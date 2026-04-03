@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.mgrtomaszzurawski</groupId>
+    <artifactId>ksef-java-sdk</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>KSeF Java SDK</name>
+    <description>Java SDK for the Polish National e-Invoicing System (KSeF) REST API v2</description>
+    <url>https://github.com/mgrtomaszzurawski/ksef-java-sdk</url>
+
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>mgrtomaszzurawski</id>
+            <name>Tomasz Zurawski</name>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/mgrtomaszzurawski/ksef-java-sdk.git</connection>
+        <developerConnection>scm:git:ssh://github.com/mgrtomaszzurawski/ksef-java-sdk.git</developerConnection>
+        <url>https://github.com/mgrtomaszzurawski/ksef-java-sdk</url>
+    </scm>
+
+    <modules>
+        <module>ksef-client</module>
+        <module>ksef-sample</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.outputTimestamp>2026-04-03T00:00:00Z</project.build.outputTimestamp>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.mycila</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>4.6</version>
+                    <configuration>
+                        <licenseSets>
+                            <licenseSet>
+                                <header>LICENSE-HEADER.txt</header>
+                                <includes>
+                                    <include>src/main/java/**/*.java</include>
+                                    <include>src/test/java/**/*.java</include>
+                                </includes>
+                            </licenseSet>
+                        </licenseSets>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>license-headers</id>
+                            <phase>process-sources</phase>
+                            <goals>
+                                <goal>format</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>

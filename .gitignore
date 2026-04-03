@@ -1,0 +1,40 @@
+# Build output
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+.cursor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+dependency-reduced-pom.xml
+
+# Logs
+logs/
+*.log
+
+# Claude Code
+.claude/
+.reviews/
+
+# Credentials / secrets
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.pem
+*.key
+credentials.*
+*.env
