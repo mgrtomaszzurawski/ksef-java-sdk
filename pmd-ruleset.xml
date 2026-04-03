@@ -36,16 +36,20 @@
     <rule ref="category/java/errorprone.xml">
         <exclude name="BeanMembersShouldSerialize"/>
         <exclude name="DataflowAnomalyAnalysis"/>
+        <!-- Java records use field-name accessors (record.baseUrl() returns field baseUrl).
+             SDK follows the same convention for non-record classes. -->
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
     </rule>
 
     <rule ref="category/java/multithreading.xml"/>
 
     <rule ref="category/java/performance.xml"/>
 
-    <!-- Short variable names: allow i/j in loops, e in catch -->
+    <!-- Short variable names: minimum 4 chars enforced.
+         Exceptions (i/j in loops, e in catch) handled via @SuppressWarnings. -->
     <rule ref="category/java/codestyle.xml/ShortVariable">
         <properties>
-            <property name="minimum" value="2"/>
+            <property name="minimum" value="4"/>
         </properties>
     </rule>
 

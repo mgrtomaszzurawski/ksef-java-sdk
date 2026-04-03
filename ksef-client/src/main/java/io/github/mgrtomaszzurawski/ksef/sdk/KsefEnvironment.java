@@ -18,14 +18,14 @@ public final class KsefEnvironment {
     public static final KsefEnvironment PREPROD = new KsefEnvironment(PREPROD_URL);
     public static final KsefEnvironment PROD = new KsefEnvironment(PROD_URL);
 
-    private final String url;
+    private final String baseUrl;
 
-    private KsefEnvironment(String url) {
-        this.url = url;
+    private KsefEnvironment(String baseUrl) {
+        this.baseUrl = baseUrl;
     }
 
     public String baseUrl() {
-        return url;
+        return baseUrl;
     }
 
     /**
