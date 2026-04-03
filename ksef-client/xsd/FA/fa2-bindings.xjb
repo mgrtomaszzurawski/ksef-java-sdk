@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jaxb:bindings xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+               jaxb:version="3.0">
+
+    <!-- Rename the local TAdres in FA(2) to avoid collision with
+         the identically-named type imported from StrukturyDanych_v10-0E.xsd -->
+    <jaxb:bindings schemaLocation="schemat_FA(2)_v1-0E.xsd"
+                   node="//xsd:complexType[@name='TAdres']">
+        <jaxb:class name="TAdresFa2"/>
+    </jaxb:bindings>
+
+</jaxb:bindings>
