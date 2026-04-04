@@ -17,12 +17,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.signing.SigningService;
 
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.util.Base64;
 
 /**
  * Client for KSeF authentication operations.
@@ -77,13 +76,13 @@ public final class AuthClient {
      * @param challenge the challenge string from {@link #requestChallenge()}
      * @param certificate the signing X.509 certificate
      * @param privateKey the private key matching the certificate
-     * @param nip the NIP (Polish tax ID) of the authenticating entity
+     * @param nipIdentifier the NIP (Polish tax ID) of the authenticating entity
      * @return authentication response with reference number and operation token
      */
     public AuthenticationInitResponseRaw authenticateWithXades(
-            String challenge, X509Certificate certificate, PrivateKey privateKey, String nip) {
-        String authXml = buildAuthTokenRequestXml(challenge, nip);
-        String signedXml = SigningService.signXml(authXml.getBytes(), certificate, privateKey);
+            String challenge, X509Certificate certificate, PrivateKey privateKey, String nipIdentifier) {
+        String authXml = buildAuthTokenRequestXml(challenge, nipIdentifier);
+        String signedXml = SigningService.signXml(authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey);
         AuthenticationInitResponseRaw response = http.postXml(
                 PATH_XADES_SIGNATURE, signedXml, AuthenticationInitResponseRaw.class, OP_AUTH_XADES);
         activateSession(response);
@@ -96,18 +95,18 @@ public final class AuthClient {
      *
      * @param challenge the challenge string from {@link #requestChallenge()}
      * @param ksefToken the pre-generated KSeF authorization token
-     * @param nip the NIP of the authenticating entity
+     * @param nipIdentifier the NIP of the authenticating entity
      * @param ksefPublicKey the KSeF public key for encrypting the token
      * @return authentication response with reference number and operation token
      */
     public AuthenticationInitResponseRaw authenticateWithToken(
-            String challenge, String ksefToken, String nip, PublicKey ksefPublicKey) {
+            String challenge, String ksefToken, String nipIdentifier, PublicKey ksefPublicKey) {
         byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, Instant.now(), ksefPublicKey);
         InitTokenAuthenticationRequestRaw request = new InitTokenAuthenticationRequestRaw()
                 .challenge(challenge)
                 .contextIdentifier(new AuthenticationContextIdentifierRaw()
                         .type(AuthenticationContextIdentifierTypeRaw.NIP)
-                        .value(nip))
+                        .value(nipIdentifier))
                 .encryptedToken(encryptedToken);
         AuthenticationInitResponseRaw response = http.postJsonAuthenticated(
                 PATH_KSEF_TOKEN, request, null, AuthenticationInitResponseRaw.class, OP_AUTH_TOKEN);
@@ -199,11 +198,11 @@ public final class AuthClient {
                 response.getAuthenticationToken().getValidUntil());
     }
 
-    private static String buildAuthTokenRequestXml(String challenge, String nip) {
+    private static String buildAuthTokenRequestXml(String challenge, String nipIdentifier) {
         return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
                 + "<AuthTokenRequest xmlns=\"http://ksef.mf.gov.pl/auth/token/2.0\">"
                 + "<Challenge>" + challenge + "</Challenge>"
-                + "<ContextIdentifier><Nip>" + nip + "</Nip></ContextIdentifier>"
+                + "<ContextIdentifier><Nip>" + nipIdentifier + "</Nip></ContextIdentifier>"
                 + "<SubjectIdentifierType>certificateSubject</SubjectIdentifierType>"
                 + "</AuthTokenRequest>";
     }

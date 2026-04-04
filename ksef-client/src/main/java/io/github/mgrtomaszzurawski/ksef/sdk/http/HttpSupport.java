@@ -26,7 +26,6 @@ public final class HttpSupport {
     private static final String APPLICATION_XML = "application/xml";
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String CONTINUATION_TOKEN_HEADER = "x-continuation-token";
     private static final int HTTP_OK = 200;
     private static final int HTTP_ACCEPTED = 202;
     private static final int HTTP_NO_CONTENT = 204;
