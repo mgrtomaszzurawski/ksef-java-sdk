@@ -19,7 +19,9 @@ package io.github.mgrtomaszzurawski.ksef.sample;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 
 /**
  * Shared mutable state passed to all demo runners.
@@ -34,19 +36,24 @@ public final class DemoContext {
     private final String ksefToken;
     private final String nipIdentifier;
     private final String environment;
+    private final X509Certificate certificate;
+    private final PrivateKey privateKey;
     private PublicKey ksefPublicKey;
     private String sessionReferenceNumber;
     private String invoiceReferenceNumber;
     private String invoiceKsefNumber;
 
     public DemoContext(KsefClient client, DemoMode mode, DemoState state,
-                       String ksefToken, String nipIdentifier, String environment) {
+                       String ksefToken, String nipIdentifier, String environment,
+                       X509Certificate certificate, PrivateKey privateKey) {
         this.client = client;
         this.mode = mode;
         this.state = state;
         this.ksefToken = ksefToken;
         this.nipIdentifier = nipIdentifier;
         this.environment = environment;
+        this.certificate = certificate;
+        this.privateKey = privateKey;
     }
 
     public KsefClient client() { return client; }
@@ -55,6 +62,9 @@ public final class DemoContext {
     public String ksefToken() { return ksefToken; }
     public String nipIdentifier() { return nipIdentifier; }
     public String environment() { return environment; }
+    public X509Certificate certificate() { return certificate; }
+    public PrivateKey privateKey() { return privateKey; }
+    public boolean hasCertificate() { return certificate != null && privateKey != null; }
 
     public PublicKey ksefPublicKey() { return ksefPublicKey; }
     public void setKsefPublicKey(PublicKey key) { this.ksefPublicKey = key; }

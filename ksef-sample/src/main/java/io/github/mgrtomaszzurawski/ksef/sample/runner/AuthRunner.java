@@ -64,10 +64,14 @@ public final class AuthRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
 
-        // XAdES — skipped, requires qualified certificate
-        results.add(RunResult.skip(NAME, OP_AUTH_XADES, SKIP_NO_CERT));
+        // XAdES — test if certificate available
+        if (context.hasCertificate()) {
+            runAuthenticateWithXades(context, results);
+        } else {
+            results.add(RunResult.skip(NAME, OP_AUTH_XADES, SKIP_NO_CERT));
+        }
 
-        // 1. Request challenge
+        // 1. Request challenge (for token-based auth — the main session)
         AuthenticationChallengeResponseRaw challengeResponse = runChallenge(context, results);
         if (challengeResponse == null) {
             return results;
@@ -97,6 +101,40 @@ public final class AuthRunner implements DemoRunner {
         runRefreshToken(context, refreshToken, results);
 
         return results;
+    }
+
+    /**
+     * Test XAdES authentication in a separate cycle: challenge → sign → authenticate → terminate.
+     * This creates a temporary session that is terminated immediately — it does NOT affect
+     * the main token-based session used by other runners.
+     */
+    private void runAuthenticateWithXades(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            // Get a fresh challenge for XAdES
+            AuthenticationChallengeResponseRaw challenge = context.client().auth().requestChallenge();
+            LOG.info("[{}] XAdES challenge: {}", NAME, challenge.getChallenge());
+
+            // Sign and authenticate
+            AuthenticationInitResponseRaw response = context.client().auth()
+                    .authenticateWithXades(challenge.getChallenge(),
+                            context.certificate(), context.privateKey(), context.nipIdentifier());
+            String refNum = response.getReferenceNumber();
+            LOG.info("[{}] XAdES authenticated, ref={}", NAME, refNum);
+
+            // Poll until auth is ready, then redeem + terminate
+            List<RunResult> pollResults = new ArrayList<>();
+            if (pollAuthStatus(context, refNum, pollResults)) {
+                context.client().auth().redeemTokens();
+                LOG.info("[{}] XAdES tokens redeemed", NAME);
+                context.client().auth().terminateCurrentSession();
+                LOG.info("[{}] XAdES session terminated", NAME);
+            }
+
+            results.add(RunResult.ok(NAME, OP_AUTH_XADES, elapsed(start), "ref=" + refNum));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_AUTH_XADES, elapsed(start), errorMessage(exception)));
+        }
     }
 
     private AuthenticationChallengeResponseRaw runChallenge(DemoContext context, List<RunResult> results) {

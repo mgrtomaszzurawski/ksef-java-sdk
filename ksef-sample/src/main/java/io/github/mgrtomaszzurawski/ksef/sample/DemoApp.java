@@ -30,11 +30,15 @@ import io.github.mgrtomaszzurawski.ksef.sample.runner.TokenRunner;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CertificateLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,12 +76,29 @@ public final class DemoApp {
             return;
         }
 
+        X509Certificate certificate = null;
+        PrivateKey privateKey = null;
+        if (properties.hasCertificate()) {
+            try {
+                char[] password = properties.certPassword().toCharArray();
+                KeyStore keyStore = CertificateLoader.loadKeyStore(Path.of(properties.certFile()), password);
+                String alias = properties.certAlias();
+                certificate = CertificateLoader.getCertificate(keyStore, alias);
+                privateKey = CertificateLoader.getPrivateKey(keyStore, alias, password);
+                LOG.info("Certificate loaded: alias={}, subject={}", alias,
+                        certificate.getSubjectX500Principal().getName());
+            } catch (Exception exception) {
+                LOG.warn("Failed to load certificate: {}", exception.getMessage());
+            }
+        }
+
         try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(properties.environment()))
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
 
             DemoContext context = new DemoContext(client, mode, state,
-                    properties.ksefToken(), properties.nipIdentifier(), properties.environment());
+                    properties.ksefToken(), properties.nipIdentifier(), properties.environment(),
+                    certificate, privateKey);
 
             List<DemoRunner> runners = buildRunners(mode);
             DemoSession session = new DemoSession(context);
