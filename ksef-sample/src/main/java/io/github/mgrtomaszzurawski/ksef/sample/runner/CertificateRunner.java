@@ -22,12 +22,25 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,8 +57,13 @@ public final class CertificateRunner implements DemoRunner {
     private static final String OP_GET_ENROLLMENT_DATA = "getEnrollmentData";
     private static final String OP_QUERY = "query";
     private static final String OP_ENROLL = "enroll";
-    private static final String SKIP_ENROLL = "requires CSR generation";
+    private static final String OP_ENROLLMENT_STATUS = "getEnrollmentStatus";
+    private static final String OP_REVOKE = "revoke";
     private static final String SKIP_NO_CERT = "no certificate available";
+    private static final String CERT_NAME = "SDK Demo Certificate";
+    private static final String RSA_ALGORITHM = "RSA";
+    private static final int RSA_KEY_SIZE = 2048;
+    private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
     private static final int AUTH_STATUS_OK = 200;
     private static final int POLL_INITIAL_DELAY_MS = 500;
     private static final int POLL_MAX_DELAY_MS = 5000;
@@ -78,8 +96,10 @@ public final class CertificateRunner implements DemoRunner {
             results.add(RunResult.skip(NAME, OP_QUERY, SKIP_NO_CERT));
         }
 
-        // 4. Enroll — skipped (needs CSR generation, out of scope for demo)
-        results.add(RunResult.skip(NAME, OP_ENROLL, SKIP_ENROLL));
+        // 4. Enroll — handled inside XAdES session block above
+        if (!context.hasCertificate()) {
+            results.add(RunResult.skip(NAME, OP_ENROLL, SKIP_NO_CERT));
+        }
 
         return results;
     }
@@ -99,8 +119,9 @@ public final class CertificateRunner implements DemoRunner {
             LOG.info("[{}] switched to XAdES session for cert ops", NAME);
 
             // Run cert ops under XAdES session
-            runGetEnrollmentData(context, results);
+            CertificateEnrollmentDataResponseRaw enrollmentData = runGetEnrollmentData(context, results);
             runQuery(context, results);
+            runEnrollAndRevoke(context, enrollmentData, results);
 
             // Terminate XAdES session
             context.client().auth().terminateCurrentSession();
@@ -121,17 +142,114 @@ public final class CertificateRunner implements DemoRunner {
         }
     }
 
-    private void runGetEnrollmentData(DemoContext context, List<RunResult> results) {
+    private CertificateEnrollmentDataResponseRaw runGetEnrollmentData(
+            DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().certificates().getEnrollmentData();
-            LOG.info("[{}] enrollment data: commonName={}, country={}", NAME,
-                    response.getCommonName(), response.getCountryName());
+            LOG.info("[{}] enrollment data: cn={}, c={}, gn={}, sn={}, serial={}, o={}, oid={}",
+                    NAME, response.getCommonName(), response.getCountryName(),
+                    response.getGivenName(), response.getSurname(), response.getSerialNumber(),
+                    response.getOrganizationName(), response.getOrganizationIdentifier());
             results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
                     "cn=" + response.getCommonName()));
+            return response;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start), errorMessage(exception)));
+            return null;
         }
+    }
+
+    private void runEnrollAndRevoke(DemoContext context,
+                                    CertificateEnrollmentDataResponseRaw enrollmentData,
+                                    List<RunResult> results) {
+        if (enrollmentData == null) {
+            results.add(RunResult.skip(NAME, OP_ENROLL, "no enrollment data"));
+            return;
+        }
+
+        String enrollmentRef = null;
+        long start = System.currentTimeMillis();
+        try {
+            // Generate RSA key pair + CSR
+            byte[] csrBytes = generateCsr(enrollmentData);
+
+            // Enroll
+            EnrollCertificateRequestRaw request = new EnrollCertificateRequestRaw()
+                    .certificateName(CERT_NAME)
+                    .certificateType(KsefCertificateTypeRaw.AUTHENTICATION)
+                    .csr(csrBytes);
+            EnrollCertificateResponseRaw response = context.client().certificates().enroll(request);
+            enrollmentRef = response.getReferenceNumber();
+            LOG.info("[{}] enrolled certificate, ref={}", NAME, enrollmentRef);
+            results.add(RunResult.ok(NAME, OP_ENROLL, elapsed(start), "ref=" + enrollmentRef));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_ENROLL, elapsed(start), errorMessage(exception)));
+            return;
+        }
+
+        // Check enrollment status
+        start = System.currentTimeMillis();
+        String serialNumber = null;
+        try {
+            CertificateEnrollmentStatusResponseRaw status =
+                    context.client().certificates().getEnrollmentStatus(enrollmentRef);
+            LOG.info("[{}] enrollment status: code={}", NAME,
+                    status.getStatus() != null ? status.getStatus().getCode() : "null");
+            serialNumber = status.getCertificateSerialNumber();
+            results.add(RunResult.ok(NAME, OP_ENROLLMENT_STATUS, elapsed(start)));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_ENROLLMENT_STATUS, elapsed(start), errorMessage(exception)));
+        }
+
+        // Revoke (cleanup) — only if we got a serial number
+        if (serialNumber != null) {
+            start = System.currentTimeMillis();
+            try {
+                context.client().certificates().revoke(serialNumber, new RevokeCertificateRequestRaw());
+                LOG.info("[{}] revoked certificate serial={}", NAME, serialNumber);
+                results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start),
+                        "revoked serial=" + serialNumber));
+            } catch (Exception exception) {
+                results.add(RunResult.fail(NAME, OP_REVOKE, elapsed(start), errorMessage(exception)));
+            }
+        } else {
+            results.add(RunResult.skip(NAME, OP_REVOKE, "no serial number from enrollment"));
+        }
+    }
+
+    private static byte[] generateCsr(CertificateEnrollmentDataResponseRaw data) throws Exception {
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
+        keyPairGen.initialize(RSA_KEY_SIZE);
+        KeyPair keyPair = keyPairGen.generateKeyPair();
+
+        StringBuilder subjectDn = new StringBuilder();
+        subjectDn.append("CN=").append(data.getCommonName());
+        subjectDn.append(",C=").append(data.getCountryName());
+        if (data.getGivenName() != null) {
+            subjectDn.append(",GIVENNAME=").append(data.getGivenName());
+        }
+        if (data.getSurname() != null) {
+            subjectDn.append(",SURNAME=").append(data.getSurname());
+        }
+        if (data.getSerialNumber() != null) {
+            subjectDn.append(",SERIALNUMBER=").append(data.getSerialNumber());
+        }
+        if (data.getOrganizationName() != null) {
+            subjectDn.append(",O=").append(data.getOrganizationName());
+        }
+        if (data.getOrganizationIdentifier() != null) {
+            subjectDn.append(",2.5.4.97=").append(data.getOrganizationIdentifier());
+        }
+        LOG.info("[{}] CSR subject DN: {}", NAME, subjectDn);
+
+        X500Name subject = new X500Name(subjectDn.toString());
+        JcaPKCS10CertificationRequestBuilder csrBuilder =
+                new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
+        ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM)
+                .build(keyPair.getPrivate());
+        PKCS10CertificationRequest csr = csrBuilder.build(signer);
+        return csr.getEncoded();
     }
 
     private void runQuery(DemoContext context, List<RunResult> results) {
