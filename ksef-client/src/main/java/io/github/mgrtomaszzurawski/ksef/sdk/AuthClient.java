@@ -65,7 +65,7 @@ public final class AuthClient {
      * @return challenge response containing the challenge string and timestamp
      */
     public AuthenticationChallengeResponseRaw requestChallenge() {
-        return http.postJson(PATH_CHALLENGE, "", AuthenticationChallengeResponseRaw.class, OP_CHALLENGE);
+        return http.postNoBody(PATH_CHALLENGE, AuthenticationChallengeResponseRaw.class, OP_CHALLENGE);
     }
 
     /**
@@ -108,8 +108,8 @@ public final class AuthClient {
                         .type(AuthenticationContextIdentifierTypeRaw.NIP)
                         .value(nipIdentifier))
                 .encryptedToken(encryptedToken);
-        AuthenticationInitResponseRaw response = http.postJsonAuthenticated(
-                PATH_KSEF_TOKEN, request, null, AuthenticationInitResponseRaw.class, OP_AUTH_TOKEN);
+        AuthenticationInitResponseRaw response = http.postJson(
+                PATH_KSEF_TOKEN, request, AuthenticationInitResponseRaw.class, OP_AUTH_TOKEN);
         activateSession(response);
         return response;
     }
@@ -201,9 +201,18 @@ public final class AuthClient {
     private static String buildAuthTokenRequestXml(String challenge, String nipIdentifier) {
         return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
                 + "<AuthTokenRequest xmlns=\"http://ksef.mf.gov.pl/auth/token/2.0\">"
-                + "<Challenge>" + challenge + "</Challenge>"
-                + "<ContextIdentifier><Nip>" + nipIdentifier + "</Nip></ContextIdentifier>"
+                + "<Challenge>" + escapeXml(challenge) + "</Challenge>"
+                + "<ContextIdentifier><Nip>" + escapeXml(nipIdentifier) + "</Nip></ContextIdentifier>"
                 + "<SubjectIdentifierType>certificateSubject</SubjectIdentifierType>"
                 + "</AuthTokenRequest>";
+    }
+
+    private static String escapeXml(String input) {
+        return input
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
     }
 }

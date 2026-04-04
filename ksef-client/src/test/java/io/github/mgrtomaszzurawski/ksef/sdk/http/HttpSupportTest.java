@@ -19,11 +19,13 @@ import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -162,11 +164,11 @@ class HttpSupportTest {
                 TEST_PATH, "{}", AuthenticationChallengeResponseRaw.class, "testPost");
 
         // then
-        assertNotNull(response.getChallenge());
+        assertEquals(TEST_CHALLENGE, response.getChallenge());
     }
 
     @Test
-    void deleteAuthenticated_whenNoContent_completesSuccessfully(WireMockRuntimeInfo wmInfo) {
+    void deleteAuthenticated_whenNoContent_sendsDeleteWithAuthHeader(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(delete(urlEqualTo(TEST_PATH))
                 .withHeader("Authorization", equalTo("Bearer test-token"))
@@ -174,8 +176,12 @@ class HttpSupportTest {
 
         HttpSupport http = createHttpSupport(wmInfo);
 
-        // when/then — should not throw
+        // when
         http.deleteAuthenticated(TEST_PATH, "test-token", "testDelete");
+
+        // then
+        verify(deleteRequestedFor(urlEqualTo(TEST_PATH))
+                .withHeader("Authorization", equalTo("Bearer test-token")));
     }
 
     @Test

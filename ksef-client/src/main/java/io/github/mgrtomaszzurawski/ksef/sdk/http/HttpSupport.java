@@ -22,6 +22,7 @@ import java.util.List;
 public final class HttpSupport {
 
     private static final String CONTENT_TYPE = "Content-Type";
+    private static final String ACCEPT = "Accept";
     private static final String APPLICATION_JSON = "application/json";
     private static final String APPLICATION_XML = "application/xml";
     private static final String AUTHORIZATION = "Authorization";
@@ -72,6 +73,19 @@ public final class HttpSupport {
         return ksef.retryHandler().execute(() -> {
             HttpRequest request = newGetBuilder(path).build();
             return sendAndDeserializeList(request, typeRef);
+        }, operationName);
+    }
+
+    /**
+     * Send a POST request with no body and deserialize the JSON response.
+     */
+    public <T> T postNoBody(String path, Class<T> responseType, String operationName) {
+        return ksef.retryHandler().executePost(() -> {
+            HttpRequest request = newPostBuilder(path)
+                    .header(ACCEPT, APPLICATION_JSON)
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            return sendAndDeserialize(request, responseType);
         }, operationName);
     }
 
@@ -150,7 +164,7 @@ public final class HttpSupport {
         return HttpRequest.newBuilder()
                 .uri(uri(path))
                 .timeout(ksef.readTimeout())
-                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .header(ACCEPT, APPLICATION_JSON)
                 .GET();
     }
 
