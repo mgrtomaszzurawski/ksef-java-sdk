@@ -15,13 +15,17 @@ import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
@@ -55,6 +59,8 @@ public final class CryptoService {
     private static final String ERR_PARSE_CERT = "Failed to parse X.509 certificate";
     private static final String ERR_HASH = "SHA-256 hash failed";
     private static final String ERR_UNSUPPORTED_ALGORITHM = "Unsupported public key algorithm: ";
+    private static final String ERR_INVALID_KEY_LENGTH = "AES key must be 32 bytes, got: ";
+    private static final String ERR_INVALID_IV_LENGTH = "IV must be 16 bytes, got: ";
     private static final String RSA_ALGORITHM_NAME = "RSA";
     private static final String EC_ALGORITHM_NAME = "EC";
     private static final String MGF1_FUNCTION = "MGF1";
@@ -64,6 +70,7 @@ public final class CryptoService {
     private static final int AES_IV_BYTES = 16;
     private static final int ECDH_SHARED_SECRET_SIZE = 32;
 
+    // SecureRandom is thread-safe; single shared instance is intentional.
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private CryptoService() {
@@ -98,7 +105,7 @@ public final class CryptoService {
             Cipher cipher = Cipher.getInstance(RSA_OAEP);
             cipher.init(Cipher.ENCRYPT_MODE, publicKey, oaepParams);
             return cipher.doFinal(plaintext);
-        } catch (Exception exception) {
+        } catch (GeneralSecurityException exception) {
             throw new KsefCryptoException(ERR_ENCRYPT_RSA, exception);
         }
     }
@@ -106,6 +113,10 @@ public final class CryptoService {
     /**
      * Encrypt data using ECDH key agreement + AES-GCM.
      * Output format: ephemeral public key || nonce || ciphertext+tag.
+     *
+     * Note: Raw ECDH shared secret is used directly as AES key without KDF.
+     * This matches the official CIRFMF SDK behavior and is required for
+     * compatibility with the KSeF server.
      */
     public static byte[] encryptEcdh(byte[] plaintext, ECPublicKey recipientPublicKey) {
         try {
@@ -118,8 +129,6 @@ public final class CryptoService {
             keyAgreement.doPhase(recipientPublicKey, true);
             byte[] sharedSecret = keyAgreement.generateSecret();
 
-            // Raw shared secret used as AES key — matches official CIRFMF SDK behavior.
-            // Ideally should use HKDF, but KSeF server expects this exact format.
             SecretKey aesKey = new SecretKeySpec(sharedSecret, 0, ECDH_SHARED_SECRET_SIZE, AES_ALGORITHM);
 
             byte[] nonce = new byte[GCM_NONCE_BYTES];
@@ -137,7 +146,7 @@ public final class CryptoService {
             buffer.put(nonce);
             buffer.put(ciphertextWithTag);
             return buffer.array();
-        } catch (Exception exception) {
+        } catch (GeneralSecurityException exception) {
             throw new KsefCryptoException(ERR_ENCRYPT_ECDH, exception);
         }
     }
@@ -153,7 +162,8 @@ public final class CryptoService {
         if (EC_ALGORITHM_NAME.equals(algorithm)) {
             return encryptEcdh(plaintext, (ECPublicKey) publicKey);
         }
-        throw new KsefCryptoException(ERR_UNSUPPORTED_ALGORITHM + algorithm, null);
+        throw new KsefCryptoException(ERR_UNSUPPORTED_ALGORITHM + algorithm,
+                new IllegalArgumentException(ERR_UNSUPPORTED_ALGORITHM + algorithm));
     }
 
     /**
@@ -168,30 +178,40 @@ public final class CryptoService {
 
     /**
      * Encrypt content with AES-256-CBC.
+     *
+     * @param plaintext the data to encrypt
+     * @param aesKey must be exactly 32 bytes (AES-256)
+     * @param initVector must be exactly 16 bytes
      */
     public static byte[] encryptAes(byte[] plaintext, byte[] aesKey, byte[] initVector) {
+        validateKeyAndIv(aesKey, initVector);
         try {
             Cipher cipher = Cipher.getInstance(AES_CBC_PKCS5);
             cipher.init(Cipher.ENCRYPT_MODE,
                     new SecretKeySpec(aesKey, AES_ALGORITHM),
                     new IvParameterSpec(initVector));
             return cipher.doFinal(plaintext);
-        } catch (Exception exception) {
+        } catch (GeneralSecurityException exception) {
             throw new KsefCryptoException(ERR_ENCRYPT_AES, exception);
         }
     }
 
     /**
      * Decrypt content with AES-256-CBC.
+     *
+     * @param ciphertext the data to decrypt
+     * @param aesKey must be exactly 32 bytes (AES-256)
+     * @param initVector must be exactly 16 bytes
      */
     public static byte[] decryptAes(byte[] ciphertext, byte[] aesKey, byte[] initVector) {
+        validateKeyAndIv(aesKey, initVector);
         try {
             Cipher cipher = Cipher.getInstance(AES_CBC_PKCS5);
             cipher.init(Cipher.DECRYPT_MODE,
                     new SecretKeySpec(aesKey, AES_ALGORITHM),
                     new IvParameterSpec(initVector));
             return cipher.doFinal(ciphertext);
-        } catch (Exception exception) {
+        } catch (GeneralSecurityException exception) {
             throw new KsefCryptoException(ERR_DECRYPT_AES, exception);
         }
     }
@@ -206,7 +226,7 @@ public final class CryptoService {
             CertificateFactory factory = CertificateFactory.getInstance(X509_TYPE);
             X509Certificate certificate = (X509Certificate) factory.generateCertificate(input);
             return certificate.getPublicKey();
-        } catch (Exception exception) {
+        } catch (CertificateException | IOException exception) {
             throw new KsefCryptoException(ERR_PARSE_CERT, exception);
         }
     }
@@ -219,8 +239,17 @@ public final class CryptoService {
             MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
             byte[] hash = digest.digest(data);
             return Base64.getEncoder().encodeToString(hash);
-        } catch (Exception exception) {
+        } catch (NoSuchAlgorithmException exception) {
             throw new KsefCryptoException(ERR_HASH, exception);
+        }
+    }
+
+    private static void validateKeyAndIv(byte[] aesKey, byte[] initVector) {
+        if (aesKey.length != AES_KEY_BYTES) {
+            throw new IllegalArgumentException(ERR_INVALID_KEY_LENGTH + aesKey.length);
+        }
+        if (initVector.length != AES_IV_BYTES) {
+            throw new IllegalArgumentException(ERR_INVALID_IV_LENGTH + initVector.length);
         }
     }
 }

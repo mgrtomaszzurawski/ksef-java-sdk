@@ -7,14 +7,18 @@ package io.github.mgrtomaszzurawski.ksef.sdk.crypto;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 import org.junit.jupiter.api.Test;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.ECPublicKey;
+import java.security.spec.MGF1ParameterSpec;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,10 +26,15 @@ class CryptoServiceTest {
 
     private static final int AES_KEY_LENGTH = 32;
     private static final int AES_IV_LENGTH = 16;
+    private static final int INVALID_AES_KEY_LENGTH = 16;
+    private static final int INVALID_IV_LENGTH = 8;
     private static final int RSA_KEY_SIZE = 2048;
     private static final int EC_KEY_SIZE = 256;
     private static final String RSA_ALGORITHM = "RSA";
     private static final String EC_ALGORITHM = "EC";
+    private static final String RSA_OAEP_CIPHER = "RSA/ECB/OAEPPadding";
+    private static final String OAEP_DIGEST = "SHA-256";
+    private static final String OAEP_MGF = "MGF1";
     private static final String KSEF_TOKEN = "test-ksef-token-12345";
     private static final byte[] TEST_PLAINTEXT = "Hello KSeF invoice content".getBytes();
 
@@ -35,7 +44,6 @@ class CryptoServiceTest {
         byte[] keyBytes = CryptoService.generateAesKey();
 
         // then
-        assertNotNull(keyBytes);
         assertEquals(AES_KEY_LENGTH, keyBytes.length);
     }
 
@@ -62,7 +70,6 @@ class CryptoServiceTest {
         byte[] ivBytes = CryptoService.generateIv();
 
         // then
-        assertNotNull(ivBytes);
         assertEquals(AES_IV_LENGTH, ivBytes.length);
     }
 
@@ -181,14 +188,16 @@ class CryptoServiceTest {
     }
 
     @Test
-    void sha256Base64_whenSameInput_producesConsistentHash() {
+    void sha256Base64_whenKnownInput_producesExpectedHash() {
+        // given — SHA-256("Hello KSeF invoice content") = known value
+        // echo -n "Hello KSeF invoice content" | sha256sum | xxd -r -p | base64
+        String expectedHash = "7CWg6hq5FQn2aJfe4+9iLEth8XytgAXIpl38hzs1sTA=";
+
         // when
-        String hash1 = CryptoService.sha256Base64(TEST_PLAINTEXT);
-        String hash2 = CryptoService.sha256Base64(TEST_PLAINTEXT);
+        String hash = CryptoService.sha256Base64(TEST_PLAINTEXT);
 
         // then
-        assertNotNull(hash1);
-        assertEquals(hash1, hash2, "Same input should produce same hash");
+        assertEquals(expectedHash, hash);
     }
 
     @Test
@@ -202,7 +211,49 @@ class CryptoServiceTest {
         String hash2 = CryptoService.sha256Base64(input2);
 
         // then
-        assertTrue(!hash1.equals(hash2), "Different inputs should produce different hashes");
+        assertNotEquals(hash1, hash2, "Different inputs should produce different hashes");
+    }
+
+    @Test
+    void encryptRsa_whenDecryptedWithPrivateKey_returnsOriginalPlaintext() throws Exception {
+        // given
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
+        keyPairGen.initialize(RSA_KEY_SIZE);
+        KeyPair keyPair = keyPairGen.generateKeyPair();
+
+        // when
+        byte[] encrypted = CryptoService.encryptRsa(TEST_PLAINTEXT, keyPair.getPublic());
+
+        // then — decrypt with private key to verify correctness
+        Cipher cipher = Cipher.getInstance(RSA_OAEP_CIPHER);
+        OAEPParameterSpec oaepParams = new OAEPParameterSpec(
+                OAEP_DIGEST, OAEP_MGF, MGF1ParameterSpec.SHA256,
+                PSource.PSpecified.DEFAULT);
+        cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate(), oaepParams);
+        byte[] decrypted = cipher.doFinal(encrypted);
+        assertArrayEquals(TEST_PLAINTEXT, decrypted);
+    }
+
+    @Test
+    void encryptAes_whenInvalidKeyLength_throwsIllegalArgument() {
+        // given
+        byte[] shortKey = new byte[INVALID_AES_KEY_LENGTH];
+        byte[] validIv = CryptoService.generateIv();
+
+        // then
+        assertThrows(IllegalArgumentException.class,
+                () -> CryptoService.encryptAes(TEST_PLAINTEXT, shortKey, validIv));
+    }
+
+    @Test
+    void decryptAes_whenInvalidIvLength_throwsIllegalArgument() {
+        // given
+        byte[] validKey = CryptoService.generateAesKey();
+        byte[] shortIv = new byte[INVALID_IV_LENGTH];
+
+        // then
+        assertThrows(IllegalArgumentException.class,
+                () -> CryptoService.decryptAes(TEST_PLAINTEXT, validKey, shortIv));
     }
 
     @Test

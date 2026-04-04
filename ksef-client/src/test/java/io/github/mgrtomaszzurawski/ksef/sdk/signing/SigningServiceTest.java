@@ -17,6 +17,7 @@ import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.cert.X509Certificate;
+import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -29,6 +30,8 @@ class SigningServiceTest {
 
     private static final String TEST_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Root><Data>test</Data></Root>";
     private static final String RSA_ALGORITHM = "RSA";
+    private static final String EC_ALGORITHM = "EC";
+    private static final String EC_CURVE = "secp256r1";
     private static final int RSA_KEY_SIZE = 2048;
     private static final int CERT_VALIDITY_DAYS = 365;
     private static final String XADES_SIGNATURE_TAG = "<ds:Signature";
@@ -36,12 +39,13 @@ class SigningServiceTest {
     private static final String ORIGINAL_CONTENT_TAG = "<Root>";
     private static final String CERT_SUBJECT = "CN=Test";
     private static final String SHA256_WITH_RSA = "SHA256WithRSA";
+    private static final String SHA256_WITH_ECDSA = "SHA256WithECDSA";
 
     @Test
     void signXml_whenValidRsaKeyPair_producesXmlWithSignatureAndOriginalContent() throws Exception {
         // given
         KeyPair keyPair = generateRsaKeyPair();
-        X509Certificate certificate = generateSelfSignedCertificate(keyPair);
+        X509Certificate certificate = generateSelfSignedCertificate(keyPair, SHA256_WITH_RSA);
 
         // when
         String signedXml = SigningService.signXml(TEST_XML.getBytes(), certificate, keyPair.getPrivate());
@@ -55,10 +59,52 @@ class SigningServiceTest {
     }
 
     @Test
-    void signXml_whenNullInput_throwsCryptoException() {
+    void signXml_whenValidEcdsaKeyPair_producesXmlWithSignatureAndOriginalContent() throws Exception {
+        // given
+        KeyPair keyPair = generateEcKeyPair();
+        X509Certificate certificate = generateSelfSignedCertificate(keyPair, SHA256_WITH_ECDSA);
+
+        // when
+        String signedXml = SigningService.signXml(TEST_XML.getBytes(), certificate, keyPair.getPrivate());
+
+        // then
+        assertNotNull(signedXml);
+        assertTrue(signedXml.contains(XADES_SIGNATURE_TAG), "Should contain XAdES Signature element");
+        assertTrue(signedXml.contains(SIGNED_INFO_TAG), "Should contain SignedInfo element");
+        assertTrue(signedXml.contains(ORIGINAL_CONTENT_TAG), "Should preserve original content");
+        assertTrue(signedXml.length() > TEST_XML.length(), "Signed XML should be longer than original");
+    }
+
+    @Test
+    void signXml_whenNullXmlContent_throwsCryptoException() throws Exception {
+        // given
+        KeyPair keyPair = generateRsaKeyPair();
+        X509Certificate certificate = generateSelfSignedCertificate(keyPair, SHA256_WITH_RSA);
+
         // then
         assertThrows(KsefCryptoException.class,
-                () -> SigningService.signXml(null, null, null));
+                () -> SigningService.signXml(null, certificate, keyPair.getPrivate()));
+    }
+
+    @Test
+    void signXml_whenNullCertificate_throwsCryptoException() throws Exception {
+        // given
+        KeyPair keyPair = generateRsaKeyPair();
+
+        // then
+        assertThrows(KsefCryptoException.class,
+                () -> SigningService.signXml(TEST_XML.getBytes(), null, keyPair.getPrivate()));
+    }
+
+    @Test
+    void signXml_whenNullPrivateKey_throwsCryptoException() throws Exception {
+        // given
+        KeyPair keyPair = generateRsaKeyPair();
+        X509Certificate certificate = generateSelfSignedCertificate(keyPair, SHA256_WITH_RSA);
+
+        // then
+        assertThrows(KsefCryptoException.class,
+                () -> SigningService.signXml(TEST_XML.getBytes(), certificate, null));
     }
 
     private static KeyPair generateRsaKeyPair() throws Exception {
@@ -67,7 +113,13 @@ class SigningServiceTest {
         return keyPairGen.generateKeyPair();
     }
 
-    private static X509Certificate generateSelfSignedCertificate(KeyPair keyPair) throws Exception {
+    private static KeyPair generateEcKeyPair() throws Exception {
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(EC_ALGORITHM);
+        keyPairGen.initialize(new ECGenParameterSpec(EC_CURVE));
+        return keyPairGen.generateKeyPair();
+    }
+
+    private static X509Certificate generateSelfSignedCertificate(KeyPair keyPair, String sigAlgorithm) throws Exception {
         X500Name issuer = new X500Name(CERT_SUBJECT);
         Instant notBefore = Instant.now();
         Instant notAfter = notBefore.plus(CERT_VALIDITY_DAYS, ChronoUnit.DAYS);
@@ -77,7 +129,7 @@ class SigningServiceTest {
                 Date.from(notBefore), Date.from(notAfter),
                 issuer, keyPair.getPublic());
 
-        ContentSigner signer = new JcaContentSignerBuilder(SHA256_WITH_RSA).build(keyPair.getPrivate());
+        ContentSigner signer = new JcaContentSignerBuilder(sigAlgorithm).build(keyPair.getPrivate());
         X509CertificateHolder certHolder = certBuilder.build(signer);
         return new JcaX509CertificateConverter().getCertificate(certHolder);
     }
