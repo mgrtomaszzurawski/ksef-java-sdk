@@ -27,6 +27,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
  * Some operations (subject, person, permissions, attachment, context block) do not
  * require authentication. Limit and rate-limit operations require authentication.</p>
  */
+@SuppressWarnings("PMD.TestClassWithoutTestCases") // Not a test class — manages KSeF test environment data
 public final class TestDataClient {
 
     // --- Unauthenticated paths ---

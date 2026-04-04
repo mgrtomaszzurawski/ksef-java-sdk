@@ -1,0 +1,258 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk;
+
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import org.junit.jupiter.api.Test;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@WireMockTest
+class CertificateClientTest {
+
+    private static final String TEST_TOKEN = "test-access-token";
+    private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
+    private static final String TEST_ENROLLMENT_REF = "20260404-CE-1234567890-ABCDEF1234-08";
+    private static final String TEST_CERT_SERIAL = "ABC123DEF456";
+
+    private static final int HTTP_OK = 200;
+    private static final int HTTP_NO_CONTENT = 204;
+    private static final int HTTP_SERVER_ERROR = 500;
+    private static final int KSEF_STATUS_OK = 200;
+
+    private static final String LIMITS_RESPONSE = """
+            {
+              "canRequest": true,
+              "enrollment": {"limit": 5, "used": 1},
+              "certificate": {"limit": 10, "used": 2}
+            }
+            """;
+
+    private static final String ENROLLMENT_DATA_RESPONSE = """
+            {
+              "commonName": "KSeF Certificate",
+              "countryName": "PL"
+            }
+            """;
+
+    private static final String ENROLL_RESPONSE = """
+            {
+              "referenceNumber": "%s",
+              "timestamp": "2026-04-04T12:00:00+02:00"
+            }
+            """.formatted(TEST_ENROLLMENT_REF);
+
+    private static final String ENROLLMENT_STATUS_RESPONSE = """
+            {
+              "requestDate": "2026-04-04T12:00:00+02:00",
+              "status": {"code": 200, "description": "Completed"}
+            }
+            """;
+
+    private static final String QUERY_RESPONSE = """
+            {
+              "certificates": [],
+              "hasMore": false
+            }
+            """;
+
+    private static final String RETRIEVE_RESPONSE = """
+            {
+              "certificates": []
+            }
+            """;
+
+    @Test
+    void getLimits_whenAuthenticated_returnsLimits(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(get(urlEqualTo("/api/v2/certificates/limits"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(LIMITS_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        CertificateLimitsResponseRaw response = ksef.certificates().getLimits();
+
+        // then
+        assertEquals(true, response.getCanRequest());
+        assertNotNull(response.getEnrollment());
+        assertNotNull(response.getCertificate());
+    }
+
+    @Test
+    void getEnrollmentData_whenAuthenticated_returnsData(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(get(urlEqualTo("/api/v2/certificates/enrollments/data"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ENROLLMENT_DATA_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        CertificateEnrollmentDataResponseRaw response = ksef.certificates().getEnrollmentData();
+
+        // then
+        assertEquals("KSeF Certificate", response.getCommonName());
+        assertEquals("PL", response.getCountryName());
+    }
+
+    @Test
+    void enroll_whenAuthenticated_returnsReference(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlEqualTo("/api/v2/certificates/enrollments"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ENROLL_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        EnrollCertificateResponseRaw response = ksef.certificates().enroll(new EnrollCertificateRequestRaw());
+
+        // then
+        assertEquals(TEST_ENROLLMENT_REF, response.getReferenceNumber());
+        assertNotNull(response.getTimestamp());
+    }
+
+    @Test
+    void getEnrollmentStatus_whenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(get(urlEqualTo("/api/v2/certificates/enrollments/" + TEST_ENROLLMENT_REF))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ENROLLMENT_STATUS_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        CertificateEnrollmentStatusResponseRaw response =
+                ksef.certificates().getEnrollmentStatus(TEST_ENROLLMENT_REF);
+
+        // then
+        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
+        assertNotNull(response.getRequestDate());
+    }
+
+    @Test
+    void retrieve_whenAuthenticated_returnsCertificates(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlEqualTo("/api/v2/certificates/retrieve"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(RETRIEVE_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        RetrieveCertificatesResponseRaw response =
+                ksef.certificates().retrieve(new RetrieveCertificatesRequestRaw());
+
+        // then
+        assertNotNull(response.getCertificates());
+    }
+
+    @Test
+    void revoke_whenAuthenticated_sendsRevokeRequest(WireMockRuntimeInfo wmInfo) {
+        // given
+        String revokePath = "/api/v2/certificates/" + TEST_CERT_SERIAL + "/revoke";
+        stubFor(post(urlEqualTo(revokePath))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        ksef.certificates().revoke(TEST_CERT_SERIAL, new RevokeCertificateRequestRaw());
+
+        // then
+        verify(postRequestedFor(urlEqualTo(revokePath))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+    }
+
+    @Test
+    void query_whenAuthenticated_returnsCertificates(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlEqualTo("/api/v2/certificates/query"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(QUERY_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        QueryCertificatesResponseRaw response =
+                ksef.certificates().query(new QueryCertificatesRequestRaw());
+
+        // then
+        assertNotNull(response.getCertificates());
+        assertEquals(false, response.getHasMore());
+    }
+
+    @Test
+    void enroll_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlEqualTo("/api/v2/certificates/enrollments"))
+                .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR).withBody("{}")));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // then
+        assertThrows(KsefServerException.class,
+                () -> ksef.certificates().enroll(new EnrollCertificateRequestRaw()));
+    }
+
+    @Test
+    void getEnrollmentStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> ksef.certificates().getEnrollmentStatus("../../../etc/passwd"));
+    }
+
+    private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+                .retryPolicy(RetryPolicy.builder().enabled(false).build())
+                .build();
+        ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        return ksef;
+    }
+}

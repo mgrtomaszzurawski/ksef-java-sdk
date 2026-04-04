@@ -35,6 +35,15 @@
         <exclude name="AvoidCatchingGenericException"/>
         <exclude name="CognitiveComplexity"/>
         <exclude name="CyclomaticComplexity"/>
+        <exclude name="CouplingBetweenObjects"/>
+    </rule>
+
+    <!-- Coupling threshold raised to 30: domain clients importing many generated model types
+         is inherent to an API client SDK (PermissionClient covers 19 operations). -->
+    <rule ref="category/java/design.xml/CouplingBetweenObjects">
+        <properties>
+            <property name="threshold" value="30"/>
+        </properties>
     </rule>
 
     <!-- Complexity thresholds: default 15 is too tight for retry/handler patterns -->
