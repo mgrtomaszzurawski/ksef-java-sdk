@@ -42,6 +42,8 @@ public final class DemoContext {
     private String sessionReferenceNumber;
     private String invoiceReferenceNumber;
     private String invoiceKsefNumber;
+    private byte[] aesKey;
+    private byte[] initVector;
 
     public DemoContext(KsefClient client, DemoMode mode, DemoState state,
                        String ksefToken, String nipIdentifier, String environment,
@@ -77,4 +79,10 @@ public final class DemoContext {
 
     public String invoiceKsefNumber() { return invoiceKsefNumber; }
     public void setInvoiceKsefNumber(String ksefNumber) { this.invoiceKsefNumber = ksefNumber; }
+
+    public byte[] aesKey() { return aesKey; }
+    public void setAesKey(byte[] key) { this.aesKey = key; }
+
+    public byte[] initVector() { return initVector; }
+    public void setInitVector(byte[] vector) { this.initVector = vector; }
 }
