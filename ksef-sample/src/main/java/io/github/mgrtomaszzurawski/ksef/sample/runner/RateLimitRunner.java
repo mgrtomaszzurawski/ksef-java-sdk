@@ -17,6 +17,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
@@ -51,11 +54,5 @@ public final class RateLimitRunner implements DemoRunner {
         return results;
     }
 
-    private static long elapsed(long start) {
-        return System.currentTimeMillis() - start;
-    }
 
-    private static String errorMessage(Exception exception) {
-        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
-    }
 }

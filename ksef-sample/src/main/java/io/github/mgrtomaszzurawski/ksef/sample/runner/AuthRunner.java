@@ -17,6 +17,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
@@ -24,8 +27,6 @@ import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -196,15 +197,4 @@ public final class AuthRunner implements DemoRunner {
         }
     }
 
-    private static long elapsed(long start) {
-        return System.currentTimeMillis() - start;
-    }
-
-    private static String errorMessage(Exception exception) {
-        if (exception instanceof KsefException ksefEx && ksefEx.responseBody() != null) {
-            return exception.getClass().getSimpleName() + ": " + exception.getMessage()
-                    + " | body: " + ksefEx.responseBody();
-        }
-        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
-    }
 }

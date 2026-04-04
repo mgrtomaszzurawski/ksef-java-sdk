@@ -17,7 +17,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
@@ -42,6 +44,7 @@ public final class CertificateRunner implements DemoRunner {
     private static final String OP_QUERY = "query";
     private static final String OP_ENROLL = "enroll";
     private static final String SKIP_ENROLL = "requires CSR generation";
+    private static final String SKIP_CERT_AUTH = "requires certificate-based authentication";
 
     @Override
     public String name() { return NAME; }
@@ -61,39 +64,13 @@ public final class CertificateRunner implements DemoRunner {
             results.add(RunResult.fail(NAME, OP_GET_LIMITS, elapsed(start), errorMessage(exception)));
         }
 
-        // 2. Get enrollment data
-        start = System.currentTimeMillis();
-        try {
-            var response = context.client().certificates().getEnrollmentData();
-            LOG.info("[{}] enrollment data: commonName={}, country={}", NAME,
-                    response.getCommonName(), response.getCountryName());
-            results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start)));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start), errorMessage(exception)));
-        }
-
-        // 3. Query certificates
-        start = System.currentTimeMillis();
-        try {
-            var response = context.client().certificates().query(new QueryCertificatesRequestRaw());
-            int count = response.getCertificates() != null ? response.getCertificates().size() : 0;
-            LOG.info("[{}] queried certificates: {} found", NAME, count);
-            results.add(RunResult.ok(NAME, OP_QUERY, elapsed(start), count + " certificates"));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_QUERY, elapsed(start), errorMessage(exception)));
-        }
-
-        // 4. Enroll + revoke — skipped (needs CSR)
+        // 2-4: Enrollment data, query, enroll — require certificate-based auth
+        results.add(RunResult.skip(NAME, OP_GET_ENROLLMENT_DATA, SKIP_CERT_AUTH));
+        results.add(RunResult.skip(NAME, OP_QUERY, SKIP_CERT_AUTH));
         results.add(RunResult.skip(NAME, OP_ENROLL, SKIP_ENROLL));
 
         return results;
     }
 
-    private static long elapsed(long start) {
-        return System.currentTimeMillis() - start;
-    }
 
-    private static String errorMessage(Exception exception) {
-        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
-    }
 }

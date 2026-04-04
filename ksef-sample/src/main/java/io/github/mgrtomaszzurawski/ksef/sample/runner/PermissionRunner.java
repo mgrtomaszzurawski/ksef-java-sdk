@@ -17,6 +17,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw;
@@ -50,13 +53,10 @@ public final class PermissionRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
 
-        // 1. Grant person permission
-        String operationRef = runGrantPerson(context, results);
-
-        // 2. Get operation status (if grant succeeded)
-        if (operationRef != null) {
-            runGetOperationStatus(context, operationRef, results);
-        }
+        // 1-2. Grant + operation status — skipped (requires proper subject identifiers)
+        results.add(RunResult.skip(NAME, OP_GRANT_PERSON, "requires valid subject identifiers"));
+        results.add(RunResult.skip(NAME, OP_GET_OP_STATUS, "depends on grant"));
+        results.add(RunResult.skip(NAME, OP_REVOKE_COMMON, "depends on grant"));
 
         // 3. Query personal permissions
         runQueryPersonal(context, results);
@@ -66,11 +66,6 @@ public final class PermissionRunner implements DemoRunner {
 
         // 5. Get attachment status
         runGetAttachmentStatus(context, results);
-
-        // 6. Revoke (cleanup) — use operation ref as permission ID
-        if (operationRef != null) {
-            runRevokeCommon(context, operationRef, results);
-        }
 
         return results;
     }
@@ -148,11 +143,5 @@ public final class PermissionRunner implements DemoRunner {
         }
     }
 
-    private static long elapsed(long start) {
-        return System.currentTimeMillis() - start;
-    }
 
-    private static String errorMessage(Exception exception) {
-        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
-    }
 }

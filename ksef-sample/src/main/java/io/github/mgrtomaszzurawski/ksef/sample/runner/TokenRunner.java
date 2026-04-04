@@ -17,9 +17,13 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.TokenPermissionTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
@@ -72,7 +76,8 @@ public final class TokenRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             GenerateTokenRequestRaw request = new GenerateTokenRequestRaw()
-                    .description(TOKEN_DESCRIPTION);
+                    .description(TOKEN_DESCRIPTION)
+                    .addPermissionsItem(TokenPermissionTypeRaw.INVOICE_READ);
             GenerateTokenResponseRaw response = context.client().tokens().generate(request);
             String refNum = response.getReferenceNumber();
             LOG.info("[{}] generated token ref={}", NAME, refNum);
@@ -118,11 +123,5 @@ public final class TokenRunner implements DemoRunner {
         }
     }
 
-    private static long elapsed(long start) {
-        return System.currentTimeMillis() - start;
-    }
 
-    private static String errorMessage(Exception exception) {
-        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
-    }
 }

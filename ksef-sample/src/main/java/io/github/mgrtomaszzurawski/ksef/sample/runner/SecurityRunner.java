@@ -17,6 +17,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateUsageRaw;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
@@ -86,11 +89,5 @@ public final class SecurityRunner implements DemoRunner {
         return x509.getPublicKey();
     }
 
-    private static long elapsed(long start) {
-        return System.currentTimeMillis() - start;
-    }
 
-    private static String errorMessage(Exception exception) {
-        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
-    }
 }
