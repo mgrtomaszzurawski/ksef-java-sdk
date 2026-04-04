@@ -28,6 +28,11 @@ module io.github.mgrtomaszzurawski.ksef {
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;
 
+    // QR code generation (ZXing - automatic modules)
+    requires com.google.zxing;
+    requires com.google.zxing.javase;
+    requires java.desktop;
+
     // XAdES signing (EU DSS - automatic modules with underscores)
     requires jpms_dss_xades;
     requires jpms_dss_enumerations;

@@ -31,6 +31,12 @@ public final class KsefClient implements AutoCloseable {
     private final SecurityClient securityClient;
     private final SessionClient sessionClient;
     private final InvoiceClient invoiceClient;
+    private final TokenClient tokenClient;
+    private final PermissionClient permissionClient;
+    private final CertificateClient certificateClient;
+    private final LimitsClient limitsClient;
+    private final RateLimitClient rateLimitClient;
+    private final TestDataClient testDataClient;
     private volatile boolean closed;
 
     private KsefClient(Builder builder) {
@@ -45,6 +51,12 @@ public final class KsefClient implements AutoCloseable {
         this.securityClient = new SecurityClient(this);
         this.sessionClient = new SessionClient(this);
         this.invoiceClient = new InvoiceClient(this);
+        this.tokenClient = new TokenClient(this);
+        this.permissionClient = new PermissionClient(this);
+        this.certificateClient = new CertificateClient(this);
+        this.limitsClient = new LimitsClient(this);
+        this.rateLimitClient = new RateLimitClient(this);
+        this.testDataClient = new TestDataClient(this);
     }
 
     public KsefEnvironment environment() {
@@ -107,6 +119,54 @@ public final class KsefClient implements AutoCloseable {
     public InvoiceClient invoices() {
         ensureOpen();
         return invoiceClient;
+    }
+
+    /**
+     * Access token management operations (generate, list, get status, revoke).
+     */
+    public TokenClient tokens() {
+        ensureOpen();
+        return tokenClient;
+    }
+
+    /**
+     * Access permission management operations (grant, revoke, query permissions).
+     */
+    public PermissionClient permissions() {
+        ensureOpen();
+        return permissionClient;
+    }
+
+    /**
+     * Access certificate management operations (enroll, retrieve, revoke, query).
+     */
+    public CertificateClient certificates() {
+        ensureOpen();
+        return certificateClient;
+    }
+
+    /**
+     * Access session and subject limit queries.
+     */
+    public LimitsClient limits() {
+        ensureOpen();
+        return limitsClient;
+    }
+
+    /**
+     * Access API rate limit information.
+     */
+    public RateLimitClient rateLimits() {
+        ensureOpen();
+        return rateLimitClient;
+    }
+
+    /**
+     * Access test environment data management operations.
+     */
+    public TestDataClient testData() {
+        ensureOpen();
+        return testDataClient;
     }
 
     @Override
