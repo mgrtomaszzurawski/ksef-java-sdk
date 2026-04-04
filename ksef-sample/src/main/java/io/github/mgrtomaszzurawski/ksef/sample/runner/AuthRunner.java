@@ -25,6 +25,8 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +48,13 @@ public final class AuthRunner implements DemoRunner {
     private static final String OP_GET_STATUS = "getStatus";
     private static final String OP_REFRESH = "refreshToken";
     private static final String OP_AUTH_XADES = "authenticateWithXades";
+    private static final String OP_POLL_STATUS = "pollAuthStatus";
     private static final String SKIP_NO_CERT = "requires qualified certificate";
+    private static final int AUTH_STATUS_OK = 200;
+    private static final int POLL_INITIAL_DELAY_MS = 500;
+    private static final int POLL_MAX_DELAY_MS = 5000;
+    private static final int POLL_TIMEOUT_MS = 30000;
+    private static final int POLL_BACKOFF_MULTIPLIER = 2;
 
     @Override
     public String name() { return NAME; }
@@ -59,28 +67,30 @@ public final class AuthRunner implements DemoRunner {
         results.add(RunResult.skip(NAME, OP_AUTH_XADES, SKIP_NO_CERT));
 
         // 1. Request challenge
-        String challenge = runChallenge(context, results);
-        if (challenge == null) {
+        AuthenticationChallengeResponseRaw challengeResponse = runChallenge(context, results);
+        if (challengeResponse == null) {
             return results;
         }
 
         // 2. Authenticate with token
-        String authRef = runAuthenticateWithToken(context, challenge, results);
+        String authRef = runAuthenticateWithToken(context, challengeResponse, results);
         if (authRef == null) {
             return results;
         }
 
-        // 3. Redeem tokens
+        // 3. Poll auth status until ready
+        if (!pollAuthStatus(context, authRef, results)) {
+            return results;
+        }
+
+        // 4. Redeem tokens
         String refreshToken = runRedeemTokens(context, results);
         if (refreshToken == null) {
             return results;
         }
 
-        // 4. List sessions
+        // 5. List sessions
         runListSessions(context, results);
-
-        // 5. Get auth status
-        runGetStatus(context, authRef, results);
 
         // 6. Refresh token
         runRefreshToken(context, refreshToken, results);
@@ -88,25 +98,27 @@ public final class AuthRunner implements DemoRunner {
         return results;
     }
 
-    private String runChallenge(DemoContext context, List<RunResult> results) {
+    private AuthenticationChallengeResponseRaw runChallenge(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             AuthenticationChallengeResponseRaw response = context.client().auth().requestChallenge();
             String challenge = response.getChallenge();
-            LOG.info("[{}] challenge: {}", NAME, challenge);
+            LOG.info("[{}] challenge: {}, clientIp: {}", NAME, challenge, response.getClientIp());
             results.add(RunResult.ok(NAME, OP_CHALLENGE, elapsed(start), "challenge=" + challenge));
-            return challenge;
+            return response;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_CHALLENGE, elapsed(start), errorMessage(exception)));
             return null;
         }
     }
 
-    private String runAuthenticateWithToken(DemoContext context, String challenge, List<RunResult> results) {
+    private String runAuthenticateWithToken(DemoContext context,
+                                            AuthenticationChallengeResponseRaw challengeResponse,
+                                            List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             AuthenticationInitResponseRaw response = context.client().auth()
-                    .authenticateWithToken(challenge, context.ksefToken(),
+                    .authenticateWithToken(challengeResponse, context.ksefToken(),
                             context.nipIdentifier(), context.ksefPublicKey());
             String refNum = response.getReferenceNumber();
             LOG.info("[{}] authenticated, ref={}", NAME, refNum);
@@ -115,6 +127,35 @@ public final class AuthRunner implements DemoRunner {
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_AUTH_TOKEN, elapsed(start), errorMessage(exception)));
             return null;
+        }
+    }
+
+    private boolean pollAuthStatus(DemoContext context, String referenceNumber, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        int delay = POLL_INITIAL_DELAY_MS;
+        try {
+            while (elapsed(start) < POLL_TIMEOUT_MS) {
+                var response = context.client().auth().getStatus(referenceNumber);
+                Integer code = response.getStatus() != null ? response.getStatus().getCode() : null;
+                LOG.info("[{}] auth status for {}: code={}", NAME, referenceNumber, code);
+                if (code != null && code == AUTH_STATUS_OK) {
+                    results.add(RunResult.ok(NAME, OP_POLL_STATUS, elapsed(start),
+                            "ready after " + elapsed(start) + "ms"));
+                    return true;
+                }
+                Thread.sleep(delay);
+                delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
+            }
+            results.add(RunResult.fail(NAME, OP_POLL_STATUS, elapsed(start),
+                    "Timeout waiting for auth status 200"));
+            return false;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            results.add(RunResult.fail(NAME, OP_POLL_STATUS, elapsed(start), "Interrupted"));
+            return false;
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_POLL_STATUS, elapsed(start), errorMessage(exception)));
+            return false;
         }
     }
 
@@ -144,18 +185,6 @@ public final class AuthRunner implements DemoRunner {
         }
     }
 
-    private void runGetStatus(DemoContext context, String referenceNumber, List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        try {
-            var response = context.client().auth().getStatus(referenceNumber);
-            LOG.info("[{}] auth status for {}: code={}", NAME, referenceNumber,
-                    response.getStatus() != null ? response.getStatus().getCode() : "null");
-            results.add(RunResult.ok(NAME, OP_GET_STATUS, elapsed(start)));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_GET_STATUS, elapsed(start), errorMessage(exception)));
-        }
-    }
-
     private void runRefreshToken(DemoContext context, String refreshToken, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
@@ -172,6 +201,10 @@ public final class AuthRunner implements DemoRunner {
     }
 
     private static String errorMessage(Exception exception) {
+        if (exception instanceof KsefException ksefEx && ksefEx.responseBody() != null) {
+            return exception.getClass().getSimpleName() + ": " + exception.getMessage()
+                    + " | body: " + ksefEx.responseBody();
+        }
         return exception.getClass().getSimpleName() + ": " + exception.getMessage();
     }
 }
