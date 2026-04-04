@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.http;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 
@@ -14,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Shared HTTP request/response handling for domain clients.
@@ -30,11 +30,28 @@ public final class HttpSupport {
     private static final int HTTP_OK = 200;
     private static final int HTTP_ACCEPTED = 202;
     private static final int HTTP_NO_CONTENT = 204;
+    private static final Pattern SAFE_PATH_SEGMENT = Pattern.compile("^[A-Za-z0-9._\\-]+$");
+    private static final String ERR_UNSAFE_PATH = "Unsafe path segment: ";
 
     private final KsefClient ksef;
 
     public HttpSupport(KsefClient ksef) {
         this.ksef = ksef;
+    }
+
+    /**
+     * Validate that a value is safe for use as a URL path segment.
+     * Rejects values containing path separators, query strings, fragments, or traversal sequences.
+     *
+     * @param segment the path segment to validate
+     * @return the validated segment (unchanged)
+     * @throws IllegalArgumentException if the segment contains unsafe characters
+     */
+    public static String requireSafePathSegment(String segment) {
+        if (segment == null || !SAFE_PATH_SEGMENT.matcher(segment).matches()) {
+            throw new IllegalArgumentException(ERR_UNSAFE_PATH + segment);
+        }
+        return segment;
     }
 
     /**
@@ -146,6 +163,40 @@ public final class HttpSupport {
     }
 
     /**
+     * Send an authenticated POST with no body and expect no content (204).
+     */
+    public void postNoBodyAuthenticated(String path, String token, String operationName) {
+        ksef.retryHandler().run(() -> {
+            HttpRequest request = newPostBuilder(path)
+                    .header(AUTHORIZATION, BEARER_PREFIX + token)
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            sendExpectNoContent(request);
+        }, operationName);
+    }
+
+    /**
+     * Send an authenticated GET request and return raw bytes (for binary responses like UPO).
+     */
+    public byte[] getAuthenticatedBytes(String path, String token, String operationName) {
+        return ksef.retryHandler().execute(() -> {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(uri(path))
+                    .timeout(ksef.readTimeout())
+                    .header(AUTHORIZATION, BEARER_PREFIX + token)
+                    .GET()
+                    .build();
+            HttpResponse<byte[]> response = sendBytes(request);
+            int status = response.statusCode();
+            if (status != HTTP_OK) {
+                throw KsefException.of(request.method() + " " + request.uri(), null, status,
+                        new String(response.body(), java.nio.charset.StandardCharsets.UTF_8));
+            }
+            return response.body();
+        }, operationName);
+    }
+
+    /**
      * Send an authenticated DELETE with no response body.
      */
     public void deleteAuthenticated(String path, String token, String operationName) {
@@ -209,11 +260,17 @@ public final class HttpSupport {
         }
     }
 
+    private HttpResponse<byte[]> sendBytes(HttpRequest request) throws IOException {
+        try {
+            return ksef.httpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
+        }
+    }
+
     private <T> T deserialize(String body, Class<T> responseType) throws IOException {
         return ksef.objectMapper().readValue(body, responseType);
     }
 
-    ObjectMapper objectMapper() {
-        return ksef.objectMapper();
-    }
 }
