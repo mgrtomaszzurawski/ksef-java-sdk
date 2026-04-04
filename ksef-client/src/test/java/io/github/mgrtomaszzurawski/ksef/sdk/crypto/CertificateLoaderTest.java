@@ -35,6 +35,7 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CertificateLoaderTest {
@@ -47,6 +48,8 @@ class CertificateLoaderTest {
     private static final String SHA256_WITH_RSA = "SHA256WithRSA";
     private static final String KEYSTORE_ALIAS = "test-alias";
     private static final char[] KEYSTORE_PASSWORD = "test-password".toCharArray();
+    private static final byte[] CORRUPTED_KEYSTORE_DATA = {1, 2, 3, 4, 5};
+    private static final int EXPECTED_KEYSTORE_SIZE = 1;
 
     private static byte[] testKeystoreBytes;
     private static KeyPair testKeyPair;
@@ -77,7 +80,7 @@ class CertificateLoaderTest {
 
         // then
         assertNotNull(loaded);
-        assertEquals(1, loaded.size());
+        assertEquals(EXPECTED_KEYSTORE_SIZE, loaded.size());
         assertEquals(KEYSTORE_ALIAS, loaded.aliases().nextElement());
     }
 
@@ -92,7 +95,7 @@ class CertificateLoaderTest {
 
         // then
         assertNotNull(loaded);
-        assertEquals(1, loaded.size());
+        assertEquals(EXPECTED_KEYSTORE_SIZE, loaded.size());
         assertEquals(KEYSTORE_ALIAS, loaded.aliases().nextElement());
     }
 
@@ -120,7 +123,7 @@ class CertificateLoaderTest {
     @Test
     void loadKeyStore_whenCorruptedData_throwsCryptoException() {
         // given
-        InputStream corruptStream = new ByteArrayInputStream(new byte[]{1, 2, 3, 4, 5});
+        InputStream corruptStream = new ByteArrayInputStream(CORRUPTED_KEYSTORE_DATA);
 
         // then
         assertThrows(KsefCryptoException.class,
@@ -164,7 +167,7 @@ class CertificateLoaderTest {
         X509Certificate certificate = CertificateLoader.getCertificate(keyStore, "nonexistent-alias");
 
         // then — KeyStore.getCertificate returns null for unknown alias
-        assertEquals(null, certificate);
+        assertNull(certificate);
     }
 
     @Test

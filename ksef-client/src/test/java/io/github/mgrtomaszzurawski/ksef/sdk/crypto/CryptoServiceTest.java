@@ -7,9 +7,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk.crypto;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 import org.junit.jupiter.api.Test;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.ECPublicKey;
+import java.security.spec.MGF1ParameterSpec;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -22,10 +26,15 @@ class CryptoServiceTest {
 
     private static final int AES_KEY_LENGTH = 32;
     private static final int AES_IV_LENGTH = 16;
+    private static final int INVALID_AES_KEY_LENGTH = 16;
+    private static final int INVALID_IV_LENGTH = 8;
     private static final int RSA_KEY_SIZE = 2048;
     private static final int EC_KEY_SIZE = 256;
     private static final String RSA_ALGORITHM = "RSA";
     private static final String EC_ALGORITHM = "EC";
+    private static final String RSA_OAEP_CIPHER = "RSA/ECB/OAEPPadding";
+    private static final String OAEP_DIGEST = "SHA-256";
+    private static final String OAEP_MGF = "MGF1";
     private static final String KSEF_TOKEN = "test-ksef-token-12345";
     private static final byte[] TEST_PLAINTEXT = "Hello KSeF invoice content".getBytes();
 
@@ -216,11 +225,11 @@ class CryptoServiceTest {
         byte[] encrypted = CryptoService.encryptRsa(TEST_PLAINTEXT, keyPair.getPublic());
 
         // then — decrypt with private key to verify correctness
-        javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPPadding");
-        javax.crypto.spec.OAEPParameterSpec oaepParams = new javax.crypto.spec.OAEPParameterSpec(
-                "SHA-256", "MGF1", java.security.spec.MGF1ParameterSpec.SHA256,
-                javax.crypto.spec.PSource.PSpecified.DEFAULT);
-        cipher.init(javax.crypto.Cipher.DECRYPT_MODE, keyPair.getPrivate(), oaepParams);
+        Cipher cipher = Cipher.getInstance(RSA_OAEP_CIPHER);
+        OAEPParameterSpec oaepParams = new OAEPParameterSpec(
+                OAEP_DIGEST, OAEP_MGF, MGF1ParameterSpec.SHA256,
+                PSource.PSpecified.DEFAULT);
+        cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate(), oaepParams);
         byte[] decrypted = cipher.doFinal(encrypted);
         assertArrayEquals(TEST_PLAINTEXT, decrypted);
     }
@@ -228,7 +237,7 @@ class CryptoServiceTest {
     @Test
     void encryptAes_whenInvalidKeyLength_throwsIllegalArgument() {
         // given
-        byte[] shortKey = new byte[16];
+        byte[] shortKey = new byte[INVALID_AES_KEY_LENGTH];
         byte[] validIv = CryptoService.generateIv();
 
         // then
@@ -240,7 +249,7 @@ class CryptoServiceTest {
     void decryptAes_whenInvalidIvLength_throwsIllegalArgument() {
         // given
         byte[] validKey = CryptoService.generateAesKey();
-        byte[] shortIv = new byte[8];
+        byte[] shortIv = new byte[INVALID_IV_LENGTH];
 
         // then
         assertThrows(IllegalArgumentException.class,
