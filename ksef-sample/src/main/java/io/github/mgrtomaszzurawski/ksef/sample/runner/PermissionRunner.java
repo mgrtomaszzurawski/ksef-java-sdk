@@ -21,7 +21,13 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PersonDetailsRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsGrantRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsSubjectIdentifierRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsSubjectIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
@@ -46,6 +52,11 @@ public final class PermissionRunner implements DemoRunner {
     private static final String OP_GET_ATTACHMENT = "getAttachmentStatus";
     private static final String OP_REVOKE_COMMON = "revokeCommon";
 
+    private static final String TEST_PERSON_PESEL = "82060411457";
+    private static final String TEST_PERSON_FIRST_NAME = "Jan";
+    private static final String TEST_PERSON_LAST_NAME = "Kowalski";
+    private static final String GRANT_DESCRIPTION = "SDK Demo grant - will be revoked";
+
     @Override
     public String name() { return NAME; }
 
@@ -53,10 +64,15 @@ public final class PermissionRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
 
-        // 1-2. Grant + operation status — skipped (requires proper subject identifiers)
-        results.add(RunResult.skip(NAME, OP_GRANT_PERSON, "requires valid subject identifiers"));
-        results.add(RunResult.skip(NAME, OP_GET_OP_STATUS, "depends on grant"));
-        results.add(RunResult.skip(NAME, OP_REVOKE_COMMON, "depends on grant"));
+        // 1. Grant person permission
+        String operationRef = runGrantPerson(context, results);
+
+        // 2. Get operation status (if grant succeeded)
+        if (operationRef != null) {
+            runGetOperationStatus(context, operationRef, results);
+        } else {
+            results.add(RunResult.skip(NAME, OP_GET_OP_STATUS, "depends on grant"));
+        }
 
         // 3. Query personal permissions
         runQueryPersonal(context, results);
@@ -67,13 +83,30 @@ public final class PermissionRunner implements DemoRunner {
         // 5. Get attachment status
         runGetAttachmentStatus(context, results);
 
+        // 6. Revoke (cleanup)
+        if (operationRef != null) {
+            runRevokeCommon(context, operationRef, results);
+        } else {
+            results.add(RunResult.skip(NAME, OP_REVOKE_COMMON, "depends on grant"));
+        }
+
         return results;
     }
 
     private String runGrantPerson(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            PersonPermissionsGrantRequestRaw request = new PersonPermissionsGrantRequestRaw();
+            PersonPermissionsGrantRequestRaw request = new PersonPermissionsGrantRequestRaw()
+                    .subjectIdentifier(new PersonPermissionsSubjectIdentifierRaw()
+                            .type(PersonPermissionsSubjectIdentifierTypeRaw.PESEL)
+                            .value(TEST_PERSON_PESEL))
+                    .addPermissionsItem(PersonPermissionTypeRaw.INVOICE_READ)
+                    .description(GRANT_DESCRIPTION)
+                    .subjectDetails(new PersonPermissionSubjectDetailsRaw()
+                            .subjectDetailsType(PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
+                            .personById(new PersonDetailsRaw()
+                                    .firstName(TEST_PERSON_FIRST_NAME)
+                                    .lastName(TEST_PERSON_LAST_NAME)));
             PermissionsOperationResponseRaw response = context.client().permissions().grantPerson(request);
             String refNum = response.getReferenceNumber();
             LOG.info("[{}] granted person permission, ref={}", NAME, refNum);
@@ -142,6 +175,4 @@ public final class PermissionRunner implements DemoRunner {
             results.add(RunResult.fail(NAME, OP_REVOKE_COMMON, elapsed(start), errorMessage(exception)));
         }
     }
-
-
 }
