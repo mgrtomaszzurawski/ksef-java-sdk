@@ -22,8 +22,8 @@ import eu.europa.esig.dss.xades.XAdESSignatureParameters;
 import eu.europa.esig.dss.xades.signature.XAdESService;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -68,7 +68,7 @@ public final class SigningService {
             SignatureValue signatureValue = createSignatureValue(dataToSign, certificate, privateKey);
             DSSDocument signedDocument = xadesService.signDocument(document, parameters, signatureValue);
 
-            try (ByteArrayInputStream stream = (ByteArrayInputStream) signedDocument.openStream()) {
+            try (InputStream stream = signedDocument.openStream()) {
                 return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             }
         } catch (Exception exception) {
@@ -111,10 +111,9 @@ public final class SigningService {
             ByteArrayOutputStream keystoreBytes = new ByteArrayOutputStream();
             keyStore.store(keystoreBytes, null);
 
-            KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(
+            KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(
                     KEYSTORE_ALIAS, new KeyStore.PasswordProtection(null));
-            KSPrivateKeyEntry dssEntry = new KSPrivateKeyEntry(KEYSTORE_ALIAS, entry);
-
+            KSPrivateKeyEntry dssEntry = new KSPrivateKeyEntry(KEYSTORE_ALIAS, privateKeyEntry);
             SignatureAlgorithm signatureAlgorithm = selectSignatureAlgorithm(certificate, privateKey);
 
             try (Pkcs12SignatureToken token = new Pkcs12SignatureToken(

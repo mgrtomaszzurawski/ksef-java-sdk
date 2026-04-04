@@ -57,6 +57,7 @@ public final class CryptoService {
     private static final String ERR_UNSUPPORTED_ALGORITHM = "Unsupported public key algorithm: ";
     private static final String RSA_ALGORITHM_NAME = "RSA";
     private static final String EC_ALGORITHM_NAME = "EC";
+    private static final String MGF1_FUNCTION = "MGF1";
     private static final int GCM_TAG_BITS = 128;
     private static final int GCM_NONCE_BYTES = 12;
     private static final int AES_KEY_BYTES = 32;
@@ -93,7 +94,7 @@ public final class CryptoService {
     public static byte[] encryptRsa(byte[] plaintext, PublicKey publicKey) {
         try {
             OAEPParameterSpec oaepParams = new OAEPParameterSpec(
-                    SHA_256_ALGORITHM, "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
+                    SHA_256_ALGORITHM, MGF1_FUNCTION, MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
             Cipher cipher = Cipher.getInstance(RSA_OAEP);
             cipher.init(Cipher.ENCRYPT_MODE, publicKey, oaepParams);
             return cipher.doFinal(plaintext);
@@ -117,6 +118,8 @@ public final class CryptoService {
             keyAgreement.doPhase(recipientPublicKey, true);
             byte[] sharedSecret = keyAgreement.generateSecret();
 
+            // Raw shared secret used as AES key — matches official CIRFMF SDK behavior.
+            // Ideally should use HKDF, but KSeF server expects this exact format.
             SecretKey aesKey = new SecretKeySpec(sharedSecret, 0, ECDH_SHARED_SECRET_SIZE, AES_ALGORITHM);
 
             byte[] nonce = new byte[GCM_NONCE_BYTES];

@@ -30,13 +30,15 @@ class SigningServiceTest {
     private static final String TEST_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Root><Data>test</Data></Root>";
     private static final String RSA_ALGORITHM = "RSA";
     private static final int RSA_KEY_SIZE = 2048;
+    private static final int CERT_VALIDITY_DAYS = 365;
     private static final String XADES_SIGNATURE_TAG = "<ds:Signature";
     private static final String SIGNED_INFO_TAG = "SignedInfo";
+    private static final String ORIGINAL_CONTENT_TAG = "<Root>";
     private static final String CERT_SUBJECT = "CN=Test";
     private static final String SHA256_WITH_RSA = "SHA256WithRSA";
 
     @Test
-    void signXml_withRsaKey_producesSignedXml() throws Exception {
+    void signXml_whenValidRsaKeyPair_producesXmlWithSignatureAndOriginalContent() throws Exception {
         // given
         KeyPair keyPair = generateRsaKeyPair();
         X509Certificate certificate = generateSelfSignedCertificate(keyPair);
@@ -48,11 +50,13 @@ class SigningServiceTest {
         assertNotNull(signedXml);
         assertTrue(signedXml.contains(XADES_SIGNATURE_TAG), "Should contain XAdES Signature element");
         assertTrue(signedXml.contains(SIGNED_INFO_TAG), "Should contain SignedInfo element");
-        assertTrue(signedXml.contains("<Root>"), "Should preserve original content");
+        assertTrue(signedXml.contains(ORIGINAL_CONTENT_TAG), "Should preserve original content");
+        assertTrue(signedXml.length() > TEST_XML.length(), "Signed XML should be longer than original");
     }
 
     @Test
-    void signXml_withNullInput_throwsCryptoException() {
+    void signXml_whenNullInput_throwsCryptoException() {
+        // then
         assertThrows(KsefCryptoException.class,
                 () -> SigningService.signXml(null, null, null));
     }
@@ -66,7 +70,7 @@ class SigningServiceTest {
     private static X509Certificate generateSelfSignedCertificate(KeyPair keyPair) throws Exception {
         X500Name issuer = new X500Name(CERT_SUBJECT);
         Instant notBefore = Instant.now();
-        Instant notAfter = notBefore.plus(365, ChronoUnit.DAYS);
+        Instant notAfter = notBefore.plus(CERT_VALIDITY_DAYS, ChronoUnit.DAYS);
 
         JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
                 issuer, BigInteger.ONE,

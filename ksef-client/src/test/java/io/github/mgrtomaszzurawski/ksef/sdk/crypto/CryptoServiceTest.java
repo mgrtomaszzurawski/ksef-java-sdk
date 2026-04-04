@@ -14,22 +14,23 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CryptoServiceTest {
 
     private static final int AES_KEY_LENGTH = 32;
     private static final int AES_IV_LENGTH = 16;
-    private static final String TEST_PLAINTEXT = "Hello KSeF invoice content";
+    private static final int RSA_KEY_SIZE = 2048;
+    private static final int EC_KEY_SIZE = 256;
     private static final String RSA_ALGORITHM = "RSA";
     private static final String EC_ALGORITHM = "EC";
-    private static final int RSA_KEY_SIZE = 2048;
     private static final String KSEF_TOKEN = "test-ksef-token-12345";
+    private static final byte[] TEST_PLAINTEXT = "Hello KSeF invoice content".getBytes();
 
     @Test
-    void generateAesKey_returns32Bytes() {
+    void generateAesKey_whenCalled_returns32ByteArray() {
         // when
         byte[] keyBytes = CryptoService.generateAesKey();
 
@@ -39,18 +40,24 @@ class CryptoServiceTest {
     }
 
     @Test
-    void generateAesKey_returnsDifferentKeysEachCall() {
+    void generateAesKey_whenCalledTwice_returnsDifferentKeys() {
         // when
         byte[] firstKey = CryptoService.generateAesKey();
         byte[] secondKey = CryptoService.generateAesKey();
 
         // then
-        assertNotEquals(java.util.HexFormat.of().formatHex(firstKey),
-                java.util.HexFormat.of().formatHex(secondKey));
+        boolean different = false;
+        for (int index = 0; index < firstKey.length; index++) {
+            if (firstKey[index] != secondKey[index]) {
+                different = true;
+                break;
+            }
+        }
+        assertTrue(different, "Two generated keys should differ");
     }
 
     @Test
-    void generateIv_returns16Bytes() {
+    void generateIv_whenCalled_returns16ByteArray() {
         // when
         byte[] ivBytes = CryptoService.generateIv();
 
@@ -60,82 +67,104 @@ class CryptoServiceTest {
     }
 
     @Test
-    void encryptAes_decryptAes_roundTrip() {
+    void encryptAes_whenDecryptedWithSameKey_returnsOriginalPlaintext() {
         // given
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
-        byte[] plaintext = TEST_PLAINTEXT.getBytes();
 
         // when
-        byte[] encrypted = CryptoService.encryptAes(plaintext, aesKey, initVector);
+        byte[] encrypted = CryptoService.encryptAes(TEST_PLAINTEXT, aesKey, initVector);
         byte[] decrypted = CryptoService.decryptAes(encrypted, aesKey, initVector);
 
         // then
-        assertArrayEquals(plaintext, decrypted);
+        assertArrayEquals(TEST_PLAINTEXT, decrypted);
     }
 
     @Test
-    void encryptRsa_producesOutput() throws Exception {
+    void encryptAes_whenEncrypted_producesOutputDifferentFromInput() {
         // given
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
-        keyPairGen.initialize(RSA_KEY_SIZE);
-        KeyPair keyPair = keyPairGen.generateKeyPair();
-        byte[] plaintext = TEST_PLAINTEXT.getBytes();
+        byte[] aesKey = CryptoService.generateAesKey();
+        byte[] initVector = CryptoService.generateIv();
 
         // when
-        byte[] encrypted = CryptoService.encryptRsa(plaintext, keyPair.getPublic());
+        byte[] encrypted = CryptoService.encryptAes(TEST_PLAINTEXT, aesKey, initVector);
 
         // then
-        assertNotNull(encrypted);
-        assertNotEquals(0, encrypted.length);
+        assertTrue(encrypted.length > 0, "Encrypted output should not be empty");
+        boolean different = encrypted.length != TEST_PLAINTEXT.length;
+        if (!different) {
+            for (int index = 0; index < encrypted.length; index++) {
+                if (encrypted[index] != TEST_PLAINTEXT[index]) {
+                    different = true;
+                    break;
+                }
+            }
+        }
+        assertTrue(different, "Encrypted output should differ from plaintext");
     }
 
     @Test
-    void encryptEcdh_producesOutput() throws Exception {
-        // given
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(EC_ALGORITHM);
-        keyPairGen.initialize(256);
-        KeyPair keyPair = keyPairGen.generateKeyPair();
-        byte[] plaintext = TEST_PLAINTEXT.getBytes();
-
-        // when
-        byte[] encrypted = CryptoService.encryptEcdh(plaintext, (ECPublicKey) keyPair.getPublic());
-
-        // then
-        assertNotNull(encrypted);
-        assertNotEquals(0, encrypted.length);
-    }
-
-    @Test
-    void encryptWithPublicKey_rsa_works() throws Exception {
+    void encryptRsa_whenValidKey_producesOutputMatchingKeySize() throws Exception {
         // given
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
         keyPairGen.initialize(RSA_KEY_SIZE);
         KeyPair keyPair = keyPairGen.generateKeyPair();
 
         // when
-        byte[] encrypted = CryptoService.encryptWithPublicKey(TEST_PLAINTEXT.getBytes(), keyPair.getPublic());
+        byte[] encrypted = CryptoService.encryptRsa(TEST_PLAINTEXT, keyPair.getPublic());
 
         // then
-        assertNotNull(encrypted);
+        int expectedBlockSize = RSA_KEY_SIZE / 8;
+        assertEquals(expectedBlockSize, encrypted.length, "RSA output should match key block size");
     }
 
     @Test
-    void encryptWithPublicKey_ec_works() throws Exception {
+    void encryptEcdh_whenValidKey_producesNonEmptyOutput() throws Exception {
         // given
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(EC_ALGORITHM);
-        keyPairGen.initialize(256);
+        keyPairGen.initialize(EC_KEY_SIZE);
         KeyPair keyPair = keyPairGen.generateKeyPair();
 
         // when
-        byte[] encrypted = CryptoService.encryptWithPublicKey(TEST_PLAINTEXT.getBytes(), keyPair.getPublic());
+        byte[] encrypted = CryptoService.encryptEcdh(TEST_PLAINTEXT, (ECPublicKey) keyPair.getPublic());
 
         // then
-        assertNotNull(encrypted);
+        assertTrue(encrypted.length > TEST_PLAINTEXT.length,
+                "ECDH output should be larger than input (contains ephemeral key + nonce + ciphertext)");
     }
 
     @Test
-    void encryptKsefToken_producesOutput() throws Exception {
+    void encryptWithPublicKey_whenRsaKey_producesRsaBlockSizeOutput() throws Exception {
+        // given
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
+        keyPairGen.initialize(RSA_KEY_SIZE);
+        KeyPair keyPair = keyPairGen.generateKeyPair();
+
+        // when
+        byte[] encrypted = CryptoService.encryptWithPublicKey(TEST_PLAINTEXT, keyPair.getPublic());
+
+        // then
+        int expectedBlockSize = RSA_KEY_SIZE / 8;
+        assertEquals(expectedBlockSize, encrypted.length);
+    }
+
+    @Test
+    void encryptWithPublicKey_whenEcKey_producesOutputLargerThanInput() throws Exception {
+        // given
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(EC_ALGORITHM);
+        keyPairGen.initialize(EC_KEY_SIZE);
+        KeyPair keyPair = keyPairGen.generateKeyPair();
+
+        // when
+        byte[] encrypted = CryptoService.encryptWithPublicKey(TEST_PLAINTEXT, keyPair.getPublic());
+
+        // then
+        assertTrue(encrypted.length > TEST_PLAINTEXT.length,
+                "EC encrypted output should be larger than input");
+    }
+
+    @Test
+    void encryptKsefToken_whenValidInput_producesRsaBlockSizeOutput() throws Exception {
         // given
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
         keyPairGen.initialize(RSA_KEY_SIZE);
@@ -146,36 +175,39 @@ class CryptoServiceTest {
         byte[] encrypted = CryptoService.encryptKsefToken(KSEF_TOKEN, timestamp, keyPair.getPublic());
 
         // then
-        assertNotNull(encrypted);
-        assertNotEquals(0, encrypted.length);
+        int expectedBlockSize = RSA_KEY_SIZE / 8;
+        assertEquals(expectedBlockSize, encrypted.length,
+                "Token encryption should produce RSA block size output");
     }
 
     @Test
-    void sha256Base64_producesConsistentHash() {
-        // given
-        byte[] data = TEST_PLAINTEXT.getBytes();
-
+    void sha256Base64_whenSameInput_producesConsistentHash() {
         // when
-        String hash1 = CryptoService.sha256Base64(data);
-        String hash2 = CryptoService.sha256Base64(data);
+        String hash1 = CryptoService.sha256Base64(TEST_PLAINTEXT);
+        String hash2 = CryptoService.sha256Base64(TEST_PLAINTEXT);
 
         // then
         assertNotNull(hash1);
-        assertEquals(hash1, hash2);
+        assertEquals(hash1, hash2, "Same input should produce same hash");
     }
 
     @Test
-    void sha256Base64_differentInputProducesDifferentHash() {
+    void sha256Base64_whenDifferentInput_producesDifferentHash() {
+        // given
+        byte[] input1 = "input one".getBytes();
+        byte[] input2 = "input two".getBytes();
+
         // when
-        String hash1 = CryptoService.sha256Base64("input one".getBytes());
-        String hash2 = CryptoService.sha256Base64("input two".getBytes());
+        String hash1 = CryptoService.sha256Base64(input1);
+        String hash2 = CryptoService.sha256Base64(input2);
 
         // then
-        assertNotEquals(hash1, hash2);
+        assertTrue(!hash1.equals(hash2), "Different inputs should produce different hashes");
     }
 
     @Test
     void parsePublicKeyFromPem_whenInvalidPem_throwsCryptoException() {
+        // then
         assertThrows(KsefCryptoException.class,
                 () -> CryptoService.parsePublicKeyFromPem("not-a-valid-certificate"));
     }
