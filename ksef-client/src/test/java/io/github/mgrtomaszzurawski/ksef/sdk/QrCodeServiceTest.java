@@ -110,6 +110,30 @@ class QrCodeServiceTest {
                 () -> service.generateQrCode(TEST_KSEF_NUMBER, -1));
     }
 
+    @Test
+    void generateQrCode_whenSizeTooLarge_throwsIllegalArgument() {
+        QrCodeService service = new QrCodeService();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.generateQrCode(TEST_KSEF_NUMBER, 5000));
+    }
+
+    @Test
+    void getVerificationUrl_whenInvalidCharacters_throwsIllegalArgument() {
+        QrCodeService service = new QrCodeService();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.getVerificationUrl("../../../etc/passwd"));
+    }
+
+    @Test
+    void getVerificationUrl_whenQueryString_throwsIllegalArgument() {
+        QrCodeService service = new QrCodeService();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.getVerificationUrl("valid-number?evil=param"));
+    }
+
     private static void assertPngMagicBytes(byte[] pngBytes) {
         byte[] header = new byte[PNG_HEADER_LENGTH];
         System.arraycopy(pngBytes, 0, header, 0, PNG_HEADER_LENGTH);

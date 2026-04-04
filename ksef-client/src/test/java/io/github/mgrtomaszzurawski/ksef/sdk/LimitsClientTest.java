@@ -16,6 +16,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -76,6 +78,8 @@ class LimitsClientTest {
 
         // then
         assertNotNull(response);
+        verify(getRequestedFor(urlEqualTo("/api/v2/limits/subject"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
     }
 
     @Test

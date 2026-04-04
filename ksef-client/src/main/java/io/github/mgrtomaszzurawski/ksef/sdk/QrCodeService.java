@@ -16,6 +16,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
@@ -32,8 +33,13 @@ public final class QrCodeService {
     private static final String TEST_VERIFICATION_URL_PREFIX = "https://ksef-test.mf.gov.pl/web/verify/";
     private static final String IMAGE_FORMAT_PNG = "PNG";
     private static final int DEFAULT_QR_SIZE = 250;
+    private static final int MAX_QR_SIZE = 4096;
+    private static final int QR_MARGIN = 1;
+    private static final Pattern KSEF_NUMBER_PATTERN = Pattern.compile("^[A-Za-z0-9\\-]+$");
     private static final String ERR_KSEF_NUMBER_EMPTY = "ksefNumber must not be null or empty";
+    private static final String ERR_KSEF_NUMBER_INVALID = "ksefNumber contains invalid characters: ";
     private static final String ERR_SIZE_POSITIVE = "size must be positive";
+    private static final String ERR_SIZE_TOO_LARGE = "size must not exceed " + MAX_QR_SIZE;
     private static final String ERR_QR_GENERATION = "Failed to generate QR code";
 
     private final boolean testEnvironment;
@@ -61,7 +67,7 @@ public final class QrCodeService {
      * @return the verification URL
      */
     public String getVerificationUrl(String ksefNumber) {
-        requireNonEmpty(ksefNumber);
+        requireValidKsefNumber(ksefNumber);
         String prefix = testEnvironment ? TEST_VERIFICATION_URL_PREFIX : VERIFICATION_URL_PREFIX;
         return prefix + ksefNumber;
     }
@@ -85,9 +91,12 @@ public final class QrCodeService {
      * @return PNG image bytes
      */
     public byte[] generateQrCode(String ksefNumber, int size) {
-        requireNonEmpty(ksefNumber);
+        requireValidKsefNumber(ksefNumber);
         if (size <= 0) {
             throw new IllegalArgumentException(ERR_SIZE_POSITIVE);
+        }
+        if (size > MAX_QR_SIZE) {
+            throw new IllegalArgumentException(ERR_SIZE_TOO_LARGE);
         }
 
         String verificationUrl = getVerificationUrl(ksefNumber);
@@ -95,7 +104,7 @@ public final class QrCodeService {
             QRCodeWriter writer = new QRCodeWriter();
             Map<EncodeHintType, Object> hints = Map.of(
                     EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M,
-                    EncodeHintType.MARGIN, 1
+                    EncodeHintType.MARGIN, QR_MARGIN
             );
             BitMatrix bitMatrix = writer.encode(verificationUrl, BarcodeFormat.QR_CODE, size, size, hints);
             BufferedImage image = MatrixToImageWriter.toBufferedImage(bitMatrix);
@@ -108,9 +117,12 @@ public final class QrCodeService {
         }
     }
 
-    private static void requireNonEmpty(String ksefNumber) {
+    private static void requireValidKsefNumber(String ksefNumber) {
         if (ksefNumber == null || ksefNumber.isEmpty()) {
             throw new IllegalArgumentException(ERR_KSEF_NUMBER_EMPTY);
+        }
+        if (!KSEF_NUMBER_PATTERN.matcher(ksefNumber).matches()) {
+            throw new IllegalArgumentException(ERR_KSEF_NUMBER_INVALID + ksefNumber);
         }
     }
 }
