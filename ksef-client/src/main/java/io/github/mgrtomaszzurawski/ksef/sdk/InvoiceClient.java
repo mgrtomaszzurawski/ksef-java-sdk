@@ -11,6 +11,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
 
+import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
+
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
  * and exporting invoices.
@@ -42,6 +44,7 @@ public final class InvoiceClient {
      * @return raw invoice XML bytes
      */
     public byte[] getByKsefNumber(String ksefNumber) {
+        requireSafePathSegment(ksefNumber);
         String token = sessionContext.token();
         return http.getAuthenticatedBytes(PATH_INVOICES_KSEF + ksefNumber, token, OP_GET_BY_KSEF);
     }
@@ -77,6 +80,7 @@ public final class InvoiceClient {
      * @return export status with download URL when complete
      */
     public InvoiceExportStatusResponseRaw getExportStatus(String referenceNumber) {
+        requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         return http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
                 InvoiceExportStatusResponseRaw.class, OP_EXPORT_STATUS);

@@ -42,6 +42,7 @@ class SessionClientTest {
     private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
 
     private static final int HTTP_OK = 200;
+    private static final int KSEF_STATUS_OK = 200;
     private static final int HTTP_CREATED = 201;
     private static final int HTTP_ACCEPTED = 202;
     private static final int HTTP_NO_CONTENT = 204;
@@ -164,7 +165,7 @@ class SessionClientTest {
         SessionStatusResponseRaw response = ksef.sessions().getStatus(TEST_SESSION_REF);
 
         // then
-        assertNotNull(response.getStatus());
+        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
         assertNotNull(response.getDateCreated());
     }
 
@@ -184,7 +185,8 @@ class SessionClientTest {
         SessionInvoicesResponseRaw response = ksef.sessions().getInvoices(TEST_SESSION_REF);
 
         // then
-        assertNotNull(response.getInvoices());
+        assertEquals(1, response.getInvoices().size());
+        assertEquals(TEST_INVOICE_REF, response.getInvoices().get(0).getReferenceNumber());
     }
 
     @Test
@@ -204,7 +206,7 @@ class SessionClientTest {
                 .getInvoiceStatus(TEST_SESSION_REF, TEST_INVOICE_REF);
 
         // then
-        assertNotNull(response.getStatus());
+        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
     }
 
     @Test

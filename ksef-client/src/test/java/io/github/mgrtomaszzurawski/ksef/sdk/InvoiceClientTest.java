@@ -37,6 +37,7 @@ class InvoiceClientTest {
     private static final String TEST_EXPORT_REF = "20260404-EX-1234567890-ABCDEF1234-05";
 
     private static final int HTTP_OK = 200;
+    private static final int KSEF_STATUS_OK = 200;
     private static final int HTTP_ACCEPTED = 202;
     private static final int HTTP_NOT_FOUND = 404;
     private static final int HTTP_SERVER_ERROR = 500;
@@ -116,7 +117,7 @@ class InvoiceClientTest {
                 .queryMetadata(new InvoiceQueryFiltersRaw());
 
         // then
-        assertNotNull(response.getInvoices());
+        assertEquals(1, response.getInvoices().size());
         assertEquals(false, response.getHasMore());
     }
 
@@ -156,7 +157,7 @@ class InvoiceClientTest {
         InvoiceExportStatusResponseRaw response = ksef.invoices().getExportStatus(TEST_EXPORT_REF);
 
         // then
-        assertNotNull(response.getStatus());
+        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
     }
 
     @Test
