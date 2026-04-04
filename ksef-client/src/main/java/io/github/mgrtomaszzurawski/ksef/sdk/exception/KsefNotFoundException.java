@@ -9,6 +9,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
  */
 public class KsefNotFoundException extends KsefException {
 
+    private static final long serialVersionUID = 1L;
+
     public KsefNotFoundException(String message, Throwable cause, int statusCode, String responseBody) {
         super(message, cause, statusCode, responseBody);
     }

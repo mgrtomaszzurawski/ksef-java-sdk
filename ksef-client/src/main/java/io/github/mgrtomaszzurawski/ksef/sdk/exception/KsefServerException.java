@@ -9,6 +9,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
  */
 public class KsefServerException extends KsefException {
 
+    private static final long serialVersionUID = 1L;
+
     public KsefServerException(String message, Throwable cause, int statusCode, String responseBody) {
         super(message, cause, statusCode, responseBody);
     }

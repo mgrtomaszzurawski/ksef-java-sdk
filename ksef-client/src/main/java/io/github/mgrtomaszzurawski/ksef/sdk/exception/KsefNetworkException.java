@@ -10,6 +10,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
  */
 public class KsefNetworkException extends KsefException {
 
+    private static final long serialVersionUID = 1L;
+
     public KsefNetworkException(String message, Throwable cause) {
         super(message, cause);
     }

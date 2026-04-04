@@ -31,19 +31,39 @@
         <exclude name="TooManyMethods"/>
         <exclude name="ExcessiveImports"/>
         <exclude name="AvoidCatchingGenericException"/>
+        <exclude name="CognitiveComplexity"/>
+        <exclude name="CyclomaticComplexity"/>
+    </rule>
+
+    <!-- Complexity thresholds: default 15 is too tight for retry/handler patterns -->
+    <rule ref="category/java/design.xml/CognitiveComplexity">
+        <properties>
+            <property name="reportLevel" value="20"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="15"/>
+        </properties>
     </rule>
 
     <rule ref="category/java/errorprone.xml">
-        <exclude name="BeanMembersShouldSerialize"/>
-        <exclude name="DataflowAnomalyAnalysis"/>
         <!-- Java records use field-name accessors (record.baseUrl() returns field baseUrl).
              SDK follows the same convention for non-record classes. -->
         <exclude name="AvoidFieldNameMatchingMethodName"/>
     </rule>
 
-    <rule ref="category/java/multithreading.xml"/>
+    <rule ref="category/java/multithreading.xml">
+        <!-- DoNotUseThreads is a J2EE/webapp rule. This is a standalone SDK. -->
+        <exclude name="DoNotUseThreads"/>
+        <!-- AvoidUsingVolatile: volatile boolean for close-guard is standard pattern. -->
+        <exclude name="AvoidUsingVolatile"/>
+    </rule>
 
-    <rule ref="category/java/performance.xml"/>
+    <rule ref="category/java/performance.xml">
+        <!-- Exception wrapping in retry loops requires object creation in catch blocks. -->
+        <exclude name="AvoidInstantiatingObjectsInLoops"/>
+    </rule>
 
     <!-- Short variable names: minimum 4 chars enforced.
          Exceptions (i/j in loops, e in catch) handled via @SuppressWarnings. -->

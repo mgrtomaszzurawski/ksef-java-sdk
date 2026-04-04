@@ -59,10 +59,7 @@ public final class RetryHandler {
     }
 
     private <T> T doExecute(ApiCall<T> call, String operationName, boolean isPost) {
-        if (!policy.enabled()) {
-            return callOnce(call, operationName);
-        }
-        if (isPost && !policy.retryPost()) {
+        if (!policy.enabled() || (isPost && !policy.retryPost())) {
             return callOnce(call, operationName);
         }
 
@@ -70,21 +67,9 @@ public final class RetryHandler {
         for (int attempt = 1; attempt <= policy.maxAttempts(); attempt++) {
             try {
                 return call.execute();
-            } catch (KsefRateLimitException exception) {
+            } catch (KsefException exception) {
                 lastException = exception;
-                if (!policy.retryOn429() || attempt == policy.maxAttempts()) {
-                    break;
-                }
-                sleepBeforeRetry(attempt, operationName);
-            } catch (KsefServerException exception) {
-                lastException = exception;
-                if (!policy.retryOn5xx() || attempt == policy.maxAttempts()) {
-                    break;
-                }
-                sleepBeforeRetry(attempt, operationName);
-            } catch (KsefNetworkException exception) {
-                lastException = exception;
-                if (attempt == policy.maxAttempts()) {
+                if (!isRetryable(exception) || attempt == policy.maxAttempts()) {
                     break;
                 }
                 sleepBeforeRetry(attempt, operationName);
@@ -99,6 +84,16 @@ public final class RetryHandler {
 
         LOGGER.error(LOG_EXHAUSTED, policy.maxAttempts(), operationName);
         throw lastException;
+    }
+
+    private boolean isRetryable(KsefException exception) {
+        if (exception instanceof KsefRateLimitException) {
+            return policy.retryOn429();
+        }
+        if (exception instanceof KsefServerException) {
+            return policy.retryOn5xx();
+        }
+        return exception instanceof KsefNetworkException;
     }
 
     private <T> T callOnce(ApiCall<T> call, String operationName) {

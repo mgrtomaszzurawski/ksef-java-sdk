@@ -9,6 +9,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
  */
 public class KsefCryptoException extends KsefException {
 
+    private static final long serialVersionUID = 1L;
+
     public KsefCryptoException(String message, Throwable cause) {
         super(message, cause);
     }

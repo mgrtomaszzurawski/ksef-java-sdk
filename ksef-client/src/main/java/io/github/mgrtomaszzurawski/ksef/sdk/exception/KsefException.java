@@ -10,7 +10,14 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
  */
 public class KsefException extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
     private static final String ERR_UNKNOWN_STATUS = "Unexpected HTTP status: ";
+    private static final int HTTP_UNAUTHORIZED = 401;
+    private static final int HTTP_FORBIDDEN = 403;
+    private static final int HTTP_NOT_FOUND = 404;
+    private static final int HTTP_GONE = 410;
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+    private static final int HTTP_SERVER_ERROR_MIN = 500;
 
     private final int statusCode;
     private final String responseBody;
@@ -40,13 +47,6 @@ public class KsefException extends RuntimeException {
     public String responseBody() {
         return responseBody;
     }
-
-    private static final int HTTP_UNAUTHORIZED = 401;
-    private static final int HTTP_FORBIDDEN = 403;
-    private static final int HTTP_NOT_FOUND = 404;
-    private static final int HTTP_GONE = 410;
-    private static final int HTTP_TOO_MANY_REQUESTS = 429;
-    private static final int HTTP_SERVER_ERROR_MIN = 500;
 
     /**
      * Factory method that maps HTTP status codes to typed exception subclasses.

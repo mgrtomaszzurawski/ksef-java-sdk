@@ -14,8 +14,7 @@ public record RetryPolicy(
         boolean retryOn429,
         boolean retryPost,
         long maxRetryAfterSeconds,
-        BackoffStrategy backoffStrategy
-) {
+        BackoffStrategy backoffStrategy) {
 
     private static final int DEFAULT_MAX_ATTEMPTS = 3;
     private static final long DEFAULT_MAX_RETRY_AFTER_SECONDS = 60L;
@@ -35,7 +34,7 @@ public record RetryPolicy(
         private int maxAttempts = DEFAULT_MAX_ATTEMPTS;
         private boolean retryOn5xx = true;
         private boolean retryOn429 = true;
-        private boolean retryPost = false;
+        private boolean retryPost;
         private long maxRetryAfterSeconds = DEFAULT_MAX_RETRY_AFTER_SECONDS;
         private BackoffStrategy backoffStrategy = BackoffStrategy.EXPONENTIAL;
 
