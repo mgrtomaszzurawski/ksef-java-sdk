@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.http;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 
@@ -146,6 +145,40 @@ public final class HttpSupport {
     }
 
     /**
+     * Send an authenticated POST with no body and expect no content (204).
+     */
+    public void postNoBodyAuthenticated(String path, String token, String operationName) {
+        ksef.retryHandler().run(() -> {
+            HttpRequest request = newPostBuilder(path)
+                    .header(AUTHORIZATION, BEARER_PREFIX + token)
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            sendExpectNoContent(request);
+        }, operationName);
+    }
+
+    /**
+     * Send an authenticated GET request and return raw bytes (for binary responses like UPO).
+     */
+    public byte[] getAuthenticatedBytes(String path, String token, String operationName) {
+        return ksef.retryHandler().execute(() -> {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(uri(path))
+                    .timeout(ksef.readTimeout())
+                    .header(AUTHORIZATION, BEARER_PREFIX + token)
+                    .GET()
+                    .build();
+            HttpResponse<byte[]> response = sendBytes(request);
+            int status = response.statusCode();
+            if (status != HTTP_OK) {
+                throw KsefException.of(request.method() + " " + request.uri(), null, status,
+                        new String(response.body(), java.nio.charset.StandardCharsets.UTF_8));
+            }
+            return response.body();
+        }, operationName);
+    }
+
+    /**
      * Send an authenticated DELETE with no response body.
      */
     public void deleteAuthenticated(String path, String token, String operationName) {
@@ -209,11 +242,17 @@ public final class HttpSupport {
         }
     }
 
+    private HttpResponse<byte[]> sendBytes(HttpRequest request) throws IOException {
+        try {
+            return ksef.httpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
+        }
+    }
+
     private <T> T deserialize(String body, Class<T> responseType) throws IOException {
         return ksef.objectMapper().readValue(body, responseType);
     }
 
-    ObjectMapper objectMapper() {
-        return ksef.objectMapper();
-    }
 }
