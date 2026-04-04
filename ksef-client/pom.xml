@@ -347,7 +347,10 @@
                     </rulesets>
                     <excludeRoots>
                         <excludeRoot>${openapi.output}/src/main/java</excludeRoot>
-                        <excludeRoot>${project.build.directory}/generated-sources/xjc</excludeRoot>
+                        <excludeRoot>${project.build.directory}/generated-sources/xjc-fa2</excludeRoot>
+                        <excludeRoot>${project.build.directory}/generated-sources/xjc-fa3</excludeRoot>
+                        <excludeRoot>${project.build.directory}/generated-sources/xjc-upo</excludeRoot>
+                        <excludeRoot>${project.build.directory}/generated-sources/xjc-auth</excludeRoot>
                     </excludeRoots>
                 </configuration>
             </plugin>

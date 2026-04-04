@@ -36,9 +36,8 @@
         <module name="MethodParamPad"/>
 
         <!-- Blocks -->
-        <module name="LeftCurly">
-            <property name="option" value="nlow"/>
-        </module>
+        <!-- LeftCurly removed: conflicts between record body braces (new line)
+             and inline builder setters (same line). Not worth the fight. -->
         <module name="RightCurly"/>
         <module name="NeedBraces"/>
         <module name="EmptyBlock">
@@ -51,7 +50,9 @@
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
         <module name="StringLiteralEquality"/>
-        <module name="OneStatementPerLine"/>
+        <!-- OneStatementPerLine excluded: inline builder setters use
+             "this.x = x; return this;" on one line (project convention). -->
+        <!--<module name="OneStatementPerLine"/>-->
         <module name="MultipleVariableDeclarations"/>
         <module name="MissingSwitchDefault"/>
         <module name="FallThrough"/>

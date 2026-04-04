@@ -7,6 +7,8 @@ module io.github.mgrtomaszzurawski.ksef {
 
     // SDK public API
     exports io.github.mgrtomaszzurawski.ksef.sdk;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.exception;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.paging;
 
     // Required modules
     requires java.net.http;

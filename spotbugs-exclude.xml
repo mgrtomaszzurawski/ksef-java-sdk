@@ -7,4 +7,11 @@
     <Match>
         <Package name="~io\.github\.mgrtomaszzurawski\.ksef\.xml\..*"/>
     </Match>
+    <!-- KsefClient intentionally exposes shared mutable objects (ObjectMapper,
+         SessionContext) to domain clients. These are internal SDK components,
+         not user-facing mutable state. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.KsefClient"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
 </FindBugsFilter>
