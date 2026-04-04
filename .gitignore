@@ -38,3 +38,6 @@ logs/
 *.key
 credentials.*
 *.env
+ksef-credentials.properties
+demo-state.json
+logs/
