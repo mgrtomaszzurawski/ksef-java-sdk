@@ -64,7 +64,7 @@ public final class AuthClient {
      * Request a challenge for authentication.
      * The challenge must be signed with XAdES and submitted via
      * {@link #authenticateWithXades(String, X509Certificate, PrivateKey, String)} or
-     * encrypted and submitted via {@link #authenticateWithToken(String, String, String, PublicKey)}.
+     * encrypted and submitted via {@link #authenticateWithToken(AuthenticationChallengeResponseRaw, String, String, PublicKey)}.
      *
      * @return challenge response containing the challenge string and timestamp
      */
