@@ -9,6 +9,8 @@ module io.github.mgrtomaszzurawski.ksef {
     exports io.github.mgrtomaszzurawski.ksef.sdk;
     exports io.github.mgrtomaszzurawski.ksef.sdk.exception;
     exports io.github.mgrtomaszzurawski.ksef.sdk.paging;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.crypto;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.signing;
 
     // Required modules
     requires java.net.http;
@@ -20,6 +22,18 @@ module io.github.mgrtomaszzurawski.ksef {
     requires jakarta.annotation;
     requires jakarta.xml.bind;
     requires org.slf4j;
+
+    // Crypto dependencies (BouncyCastle)
+    requires org.bouncycastle.provider;
+    requires org.bouncycastle.pkix;
+
+    // XAdES signing (EU DSS - automatic modules with underscores)
+    requires jpms_dss_xades;
+    requires jpms_dss_enumerations;
+    requires jpms_dss_model;
+    requires jpms_dss_token;
+    requires jpms_dss_spi;
+    requires jpms_dss_document;
 
     // Open generated model packages to Jackson for reflection-based deserialization
     opens io.github.mgrtomaszzurawski.ksef.client.model to com.fasterxml.jackson.databind;
