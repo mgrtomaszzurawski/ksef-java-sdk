@@ -21,6 +21,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunReport;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.AuthRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.CertificateRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.DemoRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.InvoiceRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.LimitsRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.PermissionRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.QrCodeRunner;
@@ -166,6 +167,7 @@ public final class DemoApp {
             runners.add(new PermissionRunner());
             runners.add(new CertificateRunner());
             runners.add(new SessionRunner());
+            runners.add(new InvoiceRunner());
         }
 
         return runners;
