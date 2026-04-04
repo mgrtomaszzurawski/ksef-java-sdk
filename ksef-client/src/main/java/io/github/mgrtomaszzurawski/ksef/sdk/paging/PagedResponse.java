@@ -18,6 +18,10 @@ public record PagedResponse<T>(
         int pageSize,
         boolean hasMore) {
 
+    public PagedResponse {
+        items = List.copyOf(items);
+    }
+
     /**
      * Calculate the offset for the next page.
      */

@@ -65,6 +65,7 @@ public final class KsefClient implements AutoCloseable {
     }
 
     public Duration readTimeout() {
+        ensureOpen();
         return DEFAULT_READ_TIMEOUT;
     }
 

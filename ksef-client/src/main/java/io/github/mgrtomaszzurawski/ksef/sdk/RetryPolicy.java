@@ -18,6 +18,22 @@ public record RetryPolicy(
 
     private static final int DEFAULT_MAX_ATTEMPTS = 3;
     private static final long DEFAULT_MAX_RETRY_AFTER_SECONDS = 60L;
+    private static final int MIN_ATTEMPTS = 1;
+    private static final String ERR_MAX_ATTEMPTS = "maxAttempts must be >= 1, got: ";
+    private static final String ERR_MAX_RETRY_AFTER = "maxRetryAfterSeconds must be >= 0, got: ";
+    private static final String ERR_BACKOFF_NULL = "backoffStrategy must not be null";
+
+    public RetryPolicy {
+        if (maxAttempts < MIN_ATTEMPTS) {
+            throw new IllegalArgumentException(ERR_MAX_ATTEMPTS + maxAttempts);
+        }
+        if (maxRetryAfterSeconds < 0) {
+            throw new IllegalArgumentException(ERR_MAX_RETRY_AFTER + maxRetryAfterSeconds);
+        }
+        if (backoffStrategy == null) {
+            throw new IllegalArgumentException(ERR_BACKOFF_NULL);
+        }
+    }
 
     public enum BackoffStrategy {
         FIXED,

@@ -29,11 +29,12 @@ public final class SessionContext {
      * Update token after refresh (keeps same reference number).
      */
     public void refreshToken(String newToken, OffsetDateTime newExpiry) {
-        SessionState current = state.get();
-        if (current == null) {
-            throw new IllegalStateException(ERR_NO_SESSION);
-        }
-        state.set(new SessionState(newToken, current.referenceNumber(), newExpiry));
+        state.updateAndGet(current -> {
+            if (current == null) {
+                throw new IllegalStateException(ERR_NO_SESSION);
+            }
+            return new SessionState(newToken, current.referenceNumber(), newExpiry);
+        });
     }
 
     /**

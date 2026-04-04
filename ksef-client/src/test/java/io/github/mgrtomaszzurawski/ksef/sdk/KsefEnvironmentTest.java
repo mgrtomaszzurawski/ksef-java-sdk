@@ -46,4 +46,14 @@ class KsefEnvironmentTest {
     void custom_whenNull_throwsIllegalArgument() {
         assertThrows(IllegalArgumentException.class, () -> KsefEnvironment.custom(null));
     }
+
+    @Test
+    void custom_whenInvalidScheme_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class, () -> KsefEnvironment.custom("ftp://example.com"));
+    }
+
+    @Test
+    void custom_whenNoScheme_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class, () -> KsefEnvironment.custom("example.com"));
+    }
 }
