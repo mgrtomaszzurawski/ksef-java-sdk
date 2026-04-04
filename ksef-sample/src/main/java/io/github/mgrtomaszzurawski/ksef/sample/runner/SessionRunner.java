@@ -61,6 +61,7 @@ public final class SessionRunner implements DemoRunner {
     private static final String OP_CLOSE_ONLINE = "closeOnline";
     private static final String OP_POLL_SESSION = "pollSessionStatus";
     private static final String OP_UPO_BY_REF = "getUpoByInvoiceReference";
+    private static final String OP_TERMINATE_FALLBACK = "terminateFallback";
     private static final String OP_OPEN_BATCH = "openBatch";
     private static final String OP_CLOSE_BATCH = "closeBatch";
     private static final String SKIP_BATCH = "requires ZIP package preparation";
@@ -69,7 +70,7 @@ public final class SessionRunner implements DemoRunner {
     private static final int SESSION_STATUS_OK = 200;
     private static final int POLL_INITIAL_DELAY_MS = 2000;
     private static final int POLL_MAX_DELAY_MS = 8000;
-    private static final int POLL_TIMEOUT_MS = 120000;
+    private static final int POLL_TIMEOUT_MS = 60000;
     private static final int POLL_BACKOFF_MULTIPLIER = 2;
     private static final int SEND_RETRY_DELAY_MS = 2000;
     private static final int SEND_MAX_RETRIES = 3;
@@ -87,11 +88,8 @@ public final class SessionRunner implements DemoRunner {
             return results;
         }
 
-        // 0. Clean up stale session from previous run
-        cleanupStaleSession(context, results);
-
-        // 1. Open online session
-        String sessionRef = runOpenOnline(context, results);
+        // 1. Open online session (with stale session cleanup if needed)
+        String sessionRef = runOpenOnlineWithCleanup(context, results);
         if (sessionRef == null) {
             return results;
         }
@@ -116,6 +114,11 @@ public final class SessionRunner implements DemoRunner {
         // 7. Close session (with retry — waits for invoice processing)
         boolean closed = runCloseOnlineWithRetry(context, sessionRef, results);
 
+        if (!closed) {
+            // Fallback: terminate the auth session to clean up the stuck online session
+            terminateFallback(context, results);
+        }
+
         // 8. Poll session status after close until processing complete
         if (closed) {
             boolean ready = pollSessionStatusAfterClose(context, sessionRef, results);
@@ -134,24 +137,35 @@ public final class SessionRunner implements DemoRunner {
     }
 
     /**
-     * Attempt to terminate any stale online session from a previous run.
-     * KSeF allows only one active online session per NIP. If the previous session
-     * wasn't closed, opening a new one will fail.
+     * Try to open online session. If it fails (likely because a stale session exists
+     * from a previous run), terminate the auth session, re-authenticate, and retry.
+     *
+     * <p>Note: KSeF has a cooldown period after session termination. Consecutive FULL
+     * runs within the same minute may fail because KSeF hasn't released the session slot.
+     * This is documented as a known server behavior.</p>
      */
-    private void cleanupStaleSession(DemoContext context, List<RunResult> results) {
+    private String runOpenOnlineWithCleanup(DemoContext context, List<RunResult> results) {
+        String sessionRef = runOpenOnline(context, results);
+        if (sessionRef != null) {
+            return sessionRef;
+        }
+
+        // Open failed — likely stale session blocking. Terminate and retry.
+        LOG.info("[{}] openOnline failed, attempting cleanup and retry", NAME);
         long start = System.currentTimeMillis();
         try {
             context.client().auth().terminateCurrentSession();
             LOG.info("[{}] terminated stale session", NAME);
-            results.add(RunResult.ok(NAME, OP_CLEANUP_STALE, elapsed(start), "stale session terminated"));
-
-            // Re-authenticate after terminating — the old token is now invalid
             reAuthenticate(context);
+            results.add(RunResult.ok(NAME, OP_CLEANUP_STALE, elapsed(start), "stale session terminated"));
         } catch (Exception exception) {
-            // No stale session — this is the expected path
-            LOG.info("[{}] no stale session to clean up: {}", NAME, exception.getMessage());
-            results.add(RunResult.ok(NAME, OP_CLEANUP_STALE, elapsed(start), "no stale session"));
+            LOG.warn("[{}] cleanup failed: {}", NAME, exception.getMessage());
+            results.add(RunResult.fail(NAME, OP_CLEANUP_STALE, elapsed(start), errorMessage(exception)));
+            return null;
         }
+
+        // Retry open after cleanup
+        return runOpenOnline(context, results);
     }
 
     /**
@@ -345,6 +359,28 @@ public final class SessionRunner implements DemoRunner {
         results.add(RunResult.fail(NAME, OP_CLOSE_ONLINE, elapsed(start),
                 "Timeout waiting for session to be closeable"));
         return false;
+    }
+
+    /**
+     * Fallback: terminate the auth session when closeOnline fails. This implicitly
+     * closes the online session, preventing stale sessions from blocking future runs.
+     * Re-authenticates afterwards so subsequent runners still have a valid token.
+     */
+    private void terminateFallback(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            context.client().auth().terminateCurrentSession();
+            LOG.info("[{}] terminated auth session as close fallback", NAME);
+
+            // Re-authenticate so subsequent runners (InvoiceRunner) have a valid token
+            reAuthenticate(context);
+            results.add(RunResult.ok(NAME, OP_TERMINATE_FALLBACK, elapsed(start),
+                    "auth session terminated + re-authenticated"));
+        } catch (Exception exception) {
+            LOG.warn("[{}] terminate fallback failed: {}", NAME, exception.getMessage());
+            results.add(RunResult.fail(NAME, OP_TERMINATE_FALLBACK, elapsed(start),
+                    errorMessage(exception)));
+        }
     }
 
     /**

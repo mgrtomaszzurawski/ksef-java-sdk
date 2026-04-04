@@ -60,7 +60,7 @@ public final class InvoiceRunner implements DemoRunner {
     private static final int EXPORT_STATUS_OK = 200;
     private static final int EXPORT_POLL_INITIAL_DELAY_MS = 2000;
     private static final int EXPORT_POLL_MAX_DELAY_MS = 10000;
-    private static final int EXPORT_POLL_TIMEOUT_MS = 120000;
+    private static final int EXPORT_POLL_TIMEOUT_MS = 60000;
     private static final int EXPORT_POLL_BACKOFF_MULTIPLIER = 2;
     private static final int QUERY_DATE_RANGE_DAYS = 30;
 
