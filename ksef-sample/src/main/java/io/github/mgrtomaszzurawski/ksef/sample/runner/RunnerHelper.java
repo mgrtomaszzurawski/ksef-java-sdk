@@ -24,6 +24,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
  */
 final class RunnerHelper {
 
+    static final int POLL_INITIAL_DELAY_MS = 2000;
+    static final int POLL_MAX_DELAY_MS = 8000;
+    static final int POLL_TIMEOUT_MS = 60000;
+    static final int POLL_BACKOFF_MULTIPLIER = 2;
+
     private RunnerHelper() { }
 
     /**

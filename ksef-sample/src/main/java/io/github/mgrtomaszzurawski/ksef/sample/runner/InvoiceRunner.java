@@ -17,6 +17,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_BACKOFF_MULTIPLIER;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_INITIAL_DELAY_MS;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_TIMEOUT_MS;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
@@ -58,10 +61,7 @@ public final class InvoiceRunner implements DemoRunner {
     private static final String SKIP_NO_KSEF_NUMBER = "no KSeF number available from SessionRunner";
     private static final String SKIP_NO_EXPORT_REF = "export not started";
     private static final int EXPORT_STATUS_OK = 200;
-    private static final int EXPORT_POLL_INITIAL_DELAY_MS = 2000;
     private static final int EXPORT_POLL_MAX_DELAY_MS = 10000;
-    private static final int EXPORT_POLL_TIMEOUT_MS = 60000;
-    private static final int EXPORT_POLL_BACKOFF_MULTIPLIER = 2;
     private static final int QUERY_DATE_RANGE_DAYS = 30;
 
     @Override
@@ -163,9 +163,9 @@ public final class InvoiceRunner implements DemoRunner {
 
     private void pollExportStatus(DemoContext context, String exportRef, List<RunResult> results) {
         long start = System.currentTimeMillis();
-        int delay = EXPORT_POLL_INITIAL_DELAY_MS;
+        int delay = POLL_INITIAL_DELAY_MS;
         try {
-            while (elapsed(start) < EXPORT_POLL_TIMEOUT_MS) {
+            while (elapsed(start) < POLL_TIMEOUT_MS) {
                 InvoiceExportStatusResponseRaw response = context.client().invoices()
                         .getExportStatus(exportRef);
                 Integer code = response.getStatus() != null ? response.getStatus().getCode() : null;
@@ -176,7 +176,7 @@ public final class InvoiceRunner implements DemoRunner {
                     return;
                 }
                 Thread.sleep(delay);
-                delay = Math.min(delay * EXPORT_POLL_BACKOFF_MULTIPLIER, EXPORT_POLL_MAX_DELAY_MS);
+                delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, EXPORT_POLL_MAX_DELAY_MS);
             }
             results.add(RunResult.fail(NAME, OP_EXPORT_STATUS, elapsed(start),
                     "Timeout waiting for export status 200"));

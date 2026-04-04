@@ -39,6 +39,8 @@ public final class QrCodeRunner implements DemoRunner {
     private static final String OP_URL = "getVerificationUrl";
     private static final String OP_QR = "generateQrCode";
     private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
+    private static final String ENV_DEMO = "demo";
+    private static final String ENV_TEST = "test";
 
     @Override
     public String name() { return NAME; }
@@ -46,7 +48,7 @@ public final class QrCodeRunner implements DemoRunner {
     @Override
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
-        boolean isTestEnv = context.environment().contains("demo") || context.environment().contains("test");
+        boolean isTestEnv = context.environment().contains(ENV_DEMO) || context.environment().contains(ENV_TEST);
         QrCodeService service = new QrCodeService(isTestEnv);
 
         // getVerificationUrl

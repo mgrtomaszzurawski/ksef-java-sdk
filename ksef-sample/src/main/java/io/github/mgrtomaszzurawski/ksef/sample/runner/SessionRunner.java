@@ -17,6 +17,10 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_BACKOFF_MULTIPLIER;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_INITIAL_DELAY_MS;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_MAX_DELAY_MS;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_TIMEOUT_MS;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
@@ -68,13 +72,9 @@ public final class SessionRunner implements DemoRunner {
     private static final String SKIP_NOT_FULL = "FULL mode only";
     private static final String SHA256_ALGORITHM = "SHA-256";
     private static final int SESSION_STATUS_OK = 200;
-    private static final int POLL_INITIAL_DELAY_MS = 2000;
-    private static final int POLL_MAX_DELAY_MS = 8000;
-    private static final int POLL_TIMEOUT_MS = 60000;
-    private static final int POLL_BACKOFF_MULTIPLIER = 2;
     private static final int SEND_RETRY_DELAY_MS = 2000;
     private static final int SEND_MAX_RETRIES = 3;
-    private static final String SESSION_BUSY_INDICATOR = "415";
+    private static final String SESSION_BUSY_INDICATOR = "(415)";
 
     @Override
     public String name() { return NAME; }

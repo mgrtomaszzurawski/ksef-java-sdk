@@ -142,7 +142,8 @@ public final class AuthRunner implements DemoRunner {
         try {
             AuthenticationChallengeResponseRaw response = context.client().auth().requestChallenge();
             String challenge = response.getChallenge();
-            LOG.info("[{}] challenge: {}, clientIp: {}", NAME, challenge, response.getClientIp());
+            LOG.info("[{}] challenge received", NAME);
+            LOG.debug("[{}] challenge: {}, clientIp: {}", NAME, challenge, response.getClientIp());
             results.add(RunResult.ok(NAME, OP_CHALLENGE, elapsed(start), "challenge=" + challenge));
             return response;
         } catch (Exception exception) {

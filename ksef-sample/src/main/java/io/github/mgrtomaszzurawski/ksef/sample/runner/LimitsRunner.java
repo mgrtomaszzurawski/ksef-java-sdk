@@ -47,7 +47,7 @@ public final class LimitsRunner implements DemoRunner {
 
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().limits().getContextLimits();
+            context.client().limits().getContextLimits();
             LOG.info("[{}] context limits fetched", NAME);
             results.add(RunResult.ok(NAME, OP_CONTEXT, elapsed(start)));
         } catch (Exception exception) {
@@ -56,7 +56,7 @@ public final class LimitsRunner implements DemoRunner {
 
         start = System.currentTimeMillis();
         try {
-            var response = context.client().limits().getSubjectLimits();
+            context.client().limits().getSubjectLimits();
             LOG.info("[{}] subject limits fetched", NAME);
             results.add(RunResult.ok(NAME, OP_SUBJECT, elapsed(start)));
         } catch (Exception exception) {

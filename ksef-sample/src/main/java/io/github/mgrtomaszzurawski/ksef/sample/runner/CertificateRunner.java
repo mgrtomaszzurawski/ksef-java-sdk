@@ -147,7 +147,8 @@ public final class CertificateRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().certificates().getEnrollmentData();
-            LOG.info("[{}] enrollment data: cn={}, c={}, gn={}, sn={}, serial={}, o={}, oid={}",
+            LOG.info("[{}] enrollment data retrieved", NAME);
+            LOG.debug("[{}] enrollment data: cn={}, c={}, gn={}, sn={}, serial={}, o={}, oid={}",
                     NAME, response.getCommonName(), response.getCountryName(),
                     response.getGivenName(), response.getSurname(), response.getSerialNumber(),
                     response.getOrganizationName(), response.getOrganizationIdentifier());
