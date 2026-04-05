@@ -10,6 +10,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponse
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -55,10 +58,11 @@ public final class InvoiceClient {
      * @param filters the query filter criteria
      * @return paginated list of invoice metadata
      */
-    public QueryInvoicesMetadataResponseRaw queryMetadata(InvoiceQueryFiltersRaw filters) {
+    public InvoiceMetadataResult queryMetadata(InvoiceQueryFiltersRaw filters) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
+        QueryInvoicesMetadataResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
+        return InvoiceMetadataResult.from(raw);
     }
 
     /**
@@ -67,10 +71,11 @@ public final class InvoiceClient {
      * @param request the export request with date range and optional filters
      * @return response with the export reference number for status polling
      */
-    public ExportInvoicesResponseRaw exportInvoices(InvoiceExportRequestRaw request) {
+    public ExportInvoicesResult exportInvoices(InvoiceExportRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_EXPORTS, request, token,
+        ExportInvoicesResponseRaw raw = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
                 ExportInvoicesResponseRaw.class, OP_EXPORT);
+        return ExportInvoicesResult.from(raw);
     }
 
     /**
@@ -79,10 +84,11 @@ public final class InvoiceClient {
      * @param referenceNumber the export reference number from {@link #exportInvoices}
      * @return export status with download URL when complete
      */
-    public InvoiceExportStatusResponseRaw getExportStatus(String referenceNumber) {
+    public InvoiceExportStatus getExportStatus(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
+        InvoiceExportStatusResponseRaw raw = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
                 InvoiceExportStatusResponseRaw.class, OP_EXPORT_STATUS);
+        return InvoiceExportStatus.from(raw);
     }
 }

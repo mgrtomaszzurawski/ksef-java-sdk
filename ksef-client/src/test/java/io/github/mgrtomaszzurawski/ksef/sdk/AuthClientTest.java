@@ -6,15 +6,15 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationListResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationOperationStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenRefreshResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationInit;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationList;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationTokenRefresh;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationTokens;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -132,12 +132,12 @@ class AuthClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        AuthenticationChallengeResponseRaw response = ksef.auth().requestChallenge();
+        AuthenticationChallenge response = ksef.auth().requestChallenge();
 
         // then
-        assertEquals(TEST_CHALLENGE, response.getChallenge());
-        assertNotNull(response.getTimestamp());
-        assertNotNull(response.getClientIp());
+        assertEquals(TEST_CHALLENGE, response.challenge());
+        assertNotNull(response.timestamp());
+        assertNotNull(response.clientIp());
     }
 
     @Test
@@ -168,12 +168,12 @@ class AuthClientTest {
         TestCertificates testCerts = TestCertificates.generateRsa();
 
         // when
-        AuthenticationInitResponseRaw response = ksef.auth().authenticateWithXades(
+        AuthenticationInit response = ksef.auth().authenticateWithXades(
                 TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
         // then
-        assertEquals(TEST_REFERENCE_NUMBER, response.getReferenceNumber());
-        assertEquals(TEST_TOKEN, response.getAuthenticationToken().getToken());
+        assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
+        assertEquals(TEST_TOKEN, response.authenticationToken().token());
         assertTrue(ksef.sessionContext().isActive());
         assertEquals(TEST_TOKEN, ksef.sessionContext().token());
     }
@@ -194,11 +194,11 @@ class AuthClientTest {
                         .withBody(TOKENS_RESPONSE)));
 
         // when
-        AuthenticationTokensResponseRaw response = ksef.auth().redeemTokens();
+        AuthenticationTokens response = ksef.auth().redeemTokens();
 
         // then
-        assertEquals(TEST_ACCESS_TOKEN, response.getAccessToken().getToken());
-        assertEquals(TEST_REFRESH_TOKEN, response.getRefreshToken().getToken());
+        assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
+        assertEquals(TEST_REFRESH_TOKEN, response.refreshToken().token());
         assertEquals(TEST_ACCESS_TOKEN, ksef.sessionContext().token());
     }
 
@@ -218,10 +218,10 @@ class AuthClientTest {
                         .withBody(REFRESH_RESPONSE)));
 
         // when
-        AuthenticationTokenRefreshResponseRaw response = ksef.auth().refreshToken(TEST_REFRESH_TOKEN);
+        AuthenticationTokenRefresh response = ksef.auth().refreshToken(TEST_REFRESH_TOKEN);
 
         // then
-        assertEquals(TEST_ACCESS_TOKEN, response.getAccessToken().getToken());
+        assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
         assertEquals(TEST_ACCESS_TOKEN, ksef.sessionContext().token());
     }
 
@@ -240,10 +240,10 @@ class AuthClientTest {
                         .withBody(STATUS_RESPONSE)));
 
         // when
-        AuthenticationOperationStatusResponseRaw response = ksef.auth().getStatus(TEST_REFERENCE_NUMBER);
+        AuthenticationStatus response = ksef.auth().getStatus(TEST_REFERENCE_NUMBER);
 
         // then
-        assertNotNull(response.getStatus());
+        assertNotNull(response.status());
     }
 
     @Test
@@ -261,11 +261,11 @@ class AuthClientTest {
                         .withBody(SESSIONS_LIST_RESPONSE)));
 
         // when
-        AuthenticationListResponseRaw response = ksef.auth().listSessions();
+        AuthenticationList response = ksef.auth().listSessions();
 
         // then
-        assertNotNull(response.getItems());
-        assertFalse(response.getItems().isEmpty());
+        assertNotNull(response.items());
+        assertFalse(response.items().isEmpty());
     }
 
     @Test

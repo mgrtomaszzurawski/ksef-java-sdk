@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
 
 import java.util.List;
 
@@ -31,8 +32,9 @@ public final class SecurityClient {
      *
      * @return list of public key certificates with validity periods and usage types
      */
-    public List<PublicKeyCertificateRaw> getPublicKeyCertificates() {
-        return http.getList(PATH_PUBLIC_KEY_CERTS,
+    public List<PublicKeyCertificate> getPublicKeyCertificates() {
+        List<PublicKeyCertificateRaw> rawList = http.getList(PATH_PUBLIC_KEY_CERTS,
                 new TypeReference<>() {}, OP_GET_PUBLIC_KEYS);
+        return rawList.stream().map(PublicKeyCertificate::from).toList();
     }
 }

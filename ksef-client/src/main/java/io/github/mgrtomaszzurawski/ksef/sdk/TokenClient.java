@@ -9,6 +9,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenList;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -38,10 +41,11 @@ public final class TokenClient {
      * @param request token generation parameters (permissions, description)
      * @return response with the generated token details
      */
-    public GenerateTokenResponseRaw generate(GenerateTokenRequestRaw request) {
+    public GenerateTokenResult generate(GenerateTokenRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_TOKENS, request, token,
+        GenerateTokenResponseRaw raw = http.postJsonAuthenticated(PATH_TOKENS, request, token,
                 GenerateTokenResponseRaw.class, OP_GENERATE);
+        return GenerateTokenResult.from(raw);
     }
 
     /**
@@ -49,10 +53,11 @@ public final class TokenClient {
      *
      * @return response with the list of tokens
      */
-    public QueryTokensResponseRaw list() {
+    public TokenList list() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_TOKENS, token,
+        QueryTokensResponseRaw raw = http.getAuthenticated(PATH_TOKENS, token,
                 QueryTokensResponseRaw.class, OP_LIST);
+        return TokenList.from(raw);
     }
 
     /**
@@ -61,11 +66,12 @@ public final class TokenClient {
      * @param referenceNumber the token reference number
      * @return token status details
      */
-    public TokenStatusResponseRaw getStatus(String referenceNumber) {
+    public TokenDetail getStatus(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_TOKENS + "/" + referenceNumber, token,
+        TokenStatusResponseRaw raw = http.getAuthenticated(PATH_TOKENS + "/" + referenceNumber, token,
                 TokenStatusResponseRaw.class, OP_GET_STATUS);
+        return TokenDetail.from(raw);
     }
 
     /**
