@@ -7,12 +7,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateRangeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -63,6 +68,47 @@ public final class InvoiceClient {
         QueryInvoicesMetadataResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
         return InvoiceMetadataResult.from(raw);
+    }
+
+    /**
+     * Query all invoice metadata matching the filters, automatically fetching
+     * subsequent pages until no more results are available.
+     * <p>
+     * Uses the permanentStorageHwmDate from each response as a cursor to
+     * narrow the date range for the next page.
+     * <p>
+     * Warning: this can return a large number of results. Consider using
+     * {@link #queryMetadata(InvoiceQueryFiltersRaw)} for single-page queries
+     * if you only need the first page.
+     *
+     * @param filters the query filter criteria
+     * @return all matching invoice metadata across all pages
+     */
+    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryFiltersRaw filters) {
+        List<InvoiceMetadata> allInvoices = new ArrayList<>();
+        InvoiceQueryFiltersRaw currentFilters = filters;
+
+        while (true) {
+            InvoiceMetadataResult page = queryMetadata(currentFilters);
+            allInvoices.addAll(page.invoices());
+
+            if (!page.hasMore() || page.permanentStorageHwmDate() == null) {
+                break;
+            }
+
+            // Use permanentStorageHwmDate as cursor — narrow dateRange.from for next page
+            InvoiceQueryDateRangeRaw nextDateRange = new InvoiceQueryDateRangeRaw()
+                    .dateType(filters.getDateRange().getDateType())
+                    .from(page.permanentStorageHwmDate());
+            if (filters.getDateRange().getTo() != null) {
+                nextDateRange.to(filters.getDateRange().getTo());
+            }
+            currentFilters = new InvoiceQueryFiltersRaw()
+                    .subjectType(filters.getSubjectType())
+                    .dateRange(nextDateRange);
+        }
+
+        return List.copyOf(allInvoices);
     }
 
     /**
