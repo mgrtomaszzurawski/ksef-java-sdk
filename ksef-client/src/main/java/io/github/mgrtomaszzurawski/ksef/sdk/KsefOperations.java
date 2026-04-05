@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.OnlineSessionBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.OnlineSessionBuilder.SessionOpenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.SendInvoiceBuilder;
 
 import java.io.ByteArrayInputStream;
@@ -114,15 +115,15 @@ public final class KsefOperations {
      */
     public SessionStatus sendInvoice(byte[] invoiceXml) {
         PublicKey encKey = symmetricKeyEncryptionKey();
+        SessionOpenResult sessionOpen = OnlineSessionBuilder.fa2(encKey).build();
 
-        OnlineSession session = client.sessions().openOnline(
-                OnlineSessionBuilder.fa2(encKey).build());
+        OnlineSession session = client.sessions().openOnline(sessionOpen.request());
         String sessionRef = session.referenceNumber();
 
         try {
             client.sessions().sendInvoice(
                     sessionRef,
-                    SendInvoiceBuilder.create(invoiceXml, encKey).build());
+                    SendInvoiceBuilder.create(invoiceXml, sessionOpen.aesKey(), sessionOpen.initVector()).build());
 
             client.sessions().closeOnline(sessionRef);
         } catch (Exception ex) {

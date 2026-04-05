@@ -46,12 +46,14 @@ public final class ValidationProbe {
 
     private static final Logger LOG = LoggerFactory.getLogger(ValidationProbe.class);
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
-    private static final int RESPONSE_BODY_MAX_LENGTH = 500;
     private static final int DETAILS_MAX_LENGTH = 200;
     private static final int SHORT_SUMMARY_MAX_LENGTH = 100;
     private static final int DESCRIPTION_MAX_LENGTH = 40;
     private static final int EXCEPTION_CODE_OFFSET = 16;
     private static final int EXCEPTION_CODE_MAX_OFFSET = 22;
+    private static final int TEST_LONG_STRING_LENGTH = 500;
+    private static final int TEST_LONG_DESCRIPTION_LENGTH = 300;
+    private static final int TEST_LONG_REF_LENGTH = 200;
 
     private final String baseUrl;
     private final String bearerToken;
@@ -129,7 +131,7 @@ public final class ValidationProbe {
             {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"INVALID\",\"value\":\"1234567890\"},\"encryptedToken\":\"dGVzdA==\"}", "Invalid enum value"},
             {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"123\"},\"encryptedToken\":\"dGVzdA==\"}", "Invalid NIP (too short)"},
             {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"12345678901234567890\"},\"encryptedToken\":\"dGVzdA==\"}", "NIP too long"},
-            {"{\"challenge\":\"" + "A".repeat(500) + "\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"1234567890\"},\"encryptedToken\":\"dGVzdA==\"}", "Very long challenge (500 chars)"},
+            {"{\"challenge\":\"" + "A".repeat(TEST_LONG_STRING_LENGTH) + "\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"1234567890\"},\"encryptedToken\":\"dGVzdA==\"}", "Very long challenge (500 chars)"},
         });
     }
 
@@ -159,7 +161,7 @@ public final class ValidationProbe {
             {"{\"description\":\"test\",\"requestedPermissions\":null}", "Null permissions"},
             {"{\"description\":\"test\",\"requestedPermissions\":[]}", "Empty permissions array"},
             {"{\"description\":\"test\",\"requestedPermissions\":[\"INVALID\"]}", "Invalid permission type"},
-            {"{\"description\":\"" + "A".repeat(300) + "\",\"requestedPermissions\":[\"InvoiceRead\"]}", "Very long description (300 chars)"},
+            {"{\"description\":\"" + "A".repeat(TEST_LONG_DESCRIPTION_LENGTH) + "\",\"requestedPermissions\":[\"InvoiceRead\"]}", "Very long description (300 chars)"},
         });
 
         // GET /limits/context
@@ -213,7 +215,7 @@ public final class ValidationProbe {
         System.out.println("### GET /api/v2/sessions/{ref}\n");
         probeEndpoint("GET", "/api/v2/sessions/invalid-ref-number", null, true, "Invalid reference number");
         probeEndpoint("GET", "/api/v2/sessions/", null, true, "Empty reference number");
-        probeEndpoint("GET", "/api/v2/sessions/" + "A".repeat(200), null, true, "Very long reference number");
+        probeEndpoint("GET", "/api/v2/sessions/" + "A".repeat(TEST_LONG_REF_LENGTH), null, true, "Very long reference number");
 
         // GET /auth/{ref} with invalid ref
         System.out.println("### GET /api/v2/auth/{ref}\n");
