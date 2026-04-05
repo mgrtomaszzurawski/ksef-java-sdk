@@ -24,12 +24,11 @@ package io.github.mgrtomaszzurawski.ksef.sample;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -47,6 +46,12 @@ public final class ValidationProbe {
 
     private static final Logger LOG = LoggerFactory.getLogger(ValidationProbe.class);
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
+    private static final int RESPONSE_BODY_MAX_LENGTH = 500;
+    private static final int DETAILS_MAX_LENGTH = 200;
+    private static final int SHORT_SUMMARY_MAX_LENGTH = 100;
+    private static final int DESCRIPTION_MAX_LENGTH = 40;
+    private static final int EXCEPTION_CODE_OFFSET = 16;
+    private static final int EXCEPTION_CODE_MAX_OFFSET = 22;
 
     private final String baseUrl;
     private final String bearerToken;
@@ -72,60 +77,22 @@ public final class ValidationProbe {
 
         LOG.info("=== KSeF Validation Probe ===");
         LOG.info("Environment: {}", ksefUrl);
-        LOG.info("NIP: {}", nipIdentifier);
+        LOG.debug("NIP: {}", nipIdentifier);
 
-        // Authenticate to get bearer token
         KsefClient client = KsefClient.builder(KsefEnvironment.custom(ksefUrl))
                 .build();
+        KsefOperations operations = new KsefOperations(client);
 
-        PublicKey publicKey = client.security().getPublicKeyCertificates().stream()
-                .filter(cert -> cert.usage().stream()
-                        .anyMatch(u -> u == io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION))
-                .findFirst()
-                .map(cert -> io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService.parsePublicKeyFromPem(
-                        new String(java.util.Base64.getEncoder().encode(cert.certificate()))))
-                .orElseThrow(() -> new RuntimeException("No token encryption certificate found"));
+        PublicKey tokenKey = operations.tokenEncryptionKey();
+        operations.authenticateWithToken(ksefToken, nipIdentifier, tokenKey);
+        LOG.info("Authenticated successfully");
 
-        // Actually need to parse the X509 cert properly
-        java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
-        io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate tokenCert = client.security().getPublicKeyCertificates().stream()
-                .filter(cert -> cert.usage().stream()
-                        .anyMatch(u -> u == io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION))
-                .findFirst()
-                .orElseThrow();
-        java.security.cert.X509Certificate x509 = (java.security.cert.X509Certificate) cf.generateCertificate(
-                new java.io.ByteArrayInputStream(tokenCert.certificate()));
-        publicKey = x509.getPublicKey();
+        String bearer = client.sessionContext().token();
 
-        var challenge = client.auth().requestChallenge();
-        var authInit = client.auth().authenticateWithToken(challenge, ksefToken, nipIdentifier, publicKey);
-        LOG.info("Auth ref: {}", authInit.referenceNumber());
-
-        // Poll for auth status
-        int authStatus = 0;
-        for (int attempt = 0; attempt < 10; attempt++) {
-            Thread.sleep(2000);
-            var status = client.auth().getStatus(authInit.referenceNumber());
-            authStatus = status.status().code();
-            LOG.info("Auth status: {}", authStatus);
-            if (authStatus == 200) break;
-        }
-
-        if (authStatus != 200) {
-            LOG.error("Auth failed with status {}", authStatus);
-            return;
-        }
-
-        var tokens = client.auth().redeemTokens();
-        String bearer = tokens.accessToken().token();
-        LOG.info("Got bearer token, length={}", bearer.length());
-
-        // Now probe all endpoints
         ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
         probe.runAllProbes();
 
-        // Clean up - terminate session
-        client.auth().terminateCurrentSession();
+        operations.terminateSession();
         LOG.info("Session terminated. Probe complete.");
     }
 
@@ -331,12 +298,8 @@ public final class ValidationProbe {
             HttpResponse<String> resp = httpClient.send(reqBuilder.build(),
                     HttpResponse.BodyHandlers.ofString());
 
-            String respBody = resp.body().length() > 500
-                    ? resp.body().substring(0, 500) + "..."
-                    : resp.body();
-
             System.out.printf("| %s | %d | %s | %s |%n",
-                    truncate(description, 40),
+                    truncate(description, DESCRIPTION_MAX_LENGTH),
                     resp.statusCode(),
                     extractExceptionCode(resp.body()),
                     extractDetails(resp.body()));
@@ -362,7 +325,7 @@ public final class ValidationProbe {
                     HttpResponse.BodyHandlers.ofString());
 
             System.out.printf("| %s | %d | %s | %s |%n",
-                    truncate(description, 40),
+                    truncate(description, DESCRIPTION_MAX_LENGTH),
                     resp.statusCode(),
                     extractExceptionCode(resp.body()),
                     extractDetails(resp.body()));
@@ -376,9 +339,10 @@ public final class ValidationProbe {
         try {
             int idx = json.indexOf("\"exceptionCode\":");
             if (idx < 0) return "-";
-            String sub = json.substring(idx + 16, Math.min(idx + 22, json.length()));
+            String sub = json.substring(idx + EXCEPTION_CODE_OFFSET,
+                    Math.min(idx + EXCEPTION_CODE_MAX_OFFSET, json.length()));
             return sub.replaceAll("[^0-9]", "");
-        } catch (Exception e) {
+        } catch (Exception ex) {
             return "-";
         }
     }
@@ -387,23 +351,23 @@ public final class ValidationProbe {
         try {
             int idx = json.indexOf("\"details\":[");
             if (idx < 0) {
-                // Try to get a short summary
-                if (json.length() > 200) return json.substring(0, 200) + "...";
-                return json.length() > 100 ? json.substring(0, 100) + "..." : json;
+                if (json.length() > DETAILS_MAX_LENGTH) return json.substring(0, DETAILS_MAX_LENGTH) + "...";
+                return json.length() > SHORT_SUMMARY_MAX_LENGTH
+                        ? json.substring(0, SHORT_SUMMARY_MAX_LENGTH) + "..." : json;
             }
             int end = json.indexOf("]", idx);
-            if (end < 0) return json.substring(idx, Math.min(idx + 200, json.length()));
+            if (end < 0) return json.substring(idx, Math.min(idx + DETAILS_MAX_LENGTH, json.length()));
             String details = json.substring(idx + 11, end);
-            // Unescape unicode
             details = details.replace("\\u0027", "'")
                     .replace("\\u0142", "l")
                     .replace("\\u0105", "a")
                     .replace("\\u015B", "s")
                     .replace("\\u0119", "e");
-            if (details.length() > 200) details = details.substring(0, 200) + "...";
+            if (details.length() > DETAILS_MAX_LENGTH) details = details.substring(0, DETAILS_MAX_LENGTH) + "...";
             return details;
-        } catch (Exception e) {
-            return json.length() > 100 ? json.substring(0, 100) + "..." : json;
+        } catch (Exception ex) {
+            return json.length() > SHORT_SUMMARY_MAX_LENGTH
+                    ? json.substring(0, SHORT_SUMMARY_MAX_LENGTH) + "..." : json;
         }
     }
 

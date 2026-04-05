@@ -28,7 +28,7 @@ import java.util.Objects;
  */
 public final class InvoiceQueryBuilder {
 
-    private static final int MAX_DATE_RANGE_DAYS = 90;
+    private static final int MAX_DATE_RANGE_MONTHS = 3;
     private static final String ERR_DATE_FROM_REQUIRED = "dateFrom is required";
     private static final String ERR_DATE_RANGE_EXCEEDED = "dateRange must not exceed 3 months";
 
@@ -171,7 +171,7 @@ public final class InvoiceQueryBuilder {
     public InvoiceQueryFiltersRaw build() {
         Objects.requireNonNull(dateFrom, ERR_DATE_FROM_REQUIRED);
 
-        if (dateTo != null && dateFrom.plusDays(MAX_DATE_RANGE_DAYS).isBefore(dateTo)) {
+        if (dateTo != null && dateFrom.plusMonths(MAX_DATE_RANGE_MONTHS).isBefore(dateTo)) {
             throw new IllegalStateException(ERR_DATE_RANGE_EXCEEDED);
         }
 
