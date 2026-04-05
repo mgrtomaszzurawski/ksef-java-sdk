@@ -1,0 +1,97 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
+
+import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
+
+import java.security.PublicKey;
+import java.util.Objects;
+
+/**
+ * Builder for invoice export requests. Handles AES key generation and
+ * RSA encryption automatically.
+ * <p>
+ * Required: filters (use {@link InvoiceQueryBuilder}), KSeF public key for encryption.
+ * <p>
+ * Usage:
+ * <pre>{@code
+ * InvoiceExportRequestRaw request = InvoiceExportBuilder.create(publicKey)
+ *     .filters(InvoiceQueryBuilder.seller()
+ *         .invoicingDateFrom(date)
+ *         .build())
+ *     .metadataOnly()
+ *     .build();
+ * }</pre>
+ */
+public final class InvoiceExportBuilder {
+
+    private final PublicKey ksefPublicKey;
+    private InvoiceQueryFiltersRaw filters;
+    private boolean onlyMetadata;
+
+    private InvoiceExportBuilder(PublicKey ksefPublicKey) {
+        this.ksefPublicKey = Objects.requireNonNull(ksefPublicKey, "ksefPublicKey is required");
+    }
+
+    /**
+     * Create an export builder with the KSeF public key for encryption.
+     *
+     * @param ksefPublicKey the public key from SecurityClient (SymmetricKeyEncryption usage)
+     */
+    public static InvoiceExportBuilder create(PublicKey ksefPublicKey) {
+        return new InvoiceExportBuilder(ksefPublicKey);
+    }
+
+    /**
+     * Set the query filters for the export.
+     *
+     * @param filters filters built with {@link InvoiceQueryBuilder}
+     */
+    public InvoiceExportBuilder filters(InvoiceQueryFiltersRaw filters) {
+        this.filters = Objects.requireNonNull(filters, "filters are required");
+        return this;
+    }
+
+    /**
+     * Export metadata only (no invoice content).
+     */
+    public InvoiceExportBuilder metadataOnly() {
+        this.onlyMetadata = true;
+        return this;
+    }
+
+    /**
+     * Export full invoice content (default).
+     */
+    public InvoiceExportBuilder fullContent() {
+        this.onlyMetadata = false;
+        return this;
+    }
+
+    /**
+     * Build the export request. Generates AES key, IV, and encrypts the symmetric
+     * key with the KSeF public key automatically.
+     *
+     * @return the request ready to pass to {@code InvoiceClient.exportInvoices()}
+     * @throws IllegalStateException if filters are not set
+     */
+    public InvoiceExportRequestRaw build() {
+        Objects.requireNonNull(filters, "filters are required — use .filters() before .build()");
+
+        byte[] aesKey = CryptoService.generateAesKey();
+        byte[] initVector = CryptoService.generateIv();
+        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, ksefPublicKey);
+
+        return new InvoiceExportRequestRaw()
+                .encryption(new EncryptionInfoRaw()
+                        .encryptedSymmetricKey(encryptedKey)
+                        .initializationVector(initVector))
+                .onlyMetadata(onlyMetadata)
+                .filters(filters);
+    }
+}
