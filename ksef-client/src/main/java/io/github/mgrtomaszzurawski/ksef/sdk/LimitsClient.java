@@ -7,6 +7,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.ContextLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SubjectLimits;
 
 /**
  * Client for KSeF session and subject limit queries.
@@ -32,10 +34,11 @@ public final class LimitsClient {
      *
      * @return context limits with online and batch session constraints
      */
-    public EffectiveContextLimitsRaw getContextLimits() {
+    public ContextLimits getContextLimits() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_CONTEXT_LIMITS, token,
+        EffectiveContextLimitsRaw raw = http.getAuthenticated(PATH_CONTEXT_LIMITS, token,
                 EffectiveContextLimitsRaw.class, OP_GET_CONTEXT_LIMITS);
+        return ContextLimits.from(raw);
     }
 
     /**
@@ -43,9 +46,10 @@ public final class LimitsClient {
      *
      * @return subject limits with certificate and enrollment constraints
      */
-    public EffectiveSubjectLimitsRaw getSubjectLimits() {
+    public SubjectLimits getSubjectLimits() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_SUBJECT_LIMITS, token,
+        EffectiveSubjectLimitsRaw raw = http.getAuthenticated(PATH_SUBJECT_LIMITS, token,
                 EffectiveSubjectLimitsRaw.class, OP_GET_SUBJECT_LIMITS);
+        return SubjectLimits.from(raw);
     }
 }

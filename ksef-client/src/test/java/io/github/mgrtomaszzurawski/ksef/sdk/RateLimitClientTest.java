@@ -6,8 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.ApiRateLimits;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -53,13 +53,13 @@ class RateLimitClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        EffectiveApiRateLimitsRaw response = ksef.rateLimits().getRateLimits();
+        ApiRateLimits response = ksef.rateLimits().getRateLimits();
 
         // then
-        assertNotNull(response.getOnlineSession());
-        assertEquals(Integer.valueOf(RATE_PER_SECOND), response.getOnlineSession().getPerSecond());
-        assertEquals(Integer.valueOf(RATE_PER_MINUTE), response.getOnlineSession().getPerMinute());
-        assertEquals(Integer.valueOf(RATE_PER_HOUR), response.getOnlineSession().getPerHour());
+        assertNotNull(response.onlineSession());
+        assertEquals(Integer.valueOf(RATE_PER_SECOND), response.onlineSession().perSecond());
+        assertEquals(Integer.valueOf(RATE_PER_MINUTE), response.onlineSession().perMinute());
+        assertEquals(Integer.valueOf(RATE_PER_HOUR), response.onlineSession().perHour());
     }
 
     @Test

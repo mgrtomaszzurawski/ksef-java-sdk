@@ -17,6 +17,12 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensRespons
 import io.github.mgrtomaszzurawski.ksef.client.model.InitTokenAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationInit;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationList;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationTokenRefresh;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationTokens;
 import io.github.mgrtomaszzurawski.ksef.sdk.signing.SigningService;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
@@ -68,8 +74,9 @@ public final class AuthClient {
      *
      * @return challenge response containing the challenge string and timestamp
      */
-    public AuthenticationChallengeResponseRaw requestChallenge() {
-        return http.postNoBody(PATH_CHALLENGE, AuthenticationChallengeResponseRaw.class, OP_CHALLENGE);
+    public AuthenticationChallenge requestChallenge() {
+        AuthenticationChallengeResponseRaw raw = http.postNoBody(PATH_CHALLENGE, AuthenticationChallengeResponseRaw.class, OP_CHALLENGE);
+        return AuthenticationChallenge.from(raw);
     }
 
     /**
@@ -83,14 +90,14 @@ public final class AuthClient {
      * @param nipIdentifier the NIP (Polish tax ID) of the authenticating entity
      * @return authentication response with reference number and operation token
      */
-    public AuthenticationInitResponseRaw authenticateWithXades(
+    public AuthenticationInit authenticateWithXades(
             String challenge, X509Certificate certificate, PrivateKey privateKey, String nipIdentifier) {
         String authXml = buildAuthTokenRequestXml(challenge, nipIdentifier);
         String signedXml = SigningService.signXml(authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey);
         AuthenticationInitResponseRaw response = http.postXml(
                 PATH_XADES_SIGNATURE, signedXml, AuthenticationInitResponseRaw.class, OP_AUTH_XADES);
         activateSession(response);
-        return response;
+        return AuthenticationInit.from(response);
     }
 
     /**
@@ -103,7 +110,7 @@ public final class AuthClient {
      * @param ksefPublicKey the KSeF public key for encrypting the token
      * @return authentication response with reference number and operation token
      */
-    public AuthenticationInitResponseRaw authenticateWithToken(
+    public AuthenticationInit authenticateWithToken(
             AuthenticationChallengeResponseRaw challengeResponse,
             String ksefToken, String nipIdentifier, PublicKey ksefPublicKey) {
         Instant challengeTimestamp = Instant.ofEpochMilli(challengeResponse.getTimestampMs());
@@ -120,7 +127,7 @@ public final class AuthClient {
         AuthenticationInitResponseRaw response = http.postJson(
                 PATH_KSEF_TOKEN, request, AuthenticationInitResponseRaw.class, OP_AUTH_TOKEN);
         activateSession(response);
-        return response;
+        return AuthenticationInit.from(response);
     }
 
     /**
@@ -130,14 +137,14 @@ public final class AuthClient {
      *
      * @return response with access and refresh tokens
      */
-    public AuthenticationTokensResponseRaw redeemTokens() {
+    public AuthenticationTokens redeemTokens() {
         String operationToken = sessionContext.token();
         AuthenticationTokensResponseRaw response = http.postAuthenticated(
                 PATH_TOKEN_REDEEM, operationToken, AuthenticationTokensResponseRaw.class, OP_REDEEM);
         sessionContext.refreshToken(
                 response.getAccessToken().getToken(),
                 response.getAccessToken().getValidUntil());
-        return response;
+        return AuthenticationTokens.from(response);
     }
 
     /**
@@ -147,13 +154,13 @@ public final class AuthClient {
      * @param refreshToken the refresh token from {@link #redeemTokens()}
      * @return response with the new access token
      */
-    public AuthenticationTokenRefreshResponseRaw refreshToken(String refreshToken) {
+    public AuthenticationTokenRefresh refreshToken(String refreshToken) {
         AuthenticationTokenRefreshResponseRaw response = http.postAuthenticated(
                 PATH_TOKEN_REFRESH, refreshToken, AuthenticationTokenRefreshResponseRaw.class, OP_REFRESH);
         sessionContext.refreshToken(
                 response.getAccessToken().getToken(),
                 response.getAccessToken().getValidUntil());
-        return response;
+        return AuthenticationTokenRefresh.from(response);
     }
 
     /**
@@ -162,12 +169,13 @@ public final class AuthClient {
      * @param referenceNumber the reference number from authentication
      * @return status response with authentication state details
      */
-    public AuthenticationOperationStatusResponseRaw getStatus(String referenceNumber) {
+    public AuthenticationStatus getStatus(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        return http.getAuthenticated(
+        AuthenticationOperationStatusResponseRaw raw = http.getAuthenticated(
                 PATH_AUTH_STATUS + referenceNumber, token,
                 AuthenticationOperationStatusResponseRaw.class, OP_STATUS);
+        return AuthenticationStatus.from(raw);
     }
 
     /**
@@ -175,10 +183,11 @@ public final class AuthClient {
      *
      * @return list response with session items and continuation token
      */
-    public AuthenticationListResponseRaw listSessions() {
+    public AuthenticationList listSessions() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_SESSIONS, token,
+        AuthenticationListResponseRaw raw = http.getAuthenticated(PATH_SESSIONS, token,
                 AuthenticationListResponseRaw.class, OP_LIST_SESSIONS);
+        return AuthenticationList.from(raw);
     }
 
     /**

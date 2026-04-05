@@ -6,8 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -51,7 +51,7 @@ class SecurityClientTest {
         SecurityClient securityClient = ksef.security();
 
         // when
-        List<PublicKeyCertificateRaw> certs = securityClient.getPublicKeyCertificates();
+        List<PublicKeyCertificate> certs = securityClient.getPublicKeyCertificates();
 
         // then
         assertFalse(certs.isEmpty());

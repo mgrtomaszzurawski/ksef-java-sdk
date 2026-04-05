@@ -7,14 +7,14 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionInvoiceStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionInvoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionStatus;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -104,11 +104,11 @@ class SessionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        OpenOnlineSessionResponseRaw response = ksef.sessions().openOnline(new OpenOnlineSessionRequestRaw());
+        OnlineSession response = ksef.sessions().openOnline(new OpenOnlineSessionRequestRaw());
 
         // then
-        assertEquals(TEST_SESSION_REF, response.getReferenceNumber());
-        assertNotNull(response.getValidUntil());
+        assertEquals(TEST_SESSION_REF, response.referenceNumber());
+        assertNotNull(response.validUntil());
     }
 
     @Test
@@ -124,11 +124,11 @@ class SessionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        SendInvoiceResponseRaw response = ksef.sessions().sendInvoice(
+        SendInvoiceResult response = ksef.sessions().sendInvoice(
                 TEST_SESSION_REF, new SendInvoiceRequestRaw());
 
         // then
-        assertEquals(TEST_INVOICE_REF, response.getReferenceNumber());
+        assertEquals(TEST_INVOICE_REF, response.referenceNumber());
     }
 
     @Test
@@ -162,11 +162,11 @@ class SessionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        SessionStatusResponseRaw response = ksef.sessions().getStatus(TEST_SESSION_REF);
+        SessionStatus response = ksef.sessions().getStatus(TEST_SESSION_REF);
 
         // then
-        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
-        assertNotNull(response.getDateCreated());
+        assertEquals(KSEF_STATUS_OK, response.status().code());
+        assertNotNull(response.dateCreated());
     }
 
     @Test
@@ -182,11 +182,11 @@ class SessionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        SessionInvoicesResponseRaw response = ksef.sessions().getInvoices(TEST_SESSION_REF);
+        SessionInvoices response = ksef.sessions().getInvoices(TEST_SESSION_REF);
 
         // then
-        assertEquals(1, response.getInvoices().size());
-        assertEquals(TEST_INVOICE_REF, response.getInvoices().get(0).getReferenceNumber());
+        assertEquals(1, response.invoices().size());
+        assertEquals(TEST_INVOICE_REF, response.invoices().get(0).referenceNumber());
     }
 
     @Test
@@ -202,11 +202,11 @@ class SessionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        SessionInvoiceStatusResponseRaw response = ksef.sessions()
+        SessionInvoiceStatus response = ksef.sessions()
                 .getInvoiceStatus(TEST_SESSION_REF, TEST_INVOICE_REF);
 
         // then
-        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
+        assertEquals(KSEF_STATUS_OK, response.status().code());
     }
 
     @Test
