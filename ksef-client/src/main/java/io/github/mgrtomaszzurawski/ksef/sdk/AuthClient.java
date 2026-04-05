@@ -70,7 +70,7 @@ public final class AuthClient {
      * Request a challenge for authentication.
      * The challenge must be signed with XAdES and submitted via
      * {@link #authenticateWithXades(String, X509Certificate, PrivateKey, String)} or
-     * encrypted and submitted via {@link #authenticateWithToken(AuthenticationChallengeResponseRaw, String, String, PublicKey)}.
+     * encrypted and submitted via {@link #authenticateWithToken(AuthenticationChallenge, String, String, PublicKey)}.
      *
      * @return challenge response containing the challenge string and timestamp
      */
@@ -104,21 +104,21 @@ public final class AuthClient {
      * Authenticate using KSeF token flow.
      * Encrypts the token with the KSeF public key and submits it with the challenge.
      *
-     * @param challengeResponse the full challenge response from {@link #requestChallenge()}
+     * @param challenge the challenge response from {@link #requestChallenge()}
      * @param ksefToken the pre-generated KSeF authorization token
      * @param nipIdentifier the NIP of the authenticating entity
      * @param ksefPublicKey the KSeF public key for encrypting the token
      * @return authentication response with reference number and operation token
      */
     public AuthenticationInit authenticateWithToken(
-            AuthenticationChallengeResponseRaw challengeResponse,
+            AuthenticationChallenge challenge,
             String ksefToken, String nipIdentifier, PublicKey ksefPublicKey) {
-        Instant challengeTimestamp = Instant.ofEpochMilli(challengeResponse.getTimestampMs());
+        Instant challengeTimestamp = Instant.ofEpochMilli(challenge.timestampMs());
         byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, challengeTimestamp, ksefPublicKey);
         AllowedIpsRaw allowedIps = new AllowedIpsRaw()
-                .addIp4AddressesItem(challengeResponse.getClientIp());
+                .addIp4AddressesItem(challenge.clientIp());
         InitTokenAuthenticationRequestRaw request = new InitTokenAuthenticationRequestRaw()
-                .challenge(challengeResponse.getChallenge())
+                .challenge(challenge.challenge())
                 .contextIdentifier(new AuthenticationContextIdentifierRaw()
                         .type(AuthenticationContextIdentifierTypeRaw.NIP)
                         .value(nipIdentifier))

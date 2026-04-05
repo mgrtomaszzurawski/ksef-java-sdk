@@ -20,9 +20,9 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationInit;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationTokens;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
@@ -72,7 +72,7 @@ public final class AuthRunner implements DemoRunner {
         }
 
         // 1. Request challenge (for token-based auth — the main session)
-        AuthenticationChallengeResponseRaw challengeResponse = runChallenge(context, results);
+        AuthenticationChallenge challengeResponse = runChallenge(context, results);
         if (challengeResponse == null) {
             return results;
         }
@@ -112,14 +112,14 @@ public final class AuthRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             // Get a fresh challenge for XAdES
-            AuthenticationChallengeResponseRaw challenge = context.client().auth().requestChallenge();
-            LOG.info("[{}] XAdES challenge: {}", NAME, challenge.getChallenge());
+            AuthenticationChallenge challenge = context.client().auth().requestChallenge();
+            LOG.info("[{}] XAdES challenge: {}", NAME, challenge.challenge());
 
             // Sign and authenticate
-            AuthenticationInitResponseRaw response = context.client().auth()
-                    .authenticateWithXades(challenge.getChallenge(),
+            AuthenticationInit response = context.client().auth()
+                    .authenticateWithXades(challenge.challenge(),
                             context.certificate(), context.privateKey(), context.nipIdentifier());
-            String refNum = response.getReferenceNumber();
+            String refNum = response.referenceNumber();
             LOG.info("[{}] XAdES authenticated, ref={}", NAME, refNum);
 
             // Poll until auth is ready, then redeem + terminate
@@ -137,13 +137,13 @@ public final class AuthRunner implements DemoRunner {
         }
     }
 
-    private AuthenticationChallengeResponseRaw runChallenge(DemoContext context, List<RunResult> results) {
+    private AuthenticationChallenge runChallenge(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            AuthenticationChallengeResponseRaw response = context.client().auth().requestChallenge();
-            String challenge = response.getChallenge();
+            AuthenticationChallenge response = context.client().auth().requestChallenge();
+            String challenge = response.challenge();
             LOG.info("[{}] challenge received", NAME);
-            LOG.debug("[{}] challenge: {}, clientIp: {}", NAME, challenge, response.getClientIp());
+            LOG.debug("[{}] challenge: {}, clientIp: {}", NAME, challenge, response.clientIp());
             results.add(RunResult.ok(NAME, OP_CHALLENGE, elapsed(start), "challenge=" + challenge));
             return response;
         } catch (Exception exception) {
@@ -153,14 +153,14 @@ public final class AuthRunner implements DemoRunner {
     }
 
     private String runAuthenticateWithToken(DemoContext context,
-                                            AuthenticationChallengeResponseRaw challengeResponse,
+                                            AuthenticationChallenge challengeResponse,
                                             List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            AuthenticationInitResponseRaw response = context.client().auth()
+            AuthenticationInit response = context.client().auth()
                     .authenticateWithToken(challengeResponse, context.ksefToken(),
                             context.nipIdentifier(), context.ksefPublicKey());
-            String refNum = response.getReferenceNumber();
+            String refNum = response.referenceNumber();
             LOG.info("[{}] authenticated, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_AUTH_TOKEN, elapsed(start), "ref=" + refNum));
             return refNum;
@@ -176,7 +176,7 @@ public final class AuthRunner implements DemoRunner {
         try {
             while (elapsed(start) < POLL_TIMEOUT_MS) {
                 var response = context.client().auth().getStatus(referenceNumber);
-                Integer code = response.getStatus() != null ? response.getStatus().getCode() : null;
+                Integer code = response.status() != null ? response.status().code() : null;
                 LOG.info("[{}] auth status for {}: code={}", NAME, referenceNumber, code);
                 if (code != null && code == AUTH_STATUS_OK) {
                     results.add(RunResult.ok(NAME, OP_POLL_STATUS, elapsed(start),
@@ -202,12 +202,12 @@ public final class AuthRunner implements DemoRunner {
     private String runRedeemTokens(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            AuthenticationTokensResponseRaw response = context.client().auth().redeemTokens();
-            String accessValid = response.getAccessToken().getValidUntil() != null
-                    ? response.getAccessToken().getValidUntil().toString() : "unknown";
+            AuthenticationTokens response = context.client().auth().redeemTokens();
+            String accessValid = response.accessToken().validUntil() != null
+                    ? response.accessToken().validUntil().toString() : "unknown";
             LOG.info("[{}] tokens redeemed, access valid until {}", NAME, accessValid);
             results.add(RunResult.ok(NAME, OP_REDEEM, elapsed(start), "validUntil=" + accessValid));
-            return response.getRefreshToken() != null ? response.getRefreshToken().getToken() : null;
+            return response.refreshToken() != null ? response.refreshToken().token() : null;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_REDEEM, elapsed(start), errorMessage(exception)));
             return null;

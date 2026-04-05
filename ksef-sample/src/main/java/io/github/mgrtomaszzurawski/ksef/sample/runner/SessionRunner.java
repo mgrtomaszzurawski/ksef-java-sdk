@@ -27,10 +27,10 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
 import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
@@ -183,7 +183,7 @@ public final class SessionRunner implements DemoRunner {
         while (elapsed(start) < POLL_TIMEOUT_MS) {
             var status = context.client().auth().getStatus(
                     context.client().sessionContext().referenceNumber());
-            Integer code = status.getStatus() != null ? status.getStatus().getCode() : null;
+            Integer code = status.status() != null ? status.status().code() : null;
             if (code != null && code == SESSION_STATUS_OK) {
                 break;
             }
@@ -211,8 +211,8 @@ public final class SessionRunner implements DemoRunner {
                             .encryptedSymmetricKey(encryptedKey)
                             .initializationVector(initVector));
 
-            OpenOnlineSessionResponseRaw response = context.client().sessions().openOnline(request);
-            String refNum = response.getReferenceNumber();
+            OnlineSession response = context.client().sessions().openOnline(request);
+            String refNum = response.referenceNumber();
             LOG.info("[{}] opened online session, ref={}", NAME, refNum);
             context.setSessionReferenceNumber(refNum);
             context.state().setSessionReferenceNumber(refNum);
@@ -250,9 +250,9 @@ public final class SessionRunner implements DemoRunner {
                         .encryptedInvoiceSize((long) encryptedInvoice.length)
                         .encryptedInvoiceContent(encryptedInvoice);
 
-                SendInvoiceResponseRaw response = context.client().sessions()
+                SendInvoiceResult response = context.client().sessions()
                         .sendInvoice(sessionRef, request);
-                String refNum = response.getReferenceNumber();
+                String refNum = response.referenceNumber();
                 LOG.info("[{}] sent invoice, ref={} (attempt {})", NAME, refNum, attempt);
                 context.setInvoiceReferenceNumber(refNum);
                 results.add(RunResult.ok(NAME, OP_SEND_INVOICE, elapsed(start), "ref=" + refNum));
@@ -282,7 +282,7 @@ public final class SessionRunner implements DemoRunner {
         try {
             var response = context.client().sessions().getInvoiceStatus(sessionRef, invoiceRef);
             LOG.info("[{}] invoice status: code={}", NAME,
-                    response.getStatus() != null ? response.getStatus().getCode() : "null");
+                    response.status() != null ? response.status().code() : "null");
             results.add(RunResult.ok(NAME, OP_GET_INVOICE_STATUS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_INVOICE_STATUS, elapsed(start), errorMessage(exception)));
@@ -294,7 +294,7 @@ public final class SessionRunner implements DemoRunner {
         try {
             var response = context.client().sessions().getStatus(sessionRef);
             LOG.info("[{}] session status: code={}", NAME,
-                    response.getStatus() != null ? response.getStatus().getCode() : "null");
+                    response.status() != null ? response.status().code() : "null");
             results.add(RunResult.ok(NAME, OP_GET_STATUS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_STATUS, elapsed(start), errorMessage(exception)));
@@ -305,7 +305,7 @@ public final class SessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().sessions().getInvoices(sessionRef);
-            int count = response.getInvoices() != null ? response.getInvoices().size() : 0;
+            int count = response.invoices() != null ? response.invoices().size() : 0;
             LOG.info("[{}] session invoices: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_GET_INVOICES, elapsed(start), count + " invoices"));
         } catch (Exception exception) {
@@ -317,7 +317,7 @@ public final class SessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().sessions().getFailedInvoices(sessionRef);
-            int count = response.getInvoices() != null ? response.getInvoices().size() : 0;
+            int count = response.invoices() != null ? response.invoices().size() : 0;
             LOG.info("[{}] failed invoices: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_GET_FAILED, elapsed(start), count + " failed"));
         } catch (Exception exception) {
@@ -407,8 +407,8 @@ public final class SessionRunner implements DemoRunner {
         int delay = POLL_INITIAL_DELAY_MS;
         try {
             while (elapsed(start) < POLL_TIMEOUT_MS) {
-                SessionStatusResponseRaw response = context.client().sessions().getStatus(sessionRef);
-                Integer code = response.getStatus() != null ? response.getStatus().getCode() : null;
+                SessionStatus response = context.client().sessions().getStatus(sessionRef);
+                Integer code = response.status() != null ? response.status().code() : null;
                 LOG.info("[{}] post-close session status: code={}", NAME, code);
                 if (code != null && code == SESSION_STATUS_OK) {
                     results.add(RunResult.ok(NAME, OP_POLL_SESSION, elapsed(start),

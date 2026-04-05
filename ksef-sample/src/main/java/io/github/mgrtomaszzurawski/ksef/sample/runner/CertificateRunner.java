@@ -20,15 +20,15 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationInit;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -81,9 +81,9 @@ public final class CertificateRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().certificates().getLimits();
-            LOG.info("[{}] certificate limits: canRequest={}", NAME, response.getCanRequest());
+            LOG.info("[{}] certificate limits: canRequest={}", NAME, response.canRequest());
             results.add(RunResult.ok(NAME, OP_GET_LIMITS, elapsed(start),
-                    "canRequest=" + response.getCanRequest()));
+                    "canRequest=" + response.canRequest()));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_LIMITS, elapsed(start), errorMessage(exception)));
         }
@@ -110,16 +110,16 @@ public final class CertificateRunner implements DemoRunner {
     private void runWithXadesSession(DemoContext context, List<RunResult> results) {
         try {
             // Authenticate with XAdES
-            AuthenticationChallengeResponseRaw challenge = context.client().auth().requestChallenge();
-            AuthenticationInitResponseRaw authResp = context.client().auth()
-                    .authenticateWithXades(challenge.getChallenge(),
+            AuthenticationChallenge challenge = context.client().auth().requestChallenge();
+            AuthenticationInit authResp = context.client().auth()
+                    .authenticateWithXades(challenge.challenge(),
                             context.certificate(), context.privateKey(), context.nipIdentifier());
-            pollUntilReady(context, authResp.getReferenceNumber());
+            pollUntilReady(context, authResp.referenceNumber());
             context.client().auth().redeemTokens();
             LOG.info("[{}] switched to XAdES session for cert ops", NAME);
 
             // Run cert ops under XAdES session
-            CertificateEnrollmentDataResponseRaw enrollmentData = runGetEnrollmentData(context, results);
+            CertificateEnrollmentData enrollmentData = runGetEnrollmentData(context, results);
             runQuery(context, results);
             runEnrollAndRevoke(context, enrollmentData, results);
 
@@ -142,18 +142,18 @@ public final class CertificateRunner implements DemoRunner {
         }
     }
 
-    private CertificateEnrollmentDataResponseRaw runGetEnrollmentData(
+    private CertificateEnrollmentData runGetEnrollmentData(
             DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().certificates().getEnrollmentData();
             LOG.info("[{}] enrollment data retrieved", NAME);
             LOG.debug("[{}] enrollment data: cn={}, c={}, gn={}, sn={}, serial={}, o={}, oid={}",
-                    NAME, response.getCommonName(), response.getCountryName(),
-                    response.getGivenName(), response.getSurname(), response.getSerialNumber(),
-                    response.getOrganizationName(), response.getOrganizationIdentifier());
+                    NAME, response.commonName(), response.countryName(),
+                    response.givenName(), response.surname(), response.serialNumber(),
+                    response.organizationName(), response.organizationIdentifier());
             results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
-                    "cn=" + response.getCommonName()));
+                    "cn=" + response.commonName()));
             return response;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start), errorMessage(exception)));
@@ -162,7 +162,7 @@ public final class CertificateRunner implements DemoRunner {
     }
 
     private void runEnrollAndRevoke(DemoContext context,
-                                    CertificateEnrollmentDataResponseRaw enrollmentData,
+                                    CertificateEnrollmentData enrollmentData,
                                     List<RunResult> results) {
         if (enrollmentData == null) {
             results.add(RunResult.skip(NAME, OP_ENROLL, "no enrollment data"));
@@ -180,8 +180,8 @@ public final class CertificateRunner implements DemoRunner {
                     .certificateName(CERT_NAME)
                     .certificateType(KsefCertificateTypeRaw.AUTHENTICATION)
                     .csr(csrBytes);
-            EnrollCertificateResponseRaw response = context.client().certificates().enroll(request);
-            enrollmentRef = response.getReferenceNumber();
+            EnrollCertificateResult response = context.client().certificates().enroll(request);
+            enrollmentRef = response.referenceNumber();
             LOG.info("[{}] enrolled certificate, ref={}", NAME, enrollmentRef);
             results.add(RunResult.ok(NAME, OP_ENROLL, elapsed(start), "ref=" + enrollmentRef));
         } catch (Exception exception) {
@@ -193,11 +193,11 @@ public final class CertificateRunner implements DemoRunner {
         start = System.currentTimeMillis();
         String serialNumber = null;
         try {
-            CertificateEnrollmentStatusResponseRaw status =
+            CertificateEnrollmentStatus status =
                     context.client().certificates().getEnrollmentStatus(enrollmentRef);
             LOG.info("[{}] enrollment status: code={}", NAME,
-                    status.getStatus() != null ? status.getStatus().getCode() : "null");
-            serialNumber = status.getCertificateSerialNumber();
+                    status.status() != null ? status.status().code() : "null");
+            serialNumber = status.certificateSerialNumber();
             results.add(RunResult.ok(NAME, OP_ENROLLMENT_STATUS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_ENROLLMENT_STATUS, elapsed(start), errorMessage(exception)));
@@ -219,28 +219,28 @@ public final class CertificateRunner implements DemoRunner {
         }
     }
 
-    private static byte[] generateCsr(CertificateEnrollmentDataResponseRaw data) throws Exception {
+    private static byte[] generateCsr(CertificateEnrollmentData data) throws Exception {
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
         keyPairGen.initialize(RSA_KEY_SIZE);
         KeyPair keyPair = keyPairGen.generateKeyPair();
 
         StringBuilder subjectDn = new StringBuilder();
-        subjectDn.append("CN=").append(data.getCommonName());
-        subjectDn.append(",C=").append(data.getCountryName());
-        if (data.getGivenName() != null) {
-            subjectDn.append(",GIVENNAME=").append(data.getGivenName());
+        subjectDn.append("CN=").append(data.commonName());
+        subjectDn.append(",C=").append(data.countryName());
+        if (data.givenName() != null) {
+            subjectDn.append(",GIVENNAME=").append(data.givenName());
         }
-        if (data.getSurname() != null) {
-            subjectDn.append(",SURNAME=").append(data.getSurname());
+        if (data.surname() != null) {
+            subjectDn.append(",SURNAME=").append(data.surname());
         }
-        if (data.getSerialNumber() != null) {
-            subjectDn.append(",SERIALNUMBER=").append(data.getSerialNumber());
+        if (data.serialNumber() != null) {
+            subjectDn.append(",SERIALNUMBER=").append(data.serialNumber());
         }
-        if (data.getOrganizationName() != null) {
-            subjectDn.append(",O=").append(data.getOrganizationName());
+        if (data.organizationName() != null) {
+            subjectDn.append(",O=").append(data.organizationName());
         }
-        if (data.getOrganizationIdentifier() != null) {
-            subjectDn.append(",2.5.4.97=").append(data.getOrganizationIdentifier());
+        if (data.organizationIdentifier() != null) {
+            subjectDn.append(",2.5.4.97=").append(data.organizationIdentifier());
         }
         LOG.info("[{}] CSR subject DN: {}", NAME, subjectDn);
 
@@ -257,7 +257,7 @@ public final class CertificateRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().certificates().query(new QueryCertificatesRequestRaw());
-            int count = response.getCertificates() != null ? response.getCertificates().size() : 0;
+            int count = response.certificates() != null ? response.certificates().size() : 0;
             LOG.info("[{}] queried certificates: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY, elapsed(start), count + " certificates"));
         } catch (Exception exception) {
@@ -270,7 +270,7 @@ public final class CertificateRunner implements DemoRunner {
         long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
         while (System.currentTimeMillis() < deadline) {
             var response = context.client().auth().getStatus(referenceNumber);
-            Integer code = response.getStatus() != null ? response.getStatus().getCode() : null;
+            Integer code = response.status() != null ? response.status().code() : null;
             if (code != null && code == AUTH_STATUS_OK) {
                 return;
             }
