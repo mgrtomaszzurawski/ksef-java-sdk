@@ -74,17 +74,28 @@ public final class OnlineSessionBuilder {
     }
 
     /**
-     * Build the session opening request. Generates AES key and encrypts it
-     * with the KSeF public key automatically.
-     *
-     * @return the request ready to pass to {@code SessionClient.openOnline()}
+     * Result of building a session request, containing the request and the
+     * AES key/IV needed for encrypting invoices within the session.
      */
-    public OpenOnlineSessionRequestRaw build() {
+    public record SessionOpenResult(
+            OpenOnlineSessionRequestRaw request,
+            byte[] aesKey,
+            byte[] initVector) {
+    }
+
+    /**
+     * Build the session opening request. Generates AES key and encrypts it
+     * with the KSeF public key automatically. Returns both the request and
+     * the AES key/IV needed for encrypting invoices within this session.
+     *
+     * @return result containing the request and session encryption keys
+     */
+    public SessionOpenResult build() {
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, ksefPublicKey);
 
-        return new OpenOnlineSessionRequestRaw()
+        OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw()
                 .formCode(new FormCodeRaw()
                         .systemCode(systemCode)
                         .schemaVersion(schemaVersion)
@@ -92,5 +103,7 @@ public final class OnlineSessionBuilder {
                 .encryption(new EncryptionInfoRaw()
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector));
+
+        return new SessionOpenResult(request, aesKey, initVector);
     }
 }

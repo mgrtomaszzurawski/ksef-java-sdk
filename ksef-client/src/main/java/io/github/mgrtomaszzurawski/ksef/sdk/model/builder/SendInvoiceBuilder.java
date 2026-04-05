@@ -9,19 +9,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.util.Objects;
 
 /**
- * Builder for sending an invoice within a session.
+ * Builder for sending an invoice within an open session.
  * <p>
- * Handles AES encryption of invoice content and SHA-256 hashing automatically.
- * The symmetric key encryption is handled at session level (see {@link OnlineSessionBuilder}),
- * not per-invoice — the session's AES key is reused for all invoices within it.
+ * The invoice must be encrypted with the SAME AES key that was used to open the session.
+ * This builder handles AES encryption and SHA-256 hashing automatically.
  * <p>
  * Usage:
  * <pre>{@code
- * var request = SendInvoiceBuilder.create(invoiceXmlBytes, encryptionPublicKey)
+ * var request = SendInvoiceBuilder.create(invoiceXmlBytes, sessionAesKey, sessionIv)
  *     .build();
  * }</pre>
  */
@@ -30,22 +28,25 @@ public final class SendInvoiceBuilder {
     private static final String SHA_256_ALGORITHM = "SHA-256";
 
     private final byte[] invoiceContent;
-    private final PublicKey ksefPublicKey;
+    private final byte[] aesKey;
+    private final byte[] initVector;
     private boolean offlineMode;
 
-    private SendInvoiceBuilder(byte[] invoiceContent, PublicKey ksefPublicKey) {
+    private SendInvoiceBuilder(byte[] invoiceContent, byte[] aesKey, byte[] initVector) {
         this.invoiceContent = Objects.requireNonNull(invoiceContent, "invoiceContent is required");
-        this.ksefPublicKey = Objects.requireNonNull(ksefPublicKey, "ksefPublicKey is required");
+        this.aesKey = Objects.requireNonNull(aesKey, "aesKey is required");
+        this.initVector = Objects.requireNonNull(initVector, "initVector is required");
     }
 
     /**
      * Create a builder for sending an invoice.
      *
      * @param invoiceXml raw invoice XML bytes
-     * @param ksefPublicKey the KSeF public key (SymmetricKeyEncryption usage)
+     * @param aesKey the AES key used when opening the session
+     * @param initVector the initialization vector used when opening the session
      */
-    public static SendInvoiceBuilder create(byte[] invoiceXml, PublicKey ksefPublicKey) {
-        return new SendInvoiceBuilder(invoiceXml, ksefPublicKey);
+    public static SendInvoiceBuilder create(byte[] invoiceXml, byte[] aesKey, byte[] initVector) {
+        return new SendInvoiceBuilder(invoiceXml, aesKey, initVector);
     }
 
     /**
@@ -57,15 +58,12 @@ public final class SendInvoiceBuilder {
     }
 
     /**
-     * Build the send invoice request. Encrypts the invoice content with AES
-     * and computes SHA-256 hashes automatically. The AES key is encrypted
-     * with the session's RSA public key at session open time.
+     * Build the send invoice request. Encrypts the invoice content with the
+     * session's AES key and computes SHA-256 hashes automatically.
      *
      * @return the request ready to pass to {@code SessionClient.sendInvoice()}
      */
     public SendInvoiceRequestRaw build() {
-        byte[] aesKey = CryptoService.generateAesKey();
-        byte[] initVector = CryptoService.generateIv();
         byte[] encryptedContent = CryptoService.encryptAes(invoiceContent, aesKey, initVector);
 
         byte[] invoiceHash = computeSha256(invoiceContent);
