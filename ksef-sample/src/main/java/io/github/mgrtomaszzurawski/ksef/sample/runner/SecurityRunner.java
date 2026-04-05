@@ -20,8 +20,8 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateUsageRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
@@ -43,8 +43,8 @@ public final class SecurityRunner implements DemoRunner {
     private static final Logger LOG = LoggerFactory.getLogger(SecurityRunner.class);
     private static final String NAME = "security";
     private static final String OP_GET_CERTS = "getPublicKeyCertificates";
-    private static final PublicKeyCertificateUsageRaw USAGE_TOKEN_ENCRYPTION =
-            PublicKeyCertificateUsageRaw.KSEF_TOKEN_ENCRYPTION;
+    private static final PublicKeyCertificateUsage USAGE_TOKEN_ENCRYPTION =
+            PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION;
     private static final String CERT_TYPE = "X.509";
     private static final String ERR_NO_ENCRYPTION_CERT = "No certificate with usage KsefTokenEncryption found";
 
@@ -56,15 +56,15 @@ public final class SecurityRunner implements DemoRunner {
         List<RunResult> results = new ArrayList<>();
         long start = System.currentTimeMillis();
         try {
-            List<PublicKeyCertificateRaw> certs = context.client().security().getPublicKeyCertificates();
+            List<PublicKeyCertificate> certs = context.client().security().getPublicKeyCertificates();
             LOG.info("[{}] fetched {} certificates", NAME, certs.size());
 
             PublicKey encryptionKey = null;
-            for (PublicKeyCertificateRaw cert : certs) {
+            for (PublicKeyCertificate cert : certs) {
                 LOG.info("[{}] cert usage={}, valid={} to {}", NAME,
-                        cert.getUsage(), cert.getValidFrom(), cert.getValidTo());
-                if (cert.getUsage() != null && cert.getUsage().contains(USAGE_TOKEN_ENCRYPTION)) {
-                    encryptionKey = extractPublicKey(cert.getCertificate());
+                        cert.usage(), cert.validFrom(), cert.validTo());
+                if (cert.usage() != null && cert.usage().contains(USAGE_TOKEN_ENCRYPTION)) {
+                    encryptionKey = extractPublicKey(cert.certificate());
                 }
             }
 
