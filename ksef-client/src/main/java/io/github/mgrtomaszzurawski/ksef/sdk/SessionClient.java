@@ -14,6 +14,12 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusRespons
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.BatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionInvoiceStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionInvoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionStatus;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -63,10 +69,11 @@ public final class SessionClient {
      * @param request session opening parameters (form code, encryption info)
      * @return response with session reference number and validity period
      */
-    public OpenOnlineSessionResponseRaw openOnline(OpenOnlineSessionRequestRaw request) {
+    public OnlineSession openOnline(OpenOnlineSessionRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_ONLINE, request, token,
+        OpenOnlineSessionResponseRaw raw = http.postJsonAuthenticated(PATH_ONLINE, request, token,
                 OpenOnlineSessionResponseRaw.class, OP_OPEN_ONLINE);
+        return OnlineSession.from(raw);
     }
 
     /**
@@ -76,12 +83,13 @@ public final class SessionClient {
      * @param request the invoice payload (encrypted content, hashes, sizes)
      * @return response with the invoice reference number
      */
-    public SendInvoiceResponseRaw sendInvoice(String referenceNumber, SendInvoiceRequestRaw request) {
+    public SendInvoiceResult sendInvoice(String referenceNumber, SendInvoiceRequestRaw request) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = PATH_ONLINE + "/" + referenceNumber + SEGMENT_INVOICES;
-        return http.postJsonAuthenticated(path, request, token,
+        SendInvoiceResponseRaw raw = http.postJsonAuthenticated(path, request, token,
                 SendInvoiceResponseRaw.class, OP_SEND_INVOICE);
+        return SendInvoiceResult.from(raw);
     }
 
     /**
@@ -104,10 +112,11 @@ public final class SessionClient {
      * @param request batch session opening parameters
      * @return response with session reference number
      */
-    public OpenBatchSessionResponseRaw openBatch(OpenBatchSessionRequestRaw request) {
+    public BatchSession openBatch(OpenBatchSessionRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_BATCH, request, token,
+        OpenBatchSessionResponseRaw raw = http.postJsonAuthenticated(PATH_BATCH, request, token,
                 OpenBatchSessionResponseRaw.class, OP_OPEN_BATCH);
+        return BatchSession.from(raw);
     }
 
     /**
@@ -130,11 +139,12 @@ public final class SessionClient {
      * @param referenceNumber the session reference number
      * @return session status with invoice counts, UPO availability, etc.
      */
-    public SessionStatusResponseRaw getStatus(String referenceNumber) {
+    public SessionStatus getStatus(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_SESSION_STATUS + referenceNumber, token,
+        SessionStatusResponseRaw raw = http.getAuthenticated(PATH_SESSION_STATUS + referenceNumber, token,
                 SessionStatusResponseRaw.class, OP_GET_STATUS);
+        return SessionStatus.from(raw);
     }
 
     /**
@@ -143,11 +153,12 @@ public final class SessionClient {
      * @param referenceNumber the session reference number
      * @return list of invoice metadata
      */
-    public SessionInvoicesResponseRaw getInvoices(String referenceNumber) {
+    public SessionInvoices getInvoices(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = PATH_SESSION_STATUS + referenceNumber + SEGMENT_INVOICES;
-        return http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES);
+        SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES);
+        return SessionInvoices.from(raw);
     }
 
     /**
@@ -157,12 +168,13 @@ public final class SessionClient {
      * @param invoiceReferenceNumber the invoice reference number
      * @return invoice processing status
      */
-    public SessionInvoiceStatusResponseRaw getInvoiceStatus(String referenceNumber, String invoiceReferenceNumber) {
+    public SessionInvoiceStatus getInvoiceStatus(String referenceNumber, String invoiceReferenceNumber) {
         requireSafePathSegment(referenceNumber);
         requireSafePathSegment(invoiceReferenceNumber);
         String token = sessionContext.token();
         String path = PATH_SESSION_STATUS + referenceNumber + SEGMENT_INVOICES + "/" + invoiceReferenceNumber;
-        return http.getAuthenticated(path, token, SessionInvoiceStatusResponseRaw.class, OP_GET_INVOICE_STATUS);
+        SessionInvoiceStatusResponseRaw raw = http.getAuthenticated(path, token, SessionInvoiceStatusResponseRaw.class, OP_GET_INVOICE_STATUS);
+        return SessionInvoiceStatus.from(raw);
     }
 
     /**
@@ -171,11 +183,12 @@ public final class SessionClient {
      * @param referenceNumber the session reference number
      * @return list of failed invoice metadata
      */
-    public SessionInvoicesResponseRaw getFailedInvoices(String referenceNumber) {
+    public SessionInvoices getFailedInvoices(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = PATH_SESSION_STATUS + referenceNumber + SEGMENT_FAILED;
-        return http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
+        SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
+        return SessionInvoices.from(raw);
     }
 
     // --- UPO retrieval ---

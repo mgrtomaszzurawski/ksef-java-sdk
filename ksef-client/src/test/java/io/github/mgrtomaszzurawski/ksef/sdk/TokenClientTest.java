@@ -7,10 +7,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenList;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -75,11 +75,11 @@ class TokenClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        GenerateTokenResponseRaw response = ksef.tokens().generate(new GenerateTokenRequestRaw());
+        GenerateTokenResult response = ksef.tokens().generate(new GenerateTokenRequestRaw());
 
         // then
-        assertEquals(TEST_TOKEN_REF, response.getReferenceNumber());
-        assertEquals(TEST_GENERATED_TOKEN, response.getToken());
+        assertEquals(TEST_TOKEN_REF, response.referenceNumber());
+        assertEquals(TEST_GENERATED_TOKEN, response.token());
     }
 
     @Test
@@ -95,12 +95,12 @@ class TokenClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        QueryTokensResponseRaw response = ksef.tokens().list();
+        TokenList response = ksef.tokens().list();
 
         // then
-        assertNotNull(response.getTokens());
-        assertEquals(1, response.getTokens().size());
-        assertEquals(TEST_TOKEN_REF, response.getTokens().get(0).getReferenceNumber());
+        assertNotNull(response.tokens());
+        assertEquals(1, response.tokens().size());
+        assertEquals(TEST_TOKEN_REF, response.tokens().get(0).referenceNumber());
     }
 
     @Test
@@ -116,11 +116,11 @@ class TokenClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        TokenStatusResponseRaw response = ksef.tokens().getStatus(TEST_TOKEN_REF);
+        TokenDetail response = ksef.tokens().getStatus(TEST_TOKEN_REF);
 
         // then
-        assertEquals(TEST_TOKEN_REF, response.getReferenceNumber());
-        assertNotNull(response.getDateCreated());
+        assertEquals(TEST_TOKEN_REF, response.referenceNumber());
+        assertNotNull(response.dateCreated());
     }
 
     @Test

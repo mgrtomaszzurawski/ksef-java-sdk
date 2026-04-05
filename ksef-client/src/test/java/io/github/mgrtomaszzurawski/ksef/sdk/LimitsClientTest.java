@@ -6,9 +6,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.ContextLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SubjectLimits;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -54,11 +54,11 @@ class LimitsClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        EffectiveContextLimitsRaw response = ksef.limits().getContextLimits();
+        ContextLimits response = ksef.limits().getContextLimits();
 
         // then
-        assertNotNull(response.getOnlineSession());
-        assertNotNull(response.getBatchSession());
+        assertNotNull(response.onlineSession());
+        assertNotNull(response.batchSession());
     }
 
     @Test
@@ -74,7 +74,7 @@ class LimitsClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        EffectiveSubjectLimitsRaw response = ksef.limits().getSubjectLimits();
+        SubjectLimits response = ksef.limits().getSubjectLimits();
 
         // then
         assertNotNull(response);

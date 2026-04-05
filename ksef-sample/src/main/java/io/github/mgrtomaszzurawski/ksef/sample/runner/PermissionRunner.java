@@ -20,8 +20,8 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonDetailsRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionTypeRaw;
@@ -107,8 +107,8 @@ public final class PermissionRunner implements DemoRunner {
                             .personById(new PersonDetailsRaw()
                                     .firstName(TEST_PERSON_FIRST_NAME)
                                     .lastName(TEST_PERSON_LAST_NAME)));
-            PermissionsOperationResponseRaw response = context.client().permissions().grantPerson(request);
-            String refNum = response.getReferenceNumber();
+            PermissionOperationResult response = context.client().permissions().grantPerson(request);
+            String refNum = response.referenceNumber();
             LOG.info("[{}] granted person permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_PERSON, elapsed(start), "ref=" + refNum));
             return refNum;
@@ -123,7 +123,7 @@ public final class PermissionRunner implements DemoRunner {
         try {
             var response = context.client().permissions().getOperationStatus(referenceNumber);
             LOG.info("[{}] operation status: code={}", NAME,
-                    response.getStatus() != null ? response.getStatus().getCode() : "null");
+                    response.status() != null ? response.status().code() : "null");
             results.add(RunResult.ok(NAME, OP_GET_OP_STATUS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_OP_STATUS, elapsed(start), errorMessage(exception)));
@@ -134,7 +134,7 @@ public final class PermissionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().permissions().queryPersonal(new PersonalPermissionsQueryRequestRaw());
-            int count = response.getPermissions() != null ? response.getPermissions().size() : 0;
+            int count = response.permissions() != null ? response.permissions().size() : 0;
             LOG.info("[{}] personal permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_PERSONAL, elapsed(start), count + " permissions"));
         } catch (Exception exception) {
@@ -146,7 +146,7 @@ public final class PermissionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().permissions().queryEntityRoles();
-            int count = response.getRoles() != null ? response.getRoles().size() : 0;
+            int count = response.roles() != null ? response.roles().size() : 0;
             LOG.info("[{}] entity roles: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_ENTITY_ROLES, elapsed(start), count + " roles"));
         } catch (Exception exception) {
@@ -158,7 +158,7 @@ public final class PermissionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().permissions().getAttachmentStatus();
-            LOG.info("[{}] attachment allowed: {}", NAME, response.getIsAttachmentAllowed());
+            LOG.info("[{}] attachment allowed: {}", NAME, response.attachmentAllowed());
             results.add(RunResult.ok(NAME, OP_GET_ATTACHMENT, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_ATTACHMENT, elapsed(start), errorMessage(exception)));

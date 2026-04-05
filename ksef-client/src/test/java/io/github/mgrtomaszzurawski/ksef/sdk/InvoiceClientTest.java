@@ -6,13 +6,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -25,7 +25,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @WireMockTest
@@ -113,12 +113,12 @@ class InvoiceClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        QueryInvoicesMetadataResponseRaw response = ksef.invoices()
+        InvoiceMetadataResult response = ksef.invoices()
                 .queryMetadata(new InvoiceQueryFiltersRaw());
 
         // then
-        assertEquals(1, response.getInvoices().size());
-        assertEquals(false, response.getHasMore());
+        assertEquals(1, response.invoices().size());
+        assertFalse(response.hasMore());
     }
 
     @Test
@@ -134,11 +134,11 @@ class InvoiceClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        ExportInvoicesResponseRaw response = ksef.invoices()
+        ExportInvoicesResult response = ksef.invoices()
                 .exportInvoices(new InvoiceExportRequestRaw());
 
         // then
-        assertEquals(TEST_EXPORT_REF, response.getReferenceNumber());
+        assertEquals(TEST_EXPORT_REF, response.referenceNumber());
     }
 
     @Test
@@ -154,10 +154,10 @@ class InvoiceClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        InvoiceExportStatusResponseRaw response = ksef.invoices().getExportStatus(TEST_EXPORT_REF);
+        InvoiceExportStatus response = ksef.invoices().getExportStatus(TEST_EXPORT_REF);
 
         // then
-        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
+        assertEquals(KSEF_STATUS_OK, response.status().code());
     }
 
     @Test
