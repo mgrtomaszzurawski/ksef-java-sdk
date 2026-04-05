@@ -7,6 +7,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.Objects;
 
@@ -14,6 +16,8 @@ import java.util.Objects;
  * Builder for sending an invoice within a session.
  * <p>
  * Handles AES encryption of invoice content and SHA-256 hashing automatically.
+ * The symmetric key encryption is handled at session level (see {@link OnlineSessionBuilder}),
+ * not per-invoice — the session's AES key is reused for all invoices within it.
  * <p>
  * Usage:
  * <pre>{@code
@@ -22,6 +26,8 @@ import java.util.Objects;
  * }</pre>
  */
 public final class SendInvoiceBuilder {
+
+    private static final String SHA_256_ALGORITHM = "SHA-256";
 
     private final byte[] invoiceContent;
     private final PublicKey ksefPublicKey;
@@ -51,8 +57,9 @@ public final class SendInvoiceBuilder {
     }
 
     /**
-     * Build the send invoice request. Encrypts the invoice content with AES,
-     * wraps the AES key with RSA, and computes SHA-256 hashes automatically.
+     * Build the send invoice request. Encrypts the invoice content with AES
+     * and computes SHA-256 hashes automatically. The AES key is encrypted
+     * with the session's RSA public key at session open time.
      *
      * @return the request ready to pass to {@code SessionClient.sendInvoice()}
      */
@@ -76,9 +83,9 @@ public final class SendInvoiceBuilder {
 
     private static byte[] computeSha256(byte[] data) {
         try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
             return digest.digest(data);
-        } catch (java.security.NoSuchAlgorithmException ex) {
+        } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 not available", ex);
         }
     }

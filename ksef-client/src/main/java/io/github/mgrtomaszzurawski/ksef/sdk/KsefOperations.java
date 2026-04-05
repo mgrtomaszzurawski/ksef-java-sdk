@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationStatus;
@@ -13,16 +11,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationTokens;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.OnlineSessionBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.SendInvoiceBuilder;
 
+import java.io.ByteArrayInputStream;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.io.ByteArrayInputStream;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * High-level convenience operations that combine multiple SDK calls into
@@ -54,31 +53,36 @@ public final class KsefOperations {
     private static final int STATUS_CODE_OK = 200;
     private static final int SESSION_POLL_DELAY_MS = 3000;
     private static final int SESSION_POLL_MAX_ATTEMPTS = 20;
-    private static final String ERR_AUTH_FAILED = "Authentication failed with status: ";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
+    private static final String ERR_SESSION_POLL_TIMEOUT = "Session status polling timed out";
 
     private final KsefClient client;
+    private final Map<PublicKeyCertificateUsage, PublicKey> publicKeyCache = new ConcurrentHashMap<>();
 
     public KsefOperations(KsefClient client) {
         this.client = Objects.requireNonNull(client, "client is required");
     }
 
     /**
-     * Get the KSeF public key for token encryption.
+     * Get the KSeF public key for token encryption. The key is cached after
+     * the first fetch — KSeF certificates are long-lived.
      *
      * @return the RSA public key for encrypting KSeF tokens
      */
     public PublicKey tokenEncryptionKey() {
-        return getPublicKeyByUsage(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION);
+        return publicKeyCache.computeIfAbsent(
+                PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION, this::fetchPublicKeyByUsage);
     }
 
     /**
      * Get the KSeF public key for symmetric key encryption (used in sessions and exports).
+     * The key is cached after the first fetch.
      *
      * @return the RSA public key for encrypting AES keys
      */
     public PublicKey symmetricKeyEncryptionKey() {
-        return getPublicKeyByUsage(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
+        return publicKeyCache.computeIfAbsent(
+                PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION, this::fetchPublicKeyByUsage);
     }
 
     /**
@@ -116,7 +120,7 @@ public final class KsefOperations {
         String sessionRef = session.referenceNumber();
 
         try {
-            SendInvoiceResult invoiceResult = client.sessions().sendInvoice(
+            client.sessions().sendInvoice(
                     sessionRef,
                     SendInvoiceBuilder.create(invoiceXml, encKey).build());
 
@@ -144,7 +148,7 @@ public final class KsefOperations {
         for (int attempt = 0; attempt < AUTH_POLL_MAX_ATTEMPTS; attempt++) {
             sleep(AUTH_POLL_DELAY_MS);
             AuthenticationStatus status = client.auth().getStatus(referenceNumber);
-            if (status.status().code() == STATUS_CODE_OK) {
+            if (status.status() != null && status.status().code() == STATUS_CODE_OK) {
                 return;
             }
         }
@@ -152,17 +156,21 @@ public final class KsefOperations {
     }
 
     private SessionStatus pollSessionStatus(String referenceNumber) {
+        SessionStatus lastStatus = null;
         for (int attempt = 0; attempt < SESSION_POLL_MAX_ATTEMPTS; attempt++) {
             sleep(SESSION_POLL_DELAY_MS);
-            SessionStatus status = client.sessions().getStatus(referenceNumber);
-            if (status.status().code() == STATUS_CODE_OK) {
-                return status;
+            lastStatus = client.sessions().getStatus(referenceNumber);
+            if (lastStatus.status() != null && lastStatus.status().code() == STATUS_CODE_OK) {
+                return lastStatus;
             }
         }
-        return client.sessions().getStatus(referenceNumber);
+        if (lastStatus != null) {
+            return lastStatus;
+        }
+        throw new IllegalStateException(ERR_SESSION_POLL_TIMEOUT);
     }
 
-    private PublicKey getPublicKeyByUsage(PublicKeyCertificateUsage usage) {
+    private PublicKey fetchPublicKeyByUsage(PublicKeyCertificateUsage usage) {
         PublicKeyCertificate cert = client.security().getPublicKeyCertificates().stream()
                 .filter(c -> c.usage().contains(usage))
                 .findFirst()
@@ -173,8 +181,8 @@ public final class KsefOperations {
 
     private static PublicKey extractPublicKey(byte[] certBytes) {
         try {
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            X509Certificate x509 = (X509Certificate) cf.generateCertificate(
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            X509Certificate x509 = (X509Certificate) certificateFactory.generateCertificate(
                     new ByteArrayInputStream(certBytes));
             return x509.getPublicKey();
         } catch (Exception ex) {

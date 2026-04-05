@@ -36,6 +36,7 @@ public final class InvoiceClient {
     private static final String OP_QUERY_METADATA = "queryInvoicesMetadata";
     private static final String OP_EXPORT = "exportInvoices";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
+    private static final int DEFAULT_MAX_RESULTS = 10000;
 
     private final HttpSupport http;
     private final SessionContext sessionContext;
@@ -72,25 +73,36 @@ public final class InvoiceClient {
 
     /**
      * Query all invoice metadata matching the filters, automatically fetching
-     * subsequent pages until no more results are available.
+     * subsequent pages until no more results are available or maxResults is reached.
      * <p>
      * Uses the permanentStorageHwmDate from each response as a cursor to
-     * narrow the date range for the next page.
-     * <p>
-     * Warning: this can return a large number of results. Consider using
-     * {@link #queryMetadata(InvoiceQueryFiltersRaw)} for single-page queries
-     * if you only need the first page.
+     * narrow the date range for the next page. Default limit: 10,000 results.
      *
      * @param filters the query filter criteria
-     * @return all matching invoice metadata across all pages
+     * @return all matching invoice metadata across all pages (up to maxResults)
      */
     public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryFiltersRaw filters) {
+        return queryAllMetadata(filters, DEFAULT_MAX_RESULTS);
+    }
+
+    /**
+     * Query invoice metadata with automatic pagination and explicit result limit.
+     *
+     * @param filters the query filter criteria
+     * @param maxResults maximum number of results to return (safety limit)
+     * @return matching invoice metadata across pages (up to maxResults)
+     */
+    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryFiltersRaw filters, int maxResults) {
         List<InvoiceMetadata> allInvoices = new ArrayList<>();
         InvoiceQueryFiltersRaw currentFilters = filters;
 
         while (true) {
             InvoiceMetadataResult page = queryMetadata(currentFilters);
             allInvoices.addAll(page.invoices());
+
+            if (allInvoices.size() >= maxResults) {
+                return List.copyOf(allInvoices.subList(0, maxResults));
+            }
 
             if (!page.hasMore() || page.permanentStorageHwmDate() == null) {
                 break;
