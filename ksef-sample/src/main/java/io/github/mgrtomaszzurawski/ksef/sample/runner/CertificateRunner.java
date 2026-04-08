@@ -275,6 +275,7 @@ public final class CertificateRunner implements DemoRunner {
     private String pollEnrollmentSerial(DemoContext context, String enrollmentRef) {
         int delay = POLL_INITIAL_DELAY_MS;
         long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
+        String lastErrorMessage = null;
         while (System.currentTimeMillis() < deadline) {
             try {
                 CertificateEnrollmentStatus status =
@@ -286,16 +287,24 @@ public final class CertificateRunner implements DemoRunner {
                     return status.certificateSerialNumber();
                 }
             } catch (Exception exception) {
-                LOG.warn("[{}] enrollment status poll failed: {}", NAME, errorMessage(exception));
-                return null;
+                lastErrorMessage = errorMessage(exception);
+                LOG.warn("[{}] enrollment status poll attempt failed (will retry): {}",
+                        NAME, lastErrorMessage);
             }
             try {
                 Thread.sleep(delay);
-            } catch (InterruptedException ie) {
+            } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
+                LOG.warn("[{}] enrollment status polling interrupted", NAME);
                 return null;
             }
             delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
+        }
+        if (lastErrorMessage != null) {
+            LOG.warn("[{}] enrollment status polling timed out after repeated failures: {}",
+                    NAME, lastErrorMessage);
+        } else {
+            LOG.warn("[{}] enrollment status polling timed out — serial never appeared", NAME);
         }
         return null;
     }

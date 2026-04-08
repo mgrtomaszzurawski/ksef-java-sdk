@@ -73,6 +73,7 @@ public final class CertProbe {
     private static final Logger LOG = LoggerFactory.getLogger(CertProbe.class);
     private static final Path CREDENTIALS_FILE = Path.of("ksef-credentials.properties");
     private static final String CERT_NAME = "Probe Cert RCA Verify";
+    private static final String STATUS_ACTIVE = "Active";
     private static final String RSA_ALGORITHM = "RSA";
     private static final int RSA_KEY_SIZE = 2048;
     private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
@@ -103,26 +104,27 @@ public final class CertProbe {
             certificate = CertificateLoader.getCertificate(keyStore, alias);
             privateKey = CertificateLoader.getPrivateKey(keyStore, alias, password);
             LOG.info("Cert loaded: subject={}", certificate.getSubjectX500Principal().getName());
-        } catch (Exception e) {
-            LOG.error("Failed to load cert: {}", e.getMessage(), e);
+        } catch (Exception exception) {
+            LOG.error("Failed to load cert", exception);
             System.exit(EXIT_FAILURE);
             return;
         }
 
         try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(properties.environment())).build()) {
             run(client, certificate, privateKey, properties.nipIdentifier());
-        } catch (Exception e) {
-            LOG.error("Probe failed: {}", e.getMessage(), e);
+        } catch (Exception exception) {
+            LOG.error("Probe failed", exception);
             System.exit(EXIT_FAILURE);
         }
     }
 
-    private static void run(KsefClient client, X509Certificate cert, PrivateKey key, String nip) throws Exception {
+    private static void run(KsefClient client, X509Certificate certificate,
+                            PrivateKey privateKey, String nipIdentifier) throws Exception {
         // STEP 1: XAdES auth
         section("STEP 1: XAdES authentication");
         AuthenticationChallenge challenge = client.auth().requestChallenge();
         AuthenticationInit authInit = client.auth().authenticateWithXades(
-                challenge.challenge(), cert, key, nip);
+                challenge.challenge(), certificate, privateKey, nipIdentifier);
         LOG.info("Auth ref: {}", authInit.referenceNumber());
         pollAuth(client, authInit.referenceNumber());
         client.auth().redeemTokens();
@@ -138,12 +140,12 @@ public final class CertProbe {
         CertificateQueryResult queryResult = client.certificates().query(new QueryCertificatesRequestRaw());
         List<CertificateListItem> certs = queryResult.certificates();
         LOG.info("Found {} certificates total", certs.size());
-        for (CertificateListItem c : certs) {
+        for (CertificateListItem cert : certs) {
             LOG.info("  serial={} status={} validFrom={} requestDate={} name={}",
-                    c.certificateSerialNumber(), c.status(), c.validFrom(), c.requestDate(), c.name());
+                    cert.certificateSerialNumber(), cert.status(), cert.validFrom(), cert.requestDate(), cert.name());
         }
         List<CertificateListItem> active = certs.stream()
-                .filter(c -> "Active".equalsIgnoreCase(c.status()))
+                .filter(cert -> STATUS_ACTIVE.equalsIgnoreCase(cert.status()))
                 .toList();
         LOG.info("Active count: {}", active.size());
 
@@ -153,15 +155,16 @@ public final class CertProbe {
             // STEP 4: Revoke youngest
             section("STEP 4: revoke youngest active cert");
             CertificateListItem youngest = active.stream()
-                    .max(Comparator.comparing(c -> c.validFrom() != null ? c.validFrom() : c.requestDate()))
+                    .max(Comparator.comparing(CertProbe::certSortKey,
+                            Comparator.nullsFirst(Comparator.naturalOrder())))
                     .orElseThrow();
             LOG.info("Youngest active: serial={} validFrom={} name={}",
                     youngest.certificateSerialNumber(), youngest.validFrom(), youngest.name());
             try {
                 client.certificates().revoke(youngest.certificateSerialNumber(), new RevokeCertificateRequestRaw());
                 LOG.info("REVOKE OK serial={}", youngest.certificateSerialNumber());
-            } catch (Exception e) {
-                LOG.error("REVOKE FAILED: {}", e.getMessage());
+            } catch (Exception exception) {
+                LOG.error("REVOKE FAILED", exception);
             }
 
             // STEP 5: Limits AFTER revoke
@@ -185,8 +188,8 @@ public final class CertProbe {
         try {
             enrollResult = client.certificates().enroll(enrollReq);
             LOG.info("ENROLL OK ref={}", enrollResult.referenceNumber());
-        } catch (Exception e) {
-            LOG.error("ENROLL FAILED: {}", e.getMessage());
+        } catch (Exception exception) {
+            LOG.error("ENROLL FAILED", exception);
             section("STEP 8: certificates/limits AFTER failed enroll");
             printLimits("AFTER_FAILED_ENROLL", client.certificates().getLimits());
             return;
@@ -194,20 +197,20 @@ public final class CertProbe {
 
         // STEP 7: Poll for serial
         section("STEP 7: poll enrollment status for serial number");
-        String serial = pollEnrollmentSerial(client, enrollResult.referenceNumber());
+        String enrolledSerial = pollEnrollmentSerial(client, enrollResult.referenceNumber());
 
         // STEP 8: Limits AFTER enroll
         section("STEP 8: certificates/limits AFTER enroll");
         printLimits("AFTER_ENROLL", client.certificates().getLimits());
 
         // STEP 9: Cleanup new cert
-        if (serial != null) {
+        if (enrolledSerial != null) {
             section("STEP 9: cleanup — revoke newly enrolled cert");
             try {
-                client.certificates().revoke(serial, new RevokeCertificateRequestRaw());
-                LOG.info("CLEANUP REVOKE OK serial={}", serial);
-            } catch (Exception e) {
-                LOG.error("CLEANUP REVOKE FAILED: {}", e.getMessage());
+                client.certificates().revoke(enrolledSerial, new RevokeCertificateRequestRaw());
+                LOG.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
+            } catch (Exception exception) {
+                LOG.error("CLEANUP REVOKE FAILED", exception);
             }
         } else {
             LOG.warn("No serial obtained — cannot cleanup. Cert may still consume slot.");
@@ -216,20 +219,21 @@ public final class CertProbe {
         section("PROBE COMPLETE");
     }
 
-    private static String pollEnrollmentSerial(KsefClient client, String ref) throws InterruptedException {
+    private static String pollEnrollmentSerial(KsefClient client, String enrollmentRef) throws InterruptedException {
         int delay = POLL_INITIAL_DELAY_MS;
-        long deadline = System.currentTimeMillis() + ENROLL_POLL_TIMEOUT_MS;
+        long startTime = System.currentTimeMillis();
+        long deadline = startTime + ENROLL_POLL_TIMEOUT_MS;
         int attempt = 0;
         while (System.currentTimeMillis() < deadline) {
             attempt++;
-            CertificateEnrollmentStatus status = client.certificates().getEnrollmentStatus(ref);
+            CertificateEnrollmentStatus status = client.certificates().getEnrollmentStatus(enrollmentRef);
             String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
-            String desc = status.status() != null ? status.status().description() : "null";
+            String description = status.status() != null ? status.status().description() : "null";
             LOG.info("  poll #{} status code={} desc={} serial={}",
-                    attempt, code, desc, status.certificateSerialNumber());
+                    attempt, code, description, status.certificateSerialNumber());
             if (status.certificateSerialNumber() != null) {
                 LOG.info("SERIAL OBTAINED after {}ms: {}",
-                        ENROLL_POLL_TIMEOUT_MS - (deadline - System.currentTimeMillis()),
+                        System.currentTimeMillis() - startTime,
                         status.certificateSerialNumber());
                 return status.certificateSerialNumber();
             }
@@ -240,18 +244,22 @@ public final class CertProbe {
         return null;
     }
 
-    private static void pollAuth(KsefClient client, String ref) throws InterruptedException {
+    private static void pollAuth(KsefClient client, String authRef) throws InterruptedException {
         int delay = POLL_INITIAL_DELAY_MS;
         long deadline = System.currentTimeMillis() + AUTH_POLL_TIMEOUT_MS;
         while (System.currentTimeMillis() < deadline) {
-            AuthenticationStatus s = client.auth().getStatus(ref);
-            if (s.status() != null && s.status().code() == AUTH_STATUS_OK) {
+            AuthenticationStatus authStatus = client.auth().getStatus(authRef);
+            if (authStatus.status() != null && authStatus.status().code() == AUTH_STATUS_OK) {
                 return;
             }
             Thread.sleep(delay);
             delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
         }
-        throw new IllegalStateException("Auth timeout for " + ref);
+        throw new IllegalStateException("Auth timeout for " + authRef);
+    }
+
+    private static java.time.OffsetDateTime certSortKey(CertificateListItem cert) {
+        return cert.validFrom() != null ? cert.validFrom() : cert.requestDate();
     }
 
     private static void printLimits(String label, CertificateLimits limits) {
@@ -267,35 +275,35 @@ public final class CertProbe {
     }
 
     private static KeyPair generateKeyPair() throws Exception {
-        KeyPairGenerator gen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
-        gen.initialize(RSA_KEY_SIZE);
-        return gen.generateKeyPair();
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA_ALGORITHM);
+        keyPairGenerator.initialize(RSA_KEY_SIZE);
+        return keyPairGenerator.generateKeyPair();
     }
 
     private static byte[] generateCsr(CertificateEnrollmentData data, KeyPair keyPair) throws Exception {
-        StringBuilder dn = new StringBuilder();
-        dn.append("CN=").append(data.commonName());
-        dn.append(",C=").append(data.countryName());
+        StringBuilder subjectDn = new StringBuilder();
+        subjectDn.append("CN=").append(data.commonName());
+        subjectDn.append(",C=").append(data.countryName());
         if (data.givenName() != null) {
-            dn.append(",GIVENNAME=").append(data.givenName());
+            subjectDn.append(",GIVENNAME=").append(data.givenName());
         }
         if (data.surname() != null) {
-            dn.append(",SURNAME=").append(data.surname());
+            subjectDn.append(",SURNAME=").append(data.surname());
         }
         if (data.serialNumber() != null) {
-            dn.append(",SERIALNUMBER=").append(data.serialNumber());
+            subjectDn.append(",SERIALNUMBER=").append(data.serialNumber());
         }
         if (data.organizationName() != null) {
-            dn.append(",O=").append(data.organizationName());
+            subjectDn.append(",O=").append(data.organizationName());
         }
         if (data.organizationIdentifier() != null) {
-            dn.append(",2.5.4.97=").append(data.organizationIdentifier());
+            subjectDn.append(",2.5.4.97=").append(data.organizationIdentifier());
         }
-        X500Name subject = new X500Name(dn.toString());
-        JcaPKCS10CertificationRequestBuilder b =
+        X500Name subject = new X500Name(subjectDn.toString());
+        JcaPKCS10CertificationRequestBuilder csrBuilder =
                 new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
         ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM).build(keyPair.getPrivate());
-        PKCS10CertificationRequest csr = b.build(signer);
+        PKCS10CertificationRequest csr = csrBuilder.build(signer);
         return csr.getEncoded();
     }
 
