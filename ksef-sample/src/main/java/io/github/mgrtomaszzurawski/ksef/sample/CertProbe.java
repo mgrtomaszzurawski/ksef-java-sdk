@@ -75,6 +75,14 @@ public final class CertProbe {
     private static final String CERT_NAME = "Probe Cert RCA Verify";
     private static final String STATUS_ACTIVE = "Active";
     private static final String RSA_ALGORITHM = "RSA";
+    private static final String DN_CN_PREFIX = "CN=";
+    private static final String DN_COUNTRY_PREFIX = ",C=";
+    private static final String DN_GIVEN_NAME_PREFIX = ",GIVENNAME=";
+    private static final String DN_SURNAME_PREFIX = ",SURNAME=";
+    private static final String DN_SERIAL_NUMBER_PREFIX = ",SERIALNUMBER=";
+    private static final String DN_ORGANIZATION_PREFIX = ",O=";
+    private static final String OID_ORGANIZATION_IDENTIFIER = "2.5.4.97";
+    private static final String DN_ORGANIZATION_IDENTIFIER_PREFIX = "," + OID_ORGANIZATION_IDENTIFIER + "=";
     private static final int RSA_KEY_SIZE = 2048;
     private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
     private static final int AUTH_STATUS_OK = 200;
@@ -226,16 +234,20 @@ public final class CertProbe {
         int attempt = 0;
         while (System.currentTimeMillis() < deadline) {
             attempt++;
-            CertificateEnrollmentStatus status = client.certificates().getEnrollmentStatus(enrollmentRef);
-            String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
-            String description = status.status() != null ? status.status().description() : "null";
-            LOG.info("  poll #{} status code={} desc={} serial={}",
-                    attempt, code, description, status.certificateSerialNumber());
-            if (status.certificateSerialNumber() != null) {
-                LOG.info("SERIAL OBTAINED after {}ms: {}",
-                        System.currentTimeMillis() - startTime,
-                        status.certificateSerialNumber());
-                return status.certificateSerialNumber();
+            try {
+                CertificateEnrollmentStatus status = client.certificates().getEnrollmentStatus(enrollmentRef);
+                String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
+                String description = status.status() != null ? status.status().description() : "null";
+                LOG.info("  poll #{} status code={} desc={} serial={}",
+                        attempt, code, description, status.certificateSerialNumber());
+                if (status.certificateSerialNumber() != null) {
+                    LOG.info("SERIAL OBTAINED after {}ms: {}",
+                            System.currentTimeMillis() - startTime,
+                            status.certificateSerialNumber());
+                    return status.certificateSerialNumber();
+                }
+            } catch (Exception exception) {
+                LOG.warn("  poll #{} failed (will retry): {}", attempt, exception.getMessage());
             }
             Thread.sleep(delay);
             delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
@@ -282,29 +294,29 @@ public final class CertProbe {
 
     private static byte[] generateCsr(CertificateEnrollmentData data, KeyPair keyPair) throws Exception {
         StringBuilder subjectDn = new StringBuilder();
-        subjectDn.append("CN=").append(data.commonName());
-        subjectDn.append(",C=").append(data.countryName());
+        subjectDn.append(DN_CN_PREFIX).append(data.commonName());
+        subjectDn.append(DN_COUNTRY_PREFIX).append(data.countryName());
         if (data.givenName() != null) {
-            subjectDn.append(",GIVENNAME=").append(data.givenName());
+            subjectDn.append(DN_GIVEN_NAME_PREFIX).append(data.givenName());
         }
         if (data.surname() != null) {
-            subjectDn.append(",SURNAME=").append(data.surname());
+            subjectDn.append(DN_SURNAME_PREFIX).append(data.surname());
         }
         if (data.serialNumber() != null) {
-            subjectDn.append(",SERIALNUMBER=").append(data.serialNumber());
+            subjectDn.append(DN_SERIAL_NUMBER_PREFIX).append(data.serialNumber());
         }
         if (data.organizationName() != null) {
-            subjectDn.append(",O=").append(data.organizationName());
+            subjectDn.append(DN_ORGANIZATION_PREFIX).append(data.organizationName());
         }
         if (data.organizationIdentifier() != null) {
-            subjectDn.append(",2.5.4.97=").append(data.organizationIdentifier());
+            subjectDn.append(DN_ORGANIZATION_IDENTIFIER_PREFIX).append(data.organizationIdentifier());
         }
         X500Name subject = new X500Name(subjectDn.toString());
         JcaPKCS10CertificationRequestBuilder csrBuilder =
                 new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
         ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM).build(keyPair.getPrivate());
-        PKCS10CertificationRequest csr = csrBuilder.build(signer);
-        return csr.getEncoded();
+        PKCS10CertificationRequest certificationRequest = csrBuilder.build(signer);
+        return certificationRequest.getEncoded();
     }
 
     private static void section(String title) {
