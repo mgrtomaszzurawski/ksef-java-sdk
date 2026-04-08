@@ -81,9 +81,18 @@ public final class CertificateRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().certificates().getLimits();
-            LOG.info("[{}] certificate limits: canRequest={}", NAME, response.canRequest());
+            String enrollment = response.enrollment() != null
+                    ? response.enrollment().remaining() + "/" + response.enrollment().limit()
+                    : "n/a";
+            String certificate = response.certificate() != null
+                    ? response.certificate().remaining() + "/" + response.certificate().limit()
+                    : "n/a";
+            LOG.info("[{}] certificate limits: canRequest={} enrollment={} certificate={}",
+                    NAME, response.canRequest(), enrollment, certificate);
             results.add(RunResult.ok(NAME, OP_GET_LIMITS, elapsed(start),
-                    "canRequest=" + response.canRequest()));
+                    "canRequest=" + response.canRequest()
+                            + " enrollment=" + enrollment
+                            + " certificate=" + certificate));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_LIMITS, elapsed(start), errorMessage(exception)));
         }
@@ -189,18 +198,16 @@ public final class CertificateRunner implements DemoRunner {
             return;
         }
 
-        // Check enrollment status
+        // Check enrollment status — poll until serial appears (server takes ~1-2s,
+        // status transitions 100 "przyjęty" → 200 "obsłużony" with serial)
         start = System.currentTimeMillis();
-        String serialNumber = null;
-        try {
-            CertificateEnrollmentStatus status =
-                    context.client().certificates().getEnrollmentStatus(enrollmentRef);
-            LOG.info("[{}] enrollment status: code={}", NAME,
-                    status.status() != null ? status.status().code() : "null");
-            serialNumber = status.certificateSerialNumber();
-            results.add(RunResult.ok(NAME, OP_ENROLLMENT_STATUS, elapsed(start)));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_ENROLLMENT_STATUS, elapsed(start), errorMessage(exception)));
+        String serialNumber = pollEnrollmentSerial(context, enrollmentRef);
+        if (serialNumber != null) {
+            results.add(RunResult.ok(NAME, OP_ENROLLMENT_STATUS, elapsed(start),
+                    "serial=" + serialNumber));
+        } else {
+            results.add(RunResult.fail(NAME, OP_ENROLLMENT_STATUS, elapsed(start),
+                    "serial not available within timeout"));
         }
 
         // Revoke (cleanup) — only if we got a serial number
@@ -263,6 +270,43 @@ public final class CertificateRunner implements DemoRunner {
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QUERY, elapsed(start), errorMessage(exception)));
         }
+    }
+
+    private String pollEnrollmentSerial(DemoContext context, String enrollmentRef) {
+        int delay = POLL_INITIAL_DELAY_MS;
+        long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
+        String lastErrorMessage = null;
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                CertificateEnrollmentStatus status =
+                        context.client().certificates().getEnrollmentStatus(enrollmentRef);
+                Integer code = status.status() != null ? status.status().code() : null;
+                LOG.info("[{}] enrollment status: code={} serial={}",
+                        NAME, code, status.certificateSerialNumber());
+                if (status.certificateSerialNumber() != null) {
+                    return status.certificateSerialNumber();
+                }
+            } catch (Exception exception) {
+                lastErrorMessage = errorMessage(exception);
+                LOG.warn("[{}] enrollment status poll attempt failed (will retry): {}",
+                        NAME, lastErrorMessage);
+            }
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                LOG.warn("[{}] enrollment status polling interrupted", NAME);
+                return null;
+            }
+            delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
+        }
+        if (lastErrorMessage != null) {
+            LOG.warn("[{}] enrollment status polling timed out after repeated failures: {}",
+                    NAME, lastErrorMessage);
+        } else {
+            LOG.warn("[{}] enrollment status polling timed out — serial never appeared", NAME);
+        }
+        return null;
     }
 
     private void pollUntilReady(DemoContext context, String referenceNumber) throws InterruptedException {
