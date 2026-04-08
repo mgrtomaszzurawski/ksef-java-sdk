@@ -29,6 +29,9 @@ logs/
 .claude/
 .reviews/
 
+# Project working notes — kept locally only, not published to GitHub
+context/
+
 # Credentials / secrets
 *.p12
 *.pfx
