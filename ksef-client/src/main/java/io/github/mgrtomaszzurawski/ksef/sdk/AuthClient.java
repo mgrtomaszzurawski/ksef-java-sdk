@@ -17,6 +17,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.signing.SigningService;
 
+import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
+
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -154,6 +156,7 @@ public final class AuthClient {
      * @return status response with authentication state details
      */
     public AuthenticationOperationStatusResponseRaw getStatus(String referenceNumber) {
+        requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         return http.getAuthenticated(
                 PATH_AUTH_STATUS + referenceNumber, token,
@@ -187,6 +190,7 @@ public final class AuthClient {
      * @param referenceNumber the reference number of the session to terminate
      */
     public void terminateSession(String referenceNumber) {
+        requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         http.deleteAuthenticated(PATH_SESSIONS + "/" + referenceNumber, token, OP_TERMINATE);
     }

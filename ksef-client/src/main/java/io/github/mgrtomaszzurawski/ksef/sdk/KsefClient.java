@@ -29,6 +29,8 @@ public final class KsefClient implements AutoCloseable {
     private final SessionContext sessionContext;
     private final AuthClient authClient;
     private final SecurityClient securityClient;
+    private final SessionClient sessionClient;
+    private final InvoiceClient invoiceClient;
     private volatile boolean closed;
 
     private KsefClient(Builder builder) {
@@ -41,6 +43,8 @@ public final class KsefClient implements AutoCloseable {
         this.sessionContext = new SessionContext();
         this.authClient = new AuthClient(this);
         this.securityClient = new SecurityClient(this);
+        this.sessionClient = new SessionClient(this);
+        this.invoiceClient = new InvoiceClient(this);
     }
 
     public KsefEnvironment environment() {
@@ -87,6 +91,22 @@ public final class KsefClient implements AutoCloseable {
     public SecurityClient security() {
         ensureOpen();
         return securityClient;
+    }
+
+    /**
+     * Access session operations (online/batch lifecycle, invoice submission, UPO retrieval).
+     */
+    public SessionClient sessions() {
+        ensureOpen();
+        return sessionClient;
+    }
+
+    /**
+     * Access invoice operations (query metadata, retrieve, export).
+     */
+    public InvoiceClient invoices() {
+        ensureOpen();
+        return invoiceClient;
     }
 
     @Override

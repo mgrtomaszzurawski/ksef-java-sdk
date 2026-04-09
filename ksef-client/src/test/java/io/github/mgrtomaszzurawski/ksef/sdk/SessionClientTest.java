@@ -1,0 +1,283 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk;
+
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@WireMockTest
+class SessionClientTest {
+
+    private static final String TEST_TOKEN = "test-access-token";
+    private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
+    private static final String TEST_INVOICE_REF = "20260404-IN-1234567890-ABCDEF1234-02";
+    private static final String TEST_UPO_REF = "20260404-UP-1234567890-ABCDEF1234-03";
+    private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
+
+    private static final int HTTP_OK = 200;
+    private static final int KSEF_STATUS_OK = 200;
+    private static final int HTTP_CREATED = 201;
+    private static final int HTTP_ACCEPTED = 202;
+    private static final int HTTP_NO_CONTENT = 204;
+    private static final int HTTP_UNAUTHORIZED = 401;
+    private static final int HTTP_SERVER_ERROR = 500;
+
+    private static final String OPEN_ONLINE_RESPONSE = """
+            {
+              "referenceNumber": "%s",
+              "validUntil": "2026-04-04T15:00:00+02:00"
+            }
+            """.formatted(TEST_SESSION_REF);
+
+    private static final String SEND_INVOICE_RESPONSE = """
+            {
+              "referenceNumber": "%s"
+            }
+            """.formatted(TEST_INVOICE_REF);
+
+    private static final String SESSION_STATUS_RESPONSE = """
+            {
+              "status": {"code": 200, "description": "Active"},
+              "dateCreated": "2026-04-04T12:00:00+02:00"
+            }
+            """;
+
+    private static final String SESSION_INVOICES_RESPONSE = """
+            {
+              "invoices": [
+                {
+                  "referenceNumber": "%s",
+                  "ordinalNumber": 1,
+                  "invoicingDate": "2026-04-04T12:00:00+02:00",
+                  "invoiceHash": "dGVzdA==",
+                  "status": {"code": 200, "description": "Processed"}
+                }
+              ]
+            }
+            """.formatted(TEST_INVOICE_REF);
+
+    private static final String INVOICE_STATUS_RESPONSE = """
+            {
+              "status": {"code": 200, "description": "Processed"}
+            }
+            """;
+
+    private static final byte[] TEST_UPO_CONTENT = "<UPO>receipt</UPO>".getBytes(StandardCharsets.UTF_8);
+
+    @Test
+    void openOnline_whenAuthenticated_returnsSessionReference(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlEqualTo("/api/v2/sessions/online"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(OPEN_ONLINE_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        OpenOnlineSessionResponseRaw response = ksef.sessions().openOnline(new OpenOnlineSessionRequestRaw());
+
+        // then
+        assertEquals(TEST_SESSION_REF, response.getReferenceNumber());
+        assertNotNull(response.getValidUntil());
+    }
+
+    @Test
+    void sendInvoice_whenSessionOpen_returnsInvoiceReference(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/invoices"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_ACCEPTED)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(SEND_INVOICE_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        SendInvoiceResponseRaw response = ksef.sessions().sendInvoice(
+                TEST_SESSION_REF, new SendInvoiceRequestRaw());
+
+        // then
+        assertEquals(TEST_INVOICE_REF, response.getReferenceNumber());
+    }
+
+    @Test
+    void closeOnline_whenSessionOpen_sendsPostAndExpectsNoContent(WireMockRuntimeInfo wmInfo) {
+        // given
+        String closePath = "/api/v2/sessions/online/" + TEST_SESSION_REF + "/close";
+        stubFor(post(urlEqualTo(closePath))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        ksef.sessions().closeOnline(TEST_SESSION_REF);
+
+        // then
+        verify(postRequestedFor(urlEqualTo(closePath))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+    }
+
+    @Test
+    void getStatus_whenSessionExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(SESSION_STATUS_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        SessionStatusResponseRaw response = ksef.sessions().getStatus(TEST_SESSION_REF);
+
+        // then
+        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
+        assertNotNull(response.getDateCreated());
+    }
+
+    @Test
+    void getInvoices_whenSessionHasInvoices_returnsInvoiceList(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/invoices"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(SESSION_INVOICES_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        SessionInvoicesResponseRaw response = ksef.sessions().getInvoices(TEST_SESSION_REF);
+
+        // then
+        assertEquals(1, response.getInvoices().size());
+        assertEquals(TEST_INVOICE_REF, response.getInvoices().get(0).getReferenceNumber());
+    }
+
+    @Test
+    void getInvoiceStatus_whenInvoiceExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/invoices/" + TEST_INVOICE_REF))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(INVOICE_STATUS_RESPONSE)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        SessionInvoiceStatusResponseRaw response = ksef.sessions()
+                .getInvoiceStatus(TEST_SESSION_REF, TEST_INVOICE_REF);
+
+        // then
+        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
+    }
+
+    @Test
+    void getUpoByReference_whenAvailable_returnsUpoBytes(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/upo/" + TEST_UPO_REF))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withHeader("Content-Type", "application/octet-stream")
+                        .withBody(TEST_UPO_CONTENT)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        byte[] upoBytes = ksef.sessions().getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
+
+        // then
+        assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+    }
+
+    @Test
+    void getUpoByKsefNumber_whenAvailable_returnsUpoBytes(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF
+                + "/invoices/ksef/" + TEST_KSEF_NUMBER + "/upo"))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(HTTP_OK)
+                        .withBody(TEST_UPO_CONTENT)));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // when
+        byte[] upoBytes = ksef.sessions().getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
+
+        // then
+        assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+    }
+
+    @Test
+    void openOnline_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlEqualTo("/api/v2/sessions/online"))
+                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // then
+        assertThrows(KsefAuthException.class,
+                () -> ksef.sessions().openOnline(new OpenOnlineSessionRequestRaw()));
+    }
+
+    @Test
+    void sendInvoice_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/invoices"))
+                .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR).withBody("{}")));
+
+        KsefClient ksef = createAuthenticatedClient(wmInfo);
+
+        // then
+        assertThrows(KsefServerException.class,
+                () -> ksef.sessions().sendInvoice(TEST_SESSION_REF, new SendInvoiceRequestRaw()));
+    }
+
+    private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+                .retryPolicy(RetryPolicy.builder().enabled(false).build())
+                .build();
+        ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        return ksef;
+    }
+}
