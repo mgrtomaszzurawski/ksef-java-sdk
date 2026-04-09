@@ -13,6 +13,9 @@ public final class KsefEnvironment {
     private static final String PREPROD_URL = "https://api-preprod.ksef.mf.gov.pl/v2";
     private static final String PROD_URL = "https://api.ksef.mf.gov.pl/v2";
     private static final String NULL_URL_MESSAGE = "baseUrl must not be null";
+    private static final String INVALID_SCHEME_MESSAGE = "baseUrl must start with http:// or https://";
+    private static final String HTTPS_SCHEME = "https://";
+    private static final String HTTP_SCHEME = "http://";
 
     public static final KsefEnvironment TEST = new KsefEnvironment(TEST_URL);
     public static final KsefEnvironment PREPROD = new KsefEnvironment(PREPROD_URL);
@@ -35,6 +38,9 @@ public final class KsefEnvironment {
     public static KsefEnvironment custom(String baseUrl) {
         if (baseUrl == null) {
             throw new IllegalArgumentException(NULL_URL_MESSAGE);
+        }
+        if (!baseUrl.startsWith(HTTPS_SCHEME) && !baseUrl.startsWith(HTTP_SCHEME)) {
+            throw new IllegalArgumentException(INVALID_SCHEME_MESSAGE);
         }
         return new KsefEnvironment(baseUrl);
     }
