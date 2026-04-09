@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.mgrtomaszzurawski</groupId>
+        <artifactId>ksef-java-sdk</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>ksef-client</artifactId>
+    <packaging>jar</packaging>
+
+    <name>KSeF Client</name>
+    <description>Java SDK for the Polish National e-Invoicing System (KSeF) REST API v2</description>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+
+        <!-- Dependency versions -->
+        <jackson.version>2.18.2</jackson.version>
+        <jackson.nullable.version>0.2.6</jackson.nullable.version>
+        <jakarta.annotation.version>2.1.1</jakarta.annotation.version>
+        <jakarta.xml.bind.version>4.0.2</jakarta.xml.bind.version>
+        <jaxb.runtime.version>4.0.5</jaxb.runtime.version>
+        <slf4j.version>2.0.16</slf4j.version>
+        <bouncycastle.version>1.80</bouncycastle.version>
+        <dss.version>6.3</dss.version>
+        <zxing.version>3.5.3</zxing.version>
+
+        <!-- Test dependency versions -->
+        <junit.version>5.11.4</junit.version>
+        <wiremock.version>3.12.1</wiremock.version>
+        <mockito.version>5.14.2</mockito.version>
+
+        <!-- Plugin versions -->
+        <openapi.generator.version>7.12.0</openapi.generator.version>
+        <jaxb.plugin.version>4.0.12</jaxb.plugin.version>
+        <build.helper.version>3.6.0</build.helper.version>
+        <compiler.plugin.version>3.13.0</compiler.plugin.version>
+        <surefire.plugin.version>3.5.2</surefire.plugin.version>
+        <spotbugs.plugin.version>4.8.6.6</spotbugs.plugin.version>
+        <pmd.plugin.version>3.26.0</pmd.plugin.version>
+        <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
+        <source.plugin.version>3.3.1</source.plugin.version>
+        <javadoc.plugin.version>3.11.2</javadoc.plugin.version>
+
+        <!-- OpenAPI generator config -->
+        <openapi.spec>${project.basedir}/openapi/open-api.json</openapi.spec>
+        <openapi.output>${project.build.directory}/generated-sources/openapi</openapi.output>
+        <openapi.api.package>io.github.mgrtomaszzurawski.ksef.client.api</openapi.api.package>
+        <openapi.model.package>io.github.mgrtomaszzurawski.ksef.client.model</openapi.model.package>
+    </properties>
+
+    <dependencies>
+        <!-- JSON serialization -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>${jackson.nullable.version}</version>
+        </dependency>
+
+        <!-- Annotations -->
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <version>${jakarta.annotation.version}</version>
+        </dependency>
+
+        <!-- JAXB (XML binding for XSD-generated invoice models) -->
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>${jakarta.xml.bind.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>${jaxb.runtime.version}</version>
+        </dependency>
+
+        <!-- Crypto (AES-GCM, RSA-OAEP, ECDH) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+
+        <!-- XAdES signing -->
+        <dependency>
+            <groupId>eu.europa.ec.joinup.sd-dss</groupId>
+            <artifactId>dss-xades</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.joinup.sd-dss</groupId>
+            <artifactId>dss-token</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.joinup.sd-dss</groupId>
+            <artifactId>dss-utils-apache-commons</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
+
+        <!-- QR code -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>${zxing.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>${zxing.version}</version>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>${wiremock.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- OpenAPI generator: REST API models from open-api.json -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi.generator.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${openapi.spec}</inputSpec>
+                            <output>${openapi.output}</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>${openapi.api.package}</apiPackage>
+                            <modelPackage>${openapi.model.package}</modelPackage>
+                            <modelNameSuffix>Raw</modelNameSuffix>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <dateLibrary>java8</dateLibrary>
+                                <useJakartaEe>true</useJakartaEe>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- JAXB XJC: invoice XML models from XSD schemas -->
+            <plugin>
+                <groupId>org.jvnet.jaxb</groupId>
+                <artifactId>jaxb-maven-plugin</artifactId>
+                <version>${jaxb.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>xjc-fa2</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <schemaDirectory>${project.basedir}/xsd/FA</schemaDirectory>
+                            <schemaIncludes>
+                                <include>schemat_FA(2)_v1-0E.xsd</include>
+                            </schemaIncludes>
+                            <bindingDirectory>${project.basedir}/xsd/FA</bindingDirectory>
+                            <bindingIncludes>
+                                <include>fa2-bindings.xjb</include>
+                            </bindingIncludes>
+                            <generatePackage>io.github.mgrtomaszzurawski.ksef.xml.fa2</generatePackage>
+                            <generateDirectory>${project.build.directory}/generated-sources/xjc-fa2</generateDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>xjc-fa3</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <schemaDirectory>${project.basedir}/xsd/FA</schemaDirectory>
+                            <schemaIncludes>
+                                <include>schemat_FA(3)_v1-0E.xsd</include>
+                            </schemaIncludes>
+                            <bindingDirectory>${project.basedir}/xsd/FA</bindingDirectory>
+                            <bindingIncludes>
+                                <include>fa3-bindings.xjb</include>
+                            </bindingIncludes>
+                            <generatePackage>io.github.mgrtomaszzurawski.ksef.xml.fa3</generatePackage>
+                            <generateDirectory>${project.build.directory}/generated-sources/xjc-fa3</generateDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>xjc-upo</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <schemaDirectory>${project.basedir}/xsd/upo</schemaDirectory>
+                            <generatePackage>io.github.mgrtomaszzurawski.ksef.xml.upo</generatePackage>
+                            <generateDirectory>${project.build.directory}/generated-sources/xjc-upo</generateDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>xjc-auth</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <schemaDirectory>${project.basedir}/xsd/auth</schemaDirectory>
+                            <generatePackage>io.github.mgrtomaszzurawski.ksef.xml.auth</generatePackage>
+                            <generateDirectory>${project.build.directory}/generated-sources/xjc-auth</generateDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Add generated sources to compile path -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build.helper.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-openapi-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${openapi.output}/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-xjc-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/xjc-fa2</source>
+                                <source>${project.build.directory}/generated-sources/xjc-fa3</source>
+                                <source>${project.build.directory}/generated-sources/xjc-upo</source>
+                                <source>${project.build.directory}/generated-sources/xjc-auth</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Compiler -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.plugin.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <!-- Test runner -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.plugin.version}</version>
+            </plugin>
+
+            <!-- SpotBugs (only SDK code, exclude generated) -->
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs.plugin.version}</version>
+                <configuration>
+                    <onlyAnalyze>io.github.mgrtomaszzurawski.ksef.sdk.-</onlyAnalyze>
+                    <excludeFilterFile>${project.basedir}/../spotbugs-exclude.xml</excludeFilterFile>
+                </configuration>
+            </plugin>
+
+            <!-- PMD (exclude generated code) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${pmd.plugin.version}</version>
+                <configuration>
+                    <rulesets>
+                        <ruleset>${project.basedir}/../pmd-ruleset.xml</ruleset>
+                    </rulesets>
+                    <excludeRoots>
+                        <excludeRoot>${openapi.output}/src/main/java</excludeRoot>
+                        <excludeRoot>${project.build.directory}/generated-sources/xjc</excludeRoot>
+                    </excludeRoots>
+                </configuration>
+            </plugin>
+
+            <!-- Checkstyle (SDK code + tests only) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${checkstyle.plugin.version}</version>
+                <configuration>
+                    <configLocation>${project.basedir}/../checkstyle.xml</configLocation>
+                    <sourceDirectories>
+                        <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+                    </sourceDirectories>
+                    <testSourceDirectories>
+                        <testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
+                    </testSourceDirectories>
+                    <excludes>module-info.java</excludes>
+                </configuration>
+            </plugin>
+
+            <!-- Source jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${source.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Javadoc jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${javadoc.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- License headers -->
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Exclude all generated code -->
+    <Match>
+        <Package name="~io\.github\.mgrtomaszzurawski\.ksef\.client\..*"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.mgrtomaszzurawski\.ksef\.xml\..*"/>
+    </Match>
+</FindBugsFilter>
