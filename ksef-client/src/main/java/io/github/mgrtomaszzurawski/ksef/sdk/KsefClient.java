@@ -27,6 +27,8 @@ public final class KsefClient implements AutoCloseable {
     private final ObjectMapper objectMapper;
     private final RetryHandler retryHandler;
     private final SessionContext sessionContext;
+    private final AuthClient authClient;
+    private final SecurityClient securityClient;
     private volatile boolean closed;
 
     private KsefClient(Builder builder) {
@@ -37,6 +39,8 @@ public final class KsefClient implements AutoCloseable {
         this.objectMapper = createObjectMapper();
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
+        this.authClient = new AuthClient(this);
+        this.securityClient = new SecurityClient(this);
     }
 
     public KsefEnvironment environment() {
@@ -67,6 +71,22 @@ public final class KsefClient implements AutoCloseable {
     public Duration readTimeout() {
         ensureOpen();
         return DEFAULT_READ_TIMEOUT;
+    }
+
+    /**
+     * Access authentication operations (challenge, sign, token management).
+     */
+    public AuthClient auth() {
+        ensureOpen();
+        return authClient;
+    }
+
+    /**
+     * Access security operations (public key certificate retrieval).
+     */
+    public SecurityClient security() {
+        ensureOpen();
+        return securityClient;
     }
 
     @Override
