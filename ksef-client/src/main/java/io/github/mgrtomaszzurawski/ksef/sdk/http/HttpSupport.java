@@ -28,6 +28,7 @@ public final class HttpSupport {
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final int HTTP_OK = 200;
+    private static final int HTTP_CREATED = 201;
     private static final int HTTP_ACCEPTED = 202;
     private static final int HTTP_NO_CONTENT = 204;
     private static final Pattern SAFE_PATH_SEGMENT = Pattern.compile("^[A-Za-z0-9._\\-]+$");
@@ -274,7 +275,7 @@ public final class HttpSupport {
     private <T> T sendAndDeserialize(HttpRequest request, Class<T> responseType) throws IOException {
         HttpResponse<String> response = send(request);
         int status = response.statusCode();
-        if (status != HTTP_OK && status != HTTP_ACCEPTED) {
+        if (status != HTTP_OK && status != HTTP_CREATED && status != HTTP_ACCEPTED) {
             throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body());
         }
         return deserialize(response.body(), responseType);

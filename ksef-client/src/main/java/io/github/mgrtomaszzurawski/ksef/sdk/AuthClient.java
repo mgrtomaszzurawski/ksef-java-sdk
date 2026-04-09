@@ -7,8 +7,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationContextIdentifierTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.AllowedIpsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationListResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.AuthorizationPolicyRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationOperationStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenRefreshResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
@@ -62,7 +64,7 @@ public final class AuthClient {
      * Request a challenge for authentication.
      * The challenge must be signed with XAdES and submitted via
      * {@link #authenticateWithXades(String, X509Certificate, PrivateKey, String)} or
-     * encrypted and submitted via {@link #authenticateWithToken(String, String, String, PublicKey)}.
+     * encrypted and submitted via {@link #authenticateWithToken(AuthenticationChallengeResponseRaw, String, String, PublicKey)}.
      *
      * @return challenge response containing the challenge string and timestamp
      */
@@ -95,21 +97,26 @@ public final class AuthClient {
      * Authenticate using KSeF token flow.
      * Encrypts the token with the KSeF public key and submits it with the challenge.
      *
-     * @param challenge the challenge string from {@link #requestChallenge()}
+     * @param challengeResponse the full challenge response from {@link #requestChallenge()}
      * @param ksefToken the pre-generated KSeF authorization token
      * @param nipIdentifier the NIP of the authenticating entity
      * @param ksefPublicKey the KSeF public key for encrypting the token
      * @return authentication response with reference number and operation token
      */
     public AuthenticationInitResponseRaw authenticateWithToken(
-            String challenge, String ksefToken, String nipIdentifier, PublicKey ksefPublicKey) {
-        byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, Instant.now(), ksefPublicKey);
+            AuthenticationChallengeResponseRaw challengeResponse,
+            String ksefToken, String nipIdentifier, PublicKey ksefPublicKey) {
+        Instant challengeTimestamp = Instant.ofEpochMilli(challengeResponse.getTimestampMs());
+        byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, challengeTimestamp, ksefPublicKey);
+        AllowedIpsRaw allowedIps = new AllowedIpsRaw()
+                .addIp4AddressesItem(challengeResponse.getClientIp());
         InitTokenAuthenticationRequestRaw request = new InitTokenAuthenticationRequestRaw()
-                .challenge(challenge)
+                .challenge(challengeResponse.getChallenge())
                 .contextIdentifier(new AuthenticationContextIdentifierRaw()
                         .type(AuthenticationContextIdentifierTypeRaw.NIP)
                         .value(nipIdentifier))
-                .encryptedToken(encryptedToken);
+                .encryptedToken(encryptedToken)
+                .authorizationPolicy(new AuthorizationPolicyRaw().allowedIps(allowedIps));
         AuthenticationInitResponseRaw response = http.postJson(
                 PATH_KSEF_TOKEN, request, AuthenticationInitResponseRaw.class, OP_AUTH_TOKEN);
         activateSession(response);
