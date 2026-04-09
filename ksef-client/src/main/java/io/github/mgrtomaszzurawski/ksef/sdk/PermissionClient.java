@@ -30,6 +30,17 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQuery
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AttachmentPermissionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EntityAuthorizationPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EntityRoles;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EuEntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PermissionOperationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PersonPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PersonalPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SubordinateEntityRoles;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SubunitPermissions;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -103,10 +114,11 @@ public final class PermissionClient {
      * @param request grant request with subject identifier, permissions, and description
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw grantPerson(PersonPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantPerson(PersonPermissionsGrantRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_GRANT_PERSON, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_PERSON, request, token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_PERSON);
+        return PermissionOperationResult.from(raw);
     }
 
     /**
@@ -115,10 +127,11 @@ public final class PermissionClient {
      * @param request grant request with subject identifier, permissions, and description
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw grantEntity(EntityPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantEntity(EntityPermissionsGrantRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_GRANT_ENTITY, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_ENTITY, request, token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_ENTITY);
+        return PermissionOperationResult.from(raw);
     }
 
     /**
@@ -127,11 +140,12 @@ public final class PermissionClient {
      * @param request grant request with authorization details
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw grantAuthorization(
+    public PermissionOperationResult grantAuthorization(
             EntityAuthorizationPermissionsGrantRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION, request, token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_AUTHORIZATION);
+        return PermissionOperationResult.from(raw);
     }
 
     /**
@@ -140,10 +154,11 @@ public final class PermissionClient {
      * @param request grant request with indirect permission details
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw grantIndirect(IndirectPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantIndirect(IndirectPermissionsGrantRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_GRANT_INDIRECT, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_INDIRECT, request, token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_INDIRECT);
+        return PermissionOperationResult.from(raw);
     }
 
     /**
@@ -152,10 +167,11 @@ public final class PermissionClient {
      * @param request grant request with subunit and permission details
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw grantSubunit(SubunitPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantSubunit(SubunitPermissionsGrantRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_GRANT_SUBUNIT, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_SUBUNIT, request, token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_SUBUNIT);
+        return PermissionOperationResult.from(raw);
     }
 
     /**
@@ -164,11 +180,12 @@ public final class PermissionClient {
      * @param request grant request with EU entity admin details
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw grantEuEntityAdmin(
+    public PermissionOperationResult grantEuEntityAdmin(
             EuEntityAdministrationPermissionsGrantRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY_ADMIN, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY_ADMIN, request, token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY_ADMIN);
+        return PermissionOperationResult.from(raw);
     }
 
     /**
@@ -177,10 +194,11 @@ public final class PermissionClient {
      * @param request grant request with EU entity permission details
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw grantEuEntity(EuEntityPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantEuEntity(EuEntityPermissionsGrantRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY, request, token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY);
+        return PermissionOperationResult.from(raw);
     }
 
     // --- Revoke operations ---
@@ -191,11 +209,12 @@ public final class PermissionClient {
      * @param permissionId the permission identifier to revoke
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw revokeCommon(String permissionId) {
+    public PermissionOperationResult revokeCommon(String permissionId) {
         requireSafePathSegment(permissionId);
         String token = sessionContext.token();
-        return http.deleteAuthenticatedWithResponse(PATH_REVOKE_COMMON + permissionId, token,
+        PermissionsOperationResponseRaw raw = http.deleteAuthenticatedWithResponse(PATH_REVOKE_COMMON + permissionId, token,
                 PermissionsOperationResponseRaw.class, OP_REVOKE_COMMON);
+        return PermissionOperationResult.from(raw);
     }
 
     /**
@@ -204,11 +223,12 @@ public final class PermissionClient {
      * @param permissionId the authorization permission identifier to revoke
      * @return operation response with reference number
      */
-    public PermissionsOperationResponseRaw revokeAuthorization(String permissionId) {
+    public PermissionOperationResult revokeAuthorization(String permissionId) {
         requireSafePathSegment(permissionId);
         String token = sessionContext.token();
-        return http.deleteAuthenticatedWithResponse(PATH_REVOKE_AUTHORIZATION + permissionId, token,
+        PermissionsOperationResponseRaw raw = http.deleteAuthenticatedWithResponse(PATH_REVOKE_AUTHORIZATION + permissionId, token,
                 PermissionsOperationResponseRaw.class, OP_REVOKE_AUTHORIZATION);
+        return PermissionOperationResult.from(raw);
     }
 
     // --- Status operations ---
@@ -219,11 +239,12 @@ public final class PermissionClient {
      * @param referenceNumber the operation reference number
      * @return operation status
      */
-    public PermissionsOperationStatusResponseRaw getOperationStatus(String referenceNumber) {
+    public PermissionOperationStatus getOperationStatus(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_OPERATION_STATUS + referenceNumber, token,
+        PermissionsOperationStatusResponseRaw raw = http.getAuthenticated(PATH_OPERATION_STATUS + referenceNumber, token,
                 PermissionsOperationStatusResponseRaw.class, OP_GET_OPERATION_STATUS);
+        return PermissionOperationStatus.from(raw);
     }
 
     /**
@@ -231,10 +252,11 @@ public final class PermissionClient {
      *
      * @return attachment permission status
      */
-    public CheckAttachmentPermissionStatusResponseRaw getAttachmentStatus() {
+    public AttachmentPermissionStatus getAttachmentStatus() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_ATTACHMENT_STATUS, token,
+        CheckAttachmentPermissionStatusResponseRaw raw = http.getAuthenticated(PATH_ATTACHMENT_STATUS, token,
                 CheckAttachmentPermissionStatusResponseRaw.class, OP_GET_ATTACHMENT_STATUS);
+        return AttachmentPermissionStatus.from(raw);
     }
 
     // --- Query operations ---
@@ -245,10 +267,11 @@ public final class PermissionClient {
      * @param request query filters
      * @return personal permissions
      */
-    public QueryPersonalPermissionsResponseRaw queryPersonal(PersonalPermissionsQueryRequestRaw request) {
+    public PersonalPermissions queryPersonal(PersonalPermissionsQueryRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_PERSONAL, request, token,
+        QueryPersonalPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_PERSONAL, request, token,
                 QueryPersonalPermissionsResponseRaw.class, OP_QUERY_PERSONAL);
+        return PersonalPermissions.from(raw);
     }
 
     /**
@@ -257,10 +280,11 @@ public final class PermissionClient {
      * @param request query filters
      * @return person permissions
      */
-    public QueryPersonPermissionsResponseRaw queryPersons(PersonPermissionsQueryRequestRaw request) {
+    public PersonPermissions queryPersons(PersonPermissionsQueryRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_PERSONS, request, token,
+        QueryPersonPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_PERSONS, request, token,
                 QueryPersonPermissionsResponseRaw.class, OP_QUERY_PERSONS);
+        return PersonPermissions.from(raw);
     }
 
     /**
@@ -269,10 +293,11 @@ public final class PermissionClient {
      * @param request query filters
      * @return subunit permissions
      */
-    public QuerySubunitPermissionsResponseRaw querySubunits(SubunitPermissionsQueryRequestRaw request) {
+    public SubunitPermissions querySubunits(SubunitPermissionsQueryRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_SUBUNITS, request, token,
+        QuerySubunitPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_SUBUNITS, request, token,
                 QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
+        return SubunitPermissions.from(raw);
     }
 
     /**
@@ -281,10 +306,11 @@ public final class PermissionClient {
      * @param request query filters
      * @return entity permissions
      */
-    public QueryEntityPermissionsResponseRaw queryEntities(EntityPermissionsQueryRequestRaw request) {
+    public EntityPermissions queryEntities(EntityPermissionsQueryRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_ENTITIES, request, token,
+        QueryEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_ENTITIES, request, token,
                 QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
+        return EntityPermissions.from(raw);
     }
 
     /**
@@ -292,10 +318,11 @@ public final class PermissionClient {
      *
      * @return entity roles
      */
-    public QueryEntityRolesResponseRaw queryEntityRoles() {
+    public EntityRoles queryEntityRoles() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_QUERY_ENTITY_ROLES, token,
+        QueryEntityRolesResponseRaw raw = http.getAuthenticated(PATH_QUERY_ENTITY_ROLES, token,
                 QueryEntityRolesResponseRaw.class, OP_QUERY_ENTITY_ROLES);
+        return EntityRoles.from(raw);
     }
 
     /**
@@ -304,11 +331,12 @@ public final class PermissionClient {
      * @param request query filters
      * @return subordinate entity roles
      */
-    public QuerySubordinateEntityRolesResponseRaw querySubordinateRoles(
+    public SubordinateEntityRoles querySubordinateRoles(
             SubordinateEntityRolesQueryRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_SUBORDINATE, request, token,
+        QuerySubordinateEntityRolesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_SUBORDINATE, request, token,
                 QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
+        return SubordinateEntityRoles.from(raw);
     }
 
     /**
@@ -317,11 +345,12 @@ public final class PermissionClient {
      * @param request query filters
      * @return authorization permissions
      */
-    public QueryEntityAuthorizationPermissionsResponseRaw queryAuthorizations(
+    public EntityAuthorizationPermissions queryAuthorizations(
             EntityAuthorizationPermissionsQueryRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_AUTHORIZATIONS, request, token,
+        QueryEntityAuthorizationPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_AUTHORIZATIONS, request, token,
                 QueryEntityAuthorizationPermissionsResponseRaw.class, OP_QUERY_AUTHORIZATIONS);
+        return EntityAuthorizationPermissions.from(raw);
     }
 
     /**
@@ -330,9 +359,10 @@ public final class PermissionClient {
      * @param request query filters
      * @return EU entity permissions
      */
-    public QueryEuEntityPermissionsResponseRaw queryEuEntities(EuEntityPermissionsQueryRequestRaw request) {
+    public EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_EU_ENTITIES, request, token,
+        QueryEuEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_EU_ENTITIES, request, token,
                 QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
+        return EuEntityPermissions.from(raw);
     }
 }

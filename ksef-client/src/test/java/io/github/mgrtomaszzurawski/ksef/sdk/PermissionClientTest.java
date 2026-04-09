@@ -6,7 +6,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.CheckAttachmentPermissionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsGrantRequestRaw;
@@ -15,23 +14,24 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermi
 import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryEntityAuthorizationPermissionsResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryEntityPermissionsResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryEntityRolesResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryEuEntityPermissionsResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryPersonPermissionsResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryPersonalPermissionsResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubordinateEntityRolesResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubunitPermissionsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.AttachmentPermissionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EntityAuthorizationPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EntityRoles;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EuEntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PermissionOperationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PersonPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PersonalPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SubordinateEntityRoles;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.SubunitPermissions;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -42,8 +42,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WireMockTest
 class PermissionClientTest {
@@ -105,11 +107,11 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        PermissionsOperationResponseRaw response =
+        PermissionOperationResult response =
                 ksef.permissions().grantPerson(new PersonPermissionsGrantRequestRaw());
 
         // then
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     @Test
@@ -119,11 +121,11 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        PermissionsOperationResponseRaw response =
+        PermissionOperationResult response =
                 ksef.permissions().grantEntity(new EntityPermissionsGrantRequestRaw());
 
         // then
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     @Test
@@ -133,11 +135,11 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        PermissionsOperationResponseRaw response =
+        PermissionOperationResult response =
                 ksef.permissions().grantAuthorization(new EntityAuthorizationPermissionsGrantRequestRaw());
 
         // then
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     @Test
@@ -147,11 +149,11 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        PermissionsOperationResponseRaw response =
+        PermissionOperationResult response =
                 ksef.permissions().grantIndirect(new IndirectPermissionsGrantRequestRaw());
 
         // then
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     @Test
@@ -161,11 +163,11 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        PermissionsOperationResponseRaw response =
+        PermissionOperationResult response =
                 ksef.permissions().grantSubunit(new SubunitPermissionsGrantRequestRaw());
 
         // then
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     @Test
@@ -175,11 +177,11 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        PermissionsOperationResponseRaw response =
+        PermissionOperationResult response =
                 ksef.permissions().grantEuEntityAdmin(new EuEntityAdministrationPermissionsGrantRequestRaw());
 
         // then
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     @Test
@@ -189,11 +191,11 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        PermissionsOperationResponseRaw response =
+        PermissionOperationResult response =
                 ksef.permissions().grantEuEntity(new EuEntityPermissionsGrantRequestRaw());
 
         // then
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     // --- Revoke tests ---
@@ -209,9 +211,9 @@ class PermissionClientTest {
 
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        PermissionsOperationResponseRaw response = ksef.permissions().revokeCommon(TEST_PERMISSION_ID);
+        PermissionOperationResult response = ksef.permissions().revokeCommon(TEST_PERMISSION_ID);
 
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     @Test
@@ -225,10 +227,10 @@ class PermissionClientTest {
 
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        PermissionsOperationResponseRaw response =
+        PermissionOperationResult response =
                 ksef.permissions().revokeAuthorization(TEST_PERMISSION_ID);
 
-        assertEquals(TEST_OPERATION_REF, response.getReferenceNumber());
+        assertEquals(TEST_OPERATION_REF, response.referenceNumber());
     }
 
     // --- Status tests ---
@@ -244,10 +246,10 @@ class PermissionClientTest {
 
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        PermissionsOperationStatusResponseRaw response =
+        PermissionOperationStatus response =
                 ksef.permissions().getOperationStatus(TEST_OPERATION_REF);
 
-        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
+        assertEquals(KSEF_STATUS_OK, response.status().code());
     }
 
     @Test
@@ -261,10 +263,10 @@ class PermissionClientTest {
 
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        CheckAttachmentPermissionStatusResponseRaw response =
+        AttachmentPermissionStatus response =
                 ksef.permissions().getAttachmentStatus();
 
-        assertEquals(true, response.getIsAttachmentAllowed());
+        assertTrue(response.attachmentAllowed());
     }
 
     // --- Query tests ---
@@ -274,11 +276,11 @@ class PermissionClientTest {
         stubQueryEndpoint("/api/v2/permissions/query/personal/grants", QUERY_PERSONAL_RESPONSE);
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        QueryPersonalPermissionsResponseRaw response =
+        PersonalPermissions response =
                 ksef.permissions().queryPersonal(new PersonalPermissionsQueryRequestRaw());
 
-        assertNotNull(response.getPermissions());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.permissions());
+        assertFalse(response.hasMore());
     }
 
     @Test
@@ -286,11 +288,11 @@ class PermissionClientTest {
         stubQueryEndpoint("/api/v2/permissions/query/persons/grants", QUERY_EMPTY_RESPONSE);
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        QueryPersonPermissionsResponseRaw response =
+        PersonPermissions response =
                 ksef.permissions().queryPersons(new PersonPermissionsQueryRequestRaw());
 
-        assertNotNull(response.getPermissions());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.permissions());
+        assertFalse(response.hasMore());
     }
 
     @Test
@@ -298,11 +300,11 @@ class PermissionClientTest {
         stubQueryEndpoint("/api/v2/permissions/query/subunits/grants", QUERY_EMPTY_RESPONSE);
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        QuerySubunitPermissionsResponseRaw response =
+        SubunitPermissions response =
                 ksef.permissions().querySubunits(new SubunitPermissionsQueryRequestRaw());
 
-        assertNotNull(response.getPermissions());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.permissions());
+        assertFalse(response.hasMore());
     }
 
     @Test
@@ -310,11 +312,11 @@ class PermissionClientTest {
         stubQueryEndpoint("/api/v2/permissions/query/entities/grants", QUERY_EMPTY_RESPONSE);
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        QueryEntityPermissionsResponseRaw response =
+        EntityPermissions response =
                 ksef.permissions().queryEntities(new EntityPermissionsQueryRequestRaw());
 
-        assertNotNull(response.getPermissions());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.permissions());
+        assertFalse(response.hasMore());
     }
 
     @Test
@@ -328,10 +330,10 @@ class PermissionClientTest {
 
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        QueryEntityRolesResponseRaw response = ksef.permissions().queryEntityRoles();
+        EntityRoles response = ksef.permissions().queryEntityRoles();
 
-        assertNotNull(response.getRoles());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.roles());
+        assertFalse(response.hasMore());
     }
 
     @Test
@@ -339,11 +341,11 @@ class PermissionClientTest {
         stubQueryEndpoint("/api/v2/permissions/query/subordinate-entities/roles", QUERY_ROLES_RESPONSE);
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        QuerySubordinateEntityRolesResponseRaw response =
+        SubordinateEntityRoles response =
                 ksef.permissions().querySubordinateRoles(new SubordinateEntityRolesQueryRequestRaw());
 
-        assertNotNull(response.getRoles());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.roles());
+        assertFalse(response.hasMore());
     }
 
     @Test
@@ -351,11 +353,11 @@ class PermissionClientTest {
         stubQueryEndpoint("/api/v2/permissions/query/authorizations/grants", QUERY_EMPTY_RESPONSE);
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        QueryEntityAuthorizationPermissionsResponseRaw response =
+        EntityAuthorizationPermissions response =
                 ksef.permissions().queryAuthorizations(new EntityAuthorizationPermissionsQueryRequestRaw());
 
-        assertNotNull(response.getAuthorizationGrants());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.authorizationGrants());
+        assertFalse(response.hasMore());
     }
 
     @Test
@@ -363,11 +365,11 @@ class PermissionClientTest {
         stubQueryEndpoint("/api/v2/permissions/query/eu-entities/grants", QUERY_EMPTY_RESPONSE);
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        QueryEuEntityPermissionsResponseRaw response =
+        EuEntityPermissions response =
                 ksef.permissions().queryEuEntities(new EuEntityPermissionsQueryRequestRaw());
 
-        assertNotNull(response.getPermissions());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.permissions());
+        assertFalse(response.hasMore());
     }
 
     // --- Error and security tests ---

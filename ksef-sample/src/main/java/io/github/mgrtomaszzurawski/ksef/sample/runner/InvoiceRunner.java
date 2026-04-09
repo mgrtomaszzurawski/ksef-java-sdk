@@ -24,14 +24,14 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateRangeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQuerySubjectTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
@@ -116,9 +116,9 @@ public final class InvoiceRunner implements DemoRunner {
                             .dateType(InvoiceQueryDateTypeRaw.INVOICING)
                             .from(from));
 
-            QueryInvoicesMetadataResponseRaw response = context.client().invoices().queryMetadata(filters);
-            int count = response.getInvoices() != null ? response.getInvoices().size() : 0;
-            boolean hasMore = Boolean.TRUE.equals(response.getHasMore());
+            InvoiceMetadataResult response = context.client().invoices().queryMetadata(filters);
+            int count = response.invoices() != null ? response.invoices().size() : 0;
+            boolean hasMore = response.hasMore();
             LOG.info("[{}] queryMetadata: {} invoices, hasMore={}", NAME, count, hasMore);
             results.add(RunResult.ok(NAME, OP_QUERY_METADATA, elapsed(start),
                     count + " invoices, hasMore=" + hasMore));
@@ -149,8 +149,8 @@ public final class InvoiceRunner implements DemoRunner {
                                     .dateType(InvoiceQueryDateTypeRaw.INVOICING)
                                     .from(from)));
 
-            ExportInvoicesResponseRaw response = context.client().invoices().exportInvoices(request);
-            String refNum = response.getReferenceNumber();
+            ExportInvoicesResult response = context.client().invoices().exportInvoices(request);
+            String refNum = response.referenceNumber();
             LOG.info("[{}] export started, ref={}", NAME, refNum);
             context.state().setExportReferenceNumber(refNum);
             results.add(RunResult.ok(NAME, OP_EXPORT, elapsed(start), "ref=" + refNum));
@@ -166,9 +166,9 @@ public final class InvoiceRunner implements DemoRunner {
         int delay = POLL_INITIAL_DELAY_MS;
         try {
             while (elapsed(start) < POLL_TIMEOUT_MS) {
-                InvoiceExportStatusResponseRaw response = context.client().invoices()
+                InvoiceExportStatus response = context.client().invoices()
                         .getExportStatus(exportRef);
-                Integer code = response.getStatus() != null ? response.getStatus().getCode() : null;
+                Integer code = response.status() != null ? response.status().code() : null;
                 LOG.info("[{}] export status: code={}", NAME, code);
                 if (code != null && code == EXPORT_STATUS_OK) {
                     results.add(RunResult.ok(NAME, OP_EXPORT_STATUS, elapsed(start),

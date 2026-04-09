@@ -7,9 +7,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateRangeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadata;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -28,6 +36,7 @@ public final class InvoiceClient {
     private static final String OP_QUERY_METADATA = "queryInvoicesMetadata";
     private static final String OP_EXPORT = "exportInvoices";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
+    private static final int DEFAULT_MAX_RESULTS = 10000;
 
     private final HttpSupport http;
     private final SessionContext sessionContext;
@@ -55,10 +64,63 @@ public final class InvoiceClient {
      * @param filters the query filter criteria
      * @return paginated list of invoice metadata
      */
-    public QueryInvoicesMetadataResponseRaw queryMetadata(InvoiceQueryFiltersRaw filters) {
+    public InvoiceMetadataResult queryMetadata(InvoiceQueryFiltersRaw filters) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
+        QueryInvoicesMetadataResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
+        return InvoiceMetadataResult.from(raw);
+    }
+
+    /**
+     * Query all invoice metadata matching the filters, automatically fetching
+     * subsequent pages until no more results are available or maxResults is reached.
+     * <p>
+     * Uses the permanentStorageHwmDate from each response as a cursor to
+     * narrow the date range for the next page. Default limit: 10,000 results.
+     *
+     * @param filters the query filter criteria
+     * @return all matching invoice metadata across all pages (up to maxResults)
+     */
+    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryFiltersRaw filters) {
+        return queryAllMetadata(filters, DEFAULT_MAX_RESULTS);
+    }
+
+    /**
+     * Query invoice metadata with automatic pagination and explicit result limit.
+     *
+     * @param filters the query filter criteria
+     * @param maxResults maximum number of results to return (safety limit)
+     * @return matching invoice metadata across pages (up to maxResults)
+     */
+    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryFiltersRaw filters, int maxResults) {
+        List<InvoiceMetadata> allInvoices = new ArrayList<>();
+        InvoiceQueryFiltersRaw currentFilters = filters;
+
+        while (true) {
+            InvoiceMetadataResult page = queryMetadata(currentFilters);
+            allInvoices.addAll(page.invoices());
+
+            if (allInvoices.size() >= maxResults) {
+                return List.copyOf(allInvoices.subList(0, maxResults));
+            }
+
+            if (!page.hasMore() || page.permanentStorageHwmDate() == null) {
+                break;
+            }
+
+            // Use permanentStorageHwmDate as cursor — narrow dateRange.from for next page
+            InvoiceQueryDateRangeRaw nextDateRange = new InvoiceQueryDateRangeRaw()
+                    .dateType(filters.getDateRange().getDateType())
+                    .from(page.permanentStorageHwmDate());
+            if (filters.getDateRange().getTo() != null) {
+                nextDateRange.to(filters.getDateRange().getTo());
+            }
+            currentFilters = new InvoiceQueryFiltersRaw()
+                    .subjectType(filters.getSubjectType())
+                    .dateRange(nextDateRange);
+        }
+
+        return List.copyOf(allInvoices);
     }
 
     /**
@@ -67,10 +129,11 @@ public final class InvoiceClient {
      * @param request the export request with date range and optional filters
      * @return response with the export reference number for status polling
      */
-    public ExportInvoicesResponseRaw exportInvoices(InvoiceExportRequestRaw request) {
+    public ExportInvoicesResult exportInvoices(InvoiceExportRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_EXPORTS, request, token,
+        ExportInvoicesResponseRaw raw = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
                 ExportInvoicesResponseRaw.class, OP_EXPORT);
+        return ExportInvoicesResult.from(raw);
     }
 
     /**
@@ -79,10 +142,11 @@ public final class InvoiceClient {
      * @param referenceNumber the export reference number from {@link #exportInvoices}
      * @return export status with download URL when complete
      */
-    public InvoiceExportStatusResponseRaw getExportStatus(String referenceNumber) {
+    public InvoiceExportStatus getExportStatus(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
+        InvoiceExportStatusResponseRaw raw = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
                 InvoiceExportStatusResponseRaw.class, OP_EXPORT_STATUS);
+        return InvoiceExportStatus.from(raw);
     }
 }

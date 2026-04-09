@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.ApiRateLimits;
 
 /**
  * Client for KSeF API rate limit information.
@@ -29,9 +30,10 @@ public final class RateLimitClient {
      *
      * @return effective rate limits including request counts and time windows
      */
-    public EffectiveApiRateLimitsRaw getRateLimits() {
+    public ApiRateLimits getRateLimits() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_RATE_LIMITS, token,
+        EffectiveApiRateLimitsRaw raw = http.getAuthenticated(PATH_RATE_LIMITS, token,
                 EffectiveApiRateLimitsRaw.class, OP_GET_RATE_LIMITS);
+        return ApiRateLimits.from(raw);
     }
 }

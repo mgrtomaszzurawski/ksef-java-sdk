@@ -21,10 +21,10 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenPermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
@@ -78,8 +78,8 @@ public final class TokenRunner implements DemoRunner {
             GenerateTokenRequestRaw request = new GenerateTokenRequestRaw()
                     .description(TOKEN_DESCRIPTION)
                     .addPermissionsItem(TokenPermissionTypeRaw.INVOICE_READ);
-            GenerateTokenResponseRaw response = context.client().tokens().generate(request);
-            String refNum = response.getReferenceNumber();
+            GenerateTokenResult response = context.client().tokens().generate(request);
+            String refNum = response.referenceNumber();
             LOG.info("[{}] generated token ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GENERATE, elapsed(start), "ref=" + refNum));
             return refNum;
@@ -92,8 +92,8 @@ public final class TokenRunner implements DemoRunner {
     private void runGetStatus(DemoContext context, String referenceNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            TokenStatusResponseRaw response = context.client().tokens().getStatus(referenceNumber);
-            LOG.info("[{}] token status: ref={}, status={}", NAME, referenceNumber, response.getStatus());
+            TokenDetail response = context.client().tokens().getStatus(referenceNumber);
+            LOG.info("[{}] token status: ref={}, status={}", NAME, referenceNumber, response.status());
             results.add(RunResult.ok(NAME, OP_GET_STATUS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_STATUS, elapsed(start), errorMessage(exception)));
@@ -103,8 +103,8 @@ public final class TokenRunner implements DemoRunner {
     private void runList(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            QueryTokensResponseRaw response = context.client().tokens().list();
-            int tokenCount = response.getTokens() != null ? response.getTokens().size() : 0;
+            TokenList response = context.client().tokens().list();
+            int tokenCount = response.tokens() != null ? response.tokens().size() : 0;
             LOG.info("[{}] listed {} tokens", NAME, tokenCount);
             results.add(RunResult.ok(NAME, OP_LIST, elapsed(start), tokenCount + " tokens"));
         } catch (Exception exception) {

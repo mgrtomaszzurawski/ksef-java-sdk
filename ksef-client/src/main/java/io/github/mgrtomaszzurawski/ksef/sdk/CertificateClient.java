@@ -15,6 +15,12 @@ import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequest
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.RetrieveCertificatesResult;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -54,10 +60,11 @@ public final class CertificateClient {
      *
      * @return certificate limits
      */
-    public CertificateLimitsResponseRaw getLimits() {
+    public CertificateLimits getLimits() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_LIMITS, token,
+        CertificateLimitsResponseRaw raw = http.getAuthenticated(PATH_LIMITS, token,
                 CertificateLimitsResponseRaw.class, OP_GET_LIMITS);
+        return CertificateLimits.from(raw);
     }
 
     /**
@@ -65,10 +72,11 @@ public final class CertificateClient {
      *
      * @return enrollment data with CSR requirements
      */
-    public CertificateEnrollmentDataResponseRaw getEnrollmentData() {
+    public CertificateEnrollmentData getEnrollmentData() {
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_ENROLLMENT_DATA, token,
+        CertificateEnrollmentDataResponseRaw raw = http.getAuthenticated(PATH_ENROLLMENT_DATA, token,
                 CertificateEnrollmentDataResponseRaw.class, OP_GET_ENROLLMENT_DATA);
+        return CertificateEnrollmentData.from(raw);
     }
 
     /**
@@ -77,10 +85,11 @@ public final class CertificateClient {
      * @param request enrollment request with certificate name, type, and CSR
      * @return response with enrollment reference number
      */
-    public EnrollCertificateResponseRaw enroll(EnrollCertificateRequestRaw request) {
+    public EnrollCertificateResult enroll(EnrollCertificateRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
+        EnrollCertificateResponseRaw raw = http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
                 EnrollCertificateResponseRaw.class, OP_ENROLL);
+        return EnrollCertificateResult.from(raw);
     }
 
     /**
@@ -89,11 +98,12 @@ public final class CertificateClient {
      * @param referenceNumber the enrollment reference number
      * @return enrollment status
      */
-    public CertificateEnrollmentStatusResponseRaw getEnrollmentStatus(String referenceNumber) {
+    public CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        return http.getAuthenticated(PATH_ENROLLMENTS + "/" + referenceNumber, token,
+        CertificateEnrollmentStatusResponseRaw raw = http.getAuthenticated(PATH_ENROLLMENTS + "/" + referenceNumber, token,
                 CertificateEnrollmentStatusResponseRaw.class, OP_GET_ENROLLMENT_STATUS);
+        return CertificateEnrollmentStatus.from(raw);
     }
 
     /**
@@ -102,10 +112,11 @@ public final class CertificateClient {
      * @param request request containing certificate serial numbers
      * @return response with certificate details
      */
-    public RetrieveCertificatesResponseRaw retrieve(RetrieveCertificatesRequestRaw request) {
+    public RetrieveCertificatesResult retrieve(RetrieveCertificatesRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_RETRIEVE, request, token,
+        RetrieveCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_RETRIEVE, request, token,
                 RetrieveCertificatesResponseRaw.class, OP_RETRIEVE);
+        return RetrieveCertificatesResult.from(raw);
     }
 
     /**
@@ -127,9 +138,10 @@ public final class CertificateClient {
      * @param request query filters
      * @return matching certificates
      */
-    public QueryCertificatesResponseRaw query(QueryCertificatesRequestRaw request) {
+    public CertificateQueryResult query(QueryCertificatesRequestRaw request) {
         String token = sessionContext.token();
-        return http.postJsonAuthenticated(PATH_QUERY, request, token,
+        QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY, request, token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);
+        return CertificateQueryResult.from(raw);
     }
 }

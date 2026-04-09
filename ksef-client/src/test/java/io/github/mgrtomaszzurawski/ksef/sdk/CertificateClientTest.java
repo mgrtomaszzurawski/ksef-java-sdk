@@ -6,17 +6,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.RetrieveCertificatesResult;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -28,8 +28,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WireMockTest
 class CertificateClientTest {
@@ -99,12 +101,12 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        CertificateLimitsResponseRaw response = ksef.certificates().getLimits();
+        CertificateLimits response = ksef.certificates().getLimits();
 
         // then
-        assertEquals(true, response.getCanRequest());
-        assertNotNull(response.getEnrollment());
-        assertNotNull(response.getCertificate());
+        assertTrue(response.canRequest());
+        assertNotNull(response.enrollment());
+        assertNotNull(response.certificate());
     }
 
     @Test
@@ -120,11 +122,11 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        CertificateEnrollmentDataResponseRaw response = ksef.certificates().getEnrollmentData();
+        CertificateEnrollmentData response = ksef.certificates().getEnrollmentData();
 
         // then
-        assertEquals("KSeF Certificate", response.getCommonName());
-        assertEquals("PL", response.getCountryName());
+        assertEquals("KSeF Certificate", response.commonName());
+        assertEquals("PL", response.countryName());
     }
 
     @Test
@@ -140,11 +142,11 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        EnrollCertificateResponseRaw response = ksef.certificates().enroll(new EnrollCertificateRequestRaw());
+        EnrollCertificateResult response = ksef.certificates().enroll(new EnrollCertificateRequestRaw());
 
         // then
-        assertEquals(TEST_ENROLLMENT_REF, response.getReferenceNumber());
-        assertNotNull(response.getTimestamp());
+        assertEquals(TEST_ENROLLMENT_REF, response.referenceNumber());
+        assertNotNull(response.timestamp());
     }
 
     @Test
@@ -160,12 +162,12 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        CertificateEnrollmentStatusResponseRaw response =
+        CertificateEnrollmentStatus response =
                 ksef.certificates().getEnrollmentStatus(TEST_ENROLLMENT_REF);
 
         // then
-        assertEquals(Integer.valueOf(KSEF_STATUS_OK), response.getStatus().getCode());
-        assertNotNull(response.getRequestDate());
+        assertEquals(KSEF_STATUS_OK, response.status().code());
+        assertNotNull(response.requestDate());
     }
 
     @Test
@@ -181,11 +183,11 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        RetrieveCertificatesResponseRaw response =
+        RetrieveCertificatesResult response =
                 ksef.certificates().retrieve(new RetrieveCertificatesRequestRaw());
 
         // then
-        assertNotNull(response.getCertificates());
+        assertNotNull(response.certificates());
     }
 
     @Test
@@ -219,12 +221,12 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        QueryCertificatesResponseRaw response =
+        CertificateQueryResult response =
                 ksef.certificates().query(new QueryCertificatesRequestRaw());
 
         // then
-        assertNotNull(response.getCertificates());
-        assertEquals(false, response.getHasMore());
+        assertNotNull(response.certificates());
+        assertFalse(response.hasMore());
     }
 
     @Test

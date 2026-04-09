@@ -8,6 +8,8 @@ module io.github.mgrtomaszzurawski.ksef {
     // SDK public API
     exports io.github.mgrtomaszzurawski.ksef.sdk;
     exports io.github.mgrtomaszzurawski.ksef.sdk.exception;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
     exports io.github.mgrtomaszzurawski.ksef.sdk.paging;
     exports io.github.mgrtomaszzurawski.ksef.sdk.crypto;
     exports io.github.mgrtomaszzurawski.ksef.sdk.signing;
