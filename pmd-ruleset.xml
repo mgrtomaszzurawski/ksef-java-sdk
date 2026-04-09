@@ -8,6 +8,8 @@
 
     <rule ref="category/java/bestpractices.xml">
         <exclude name="GuardLogStatement"/>
+        <!-- char[] params for passwords/keys are standard Java security API convention -->
+        <exclude name="UseVarargs"/>
     </rule>
 
     <rule ref="category/java/codestyle.xml">
