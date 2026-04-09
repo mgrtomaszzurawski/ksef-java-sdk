@@ -163,6 +163,35 @@ public final class HttpSupport {
     }
 
     /**
+     * Send an authenticated POST with JSON body and expect no content (204).
+     */
+    public void postJsonAuthenticatedNoContent(String path, Object body, String token, String operationName) {
+        ksef.retryHandler().run(() -> {
+            String jsonBody = ksef.objectMapper().writeValueAsString(body);
+            HttpRequest request = newPostBuilder(path)
+                    .header(CONTENT_TYPE, APPLICATION_JSON)
+                    .header(AUTHORIZATION, BEARER_PREFIX + token)
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+            sendExpectNoContent(request);
+        }, operationName);
+    }
+
+    /**
+     * Send a POST with JSON body and expect no content (204). No authentication.
+     */
+    public void postJsonNoContent(String path, Object body, String operationName) {
+        ksef.retryHandler().run(() -> {
+            String jsonBody = ksef.objectMapper().writeValueAsString(body);
+            HttpRequest request = newPostBuilder(path)
+                    .header(CONTENT_TYPE, APPLICATION_JSON)
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+            sendExpectNoContent(request);
+        }, operationName);
+    }
+
+    /**
      * Send an authenticated POST with no body and expect no content (204).
      */
     public void postNoBodyAuthenticated(String path, String token, String operationName) {
@@ -193,6 +222,23 @@ public final class HttpSupport {
                         new String(response.body(), java.nio.charset.StandardCharsets.UTF_8));
             }
             return response.body();
+        }, operationName);
+    }
+
+    /**
+     * Send an authenticated DELETE and deserialize the JSON response.
+     */
+    public <T> T deleteAuthenticatedWithResponse(String path, String token,
+                                                  Class<T> responseType, String operationName) {
+        return ksef.retryHandler().execute(() -> {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(uri(path))
+                    .timeout(ksef.readTimeout())
+                    .header(ACCEPT, APPLICATION_JSON)
+                    .header(AUTHORIZATION, BEARER_PREFIX + token)
+                    .DELETE()
+                    .build();
+            return sendAndDeserialize(request, responseType);
         }, operationName);
     }
 
