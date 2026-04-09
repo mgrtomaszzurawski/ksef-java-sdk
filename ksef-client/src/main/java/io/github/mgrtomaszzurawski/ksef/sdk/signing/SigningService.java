@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.signing;
 
+import eu.europa.esig.dss.model.DSSException;
 import eu.europa.esig.dss.enumerations.DigestAlgorithm;
 import eu.europa.esig.dss.enumerations.EncryptionAlgorithm;
 import eu.europa.esig.dss.enumerations.MimeTypeEnum;
@@ -23,8 +24,10 @@ import eu.europa.esig.dss.xades.signature.XAdESService;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
@@ -59,6 +62,10 @@ public final class SigningService {
      * @return the signed XML as a string
      */
     public static String signXml(byte[] xmlContent, X509Certificate certificate, PrivateKey privateKey) {
+        if (xmlContent == null || certificate == null || privateKey == null) {
+            throw new KsefCryptoException(ERR_SIGN_FAILED,
+                    new IllegalArgumentException("xmlContent, certificate, and privateKey must not be null"));
+        }
         try {
             DSSDocument document = new InMemoryDocument(xmlContent, null, MimeTypeEnum.XML);
             XAdESSignatureParameters parameters = buildParameters(certificate, privateKey);
@@ -71,7 +78,7 @@ public final class SigningService {
             try (InputStream stream = signedDocument.openStream()) {
                 return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             }
-        } catch (Exception exception) {
+        } catch (IOException | DSSException exception) {
             throw new KsefCryptoException(ERR_SIGN_FAILED, exception);
         }
     }
@@ -120,7 +127,7 @@ public final class SigningService {
                     keystoreBytes.toByteArray(), new KeyStore.PasswordProtection(null))) {
                 return token.sign(toBeSigned, signatureAlgorithm, dssEntry);
             }
-        } catch (Exception exception) {
+        } catch (GeneralSecurityException | IOException exception) {
             throw new KsefCryptoException(ERR_SIGN_FAILED, exception);
         }
     }
