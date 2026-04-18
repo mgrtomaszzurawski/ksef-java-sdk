@@ -5,8 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.SubjectCreateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TestSubjectType;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ import java.util.Objects;
  * Usage:
  * <pre>{@code
  * SubjectCreateRequestRaw request = TestSubjectCreateBuilder
- *     .create("1234567890", SubjectTypeRaw.JST, "Test taxpayer")
+ *     .create("1234567890", TestSubjectType.JST, "Test taxpayer")
  *     .build();
  * }</pre>
  */
@@ -35,12 +35,12 @@ public final class TestSubjectCreateBuilder {
     private static final String ERR_NULL_SUBUNIT_DESCRIPTION = "subunitDescription is required";
 
     private final String subjectNip;
-    private final SubjectTypeRaw subjectType;
+    private final TestSubjectType subjectType;
     private final String description;
     private final List<SubunitRaw> subunits = new ArrayList<>();
     private OffsetDateTime createdDate;
 
-    private TestSubjectCreateBuilder(String subjectNip, SubjectTypeRaw subjectType, String description) {
+    private TestSubjectCreateBuilder(String subjectNip, TestSubjectType subjectType, String description) {
         this.subjectNip = Objects.requireNonNull(subjectNip, ERR_NULL_SUBJECT_NIP);
         this.subjectType = Objects.requireNonNull(subjectType, ERR_NULL_SUBJECT_TYPE);
         this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
@@ -53,7 +53,7 @@ public final class TestSubjectCreateBuilder {
      * @param subjectType type of the subject (EnforcementAuthority, VatGroup, JST)
      * @param description human-readable description
      */
-    public static TestSubjectCreateBuilder create(String subjectNip, SubjectTypeRaw subjectType,
+    public static TestSubjectCreateBuilder create(String subjectNip, TestSubjectType subjectType,
                                                    String description) {
         return new TestSubjectCreateBuilder(subjectNip, subjectType, description);
     }
@@ -90,7 +90,7 @@ public final class TestSubjectCreateBuilder {
     public SubjectCreateRequestRaw build() {
         SubjectCreateRequestRaw request = new SubjectCreateRequestRaw();
         request.setSubjectNip(subjectNip);
-        request.setSubjectType(subjectType);
+        request.setSubjectType(subjectType.toRaw());
         request.setDescription(description);
         if (!subunits.isEmpty()) {
             request.setSubunits(new ArrayList<>(subunits));

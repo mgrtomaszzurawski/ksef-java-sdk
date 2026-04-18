@@ -4,9 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateListItemStatusRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.KsefCertificateType;
 
 import java.time.OffsetDateTime;
 
@@ -18,8 +18,8 @@ import java.time.OffsetDateTime;
  * Usage:
  * <pre>{@code
  * QueryCertificatesRequestRaw request = CertificateQueryBuilder.create()
- *     .status(CertificateListItemStatusRaw.ACTIVE)
- *     .type(KsefCertificateTypeRaw.AUTHENTICATION)
+ *     .status(CertificateStatus.ACTIVE)
+ *     .type(KsefCertificateType.AUTHENTICATION)
  *     .build();
  * }</pre>
  */
@@ -27,8 +27,8 @@ public final class CertificateQueryBuilder {
 
     private String serialNumber;
     private String name;
-    private KsefCertificateTypeRaw type;
-    private CertificateListItemStatusRaw status;
+    private KsefCertificateType type;
+    private CertificateStatus status;
     private OffsetDateTime expiresAfter;
 
     private CertificateQueryBuilder() {
@@ -66,7 +66,7 @@ public final class CertificateQueryBuilder {
      *
      * @param type Authentication or Offline
      */
-    public CertificateQueryBuilder type(KsefCertificateTypeRaw type) {
+    public CertificateQueryBuilder type(KsefCertificateType type) {
         this.type = type;
         return this;
     }
@@ -76,7 +76,7 @@ public final class CertificateQueryBuilder {
      *
      * @param status Active, Blocked, Revoked, or Expired
      */
-    public CertificateQueryBuilder status(CertificateListItemStatusRaw status) {
+    public CertificateQueryBuilder status(CertificateStatus status) {
         this.status = status;
         return this;
     }
@@ -105,10 +105,10 @@ public final class CertificateQueryBuilder {
             request.setName(name);
         }
         if (type != null) {
-            request.setType(type);
+            request.setType(type.toRaw());
         }
         if (status != null) {
-            request.setStatus(status);
+            request.setStatus(status.toRaw());
         }
         if (expiresAfter != null) {
             request.setExpiresAfter(expiresAfter);

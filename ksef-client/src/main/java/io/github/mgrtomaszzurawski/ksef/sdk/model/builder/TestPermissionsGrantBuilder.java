@@ -9,8 +9,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifie
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TestDataPermissionType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -99,40 +99,40 @@ public final class TestPermissionsGrantBuilder {
      * @param permissionType the permission type
      * @param description human-readable description
      */
-    public TestPermissionsGrantBuilder permission(TestDataPermissionTypeRaw permissionType, String description) {
+    public TestPermissionsGrantBuilder permission(TestDataPermissionType permissionType, String description) {
         TestDataPermissionRaw perm = new TestDataPermissionRaw();
-        perm.setPermissionType(Objects.requireNonNull(permissionType, ERR_NULL_PERMISSION_TYPE));
+        perm.setPermissionType(Objects.requireNonNull(permissionType, ERR_NULL_PERMISSION_TYPE).toRaw());
         perm.setDescription(Objects.requireNonNull(description, ERR_NULL_DESCRIPTION));
         permissions.add(perm);
         return this;
     }
 
     public TestPermissionsGrantBuilder invoiceRead() {
-        return permission(TestDataPermissionTypeRaw.INVOICE_READ, "InvoiceRead");
+        return permission(TestDataPermissionType.INVOICE_READ, "InvoiceRead");
     }
 
     public TestPermissionsGrantBuilder invoiceWrite() {
-        return permission(TestDataPermissionTypeRaw.INVOICE_WRITE, "InvoiceWrite");
+        return permission(TestDataPermissionType.INVOICE_WRITE, "InvoiceWrite");
     }
 
     public TestPermissionsGrantBuilder credentialsRead() {
-        return permission(TestDataPermissionTypeRaw.CREDENTIALS_READ, "CredentialsRead");
+        return permission(TestDataPermissionType.CREDENTIALS_READ, "CredentialsRead");
     }
 
     public TestPermissionsGrantBuilder credentialsManage() {
-        return permission(TestDataPermissionTypeRaw.CREDENTIALS_MANAGE, "CredentialsManage");
+        return permission(TestDataPermissionType.CREDENTIALS_MANAGE, "CredentialsManage");
     }
 
     public TestPermissionsGrantBuilder introspection() {
-        return permission(TestDataPermissionTypeRaw.INTROSPECTION, "Introspection");
+        return permission(TestDataPermissionType.INTROSPECTION, "Introspection");
     }
 
     public TestPermissionsGrantBuilder enforcementOperations() {
-        return permission(TestDataPermissionTypeRaw.ENFORCEMENT_OPERATIONS, "EnforcementOperations");
+        return permission(TestDataPermissionType.ENFORCEMENT_OPERATIONS, "EnforcementOperations");
     }
 
     public TestPermissionsGrantBuilder subunitManage() {
-        return permission(TestDataPermissionTypeRaw.SUBUNIT_MANAGE, "SubunitManage");
+        return permission(TestDataPermissionType.SUBUNIT_MANAGE, "SubunitManage");
     }
 
     /**

@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.KsefCertificateType;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -19,7 +19,7 @@ import java.util.Objects;
  * Usage:
  * <pre>{@code
  * EnrollCertificateRequestRaw request = CertificateEnrollBuilder
- *     .create("My Auth Cert", KsefCertificateTypeRaw.AUTHENTICATION, csrBytes)
+ *     .create("My Auth Cert", KsefCertificateType.AUTHENTICATION, csrBytes)
  *     .validFrom(OffsetDateTime.now().plusDays(1))
  *     .build();
  * }</pre>
@@ -32,11 +32,11 @@ public final class CertificateEnrollBuilder {
     private static final String ERR_CSR_EMPTY = "csr must not be empty";
 
     private final String certificateName;
-    private final KsefCertificateTypeRaw certificateType;
+    private final KsefCertificateType certificateType;
     private final byte[] csr;
     private OffsetDateTime validFrom;
 
-    private CertificateEnrollBuilder(String certificateName, KsefCertificateTypeRaw certificateType, byte[] csr) {
+    private CertificateEnrollBuilder(String certificateName, KsefCertificateType certificateType, byte[] csr) {
         this.certificateName = Objects.requireNonNull(certificateName, ERR_NULL_CERTIFICATE_NAME);
         this.certificateType = Objects.requireNonNull(certificateType, ERR_NULL_CERTIFICATE_TYPE);
         Objects.requireNonNull(csr, ERR_NULL_CSR);
@@ -54,7 +54,7 @@ public final class CertificateEnrollBuilder {
      * @param csr PKCS#10 certificate signing request in DER format
      */
     public static CertificateEnrollBuilder create(String certificateName,
-                                                   KsefCertificateTypeRaw certificateType,
+                                                   KsefCertificateType certificateType,
                                                    byte[] csr) {
         return new CertificateEnrollBuilder(certificateName, certificateType, csr);
     }
@@ -77,7 +77,7 @@ public final class CertificateEnrollBuilder {
     public EnrollCertificateRequestRaw build() {
         EnrollCertificateRequestRaw request = new EnrollCertificateRequestRaw();
         request.setCertificateName(certificateName);
-        request.setCertificateType(certificateType);
+        request.setCertificateType(certificateType.toRaw());
         request.setCsr(csr.clone());
         if (validFrom != null) {
             request.setValidFrom(validFrom);

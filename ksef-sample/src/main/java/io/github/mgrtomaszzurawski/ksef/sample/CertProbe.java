@@ -17,7 +17,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefPkcs12Credentials;
@@ -171,7 +171,7 @@ public final class CertProbe {
         KeyPair newKeyPair = generateKeyPair();
         byte[] csrBytes = generateCsr(enrollData, newKeyPair);
         CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder.create(
-                CERT_NAME, KsefCertificateTypeRaw.AUTHENTICATION, csrBytes);
+                CERT_NAME, KsefCertificateType.AUTHENTICATION, csrBytes);
 
         EnrollCertificateResult enrollResult;
         try {

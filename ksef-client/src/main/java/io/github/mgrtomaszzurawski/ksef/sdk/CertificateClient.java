@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataRe
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateRevocationReasonRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateRevocationReason;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRaw;
@@ -152,11 +153,11 @@ public final class CertificateClient {
      * @param certificateSerialNumber the serial number of the certificate to revoke
      * @param revocationReason reason for revocation (Unspecified, Superseded, KeyCompromise)
      */
-    public void revoke(String certificateSerialNumber, CertificateRevocationReasonRaw revocationReason) {
+    public void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason) {
         requireSafePathSegment(certificateSerialNumber);
         Objects.requireNonNull(revocationReason, ERR_NULL_REVOCATION_REASON);
         RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
-        request.setRevocationReason(revocationReason);
+        request.setRevocationReason(revocationReason.toRaw());
         String token = sessionContext.token();
         String path = PATH_CERTIFICATES + "/" + certificateSerialNumber + SEGMENT_REVOKE;
         http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
