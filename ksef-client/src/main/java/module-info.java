@@ -11,9 +11,6 @@ module io.github.mgrtomaszzurawski.ksef {
     exports io.github.mgrtomaszzurawski.ksef.sdk.model;
     exports io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
     exports io.github.mgrtomaszzurawski.ksef.sdk.paging;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.crypto;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.signing;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.http;
 
     // Required modules
     requires java.net.http;
