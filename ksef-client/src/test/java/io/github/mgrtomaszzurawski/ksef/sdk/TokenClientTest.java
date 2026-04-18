@@ -6,11 +6,11 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.GenerateTokenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TokenGenerateBuilder;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -75,7 +75,7 @@ class TokenClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        GenerateTokenResult response = ksef.tokens().generate(new GenerateTokenRequestRaw());
+        GenerateTokenResult response = ksef.tokens().generate(TokenGenerateBuilder.create("test description").invoiceRead());
 
         // then
         assertEquals(TEST_TOKEN_REF, response.referenceNumber());
@@ -151,7 +151,7 @@ class TokenClientTest {
 
         // then
         assertThrows(KsefAuthException.class,
-                () -> ksef.tokens().generate(new GenerateTokenRequestRaw()));
+                () -> ksef.tokens().generate(TokenGenerateBuilder.create("test description").invoiceRead()));
     }
 
     @Test
@@ -164,6 +164,7 @@ class TokenClientTest {
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+                .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
         ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);

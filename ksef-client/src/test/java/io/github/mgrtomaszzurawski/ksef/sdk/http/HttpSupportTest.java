@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
@@ -199,6 +200,7 @@ class HttpSupportTest {
 
     private static HttpSupport createHttpSupport(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+                .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
         return new HttpSupport(ksef);
