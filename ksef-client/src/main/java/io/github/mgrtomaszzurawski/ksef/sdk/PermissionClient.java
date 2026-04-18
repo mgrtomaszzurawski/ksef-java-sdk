@@ -5,19 +5,9 @@
 package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.CheckAttachmentPermissionStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryEntityAuthorizationPermissionsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryEntityPermissionsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryEntityRolesResponseRaw;
@@ -27,7 +17,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryPersonalPermissionsRes
 import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubordinateEntityRolesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubunitPermissionsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AttachmentPermissionStatus;
@@ -41,6 +30,19 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.PersonPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PersonalPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.SubunitPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityAuthorizationPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityAuthorizationPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityAdminPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.IndirectPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonalPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.SubunitPermissionGrantBuilder;
+
+import java.util.Objects;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -98,6 +100,9 @@ public final class PermissionClient {
     private static final String OP_QUERY_AUTHORIZATIONS = "queryAuthorizationPermissions";
     private static final String OP_QUERY_EU_ENTITIES = "queryEuEntityPermissions";
 
+    // --- Null-check error messages ---
+    private static final String ERR_BUILDER_NULL = "builder must not be null";
+
     private final HttpSupport http;
     private final SessionContext sessionContext;
 
@@ -111,12 +116,13 @@ public final class PermissionClient {
     /**
      * Grant permissions to a person (identified by PESEL or NIP).
      *
-     * @param request grant request with subject identifier, permissions, and description
+     * @param builder grant builder with subject identifier, permissions, and description
      * @return operation response with reference number
      */
-    public PermissionOperationResult grantPerson(PersonPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantPerson(PersonPermissionGrantBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_PERSON, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_PERSON, builder.build(), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_PERSON);
         return PermissionOperationResult.from(raw);
     }
@@ -124,12 +130,13 @@ public final class PermissionClient {
     /**
      * Grant permissions to an entity (identified by NIP).
      *
-     * @param request grant request with subject identifier, permissions, and description
+     * @param builder grant builder with subject identifier, permissions, and description
      * @return operation response with reference number
      */
-    public PermissionOperationResult grantEntity(EntityPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantEntity(EntityPermissionGrantBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_ENTITY, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_ENTITY, builder.build(), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_ENTITY);
         return PermissionOperationResult.from(raw);
     }
@@ -137,13 +144,13 @@ public final class PermissionClient {
     /**
      * Grant authorization permissions (delegate authority to act on behalf of an entity).
      *
-     * @param request grant request with authorization details
+     * @param builder grant builder with authorization details
      * @return operation response with reference number
      */
-    public PermissionOperationResult grantAuthorization(
-            EntityAuthorizationPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION, builder.build(), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_AUTHORIZATION);
         return PermissionOperationResult.from(raw);
     }
@@ -151,12 +158,13 @@ public final class PermissionClient {
     /**
      * Grant indirect permissions (through an intermediary entity).
      *
-     * @param request grant request with indirect permission details
+     * @param builder grant builder with indirect permission details
      * @return operation response with reference number
      */
-    public PermissionOperationResult grantIndirect(IndirectPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantIndirect(IndirectPermissionGrantBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_INDIRECT, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_INDIRECT, builder.build(), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_INDIRECT);
         return PermissionOperationResult.from(raw);
     }
@@ -164,12 +172,13 @@ public final class PermissionClient {
     /**
      * Grant permissions to a subunit (organizational unit within an entity).
      *
-     * @param request grant request with subunit and permission details
+     * @param builder grant builder with subunit and permission details
      * @return operation response with reference number
      */
-    public PermissionOperationResult grantSubunit(SubunitPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantSubunit(SubunitPermissionGrantBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_SUBUNIT, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_SUBUNIT, builder.build(), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_SUBUNIT);
         return PermissionOperationResult.from(raw);
     }
@@ -177,13 +186,13 @@ public final class PermissionClient {
     /**
      * Grant EU entity administration permissions (register and manage EU entities).
      *
-     * @param request grant request with EU entity admin details
+     * @param builder grant builder with EU entity admin details
      * @return operation response with reference number
      */
-    public PermissionOperationResult grantEuEntityAdmin(
-            EuEntityAdministrationPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY_ADMIN, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY_ADMIN, builder.build(), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY_ADMIN);
         return PermissionOperationResult.from(raw);
     }
@@ -191,12 +200,13 @@ public final class PermissionClient {
     /**
      * Grant permissions to an EU entity.
      *
-     * @param request grant request with EU entity permission details
+     * @param builder grant builder with EU entity permission details
      * @return operation response with reference number
      */
-    public PermissionOperationResult grantEuEntity(EuEntityPermissionsGrantRequestRaw request) {
+    public PermissionOperationResult grantEuEntity(EuEntityPermissionGrantBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY, request, token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY, builder.build(), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY);
         return PermissionOperationResult.from(raw);
     }
@@ -264,12 +274,13 @@ public final class PermissionClient {
     /**
      * Query personal permissions (permissions granted to the authenticated user).
      *
-     * @param request query filters
+     * @param builder query builder with optional filters
      * @return personal permissions
      */
-    public PersonalPermissions queryPersonal(PersonalPermissionsQueryRequestRaw request) {
+    public PersonalPermissions queryPersonal(PersonalPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        QueryPersonalPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_PERSONAL, request, token,
+        QueryPersonalPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_PERSONAL, builder.build(), token,
                 QueryPersonalPermissionsResponseRaw.class, OP_QUERY_PERSONAL);
         return PersonalPermissions.from(raw);
     }
@@ -277,38 +288,39 @@ public final class PermissionClient {
     /**
      * Query permissions granted to persons for the current context.
      *
-     * @param request query filters
+     * @param builder query builder with filters (queryType is required)
      * @return person permissions
      */
-    public PersonPermissions queryPersons(PersonPermissionsQueryRequestRaw request) {
+    public PersonPermissions queryPersons(PersonPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        QueryPersonPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_PERSONS, request, token,
+        QueryPersonPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_PERSONS, builder.build(), token,
                 QueryPersonPermissionsResponseRaw.class, OP_QUERY_PERSONS);
         return PersonPermissions.from(raw);
     }
 
     /**
-     * Query permissions granted to subunits.
+     * Query permissions granted to subunits (sends empty request body).
      *
-     * @param request query filters
      * @return subunit permissions
      */
-    public SubunitPermissions querySubunits(SubunitPermissionsQueryRequestRaw request) {
+    public SubunitPermissions querySubunits() {
         String token = sessionContext.token();
-        QuerySubunitPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_SUBUNITS, request, token,
+        QuerySubunitPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_SUBUNITS,
+                new SubunitPermissionsQueryRequestRaw(), token,
                 QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
         return SubunitPermissions.from(raw);
     }
 
     /**
-     * Query permissions granted to entities.
+     * Query permissions granted to entities (sends empty request body).
      *
-     * @param request query filters
      * @return entity permissions
      */
-    public EntityPermissions queryEntities(EntityPermissionsQueryRequestRaw request) {
+    public EntityPermissions queryEntities() {
         String token = sessionContext.token();
-        QueryEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_ENTITIES, request, token,
+        QueryEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_ENTITIES,
+                new EntityPermissionsQueryRequestRaw(), token,
                 QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
         return EntityPermissions.from(raw);
     }
@@ -326,15 +338,14 @@ public final class PermissionClient {
     }
 
     /**
-     * Query roles of subordinate entities.
+     * Query roles of subordinate entities (sends empty request body).
      *
-     * @param request query filters
      * @return subordinate entity roles
      */
-    public SubordinateEntityRoles querySubordinateRoles(
-            SubordinateEntityRolesQueryRequestRaw request) {
+    public SubordinateEntityRoles querySubordinateRoles() {
         String token = sessionContext.token();
-        QuerySubordinateEntityRolesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_SUBORDINATE, request, token,
+        QuerySubordinateEntityRolesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_SUBORDINATE,
+                new SubordinateEntityRolesQueryRequestRaw(), token,
                 QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
         return SubordinateEntityRoles.from(raw);
     }
@@ -342,13 +353,14 @@ public final class PermissionClient {
     /**
      * Query authorization permissions.
      *
-     * @param request query filters
+     * @param builder query builder with filters (queryType is required)
      * @return authorization permissions
      */
-    public EntityAuthorizationPermissions queryAuthorizations(
-            EntityAuthorizationPermissionsQueryRequestRaw request) {
+    public EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        QueryEntityAuthorizationPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_AUTHORIZATIONS, request, token,
+        QueryEntityAuthorizationPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_AUTHORIZATIONS,
+                builder.build(), token,
                 QueryEntityAuthorizationPermissionsResponseRaw.class, OP_QUERY_AUTHORIZATIONS);
         return EntityAuthorizationPermissions.from(raw);
     }
@@ -356,12 +368,14 @@ public final class PermissionClient {
     /**
      * Query permissions granted to EU entities.
      *
-     * @param request query filters
+     * @param builder query builder with optional filters
      * @return EU entity permissions
      */
-    public EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryRequestRaw request) {
+    public EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        QueryEuEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_EU_ENTITIES, request, token,
+        QueryEuEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_EU_ENTITIES,
+                builder.build(), token,
                 QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
         return EuEntityPermissions.from(raw);
     }

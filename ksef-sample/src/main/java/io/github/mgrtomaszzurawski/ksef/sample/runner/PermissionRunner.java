@@ -20,15 +20,9 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonDetailsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PermissionOperationResult;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsSubjectIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsSubjectIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonalPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
@@ -96,18 +90,12 @@ public final class PermissionRunner implements DemoRunner {
     private String runGrantPerson(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            PersonPermissionsGrantRequestRaw request = new PersonPermissionsGrantRequestRaw()
-                    .subjectIdentifier(new PersonPermissionsSubjectIdentifierRaw()
-                            .type(PersonPermissionsSubjectIdentifierTypeRaw.PESEL)
-                            .value(TEST_PERSON_PESEL))
-                    .addPermissionsItem(PersonPermissionTypeRaw.INVOICE_READ)
+            PersonPermissionGrantBuilder grantBuilder = PersonPermissionGrantBuilder
+                    .forPesel(TEST_PERSON_PESEL)
                     .description(GRANT_DESCRIPTION)
-                    .subjectDetails(new PersonPermissionSubjectDetailsRaw()
-                            .subjectDetailsType(PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
-                            .personById(new PersonDetailsRaw()
-                                    .firstName(TEST_PERSON_FIRST_NAME)
-                                    .lastName(TEST_PERSON_LAST_NAME)));
-            PermissionOperationResult response = context.client().permissions().grantPerson(request);
+                    .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
+                    .invoiceRead();
+            PermissionOperationResult response = context.client().permissions().grantPerson(grantBuilder);
             String refNum = response.referenceNumber();
             LOG.info("[{}] granted person permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_PERSON, elapsed(start), "ref=" + refNum));
@@ -133,7 +121,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQueryPersonal(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().queryPersonal(new PersonalPermissionsQueryRequestRaw());
+            var response = context.client().permissions().queryPersonal(PersonalPermissionsQueryBuilder.create());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOG.info("[{}] personal permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_PERSONAL, elapsed(start), count + " permissions"));

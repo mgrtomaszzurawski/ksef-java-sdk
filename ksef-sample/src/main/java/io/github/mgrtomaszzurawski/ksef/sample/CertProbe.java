@@ -17,15 +17,10 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
@@ -33,6 +28,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateEnrollBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateQueryBuilder;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -131,7 +128,7 @@ public final class CertProbe {
 
         // STEP 3: Query active certs
         section("STEP 3: query active certificates");
-        CertificateQueryResult queryResult = client.certificates().query(new QueryCertificatesRequestRaw());
+        CertificateQueryResult queryResult = client.certificates().query(CertificateQueryBuilder.create());
         List<CertificateListItem> certs = queryResult.certificates();
         LOG.info("Found {} certificates total", certs.size());
         for (CertificateListItem cert : certs) {
@@ -155,7 +152,7 @@ public final class CertProbe {
             LOG.info("Youngest active: serial={} validFrom={} name={}",
                     youngest.certificateSerialNumber(), youngest.validFrom(), youngest.name());
             try {
-                client.certificates().revoke(youngest.certificateSerialNumber(), new RevokeCertificateRequestRaw());
+                client.certificates().revoke(youngest.certificateSerialNumber());
                 LOG.info("REVOKE OK serial={}", youngest.certificateSerialNumber());
             } catch (Exception exception) {
                 LOG.error("REVOKE FAILED", exception);
@@ -173,14 +170,12 @@ public final class CertProbe {
         LOG.info("Enrollment data: cn={}", enrollData.commonName());
         KeyPair newKeyPair = generateKeyPair();
         byte[] csrBytes = generateCsr(enrollData, newKeyPair);
-        EnrollCertificateRequestRaw enrollReq = new EnrollCertificateRequestRaw()
-                .certificateName(CERT_NAME)
-                .certificateType(KsefCertificateTypeRaw.AUTHENTICATION)
-                .csr(csrBytes);
+        CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder.create(
+                CERT_NAME, KsefCertificateTypeRaw.AUTHENTICATION, csrBytes);
 
         EnrollCertificateResult enrollResult;
         try {
-            enrollResult = client.certificates().enroll(enrollReq);
+            enrollResult = client.certificates().enroll(enrollBuilder);
             LOG.info("ENROLL OK ref={}", enrollResult.referenceNumber());
         } catch (Exception exception) {
             LOG.error("ENROLL FAILED", exception);
@@ -201,7 +196,7 @@ public final class CertProbe {
         if (enrolledSerial != null) {
             section("STEP 9: cleanup — revoke newly enrolled cert");
             try {
-                client.certificates().revoke(enrolledSerial, new RevokeCertificateRequestRaw());
+                client.certificates().revoke(enrolledSerial);
                 LOG.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
             } catch (Exception exception) {
                 LOG.error("CLEANUP REVOKE FAILED", exception);

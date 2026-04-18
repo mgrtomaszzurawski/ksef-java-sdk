@@ -30,6 +30,7 @@ public final class OnlineSessionBuilder {
     private static final String SCHEMA_VERSION_3 = "3";
     private static final String FORM_CODE_FA2 = "FA (2)";
     private static final String FORM_CODE_FA3 = "FA (3)";
+    private static final String ERR_NULL_KSEF_PUBLIC_KEY = "ksefPublicKey is required";
 
     private final String systemCode;
     private final String schemaVersion;
@@ -40,7 +41,7 @@ public final class OnlineSessionBuilder {
         this.systemCode = systemCode;
         this.schemaVersion = schemaVersion;
         this.formCodeValue = formCodeValue;
-        this.ksefPublicKey = Objects.requireNonNull(ksefPublicKey, "ksefPublicKey is required");
+        this.ksefPublicKey = Objects.requireNonNull(ksefPublicKey, ERR_NULL_KSEF_PUBLIC_KEY);
     }
 
     /**

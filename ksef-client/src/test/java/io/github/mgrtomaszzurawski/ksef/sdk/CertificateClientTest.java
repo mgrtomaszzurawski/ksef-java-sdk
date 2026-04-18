@@ -6,10 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.CertificateRevocationReasonRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
@@ -17,7 +15,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.RetrieveCertificatesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateEnrollBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateQueryBuilder;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -40,6 +42,8 @@ class CertificateClientTest {
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
     private static final String TEST_ENROLLMENT_REF = "20260404-CE-1234567890-ABCDEF1234-08";
     private static final String TEST_CERT_SERIAL = "ABC123DEF456";
+    private static final String TEST_CERT_NAME = "Test Auth Certificate";
+    private static final byte[] TEST_CSR = new byte[]{0x30, 0x42};
 
     private static final int HTTP_OK = 200;
     private static final int HTTP_NO_CONTENT = 204;
@@ -142,7 +146,8 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        EnrollCertificateResult response = ksef.certificates().enroll(new EnrollCertificateRequestRaw());
+        EnrollCertificateResult response = ksef.certificates().enroll(
+                CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateTypeRaw.AUTHENTICATION, TEST_CSR));
 
         // then
         assertEquals(TEST_ENROLLMENT_REF, response.referenceNumber());
@@ -184,7 +189,7 @@ class CertificateClientTest {
 
         // when
         RetrieveCertificatesResult response =
-                ksef.certificates().retrieve(new RetrieveCertificatesRequestRaw());
+                ksef.certificates().retrieve(List.of(TEST_CERT_SERIAL));
 
         // then
         assertNotNull(response.certificates());
@@ -201,7 +206,7 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        ksef.certificates().revoke(TEST_CERT_SERIAL, new RevokeCertificateRequestRaw());
+        ksef.certificates().revoke(TEST_CERT_SERIAL, CertificateRevocationReasonRaw.UNSPECIFIED);
 
         // then
         verify(postRequestedFor(urlEqualTo(revokePath))
@@ -222,7 +227,7 @@ class CertificateClientTest {
 
         // when
         CertificateQueryResult response =
-                ksef.certificates().query(new QueryCertificatesRequestRaw());
+                ksef.certificates().query(CertificateQueryBuilder.create());
 
         // then
         assertNotNull(response.certificates());
@@ -239,7 +244,8 @@ class CertificateClientTest {
 
         // then
         assertThrows(KsefServerException.class,
-                () -> ksef.certificates().enroll(new EnrollCertificateRequestRaw()));
+                () -> ksef.certificates().enroll(
+                        CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateTypeRaw.AUTHENTICATION, TEST_CSR)));
     }
 
     @Test

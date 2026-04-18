@@ -30,12 +30,13 @@ public final class TokenGenerateBuilder {
     private static final int DESCRIPTION_MAX_LENGTH = 256;
     private static final String ERR_DESCRIPTION_LENGTH = "description must be between 5 and 256 characters";
     private static final String ERR_PERMISSIONS_EMPTY = "at least one permission is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
 
     private final String description;
     private final List<TokenPermissionTypeRaw> permissions = new ArrayList<>();
 
     private TokenGenerateBuilder(String description) {
-        this.description = Objects.requireNonNull(description, "description is required");
+        this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
     }
 
     /**

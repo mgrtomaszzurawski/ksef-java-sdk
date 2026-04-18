@@ -6,20 +6,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionRevokeRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.BlockContextAuthenticationRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonCreateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonRemoveRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SetRateLimitsRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SetSessionLimitsRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SetSubjectLimitsRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectCreateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsRevokeRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SubjectTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SubjectIdentifierTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsRevokeBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPersonCreateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestRateLimitsBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSessionLimitsBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSubjectCreateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSubjectLimitsBuilder;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -38,10 +35,22 @@ class TestDataClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
+    private static final String TEST_NIP = "1234567890";
+    private static final String TEST_PESEL = "82060411457";
+    private static final String TEST_AUTHORIZED_NIP = "0987654321";
+    private static final String TEST_DESCRIPTION = "Test data entry";
 
     private static final int HTTP_OK = 200;
     private static final int HTTP_NO_CONTENT = 204;
     private static final int HTTP_SERVER_ERROR = 500;
+
+    private static final int LIMIT_INVOICE_SIZE_MB = 100;
+    private static final int LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB = 200;
+    private static final int LIMIT_MAX_INVOICES_ONLINE = 500;
+    private static final int LIMIT_MAX_INVOICES_BATCH = 1000;
+    private static final int RATE_PER_SECOND = 10;
+    private static final int RATE_PER_MINUTE = 100;
+    private static final int RATE_PER_HOUR = 1000;
 
     // --- Subject tests (unauthenticated) ---
 
@@ -54,7 +63,8 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().createSubject(new SubjectCreateRequestRaw());
+        ksef.testData().createSubject(
+                TestSubjectCreateBuilder.create(TEST_NIP, SubjectTypeRaw.JST, TEST_DESCRIPTION));
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/subject")));
@@ -69,7 +79,7 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().removeSubject(new SubjectRemoveRequestRaw());
+        ksef.testData().removeSubject(TEST_NIP);
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/subject/remove")));
@@ -86,7 +96,8 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().createPerson(new PersonCreateRequestRaw());
+        ksef.testData().createPerson(
+                TestPersonCreateBuilder.create(TEST_NIP, TEST_PESEL, false, TEST_DESCRIPTION));
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/person")));
@@ -101,7 +112,7 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().removePerson(new PersonRemoveRequestRaw());
+        ksef.testData().removePerson(TEST_NIP);
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/person/remove")));
@@ -118,7 +129,9 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().grantPermissions(new TestDataPermissionsGrantRequestRaw());
+        ksef.testData().grantPermissions(TestPermissionsGrantBuilder.create(TEST_NIP)
+                .authorizedNip(TEST_AUTHORIZED_NIP)
+                .invoiceRead());
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/permissions")));
@@ -133,7 +146,8 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().revokePermissions(new TestDataPermissionsRevokeRequestRaw());
+        ksef.testData().revokePermissions(TestPermissionsRevokeBuilder.create(TEST_NIP)
+                .authorizedNip(TEST_AUTHORIZED_NIP));
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/permissions/revoke")));
@@ -150,7 +164,7 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().grantAttachment(new AttachmentPermissionGrantRequestRaw());
+        ksef.testData().grantAttachment(TEST_NIP);
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/attachment")));
@@ -165,7 +179,7 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().revokeAttachment(new AttachmentPermissionRevokeRequestRaw());
+        ksef.testData().revokeAttachment(TEST_NIP);
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/attachment/revoke")));
@@ -182,7 +196,7 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().blockContext(new BlockContextAuthenticationRequestRaw());
+        ksef.testData().blockContext(TestDataAuthenticationContextIdentifierTypeRaw.NIP, TEST_NIP);
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/block")));
@@ -197,7 +211,7 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().unblockContext(new UnblockContextAuthenticationRequestRaw());
+        ksef.testData().unblockContext(TestDataAuthenticationContextIdentifierTypeRaw.NIP, TEST_NIP);
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/unblock")));
@@ -215,7 +229,9 @@ class TestDataClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        ksef.testData().setSessionLimits(new SetSessionLimitsRequestRaw());
+        ksef.testData().setSessionLimits(TestSessionLimitsBuilder.create()
+                .onlineSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_ONLINE)
+                .batchSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_BATCH));
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/limits/context/session"))
@@ -251,7 +267,8 @@ class TestDataClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        ksef.testData().setSubjectLimits(new SetSubjectLimitsRequestRaw());
+        ksef.testData().setSubjectLimits(
+                TestSubjectLimitsBuilder.create(SubjectIdentifierTypeRaw.NIP));
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/limits/subject/certificate"))
@@ -287,7 +304,8 @@ class TestDataClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        ksef.testData().setRateLimits(new SetRateLimitsRequestRaw());
+        ksef.testData().setRateLimits(TestRateLimitsBuilder.create()
+                .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR));
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/rate-limits"))
@@ -340,7 +358,8 @@ class TestDataClientTest {
 
         // then
         assertThrows(KsefServerException.class,
-                () -> ksef.testData().createSubject(new SubjectCreateRequestRaw()));
+                () -> ksef.testData().createSubject(
+                        TestSubjectCreateBuilder.create(TEST_NIP, SubjectTypeRaw.JST, TEST_DESCRIPTION)));
     }
 
     // --- Helpers ---
