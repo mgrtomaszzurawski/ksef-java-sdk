@@ -45,7 +45,16 @@ public record BatchFileSpec(long fileSize, byte[] fileHash, List<Part> parts) {
         if (parts.isEmpty()) {
             throw new IllegalArgumentException(ERR_PARTS_EMPTY);
         }
+        fileHash = fileHash.clone();
         parts = List.copyOf(parts);
+    }
+
+    /**
+     * SHA-256 hash of the entire file. Returns a defensive copy.
+     */
+    @Override
+    public byte[] fileHash() {
+        return fileHash.clone();
     }
 
     /**
@@ -68,6 +77,15 @@ public record BatchFileSpec(long fileSize, byte[] fileHash, List<Part> parts) {
          */
         public Part {
             Objects.requireNonNull(fileHash, ERR_PART_HASH_NULL);
+            fileHash = fileHash.clone();
+        }
+
+        /**
+         * SHA-256 hash of this part. Returns a defensive copy.
+         */
+        @Override
+        public byte[] fileHash() {
+            return fileHash.clone();
         }
     }
 }
