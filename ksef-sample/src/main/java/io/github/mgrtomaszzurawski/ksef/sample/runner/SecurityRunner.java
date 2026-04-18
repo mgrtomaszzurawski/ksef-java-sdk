@@ -17,26 +17,54 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * SecurityClient operations (public key fetch) are now handled automatically
- * by KsefClient during authenticate() and openSession(). This runner is a no-op.
+ * Runner for SecurityClient operations. Fetches KSeF public key certificates
+ * and verifies they are available. No auth required for this endpoint.
+ *
+ * <p>Note: the SDK caches public keys internally during authenticate() and openSession().
+ * This runner exercises the security endpoint directly as a smoke test.</p>
  */
 public final class SecurityRunner implements DemoRunner {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SecurityRunner.class);
     private static final String NAME = "security";
     private static final String OP_GET_CERTS = "getPublicKeyCertificates";
-    private static final String SKIP_REASON = "handled automatically by SDK during authenticate()";
 
     @Override
     public String name() { return NAME; }
 
     @Override
     public List<RunResult> run(DemoContext context) {
-        return List.of(RunResult.skip(NAME, OP_GET_CERTS, SKIP_REASON));
+        List<RunResult> results = new ArrayList<>();
+        long start = System.currentTimeMillis();
+        try {
+            List<PublicKeyCertificate> certs = context.client().security()
+                    .getPublicKeyCertificates();
+            LOG.info("[{}] fetched {} certificates", NAME, certs.size());
+
+            for (PublicKeyCertificate cert : certs) {
+                LOG.info("[{}] cert usage={}, valid={} to {}", NAME,
+                        cert.usage(), cert.validFrom(), cert.validTo());
+            }
+
+            results.add(RunResult.ok(NAME, OP_GET_CERTS, elapsed(start),
+                    certs.size() + " certificates"));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_GET_CERTS, elapsed(start),
+                    errorMessage(exception)));
+        }
+        return results;
     }
 }

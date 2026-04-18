@@ -20,6 +20,10 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateListItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
@@ -29,9 +33,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Runner for CertificateClient operations. Tests getLimits with token auth,
- * then switches to XAdES auth session for operations that require it
- * (enrollmentData, query). Re-authenticates with token afterward.
+ * Runner for CertificateClient operations.
+ *
+ * <p>getLimits works with any auth method (token or XAdES).
+ * getEnrollmentData and query require XAdES auth — they run when the SDK was
+ * authenticated with PKCS#12/certificate credentials. With token credentials
+ * these operations are skipped (server returns 403).</p>
+ *
+ * <p>Enrollment and revoke are skipped to preserve cert quota (max 12/month).</p>
  */
 public final class CertificateRunner implements DemoRunner {
 
@@ -40,19 +49,7 @@ public final class CertificateRunner implements DemoRunner {
     private static final String OP_GET_LIMITS = "getLimits";
     private static final String OP_GET_ENROLLMENT_DATA = "getEnrollmentData";
     private static final String OP_QUERY = "query";
-    private static final String OP_ENROLL = "enroll";
-    private static final String OP_ENROLLMENT_STATUS = "getEnrollmentStatus";
-    private static final String OP_REVOKE = "revoke";
-    private static final String SKIP_NO_CERT = "no certificate available";
-    private static final String CERT_NAME = "SDK Demo Certificate";
-    private static final String RSA_ALGORITHM = "RSA";
-    private static final int RSA_KEY_SIZE = 2048;
-    private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
-    private static final int AUTH_STATUS_OK = 200;
-    private static final int POLL_INITIAL_DELAY_MS = 500;
-    private static final int POLL_MAX_DELAY_MS = 5000;
-    private static final int POLL_TIMEOUT_MS = 30000;
-    private static final int POLL_BACKOFF_MULTIPLIER = 2;
+    private static final String SKIP_QUOTA = "skipped to preserve cert quota (max 12/month)";
 
     @Override
     public String name() { return NAME; }
@@ -61,7 +58,23 @@ public final class CertificateRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
 
-        // 1. Get limits (works with token auth)
+        // 1. Get limits (works with any auth method)
+        runGetLimits(context, results);
+
+        // 2. Get enrollment data (requires XAdES auth, may fail with token auth)
+        runGetEnrollmentData(context, results);
+
+        // 3. Query certificates (requires XAdES auth, may fail with token auth)
+        runQuery(context, results);
+
+        // 4-5. Enroll + revoke — skipped to preserve monthly quota
+        results.add(RunResult.skip(NAME, "enroll", SKIP_QUOTA));
+        results.add(RunResult.skip(NAME, "revoke", SKIP_QUOTA));
+
+        return results;
+    }
+
+    private void runGetLimits(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             var response = context.client().certificates().getLimits();
@@ -71,27 +84,51 @@ public final class CertificateRunner implements DemoRunner {
             String certificate = response.certificate() != null
                     ? response.certificate().remaining() + "/" + response.certificate().limit()
                     : "n/a";
-            LOG.info("[{}] certificate limits: canRequest={} enrollment={} certificate={}",
+            LOG.info("[{}] limits: canRequest={} enrollment={} certificate={}",
                     NAME, response.canRequest(), enrollment, certificate);
             results.add(RunResult.ok(NAME, OP_GET_LIMITS, elapsed(start),
                     "canRequest=" + response.canRequest()
                             + " enrollment=" + enrollment
                             + " certificate=" + certificate));
         } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_GET_LIMITS, elapsed(start), errorMessage(exception)));
+            results.add(RunResult.fail(NAME, OP_GET_LIMITS, elapsed(start),
+                    errorMessage(exception)));
         }
-
-        // 2-3-4. Enrollment data, query, enroll — require XAdES auth session
-        // Cert-based auth is handled internally by KsefClient when PKCS#12 credentials are used.
-        // The XAdES session switch logic is deferred to a future builder for cert operations.
-        results.add(RunResult.skip(NAME, OP_GET_ENROLLMENT_DATA, SKIP_NO_CERT));
-        results.add(RunResult.skip(NAME, OP_QUERY, SKIP_NO_CERT));
-        results.add(RunResult.skip(NAME, OP_ENROLL, SKIP_NO_CERT));
-
-        return results;
     }
 
-    // XAdES session switch + cert enrollment/revoke/query operations removed.
-    // These require cert-based auth session switching which is deferred to a
-    // future release with dedicated builders for certificate operations.
+    private void runGetEnrollmentData(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            CertificateEnrollmentData response = context.client().certificates()
+                    .getEnrollmentData();
+            LOG.info("[{}] enrollment data: cn={}", NAME, response.commonName());
+            results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
+                    "cn=" + response.commonName()));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
+                    errorMessage(exception)));
+        }
+    }
+
+    private void runQuery(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            CertificateQueryResult response = context.client().certificates()
+                    .query(CertificateQueryBuilder.create());
+            List<CertificateListItem> certs = response.certificates();
+            int count = certs != null ? certs.size() : 0;
+            LOG.info("[{}] queried certificates: {} found", NAME, count);
+            if (certs != null) {
+                for (CertificateListItem cert : certs) {
+                    LOG.info("[{}]   serial={} status={} name={}",
+                            NAME, cert.certificateSerialNumber(), cert.status(), cert.name());
+                }
+            }
+            results.add(RunResult.ok(NAME, OP_QUERY, elapsed(start),
+                    count + " certificates"));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_QUERY, elapsed(start),
+                    errorMessage(exception)));
+        }
+    }
 }

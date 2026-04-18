@@ -40,6 +40,8 @@ public final class AuthRunner implements DemoRunner {
     private static final Logger LOG = LoggerFactory.getLogger(AuthRunner.class);
     private static final String NAME = "auth";
     private static final String OP_AUTHENTICATE = "authenticate";
+    private static final String OP_TERMINATE = "terminateAuth";
+    private static final String OP_RE_AUTHENTICATE = "reAuthenticate";
 
     @Override
     public String name() { return NAME; }
@@ -47,18 +49,52 @@ public final class AuthRunner implements DemoRunner {
     @Override
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
-        long start = System.currentTimeMillis();
 
+        // 1. Authenticate (challenge → encrypt/sign → poll → redeem — all inside SDK)
+        runAuthenticate(context, results);
+
+        // 2. Terminate + re-authenticate (verifies session lifecycle works end-to-end)
+        runTerminateAndReAuthenticate(context, results);
+
+        return results;
+    }
+
+    private void runAuthenticate(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
         try {
             context.client().authenticate();
-            LOG.info("[{}] authenticated successfully as NIP {}", NAME, context.nipIdentifier());
+            LOG.info("[{}] authenticated as NIP {}", NAME, context.nipIdentifier());
             results.add(RunResult.ok(NAME, OP_AUTHENTICATE, elapsed(start),
                     "NIP=" + context.nipIdentifier()));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_AUTHENTICATE, elapsed(start),
                     errorMessage(exception)));
         }
+    }
 
-        return results;
+    private void runTerminateAndReAuthenticate(DemoContext context, List<RunResult> results) {
+        // Terminate
+        long start = System.currentTimeMillis();
+        try {
+            context.client().terminateAuth();
+            LOG.info("[{}] auth session terminated", NAME);
+            results.add(RunResult.ok(NAME, OP_TERMINATE, elapsed(start)));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_TERMINATE, elapsed(start),
+                    errorMessage(exception)));
+            return;
+        }
+
+        // Re-authenticate (proves full lifecycle: auth → terminate → auth again)
+        start = System.currentTimeMillis();
+        try {
+            context.client().authenticate();
+            LOG.info("[{}] re-authenticated after terminate", NAME);
+            results.add(RunResult.ok(NAME, OP_RE_AUTHENTICATE, elapsed(start),
+                    "NIP=" + context.nipIdentifier()));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_RE_AUTHENTICATE, elapsed(start),
+                    errorMessage(exception)));
+        }
     }
 }
