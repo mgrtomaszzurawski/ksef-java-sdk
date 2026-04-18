@@ -28,13 +28,17 @@ import java.util.Objects;
 public final class TestPermissionsRevokeBuilder {
 
     private static final String ERR_AUTHORIZED_REQUIRED = "authorized identifier must be set via authorizedNip(), authorizedPesel(), or authorizedFingerprint()";
+    private static final String ERR_NULL_CONTEXT_NIP = "contextNip is required";
+    private static final String ERR_NULL_NIP = "nip is required";
+    private static final String ERR_NULL_PESEL = "pesel is required";
+    private static final String ERR_NULL_FINGERPRINT = "fingerprint is required";
 
     private final String contextNip;
     private TestDataAuthorizedIdentifierTypeRaw authorizedType;
     private String authorizedValue;
 
     private TestPermissionsRevokeBuilder(String contextNip) {
-        this.contextNip = Objects.requireNonNull(contextNip, "contextNip is required");
+        this.contextNip = Objects.requireNonNull(contextNip, ERR_NULL_CONTEXT_NIP);
     }
 
     /**
@@ -53,7 +57,7 @@ public final class TestPermissionsRevokeBuilder {
      */
     public TestPermissionsRevokeBuilder authorizedNip(String nip) {
         this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.NIP;
-        this.authorizedValue = Objects.requireNonNull(nip, "nip is required");
+        this.authorizedValue = Objects.requireNonNull(nip, ERR_NULL_NIP);
         return this;
     }
 
@@ -64,7 +68,7 @@ public final class TestPermissionsRevokeBuilder {
      */
     public TestPermissionsRevokeBuilder authorizedPesel(String pesel) {
         this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.PESEL;
-        this.authorizedValue = Objects.requireNonNull(pesel, "pesel is required");
+        this.authorizedValue = Objects.requireNonNull(pesel, ERR_NULL_PESEL);
         return this;
     }
 
@@ -75,7 +79,7 @@ public final class TestPermissionsRevokeBuilder {
      */
     public TestPermissionsRevokeBuilder authorizedFingerprint(String fingerprint) {
         this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.FINGERPRINT;
-        this.authorizedValue = Objects.requireNonNull(fingerprint, "fingerprint is required");
+        this.authorizedValue = Objects.requireNonNull(fingerprint, ERR_NULL_FINGERPRINT);
         return this;
     }
 

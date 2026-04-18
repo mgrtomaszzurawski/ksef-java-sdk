@@ -31,13 +31,15 @@ import java.util.Objects;
 public final class InvoiceExportBuilder {
 
     private static final String ERR_QUERY_BUILDER_REQUIRED = "queryBuilder is required";
+    private static final String ERR_NULL_KSEF_PUBLIC_KEY = "ksefPublicKey is required";
+    private static final String ERR_NULL_FILTERS = "filters are required — use .filters() before .build()";
 
     private final PublicKey ksefPublicKey;
     private InvoiceQueryFiltersRaw filters;
     private boolean onlyMetadata;
 
     private InvoiceExportBuilder(PublicKey ksefPublicKey) {
-        this.ksefPublicKey = Objects.requireNonNull(ksefPublicKey, "ksefPublicKey is required");
+        this.ksefPublicKey = Objects.requireNonNull(ksefPublicKey, ERR_NULL_KSEF_PUBLIC_KEY);
     }
 
     /**
@@ -84,7 +86,7 @@ public final class InvoiceExportBuilder {
      * @throws IllegalStateException if filters are not set
      */
     public InvoiceExportRequestRaw build() {
-        Objects.requireNonNull(filters, "filters are required — use .filters() before .build()");
+        Objects.requireNonNull(filters, ERR_NULL_FILTERS);
 
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();

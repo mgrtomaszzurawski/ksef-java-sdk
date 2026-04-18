@@ -52,6 +52,10 @@ public final class CertificateClient {
     private static final String OP_REVOKE = "revokeCertificate";
     private static final String OP_QUERY = "queryCertificates";
 
+    private static final String ERR_NULL_BUILDER = "builder is required";
+    private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBERS = "certificateSerialNumbers is required";
+    private static final String ERR_NULL_REVOCATION_REASON = "revocationReason is required";
+
     private final HttpSupport http;
     private final SessionContext sessionContext;
 
@@ -91,7 +95,7 @@ public final class CertificateClient {
      * @return response with enrollment reference number
      */
     public EnrollCertificateResult enroll(CertificateEnrollBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         EnrollCertificateRequestRaw request = builder.build();
         String token = sessionContext.token();
         EnrollCertificateResponseRaw raw = http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
@@ -120,7 +124,7 @@ public final class CertificateClient {
      * @return response with certificate details
      */
     public RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers) {
-        Objects.requireNonNull(certificateSerialNumbers, "certificateSerialNumbers is required");
+        Objects.requireNonNull(certificateSerialNumbers, ERR_NULL_CERTIFICATE_SERIAL_NUMBERS);
         RetrieveCertificatesRequestRaw request = new RetrieveCertificatesRequestRaw();
         request.setCertificateSerialNumbers(certificateSerialNumbers);
         String token = sessionContext.token();
@@ -150,7 +154,7 @@ public final class CertificateClient {
      */
     public void revoke(String certificateSerialNumber, CertificateRevocationReasonRaw revocationReason) {
         requireSafePathSegment(certificateSerialNumber);
-        Objects.requireNonNull(revocationReason, "revocationReason is required");
+        Objects.requireNonNull(revocationReason, ERR_NULL_REVOCATION_REASON);
         RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
         request.setRevocationReason(revocationReason);
         String token = sessionContext.token();
@@ -165,7 +169,7 @@ public final class CertificateClient {
      * @return matching certificates
      */
     public CertificateQueryResult query(CertificateQueryBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY, builder.build(), token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);

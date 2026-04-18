@@ -28,12 +28,14 @@ import java.util.Objects;
  */
 public final class TestSubjectLimitsBuilder {
 
+    private static final String ERR_NULL_SUBJECT_IDENTIFIER_TYPE = "subjectIdentifierType is required";
+
     private final SubjectIdentifierTypeRaw subjectIdentifierType;
     private Integer maxEnrollments;
     private Integer maxCertificates;
 
     private TestSubjectLimitsBuilder(SubjectIdentifierTypeRaw subjectIdentifierType) {
-        this.subjectIdentifierType = Objects.requireNonNull(subjectIdentifierType, "subjectIdentifierType is required");
+        this.subjectIdentifierType = Objects.requireNonNull(subjectIdentifierType, ERR_NULL_SUBJECT_IDENTIFIER_TYPE);
     }
 
     /**

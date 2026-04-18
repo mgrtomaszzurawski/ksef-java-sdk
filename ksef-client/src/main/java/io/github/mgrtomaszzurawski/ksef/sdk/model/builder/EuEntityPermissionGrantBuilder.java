@@ -40,6 +40,10 @@ public final class EuEntityPermissionGrantBuilder {
     private static final String ERR_PERMISSIONS_EMPTY = "at least one permission is required";
     private static final String ERR_SUBJECT_DETAILS_REQUIRED = "subject details are required — use .subjectEntityByFingerprint()";
     private static final String ERR_DESCRIPTION_REQUIRED = "description is required — use .description() before .build()";
+    private static final String ERR_NULL_FINGERPRINT = "fingerprint is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
+    private static final String ERR_NULL_SUBJECT_FULL_NAME = "subject fullName is required";
+    private static final String ERR_NULL_SUBJECT_ADDRESS = "subject address is required";
 
     private final String fingerprintValue;
     private String description;
@@ -48,7 +52,7 @@ public final class EuEntityPermissionGrantBuilder {
     private final List<EuEntityPermissionTypeRaw> permissions = new ArrayList<>();
 
     private EuEntityPermissionGrantBuilder(String fingerprint) {
-        this.fingerprintValue = Objects.requireNonNull(fingerprint, "fingerprint is required");
+        this.fingerprintValue = Objects.requireNonNull(fingerprint, ERR_NULL_FINGERPRINT);
     }
 
     /**
@@ -59,7 +63,7 @@ public final class EuEntityPermissionGrantBuilder {
     }
 
     public EuEntityPermissionGrantBuilder description(String description) {
-        this.description = Objects.requireNonNull(description, "description is required");
+        this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
         return this;
     }
 
@@ -67,8 +71,8 @@ public final class EuEntityPermissionGrantBuilder {
      * Set subject details as entity identified by fingerprint.
      */
     public EuEntityPermissionGrantBuilder subjectEntityByFingerprint(String fullName, String address) {
-        this.subjectFullName = Objects.requireNonNull(fullName, "subject fullName is required");
-        this.subjectAddress = Objects.requireNonNull(address, "subject address is required");
+        this.subjectFullName = Objects.requireNonNull(fullName, ERR_NULL_SUBJECT_FULL_NAME);
+        this.subjectAddress = Objects.requireNonNull(address, ERR_NULL_SUBJECT_ADDRESS);
         return this;
     }
 

@@ -35,6 +35,12 @@ public final class TestPermissionsGrantBuilder {
 
     private static final String ERR_AUTHORIZED_REQUIRED = "authorized identifier must be set via authorizedNip(), authorizedPesel(), or authorizedFingerprint()";
     private static final String ERR_PERMISSIONS_EMPTY = "at least one permission is required";
+    private static final String ERR_NULL_CONTEXT_NIP = "contextNip is required";
+    private static final String ERR_NULL_NIP = "nip is required";
+    private static final String ERR_NULL_PESEL = "pesel is required";
+    private static final String ERR_NULL_FINGERPRINT = "fingerprint is required";
+    private static final String ERR_NULL_PERMISSION_TYPE = "permissionType is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
 
     private final String contextNip;
     private TestDataAuthorizedIdentifierTypeRaw authorizedType;
@@ -42,7 +48,7 @@ public final class TestPermissionsGrantBuilder {
     private final List<TestDataPermissionRaw> permissions = new ArrayList<>();
 
     private TestPermissionsGrantBuilder(String contextNip) {
-        this.contextNip = Objects.requireNonNull(contextNip, "contextNip is required");
+        this.contextNip = Objects.requireNonNull(contextNip, ERR_NULL_CONTEXT_NIP);
     }
 
     /**
@@ -61,7 +67,7 @@ public final class TestPermissionsGrantBuilder {
      */
     public TestPermissionsGrantBuilder authorizedNip(String nip) {
         this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.NIP;
-        this.authorizedValue = Objects.requireNonNull(nip, "nip is required");
+        this.authorizedValue = Objects.requireNonNull(nip, ERR_NULL_NIP);
         return this;
     }
 
@@ -72,7 +78,7 @@ public final class TestPermissionsGrantBuilder {
      */
     public TestPermissionsGrantBuilder authorizedPesel(String pesel) {
         this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.PESEL;
-        this.authorizedValue = Objects.requireNonNull(pesel, "pesel is required");
+        this.authorizedValue = Objects.requireNonNull(pesel, ERR_NULL_PESEL);
         return this;
     }
 
@@ -83,7 +89,7 @@ public final class TestPermissionsGrantBuilder {
      */
     public TestPermissionsGrantBuilder authorizedFingerprint(String fingerprint) {
         this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.FINGERPRINT;
-        this.authorizedValue = Objects.requireNonNull(fingerprint, "fingerprint is required");
+        this.authorizedValue = Objects.requireNonNull(fingerprint, ERR_NULL_FINGERPRINT);
         return this;
     }
 
@@ -95,8 +101,8 @@ public final class TestPermissionsGrantBuilder {
      */
     public TestPermissionsGrantBuilder permission(TestDataPermissionTypeRaw permissionType, String description) {
         TestDataPermissionRaw perm = new TestDataPermissionRaw();
-        perm.setPermissionType(Objects.requireNonNull(permissionType, "permissionType is required"));
-        perm.setDescription(Objects.requireNonNull(description, "description is required"));
+        perm.setPermissionType(Objects.requireNonNull(permissionType, ERR_NULL_PERMISSION_TYPE));
+        perm.setDescription(Objects.requireNonNull(description, ERR_NULL_DESCRIPTION));
         permissions.add(perm);
         return this;
     }

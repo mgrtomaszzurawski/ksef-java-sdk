@@ -24,6 +24,10 @@ import java.util.Objects;
  */
 public final class TestPersonCreateBuilder {
 
+    private static final String ERR_NULL_NIP = "nip is required";
+    private static final String ERR_NULL_PESEL = "pesel is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
+
     private final String nip;
     private final String pesel;
     private final boolean isBailiff;
@@ -32,10 +36,10 @@ public final class TestPersonCreateBuilder {
     private OffsetDateTime createdDate;
 
     private TestPersonCreateBuilder(String nip, String pesel, boolean isBailiff, String description) {
-        this.nip = Objects.requireNonNull(nip, "nip is required");
-        this.pesel = Objects.requireNonNull(pesel, "pesel is required");
+        this.nip = Objects.requireNonNull(nip, ERR_NULL_NIP);
+        this.pesel = Objects.requireNonNull(pesel, ERR_NULL_PESEL);
         this.isBailiff = isBailiff;
-        this.description = Objects.requireNonNull(description, "description is required");
+        this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
     }
 
     /**

@@ -43,6 +43,14 @@ public final class EuEntityAdminPermissionGrantBuilder {
     private static final String ERR_SUBJECT_DETAILS_REQUIRED = "subject details are required — use .subjectEntityByFingerprint()";
     private static final String ERR_EU_ENTITY_DETAILS_REQUIRED = "EU entity details are required — use .euEntityDetails()";
     private static final String ERR_DESCRIPTION_REQUIRED = "description is required — use .description() before .build()";
+    private static final String ERR_NULL_FINGERPRINT = "fingerprint is required";
+    private static final String ERR_NULL_NIP_VAT_UE = "NIP-VAT-UE is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
+    private static final String ERR_NULL_EU_ENTITY_NAME = "euEntityName is required";
+    private static final String ERR_NULL_SUBJECT_FULL_NAME = "subject fullName is required";
+    private static final String ERR_NULL_SUBJECT_ADDRESS = "subject address is required";
+    private static final String ERR_NULL_EU_ENTITY_FULL_NAME = "EU entity fullName is required";
+    private static final String ERR_NULL_EU_ENTITY_ADDRESS = "EU entity address is required";
 
     private final String fingerprintValue;
     private String contextValue;
@@ -54,7 +62,7 @@ public final class EuEntityAdminPermissionGrantBuilder {
     private String euEntityAddress;
 
     private EuEntityAdminPermissionGrantBuilder(String fingerprint) {
-        this.fingerprintValue = Objects.requireNonNull(fingerprint, "fingerprint is required");
+        this.fingerprintValue = Objects.requireNonNull(fingerprint, ERR_NULL_FINGERPRINT);
     }
 
     /**
@@ -68,12 +76,12 @@ public final class EuEntityAdminPermissionGrantBuilder {
      * Set context identifier by NIP-VAT-UE.
      */
     public EuEntityAdminPermissionGrantBuilder contextNipVatUe(String nipVatUe) {
-        this.contextValue = Objects.requireNonNull(nipVatUe, "NIP-VAT-UE is required");
+        this.contextValue = Objects.requireNonNull(nipVatUe, ERR_NULL_NIP_VAT_UE);
         return this;
     }
 
     public EuEntityAdminPermissionGrantBuilder description(String description) {
-        this.description = Objects.requireNonNull(description, "description is required");
+        this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
         return this;
     }
 
@@ -81,7 +89,7 @@ public final class EuEntityAdminPermissionGrantBuilder {
      * Set the EU entity name.
      */
     public EuEntityAdminPermissionGrantBuilder euEntityName(String euEntityName) {
-        this.euEntityName = Objects.requireNonNull(euEntityName, "euEntityName is required");
+        this.euEntityName = Objects.requireNonNull(euEntityName, ERR_NULL_EU_ENTITY_NAME);
         return this;
     }
 
@@ -89,8 +97,8 @@ public final class EuEntityAdminPermissionGrantBuilder {
      * Set subject details as entity identified by fingerprint.
      */
     public EuEntityAdminPermissionGrantBuilder subjectEntityByFingerprint(String fullName, String address) {
-        this.subjectFullName = Objects.requireNonNull(fullName, "subject fullName is required");
-        this.subjectAddress = Objects.requireNonNull(address, "subject address is required");
+        this.subjectFullName = Objects.requireNonNull(fullName, ERR_NULL_SUBJECT_FULL_NAME);
+        this.subjectAddress = Objects.requireNonNull(address, ERR_NULL_SUBJECT_ADDRESS);
         return this;
     }
 
@@ -98,8 +106,8 @@ public final class EuEntityAdminPermissionGrantBuilder {
      * Set EU entity details (name and address).
      */
     public EuEntityAdminPermissionGrantBuilder euEntityDetails(String fullName, String address) {
-        this.euEntityFullName = Objects.requireNonNull(fullName, "EU entity fullName is required");
-        this.euEntityAddress = Objects.requireNonNull(address, "EU entity address is required");
+        this.euEntityFullName = Objects.requireNonNull(fullName, ERR_NULL_EU_ENTITY_FULL_NAME);
+        this.euEntityAddress = Objects.requireNonNull(address, ERR_NULL_EU_ENTITY_ADDRESS);
         return this;
     }
 

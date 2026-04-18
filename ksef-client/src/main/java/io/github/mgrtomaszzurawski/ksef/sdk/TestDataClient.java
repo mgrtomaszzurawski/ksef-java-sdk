@@ -72,6 +72,13 @@ public final class TestDataClient {
     private static final String OP_RESET_RATE_LIMITS = "resetRateLimits";
     private static final String OP_SET_PRODUCTION_RATE_LIMITS = "setProductionRateLimits";
 
+    private static final String ERR_NULL_BUILDER = "builder is required";
+    private static final String ERR_NULL_SUBJECT_NIP = "subjectNip is required";
+    private static final String ERR_NULL_NIP = "nip is required";
+    private static final String ERR_NULL_IDENTIFIER_TYPE = "identifierType is required";
+    private static final String ERR_NULL_IDENTIFIER_VALUE = "identifierValue is required";
+    private static final String ERR_NULL_EXPECTED_END_DATE = "expectedEndDate is required";
+
     private final HttpSupport http;
     private final SessionContext sessionContext;
 
@@ -88,7 +95,7 @@ public final class TestDataClient {
      * @param builder subject creation builder (NIP, type, description)
      */
     public void createSubject(TestSubjectCreateBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_SUBJECT, builder.build(), OP_CREATE_SUBJECT);
     }
 
@@ -98,7 +105,7 @@ public final class TestDataClient {
      * @param subjectNip NIP of the subject to remove
      */
     public void removeSubject(String subjectNip) {
-        Objects.requireNonNull(subjectNip, "subjectNip is required");
+        Objects.requireNonNull(subjectNip, ERR_NULL_SUBJECT_NIP);
         SubjectRemoveRequestRaw request = new SubjectRemoveRequestRaw();
         request.setSubjectNip(subjectNip);
         http.postJsonNoContent(PATH_SUBJECT_REMOVE, request, OP_REMOVE_SUBJECT);
@@ -112,7 +119,7 @@ public final class TestDataClient {
      * @param builder person creation builder (NIP, PESEL, isBailiff, description)
      */
     public void createPerson(TestPersonCreateBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_PERSON, builder.build(), OP_CREATE_PERSON);
     }
 
@@ -122,7 +129,7 @@ public final class TestDataClient {
      * @param nip NIP of the person to remove
      */
     public void removePerson(String nip) {
-        Objects.requireNonNull(nip, "nip is required");
+        Objects.requireNonNull(nip, ERR_NULL_NIP);
         PersonRemoveRequestRaw request = new PersonRemoveRequestRaw();
         request.setNip(nip);
         http.postJsonNoContent(PATH_PERSON_REMOVE, request, OP_REMOVE_PERSON);
@@ -136,7 +143,7 @@ public final class TestDataClient {
      * @param builder permission grant builder
      */
     public void grantPermissions(TestPermissionsGrantBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_PERMISSIONS, builder.build(), OP_GRANT_PERMISSIONS);
     }
 
@@ -146,7 +153,7 @@ public final class TestDataClient {
      * @param builder permission revocation builder
      */
     public void revokePermissions(TestPermissionsRevokeBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_PERMISSIONS_REVOKE, builder.build(), OP_REVOKE_PERMISSIONS);
     }
 
@@ -158,7 +165,7 @@ public final class TestDataClient {
      * @param nip NIP of the subject to grant attachment permissions to
      */
     public void grantAttachment(String nip) {
-        Objects.requireNonNull(nip, "nip is required");
+        Objects.requireNonNull(nip, ERR_NULL_NIP);
         AttachmentPermissionGrantRequestRaw request = new AttachmentPermissionGrantRequestRaw();
         request.setNip(nip);
         http.postJsonNoContent(PATH_ATTACHMENT, request, OP_GRANT_ATTACHMENT);
@@ -170,7 +177,7 @@ public final class TestDataClient {
      * @param nip NIP of the subject to revoke attachment permissions from
      */
     public void revokeAttachment(String nip) {
-        Objects.requireNonNull(nip, "nip is required");
+        Objects.requireNonNull(nip, ERR_NULL_NIP);
         AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
         request.setNip(nip);
         http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, request, OP_REVOKE_ATTACHMENT);
@@ -183,8 +190,8 @@ public final class TestDataClient {
      * @param expectedEndDate expected end date for the revocation
      */
     public void revokeAttachment(String nip, LocalDate expectedEndDate) {
-        Objects.requireNonNull(nip, "nip is required");
-        Objects.requireNonNull(expectedEndDate, "expectedEndDate is required");
+        Objects.requireNonNull(nip, ERR_NULL_NIP);
+        Objects.requireNonNull(expectedEndDate, ERR_NULL_EXPECTED_END_DATE);
         AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
         request.setNip(nip);
         request.setExpectedEndDate(expectedEndDate);
@@ -201,8 +208,8 @@ public final class TestDataClient {
      */
     public void blockContext(TestDataAuthenticationContextIdentifierTypeRaw identifierType,
                              String identifierValue) {
-        Objects.requireNonNull(identifierType, "identifierType is required");
-        Objects.requireNonNull(identifierValue, "identifierValue is required");
+        Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
+        Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
         identifier.setType(identifierType);
         identifier.setValue(identifierValue);
@@ -219,8 +226,8 @@ public final class TestDataClient {
      */
     public void unblockContext(TestDataAuthenticationContextIdentifierTypeRaw identifierType,
                                String identifierValue) {
-        Objects.requireNonNull(identifierType, "identifierType is required");
-        Objects.requireNonNull(identifierValue, "identifierValue is required");
+        Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
+        Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
         identifier.setType(identifierType);
         identifier.setValue(identifierValue);
@@ -237,7 +244,7 @@ public final class TestDataClient {
      * @param builder session limits builder (online and batch)
      */
     public void setSessionLimits(TestSessionLimitsBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS, builder.build(), token, OP_SET_SESSION_LIMITS);
     }
@@ -258,7 +265,7 @@ public final class TestDataClient {
      * @param builder subject limits builder
      */
     public void setSubjectLimits(TestSubjectLimitsBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS, builder.build(), token, OP_SET_SUBJECT_LIMITS);
     }
@@ -279,7 +286,7 @@ public final class TestDataClient {
      * @param builder rate limits builder
      */
     public void setRateLimits(TestRateLimitsBuilder builder) {
-        Objects.requireNonNull(builder, "builder is required");
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS, builder.build(), token, OP_SET_RATE_LIMITS);
     }

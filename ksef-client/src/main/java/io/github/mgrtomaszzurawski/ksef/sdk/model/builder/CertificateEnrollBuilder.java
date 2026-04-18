@@ -26,6 +26,9 @@ import java.util.Objects;
  */
 public final class CertificateEnrollBuilder {
 
+    private static final String ERR_NULL_CERTIFICATE_NAME = "certificateName is required";
+    private static final String ERR_NULL_CERTIFICATE_TYPE = "certificateType is required";
+    private static final String ERR_NULL_CSR = "csr is required";
     private static final String ERR_CSR_EMPTY = "csr must not be empty";
 
     private final String certificateName;
@@ -34,9 +37,9 @@ public final class CertificateEnrollBuilder {
     private OffsetDateTime validFrom;
 
     private CertificateEnrollBuilder(String certificateName, KsefCertificateTypeRaw certificateType, byte[] csr) {
-        this.certificateName = Objects.requireNonNull(certificateName, "certificateName is required");
-        this.certificateType = Objects.requireNonNull(certificateType, "certificateType is required");
-        Objects.requireNonNull(csr, "csr is required");
+        this.certificateName = Objects.requireNonNull(certificateName, ERR_NULL_CERTIFICATE_NAME);
+        this.certificateType = Objects.requireNonNull(certificateType, ERR_NULL_CERTIFICATE_TYPE);
+        Objects.requireNonNull(csr, ERR_NULL_CSR);
         if (csr.length == 0) {
             throw new IllegalArgumentException(ERR_CSR_EMPTY);
         }

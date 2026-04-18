@@ -28,6 +28,12 @@ import java.util.Objects;
  */
 public final class TestSubjectCreateBuilder {
 
+    private static final String ERR_NULL_SUBJECT_NIP = "subjectNip is required";
+    private static final String ERR_NULL_SUBJECT_TYPE = "subjectType is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
+    private static final String ERR_NULL_SUBUNIT_NIP = "subunitNip is required";
+    private static final String ERR_NULL_SUBUNIT_DESCRIPTION = "subunitDescription is required";
+
     private final String subjectNip;
     private final SubjectTypeRaw subjectType;
     private final String description;
@@ -35,9 +41,9 @@ public final class TestSubjectCreateBuilder {
     private OffsetDateTime createdDate;
 
     private TestSubjectCreateBuilder(String subjectNip, SubjectTypeRaw subjectType, String description) {
-        this.subjectNip = Objects.requireNonNull(subjectNip, "subjectNip is required");
-        this.subjectType = Objects.requireNonNull(subjectType, "subjectType is required");
-        this.description = Objects.requireNonNull(description, "description is required");
+        this.subjectNip = Objects.requireNonNull(subjectNip, ERR_NULL_SUBJECT_NIP);
+        this.subjectType = Objects.requireNonNull(subjectType, ERR_NULL_SUBJECT_TYPE);
+        this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
     }
 
     /**
@@ -60,8 +66,8 @@ public final class TestSubjectCreateBuilder {
      */
     public TestSubjectCreateBuilder addSubunit(String subunitNip, String subunitDescription) {
         SubunitRaw subunit = new SubunitRaw();
-        subunit.setSubjectNip(Objects.requireNonNull(subunitNip, "subunitNip is required"));
-        subunit.setDescription(Objects.requireNonNull(subunitDescription, "subunitDescription is required"));
+        subunit.setSubjectNip(Objects.requireNonNull(subunitNip, ERR_NULL_SUBUNIT_NIP));
+        subunit.setDescription(Objects.requireNonNull(subunitDescription, ERR_NULL_SUBUNIT_DESCRIPTION));
         subunits.add(subunit);
         return this;
     }

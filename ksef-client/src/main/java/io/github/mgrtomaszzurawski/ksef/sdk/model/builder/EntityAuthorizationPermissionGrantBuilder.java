@@ -34,6 +34,9 @@ public final class EntityAuthorizationPermissionGrantBuilder {
     private static final String ERR_PERMISSION_REQUIRED = "permission type is required — use .selfInvoicing(), .rrInvoicing(), .taxRepresentative(), or .pefInvoicing()";
     private static final String ERR_ENTITY_DETAILS_REQUIRED = "entityDetails (fullName) is required by KSeF server";
     private static final String ERR_DESCRIPTION_REQUIRED = "description is required — use .description() before .build()";
+    private static final String ERR_NULL_IDENTIFIER_VALUE = "identifier value is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
+    private static final String ERR_NULL_FULL_NAME = "fullName is required";
 
     private final EntityAuthorizationPermissionsSubjectIdentifierTypeRaw identifierType;
     private final String identifierValue;
@@ -44,7 +47,7 @@ public final class EntityAuthorizationPermissionGrantBuilder {
     private EntityAuthorizationPermissionGrantBuilder(
             EntityAuthorizationPermissionsSubjectIdentifierTypeRaw type, String value) {
         this.identifierType = type;
-        this.identifierValue = Objects.requireNonNull(value, "identifier value is required");
+        this.identifierValue = Objects.requireNonNull(value, ERR_NULL_IDENTIFIER_VALUE);
     }
 
     /**
@@ -64,7 +67,7 @@ public final class EntityAuthorizationPermissionGrantBuilder {
     }
 
     public EntityAuthorizationPermissionGrantBuilder description(String description) {
-        this.description = Objects.requireNonNull(description, "description is required");
+        this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
         return this;
     }
 
@@ -72,7 +75,7 @@ public final class EntityAuthorizationPermissionGrantBuilder {
      * Set entity details (required by KSeF server).
      */
     public EntityAuthorizationPermissionGrantBuilder entityDetails(String fullName) {
-        this.fullName = Objects.requireNonNull(fullName, "fullName is required");
+        this.fullName = Objects.requireNonNull(fullName, ERR_NULL_FULL_NAME);
         return this;
     }
 

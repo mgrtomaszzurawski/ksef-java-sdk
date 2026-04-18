@@ -26,6 +26,10 @@ import java.util.Objects;
 public final class SendInvoiceBuilder {
 
     private static final String SHA_256_ALGORITHM = "SHA-256";
+    private static final String ERR_NULL_INVOICE_CONTENT = "invoiceContent is required";
+    private static final String ERR_NULL_AES_KEY = "aesKey is required";
+    private static final String ERR_NULL_INIT_VECTOR = "initVector is required";
+    private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 not available";
 
     private final byte[] invoiceContent;
     private final byte[] aesKey;
@@ -33,9 +37,9 @@ public final class SendInvoiceBuilder {
     private boolean offlineMode;
 
     private SendInvoiceBuilder(byte[] invoiceContent, byte[] aesKey, byte[] initVector) {
-        this.invoiceContent = Objects.requireNonNull(invoiceContent, "invoiceContent is required");
-        this.aesKey = Objects.requireNonNull(aesKey, "aesKey is required");
-        this.initVector = Objects.requireNonNull(initVector, "initVector is required");
+        this.invoiceContent = Objects.requireNonNull(invoiceContent, ERR_NULL_INVOICE_CONTENT);
+        this.aesKey = Objects.requireNonNull(aesKey, ERR_NULL_AES_KEY);
+        this.initVector = Objects.requireNonNull(initVector, ERR_NULL_INIT_VECTOR);
     }
 
     /**
@@ -84,7 +88,7 @@ public final class SendInvoiceBuilder {
             MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
             return digest.digest(data);
         } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 not available", ex);
+            throw new IllegalStateException(ERR_SHA256_UNAVAILABLE, ex);
         }
     }
 }

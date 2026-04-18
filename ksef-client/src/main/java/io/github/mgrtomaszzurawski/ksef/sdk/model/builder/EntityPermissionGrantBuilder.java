@@ -38,6 +38,9 @@ public final class EntityPermissionGrantBuilder {
     private static final String ERR_PERMISSIONS_EMPTY = "at least one permission is required";
     private static final String ERR_ENTITY_DETAILS_REQUIRED = "entityDetails (fullName) is required by KSeF server";
     private static final String ERR_DESCRIPTION_REQUIRED = "description is required — use .description() before .build()";
+    private static final String ERR_NULL_NIP = "NIP is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
+    private static final String ERR_NULL_FULL_NAME = "fullName is required";
 
     private final String identifierValue;
     private String description;
@@ -45,7 +48,7 @@ public final class EntityPermissionGrantBuilder {
     private final List<EntityPermissionRaw> permissions = new ArrayList<>();
 
     private EntityPermissionGrantBuilder(String nip) {
-        this.identifierValue = Objects.requireNonNull(nip, "NIP is required");
+        this.identifierValue = Objects.requireNonNull(nip, ERR_NULL_NIP);
     }
 
     /**
@@ -56,7 +59,7 @@ public final class EntityPermissionGrantBuilder {
     }
 
     public EntityPermissionGrantBuilder description(String description) {
-        this.description = Objects.requireNonNull(description, "description is required");
+        this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
         return this;
     }
 
@@ -64,7 +67,7 @@ public final class EntityPermissionGrantBuilder {
      * Set entity details (required by KSeF server).
      */
     public EntityPermissionGrantBuilder entityDetails(String fullName) {
-        this.fullName = Objects.requireNonNull(fullName, "fullName is required");
+        this.fullName = Objects.requireNonNull(fullName, ERR_NULL_FULL_NAME);
         return this;
     }
 

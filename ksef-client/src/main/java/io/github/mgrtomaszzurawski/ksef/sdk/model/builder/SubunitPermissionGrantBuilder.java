@@ -39,6 +39,13 @@ public final class SubunitPermissionGrantBuilder {
     private static final String ERR_CONTEXT_REQUIRED = "context identifier is required — use .contextNip() or .contextInternalId()";
     private static final String ERR_SUBJECT_DETAILS_REQUIRED = "personDetails (firstName, lastName) is required by KSeF server";
     private static final String ERR_DESCRIPTION_REQUIRED = "description is required — use .description() before .build()";
+    private static final String ERR_NULL_IDENTIFIER_VALUE = "identifier value is required";
+    private static final String ERR_NULL_CONTEXT_NIP = "context NIP is required";
+    private static final String ERR_NULL_INTERNAL_ID = "internal ID is required";
+    private static final String ERR_NULL_DESCRIPTION = "description is required";
+    private static final String ERR_NULL_FIRST_NAME = "firstName is required";
+    private static final String ERR_NULL_LAST_NAME = "lastName is required";
+    private static final String ERR_NULL_SUBUNIT_NAME = "subunitName must not be null if provided";
 
     private final SubunitPermissionsSubjectIdentifierTypeRaw identifierType;
     private final String identifierValue;
@@ -51,7 +58,7 @@ public final class SubunitPermissionGrantBuilder {
 
     private SubunitPermissionGrantBuilder(SubunitPermissionsSubjectIdentifierTypeRaw type, String value) {
         this.identifierType = type;
-        this.identifierValue = Objects.requireNonNull(value, "identifier value is required");
+        this.identifierValue = Objects.requireNonNull(value, ERR_NULL_IDENTIFIER_VALUE);
     }
 
     /**
@@ -80,7 +87,7 @@ public final class SubunitPermissionGrantBuilder {
      */
     public SubunitPermissionGrantBuilder contextNip(String nip) {
         this.contextType = SubunitPermissionsContextIdentifierTypeRaw.NIP;
-        this.contextValue = Objects.requireNonNull(nip, "context NIP is required");
+        this.contextValue = Objects.requireNonNull(nip, ERR_NULL_CONTEXT_NIP);
         return this;
     }
 
@@ -89,12 +96,12 @@ public final class SubunitPermissionGrantBuilder {
      */
     public SubunitPermissionGrantBuilder contextInternalId(String internalId) {
         this.contextType = SubunitPermissionsContextIdentifierTypeRaw.INTERNAL_ID;
-        this.contextValue = Objects.requireNonNull(internalId, "internal ID is required");
+        this.contextValue = Objects.requireNonNull(internalId, ERR_NULL_INTERNAL_ID);
         return this;
     }
 
     public SubunitPermissionGrantBuilder description(String description) {
-        this.description = Objects.requireNonNull(description, "description is required");
+        this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
         return this;
     }
 
@@ -102,8 +109,8 @@ public final class SubunitPermissionGrantBuilder {
      * Set person details (required by KSeF server).
      */
     public SubunitPermissionGrantBuilder personDetails(String firstName, String lastName) {
-        this.firstName = Objects.requireNonNull(firstName, "firstName is required");
-        this.lastName = Objects.requireNonNull(lastName, "lastName is required");
+        this.firstName = Objects.requireNonNull(firstName, ERR_NULL_FIRST_NAME);
+        this.lastName = Objects.requireNonNull(lastName, ERR_NULL_LAST_NAME);
         return this;
     }
 
@@ -111,7 +118,7 @@ public final class SubunitPermissionGrantBuilder {
      * Set optional subunit name.
      */
     public SubunitPermissionGrantBuilder subunitName(String subunitName) {
-        this.subunitName = Objects.requireNonNull(subunitName, "subunitName must not be null if provided");
+        this.subunitName = Objects.requireNonNull(subunitName, ERR_NULL_SUBUNIT_NAME);
         return this;
     }
 
