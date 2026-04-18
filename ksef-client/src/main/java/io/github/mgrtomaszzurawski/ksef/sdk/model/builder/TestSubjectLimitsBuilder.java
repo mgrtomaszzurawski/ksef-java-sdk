@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateSubjectLimitsOverrideRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollmentSubjectLimitsOverrideRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SetSubjectLimitsRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectIdentifierTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TestSubjectIdentifierType;
 
 import java.util.Objects;
 
@@ -20,7 +20,7 @@ import java.util.Objects;
  * Usage:
  * <pre>{@code
  * SetSubjectLimitsRequestRaw request = TestSubjectLimitsBuilder
- *     .create(SubjectIdentifierTypeRaw.NIP)
+ *     .create(TestSubjectIdentifierType.NIP)
  *     .maxEnrollments(20)
  *     .maxCertificates(10)
  *     .build();
@@ -30,11 +30,11 @@ public final class TestSubjectLimitsBuilder {
 
     private static final String ERR_NULL_SUBJECT_IDENTIFIER_TYPE = "subjectIdentifierType is required";
 
-    private final SubjectIdentifierTypeRaw subjectIdentifierType;
+    private final TestSubjectIdentifierType subjectIdentifierType;
     private Integer maxEnrollments;
     private Integer maxCertificates;
 
-    private TestSubjectLimitsBuilder(SubjectIdentifierTypeRaw subjectIdentifierType) {
+    private TestSubjectLimitsBuilder(TestSubjectIdentifierType subjectIdentifierType) {
         this.subjectIdentifierType = Objects.requireNonNull(subjectIdentifierType, ERR_NULL_SUBJECT_IDENTIFIER_TYPE);
     }
 
@@ -43,7 +43,7 @@ public final class TestSubjectLimitsBuilder {
      *
      * @param subjectIdentifierType type of subject identifier (Nip, Pesel, Fingerprint)
      */
-    public static TestSubjectLimitsBuilder create(SubjectIdentifierTypeRaw subjectIdentifierType) {
+    public static TestSubjectLimitsBuilder create(TestSubjectIdentifierType subjectIdentifierType) {
         return new TestSubjectLimitsBuilder(subjectIdentifierType);
     }
 
@@ -74,7 +74,7 @@ public final class TestSubjectLimitsBuilder {
      */
     public SetSubjectLimitsRequestRaw build() {
         SetSubjectLimitsRequestRaw request = new SetSubjectLimitsRequestRaw();
-        request.setSubjectIdentifierType(subjectIdentifierType);
+        request.setSubjectIdentifierType(subjectIdentifierType.toRaw());
         if (maxEnrollments != null) {
             EnrollmentSubjectLimitsOverrideRaw enrollment = new EnrollmentSubjectLimitsOverrideRaw();
             enrollment.setMaxEnrollments(maxEnrollments);

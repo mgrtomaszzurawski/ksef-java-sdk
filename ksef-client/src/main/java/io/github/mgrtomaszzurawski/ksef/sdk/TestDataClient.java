@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.PersonRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsGrantBuilder;
@@ -206,12 +207,11 @@ public final class TestDataClient {
      * @param identifierType type of context identifier
      * @param identifierValue value of context identifier (e.g., NIP)
      */
-    public void blockContext(TestDataAuthenticationContextIdentifierTypeRaw identifierType,
-                             String identifierValue) {
+    public void blockContext(TestDataIdentifierType identifierType, String identifierValue) {
         Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
         Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
-        identifier.setType(identifierType);
+        identifier.setType(identifierType.toRaw());
         identifier.setValue(identifierValue);
         BlockContextAuthenticationRequestRaw request = new BlockContextAuthenticationRequestRaw();
         request.setContextIdentifier(identifier);
@@ -224,12 +224,11 @@ public final class TestDataClient {
      * @param identifierType type of context identifier
      * @param identifierValue value of context identifier (e.g., NIP)
      */
-    public void unblockContext(TestDataAuthenticationContextIdentifierTypeRaw identifierType,
-                               String identifierValue) {
+    public void unblockContext(TestDataIdentifierType identifierType, String identifierValue) {
         Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
         Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
-        identifier.setType(identifierType);
+        identifier.setType(identifierType.toRaw());
         identifier.setValue(identifierValue);
         UnblockContextAuthenticationRequestRaw request = new UnblockContextAuthenticationRequestRaw();
         request.setContextIdentifier(identifier);

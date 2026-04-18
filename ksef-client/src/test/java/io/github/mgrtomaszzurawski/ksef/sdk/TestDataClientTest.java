@@ -6,9 +6,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TestSubjectType;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TestSubjectIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsRevokeBuilder;
@@ -64,7 +64,7 @@ class TestDataClientTest {
 
         // when
         ksef.testData().createSubject(
-                TestSubjectCreateBuilder.create(TEST_NIP, SubjectTypeRaw.JST, TEST_DESCRIPTION));
+                TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION));
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/subject")));
@@ -196,7 +196,7 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().blockContext(TestDataAuthenticationContextIdentifierTypeRaw.NIP, TEST_NIP);
+        ksef.testData().blockContext(TestDataIdentifierType.NIP, TEST_NIP);
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/block")));
@@ -211,7 +211,7 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // when
-        ksef.testData().unblockContext(TestDataAuthenticationContextIdentifierTypeRaw.NIP, TEST_NIP);
+        ksef.testData().unblockContext(TestDataIdentifierType.NIP, TEST_NIP);
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/unblock")));
@@ -268,7 +268,7 @@ class TestDataClientTest {
 
         // when
         ksef.testData().setSubjectLimits(
-                TestSubjectLimitsBuilder.create(SubjectIdentifierTypeRaw.NIP));
+                TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP));
 
         // then
         verify(postRequestedFor(urlEqualTo("/api/v2/testdata/limits/subject/certificate"))
@@ -359,7 +359,7 @@ class TestDataClientTest {
         // then
         assertThrows(KsefServerException.class,
                 () -> ksef.testData().createSubject(
-                        TestSubjectCreateBuilder.create(TEST_NIP, SubjectTypeRaw.JST, TEST_DESCRIPTION)));
+                        TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION)));
     }
 
     // --- Helpers ---

@@ -6,8 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateRevocationReasonRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
@@ -147,7 +147,7 @@ class CertificateClientTest {
 
         // when
         EnrollCertificateResult response = ksef.certificates().enroll(
-                CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateTypeRaw.AUTHENTICATION, TEST_CSR));
+                CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR));
 
         // then
         assertEquals(TEST_ENROLLMENT_REF, response.referenceNumber());
@@ -206,7 +206,7 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        ksef.certificates().revoke(TEST_CERT_SERIAL, CertificateRevocationReasonRaw.UNSPECIFIED);
+        ksef.certificates().revoke(TEST_CERT_SERIAL, CertificateRevocationReason.UNSPECIFIED);
 
         // then
         verify(postRequestedFor(urlEqualTo(revokePath))
@@ -245,7 +245,7 @@ class CertificateClientTest {
         // then
         assertThrows(KsefServerException.class,
                 () -> ksef.certificates().enroll(
-                        CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateTypeRaw.AUTHENTICATION, TEST_CSR)));
+                        CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR)));
     }
 
     @Test
