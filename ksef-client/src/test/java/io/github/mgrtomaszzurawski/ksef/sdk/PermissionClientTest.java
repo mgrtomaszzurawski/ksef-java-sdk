@@ -6,20 +6,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AttachmentPermissionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.EntityAuthorizationPermissions;
@@ -32,6 +18,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.PersonPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PersonalPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.SubunitPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityAuthorizationPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityAuthorizationPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityAdminPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.IndirectPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonalPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.SubunitPermissionGrantBuilder;
 import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -54,6 +51,10 @@ class PermissionClientTest {
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
     private static final String TEST_OPERATION_REF = "20260404-PM-1234567890-ABCDEF1234-09";
     private static final String TEST_PERMISSION_ID = "perm-id-abc123def456";
+    private static final String TEST_NIP = "1234567890";
+    private static final String TEST_PESEL = "82060411457";
+    private static final String TEST_FINGERPRINT = "ABC123DEF456";
+    private static final String TEST_DESCRIPTION = "Test permission grant";
 
     private static final int HTTP_OK = 200;
     private static final int HTTP_UNAUTHORIZED = 401;
@@ -108,7 +109,10 @@ class PermissionClientTest {
 
         // when
         PermissionOperationResult response =
-                ksef.permissions().grantPerson(new PersonPermissionsGrantRequestRaw());
+                ksef.permissions().grantPerson(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
+                        .description(TEST_DESCRIPTION)
+                        .personDetails("Jan", "Kowalski")
+                        .invoiceRead());
 
         // then
         assertEquals(TEST_OPERATION_REF, response.referenceNumber());
@@ -122,7 +126,10 @@ class PermissionClientTest {
 
         // when
         PermissionOperationResult response =
-                ksef.permissions().grantEntity(new EntityPermissionsGrantRequestRaw());
+                ksef.permissions().grantEntity(EntityPermissionGrantBuilder.forNip(TEST_NIP)
+                        .description(TEST_DESCRIPTION)
+                        .entityDetails("Firma Sp. z o.o.")
+                        .invoiceRead());
 
         // then
         assertEquals(TEST_OPERATION_REF, response.referenceNumber());
@@ -136,7 +143,10 @@ class PermissionClientTest {
 
         // when
         PermissionOperationResult response =
-                ksef.permissions().grantAuthorization(new EntityAuthorizationPermissionsGrantRequestRaw());
+                ksef.permissions().grantAuthorization(EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
+                        .selfInvoicing()
+                        .description(TEST_DESCRIPTION)
+                        .entityDetails("Firma Sp. z o.o."));
 
         // then
         assertEquals(TEST_OPERATION_REF, response.referenceNumber());
@@ -150,7 +160,10 @@ class PermissionClientTest {
 
         // when
         PermissionOperationResult response =
-                ksef.permissions().grantIndirect(new IndirectPermissionsGrantRequestRaw());
+                ksef.permissions().grantIndirect(IndirectPermissionGrantBuilder.forNip(TEST_NIP)
+                        .description(TEST_DESCRIPTION)
+                        .personDetails("Jan", "Kowalski")
+                        .invoiceRead());
 
         // then
         assertEquals(TEST_OPERATION_REF, response.referenceNumber());
@@ -164,7 +177,10 @@ class PermissionClientTest {
 
         // when
         PermissionOperationResult response =
-                ksef.permissions().grantSubunit(new SubunitPermissionsGrantRequestRaw());
+                ksef.permissions().grantSubunit(SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
+                        .contextNip(TEST_NIP)
+                        .description(TEST_DESCRIPTION)
+                        .personDetails("Jan", "Kowalski"));
 
         // then
         assertEquals(TEST_OPERATION_REF, response.referenceNumber());
@@ -178,7 +194,12 @@ class PermissionClientTest {
 
         // when
         PermissionOperationResult response =
-                ksef.permissions().grantEuEntityAdmin(new EuEntityAdministrationPermissionsGrantRequestRaw());
+                ksef.permissions().grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                        .contextNipVatUe("PL" + TEST_NIP)
+                        .description(TEST_DESCRIPTION)
+                        .euEntityName("EU Partner GmbH")
+                        .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
+                        .euEntityDetails("EU Partner GmbH", "Berlin, Germany"));
 
         // then
         assertEquals(TEST_OPERATION_REF, response.referenceNumber());
@@ -192,7 +213,10 @@ class PermissionClientTest {
 
         // when
         PermissionOperationResult response =
-                ksef.permissions().grantEuEntity(new EuEntityPermissionsGrantRequestRaw());
+                ksef.permissions().grantEuEntity(EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                        .description(TEST_DESCRIPTION)
+                        .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
+                        .invoiceRead());
 
         // then
         assertEquals(TEST_OPERATION_REF, response.referenceNumber());
@@ -277,7 +301,7 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         PersonalPermissions response =
-                ksef.permissions().queryPersonal(new PersonalPermissionsQueryRequestRaw());
+                ksef.permissions().queryPersonal(PersonalPermissionsQueryBuilder.create());
 
         assertNotNull(response.permissions());
         assertFalse(response.hasMore());
@@ -289,7 +313,7 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         PersonPermissions response =
-                ksef.permissions().queryPersons(new PersonPermissionsQueryRequestRaw());
+                ksef.permissions().queryPersons(PersonPermissionsQueryBuilder.permissionsInCurrentContext());
 
         assertNotNull(response.permissions());
         assertFalse(response.hasMore());
@@ -301,7 +325,7 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         SubunitPermissions response =
-                ksef.permissions().querySubunits(new SubunitPermissionsQueryRequestRaw());
+                ksef.permissions().querySubunits();
 
         assertNotNull(response.permissions());
         assertFalse(response.hasMore());
@@ -313,7 +337,7 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         EntityPermissions response =
-                ksef.permissions().queryEntities(new EntityPermissionsQueryRequestRaw());
+                ksef.permissions().queryEntities();
 
         assertNotNull(response.permissions());
         assertFalse(response.hasMore());
@@ -342,7 +366,7 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         SubordinateEntityRoles response =
-                ksef.permissions().querySubordinateRoles(new SubordinateEntityRolesQueryRequestRaw());
+                ksef.permissions().querySubordinateRoles();
 
         assertNotNull(response.roles());
         assertFalse(response.hasMore());
@@ -354,7 +378,7 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         EntityAuthorizationPermissions response =
-                ksef.permissions().queryAuthorizations(new EntityAuthorizationPermissionsQueryRequestRaw());
+                ksef.permissions().queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder.granted());
 
         assertNotNull(response.authorizationGrants());
         assertFalse(response.hasMore());
@@ -366,7 +390,7 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         EuEntityPermissions response =
-                ksef.permissions().queryEuEntities(new EuEntityPermissionsQueryRequestRaw());
+                ksef.permissions().queryEuEntities(EuEntityPermissionsQueryBuilder.create());
 
         assertNotNull(response.permissions());
         assertFalse(response.hasMore());
@@ -382,7 +406,10 @@ class PermissionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         assertThrows(KsefAuthException.class,
-                () -> ksef.permissions().grantPerson(new PersonPermissionsGrantRequestRaw()));
+                () -> ksef.permissions().grantPerson(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
+                        .description(TEST_DESCRIPTION)
+                        .personDetails("Jan", "Kowalski")
+                        .invoiceRead()));
     }
 
     @Test

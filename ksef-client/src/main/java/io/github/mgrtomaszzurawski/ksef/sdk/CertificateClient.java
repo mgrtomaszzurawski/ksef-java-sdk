@@ -7,9 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.CertificateRevocationReasonRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
@@ -21,6 +21,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.RetrieveCertificatesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateEnrollBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateQueryBuilder;
+
+import java.util.List;
+import java.util.Objects;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -82,10 +87,12 @@ public final class CertificateClient {
     /**
      * Enroll (register) a new certificate.
      *
-     * @param request enrollment request with certificate name, type, and CSR
+     * @param builder enrollment builder with certificate name, type, and CSR
      * @return response with enrollment reference number
      */
-    public EnrollCertificateResult enroll(EnrollCertificateRequestRaw request) {
+    public EnrollCertificateResult enroll(CertificateEnrollBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
+        EnrollCertificateRequestRaw request = builder.build();
         String token = sessionContext.token();
         EnrollCertificateResponseRaw raw = http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
                 EnrollCertificateResponseRaw.class, OP_ENROLL);
@@ -109,10 +116,13 @@ public final class CertificateClient {
     /**
      * Retrieve certificates by their serial numbers.
      *
-     * @param request request containing certificate serial numbers
+     * @param certificateSerialNumbers serial numbers of certificates to retrieve
      * @return response with certificate details
      */
-    public RetrieveCertificatesResult retrieve(RetrieveCertificatesRequestRaw request) {
+    public RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers) {
+        Objects.requireNonNull(certificateSerialNumbers, "certificateSerialNumbers is required");
+        RetrieveCertificatesRequestRaw request = new RetrieveCertificatesRequestRaw();
+        request.setCertificateSerialNumbers(certificateSerialNumbers);
         String token = sessionContext.token();
         RetrieveCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_RETRIEVE, request, token,
                 RetrieveCertificatesResponseRaw.class, OP_RETRIEVE);
@@ -120,13 +130,29 @@ public final class CertificateClient {
     }
 
     /**
-     * Revoke a certificate by its serial number.
+     * Revoke a certificate by its serial number with no specific reason.
      *
      * @param certificateSerialNumber the serial number of the certificate to revoke
-     * @param request revocation request with reason
      */
-    public void revoke(String certificateSerialNumber, RevokeCertificateRequestRaw request) {
+    public void revoke(String certificateSerialNumber) {
         requireSafePathSegment(certificateSerialNumber);
+        RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
+        String token = sessionContext.token();
+        String path = PATH_CERTIFICATES + "/" + certificateSerialNumber + SEGMENT_REVOKE;
+        http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
+    }
+
+    /**
+     * Revoke a certificate by its serial number with a specific reason.
+     *
+     * @param certificateSerialNumber the serial number of the certificate to revoke
+     * @param revocationReason reason for revocation (Unspecified, Superseded, KeyCompromise)
+     */
+    public void revoke(String certificateSerialNumber, CertificateRevocationReasonRaw revocationReason) {
+        requireSafePathSegment(certificateSerialNumber);
+        Objects.requireNonNull(revocationReason, "revocationReason is required");
+        RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
+        request.setRevocationReason(revocationReason);
         String token = sessionContext.token();
         String path = PATH_CERTIFICATES + "/" + certificateSerialNumber + SEGMENT_REVOKE;
         http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
@@ -135,12 +161,13 @@ public final class CertificateClient {
     /**
      * Query certificates with optional filters.
      *
-     * @param request query filters
+     * @param builder query builder with optional filters
      * @return matching certificates
      */
-    public CertificateQueryResult query(QueryCertificatesRequestRaw request) {
+    public CertificateQueryResult query(CertificateQueryBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
         String token = sessionContext.token();
-        QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY, request, token,
+        QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY, builder.build(), token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);
         return CertificateQueryResult.from(raw);
     }

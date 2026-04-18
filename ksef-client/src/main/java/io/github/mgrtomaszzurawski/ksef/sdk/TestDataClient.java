@@ -7,17 +7,22 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionRevokeRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.BlockContextAuthenticationRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonCreateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonRemoveRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SetRateLimitsRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SetSessionLimitsRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SetSubjectLimitsRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectCreateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsRevokeRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsRevokeBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPersonCreateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestRateLimitsBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSessionLimitsBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSubjectCreateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSubjectLimitsBuilder;
+
+import java.time.LocalDate;
+import java.util.Objects;
 
 /**
  * Client for KSeF test environment data management — creating/removing test subjects,
@@ -80,18 +85,22 @@ public final class TestDataClient {
     /**
      * Create a test subject (taxpayer entity) in the test environment.
      *
-     * @param request subject creation parameters (NIP, type, description)
+     * @param builder subject creation builder (NIP, type, description)
      */
-    public void createSubject(SubjectCreateRequestRaw request) {
-        http.postJsonNoContent(PATH_SUBJECT, request, OP_CREATE_SUBJECT);
+    public void createSubject(TestSubjectCreateBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
+        http.postJsonNoContent(PATH_SUBJECT, builder.build(), OP_CREATE_SUBJECT);
     }
 
     /**
      * Remove a test subject from the test environment.
      *
-     * @param request subject removal parameters (NIP)
+     * @param subjectNip NIP of the subject to remove
      */
-    public void removeSubject(SubjectRemoveRequestRaw request) {
+    public void removeSubject(String subjectNip) {
+        Objects.requireNonNull(subjectNip, "subjectNip is required");
+        SubjectRemoveRequestRaw request = new SubjectRemoveRequestRaw();
+        request.setSubjectNip(subjectNip);
         http.postJsonNoContent(PATH_SUBJECT_REMOVE, request, OP_REMOVE_SUBJECT);
     }
 
@@ -100,18 +109,22 @@ public final class TestDataClient {
     /**
      * Create a test person in the test environment.
      *
-     * @param request person creation parameters (NIP, PESEL, description)
+     * @param builder person creation builder (NIP, PESEL, isBailiff, description)
      */
-    public void createPerson(PersonCreateRequestRaw request) {
-        http.postJsonNoContent(PATH_PERSON, request, OP_CREATE_PERSON);
+    public void createPerson(TestPersonCreateBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
+        http.postJsonNoContent(PATH_PERSON, builder.build(), OP_CREATE_PERSON);
     }
 
     /**
      * Remove a test person from the test environment.
      *
-     * @param request person removal parameters (NIP)
+     * @param nip NIP of the person to remove
      */
-    public void removePerson(PersonRemoveRequestRaw request) {
+    public void removePerson(String nip) {
+        Objects.requireNonNull(nip, "nip is required");
+        PersonRemoveRequestRaw request = new PersonRemoveRequestRaw();
+        request.setNip(nip);
         http.postJsonNoContent(PATH_PERSON_REMOVE, request, OP_REMOVE_PERSON);
     }
 
@@ -120,19 +133,21 @@ public final class TestDataClient {
     /**
      * Grant test permissions in the test environment.
      *
-     * @param request permission grant parameters
+     * @param builder permission grant builder
      */
-    public void grantPermissions(TestDataPermissionsGrantRequestRaw request) {
-        http.postJsonNoContent(PATH_PERMISSIONS, request, OP_GRANT_PERMISSIONS);
+    public void grantPermissions(TestPermissionsGrantBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
+        http.postJsonNoContent(PATH_PERMISSIONS, builder.build(), OP_GRANT_PERMISSIONS);
     }
 
     /**
      * Revoke test permissions in the test environment.
      *
-     * @param request permission revocation parameters
+     * @param builder permission revocation builder
      */
-    public void revokePermissions(TestDataPermissionsRevokeRequestRaw request) {
-        http.postJsonNoContent(PATH_PERMISSIONS_REVOKE, request, OP_REVOKE_PERMISSIONS);
+    public void revokePermissions(TestPermissionsRevokeBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
+        http.postJsonNoContent(PATH_PERMISSIONS_REVOKE, builder.build(), OP_REVOKE_PERMISSIONS);
     }
 
     // --- Attachment management (unauthenticated) ---
@@ -140,18 +155,39 @@ public final class TestDataClient {
     /**
      * Grant attachment permissions in the test environment.
      *
-     * @param request attachment permission grant parameters
+     * @param nip NIP of the subject to grant attachment permissions to
      */
-    public void grantAttachment(AttachmentPermissionGrantRequestRaw request) {
+    public void grantAttachment(String nip) {
+        Objects.requireNonNull(nip, "nip is required");
+        AttachmentPermissionGrantRequestRaw request = new AttachmentPermissionGrantRequestRaw();
+        request.setNip(nip);
         http.postJsonNoContent(PATH_ATTACHMENT, request, OP_GRANT_ATTACHMENT);
     }
 
     /**
      * Revoke attachment permissions in the test environment.
      *
-     * @param request attachment permission revocation parameters
+     * @param nip NIP of the subject to revoke attachment permissions from
      */
-    public void revokeAttachment(AttachmentPermissionRevokeRequestRaw request) {
+    public void revokeAttachment(String nip) {
+        Objects.requireNonNull(nip, "nip is required");
+        AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
+        request.setNip(nip);
+        http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, request, OP_REVOKE_ATTACHMENT);
+    }
+
+    /**
+     * Revoke attachment permissions in the test environment with an expected end date.
+     *
+     * @param nip NIP of the subject to revoke attachment permissions from
+     * @param expectedEndDate expected end date for the revocation
+     */
+    public void revokeAttachment(String nip, LocalDate expectedEndDate) {
+        Objects.requireNonNull(nip, "nip is required");
+        Objects.requireNonNull(expectedEndDate, "expectedEndDate is required");
+        AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
+        request.setNip(nip);
+        request.setExpectedEndDate(expectedEndDate);
         http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, request, OP_REVOKE_ATTACHMENT);
     }
 
@@ -160,18 +196,36 @@ public final class TestDataClient {
     /**
      * Block authentication for a context in the test environment.
      *
-     * @param request context blocking parameters
+     * @param identifierType type of context identifier
+     * @param identifierValue value of context identifier (e.g., NIP)
      */
-    public void blockContext(BlockContextAuthenticationRequestRaw request) {
+    public void blockContext(TestDataAuthenticationContextIdentifierTypeRaw identifierType,
+                             String identifierValue) {
+        Objects.requireNonNull(identifierType, "identifierType is required");
+        Objects.requireNonNull(identifierValue, "identifierValue is required");
+        TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
+        identifier.setType(identifierType);
+        identifier.setValue(identifierValue);
+        BlockContextAuthenticationRequestRaw request = new BlockContextAuthenticationRequestRaw();
+        request.setContextIdentifier(identifier);
         http.postJsonNoContent(PATH_CONTEXT_BLOCK, request, OP_BLOCK_CONTEXT);
     }
 
     /**
      * Unblock authentication for a context in the test environment.
      *
-     * @param request context unblocking parameters
+     * @param identifierType type of context identifier
+     * @param identifierValue value of context identifier (e.g., NIP)
      */
-    public void unblockContext(UnblockContextAuthenticationRequestRaw request) {
+    public void unblockContext(TestDataAuthenticationContextIdentifierTypeRaw identifierType,
+                               String identifierValue) {
+        Objects.requireNonNull(identifierType, "identifierType is required");
+        Objects.requireNonNull(identifierValue, "identifierValue is required");
+        TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
+        identifier.setType(identifierType);
+        identifier.setValue(identifierValue);
+        UnblockContextAuthenticationRequestRaw request = new UnblockContextAuthenticationRequestRaw();
+        request.setContextIdentifier(identifier);
         http.postJsonNoContent(PATH_CONTEXT_UNBLOCK, request, OP_UNBLOCK_CONTEXT);
     }
 
@@ -180,11 +234,12 @@ public final class TestDataClient {
     /**
      * Set session limits override in the test environment.
      *
-     * @param request session limits (online and batch)
+     * @param builder session limits builder (online and batch)
      */
-    public void setSessionLimits(SetSessionLimitsRequestRaw request) {
+    public void setSessionLimits(TestSessionLimitsBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS, request, token, OP_SET_SESSION_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS, builder.build(), token, OP_SET_SESSION_LIMITS);
     }
 
     /**
@@ -200,11 +255,12 @@ public final class TestDataClient {
     /**
      * Set subject certificate limits override in the test environment.
      *
-     * @param request subject limits
+     * @param builder subject limits builder
      */
-    public void setSubjectLimits(SetSubjectLimitsRequestRaw request) {
+    public void setSubjectLimits(TestSubjectLimitsBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS, request, token, OP_SET_SUBJECT_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS, builder.build(), token, OP_SET_SUBJECT_LIMITS);
     }
 
     /**
@@ -220,11 +276,12 @@ public final class TestDataClient {
     /**
      * Set rate limit overrides in the test environment.
      *
-     * @param request rate limit values
+     * @param builder rate limits builder
      */
-    public void setRateLimits(SetRateLimitsRequestRaw request) {
+    public void setRateLimits(TestRateLimitsBuilder builder) {
+        Objects.requireNonNull(builder, "builder is required");
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS, request, token, OP_SET_RATE_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS, builder.build(), token, OP_SET_RATE_LIMITS);
     }
 
     /**

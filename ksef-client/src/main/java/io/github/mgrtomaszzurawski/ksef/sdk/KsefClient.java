@@ -8,13 +8,17 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.mgrtomaszzurawski.ksef.client.model.BatchFileInfoRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.BatchFilePartInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CertificateLoader;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage;
@@ -24,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
+import java.util.List;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -63,6 +68,7 @@ public final class KsefClient implements AutoCloseable {
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
     private static final String ERR_FORM_CODE_NULL = "formCode must not be null";
+    private static final String ERR_BATCH_FILE_SPEC_NULL = "batchFileSpec must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
     private static final String ERR_NO_CERT = "No certificate found with usage: ";
@@ -185,6 +191,54 @@ public final class KsefClient implements AutoCloseable {
         LOG.info("Opened KSeF session {}, formCode={}", session.referenceNumber(), formCode);
 
         return new KsefSession(sessionClient, session.referenceNumber(), aesKey, initVector);
+    }
+
+    /**
+     * Open a batch KSeF session for bulk invoice submission via ZIP package.
+     *
+     * <p>Authenticates lazily if not already authenticated. Generates AES encryption key,
+     * encrypts it with the KSeF public key, and opens the batch session. The returned
+     * {@link KsefBatchSession} contains upload URLs for each ZIP part.
+     *
+     * <p>Batch session flow:
+     * <ol>
+     *   <li>Open session with this method</li>
+     *   <li>Upload encrypted ZIP parts to the URLs from
+     *       {@link KsefBatchSession#partUploadRequests()}</li>
+     *   <li>Close the session via {@link KsefBatchSession#close()}</li>
+     * </ol>
+     *
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * @param batchFileSpec metadata describing the encrypted ZIP file and its parts
+     * @return an open batch session — use with try-with-resources
+     */
+    public synchronized KsefBatchSession openBatchSession(FormCode formCode,
+                                                          BatchFileSpec batchFileSpec) {
+        Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
+        Objects.requireNonNull(batchFileSpec, ERR_BATCH_FILE_SPEC_NULL);
+        ensureOpen();
+        ensureAuthenticated();
+
+        PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
+        byte[] aesKey = CryptoService.generateAesKey();
+        byte[] initVector = CryptoService.generateIv();
+        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
+
+        OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
+                .formCode(new FormCodeRaw()
+                        .systemCode(formCode.systemCode())
+                        .schemaVersion(formCode.schemaVersion())
+                        .value(formCode.value()))
+                .encryption(new EncryptionInfoRaw()
+                        .encryptedSymmetricKey(encryptedKey)
+                        .initializationVector(initVector))
+                .batchFile(toBatchFileInfoRaw(batchFileSpec));
+
+        BatchSession session = sessionClient.openBatch(request);
+        LOG.info("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
+
+        return new KsefBatchSession(sessionClient, session.referenceNumber(),
+                session.partUploadRequests());
     }
 
     /**
@@ -432,6 +486,19 @@ public final class KsefClient implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(ERR_INTERRUPTED, ex);
         }
+    }
+
+    private static BatchFileInfoRaw toBatchFileInfoRaw(BatchFileSpec spec) {
+        List<BatchFilePartInfoRaw> parts = spec.parts().stream()
+                .map(part -> new BatchFilePartInfoRaw()
+                        .ordinalNumber(part.ordinalNumber())
+                        .fileSize(part.fileSize())
+                        .fileHash(part.fileHash()))
+                .toList();
+        return new BatchFileInfoRaw()
+                .fileSize(spec.fileSize())
+                .fileHash(spec.fileHash())
+                .fileParts(parts);
     }
 
     private static ObjectMapper createObjectMapper() {
