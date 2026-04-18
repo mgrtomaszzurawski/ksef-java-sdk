@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
@@ -12,6 +11,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.GenerateTokenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TokenGenerateBuilder;
+
+import java.util.Objects;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -26,6 +28,7 @@ public final class TokenClient {
     private static final String OP_LIST = "listTokens";
     private static final String OP_GET_STATUS = "getTokenStatus";
     private static final String OP_REVOKE = "revokeToken";
+    private static final String ERR_NULL_BUILDER = "tokenBuilder must not be null";
 
     private final HttpSupport http;
     private final SessionContext sessionContext;
@@ -38,13 +41,14 @@ public final class TokenClient {
     /**
      * Generate a new API token with the specified permissions and description.
      *
-     * @param request token generation parameters (permissions, description)
+     * @param tokenBuilder token generation builder with permissions and description
      * @return response with the generated token details
      */
-    public GenerateTokenResult generate(GenerateTokenRequestRaw request) {
+    public GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder) {
+        Objects.requireNonNull(tokenBuilder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        GenerateTokenResponseRaw raw = http.postJsonAuthenticated(PATH_TOKENS, request, token,
-                GenerateTokenResponseRaw.class, OP_GENERATE);
+        GenerateTokenResponseRaw raw = http.postJsonAuthenticated(PATH_TOKENS,
+                tokenBuilder.build(), token, GenerateTokenResponseRaw.class, OP_GENERATE);
         return GenerateTokenResult.from(raw);
     }
 

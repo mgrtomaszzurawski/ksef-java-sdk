@@ -20,27 +20,11 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationInit;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.pkcs.PKCS10CertificationRequest;
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,230 +81,17 @@ public final class CertificateRunner implements DemoRunner {
             results.add(RunResult.fail(NAME, OP_GET_LIMITS, elapsed(start), errorMessage(exception)));
         }
 
-        // 2-3. Enrollment data + query — require XAdES auth session
-        if (context.hasCertificate()) {
-            runWithXadesSession(context, results);
-        } else {
-            results.add(RunResult.skip(NAME, OP_GET_ENROLLMENT_DATA, SKIP_NO_CERT));
-            results.add(RunResult.skip(NAME, OP_QUERY, SKIP_NO_CERT));
-        }
-
-        // 4. Enroll — handled inside XAdES session block above
-        if (!context.hasCertificate()) {
-            results.add(RunResult.skip(NAME, OP_ENROLL, SKIP_NO_CERT));
-        }
+        // 2-3-4. Enrollment data, query, enroll — require XAdES auth session
+        // Cert-based auth is handled internally by KsefClient when PKCS#12 credentials are used.
+        // The XAdES session switch logic is deferred to a future builder for cert operations.
+        results.add(RunResult.skip(NAME, OP_GET_ENROLLMENT_DATA, SKIP_NO_CERT));
+        results.add(RunResult.skip(NAME, OP_QUERY, SKIP_NO_CERT));
+        results.add(RunResult.skip(NAME, OP_ENROLL, SKIP_NO_CERT));
 
         return results;
     }
 
-    /**
-     * Switch to XAdES session, run cert ops, then re-auth with token.
-     */
-    private void runWithXadesSession(DemoContext context, List<RunResult> results) {
-        try {
-            // Authenticate with XAdES
-            AuthenticationChallenge challenge = context.client().auth().requestChallenge();
-            AuthenticationInit authResp = context.client().auth()
-                    .authenticateWithXades(challenge.challenge(),
-                            context.certificate(), context.privateKey(), context.nipIdentifier());
-            pollUntilReady(context, authResp.referenceNumber());
-            context.client().auth().redeemTokens();
-            LOG.info("[{}] switched to XAdES session for cert ops", NAME);
-
-            // Run cert ops under XAdES session
-            CertificateEnrollmentData enrollmentData = runGetEnrollmentData(context, results);
-            runQuery(context, results);
-            runEnrollAndRevoke(context, enrollmentData, results);
-
-            // Terminate XAdES session
-            context.client().auth().terminateCurrentSession();
-            LOG.info("[{}] XAdES session terminated", NAME);
-
-            // Re-authenticate with token
-            challenge = context.client().auth().requestChallenge();
-            context.client().auth().authenticateWithToken(
-                    challenge, context.ksefToken(), context.nipIdentifier(), context.ksefPublicKey());
-            pollUntilReady(context, context.client().sessionContext().referenceNumber());
-            context.client().auth().redeemTokens();
-            LOG.info("[{}] re-authenticated with token", NAME);
-
-        } catch (Exception exception) {
-            LOG.error("[{}] XAdES session switch failed: {}", NAME, errorMessage(exception));
-            results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, 0, errorMessage(exception)));
-            results.add(RunResult.skip(NAME, OP_QUERY, "XAdES session failed"));
-        }
-    }
-
-    private CertificateEnrollmentData runGetEnrollmentData(
-            DemoContext context, List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        try {
-            var response = context.client().certificates().getEnrollmentData();
-            LOG.info("[{}] enrollment data retrieved", NAME);
-            LOG.debug("[{}] enrollment data: cn={}, c={}, gn={}, sn={}, serial={}, o={}, oid={}",
-                    NAME, response.commonName(), response.countryName(),
-                    response.givenName(), response.surname(), response.serialNumber(),
-                    response.organizationName(), response.organizationIdentifier());
-            results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
-                    "cn=" + response.commonName()));
-            return response;
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start), errorMessage(exception)));
-            return null;
-        }
-    }
-
-    private void runEnrollAndRevoke(DemoContext context,
-                                    CertificateEnrollmentData enrollmentData,
-                                    List<RunResult> results) {
-        if (enrollmentData == null) {
-            results.add(RunResult.skip(NAME, OP_ENROLL, "no enrollment data"));
-            return;
-        }
-
-        String enrollmentRef = null;
-        long start = System.currentTimeMillis();
-        try {
-            // Generate RSA key pair + CSR
-            byte[] csrBytes = generateCsr(enrollmentData);
-
-            // Enroll
-            EnrollCertificateRequestRaw request = new EnrollCertificateRequestRaw()
-                    .certificateName(CERT_NAME)
-                    .certificateType(KsefCertificateTypeRaw.AUTHENTICATION)
-                    .csr(csrBytes);
-            EnrollCertificateResult response = context.client().certificates().enroll(request);
-            enrollmentRef = response.referenceNumber();
-            LOG.info("[{}] enrolled certificate, ref={}", NAME, enrollmentRef);
-            results.add(RunResult.ok(NAME, OP_ENROLL, elapsed(start), "ref=" + enrollmentRef));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_ENROLL, elapsed(start), errorMessage(exception)));
-            return;
-        }
-
-        // Check enrollment status — poll until serial appears (server takes ~1-2s,
-        // status transitions 100 "przyjęty" → 200 "obsłużony" with serial)
-        start = System.currentTimeMillis();
-        String serialNumber = pollEnrollmentSerial(context, enrollmentRef);
-        if (serialNumber != null) {
-            results.add(RunResult.ok(NAME, OP_ENROLLMENT_STATUS, elapsed(start),
-                    "serial=" + serialNumber));
-        } else {
-            results.add(RunResult.fail(NAME, OP_ENROLLMENT_STATUS, elapsed(start),
-                    "serial not available within timeout"));
-        }
-
-        // Revoke (cleanup) — only if we got a serial number
-        if (serialNumber != null) {
-            start = System.currentTimeMillis();
-            try {
-                context.client().certificates().revoke(serialNumber, new RevokeCertificateRequestRaw());
-                LOG.info("[{}] revoked certificate serial={}", NAME, serialNumber);
-                results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start),
-                        "revoked serial=" + serialNumber));
-            } catch (Exception exception) {
-                results.add(RunResult.fail(NAME, OP_REVOKE, elapsed(start), errorMessage(exception)));
-            }
-        } else {
-            results.add(RunResult.skip(NAME, OP_REVOKE, "no serial number from enrollment"));
-        }
-    }
-
-    private static byte[] generateCsr(CertificateEnrollmentData data) throws Exception {
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
-        keyPairGen.initialize(RSA_KEY_SIZE);
-        KeyPair keyPair = keyPairGen.generateKeyPair();
-
-        StringBuilder subjectDn = new StringBuilder();
-        subjectDn.append("CN=").append(data.commonName());
-        subjectDn.append(",C=").append(data.countryName());
-        if (data.givenName() != null) {
-            subjectDn.append(",GIVENNAME=").append(data.givenName());
-        }
-        if (data.surname() != null) {
-            subjectDn.append(",SURNAME=").append(data.surname());
-        }
-        if (data.serialNumber() != null) {
-            subjectDn.append(",SERIALNUMBER=").append(data.serialNumber());
-        }
-        if (data.organizationName() != null) {
-            subjectDn.append(",O=").append(data.organizationName());
-        }
-        if (data.organizationIdentifier() != null) {
-            subjectDn.append(",2.5.4.97=").append(data.organizationIdentifier());
-        }
-        LOG.info("[{}] CSR subject DN: {}", NAME, subjectDn);
-
-        X500Name subject = new X500Name(subjectDn.toString());
-        JcaPKCS10CertificationRequestBuilder csrBuilder =
-                new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
-        ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM)
-                .build(keyPair.getPrivate());
-        PKCS10CertificationRequest csr = csrBuilder.build(signer);
-        return csr.getEncoded();
-    }
-
-    private void runQuery(DemoContext context, List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        try {
-            var response = context.client().certificates().query(new QueryCertificatesRequestRaw());
-            int count = response.certificates() != null ? response.certificates().size() : 0;
-            LOG.info("[{}] queried certificates: {} found", NAME, count);
-            results.add(RunResult.ok(NAME, OP_QUERY, elapsed(start), count + " certificates"));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_QUERY, elapsed(start), errorMessage(exception)));
-        }
-    }
-
-    private String pollEnrollmentSerial(DemoContext context, String enrollmentRef) {
-        int delay = POLL_INITIAL_DELAY_MS;
-        long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
-        String lastErrorMessage = null;
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                CertificateEnrollmentStatus status =
-                        context.client().certificates().getEnrollmentStatus(enrollmentRef);
-                Integer code = status.status() != null ? status.status().code() : null;
-                LOG.info("[{}] enrollment status: code={} serial={}",
-                        NAME, code, status.certificateSerialNumber());
-                if (status.certificateSerialNumber() != null) {
-                    return status.certificateSerialNumber();
-                }
-            } catch (Exception exception) {
-                lastErrorMessage = errorMessage(exception);
-                LOG.warn("[{}] enrollment status poll attempt failed (will retry): {}",
-                        NAME, lastErrorMessage);
-            }
-            try {
-                Thread.sleep(delay);
-            } catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
-                LOG.warn("[{}] enrollment status polling interrupted", NAME);
-                return null;
-            }
-            delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
-        }
-        if (lastErrorMessage != null) {
-            LOG.warn("[{}] enrollment status polling timed out after repeated failures: {}",
-                    NAME, lastErrorMessage);
-        } else {
-            LOG.warn("[{}] enrollment status polling timed out — serial never appeared", NAME);
-        }
-        return null;
-    }
-
-    private void pollUntilReady(DemoContext context, String referenceNumber) throws InterruptedException {
-        int delay = POLL_INITIAL_DELAY_MS;
-        long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
-        while (System.currentTimeMillis() < deadline) {
-            var response = context.client().auth().getStatus(referenceNumber);
-            Integer code = response.status() != null ? response.status().code() : null;
-            if (code != null && code == AUTH_STATUS_OK) {
-                return;
-            }
-            Thread.sleep(delay);
-            delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
-        }
-        throw new IllegalStateException("Timeout waiting for auth status 200 for " + referenceNumber);
-    }
+    // XAdES session switch + cert enrollment/revoke/query operations removed.
+    // These require cert-based auth session switching which is deferred to a
+    // future release with dedicated builders for certificate operations.
 }

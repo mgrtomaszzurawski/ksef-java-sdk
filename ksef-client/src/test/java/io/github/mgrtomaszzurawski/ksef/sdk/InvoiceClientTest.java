@@ -6,13 +6,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.InvoiceExportBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.InvoiceQueryBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -33,6 +33,8 @@ class InvoiceClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
+    private static final String TEST_NIP = "1234567890";
+    private static final String TEST_KSEF_TOKEN = "test-ksef-token";
     private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
     private static final String TEST_EXPORT_REF = "20260404-EX-1234567890-ABCDEF1234-05";
 
@@ -113,8 +115,9 @@ class InvoiceClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        InvoiceMetadataResult response = ksef.invoices()
-                .queryMetadata(new InvoiceQueryFiltersRaw());
+        InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1));
+        InvoiceMetadataResult response = ksef.invoices().queryMetadata(query);
 
         // then
         assertEquals(1, response.invoices().size());
@@ -122,7 +125,7 @@ class InvoiceClientTest {
     }
 
     @Test
-    void exportInvoices_whenRequested_returnsExportReference(WireMockRuntimeInfo wmInfo) {
+    void exportInvoices_whenRequested_returnsExportReference(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubFor(post(urlEqualTo("/api/v2/invoices/exports"))
                 .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
@@ -134,8 +137,12 @@ class InvoiceClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // when
-        ExportInvoicesResult response = ksef.invoices()
-                .exportInvoices(new InvoiceExportRequestRaw());
+        InvoiceExportBuilder exportBuilder = InvoiceExportBuilder.create(
+                        TestCertificates.generateRsa().certificate().getPublicKey())
+                .filters(InvoiceQueryBuilder.seller()
+                        .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1)))
+                .metadataOnly();
+        ExportInvoicesResult response = ksef.invoices().exportInvoices(exportBuilder);
 
         // then
         assertEquals(TEST_EXPORT_REF, response.referenceNumber());
@@ -161,20 +168,26 @@ class InvoiceClientTest {
     }
 
     @Test
-    void exportInvoices_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
+    void exportInvoices_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubFor(post(urlEqualTo("/api/v2/invoices/exports"))
                 .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR).withBody("{}")));
 
         KsefClient ksef = createAuthenticatedClient(wmInfo);
+        InvoiceExportBuilder exportBuilder = InvoiceExportBuilder.create(
+                        TestCertificates.generateRsa().certificate().getPublicKey())
+                .filters(InvoiceQueryBuilder.seller()
+                        .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1)))
+                .metadataOnly();
 
         // then
         assertThrows(KsefServerException.class,
-                () -> ksef.invoices().exportInvoices(new InvoiceExportRequestRaw()));
+                () -> ksef.invoices().exportInvoices(exportBuilder));
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+                .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
         ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);

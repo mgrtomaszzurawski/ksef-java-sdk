@@ -15,9 +15,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.InvoiceExportBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.InvoiceQueryBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static io.github.mgrtomaszzurawski.ksef.sdk.http.HttpSupport.requireSafePathSegment;
 
@@ -36,6 +39,8 @@ public final class InvoiceClient {
     private static final String OP_QUERY_METADATA = "queryInvoicesMetadata";
     private static final String OP_EXPORT = "exportInvoices";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
+    private static final String ERR_NULL_QUERY = "query must not be null";
+    private static final String ERR_NULL_EXPORT = "exportBuilder must not be null";
     private static final int DEFAULT_MAX_RESULTS = 10000;
 
     private final HttpSupport http;
@@ -61,14 +66,12 @@ public final class InvoiceClient {
     /**
      * Query invoice metadata with filters (date range, buyer/seller, amounts, etc.).
      *
-     * @param filters the query filter criteria
+     * @param query the query builder with filter criteria
      * @return paginated list of invoice metadata
      */
-    public InvoiceMetadataResult queryMetadata(InvoiceQueryFiltersRaw filters) {
-        String token = sessionContext.token();
-        QueryInvoicesMetadataResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
-                QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
-        return InvoiceMetadataResult.from(raw);
+    public InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query) {
+        Objects.requireNonNull(query, ERR_NULL_QUERY);
+        return doQueryMetadata(query.build());
     }
 
     /**
@@ -78,26 +81,27 @@ public final class InvoiceClient {
      * Uses the permanentStorageHwmDate from each response as a cursor to
      * narrow the date range for the next page. Default limit: 10,000 results.
      *
-     * @param filters the query filter criteria
-     * @return all matching invoice metadata across all pages (up to maxResults)
+     * @param query the query builder with filter criteria
+     * @return all matching invoice metadata across all pages (up to default limit)
      */
-    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryFiltersRaw filters) {
-        return queryAllMetadata(filters, DEFAULT_MAX_RESULTS);
+    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query) {
+        return queryAllMetadata(query, DEFAULT_MAX_RESULTS);
     }
 
     /**
      * Query invoice metadata with automatic pagination and explicit result limit.
      *
-     * @param filters the query filter criteria
+     * @param query the query builder with filter criteria
      * @param maxResults maximum number of results to return (safety limit)
      * @return matching invoice metadata across pages (up to maxResults)
      */
-    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryFiltersRaw filters, int maxResults) {
+    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults) {
+        Objects.requireNonNull(query, ERR_NULL_QUERY);
+        InvoiceQueryFiltersRaw filters = query.build();
         List<InvoiceMetadata> allInvoices = new ArrayList<>();
-        InvoiceQueryFiltersRaw currentFilters = filters;
 
         while (true) {
-            InvoiceMetadataResult page = queryMetadata(currentFilters);
+            InvoiceMetadataResult page = doQueryMetadata(filters);
             allInvoices.addAll(page.invoices());
 
             if (allInvoices.size() >= maxResults) {
@@ -115,7 +119,7 @@ public final class InvoiceClient {
             if (filters.getDateRange().getTo() != null) {
                 nextDateRange.to(filters.getDateRange().getTo());
             }
-            currentFilters = new InvoiceQueryFiltersRaw()
+            filters = new InvoiceQueryFiltersRaw()
                     .subjectType(filters.getSubjectType())
                     .dateRange(nextDateRange);
         }
@@ -126,10 +130,12 @@ public final class InvoiceClient {
     /**
      * Start an invoice export job.
      *
-     * @param request the export request with date range and optional filters
+     * @param exportBuilder the export builder with date range and filters
      * @return response with the export reference number for status polling
      */
-    public ExportInvoicesResult exportInvoices(InvoiceExportRequestRaw request) {
+    public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder) {
+        Objects.requireNonNull(exportBuilder, ERR_NULL_EXPORT);
+        InvoiceExportRequestRaw request = exportBuilder.build();
         String token = sessionContext.token();
         ExportInvoicesResponseRaw raw = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
                 ExportInvoicesResponseRaw.class, OP_EXPORT);
@@ -148,5 +154,12 @@ public final class InvoiceClient {
         InvoiceExportStatusResponseRaw raw = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
                 InvoiceExportStatusResponseRaw.class, OP_EXPORT_STATUS);
         return InvoiceExportStatus.from(raw);
+    }
+
+    private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters) {
+        String token = sessionContext.token();
+        QueryInvoicesMetadataResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
+                QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
+        return InvoiceMetadataResult.from(raw);
     }
 }

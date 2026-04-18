@@ -20,9 +20,8 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TokenPermissionTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TokenGenerateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
@@ -75,10 +74,9 @@ public final class TokenRunner implements DemoRunner {
     private String runGenerate(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            GenerateTokenRequestRaw request = new GenerateTokenRequestRaw()
-                    .description(TOKEN_DESCRIPTION)
-                    .addPermissionsItem(TokenPermissionTypeRaw.INVOICE_READ);
-            GenerateTokenResult response = context.client().tokens().generate(request);
+            TokenGenerateBuilder tokenBuilder = TokenGenerateBuilder.create(TOKEN_DESCRIPTION)
+                    .invoiceRead();
+            GenerateTokenResult response = context.client().tokens().generate(tokenBuilder);
             String refNum = response.referenceNumber();
             LOG.info("[{}] generated token ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GENERATE, elapsed(start), "ref=" + refNum));

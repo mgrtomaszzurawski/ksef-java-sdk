@@ -23,7 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CertificateLoader;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.AuthenticationStatus;
@@ -103,40 +103,26 @@ public final class CertProbe {
             System.exit(EXIT_FAILURE);
         }
 
-        X509Certificate certificate;
-        PrivateKey privateKey;
-        try {
-            char[] password = properties.certPassword().toCharArray();
-            KeyStore keyStore = CertificateLoader.loadKeyStore(Path.of(properties.certFile()), password);
-            String alias = properties.certAlias();
-            certificate = CertificateLoader.getCertificate(keyStore, alias);
-            privateKey = CertificateLoader.getPrivateKey(keyStore, alias, password);
-            LOG.info("Cert loaded: subject={}", certificate.getSubjectX500Principal().getName());
-        } catch (Exception exception) {
-            LOG.error("Failed to load cert", exception);
-            System.exit(EXIT_FAILURE);
-            return;
-        }
+        KsefPkcs12Credentials credentials = new KsefPkcs12Credentials(
+                Path.of(properties.certFile()),
+                properties.certPassword().toCharArray(),
+                properties.nipIdentifier());
 
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(properties.environment())).build()) {
-            run(client, certificate, privateKey, properties.nipIdentifier());
+        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(properties.environment()))
+                .credentials(credentials).build()) {
+            // CertProbe uses cert-based XAdES auth (handled internally by authenticate())
+            client.authenticate();
+            run(client, properties.nipIdentifier());
         } catch (Exception exception) {
             LOG.error("Probe failed", exception);
             System.exit(EXIT_FAILURE);
         }
     }
 
-    private static void run(KsefClient client, X509Certificate certificate,
-                            PrivateKey privateKey, String nipIdentifier) throws Exception {
-        // STEP 1: XAdES auth
-        section("STEP 1: XAdES authentication");
-        AuthenticationChallenge challenge = client.auth().requestChallenge();
-        AuthenticationInit authInit = client.auth().authenticateWithXades(
-                challenge.challenge(), certificate, privateKey, nipIdentifier);
-        LOG.info("Auth ref: {}", authInit.referenceNumber());
-        pollAuth(client, authInit.referenceNumber());
-        client.auth().redeemTokens();
-        LOG.info("XAdES session active");
+    private static void run(KsefClient client, String nipIdentifier) throws Exception {
+        // STEP 1: Already authenticated via client.authenticate() in main
+        section("STEP 1: XAdES authentication (handled by SDK)");
+        LOG.info("XAdES session active (authenticated via KsefClient.authenticate())");
 
         // STEP 2: Limits BEFORE
         section("STEP 2: certificates/limits BEFORE");
