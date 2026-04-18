@@ -60,6 +60,9 @@ public final class InvoiceRunner implements DemoRunner {
     private static final int EXPORT_STATUS_OK = 200;
     private static final int EXPORT_POLL_MAX_DELAY_MS = 10000;
     private static final int QUERY_DATE_RANGE_DAYS = 30;
+    private static final String ERR_NO_ENCRYPTION_CERT = "No SymmetricKeyEncryption certificate found";
+    private static final String CERT_TYPE_X509 = "X.509";
+    private static final String ERR_KEY_EXTRACT = "Failed to extract public key";
 
     @Override
     public String name() { return NAME; }
@@ -150,16 +153,16 @@ public final class InvoiceRunner implements DemoRunner {
         PublicKeyCertificate cert = context.client().security().getPublicKeyCertificates().stream()
                 .filter(c -> c.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No SymmetricKeyEncryption certificate found"));
+                .orElseThrow(() -> new IllegalStateException(ERR_NO_ENCRYPTION_CERT));
         try {
             java.security.cert.CertificateFactory factory =
-                    java.security.cert.CertificateFactory.getInstance("X.509");
+                    java.security.cert.CertificateFactory.getInstance(CERT_TYPE_X509);
             java.security.cert.X509Certificate x509 =
                     (java.security.cert.X509Certificate) factory.generateCertificate(
                             new java.io.ByteArrayInputStream(cert.certificate()));
             return x509.getPublicKey();
         } catch (Exception ex) {
-            throw new IllegalStateException("Failed to extract public key", ex);
+            throw new IllegalStateException(ERR_KEY_EXTRACT, ex);
         }
     }
 

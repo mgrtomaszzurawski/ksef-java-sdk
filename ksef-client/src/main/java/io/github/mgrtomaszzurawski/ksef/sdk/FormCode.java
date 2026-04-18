@@ -68,6 +68,24 @@ public final class FormCode {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof FormCode other)) {
+            return false;
+        }
+        return Objects.equals(systemCode, other.systemCode)
+                && Objects.equals(schemaVersion, other.schemaVersion)
+                && Objects.equals(value, other.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(systemCode, schemaVersion, value);
+    }
+
+    @Override
     public String toString() {
         return value;
     }

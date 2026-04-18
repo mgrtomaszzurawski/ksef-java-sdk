@@ -162,7 +162,7 @@ public final class KsefClient implements AutoCloseable {
      * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
      * @return an open session — use with try-with-resources
      */
-    public KsefSession openSession(FormCode formCode) {
+    public synchronized KsefSession openSession(FormCode formCode) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         ensureOpen();
         ensureAuthenticated();
@@ -192,7 +192,7 @@ public final class KsefClient implements AutoCloseable {
      * Clears all session state. After calling this, {@link #authenticate()} must be
      * called again (explicitly or lazily) before any further operations.
      */
-    public void terminateAuth() {
+    public synchronized void terminateAuth() {
         ensureOpen();
         authClient.terminateCurrentSession();
         authenticated = false;
@@ -420,7 +420,7 @@ public final class KsefClient implements AutoCloseable {
             X509Certificate x509 = (X509Certificate) factory.generateCertificate(
                     new ByteArrayInputStream(certBytes));
             return x509.getPublicKey();
-        } catch (Exception ex) {
+        } catch (java.security.cert.CertificateException ex) {
             throw new IllegalStateException(ERR_KEY_EXTRACT, ex);
         }
     }

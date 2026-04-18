@@ -30,6 +30,8 @@ import java.util.Objects;
  */
 public final class InvoiceExportBuilder {
 
+    private static final String ERR_QUERY_BUILDER_REQUIRED = "queryBuilder is required";
+
     private final PublicKey ksefPublicKey;
     private InvoiceQueryFiltersRaw filters;
     private boolean onlyMetadata;
@@ -53,7 +55,7 @@ public final class InvoiceExportBuilder {
      * @param queryBuilder query builder with filter criteria
      */
     public InvoiceExportBuilder filters(InvoiceQueryBuilder queryBuilder) {
-        Objects.requireNonNull(queryBuilder, "queryBuilder is required");
+        Objects.requireNonNull(queryBuilder, ERR_QUERY_BUILDER_REQUIRED);
         this.filters = queryBuilder.build();
         return this;
     }

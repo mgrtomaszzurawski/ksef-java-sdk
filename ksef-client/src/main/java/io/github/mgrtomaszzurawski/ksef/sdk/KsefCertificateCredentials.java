@@ -26,20 +26,14 @@ public record KsefCertificateCredentials(
 
     private static final String ERR_NULL_CERT = "certificate must not be null";
     private static final String ERR_NULL_KEY = "privateKey must not be null";
-    private static final String ERR_NULL_NIP = "nip must not be null";
-    private static final String ERR_INVALID_NIP = "nip must be exactly 10 digits";
-    private static final int NIP_LENGTH = 10;
-
     public KsefCertificateCredentials {
         Objects.requireNonNull(certificate, ERR_NULL_CERT);
         Objects.requireNonNull(privateKey, ERR_NULL_KEY);
-        Objects.requireNonNull(nip, ERR_NULL_NIP);
-        validateNip(nip);
+        KsefCredentials.validateNip(nip);
     }
 
-    private static void validateNip(String nip) {
-        if (nip.length() != NIP_LENGTH || !nip.chars().allMatch(Character::isDigit)) {
-            throw new IllegalArgumentException(ERR_INVALID_NIP);
-        }
+    @Override
+    public String toString() {
+        return "KsefCertificateCredentials[nip=" + nip + "]";
     }
 }

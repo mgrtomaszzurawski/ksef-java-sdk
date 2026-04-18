@@ -23,20 +23,14 @@ public record KsefPkcs12Credentials(Path keystorePath, char[] password, String n
 
     private static final String ERR_NULL_PATH = "keystorePath must not be null";
     private static final String ERR_NULL_PASSWORD = "password must not be null";
-    private static final String ERR_NULL_NIP = "nip must not be null";
-    private static final String ERR_INVALID_NIP = "nip must be exactly 10 digits";
-    private static final int NIP_LENGTH = 10;
-
     public KsefPkcs12Credentials {
         Objects.requireNonNull(keystorePath, ERR_NULL_PATH);
         Objects.requireNonNull(password, ERR_NULL_PASSWORD);
-        Objects.requireNonNull(nip, ERR_NULL_NIP);
-        validateNip(nip);
+        KsefCredentials.validateNip(nip);
     }
 
-    private static void validateNip(String nip) {
-        if (nip.length() != NIP_LENGTH || !nip.chars().allMatch(Character::isDigit)) {
-            throw new IllegalArgumentException(ERR_INVALID_NIP);
-        }
+    @Override
+    public String toString() {
+        return "KsefPkcs12Credentials[nip=" + nip + ", keystorePath=" + keystorePath + "]";
     }
 }
