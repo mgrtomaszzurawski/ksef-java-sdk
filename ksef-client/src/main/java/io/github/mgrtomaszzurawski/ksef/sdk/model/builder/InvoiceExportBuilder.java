@@ -50,10 +50,11 @@ public final class InvoiceExportBuilder {
     /**
      * Set the query filters for the export.
      *
-     * @param filters filters built with {@link InvoiceQueryBuilder}
+     * @param queryBuilder query builder with filter criteria
      */
-    public InvoiceExportBuilder filters(InvoiceQueryFiltersRaw filters) {
-        this.filters = Objects.requireNonNull(filters, "filters are required");
+    public InvoiceExportBuilder filters(InvoiceQueryBuilder queryBuilder) {
+        Objects.requireNonNull(queryBuilder, "queryBuilder is required");
+        this.filters = queryBuilder.build();
         return this;
     }
 

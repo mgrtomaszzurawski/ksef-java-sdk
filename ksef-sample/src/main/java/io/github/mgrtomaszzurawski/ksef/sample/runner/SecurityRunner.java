@@ -17,77 +17,26 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
-
-import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.security.PublicKey;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Runner for SecurityClient operations. Fetches KSeF public key certificates
- * and makes the encryption key available for subsequent runners.
+ * SecurityClient operations (public key fetch) are now handled automatically
+ * by KsefClient during authenticate() and openSession(). This runner is a no-op.
  */
 public final class SecurityRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityRunner.class);
     private static final String NAME = "security";
     private static final String OP_GET_CERTS = "getPublicKeyCertificates";
-    private static final PublicKeyCertificateUsage USAGE_TOKEN_ENCRYPTION =
-            PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION;
-    private static final String CERT_TYPE = "X.509";
-    private static final String ERR_NO_ENCRYPTION_CERT = "No certificate with usage KsefTokenEncryption found";
+    private static final String SKIP_REASON = "handled automatically by SDK during authenticate()";
 
     @Override
     public String name() { return NAME; }
 
     @Override
     public List<RunResult> run(DemoContext context) {
-        List<RunResult> results = new ArrayList<>();
-        long start = System.currentTimeMillis();
-        try {
-            List<PublicKeyCertificate> certs = context.client().security().getPublicKeyCertificates();
-            LOG.info("[{}] fetched {} certificates", NAME, certs.size());
-
-            PublicKey encryptionKey = null;
-            for (PublicKeyCertificate cert : certs) {
-                LOG.info("[{}] cert usage={}, valid={} to {}", NAME,
-                        cert.usage(), cert.validFrom(), cert.validTo());
-                if (cert.usage() != null && cert.usage().contains(USAGE_TOKEN_ENCRYPTION)) {
-                    encryptionKey = extractPublicKey(cert.certificate());
-                }
-            }
-
-            if (encryptionKey == null) {
-                results.add(RunResult.fail(NAME, OP_GET_CERTS, elapsed(start), ERR_NO_ENCRYPTION_CERT));
-            } else {
-                context.setKsefPublicKey(encryptionKey);
-                LOG.info("[{}] KsefTokenEncryption key extracted: {}", NAME, encryptionKey.getAlgorithm());
-                results.add(RunResult.ok(NAME, OP_GET_CERTS, elapsed(start),
-                        certs.size() + " certificates, encryption key: " + encryptionKey.getAlgorithm()));
-            }
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_GET_CERTS, elapsed(start), errorMessage(exception)));
-        }
-        return results;
+        return List.of(RunResult.skip(NAME, OP_GET_CERTS, SKIP_REASON));
     }
-
-    private static PublicKey extractPublicKey(byte[] derCertBytes) throws Exception {
-        CertificateFactory factory = CertificateFactory.getInstance(CERT_TYPE);
-        X509Certificate x509 = (X509Certificate) factory.generateCertificate(
-                new ByteArrayInputStream(derCertBytes));
-        return x509.getPublicKey();
-    }
-
-
 }

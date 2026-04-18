@@ -23,19 +23,16 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_T
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateRangeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQuerySubjectTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.InvoiceExportBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CryptoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,13 +107,10 @@ public final class InvoiceRunner implements DemoRunner {
                     .truncatedTo(ChronoUnit.SECONDS)
                     .minusDays(QUERY_DATE_RANGE_DAYS);
 
-            InvoiceQueryFiltersRaw filters = new InvoiceQueryFiltersRaw()
-                    .subjectType(InvoiceQuerySubjectTypeRaw.SUBJECT1)
-                    .dateRange(new InvoiceQueryDateRangeRaw()
-                            .dateType(InvoiceQueryDateTypeRaw.INVOICING)
-                            .from(from));
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(from);
 
-            InvoiceMetadataResult response = context.client().invoices().queryMetadata(filters);
+            InvoiceMetadataResult response = context.client().invoices().queryMetadata(query);
             int count = response.invoices() != null ? response.invoices().size() : 0;
             boolean hasMore = response.hasMore();
             LOG.info("[{}] queryMetadata: {} invoices, hasMore={}", NAME, count, hasMore);
@@ -134,22 +128,13 @@ public final class InvoiceRunner implements DemoRunner {
                     .truncatedTo(ChronoUnit.SECONDS)
                     .minusDays(QUERY_DATE_RANGE_DAYS);
 
-            byte[] aesKey = CryptoService.generateAesKey();
-            byte[] initVector = CryptoService.generateIv();
-            byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, context.ksefPublicKey());
+            java.security.PublicKey encKey = extractEncryptionKey(context);
 
-            InvoiceExportRequestRaw request = new InvoiceExportRequestRaw()
-                    .encryption(new EncryptionInfoRaw()
-                            .encryptedSymmetricKey(encryptedKey)
-                            .initializationVector(initVector))
-                    .onlyMetadata(true)
-                    .filters(new InvoiceQueryFiltersRaw()
-                            .subjectType(InvoiceQuerySubjectTypeRaw.SUBJECT1)
-                            .dateRange(new InvoiceQueryDateRangeRaw()
-                                    .dateType(InvoiceQueryDateTypeRaw.INVOICING)
-                                    .from(from)));
+            InvoiceExportBuilder exportBuilder = InvoiceExportBuilder.create(encKey)
+                    .filters(InvoiceQueryBuilder.seller().invoicingDateFrom(from))
+                    .metadataOnly();
 
-            ExportInvoicesResult response = context.client().invoices().exportInvoices(request);
+            ExportInvoicesResult response = context.client().invoices().exportInvoices(exportBuilder);
             String refNum = response.referenceNumber();
             LOG.info("[{}] export started, ref={}", NAME, refNum);
             context.state().setExportReferenceNumber(refNum);
@@ -158,6 +143,23 @@ public final class InvoiceRunner implements DemoRunner {
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_EXPORT, elapsed(start), errorMessage(exception)));
             return null;
+        }
+    }
+
+    private static java.security.PublicKey extractEncryptionKey(DemoContext context) {
+        PublicKeyCertificate cert = context.client().security().getPublicKeyCertificates().stream()
+                .filter(c -> c.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No SymmetricKeyEncryption certificate found"));
+        try {
+            java.security.cert.CertificateFactory factory =
+                    java.security.cert.CertificateFactory.getInstance("X.509");
+            java.security.cert.X509Certificate x509 =
+                    (java.security.cert.X509Certificate) factory.generateCertificate(
+                            new java.io.ByteArrayInputStream(cert.certificate()));
+            return x509.getPublicKey();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to extract public key", ex);
         }
     }
 

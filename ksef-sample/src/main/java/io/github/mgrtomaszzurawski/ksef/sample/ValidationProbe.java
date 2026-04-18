@@ -24,7 +24,7 @@ package io.github.mgrtomaszzurawski.ksef.sample;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefOperations;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefTokenCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.PublicKey;
 import java.time.Duration;
 import java.util.Properties;
 
@@ -82,11 +81,9 @@ public final class ValidationProbe {
         LOG.debug("NIP: {}", nipIdentifier);
 
         KsefClient client = KsefClient.builder(KsefEnvironment.custom(ksefUrl))
+                .credentials(new KsefTokenCredentials(ksefToken, nipIdentifier))
                 .build();
-        KsefOperations operations = new KsefOperations(client);
-
-        PublicKey tokenKey = operations.tokenEncryptionKey();
-        operations.authenticateWithToken(ksefToken, nipIdentifier, tokenKey);
+        client.authenticate();
         LOG.info("Authenticated successfully");
 
         String bearer = client.sessionContext().token();
@@ -94,7 +91,7 @@ public final class ValidationProbe {
         ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
         probe.runAllProbes();
 
-        operations.terminateSession();
+        client.terminateAuth();
         LOG.info("Session terminated. Probe complete.");
     }
 

@@ -259,31 +259,36 @@ public final class KsefClient implements AutoCloseable {
         return testDataClient;
     }
 
-    // --- Package-private accessors for internal clients ---
+    // --- Internal client accessors (for advanced use / probe utilities) ---
 
-    KsefEnvironment environment() {
-        return environment;
-    }
+    /** Low-level auth client. Prefer {@link #authenticate()} for normal use. */
+    public AuthClient auth() { return authClient; }
 
-    HttpClient httpClient() {
-        return httpClient;
-    }
+    /** Low-level session client. Prefer {@link #openSession(FormCode)} for normal use. */
+    public SessionClient sessions() { return sessionClient; }
 
-    ObjectMapper objectMapper() {
-        return objectMapper;
-    }
+    /** Low-level security client. Keys are fetched automatically by the SDK. */
+    public SecurityClient security() { return securityClient; }
 
-    RetryHandler retryHandler() {
-        return retryHandler;
-    }
+    // --- Infrastructure accessors (used by internal clients across packages) ---
 
-    SessionContext sessionContext() {
-        return sessionContext;
-    }
+    /** SDK infrastructure — not part of the consumer-facing API. */
+    public KsefEnvironment environment() { return environment; }
 
-    Duration readTimeout() {
-        return readTimeout;
-    }
+    /** SDK infrastructure — not part of the consumer-facing API. */
+    public HttpClient httpClient() { return httpClient; }
+
+    /** SDK infrastructure — not part of the consumer-facing API. */
+    public ObjectMapper objectMapper() { return objectMapper; }
+
+    /** SDK infrastructure — not part of the consumer-facing API. */
+    public RetryHandler retryHandler() { return retryHandler; }
+
+    /** SDK infrastructure — not part of the consumer-facing API. */
+    public SessionContext sessionContext() { return sessionContext; }
+
+    /** SDK infrastructure — not part of the consumer-facing API. */
+    public Duration readTimeout() { return readTimeout; }
 
     @Override
     public void close() {
@@ -352,11 +357,12 @@ public final class KsefClient implements AutoCloseable {
     }
 
     private void doAuthenticate() {
-        switch (credentials) {
-            case KsefTokenCredentials token -> authenticateWithToken(token);
-            case KsefCertificateCredentials cert -> authenticateWithCertificate(
-                    cert.certificate(), cert.privateKey(), cert.nip());
-            case KsefPkcs12Credentials pkcs12 -> authenticateWithPkcs12(pkcs12);
+        if (credentials instanceof KsefTokenCredentials token) {
+            authenticateWithToken(token);
+        } else if (credentials instanceof KsefCertificateCredentials cert) {
+            authenticateWithCertificate(cert.certificate(), cert.privateKey(), cert.nip());
+        } else if (credentials instanceof KsefPkcs12Credentials pkcs12) {
+            authenticateWithPkcs12(pkcs12);
         }
     }
 

@@ -83,6 +83,7 @@ public final class KsefSession implements AutoCloseable {
 
     /**
      * Get the current session status.
+     * Works on both open and closed sessions.
      *
      * @return session status with invoice counts and processing state
      */
@@ -120,9 +121,7 @@ public final class KsefSession implements AutoCloseable {
 
     /**
      * Download UPO (official receipt) for a specific invoice.
-     *
-     * <p>UPO is only available after the session is closed and processing is complete
-     * (status code 200).
+     * Works on closed sessions — UPO is only available after close completes.
      *
      * @param invoiceReferenceNumber the invoice reference number
      * @return raw UPO bytes (XML)
