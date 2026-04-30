@@ -27,11 +27,11 @@ public final class FormCode {
     private static final String ERR_NULL_SCHEMA_VERSION = "schemaVersion must not be null";
     private static final String ERR_NULL_VALUE = "value must not be null";
 
-    /** FA(2) — standard invoice, schema version 2. */
-    public static final FormCode FA2 = new FormCode("FA", "2", "FA (2)");
+    /** FA(2) — standard invoice, schema 1-0E. */
+    public static final FormCode FA2 = new FormCode("FA (2)", "1-0E", "FA");
 
-    /** FA(3) — standard invoice, schema version 3. */
-    public static final FormCode FA3 = new FormCode("FA", "3", "FA (3)");
+    /** FA(3) — standard invoice, schema 1-0E. */
+    public static final FormCode FA3 = new FormCode("FA (3)", "1-0E", "FA");
 
     private final String systemCode;
     private final String schemaVersion;

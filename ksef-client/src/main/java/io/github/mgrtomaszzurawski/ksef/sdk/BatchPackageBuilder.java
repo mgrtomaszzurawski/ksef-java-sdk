@@ -19,7 +19,6 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
@@ -47,6 +46,7 @@ import java.util.zip.ZipOutputStream;
 final class BatchPackageBuilder {
 
     private static final String SHA_256 = "SHA-256";
+    private static final String INVOICE_ENTRY_PREFIX = "invoice-";
     private static final String INVOICE_ENTRY_SUFFIX = ".xml";
     private static final long DEFAULT_MAX_PART_SIZE = 100L * 1024L * 1024L;
     private static final int MAX_PARTS = 50;
@@ -113,15 +113,17 @@ final class BatchPackageBuilder {
         zipFile.toFile().deleteOnExit();
         try (OutputStream out = Files.newOutputStream(zipFile);
              ZipOutputStream zip = new ZipOutputStream(out)) {
+            int ordinal = 1;
             for (byte[] invoice : invoices) {
                 Objects.requireNonNull(invoice, ERR_NULL_INVOICE);
                 if (invoice.length == 0) {
                     throw new IllegalArgumentException(ERR_EMPTY_INVOICE);
                 }
-                ZipEntry entry = new ZipEntry(entryNameFor(invoice));
+                ZipEntry entry = new ZipEntry(INVOICE_ENTRY_PREFIX + ordinal + INVOICE_ENTRY_SUFFIX);
                 zip.putNextEntry(entry);
                 zip.write(invoice);
                 zip.closeEntry();
+                ordinal++;
             }
         }
         return zipFile;
@@ -245,15 +247,6 @@ final class BatchPackageBuilder {
     }
 
     private record EncryptResult(BatchFileSpec spec) { }
-
-    private static String entryNameFor(byte[] invoice) {
-        byte[] hash = sha256(invoice);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(hash) + INVOICE_ENTRY_SUFFIX;
-    }
-
-    private static byte[] sha256(byte[] data) {
-        return newSha256().digest(data);
-    }
 
     private static MessageDigest newSha256() {
         try {

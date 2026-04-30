@@ -12,13 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FormCodeTest {
 
-    private static final String SYSTEM_CODE_FA = "FA";
-    private static final String SCHEMA_VERSION_2 = "2";
-    private static final String SCHEMA_VERSION_3 = "3";
-    private static final String VALUE_FA2 = "FA (2)";
-    private static final String VALUE_FA3 = "FA (3)";
-    private static final String SYSTEM_CODE_PEF = "PEF";
-    private static final String VALUE_PEF3 = "PEF (3)";
+    private static final String SYSTEM_CODE_FA2 = "FA (2)";
+    private static final String SYSTEM_CODE_FA3 = "FA (3)";
+    private static final String SCHEMA_VERSION_FA = "1-0E";
+    private static final String VALUE_FA = "FA";
+    private static final String SYSTEM_CODE_PEF3 = "PEF (3)";
+    private static final String SCHEMA_VERSION_PEF = "2-1";
+    private static final String VALUE_PEF = "PEF";
 
     @Test
     void fa2_hasExpectedValues() {
@@ -26,9 +26,9 @@ class FormCodeTest {
         FormCode formCode = FormCode.FA2;
 
         // then
-        assertEquals(SYSTEM_CODE_FA, formCode.systemCode());
-        assertEquals(SCHEMA_VERSION_2, formCode.schemaVersion());
-        assertEquals(VALUE_FA2, formCode.value());
+        assertEquals(SYSTEM_CODE_FA2, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_FA, formCode.schemaVersion());
+        assertEquals(VALUE_FA, formCode.value());
     }
 
     @Test
@@ -37,47 +37,47 @@ class FormCodeTest {
         FormCode formCode = FormCode.FA3;
 
         // then
-        assertEquals(SYSTEM_CODE_FA, formCode.systemCode());
-        assertEquals(SCHEMA_VERSION_3, formCode.schemaVersion());
-        assertEquals(VALUE_FA3, formCode.value());
+        assertEquals(SYSTEM_CODE_FA3, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_FA, formCode.schemaVersion());
+        assertEquals(VALUE_FA, formCode.value());
     }
 
     @Test
     void custom_whenValidInputs_createsSuccessfully() {
         // when
-        FormCode formCode = FormCode.custom(SYSTEM_CODE_PEF, SCHEMA_VERSION_3, VALUE_PEF3);
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_PEF3, SCHEMA_VERSION_PEF, VALUE_PEF);
 
         // then
-        assertEquals(SYSTEM_CODE_PEF, formCode.systemCode());
-        assertEquals(SCHEMA_VERSION_3, formCode.schemaVersion());
-        assertEquals(VALUE_PEF3, formCode.value());
+        assertEquals(SYSTEM_CODE_PEF3, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_PEF, formCode.schemaVersion());
+        assertEquals(VALUE_PEF, formCode.value());
     }
 
     @Test
     void custom_whenNullSystemCode_throwsNullPointerException() {
         // when / then
         assertThrows(NullPointerException.class,
-                () -> FormCode.custom(null, SCHEMA_VERSION_2, VALUE_FA2));
+                () -> FormCode.custom(null, SCHEMA_VERSION_FA, VALUE_FA));
     }
 
     @Test
     void custom_whenNullSchemaVersion_throwsNullPointerException() {
         // when / then
         assertThrows(NullPointerException.class,
-                () -> FormCode.custom(SYSTEM_CODE_FA, null, VALUE_FA2));
+                () -> FormCode.custom(SYSTEM_CODE_FA2, null, VALUE_FA));
     }
 
     @Test
     void custom_whenNullValue_throwsNullPointerException() {
         // when / then
         assertThrows(NullPointerException.class,
-                () -> FormCode.custom(SYSTEM_CODE_FA, SCHEMA_VERSION_2, null));
+                () -> FormCode.custom(SYSTEM_CODE_FA2, SCHEMA_VERSION_FA, null));
     }
 
     @Test
     void equals_whenSameValues_returnsTrue() {
         // given
-        FormCode custom = FormCode.custom(SYSTEM_CODE_FA, SCHEMA_VERSION_2, VALUE_FA2);
+        FormCode custom = FormCode.custom(SYSTEM_CODE_FA2, SCHEMA_VERSION_FA, VALUE_FA);
 
         // when / then
         assertEquals(FormCode.FA2, custom);
@@ -92,7 +92,7 @@ class FormCodeTest {
     @Test
     void hashCode_whenEqualObjects_returnsSameHash() {
         // given
-        FormCode custom = FormCode.custom(SYSTEM_CODE_FA, SCHEMA_VERSION_2, VALUE_FA2);
+        FormCode custom = FormCode.custom(SYSTEM_CODE_FA2, SCHEMA_VERSION_FA, VALUE_FA);
 
         // when / then
         assertEquals(FormCode.FA2.hashCode(), custom.hashCode());
@@ -104,6 +104,6 @@ class FormCodeTest {
         String result = FormCode.FA2.toString();
 
         // then
-        assertEquals(VALUE_FA2, result);
+        assertEquals(VALUE_FA, result);
     }
 }
