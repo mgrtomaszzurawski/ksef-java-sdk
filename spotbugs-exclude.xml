@@ -36,4 +36,11 @@
         <Class name="io.github.mgrtomaszzurawski.ksef.sdk.KsefPkcs12Credentials"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
+    <!-- KsefBatchSession.partUploadRequests() returns a List that was already
+         List.copyOf'd in the constructor (immutable). SpotBugs cannot detect
+         the defensive copy pattern. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.KsefBatchSession"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
 </FindBugsFilter>

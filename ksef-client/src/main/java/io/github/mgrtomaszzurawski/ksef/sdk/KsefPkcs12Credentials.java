@@ -16,21 +16,38 @@ import java.util.Objects;
  *
  * @param keystorePath path to the PKCS#12 keystore file
  * @param password keystore and private key password
- * @param nip 10-digit Polish tax identification number (NIP)
+ * @param identifier authentication context identifier (NIP, internal id, EU VAT, or Peppol)
  */
-public record KsefPkcs12Credentials(Path keystorePath, char[] password, String nip)
+public record KsefPkcs12Credentials(Path keystorePath, char[] password, KsefIdentifier identifier)
         implements KsefCredentials {
 
     private static final String ERR_NULL_PATH = "keystorePath must not be null";
     private static final String ERR_NULL_PASSWORD = "password must not be null";
+    private static final String ERR_NULL_IDENTIFIER = "identifier must not be null";
+
+    /**
+     * Canonical constructor — validates non-null path, password and identifier.
+     */
     public KsefPkcs12Credentials {
         Objects.requireNonNull(keystorePath, ERR_NULL_PATH);
         Objects.requireNonNull(password, ERR_NULL_PASSWORD);
-        KsefCredentials.validateNip(nip);
+        Objects.requireNonNull(identifier, ERR_NULL_IDENTIFIER);
+    }
+
+    /**
+     * Backwards-compatible constructor — accepts a plain NIP string.
+     *
+     * @param keystorePath path to PKCS#12 keystore
+     * @param password keystore and private key password
+     * @param nip 10-digit Polish tax identification number
+     */
+    public KsefPkcs12Credentials(Path keystorePath, char[] password, String nip) {
+        this(keystorePath, password, KsefIdentifier.nip(nip));
     }
 
     @Override
     public String toString() {
-        return "KsefPkcs12Credentials[nip=" + nip + ", keystorePath=" + keystorePath + "]";
+        return "KsefPkcs12Credentials[identifier=" + identifier
+                + ", keystorePath=" + keystorePath + "]";
     }
 }

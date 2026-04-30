@@ -16,24 +16,40 @@ import java.util.Objects;
  *
  * @param certificate X.509 certificate (qualified or test)
  * @param privateKey private key corresponding to the certificate
- * @param nip 10-digit Polish tax identification number (NIP)
+ * @param identifier authentication context identifier (NIP, internal id, EU VAT, or Peppol)
  */
 public record KsefCertificateCredentials(
         X509Certificate certificate,
         PrivateKey privateKey,
-        String nip
+        KsefIdentifier identifier
 ) implements KsefCredentials {
 
     private static final String ERR_NULL_CERT = "certificate must not be null";
     private static final String ERR_NULL_KEY = "privateKey must not be null";
+    private static final String ERR_NULL_IDENTIFIER = "identifier must not be null";
+
+    /**
+     * Canonical constructor — validates non-null certificate, private key and identifier.
+     */
     public KsefCertificateCredentials {
         Objects.requireNonNull(certificate, ERR_NULL_CERT);
         Objects.requireNonNull(privateKey, ERR_NULL_KEY);
-        KsefCredentials.validateNip(nip);
+        Objects.requireNonNull(identifier, ERR_NULL_IDENTIFIER);
+    }
+
+    /**
+     * Backwards-compatible constructor — accepts a plain NIP string.
+     *
+     * @param certificate X.509 certificate
+     * @param privateKey private key matching the certificate
+     * @param nip 10-digit Polish tax identification number
+     */
+    public KsefCertificateCredentials(X509Certificate certificate, PrivateKey privateKey, String nip) {
+        this(certificate, privateKey, KsefIdentifier.nip(nip));
     }
 
     @Override
     public String toString() {
-        return "KsefCertificateCredentials[nip=" + nip + "]";
+        return "KsefCertificateCredentials[identifier=" + identifier + "]";
     }
 }

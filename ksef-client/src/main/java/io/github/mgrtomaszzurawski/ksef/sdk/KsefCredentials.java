@@ -24,13 +24,34 @@ public sealed interface KsefCredentials
     int NIP_LENGTH = 10;
     String ERR_NULL_NIP = "nip must not be null";
     String ERR_INVALID_NIP = "nip must be exactly 10 digits";
+    String ERR_NOT_NIP = "identifier is not a NIP — use identifier() instead";
+
+    /**
+     * The authentication context identifier (NIP / internal id / EU VAT / Peppol).
+     *
+     * @return identifier (type + value)
+     */
+    KsefIdentifier identifier();
 
     /**
      * The NIP (Polish tax identification number) of the authenticating entity.
      *
+     * <p>Backwards-compatible accessor. Returns {@code identifier().value()} only when
+     * the underlying identifier type is {@link KsefIdentifier.Type#NIP}; otherwise
+     * throws {@link IllegalStateException}.
+     *
      * @return 10-digit NIP string
+     * @throws IllegalStateException if the identifier type is not {@code NIP}
+     * @deprecated use {@link #identifier()} — supports all four KSeF identifier types
      */
-    String nip();
+    @Deprecated(since = "0.2.0", forRemoval = false)
+    default String nip() {
+        KsefIdentifier id = identifier();
+        if (id.type() != KsefIdentifier.Type.NIP) {
+            throw new IllegalStateException(ERR_NOT_NIP);
+        }
+        return id.value();
+    }
 
     /**
      * Validate that the given NIP is non-null and exactly 10 digits.
