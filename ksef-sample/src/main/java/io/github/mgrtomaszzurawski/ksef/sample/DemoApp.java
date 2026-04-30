@@ -30,6 +30,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.runner.QrCodeRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.RateLimitRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.SecurityRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.SessionRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.TestDataRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.TokenRunner;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefCredentials;
@@ -164,6 +165,7 @@ public final class DemoApp {
             runners.add(new PermissionRunner());
             runners.add(new CertificateRunner());
             runners.add(new PeppolRunner());
+            runners.add(new TestDataRunner());
             runners.add(new BatchSessionRunner());
             runners.add(new SessionRunner());
             runners.add(new InvoiceRunner());

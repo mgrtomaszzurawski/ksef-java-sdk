@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,7 +44,8 @@ import java.util.List;
  *
  * <p>Operations tested: openSession, send, invoiceStatus, status,
  * invoices, failedInvoices, close (with 415 retry handled by SDK),
- * and UPO retrieval.</p>
+ * UPO retrieval (by invoice ref and by KSeF number), and a
+ * negative-path stale-session-recovery probe.</p>
  */
 public final class SessionRunner implements DemoRunner {
 
@@ -57,7 +59,16 @@ public final class SessionRunner implements DemoRunner {
     private static final String OP_GET_FAILED = "getFailedInvoices";
     private static final String OP_CLOSE = "close";
     private static final String OP_UPO = "getUpo";
+    private static final String OP_UPO_BY_KSEF = "getUpoByKsefNumber";
+    private static final String OP_STALE_SESSION_RECOVERY = "staleSessionRecovery";
+
     private static final String SKIP_NOT_FULL = "FULL mode only";
+    private static final String SKIP_NO_KSEF_NUMBER =
+            "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
+    private static final String FAIL_SECOND_OPEN_SUCCEEDED =
+            "expected failure but second session opened";
+    private static final String FAIL_UPO_BYTES_DIFFER =
+            "UPO retrieved by invoice ref differs from UPO retrieved by KSeF number";
 
     @Override
     public String name() { return NAME; }
@@ -70,6 +81,10 @@ public final class SessionRunner implements DemoRunner {
             results.add(RunResult.skip(NAME, OP_OPEN_SESSION, SKIP_NOT_FULL));
             return results;
         }
+
+        // 0. Negative-path probe: confirm the one-session-per-NIP server constraint
+        //    by attempting to open a second session while the first is still open.
+        runStaleSessionRecovery(context, results);
 
         // 1. Open session
         KsefSession session = runOpenSession(context, results);
@@ -99,10 +114,42 @@ public final class SessionRunner implements DemoRunner {
 
         // 8. Retrieve UPO (available after close)
         if (closed && invoiceRef != null) {
-            runGetUpo(session, invoiceRef, results);
+            byte[] upoByInvoiceRef = runGetUpo(session, invoiceRef, results);
+            // 9. Retrieve UPO by KSeF number — alternative endpoint, should match.
+            runGetUpoByKsefNumber(context, session, invoiceRef, upoByInvoiceRef, results);
         }
 
         return results;
+    }
+
+    private void runStaleSessionRecovery(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        KsefSession first = null;
+        KsefSession second = null;
+        try {
+            first = context.client().openSession(FormCode.FA2);
+            LOG.info("[{}] first session opened ref={}, attempting second open (expected to fail)",
+                    NAME, first.referenceNumber());
+            try {
+                second = context.client().openSession(FormCode.FA2);
+                // If we got here, the constraint was not enforced — that's a failure
+                // for this negative-path test.
+                results.add(RunResult.fail(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
+                        FAIL_SECOND_OPEN_SUCCEEDED));
+            } catch (Exception expected) {
+                LOG.info("[{}] second openSession rejected as expected: {}", NAME,
+                        expected.getClass().getSimpleName());
+                results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
+                        "rejected: " + expected.getClass().getSimpleName()));
+            }
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
+                    errorMessage(exception)));
+        } finally {
+            // Make sure both sessions are closed before the happy-path test runs.
+            quietClose(second);
+            quietClose(first);
+        }
     }
 
     private KsefSession runOpenSession(DemoContext context, List<RunResult> results) {
@@ -211,17 +258,70 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private void runGetUpo(KsefSession session, String invoiceRef,
-                           List<RunResult> results) {
+    private byte[] runGetUpo(KsefSession session, String invoiceRef,
+                             List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             byte[] upo = session.upo(invoiceRef);
             LOG.info("[{}] UPO retrieved, size={} bytes", NAME, upo.length);
             results.add(RunResult.ok(NAME, OP_UPO, elapsed(start),
                     upo.length + " bytes"));
+            return upo;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_UPO, elapsed(start),
                     errorMessage(exception)));
+            return null;
+        }
+    }
+
+    private void runGetUpoByKsefNumber(DemoContext context, KsefSession session,
+                                       String invoiceRef, byte[] upoByInvoiceRef,
+                                       List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        String ksefNumber;
+        try {
+            // Re-query invoice status — after close completes, the ksefNumber should be
+            // populated for accepted invoices (rejected invoices leave it null).
+            SessionInvoiceStatus status = session.invoiceStatus(invoiceRef);
+            ksefNumber = status.ksefNumber();
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_UPO_BY_KSEF, elapsed(start),
+                    errorMessage(exception)));
+            return;
+        }
+
+        if (ksefNumber == null || ksefNumber.isBlank()) {
+            results.add(RunResult.skip(NAME, OP_UPO_BY_KSEF, SKIP_NO_KSEF_NUMBER));
+            return;
+        }
+        context.setInvoiceKsefNumber(ksefNumber);
+
+        try {
+            byte[] upoByKsef = context.client().sessions().getUpoByKsefNumber(
+                    session.referenceNumber(), ksefNumber);
+            LOG.info("[{}] UPO by KSeF number retrieved, size={} bytes", NAME, upoByKsef.length);
+
+            if (upoByInvoiceRef != null && !Arrays.equals(upoByInvoiceRef, upoByKsef)) {
+                results.add(RunResult.fail(NAME, OP_UPO_BY_KSEF, elapsed(start),
+                        FAIL_UPO_BYTES_DIFFER));
+                return;
+            }
+            results.add(RunResult.ok(NAME, OP_UPO_BY_KSEF, elapsed(start),
+                    upoByKsef.length + " bytes, matches by-ref UPO"));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_UPO_BY_KSEF, elapsed(start),
+                    errorMessage(exception)));
+        }
+    }
+
+    private static void quietClose(KsefSession session) {
+        if (session == null) {
+            return;
+        }
+        try {
+            session.close();
+        } catch (Exception ignored) {
+            // Best-effort cleanup — failures here would mask the underlying test result.
         }
     }
 }

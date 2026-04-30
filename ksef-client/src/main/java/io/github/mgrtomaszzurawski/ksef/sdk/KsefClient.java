@@ -593,6 +593,11 @@ public final class KsefClient implements AutoCloseable {
         mapper.registerModule(new JsonNullableModule());
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // Omit unset fields from request JSON. KSeF's .NET backend rejects explicit nulls
+        // for typed fields (e.g. "isDeceased":null fails to deserialize as System.Boolean).
+        // Plain null fields → absent. JsonNullable.undefined() also stays absent;
+        // JsonNullable.of(null) still serializes as explicit null where needed.
+        mapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
         return mapper;
     }
 }
