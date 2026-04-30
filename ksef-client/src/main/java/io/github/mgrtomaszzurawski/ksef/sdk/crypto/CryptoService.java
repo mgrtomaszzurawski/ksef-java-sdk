@@ -197,6 +197,31 @@ public final class CryptoService {
     }
 
     /**
+     * Create a configured AES-256-CBC Cipher in encrypt mode for streaming
+     * usage (e.g. with {@link javax.crypto.CipherOutputStream}).
+     *
+     * <p>Use this for large payloads to avoid loading the entire content into memory.
+     * The returned cipher is single-use — wrap it in a {@code CipherOutputStream},
+     * write all input bytes, then close the stream to flush the final block.
+     *
+     * @param aesKey must be exactly 32 bytes (AES-256)
+     * @param initVector must be exactly 16 bytes
+     * @return initialized Cipher in encrypt mode
+     */
+    public static Cipher newAesEncryptCipher(byte[] aesKey, byte[] initVector) {
+        validateKeyAndIv(aesKey, initVector);
+        try {
+            Cipher cipher = Cipher.getInstance(AES_CBC_PKCS5);
+            cipher.init(Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(aesKey, AES_ALGORITHM),
+                    new IvParameterSpec(initVector));
+            return cipher;
+        } catch (GeneralSecurityException exception) {
+            throw new KsefCryptoException(ERR_ENCRYPT_AES, exception);
+        }
+    }
+
+    /**
      * Decrypt content with AES-256-CBC.
      *
      * @param ciphertext the data to decrypt
