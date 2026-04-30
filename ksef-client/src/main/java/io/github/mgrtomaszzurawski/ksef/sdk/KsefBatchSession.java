@@ -58,7 +58,9 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final int CLOSE_POLL_BACKOFF_MULTIPLIER = 2;
     private static final long CLOSE_TIMEOUT_MS = 60000;
     private static final int STATUS_POLL_DELAY_MS = 3000;
-    private static final int STATUS_POLL_MAX_ATTEMPTS = 20;
+    // 5-minute safety budget. Polling actually exits immediately on any terminal state
+    // (code >= 200), so this is only hit when KSeF is genuinely stalled.
+    private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
     private static final String ERR_NO_PARTS = "No parts to upload — session was opened with raw "
             + "BatchFileSpec, not invoiceXmls";
@@ -242,17 +244,31 @@ public final class KsefBatchSession implements AutoCloseable {
     }
 
     private void pollUntilComplete() {
+        Integer lastCode = null;
         for (int attempt = 0; attempt < STATUS_POLL_MAX_ATTEMPTS; attempt++) {
             sleep(STATUS_POLL_DELAY_MS);
             SessionStatus sessionStatus = sessionClient.getStatus(referenceNumber);
-            if (sessionStatus.status() != null
-                    && sessionStatus.status().code() == STATUS_CODE_OK) {
-                LOG.info("Batch session {} processing complete", referenceNumber);
+            Integer code = sessionStatus.status() != null ? sessionStatus.status().code() : null;
+            if (code != null && !code.equals(lastCode)) {
+                LOG.debug("Batch session {} status code transition: {} -> {} (attempt {})",
+                        referenceNumber, lastCode, code, attempt + 1);
+                lastCode = code;
+            }
+            // Any code >= 200 is terminal: 200 = success; others = various failures.
+            // Codes < 200 (100=open, 170=closing) are intermediate.
+            if (code != null && code >= STATUS_CODE_OK) {
+                if (code == STATUS_CODE_OK) {
+                    LOG.info("Batch session {} processing complete", referenceNumber);
+                } else {
+                    LOG.warn("Batch session {} reached terminal failure state — code={} description={}",
+                            referenceNumber, code,
+                            sessionStatus.status() != null ? sessionStatus.status().description() : null);
+                }
                 return;
             }
         }
-        LOG.warn("Batch session {} polling timed out — processing may not be complete yet",
-                referenceNumber);
+        LOG.warn("Batch session {} polling timed out after {} attempts — last status code={} — processing may not be complete yet",
+                referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     private static boolean isSessionBusy(KsefException exception) {

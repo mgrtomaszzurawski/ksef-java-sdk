@@ -43,7 +43,9 @@ public final class KsefSession implements AutoCloseable {
     private static final int CLOSE_POLL_BACKOFF_MULTIPLIER = 2;
     private static final long CLOSE_TIMEOUT_MS = 60000;
     private static final int STATUS_POLL_DELAY_MS = 3000;
-    private static final int STATUS_POLL_MAX_ATTEMPTS = 20;
+    // 5-minute safety budget. Polling actually exits immediately on any terminal state
+    // (code >= 200), so this is only hit when KSeF is genuinely stalled.
+    private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
     private static final String ERR_SESSION_CLOSED = "Session is already closed";
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for session to become closeable";
@@ -186,16 +188,31 @@ public final class KsefSession implements AutoCloseable {
     }
 
     private void pollUntilComplete() {
+        Integer lastCode = null;
         for (int attempt = 0; attempt < STATUS_POLL_MAX_ATTEMPTS; attempt++) {
             sleep(STATUS_POLL_DELAY_MS);
             SessionStatus sessionStatus = sessionClient.getStatus(referenceNumber);
-            if (sessionStatus.status() != null
-                    && sessionStatus.status().code() == STATUS_CODE_OK) {
-                LOG.info("Session {} processing complete", referenceNumber);
+            Integer code = sessionStatus.status() != null ? sessionStatus.status().code() : null;
+            if (code != null && !code.equals(lastCode)) {
+                LOG.debug("Session {} status code transition: {} -> {} (attempt {})",
+                        referenceNumber, lastCode, code, attempt + 1);
+                lastCode = code;
+            }
+            // Any code >= 200 is terminal: 200 = success; 415/440/445/etc. = various failures.
+            // Codes < 200 (100=open, 170=closing) are intermediate.
+            if (code != null && code >= STATUS_CODE_OK) {
+                if (code == STATUS_CODE_OK) {
+                    LOG.info("Session {} processing complete", referenceNumber);
+                } else {
+                    LOG.warn("Session {} reached terminal failure state — code={} description={}",
+                            referenceNumber, code,
+                            sessionStatus.status() != null ? sessionStatus.status().description() : null);
+                }
                 return;
             }
         }
-        LOG.warn("Session {} polling timed out — UPO may not be available yet", referenceNumber);
+        LOG.warn("Session {} polling timed out after {} attempts — last status code={} — UPO may not be available yet",
+                referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     private static boolean isSessionBusy(KsefException exception) {
