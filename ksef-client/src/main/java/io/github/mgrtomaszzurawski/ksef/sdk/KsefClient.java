@@ -294,7 +294,7 @@ public final class KsefClient implements AutoCloseable {
                 session.referenceNumber(), invoiceXmls.size(), formCode);
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
-                session.partUploadRequests(), pkg.partBytes());
+                session.partUploadRequests(), pkg);
     }
 
     /**

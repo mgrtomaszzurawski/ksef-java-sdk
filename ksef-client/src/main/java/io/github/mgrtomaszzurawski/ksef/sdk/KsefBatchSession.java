@@ -17,7 +17,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -38,9 +38,9 @@ import java.util.Map;
  * <p>Batch session flow (automated variant):
  * <ol>
  *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, java.util.List)}
- *       — the SDK builds the encrypted ZIP and computes hashes</li>
- *   <li>Call {@link #uploadParts()} to push every encrypted part to its URL</li>
- *   <li>Call {@link #close()} (or use try-with-resources) to finalize</li>
+ *       — the SDK builds the encrypted ZIP and computes hashes using temp files</li>
+ *   <li>Call {@link #uploadParts()} to push every encrypted part file to its URL</li>
+ *   <li>Call {@link #close()} to finalize and delete the temp files</li>
  * </ol>
  *
  * @see KsefClient#openBatchSession(FormCode, BatchFileSpec)
@@ -63,23 +63,24 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String ERR_NO_PARTS = "No parts to upload — session was opened with raw "
             + "BatchFileSpec, not invoiceXmls";
     private static final String ERR_PART_COUNT_MISMATCH = "partUploadRequests count does not match "
-            + "partBytes count";
+            + "part files count";
     private static final String ERR_UPLOAD_FAILED = "Failed to upload batch part %d: HTTP %d";
     private static final String ERR_UPLOAD_INTERRUPTED = "Interrupted while uploading batch parts";
     private static final String ERR_UPLOAD_IO = "I/O error uploading batch part %d";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
+    private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
     private static final String METHOD_PUT = "PUT";
 
     private final SessionClient sessionClient;
     private final HttpClient httpClient;
     private final String referenceNumber;
     private final List<PartUploadRequest> partUploadRequests;
-    private final List<byte[]> partBytes;
+    private final BatchPackageBuilder.BatchPackage batchPackage;
     private volatile boolean closed;
 
     /**
      * Package-private constructor used by tests and by {@link KsefClient} when opening a
-     * batch session from a pre-built {@link BatchFileSpec} (no part bytes available —
+     * batch session from a pre-built {@link BatchFileSpec} (no part files available —
      * {@link #uploadParts()} will fail).
      */
     KsefBatchSession(SessionClient sessionClient, String referenceNumber,
@@ -89,26 +90,21 @@ public final class KsefBatchSession implements AutoCloseable {
 
     /**
      * Full constructor — used by {@link KsefClient} when the session was opened from a
-     * list of raw invoices and the SDK retains the encrypted part bytes for upload.
+     * list of raw invoices and the SDK retains references to the encrypted part files
+     * for upload + cleanup.
      */
     KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
-                     List<PartUploadRequest> partUploadRequests, List<byte[]> partBytes) {
+                     List<PartUploadRequest> partUploadRequests,
+                     BatchPackageBuilder.BatchPackage batchPackage) {
         this.sessionClient = sessionClient;
         this.httpClient = httpClient;
         this.referenceNumber = referenceNumber;
         this.partUploadRequests = List.copyOf(partUploadRequests);
-        if (partBytes == null) {
-            this.partBytes = null;
-        } else {
-            if (partBytes.size() != partUploadRequests.size()) {
-                throw new IllegalArgumentException(ERR_PART_COUNT_MISMATCH);
-            }
-            List<byte[]> copy = new ArrayList<>(partBytes.size());
-            for (byte[] part : partBytes) {
-                copy.add(part.clone());
-            }
-            this.partBytes = List.copyOf(copy);
+        if (batchPackage != null
+                && batchPackage.partFiles().size() != partUploadRequests.size()) {
+            throw new IllegalArgumentException(ERR_PART_COUNT_MISMATCH);
         }
+        this.batchPackage = batchPackage;
     }
 
     /**
@@ -136,32 +132,36 @@ public final class KsefBatchSession implements AutoCloseable {
      * Upload all encrypted batch parts to their respective URLs.
      *
      * <p>Only available when the session was opened via
-     * {@link KsefClient#openBatchSession(FormCode, java.util.List)} — that flow keeps the
-     * encrypted bytes in memory. When the session was opened from a raw
+     * {@link KsefClient#openBatchSession(FormCode, java.util.List)} — that flow keeps
+     * references to the encrypted part files. When the session was opened from a raw
      * {@link BatchFileSpec}, this method throws {@link IllegalStateException}.
      *
      * <p>Each part is uploaded with the HTTP method and headers returned by KSeF in the
      * open-session response (typically {@code PUT}). Any non-2xx response aborts the
      * upload and is wrapped in {@link KsefNetworkException}.
      *
-     * @throws IllegalStateException if the session has no part bytes attached
+     * @throws IllegalStateException if the session has no part files attached
      * @throws KsefNetworkException if any upload fails or the network is interrupted
      */
     public void uploadParts() {
-        if (partBytes == null || httpClient == null) {
+        if (batchPackage == null || httpClient == null) {
             throw new IllegalStateException(ERR_NO_PARTS);
         }
+        List<Path> partFiles = batchPackage.partFiles();
         for (int index = 0; index < partUploadRequests.size(); index++) {
-            PartUploadRequest upload = partUploadRequests.get(index);
-            byte[] body = partBytes.get(index);
-            uploadSinglePart(upload, body);
+            uploadSinglePart(partUploadRequests.get(index), partFiles.get(index));
         }
     }
 
-    private void uploadSinglePart(PartUploadRequest upload, byte[] body) {
+    private void uploadSinglePart(PartUploadRequest upload, Path partFile) {
         HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url());
         String method = upload.method() != null ? upload.method() : METHOD_PUT;
-        builder.method(method, BodyPublishers.ofByteArray(body));
+        try {
+            builder.method(method, BodyPublishers.ofFile(partFile));
+        } catch (java.io.FileNotFoundException ex) {
+            throw new KsefNetworkException(
+                    String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), ex);
+        }
         Map<String, String> headers = upload.headers() != null ? upload.headers() : Map.of();
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             builder.header(entry.getKey(), entry.getValue());
@@ -196,7 +196,8 @@ public final class KsefBatchSession implements AutoCloseable {
 
     /**
      * Close this batch session. Sends close request to KSeF, retrying on 415 (session busy),
-     * then polls until session processing is complete (status 200).
+     * polls until session processing is complete (status 200), then deletes any
+     * temp part files held by this session.
      *
      * <p>This method is idempotent — calling it on an already-closed session is a no-op.
      * It is called automatically when using try-with-resources.
@@ -207,8 +208,14 @@ public final class KsefBatchSession implements AutoCloseable {
             return;
         }
         closed = true;
-        closeWithRetry();
-        pollUntilComplete();
+        try {
+            closeWithRetry();
+            pollUntilComplete();
+        } finally {
+            if (batchPackage != null) {
+                batchPackage.cleanup();
+            }
+        }
     }
 
     private void closeWithRetry() {
@@ -231,7 +238,7 @@ public final class KsefBatchSession implements AutoCloseable {
                 }
             }
         }
-        throw new IllegalStateException("Timeout waiting for batch session to become closeable");
+        throw new IllegalStateException(ERR_CLOSE_TIMEOUT);
     }
 
     private void pollUntilComplete() {
