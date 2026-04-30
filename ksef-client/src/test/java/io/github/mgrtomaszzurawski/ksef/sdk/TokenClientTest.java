@@ -143,8 +143,11 @@ class TokenClientTest {
 
     @Test
     void generate_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
-        // given
+        // given — both the target endpoint and the reauth security endpoint return 401,
+        // so after the SDK retries once on 401 the auth exception propagates.
         stubFor(post(urlEqualTo("/api/v2/tokens"))
+                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+        stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
                 .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
 
         KsefClient ksef = createAuthenticatedClient(wmInfo);

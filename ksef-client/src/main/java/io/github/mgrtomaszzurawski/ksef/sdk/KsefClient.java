@@ -69,6 +69,7 @@ public final class KsefClient implements AutoCloseable {
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
     private static final String ERR_FORM_CODE_NULL = "formCode must not be null";
     private static final String ERR_BATCH_FILE_SPEC_NULL = "batchFileSpec must not be null";
+    private static final String ERR_INVOICES_NULL = "invoices must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
     private static final String ERR_NO_CERT = "No certificate found with usage: ";
@@ -100,6 +101,7 @@ public final class KsefClient implements AutoCloseable {
     private final LimitsClient limitsClient;
     private final RateLimitClient rateLimitClient;
     private final TestDataClient testDataClient;
+    private final PeppolClient peppolClient;
 
     private final Map<PublicKeyCertificateUsage, PublicKey> publicKeyCache = new ConcurrentHashMap<>();
     private volatile boolean authenticated;
@@ -125,6 +127,7 @@ public final class KsefClient implements AutoCloseable {
         this.limitsClient = new LimitsClient(this);
         this.rateLimitClient = new RateLimitClient(this);
         this.testDataClient = new TestDataClient(this);
+        this.peppolClient = new PeppolClient(this);
     }
 
     // --- Authentication ---
@@ -153,7 +156,7 @@ public final class KsefClient implements AutoCloseable {
         }
         doAuthenticate();
         authenticated = true;
-        LOG.info("Authenticated with KSeF as NIP {}", credentials.nip());
+        LOG.info("Authenticated with KSeF as {}", credentials.identifier());
     }
 
     /**
@@ -237,8 +240,61 @@ public final class KsefClient implements AutoCloseable {
         BatchSession session = sessionClient.openBatch(request);
         LOG.info("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
 
-        return new KsefBatchSession(sessionClient, session.referenceNumber(),
-                session.partUploadRequests());
+        return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
+                session.partUploadRequests(), null);
+    }
+
+    /**
+     * Open a batch KSeF session for a list of raw invoice XML byte arrays.
+     *
+     * <p>Convenience overload that fully automates the batch package construction:
+     * <ol>
+     *   <li>Wrap each invoice as a separate entry in an in-memory ZIP</li>
+     *   <li>Encrypt the ZIP with a session AES-256 key</li>
+     *   <li>Split the encrypted bytes into upload parts (max 100 MB each)</li>
+     *   <li>Compute SHA-256 hashes for the whole file and each part</li>
+     *   <li>Open the batch session</li>
+     * </ol>
+     *
+     * <p>Authenticates lazily if not already authenticated. After this call, invoke
+     * {@link KsefBatchSession#uploadParts()} to push the encrypted bytes, then
+     * {@link KsefBatchSession#close()} to finalise the session.
+     *
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * @param invoiceXmls non-empty list of raw invoice XML byte arrays
+     * @return an open batch session pre-loaded with the encrypted part bytes
+     */
+    public synchronized KsefBatchSession openBatchSession(FormCode formCode,
+                                                          List<byte[]> invoiceXmls) {
+        Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
+        Objects.requireNonNull(invoiceXmls, ERR_INVOICES_NULL);
+        ensureOpen();
+        ensureAuthenticated();
+
+        PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
+        byte[] aesKey = CryptoService.generateAesKey();
+        byte[] initVector = CryptoService.generateIv();
+        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
+
+        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+                invoiceXmls, aesKey, initVector);
+
+        OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
+                .formCode(new FormCodeRaw()
+                        .systemCode(formCode.systemCode())
+                        .schemaVersion(formCode.schemaVersion())
+                        .value(formCode.value()))
+                .encryption(new EncryptionInfoRaw()
+                        .encryptedSymmetricKey(encryptedKey)
+                        .initializationVector(initVector))
+                .batchFile(toBatchFileInfoRaw(pkg.spec()));
+
+        BatchSession session = sessionClient.openBatch(request);
+        LOG.info("Opened KSeF batch session {} with {} invoices, formCode={}",
+                session.referenceNumber(), invoiceXmls.size(), formCode);
+
+        return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
+                session.partUploadRequests(), pkg.partBytes());
     }
 
     /**
@@ -252,6 +308,26 @@ public final class KsefClient implements AutoCloseable {
         authenticated = false;
         publicKeyCache.clear();
         LOG.info("Terminated KSeF auth session");
+    }
+
+    /**
+     * Force re-authentication: clear the current JWT and obtain a fresh access token.
+     *
+     * <p>Used by the SDK internally when an authenticated request returns HTTP 401
+     * (token expired). Resets the authenticated flag and the public key cache (the
+     * KSeF certificate may have rotated), clears the session JWT, and re-runs the
+     * full auth flow.
+     *
+     * <p>Thread-safe: serialized on this {@link KsefClient} so concurrent 401s only
+     * trigger one re-auth.
+     */
+    public synchronized void reauthenticate() {
+        ensureOpen();
+        authenticated = false;
+        publicKeyCache.clear();
+        sessionContext.clear();
+        authenticate();
+        LOG.info("Re-authenticated with KSeF after 401 (token refresh)");
     }
 
     // --- Public domain client accessors ---
@@ -311,6 +387,15 @@ public final class KsefClient implements AutoCloseable {
     public TestDataClient testData() {
         ensureOpen();
         return testDataClient;
+    }
+
+    /**
+     * Access Peppol service provider queries.
+     * Requires authentication (lazy auth if needed).
+     */
+    public PeppolClient peppol() {
+        ensureOpen();
+        return peppolClient;
     }
 
     // --- Internal client accessors (for advanced use / probe utilities) ---
@@ -414,7 +499,7 @@ public final class KsefClient implements AutoCloseable {
         if (credentials instanceof KsefTokenCredentials token) {
             authenticateWithToken(token);
         } else if (credentials instanceof KsefCertificateCredentials cert) {
-            authenticateWithCertificate(cert.certificate(), cert.privateKey(), cert.nip());
+            authenticateWithCertificate(cert.certificate(), cert.privateKey(), cert.identifier());
         } else if (credentials instanceof KsefPkcs12Credentials pkcs12) {
             authenticateWithPkcs12(pkcs12);
         }
@@ -424,14 +509,15 @@ public final class KsefClient implements AutoCloseable {
         PublicKey tokenKey = getPublicKey(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION);
         AuthenticationChallenge challenge = authClient.requestChallenge();
         authClient.authenticateWithToken(challenge, credentials.ksefToken(),
-                credentials.nip(), tokenKey);
+                credentials.identifier(), tokenKey);
         pollAuthStatus();
         authClient.redeemTokens();
     }
 
-    private void authenticateWithCertificate(X509Certificate certificate, PrivateKey privateKey, String nip) {
+    private void authenticateWithCertificate(X509Certificate certificate, PrivateKey privateKey,
+                                             KsefIdentifier identifier) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
-        authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, nip);
+        authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier);
         pollAuthStatus();
         authClient.redeemTokens();
     }
@@ -441,7 +527,7 @@ public final class KsefClient implements AutoCloseable {
         String alias = CertificateLoader.getFirstAlias(keyStore);
         PrivateKey privateKey = CertificateLoader.getPrivateKey(keyStore, alias, credentials.password());
         X509Certificate certificate = CertificateLoader.getCertificate(keyStore, alias);
-        authenticateWithCertificate(certificate, privateKey, credentials.nip());
+        authenticateWithCertificate(certificate, privateKey, credentials.identifier());
     }
 
     private void pollAuthStatus() {

@@ -5,12 +5,21 @@
 package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An open KSeF batch session for bulk invoice submission via ZIP package.
@@ -19,28 +28,31 @@ import java.util.List;
  * Instead, the entire ZIP package is encrypted with the session AES key. The consumer
  * uploads ZIP parts to the URLs provided in {@link #partUploadRequests()}.
  *
- * <p>Batch session flow:
+ * <p>Batch session flow (manual variant):
  * <ol>
  *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, BatchFileSpec)}</li>
  *   <li>Upload encrypted ZIP parts to the URLs from {@link #partUploadRequests()}</li>
  *   <li>Call {@link #close()} (or use try-with-resources) to finalize</li>
  * </ol>
  *
- * <p>Example:
- * <pre>{@code
- * try (KsefBatchSession batch = client.openBatchSession(FormCode.FA2, batchFileSpec)) {
- *     // Upload ZIP parts to batch.partUploadRequests() URLs
- *     batch.close();
- * }
- * }</pre>
+ * <p>Batch session flow (automated variant):
+ * <ol>
+ *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, java.util.List)}
+ *       — the SDK builds the encrypted ZIP and computes hashes</li>
+ *   <li>Call {@link #uploadParts()} to push every encrypted part to its URL</li>
+ *   <li>Call {@link #close()} (or use try-with-resources) to finalize</li>
+ * </ol>
  *
  * @see KsefClient#openBatchSession(FormCode, BatchFileSpec)
+ * @see KsefClient#openBatchSession(FormCode, java.util.List)
  */
 public final class KsefBatchSession implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(KsefBatchSession.class);
 
     private static final int STATUS_CODE_OK = 200;
+    private static final int HTTP_STATUS_LOWER_BOUND_OK = 200;
+    private static final int HTTP_STATUS_UPPER_BOUND_OK = 300;
     private static final int CLOSE_POLL_INITIAL_DELAY_MS = 1000;
     private static final int CLOSE_POLL_MAX_DELAY_MS = 10000;
     private static final int CLOSE_POLL_BACKOFF_MULTIPLIER = 2;
@@ -48,20 +60,55 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final int STATUS_POLL_DELAY_MS = 3000;
     private static final int STATUS_POLL_MAX_ATTEMPTS = 20;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
-    private static final String ERR_SESSION_CLOSED = "Batch session is already closed";
-    private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
+    private static final String ERR_NO_PARTS = "No parts to upload — session was opened with raw "
+            + "BatchFileSpec, not invoiceXmls";
+    private static final String ERR_PART_COUNT_MISMATCH = "partUploadRequests count does not match "
+            + "partBytes count";
+    private static final String ERR_UPLOAD_FAILED = "Failed to upload batch part %d: HTTP %d";
+    private static final String ERR_UPLOAD_INTERRUPTED = "Interrupted while uploading batch parts";
+    private static final String ERR_UPLOAD_IO = "I/O error uploading batch part %d";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
+    private static final String METHOD_PUT = "PUT";
 
     private final SessionClient sessionClient;
+    private final HttpClient httpClient;
     private final String referenceNumber;
     private final List<PartUploadRequest> partUploadRequests;
+    private final List<byte[]> partBytes;
     private volatile boolean closed;
 
+    /**
+     * Package-private constructor used by tests and by {@link KsefClient} when opening a
+     * batch session from a pre-built {@link BatchFileSpec} (no part bytes available —
+     * {@link #uploadParts()} will fail).
+     */
     KsefBatchSession(SessionClient sessionClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests) {
+        this(sessionClient, null, referenceNumber, partUploadRequests, null);
+    }
+
+    /**
+     * Full constructor — used by {@link KsefClient} when the session was opened from a
+     * list of raw invoices and the SDK retains the encrypted part bytes for upload.
+     */
+    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+                     List<PartUploadRequest> partUploadRequests, List<byte[]> partBytes) {
         this.sessionClient = sessionClient;
+        this.httpClient = httpClient;
         this.referenceNumber = referenceNumber;
         this.partUploadRequests = List.copyOf(partUploadRequests);
+        if (partBytes == null) {
+            this.partBytes = null;
+        } else {
+            if (partBytes.size() != partUploadRequests.size()) {
+                throw new IllegalArgumentException(ERR_PART_COUNT_MISMATCH);
+            }
+            List<byte[]> copy = new ArrayList<>(partBytes.size());
+            for (byte[] part : partBytes) {
+                copy.add(part.clone());
+            }
+            this.partBytes = List.copyOf(copy);
+        }
     }
 
     /**
@@ -83,6 +130,58 @@ public final class KsefBatchSession implements AutoCloseable {
      */
     public List<PartUploadRequest> partUploadRequests() {
         return partUploadRequests;
+    }
+
+    /**
+     * Upload all encrypted batch parts to their respective URLs.
+     *
+     * <p>Only available when the session was opened via
+     * {@link KsefClient#openBatchSession(FormCode, java.util.List)} — that flow keeps the
+     * encrypted bytes in memory. When the session was opened from a raw
+     * {@link BatchFileSpec}, this method throws {@link IllegalStateException}.
+     *
+     * <p>Each part is uploaded with the HTTP method and headers returned by KSeF in the
+     * open-session response (typically {@code PUT}). Any non-2xx response aborts the
+     * upload and is wrapped in {@link KsefNetworkException}.
+     *
+     * @throws IllegalStateException if the session has no part bytes attached
+     * @throws KsefNetworkException if any upload fails or the network is interrupted
+     */
+    public void uploadParts() {
+        if (partBytes == null || httpClient == null) {
+            throw new IllegalStateException(ERR_NO_PARTS);
+        }
+        for (int index = 0; index < partUploadRequests.size(); index++) {
+            PartUploadRequest upload = partUploadRequests.get(index);
+            byte[] body = partBytes.get(index);
+            uploadSinglePart(upload, body);
+        }
+    }
+
+    private void uploadSinglePart(PartUploadRequest upload, byte[] body) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url());
+        String method = upload.method() != null ? upload.method() : METHOD_PUT;
+        builder.method(method, BodyPublishers.ofByteArray(body));
+        Map<String, String> headers = upload.headers() != null ? upload.headers() : Map.of();
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            builder.header(entry.getKey(), entry.getValue());
+        }
+        try {
+            HttpResponse<Void> response = httpClient.send(builder.build(), BodyHandlers.discarding());
+            if (response.statusCode() < HTTP_STATUS_LOWER_BOUND_OK
+                    || response.statusCode() >= HTTP_STATUS_UPPER_BOUND_OK) {
+                throw new KsefNetworkException(
+                        String.format(ERR_UPLOAD_FAILED, upload.ordinalNumber(), response.statusCode()),
+                        null);
+            }
+            LOG.debug("Uploaded batch part {} to {}", upload.ordinalNumber(), upload.url());
+        } catch (IOException ex) {
+            throw new KsefNetworkException(
+                    String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new KsefNetworkException(ERR_UPLOAD_INTERRUPTED, ex);
+        }
     }
 
     /**
@@ -132,7 +231,7 @@ public final class KsefBatchSession implements AutoCloseable {
                 }
             }
         }
-        throw new IllegalStateException(ERR_CLOSE_TIMEOUT);
+        throw new IllegalStateException("Timeout waiting for batch session to become closeable");
     }
 
     private void pollUntilComplete() {

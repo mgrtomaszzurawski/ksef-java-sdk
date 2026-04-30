@@ -92,7 +92,23 @@ public final class AuthClient {
      */
     public AuthenticationInit authenticateWithXades(
             String challenge, X509Certificate certificate, PrivateKey privateKey, String nipIdentifier) {
-        String authXml = buildAuthTokenRequestXml(challenge, nipIdentifier);
+        return authenticateWithXades(challenge, certificate, privateKey,
+                KsefIdentifier.nip(nipIdentifier));
+    }
+
+    /**
+     * Authenticate using XAdES signature flow with a generic identifier.
+     *
+     * @param challenge the challenge string from {@link #requestChallenge()}
+     * @param certificate the signing X.509 certificate
+     * @param privateKey the private key matching the certificate
+     * @param identifier authentication context identifier (any of the four KSeF types)
+     * @return authentication response with reference number and operation token
+     */
+    public AuthenticationInit authenticateWithXades(
+            String challenge, X509Certificate certificate, PrivateKey privateKey,
+            KsefIdentifier identifier) {
+        String authXml = buildAuthTokenRequestXml(challenge, identifier);
         String signedXml = SigningService.signXml(authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey);
         AuthenticationInitResponseRaw response = http.postXml(
                 PATH_XADES_SIGNATURE, signedXml, AuthenticationInitResponseRaw.class, OP_AUTH_XADES);
@@ -113,6 +129,22 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithToken(
             AuthenticationChallenge challenge,
             String ksefToken, String nipIdentifier, PublicKey ksefPublicKey) {
+        return authenticateWithToken(challenge, ksefToken,
+                KsefIdentifier.nip(nipIdentifier), ksefPublicKey);
+    }
+
+    /**
+     * Authenticate using KSeF token flow with a generic identifier.
+     *
+     * @param challenge the challenge response from {@link #requestChallenge()}
+     * @param ksefToken the pre-generated KSeF authorization token
+     * @param identifier authentication context identifier (any of the four KSeF types)
+     * @param ksefPublicKey the KSeF public key for encrypting the token
+     * @return authentication response with reference number and operation token
+     */
+    public AuthenticationInit authenticateWithToken(
+            AuthenticationChallenge challenge,
+            String ksefToken, KsefIdentifier identifier, PublicKey ksefPublicKey) {
         Instant challengeTimestamp = Instant.ofEpochMilli(challenge.timestampMs());
         byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, challengeTimestamp, ksefPublicKey);
         AllowedIpsRaw allowedIps = new AllowedIpsRaw()
@@ -120,8 +152,8 @@ public final class AuthClient {
         InitTokenAuthenticationRequestRaw request = new InitTokenAuthenticationRequestRaw()
                 .challenge(challenge.challenge())
                 .contextIdentifier(new AuthenticationContextIdentifierRaw()
-                        .type(AuthenticationContextIdentifierTypeRaw.NIP)
-                        .value(nipIdentifier))
+                        .type(toRawType(identifier.type()))
+                        .value(identifier.value()))
                 .encryptedToken(encryptedToken)
                 .authorizationPolicy(new AuthorizationPolicyRaw().allowedIps(allowedIps));
         AuthenticationInitResponseRaw response = http.postJson(
@@ -218,13 +250,33 @@ public final class AuthClient {
                 response.getAuthenticationToken().getValidUntil());
     }
 
-    private static String buildAuthTokenRequestXml(String challenge, String nipIdentifier) {
+    private static String buildAuthTokenRequestXml(String challenge, KsefIdentifier identifier) {
+        String elementName = xmlElementForType(identifier.type());
         return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
                 + "<AuthTokenRequest xmlns=\"http://ksef.mf.gov.pl/auth/token/2.0\">"
                 + "<Challenge>" + escapeXml(challenge) + "</Challenge>"
-                + "<ContextIdentifier><Nip>" + escapeXml(nipIdentifier) + "</Nip></ContextIdentifier>"
+                + "<ContextIdentifier><" + elementName + ">" + escapeXml(identifier.value())
+                + "</" + elementName + "></ContextIdentifier>"
                 + "<SubjectIdentifierType>certificateSubject</SubjectIdentifierType>"
                 + "</AuthTokenRequest>";
+    }
+
+    private static AuthenticationContextIdentifierTypeRaw toRawType(KsefIdentifier.Type type) {
+        return switch (type) {
+            case NIP -> AuthenticationContextIdentifierTypeRaw.NIP;
+            case INTERNAL_ID -> AuthenticationContextIdentifierTypeRaw.INTERNAL_ID;
+            case NIP_VAT_UE -> AuthenticationContextIdentifierTypeRaw.NIP_VAT_UE;
+            case PEPPOL_ID -> AuthenticationContextIdentifierTypeRaw.PEPPOL_ID;
+        };
+    }
+
+    private static String xmlElementForType(KsefIdentifier.Type type) {
+        return switch (type) {
+            case NIP -> "Nip";
+            case INTERNAL_ID -> "InternalId";
+            case NIP_VAT_UE -> "NipVatUe";
+            case PEPPOL_ID -> "PeppolId";
+        };
     }
 
     private static String escapeXml(String input) {

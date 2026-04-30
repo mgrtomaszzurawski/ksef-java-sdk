@@ -161,4 +161,53 @@ class KsefCredentialsTest {
                 "toString must not expose the password");
         assertNotNull(result);
     }
+
+    // --- Identifier-based factories (Part A) ---
+
+    private static final String PEPPOL_VALUE = "PPL000123";
+    private static final String INTERNAL_VALUE = "1234567890-12345";
+
+    @Test
+    void tokenCredentials_whenIdentifierConstructor_returnsIdentifier() {
+        // given
+        KsefIdentifier id = KsefIdentifier.peppolId(PEPPOL_VALUE);
+
+        // when
+        KsefTokenCredentials credentials = new KsefTokenCredentials(VALID_TOKEN, id);
+
+        // then
+        assertEquals(id, credentials.identifier());
+        assertEquals(KsefIdentifier.Type.PEPPOL_ID, credentials.identifier().type());
+    }
+
+    @Test
+    void tokenCredentials_whenLegacyNipConstructor_identifierIsNip() {
+        // when
+        KsefTokenCredentials credentials = new KsefTokenCredentials(VALID_TOKEN, VALID_NIP);
+
+        // then
+        assertEquals(KsefIdentifier.Type.NIP, credentials.identifier().type());
+        assertEquals(VALID_NIP, credentials.identifier().value());
+        assertEquals(VALID_NIP, credentials.nip());
+    }
+
+    @Test
+    void nip_whenIdentifierIsPeppol_throwsIllegalState() {
+        // given
+        KsefTokenCredentials credentials = new KsefTokenCredentials(
+                VALID_TOKEN, KsefIdentifier.peppolId(PEPPOL_VALUE));
+
+        // when / then
+        assertThrows(IllegalStateException.class, credentials::nip);
+    }
+
+    @Test
+    void nip_whenIdentifierIsInternalId_throwsIllegalState() {
+        // given
+        KsefTokenCredentials credentials = new KsefTokenCredentials(
+                VALID_TOKEN, KsefIdentifier.internalId(INTERNAL_VALUE));
+
+        // when / then
+        assertThrows(IllegalStateException.class, credentials::nip);
+    }
 }
