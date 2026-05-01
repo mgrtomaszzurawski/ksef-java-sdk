@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.qrcode;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,18 +43,12 @@ class QrCodeServiceTest {
         assertEquals(TEST_URL_PREFIX + TEST_KSEF_NUMBER, url);
     }
 
-    @Test
-    void getVerificationUrl_whenNull_throwsIllegalArgument() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    void getVerificationUrl_whenNullOrEmpty_throwsIllegalArgument(String input) {
         QrCodeService service = new QrCodeService();
 
-        assertThrows(IllegalArgumentException.class, () -> service.getVerificationUrl(null));
-    }
-
-    @Test
-    void getVerificationUrl_whenEmpty_throwsIllegalArgument() {
-        QrCodeService service = new QrCodeService();
-
-        assertThrows(IllegalArgumentException.class, () -> service.getVerificationUrl(""));
+        assertThrows(IllegalArgumentException.class, () -> service.getVerificationUrl(input));
     }
 
     @Test
@@ -94,20 +90,13 @@ class QrCodeServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.generateQrCode(null));
     }
 
-    @Test
-    void generateQrCode_whenZeroSize_throwsIllegalArgument() {
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, -1, -100})
+    void generateQrCode_whenInvalidSize_throwsIllegalArgument(int size) {
         QrCodeService service = new QrCodeService();
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.generateQrCode(TEST_KSEF_NUMBER, 0));
-    }
-
-    @Test
-    void generateQrCode_whenNegativeSize_throwsIllegalArgument() {
-        QrCodeService service = new QrCodeService();
-
-        assertThrows(IllegalArgumentException.class,
-                () -> service.generateQrCode(TEST_KSEF_NUMBER, -1));
+                () -> service.generateQrCode(TEST_KSEF_NUMBER, size));
     }
 
     @Test

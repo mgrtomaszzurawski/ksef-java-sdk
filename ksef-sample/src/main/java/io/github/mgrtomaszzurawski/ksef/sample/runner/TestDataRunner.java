@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
+
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;

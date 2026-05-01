@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -81,6 +82,34 @@ public final class OnlineSessionBuilder {
             OpenOnlineSessionRequestRaw request,
             byte[] aesKey,
             byte[] initVector) {
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof SessionOpenResult other)) {
+                return false;
+            }
+            return Objects.equals(request, other.request)
+                    && Arrays.equals(aesKey, other.aesKey)
+                    && Arrays.equals(initVector, other.initVector);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hashCode(request);
+            result = 31 * result + Arrays.hashCode(aesKey);
+            result = 31 * result + Arrays.hashCode(initVector);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "SessionOpenResult[request=" + request
+                    + ", aesKey=<redacted>"
+                    + ", initVector=<redacted>]";
+        }
     }
 
     /**

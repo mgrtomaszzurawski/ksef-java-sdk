@@ -7,6 +7,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.certificates;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
@@ -18,8 +20,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -245,17 +245,19 @@ class CertificateClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        assertThrows(KsefServerException.class,
-                () -> ksef.certificates().enroll(
-                        CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR)));
+        var certs = ksef.certificates();
+        var builder = CertificateEnrollBuilder.create(
+                TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR);
+        assertThrows(KsefServerException.class, () -> certs.enroll(builder));
     }
 
     @Test
     void getEnrollmentStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
+        var certs = ksef.certificates();
 
         assertThrows(IllegalArgumentException.class,
-                () -> ksef.certificates().getEnrollmentStatus("../../../etc/passwd"));
+                () -> certs.getEnrollmentStatus("../../../etc/passwd"));
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

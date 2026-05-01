@@ -14,6 +14,11 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefPkcs12Credentials;
@@ -21,20 +26,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCrede
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.CertificateClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
@@ -48,6 +39,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
 import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
 import java.security.KeyStore;
@@ -216,7 +216,9 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                         .initializationVector(initVector));
 
         OnlineSession session = sessionClient.openOnline(request);
-        LOG.info("Opened KSeF session {}, formCode={}", session.referenceNumber(), formCode);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Opened KSeF session {}, formCode={}", session.referenceNumber(), formCode);
+        }
 
         return new KsefSession(sessionClient, session.referenceNumber(), aesKey, initVector);
     }
@@ -263,7 +265,9 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .batchFile(toBatchFileInfoRaw(batchFileSpec));
 
         BatchSession session = sessionClient.openBatch(request);
-        LOG.info("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
+        }
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), null);
@@ -315,8 +319,10 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .batchFile(toBatchFileInfoRaw(pkg.spec()));
 
         BatchSession session = sessionClient.openBatch(request);
-        LOG.info("Opened KSeF batch session {} with {} invoices, formCode={}",
-                session.referenceNumber(), invoiceXmls.size(), formCode);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Opened KSeF batch session {} with {} invoices, formCode={}",
+                    session.referenceNumber(), invoiceXmls.size(), formCode);
+        }
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), pkg);
@@ -615,16 +621,23 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .fileParts(parts);
     }
 
+    /**
+     * Builds the {@link ObjectMapper} used for both request serialization and response
+     * deserialization.
+     *
+     * <p>{@code Include.NON_NULL} is set deliberately — KSeF's .NET backend rejects
+     * explicit JSON nulls for typed fields (e.g. an unset {@code isDeceased} surfaced
+     * as {@code "isDeceased":null} fails to deserialize as {@code System.Boolean}).
+     * Plain Java {@code null} fields are dropped from output; {@code JsonNullable.undefined()}
+     * also stays absent, while {@code JsonNullable.of(null)} still serializes as an
+     * explicit null where the spec requires it.
+     */
     private static ObjectMapper createObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.registerModule(new JsonNullableModule());
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        // Omit unset fields from request JSON. KSeF's .NET backend rejects explicit nulls
-        // for typed fields (e.g. "isDeceased":null fails to deserialize as System.Boolean).
-        // Plain null fields → absent. JsonNullable.undefined() also stays absent;
-        // JsonNullable.of(null) still serializes as explicit null where needed.
         mapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
         return mapper;
     }

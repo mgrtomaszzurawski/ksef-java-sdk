@@ -7,10 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.testdata;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsRevokeBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPersonCreateBuilder;
@@ -21,6 +20,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectL
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -360,9 +360,9 @@ class TestDataClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // then
-        assertThrows(KsefServerException.class,
-                () -> ksef.testData().createSubject(
-                        TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION)));
+        var testData = ksef.testData();
+        var builder = TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION);
+        assertThrows(KsefServerException.class, () -> testData.createSubject(builder));
     }
 
     // --- Helpers ---

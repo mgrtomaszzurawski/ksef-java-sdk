@@ -7,13 +7,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +23,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,8 +85,8 @@ class KsefBatchSessionTest {
         assertEquals(PART_ORDINAL, parts.get(0).ordinalNumber());
         assertEquals(UPLOAD_METHOD, parts.get(0).method());
         assertEquals(URI.create(UPLOAD_URL), parts.get(0).url());
-        assertThrows(UnsupportedOperationException.class,
-                () -> parts.add(samplePart()));
+        PartUploadRequest extraPart = samplePart();
+        assertThrows(UnsupportedOperationException.class, () -> parts.add(extraPart));
     }
 
     @Test
@@ -108,11 +109,11 @@ class KsefBatchSessionTest {
         stubCloseAndStatusOk();
         KsefBatchSession session = createSession(wmInfo);
 
-        // when — close should not throw
+        // when — first close should not throw
         session.close();
 
         // then — second close is no-op (idempotent), no error
-        session.close();
+        assertDoesNotThrow(session::close);
     }
 
     @Test
@@ -136,10 +137,10 @@ class KsefBatchSessionTest {
         KsefBatchSession session = createSession(wmInfo);
 
         // when — should not throw despite the first 415
-        session.close();
+        assertDoesNotThrow(session::close);
 
-        // then — close completed successfully (idempotent second call confirms)
-        session.close();
+        // then — second call confirms close completed successfully (idempotent)
+        assertDoesNotThrow(session::close);
     }
 
     @Test
@@ -149,10 +150,8 @@ class KsefBatchSessionTest {
         KsefBatchSession session = createSession(wmInfo);
         session.close();
 
-        // when — second call is a no-op (no error, no extra HTTP call)
-        session.close();
-
-        // then — no exception thrown means idempotent
+        // when / then — second call is a no-op (no error, no extra HTTP call)
+        assertDoesNotThrow(session::close);
     }
 
     // --- Helper methods ---

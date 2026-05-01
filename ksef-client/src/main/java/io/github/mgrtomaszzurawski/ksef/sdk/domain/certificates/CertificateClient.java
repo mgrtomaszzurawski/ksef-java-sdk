@@ -24,6 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.List;
 import java.util.Objects;
@@ -35,12 +36,12 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  */
 public final class CertificateClient {
 
-    private static final String PATH_CERTIFICATES = "/api/v2/certificates";
-    private static final String PATH_LIMITS = "/api/v2/certificates/limits";
-    private static final String PATH_ENROLLMENT_DATA = "/api/v2/certificates/enrollments/data";
-    private static final String PATH_ENROLLMENTS = "/api/v2/certificates/enrollments";
-    private static final String PATH_RETRIEVE = "/api/v2/certificates/retrieve";
-    private static final String PATH_QUERY = "/api/v2/certificates/query";
+    private static final String PATH_CERTIFICATES = ApiPaths.CERTIFICATES;
+    private static final String PATH_LIMITS = ApiPaths.CERTIFICATES + "/limits";
+    private static final String PATH_ENROLLMENT_DATA = ApiPaths.CERTIFICATES + "/enrollments/data";
+    private static final String PATH_ENROLLMENTS = ApiPaths.CERTIFICATES + "/enrollments";
+    private static final String PATH_RETRIEVE = ApiPaths.CERTIFICATES + "/retrieve";
+    private static final String PATH_QUERY = ApiPaths.CERTIFICATES + "/query";
 
     private static final String SEGMENT_REVOKE = "/revoke";
 
@@ -112,7 +113,7 @@ public final class CertificateClient {
     public CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        CertificateEnrollmentStatusResponseRaw raw = http.getAuthenticated(PATH_ENROLLMENTS + "/" + referenceNumber, token,
+        CertificateEnrollmentStatusResponseRaw raw = http.getAuthenticated(ApiPaths.subPath(PATH_ENROLLMENTS, referenceNumber), token,
                 CertificateEnrollmentStatusResponseRaw.class, OP_GET_ENROLLMENT_STATUS);
         return CertificateEnrollmentStatus.from(raw);
     }
@@ -142,7 +143,7 @@ public final class CertificateClient {
         requireSafePathSegment(certificateSerialNumber);
         RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
         String token = sessionContext.token();
-        String path = PATH_CERTIFICATES + "/" + certificateSerialNumber + SEGMENT_REVOKE;
+        String path = ApiPaths.subPath(PATH_CERTIFICATES, certificateSerialNumber) + SEGMENT_REVOKE;
         http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
     }
 
@@ -158,7 +159,7 @@ public final class CertificateClient {
         RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
         request.setRevocationReason(revocationReason.toRaw());
         String token = sessionContext.token();
-        String path = PATH_CERTIFICATES + "/" + certificateSerialNumber + SEGMENT_REVOKE;
+        String path = ApiPaths.subPath(PATH_CERTIFICATES, certificateSerialNumber) + SEGMENT_REVOKE;
         http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
     }
 

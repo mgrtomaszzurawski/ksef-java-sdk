@@ -5,13 +5,13 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.SendInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +51,6 @@ public final class KsefSession implements AutoCloseable {
     private static final String SESSION_BUSY_INDICATOR = "(415)";
     private static final String ERR_SESSION_CLOSED = "Session is already closed";
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for session to become closeable";
-    private static final String ERR_POLL_TIMEOUT = "Session status polling timed out after close";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
 
     private final SessionClient sessionClient;
@@ -200,26 +199,35 @@ public final class KsefSession implements AutoCloseable {
             sleep(STATUS_POLL_DELAY_MS);
             SessionStatus sessionStatus = sessionClient.getStatus(referenceNumber);
             Integer code = sessionStatus.status() != null ? sessionStatus.status().code() : null;
-            if (code != null && !code.equals(lastCode)) {
-                LOG.debug("Session {} status code transition: {} -> {} (attempt {})",
-                        referenceNumber, lastCode, code, attempt + 1);
-                lastCode = code;
-            }
+            lastCode = logStatusTransition(lastCode, code, attempt);
             // Any code >= 200 is terminal: 200 = success; 415/440/445/etc. = various failures.
             // Codes < 200 (100=open, 170=closing) are intermediate.
             if (code != null && code >= STATUS_CODE_OK) {
-                if (code == STATUS_CODE_OK) {
-                    LOG.info("Session {} processing complete", referenceNumber);
-                } else {
-                    LOG.warn("Session {} reached terminal failure state — code={} description={}",
-                            referenceNumber, code,
-                            sessionStatus.status() != null ? sessionStatus.status().description() : null);
-                }
+                logTerminalState(code, sessionStatus);
                 return;
             }
         }
         LOG.warn("Session {} polling timed out after {} attempts — last status code={} — UPO may not be available yet",
                 referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
+    }
+
+    private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {
+        if (code != null && !code.equals(lastCode)) {
+            LOG.debug("Session {} status code transition: {} -> {} (attempt {})",
+                    referenceNumber, lastCode, code, attempt + 1);
+            return code;
+        }
+        return lastCode;
+    }
+
+    private void logTerminalState(int code, SessionStatus sessionStatus) {
+        if (code == STATUS_CODE_OK) {
+            LOG.info("Session {} processing complete", referenceNumber);
+        } else {
+            String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
+            LOG.warn("Session {} reached terminal failure state — code={} description={}",
+                    referenceNumber, code, description);
+        }
     }
 
     private static boolean isSessionBusy(KsefException exception) {

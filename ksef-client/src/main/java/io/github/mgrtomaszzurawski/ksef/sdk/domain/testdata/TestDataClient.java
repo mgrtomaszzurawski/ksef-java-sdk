@@ -12,8 +12,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsRevokeBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPersonCreateBuilder;
@@ -22,6 +20,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionL
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -37,22 +38,22 @@ import java.util.Objects;
 public final class TestDataClient {
 
     // --- Unauthenticated paths ---
-    private static final String PATH_SUBJECT = "/api/v2/testdata/subject";
-    private static final String PATH_SUBJECT_REMOVE = "/api/v2/testdata/subject/remove";
-    private static final String PATH_PERSON = "/api/v2/testdata/person";
-    private static final String PATH_PERSON_REMOVE = "/api/v2/testdata/person/remove";
-    private static final String PATH_PERMISSIONS = "/api/v2/testdata/permissions";
-    private static final String PATH_PERMISSIONS_REVOKE = "/api/v2/testdata/permissions/revoke";
-    private static final String PATH_ATTACHMENT = "/api/v2/testdata/attachment";
-    private static final String PATH_ATTACHMENT_REVOKE = "/api/v2/testdata/attachment/revoke";
-    private static final String PATH_CONTEXT_BLOCK = "/api/v2/testdata/context/block";
-    private static final String PATH_CONTEXT_UNBLOCK = "/api/v2/testdata/context/unblock";
+    private static final String PATH_SUBJECT = ApiPaths.TESTDATA + "/subject";
+    private static final String PATH_SUBJECT_REMOVE = ApiPaths.TESTDATA + "/subject/remove";
+    private static final String PATH_PERSON = ApiPaths.TESTDATA + "/person";
+    private static final String PATH_PERSON_REMOVE = ApiPaths.TESTDATA + "/person/remove";
+    private static final String PATH_PERMISSIONS = ApiPaths.TESTDATA + "/permissions";
+    private static final String PATH_PERMISSIONS_REVOKE = ApiPaths.TESTDATA + "/permissions/revoke";
+    private static final String PATH_ATTACHMENT = ApiPaths.TESTDATA + "/attachment";
+    private static final String PATH_ATTACHMENT_REVOKE = ApiPaths.TESTDATA + "/attachment/revoke";
+    private static final String PATH_CONTEXT_BLOCK = ApiPaths.TESTDATA + "/context/block";
+    private static final String PATH_CONTEXT_UNBLOCK = ApiPaths.TESTDATA + "/context/unblock";
 
     // --- Authenticated paths ---
-    private static final String PATH_SESSION_LIMITS = "/api/v2/testdata/limits/context/session";
-    private static final String PATH_SUBJECT_LIMITS = "/api/v2/testdata/limits/subject/certificate";
-    private static final String PATH_RATE_LIMITS = "/api/v2/testdata/rate-limits";
-    private static final String PATH_RATE_LIMITS_PRODUCTION = "/api/v2/testdata/rate-limits/production";
+    private static final String PATH_SESSION_LIMITS = ApiPaths.TESTDATA + "/limits/context/session";
+    private static final String PATH_SUBJECT_LIMITS = ApiPaths.TESTDATA + "/limits/subject/certificate";
+    private static final String PATH_RATE_LIMITS = ApiPaths.TESTDATA + "/rate-limits";
+    private static final String PATH_RATE_LIMITS_PRODUCTION = ApiPaths.TESTDATA + "/rate-limits/production";
 
     // --- Operation names ---
     private static final String OP_CREATE_SUBJECT = "createTestSubject";

@@ -20,24 +20,26 @@ public record EntityAuthorizationGrant(
         OffsetDateTime startDate) {
 
     public static EntityAuthorizationGrant from(EntityAuthorizationGrantRaw raw) {
-        PermissionIdentifier authorId = raw.getAuthorIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getAuthorIdentifier().getType() != null ? raw.getAuthorIdentifier().getType().getValue() : null,
-                        raw.getAuthorIdentifier().getValue())
-                : null;
-        PermissionIdentifier authzEntityId = raw.getAuthorizedEntityIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getAuthorizedEntityIdentifier().getType() != null ? raw.getAuthorizedEntityIdentifier().getType().getValue() : null,
-                        raw.getAuthorizedEntityIdentifier().getValue())
-                : null;
-        PermissionIdentifier authingEntityId = raw.getAuthorizingEntityIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getAuthorizingEntityIdentifier().getType() != null ? raw.getAuthorizingEntityIdentifier().getType().getValue() : null,
-                        raw.getAuthorizingEntityIdentifier().getValue())
-                : null;
-        return new EntityAuthorizationGrant(
-                raw.getId(), authorId, authzEntityId, authingEntityId,
-                raw.getAuthorizationScope() != null ? raw.getAuthorizationScope().getValue() : null,
-                raw.getDescription(), raw.getStartDate());
+        var authorRaw = raw.getAuthorIdentifier();
+        PermissionIdentifier authorId = null;
+        if (authorRaw != null) {
+            String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
+            authorId = new PermissionIdentifier(type, authorRaw.getValue());
+        }
+        var authzRaw = raw.getAuthorizedEntityIdentifier();
+        PermissionIdentifier authzEntityId = null;
+        if (authzRaw != null) {
+            String type = authzRaw.getType() != null ? authzRaw.getType().getValue() : null;
+            authzEntityId = new PermissionIdentifier(type, authzRaw.getValue());
+        }
+        var authingRaw = raw.getAuthorizingEntityIdentifier();
+        PermissionIdentifier authingEntityId = null;
+        if (authingRaw != null) {
+            String type = authingRaw.getType() != null ? authingRaw.getType().getValue() : null;
+            authingEntityId = new PermissionIdentifier(type, authingRaw.getValue());
+        }
+        String authScope = raw.getAuthorizationScope() != null ? raw.getAuthorizationScope().getValue() : null;
+        return new EntityAuthorizationGrant(raw.getId(), authorId, authzEntityId, authingEntityId,
+                authScope, raw.getDescription(), raw.getStartDate());
     }
 }

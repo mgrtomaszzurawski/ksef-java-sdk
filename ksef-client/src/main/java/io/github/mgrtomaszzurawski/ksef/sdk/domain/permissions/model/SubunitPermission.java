@@ -21,24 +21,26 @@ public record SubunitPermission(
         OffsetDateTime startDate) {
 
     public static SubunitPermission from(SubunitPermissionRaw raw) {
-        PermissionIdentifier authzId = raw.getAuthorizedIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getAuthorizedIdentifier().getType() != null ? raw.getAuthorizedIdentifier().getType().getValue() : null,
-                        raw.getAuthorizedIdentifier().getValue())
-                : null;
-        PermissionIdentifier subunitId = raw.getSubunitIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getSubunitIdentifier().getType() != null ? raw.getSubunitIdentifier().getType().getValue() : null,
-                        raw.getSubunitIdentifier().getValue())
-                : null;
-        PermissionIdentifier authorId = raw.getAuthorIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getAuthorIdentifier().getType() != null ? raw.getAuthorIdentifier().getType().getValue() : null,
-                        raw.getAuthorIdentifier().getValue())
-                : null;
-        return new SubunitPermission(
-                raw.getId(), authzId, subunitId, authorId,
-                raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null,
-                raw.getDescription(), raw.getSubunitName(), raw.getStartDate());
+        var authzRaw = raw.getAuthorizedIdentifier();
+        PermissionIdentifier authzId = null;
+        if (authzRaw != null) {
+            String type = authzRaw.getType() != null ? authzRaw.getType().getValue() : null;
+            authzId = new PermissionIdentifier(type, authzRaw.getValue());
+        }
+        var subunitRaw = raw.getSubunitIdentifier();
+        PermissionIdentifier subunitId = null;
+        if (subunitRaw != null) {
+            String type = subunitRaw.getType() != null ? subunitRaw.getType().getValue() : null;
+            subunitId = new PermissionIdentifier(type, subunitRaw.getValue());
+        }
+        var authorRaw = raw.getAuthorIdentifier();
+        PermissionIdentifier authorId = null;
+        if (authorRaw != null) {
+            String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
+            authorId = new PermissionIdentifier(type, authorRaw.getValue());
+        }
+        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
+        return new SubunitPermission(raw.getId(), authzId, subunitId, authorId,
+                scope, raw.getDescription(), raw.getSubunitName(), raw.getStartDate());
     }
 }

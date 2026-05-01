@@ -23,6 +23,8 @@ public final class RetryHandler {
 
     private static final String LOG_RETRY = "Retry attempt {}/{} after {}ms for: {}";
     private static final String LOG_EXHAUSTED = "All {} retry attempts exhausted for: {}";
+    private static final String ERR_RETRY_LOOP_NEVER_ENTERED =
+            "Retry loop exited without executing any attempt — likely an invalid RetryPolicy.maxAttempts (must be >= 1)";
     private static final long BACKOFF_BASE_MILLIS = 1000L;
     private static final long MILLIS_PER_SECOND = 1000L;
     private static final int JITTER_DIVISOR = 2;
@@ -63,27 +65,43 @@ public final class RetryHandler {
             return callOnce(call, operationName);
         }
 
-        KsefException lastException = null;
+        KsefException lastException = new KsefException(ERR_RETRY_LOOP_NEVER_ENTERED, 0, null);
         for (int attempt = 1; attempt <= policy.maxAttempts(); attempt++) {
-            try {
-                return call.execute();
-            } catch (KsefException exception) {
-                lastException = exception;
-                if (!isRetryable(exception) || attempt == policy.maxAttempts()) {
-                    break;
-                }
-                sleepBeforeRetry(attempt, operationName);
-            } catch (IOException exception) {
-                lastException = new KsefNetworkException(operationName, exception);
-                if (attempt == policy.maxAttempts()) {
-                    break;
-                }
-                sleepBeforeRetry(attempt, operationName);
+            AttemptResult<T> result = attemptOnce(call, attempt, operationName);
+            if (result.success()) {
+                return result.value();
             }
+            lastException = result.exception();
+            if (result.terminal()) {
+                break;
+            }
+            sleepBeforeRetry(attempt, operationName);
         }
 
         LOGGER.error(LOG_EXHAUSTED, policy.maxAttempts(), operationName);
         throw lastException;
+    }
+
+    private <T> AttemptResult<T> attemptOnce(ApiCall<T> call, int attempt, String operationName) {
+        try {
+            return AttemptResult.success(call.execute());
+        } catch (KsefException exception) {
+            boolean terminal = !isRetryable(exception) || attempt == policy.maxAttempts();
+            return AttemptResult.failed(exception, terminal);
+        } catch (IOException exception) {
+            boolean terminal = attempt == policy.maxAttempts();
+            return AttemptResult.failed(new KsefNetworkException(operationName, exception), terminal);
+        }
+    }
+
+    private record AttemptResult<T>(T value, KsefException exception, boolean terminal, boolean success) {
+        static <T> AttemptResult<T> success(T value) {
+            return new AttemptResult<>(value, null, false, true);
+        }
+
+        static <T> AttemptResult<T> failed(KsefException exception, boolean terminal) {
+            return new AttemptResult<>(null, exception, terminal, false);
+        }
     }
 
     private boolean isRetryable(KsefException exception) {

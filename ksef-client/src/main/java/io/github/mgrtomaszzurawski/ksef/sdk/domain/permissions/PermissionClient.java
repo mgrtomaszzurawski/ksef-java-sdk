@@ -19,8 +19,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubunitPermissionsResp
 import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionGrantBuilder;
@@ -43,6 +41,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 
@@ -53,31 +54,31 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
 public final class PermissionClient {
 
     // --- Grant paths ---
-    private static final String PATH_GRANT_PERSON = "/api/v2/permissions/persons/grants";
-    private static final String PATH_GRANT_ENTITY = "/api/v2/permissions/entities/grants";
-    private static final String PATH_GRANT_AUTHORIZATION = "/api/v2/permissions/authorizations/grants";
-    private static final String PATH_GRANT_INDIRECT = "/api/v2/permissions/indirect/grants";
-    private static final String PATH_GRANT_SUBUNIT = "/api/v2/permissions/subunits/grants";
-    private static final String PATH_GRANT_EU_ENTITY_ADMIN = "/api/v2/permissions/eu-entities/administration/grants";
-    private static final String PATH_GRANT_EU_ENTITY = "/api/v2/permissions/eu-entities/grants";
+    private static final String PATH_GRANT_PERSON = ApiPaths.PERMISSIONS + "/persons/grants";
+    private static final String PATH_GRANT_ENTITY = ApiPaths.PERMISSIONS + "/entities/grants";
+    private static final String PATH_GRANT_AUTHORIZATION = ApiPaths.PERMISSIONS + "/authorizations/grants";
+    private static final String PATH_GRANT_INDIRECT = ApiPaths.PERMISSIONS + "/indirect/grants";
+    private static final String PATH_GRANT_SUBUNIT = ApiPaths.PERMISSIONS + "/subunits/grants";
+    private static final String PATH_GRANT_EU_ENTITY_ADMIN = ApiPaths.PERMISSIONS + "/eu-entities/administration/grants";
+    private static final String PATH_GRANT_EU_ENTITY = ApiPaths.PERMISSIONS + "/eu-entities/grants";
 
     // --- Revoke paths ---
-    private static final String PATH_REVOKE_COMMON = "/api/v2/permissions/common/grants/";
-    private static final String PATH_REVOKE_AUTHORIZATION = "/api/v2/permissions/authorizations/grants/";
+    private static final String PATH_REVOKE_COMMON = ApiPaths.PERMISSIONS + "/common/grants/";
+    private static final String PATH_REVOKE_AUTHORIZATION = ApiPaths.PERMISSIONS + "/authorizations/grants/";
 
     // --- Status paths ---
-    private static final String PATH_OPERATION_STATUS = "/api/v2/permissions/operations/";
-    private static final String PATH_ATTACHMENT_STATUS = "/api/v2/permissions/attachments/status";
+    private static final String PATH_OPERATION_STATUS = ApiPaths.PERMISSIONS + "/operations/";
+    private static final String PATH_ATTACHMENT_STATUS = ApiPaths.PERMISSIONS + "/attachments/status";
 
     // --- Query paths ---
-    private static final String PATH_QUERY_PERSONAL = "/api/v2/permissions/query/personal/grants";
-    private static final String PATH_QUERY_PERSONS = "/api/v2/permissions/query/persons/grants";
-    private static final String PATH_QUERY_SUBUNITS = "/api/v2/permissions/query/subunits/grants";
-    private static final String PATH_QUERY_ENTITIES = "/api/v2/permissions/query/entities/grants";
-    private static final String PATH_QUERY_ENTITY_ROLES = "/api/v2/permissions/query/entities/roles";
-    private static final String PATH_QUERY_SUBORDINATE = "/api/v2/permissions/query/subordinate-entities/roles";
-    private static final String PATH_QUERY_AUTHORIZATIONS = "/api/v2/permissions/query/authorizations/grants";
-    private static final String PATH_QUERY_EU_ENTITIES = "/api/v2/permissions/query/eu-entities/grants";
+    private static final String PATH_QUERY_PERSONAL = ApiPaths.PERMISSIONS + "/query/personal/grants";
+    private static final String PATH_QUERY_PERSONS = ApiPaths.PERMISSIONS + "/query/persons/grants";
+    private static final String PATH_QUERY_SUBUNITS = ApiPaths.PERMISSIONS + "/query/subunits/grants";
+    private static final String PATH_QUERY_ENTITIES = ApiPaths.PERMISSIONS + "/query/entities/grants";
+    private static final String PATH_QUERY_ENTITY_ROLES = ApiPaths.PERMISSIONS + "/query/entities/roles";
+    private static final String PATH_QUERY_SUBORDINATE = ApiPaths.PERMISSIONS + "/query/subordinate-entities/roles";
+    private static final String PATH_QUERY_AUTHORIZATIONS = ApiPaths.PERMISSIONS + "/query/authorizations/grants";
+    private static final String PATH_QUERY_EU_ENTITIES = ApiPaths.PERMISSIONS + "/query/eu-entities/grants";
 
     // --- Operation names ---
     private static final String OP_GRANT_PERSON = "grantPersonPermissions";

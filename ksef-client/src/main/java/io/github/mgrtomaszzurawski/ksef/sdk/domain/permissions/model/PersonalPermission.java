@@ -36,21 +36,24 @@ public record PersonalPermission(
         Boolean canDelegate) {
 
     public static PersonalPermission from(PersonalPermissionRaw raw) {
-        PermissionIdentifier ctxId = raw.getContextIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getContextIdentifier().getType() != null ? raw.getContextIdentifier().getType().getValue() : null,
-                        raw.getContextIdentifier().getValue())
-                : null;
-        PermissionIdentifier authzId = raw.getAuthorizedIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getAuthorizedIdentifier().getType() != null ? raw.getAuthorizedIdentifier().getType().getValue() : null,
-                        raw.getAuthorizedIdentifier().getValue())
-                : null;
-        PermissionIdentifier targetId = raw.getTargetIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getTargetIdentifier().getType() != null ? raw.getTargetIdentifier().getType().getValue() : null,
-                        raw.getTargetIdentifier().getValue())
-                : null;
+        var ctxRaw = raw.getContextIdentifier();
+        PermissionIdentifier ctxId = null;
+        if (ctxRaw != null) {
+            String type = ctxRaw.getType() != null ? ctxRaw.getType().getValue() : null;
+            ctxId = new PermissionIdentifier(type, ctxRaw.getValue());
+        }
+        var authzRaw = raw.getAuthorizedIdentifier();
+        PermissionIdentifier authzId = null;
+        if (authzRaw != null) {
+            String type = authzRaw.getType() != null ? authzRaw.getType().getValue() : null;
+            authzId = new PermissionIdentifier(type, authzRaw.getValue());
+        }
+        var targetRaw = raw.getTargetIdentifier();
+        PermissionIdentifier targetId = null;
+        if (targetRaw != null) {
+            String type = targetRaw.getType() != null ? targetRaw.getType().getValue() : null;
+            targetId = new PermissionIdentifier(type, targetRaw.getValue());
+        }
         PermissionSubjectDetails personDetails = raw.getSubjectPersonDetails() != null
                 ? new PermissionSubjectDetails(
                         raw.getSubjectPersonDetails().getFirstName(),
@@ -60,11 +63,10 @@ public record PersonalPermission(
                 ? new PermissionSubjectDetails(null, null,
                         raw.getSubjectEntityDetails().getFullName())
                 : null;
-        return new PersonalPermission(
-                raw.getId(), ctxId, authzId, targetId,
-                raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null,
-                raw.getDescription(), personDetails, entityDetails,
-                raw.getPermissionState() != null ? raw.getPermissionState().getValue() : null,
+        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
+        String state = raw.getPermissionState() != null ? raw.getPermissionState().getValue() : null;
+        return new PersonalPermission(raw.getId(), ctxId, authzId, targetId, scope,
+                raw.getDescription(), personDetails, entityDetails, state,
                 raw.getStartDate(), raw.getCanDelegate());
     }
 }

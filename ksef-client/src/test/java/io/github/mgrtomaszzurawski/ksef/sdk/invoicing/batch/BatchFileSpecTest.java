@@ -4,9 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.batch;
 
-import java.util.List;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,10 +73,11 @@ class BatchFileSpecTest {
     void create_whenEmptyParts_throwsIllegalArgumentException() {
         // given
         byte[] hash = sampleHash();
+        List<BatchFileSpec.Part> empty = List.of();
 
         // when / then
         assertThrows(IllegalArgumentException.class,
-                () -> new BatchFileSpec(FILE_SIZE, hash, List.of()));
+                () -> new BatchFileSpec(FILE_SIZE, hash, empty));
     }
 
     @Test
@@ -158,8 +158,9 @@ class BatchFileSpecTest {
         BatchFileSpec spec = new BatchFileSpec(FILE_SIZE, sampleHash(), List.of(samplePart(PART_ONE)));
 
         // when / then — returned list is immutable
-        assertThrows(UnsupportedOperationException.class,
-                () -> spec.parts().add(samplePart(PART_TWO)));
+        List<BatchFileSpec.Part> parts = spec.parts();
+        BatchFileSpec.Part extraPart = samplePart(PART_TWO);
+        assertThrows(UnsupportedOperationException.class, () -> parts.add(extraPart));
     }
 
     // --- BatchFileSpec.Part construction ---

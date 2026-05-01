@@ -44,25 +44,25 @@ class RetryPolicyTest {
 
     @Test
     void build_whenMaxAttemptsZero_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
-                () -> RetryPolicy.builder().maxAttempts(0).build());
+        RetryPolicy.Builder builder = RetryPolicy.builder().maxAttempts(0);
+        assertThrows(IllegalArgumentException.class, builder::build);
     }
 
     @Test
     void build_whenMaxAttemptsNegative_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
-                () -> RetryPolicy.builder().maxAttempts(-1).build());
+        RetryPolicy.Builder builder = RetryPolicy.builder().maxAttempts(-1);
+        assertThrows(IllegalArgumentException.class, builder::build);
     }
 
     @Test
     void build_whenMaxRetryAfterNegative_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
-                () -> RetryPolicy.builder().maxRetryAfterSeconds(-1).build());
+        RetryPolicy.Builder builder = RetryPolicy.builder().maxRetryAfterSeconds(-1);
+        assertThrows(IllegalArgumentException.class, builder::build);
     }
 
     @Test
     void build_whenBackoffStrategyNull_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
-                () -> RetryPolicy.builder().backoffStrategy(null).build());
+        RetryPolicy.Builder builder = RetryPolicy.builder().backoffStrategy(null);
+        assertThrows(IllegalArgumentException.class, builder::build);
     }
 }

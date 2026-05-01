@@ -182,6 +182,7 @@ public final class CryptoService {
      * @param aesKey must be exactly 32 bytes (AES-256)
      * @param initVector must be exactly 16 bytes
      */
+    @SuppressWarnings("java:S5542") // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011); GCM/CCM are not supported by the server.
     public static byte[] encryptAes(byte[] plaintext, byte[] aesKey, byte[] initVector) {
         validateKeyAndIv(aesKey, initVector);
         try {
@@ -207,6 +208,7 @@ public final class CryptoService {
      * @param initVector must be exactly 16 bytes
      * @return initialized Cipher in encrypt mode
      */
+    @SuppressWarnings("java:S5542") // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011).
     public static Cipher newAesEncryptCipher(byte[] aesKey, byte[] initVector) {
         validateKeyAndIv(aesKey, initVector);
         try {
@@ -227,6 +229,7 @@ public final class CryptoService {
      * @param aesKey must be exactly 32 bytes (AES-256)
      * @param initVector must be exactly 16 bytes
      */
+    @SuppressWarnings("java:S5542") // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011).
     public static byte[] decryptAes(byte[] ciphertext, byte[] aesKey, byte[] initVector) {
         validateKeyAndIv(aesKey, initVector);
         try {

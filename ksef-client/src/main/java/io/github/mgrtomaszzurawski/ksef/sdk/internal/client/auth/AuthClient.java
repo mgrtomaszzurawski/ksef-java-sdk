@@ -16,15 +16,16 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensRespons
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthorizationPolicyRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InitTokenAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationList;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationTokenRefresh;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationTokens;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.signing.SigningService;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
@@ -39,14 +40,13 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  */
 public final class AuthClient {
 
-    private static final String PATH_CHALLENGE = "/api/v2/auth/challenge";
-    private static final String PATH_XADES_SIGNATURE = "/api/v2/auth/xades-signature";
-    private static final String PATH_KSEF_TOKEN = "/api/v2/auth/ksef-token";
-    private static final String PATH_TOKEN_REDEEM = "/api/v2/auth/token/redeem";
-    private static final String PATH_TOKEN_REFRESH = "/api/v2/auth/token/refresh";
-    private static final String PATH_SESSIONS = "/api/v2/auth/sessions";
-    private static final String PATH_SESSIONS_CURRENT = "/api/v2/auth/sessions/current";
-    private static final String PATH_AUTH_STATUS = "/api/v2/auth/";
+    private static final String PATH_CHALLENGE = ApiPaths.AUTH + "/challenge";
+    private static final String PATH_XADES_SIGNATURE = ApiPaths.AUTH + "/xades-signature";
+    private static final String PATH_KSEF_TOKEN = ApiPaths.AUTH + "/ksef-token";
+    private static final String PATH_TOKEN_REDEEM = ApiPaths.AUTH + "/token/redeem";
+    private static final String PATH_TOKEN_REFRESH = ApiPaths.AUTH + "/token/refresh";
+    private static final String PATH_SESSIONS = ApiPaths.AUTH + "/sessions";
+    private static final String PATH_SESSIONS_CURRENT = ApiPaths.AUTH + "/sessions/current";
 
     private static final String OP_CHALLENGE = "requestChallenge";
     private static final String OP_AUTH_XADES = "authenticateWithXades";
@@ -205,7 +205,7 @@ public final class AuthClient {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         AuthenticationOperationStatusResponseRaw raw = http.getAuthenticated(
-                PATH_AUTH_STATUS + referenceNumber, token,
+                ApiPaths.subPath(ApiPaths.AUTH, referenceNumber), token,
                 AuthenticationOperationStatusResponseRaw.class, OP_STATUS);
         return AuthenticationStatus.from(raw);
     }
@@ -240,7 +240,7 @@ public final class AuthClient {
     public void terminateSession(String referenceNumber) {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        http.deleteAuthenticated(PATH_SESSIONS + "/" + referenceNumber, token, OP_TERMINATE);
+        http.deleteAuthenticated(ApiPaths.subPath(PATH_SESSIONS, referenceNumber), token, OP_TERMINATE);
     }
 
     private void activateSession(AuthenticationInitResponseRaw response) {

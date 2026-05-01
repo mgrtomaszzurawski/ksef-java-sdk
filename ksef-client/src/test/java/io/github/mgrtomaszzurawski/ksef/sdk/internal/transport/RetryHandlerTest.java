@@ -8,9 +8,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
-import java.io.IOException;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -7,6 +7,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationInit;
@@ -14,8 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.Authenti
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationTokenRefresh;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationTokens;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
@@ -155,7 +155,9 @@ class AuthClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // then
-        assertThrows(KsefRateLimitException.class, () -> ksef.auth().requestChallenge());
+        var authX = ksef.auth();
+
+        assertThrows(KsefRateLimitException.class, () -> authX.requestChallenge());
     }
 
     @Test
@@ -301,11 +303,13 @@ class AuthClientTest {
 
         KsefClient ksef = createClient(wmInfo);
         TestCertificates testCerts = TestCertificates.generateRsa();
+        var auth = ksef.auth();
+        var cert = testCerts.certificate();
+        var key = testCerts.privateKey();
 
         // then
         assertThrows(KsefAuthException.class,
-                () -> ksef.auth().authenticateWithXades(
-                        TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP));
+                () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, key, TEST_NIP));
     }
 
     @Test
@@ -318,11 +322,13 @@ class AuthClientTest {
 
         KsefClient ksef = createClient(wmInfo);
         TestCertificates testCerts = TestCertificates.generateRsa();
+        var auth = ksef.auth();
+        var cert = testCerts.certificate();
+        var key = testCerts.privateKey();
 
         // then
         assertThrows(KsefServerException.class,
-                () -> ksef.auth().authenticateWithXades(
-                        TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP));
+                () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, key, TEST_NIP));
     }
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {

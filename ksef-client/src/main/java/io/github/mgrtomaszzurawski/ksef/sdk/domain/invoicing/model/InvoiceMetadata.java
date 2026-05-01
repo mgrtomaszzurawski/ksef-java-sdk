@@ -7,7 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataRaw;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Invoice metadata from a query result.
@@ -80,5 +82,70 @@ public record InvoiceMetadata(
                 raw.getInvoiceHash(),
                 raw.getHashOfCorrectedInvoice(),
                 subjects);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof InvoiceMetadata other)) {
+            return false;
+        }
+        return Objects.equals(ksefNumber, other.ksefNumber)
+                && Objects.equals(invoiceNumber, other.invoiceNumber)
+                && Objects.equals(issueDate, other.issueDate)
+                && Objects.equals(invoicingDate, other.invoicingDate)
+                && Objects.equals(acquisitionDate, other.acquisitionDate)
+                && Objects.equals(permanentStorageDate, other.permanentStorageDate)
+                && Objects.equals(seller, other.seller)
+                && Objects.equals(buyer, other.buyer)
+                && Objects.equals(netAmount, other.netAmount)
+                && Objects.equals(grossAmount, other.grossAmount)
+                && Objects.equals(vatAmount, other.vatAmount)
+                && Objects.equals(currency, other.currency)
+                && invoicingMode == other.invoicingMode
+                && invoiceType == other.invoiceType
+                && Objects.equals(formCode, other.formCode)
+                && Objects.equals(selfInvoicing, other.selfInvoicing)
+                && Objects.equals(hasAttachment, other.hasAttachment)
+                && Arrays.equals(invoiceHash, other.invoiceHash)
+                && Arrays.equals(hashOfCorrectedInvoice, other.hashOfCorrectedInvoice)
+                && Objects.equals(thirdSubjects, other.thirdSubjects);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(ksefNumber, invoiceNumber, issueDate, invoicingDate,
+                acquisitionDate, permanentStorageDate, seller, buyer, netAmount, grossAmount,
+                vatAmount, currency, invoicingMode, invoiceType, formCode, selfInvoicing,
+                hasAttachment, thirdSubjects);
+        result = 31 * result + Arrays.hashCode(invoiceHash);
+        result = 31 * result + Arrays.hashCode(hashOfCorrectedInvoice);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "InvoiceMetadata[ksefNumber=" + ksefNumber
+                + ", invoiceNumber=" + invoiceNumber
+                + ", issueDate=" + issueDate
+                + ", invoicingDate=" + invoicingDate
+                + ", acquisitionDate=" + acquisitionDate
+                + ", permanentStorageDate=" + permanentStorageDate
+                + ", seller=" + seller
+                + ", buyer=" + buyer
+                + ", netAmount=" + netAmount
+                + ", grossAmount=" + grossAmount
+                + ", vatAmount=" + vatAmount
+                + ", currency=" + currency
+                + ", invoicingMode=" + invoicingMode
+                + ", invoiceType=" + invoiceType
+                + ", formCode=" + formCode
+                + ", selfInvoicing=" + selfInvoicing
+                + ", hasAttachment=" + hasAttachment
+                + ", invoiceHash=byte[" + (invoiceHash == null ? 0 : invoiceHash.length) + "]"
+                + ", hashOfCorrectedInvoice=byte[" + (hashOfCorrectedInvoice == null ? 0 : hashOfCorrectedInvoice.length) + "]"
+                + ", thirdSubjects=" + thirdSubjects + "]";
     }
 }

@@ -21,16 +21,15 @@ public record EuEntityPermission(
         OffsetDateTime startDate) {
 
     public static EuEntityPermission from(EuEntityPermissionRaw raw) {
-        PermissionIdentifier authorId = raw.getAuthorIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getAuthorIdentifier().getType() != null ? raw.getAuthorIdentifier().getType().getValue() : null,
-                        raw.getAuthorIdentifier().getValue())
-                : null;
-        return new EuEntityPermission(
-                raw.getId(), authorId,
-                raw.getVatUeIdentifier(), raw.getEuEntityName(),
-                raw.getAuthorizedFingerprintIdentifier(),
-                raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null,
-                raw.getDescription(), raw.getStartDate());
+        var authorRaw = raw.getAuthorIdentifier();
+        PermissionIdentifier authorId = null;
+        if (authorRaw != null) {
+            String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
+            authorId = new PermissionIdentifier(type, authorRaw.getValue());
+        }
+        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
+        return new EuEntityPermission(raw.getId(), authorId, raw.getVatUeIdentifier(),
+                raw.getEuEntityName(), raw.getAuthorizedFingerprintIdentifier(),
+                scope, raw.getDescription(), raw.getStartDate());
     }
 }

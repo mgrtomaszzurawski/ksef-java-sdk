@@ -8,12 +8,13 @@ import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 
@@ -22,7 +23,7 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  */
 public final class TokenClient {
 
-    private static final String PATH_TOKENS = "/api/v2/tokens";
+    private static final String PATH_TOKENS = ApiPaths.TOKENS;
 
     private static final String OP_GENERATE = "generateToken";
     private static final String OP_LIST = "listTokens";

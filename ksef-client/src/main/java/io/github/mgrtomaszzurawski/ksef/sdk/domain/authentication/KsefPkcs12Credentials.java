@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -44,6 +45,26 @@ public record KsefPkcs12Credentials(Path keystorePath, char[] password, KsefIden
      */
     public KsefPkcs12Credentials(Path keystorePath, char[] password, String nip) {
         this(keystorePath, password, KsefIdentifier.nip(nip));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof KsefPkcs12Credentials other)) {
+            return false;
+        }
+        return Objects.equals(keystorePath, other.keystorePath)
+                && Arrays.equals(password, other.password)
+                && Objects.equals(identifier, other.identifier);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(keystorePath, identifier);
+        result = 31 * result + Arrays.hashCode(password);
+        return result;
     }
 
     @Override

@@ -21,6 +21,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -74,16 +75,21 @@ class BatchPackageBuilderTest {
 
     @Test
     void build_whenNullInvoices_throwsNullPointerException() {
+        // given
+        byte[] key = aesKey();
+        byte[] iv = aesIv();
         // when / then
-        assertThrows(NullPointerException.class,
-                () -> BatchPackageBuilder.build(null, aesKey(), aesIv()));
+        assertThrows(NullPointerException.class, () -> BatchPackageBuilder.build(null, key, iv));
     }
 
     @Test
     void build_whenEmptyInvoices_throwsIllegalArgumentException() {
+        // given
+        byte[] key = aesKey();
+        byte[] iv = aesIv();
+        List<byte[]> empty = List.of();
         // when / then
-        assertThrows(IllegalArgumentException.class,
-                () -> BatchPackageBuilder.build(List.of(), aesKey(), aesIv()));
+        assertThrows(IllegalArgumentException.class, () -> BatchPackageBuilder.build(empty, key, iv));
     }
 
     @Test
@@ -262,10 +268,9 @@ class BatchPackageBuilderTest {
         byte[] invoice = INVOICE_ONE_XML.getBytes(StandardCharsets.UTF_8);
         BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
                 List.of(invoice), aesKey(), aesIv());
-
-        // when
         pkg.cleanup();
-        pkg.cleanup();  // second call should not throw
-        // then — no exception
+
+        // when / then — second call must not throw
+        assertDoesNotThrow(pkg::cleanup);
     }
 }
