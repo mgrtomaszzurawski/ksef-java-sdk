@@ -20,12 +20,12 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.SendInvoiceResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionInvoiceStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionInvoices;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionInvoiceStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionInvoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;

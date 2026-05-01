@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 
 /**
  * Thrown when a KSeF session has expired or been terminated.

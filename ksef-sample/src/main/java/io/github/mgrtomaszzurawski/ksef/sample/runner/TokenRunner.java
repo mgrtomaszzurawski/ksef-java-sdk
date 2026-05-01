@@ -16,14 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenClient;
 
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.model.GenerateTokenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TokenGenerateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenDetail;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenGenerateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;

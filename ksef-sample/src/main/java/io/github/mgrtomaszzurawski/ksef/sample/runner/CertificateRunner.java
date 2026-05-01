@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateClient;
 
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
@@ -23,14 +24,14 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.CertificateCsrUtil;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateListItem;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.KsefCertificateType;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateListItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateQueryResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.EnrollCertificateResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.KsefCertificateType;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

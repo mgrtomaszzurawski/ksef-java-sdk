@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.TestDataClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.qrcode.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.security.SecurityClient;
 
 /**
  * Run mode for the KSeF demo application.

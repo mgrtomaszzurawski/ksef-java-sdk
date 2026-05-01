@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.InvoiceClient;
 
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_BACKOFF_MULTIPLIER;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_INITIAL_DELAY_MS;
@@ -23,13 +24,13 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_T
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.model.ExportInvoicesResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceExportStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.InvoiceMetadataResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.PublicKeyCertificateUsage;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.InvoiceExportBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.InvoiceQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceExportStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder.InvoiceExportBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;

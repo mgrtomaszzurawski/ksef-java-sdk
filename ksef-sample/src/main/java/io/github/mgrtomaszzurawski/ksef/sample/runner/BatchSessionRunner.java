@@ -24,9 +24,9 @@ import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
-import io.github.mgrtomaszzurawski.ksef.sdk.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.KsefBatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

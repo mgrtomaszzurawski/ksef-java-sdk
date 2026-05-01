@@ -16,23 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.PermissionClient;
 
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.PermissionOperationResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityAuthorizationPermissionGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityAuthorizationPermissionsQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityPermissionGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityAdminPermissionGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityPermissionGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EuEntityPermissionsQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.IndirectPermissionGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonPermissionGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonPermissionsQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.PersonalPermissionsQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.SubunitPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EuEntityAdminPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EuEntityPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EuEntityPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.IndirectPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonalPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.SubunitPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;
