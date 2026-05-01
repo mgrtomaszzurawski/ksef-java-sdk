@@ -9,7 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;

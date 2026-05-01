@@ -9,7 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ApiRateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import org.junit.jupiter.api.Test;
@@ -79,7 +79,7 @@ class RateLimitClientTest {
         // then
         var rateLimits = ksef.rateLimits();
 
-        assertThrows(KsefAuthException.class, () -> rateLimits.getRateLimits());
+        assertThrows(KsefAuthException.class, rateLimits::getRateLimits);
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

@@ -10,7 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResp
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
