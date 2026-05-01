@@ -21,10 +21,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenClient;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.GenerateTokenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenGenerateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenDetail;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.builder.TokenGenerateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import org.slf4j.Logger;

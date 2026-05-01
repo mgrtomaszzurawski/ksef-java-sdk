@@ -17,7 +17,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.util;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentData;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
