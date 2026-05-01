@@ -90,12 +90,12 @@ class SigningServiceTest {
     void signXml_whenNullCertificate_throwsCryptoException() throws Exception {
         // given
         KeyPair keyPair = generateRsaKeyPair();
-        byte[] xml = TEST_XML.getBytes();
+        byte[] xmlBytes = TEST_XML.getBytes();
         java.security.PrivateKey privateKey = keyPair.getPrivate();
 
         // then
         assertThrows(KsefCryptoException.class,
-                () -> SigningService.signXml(xml, null, privateKey));
+                () -> SigningService.signXml(xmlBytes, null, privateKey));
     }
 
     @Test
@@ -103,11 +103,11 @@ class SigningServiceTest {
         // given
         KeyPair keyPair = generateRsaKeyPair();
         X509Certificate certificate = generateSelfSignedCertificate(keyPair, SHA256_WITH_RSA);
-        byte[] xml = TEST_XML.getBytes();
+        byte[] xmlBytes = TEST_XML.getBytes();
 
         // then
         assertThrows(KsefCryptoException.class,
-                () -> SigningService.signXml(xml, certificate, null));
+                () -> SigningService.signXml(xmlBytes, certificate, null));
     }
 
     private static KeyPair generateRsaKeyPair() throws Exception {

@@ -119,11 +119,11 @@ class KsefCredentialsTest {
     void certificateCredentials_whenNullCertificate_throwsNullPointerException() throws Exception {
         // given
         TestCertificates certs = TestCertificates.generateRsa();
-        java.security.PrivateKey key = certs.privateKey();
+        java.security.PrivateKey privateKey = certs.privateKey();
 
         // when / then
         assertThrows(NullPointerException.class,
-                () -> new KsefCertificateCredentials(null, key, VALID_NIP));
+                () -> new KsefCertificateCredentials(null, privateKey, VALID_NIP));
     }
 
     @Test
