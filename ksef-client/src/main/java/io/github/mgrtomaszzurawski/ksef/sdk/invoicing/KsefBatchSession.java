@@ -84,8 +84,8 @@ public final class KsefBatchSession implements AutoCloseable {
     private volatile boolean closed;
 
     /**
-     * Package-private constructor used by tests and by {@link KsefClient} when opening a
-     * batch session from a pre-built {@link BatchFileSpec} (no part files available —
+     * Constructor used by tests and by {@link KsefClient} when opening a batch session
+     * from a pre-built {@link BatchFileSpec} (no part files available —
      * {@link #uploadParts()} will fail).
      *
      * @apiNote Internal — constructed by {@code KsefClient.openBatchSession(...)}.
