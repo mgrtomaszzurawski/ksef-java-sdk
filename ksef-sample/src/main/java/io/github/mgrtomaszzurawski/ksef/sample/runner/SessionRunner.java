@@ -67,6 +67,8 @@ public final class SessionRunner implements DemoRunner {
             "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
     private static final String FAIL_UPO_BYTES_DIFFER =
             "UPO retrieved by invoice ref differs from UPO retrieved by KSeF number";
+    private static final String OK_CONCURRENT_PERMITTED = "server permitted concurrent open";
+    private static final String OK_CONCURRENT_REJECTED_PREFIX = "server rejected: ";
 
     @Override
     public String name() { return NAME; }
@@ -80,8 +82,8 @@ public final class SessionRunner implements DemoRunner {
             return results;
         }
 
-        // 0. Negative-path probe: confirm the one-session-per-NIP server constraint
-        //    by attempting to open a second session while the first is still open.
+        // 0. Informational probe: record whether the server permits a second
+        //    concurrent open for the same NIP. Both outcomes are valid observations.
         runStaleSessionRecovery(context, results);
 
         // 1. Open session
@@ -133,17 +135,18 @@ public final class SessionRunner implements DemoRunner {
                 LOG.info("[{}] server permitted concurrent open: ref={}", NAME,
                         second.referenceNumber());
                 results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
-                        "server permitted concurrent open"));
+                        OK_CONCURRENT_PERMITTED));
             } catch (Exception rejected) {
                 LOG.info("[{}] server rejected concurrent open: {}", NAME,
                         rejected.getClass().getSimpleName());
                 results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
-                        "server rejected: " + rejected.getClass().getSimpleName()));
+                        OK_CONCURRENT_REJECTED_PREFIX + rejected.getClass().getSimpleName()));
             }
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
                     errorMessage(exception)));
         } finally {
+            // Make sure both sessions are closed before the happy-path test runs.
             quietClose(second);
             quietClose(first);
         }
