@@ -17,19 +17,19 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.KsefCertificateType;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentData;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateListItem;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateQueryResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.EnrollCertificateResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateListItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateQueryResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.EnrollCertificateResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateEnrollBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sample.util.CertificateCsrUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

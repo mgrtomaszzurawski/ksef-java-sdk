@@ -19,12 +19,12 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensRespons
 import io.github.mgrtomaszzurawski.ksef.client.model.InitTokenAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationChallenge;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationInit;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationList;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationTokenRefresh;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationTokens;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationChallenge;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationInit;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationList;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationTokenRefresh;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationTokens;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.signing.SigningService;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
 import java.nio.charset.StandardCharsets;

@@ -23,7 +23,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.peppol.PeppolProvidersResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.peppol.model.PeppolProvidersResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
