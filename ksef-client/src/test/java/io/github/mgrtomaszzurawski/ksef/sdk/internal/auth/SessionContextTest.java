@@ -5,6 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 
 import java.time.OffsetDateTime;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;

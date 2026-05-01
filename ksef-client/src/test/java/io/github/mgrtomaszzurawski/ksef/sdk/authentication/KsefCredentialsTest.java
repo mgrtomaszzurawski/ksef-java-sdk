@@ -5,6 +5,10 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefCertificateCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefPkcs12Credentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

@@ -12,46 +12,46 @@ module io.github.mgrtomaszzurawski.ksef {
     exports io.github.mgrtomaszzurawski.ksef.sdk.config;
 
     // Authentication: credentials and auth-flow models
-    exports io.github.mgrtomaszzurawski.ksef.sdk.authentication;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.authentication.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model;
 
     // Common shared types (StatusInfo, TokenInfo, public-key models)
     exports io.github.mgrtomaszzurawski.ksef.sdk.common;
 
     // Invoicing functionality (online + batch sessions, invoice ops, QR, batch helper)
-    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing.batch;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing.qrcode;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;
 
     // Permissions functionality
-    exports io.github.mgrtomaszzurawski.ksef.sdk.permissions;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.permissions.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
     // Tokens functionality
-    exports io.github.mgrtomaszzurawski.ksef.sdk.tokens;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.tokens.builder;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.tokens.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
 
     // Certificates functionality
-    exports io.github.mgrtomaszzurawski.ksef.sdk.certificates;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.certificates.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
     // Peppol functionality
-    exports io.github.mgrtomaszzurawski.ksef.sdk.peppol;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.peppol.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model;
 
     // Limits and rate-limit queries
-    exports io.github.mgrtomaszzurawski.ksef.sdk.limits;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.limits.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.limits;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
     // Test data functionality (api-test environment helpers)
-    exports io.github.mgrtomaszzurawski.ksef.sdk.testdata;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.testdata.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 
     // Exception hierarchy
     exports io.github.mgrtomaszzurawski.ksef.sdk.exception;

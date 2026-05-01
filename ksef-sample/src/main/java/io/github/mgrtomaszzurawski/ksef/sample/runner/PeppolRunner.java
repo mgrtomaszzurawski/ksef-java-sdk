@@ -18,8 +18,7 @@
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.peppol.PeppolClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.peppol.model.PeppolProvidersResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;

@@ -18,11 +18,10 @@
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.builder.TokenGenerateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.GenerateTokenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenDetail;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;

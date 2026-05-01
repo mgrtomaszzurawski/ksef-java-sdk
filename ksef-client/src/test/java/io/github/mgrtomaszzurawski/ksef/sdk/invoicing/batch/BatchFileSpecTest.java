@@ -5,6 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.batch;
 
 import java.util.List;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;

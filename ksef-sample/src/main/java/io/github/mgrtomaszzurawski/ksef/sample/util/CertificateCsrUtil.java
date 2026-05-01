@@ -17,7 +17,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.util;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;

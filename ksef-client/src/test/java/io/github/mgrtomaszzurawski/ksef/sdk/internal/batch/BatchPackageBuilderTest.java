@@ -4,7 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.batch;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.CryptoService;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;

@@ -19,7 +19,7 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.security.SecurityClient;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
