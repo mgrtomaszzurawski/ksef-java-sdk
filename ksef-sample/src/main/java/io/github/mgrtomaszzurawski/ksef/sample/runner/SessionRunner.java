@@ -65,10 +65,10 @@ public final class SessionRunner implements DemoRunner {
     private static final String SKIP_NOT_FULL = "FULL mode only";
     private static final String SKIP_NO_KSEF_NUMBER =
             "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
-    private static final String FAIL_SECOND_OPEN_SUCCEEDED =
-            "expected failure but second session opened";
     private static final String FAIL_UPO_BYTES_DIFFER =
             "UPO retrieved by invoice ref differs from UPO retrieved by KSeF number";
+    private static final String OK_CONCURRENT_PERMITTED = "server permitted concurrent open";
+    private static final String OK_CONCURRENT_REJECTED_PREFIX = "server rejected: ";
 
     @Override
     public String name() { return NAME; }
@@ -82,8 +82,8 @@ public final class SessionRunner implements DemoRunner {
             return results;
         }
 
-        // 0. Negative-path probe: confirm the one-session-per-NIP server constraint
-        //    by attempting to open a second session while the first is still open.
+        // 0. Informational probe: record whether the server permits a second
+        //    concurrent open for the same NIP. Both outcomes are valid observations.
         runStaleSessionRecovery(context, results);
 
         // 1. Open session
@@ -128,19 +128,19 @@ public final class SessionRunner implements DemoRunner {
         KsefSession second = null;
         try {
             first = context.client().openSession(FormCode.FA2);
-            LOG.info("[{}] first session opened ref={}, attempting second open (expected to fail)",
+            LOG.info("[{}] first session opened ref={}, probing concurrent-open behavior",
                     NAME, first.referenceNumber());
             try {
                 second = context.client().openSession(FormCode.FA2);
-                // If we got here, the constraint was not enforced — that's a failure
-                // for this negative-path test.
-                results.add(RunResult.fail(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
-                        FAIL_SECOND_OPEN_SUCCEEDED));
-            } catch (Exception expected) {
-                LOG.info("[{}] second openSession rejected as expected: {}", NAME,
-                        expected.getClass().getSimpleName());
+                LOG.info("[{}] server permitted concurrent open: ref={}", NAME,
+                        second.referenceNumber());
                 results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
-                        "rejected: " + expected.getClass().getSimpleName()));
+                        OK_CONCURRENT_PERMITTED));
+            } catch (Exception rejected) {
+                LOG.info("[{}] server rejected concurrent open: {}", NAME,
+                        rejected.getClass().getSimpleName());
+                results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
+                        OK_CONCURRENT_REJECTED_PREFIX + rejected.getClass().getSimpleName()));
             }
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),

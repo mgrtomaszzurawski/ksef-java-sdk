@@ -86,7 +86,7 @@ public final class PermissionRunner implements DemoRunner {
     private static final String TEST_INDIRECT_NIP = "3333333333";
     private static final String TEST_SUBUNIT_CONTEXT_NIP = "4444444444";
     private static final String TEST_FINGERPRINT = "AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899";
-    private static final String TEST_EU_NIP_VAT_UE = "DE123456789";
+    private static final String TEST_EU_VAT_UE_SUFFIX = "-DE123456789";
     private static final String TEST_EU_ENTITY_NAME = "EU Partner GmbH";
     private static final String TEST_EU_ENTITY_ADDRESS = "Berlin, Germany";
 
@@ -302,7 +302,7 @@ public final class PermissionRunner implements DemoRunner {
         try {
             EuEntityAdminPermissionGrantBuilder builder = EuEntityAdminPermissionGrantBuilder
                     .forFingerprint(TEST_FINGERPRINT)
-                    .contextNipVatUe(TEST_EU_NIP_VAT_UE)
+                    .contextNipVatUe(context.nipIdentifier() + TEST_EU_VAT_UE_SUFFIX)
                     .description(GRANT_EU_ADMIN_DESC)
                     .euEntityName(TEST_EU_ENTITY_NAME)
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
