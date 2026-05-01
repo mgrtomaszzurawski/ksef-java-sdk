@@ -13,6 +13,7 @@ module io.github.mgrtomaszzurawski.ksef {
 
     // Authentication: credentials and auth-flow models
     exports io.github.mgrtomaszzurawski.ksef.sdk.authentication;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.authentication.model;
 
     // Common shared types (StatusInfo, TokenInfo, public-key models)
     exports io.github.mgrtomaszzurawski.ksef.sdk.common;
@@ -31,15 +32,21 @@ module io.github.mgrtomaszzurawski.ksef {
 
     // Tokens functionality
     exports io.github.mgrtomaszzurawski.ksef.sdk.tokens;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.tokens.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.tokens.model;
 
     // Certificates functionality
     exports io.github.mgrtomaszzurawski.ksef.sdk.certificates;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.certificates.model;
 
     // Peppol functionality
     exports io.github.mgrtomaszzurawski.ksef.sdk.peppol;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.peppol.model;
 
     // Limits and rate-limit queries
     exports io.github.mgrtomaszzurawski.ksef.sdk.limits;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.limits.model;
 
     // Test data functionality (api-test environment helpers)
     exports io.github.mgrtomaszzurawski.ksef.sdk.testdata;
