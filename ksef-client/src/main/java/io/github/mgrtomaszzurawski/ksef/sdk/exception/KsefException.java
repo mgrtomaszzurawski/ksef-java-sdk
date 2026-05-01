@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
-
 /**
  * Base exception for all KSeF SDK errors.
  * All subclasses are unchecked (extend RuntimeException).

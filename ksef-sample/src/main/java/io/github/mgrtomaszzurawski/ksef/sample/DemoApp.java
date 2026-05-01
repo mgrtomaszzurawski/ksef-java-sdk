@@ -33,11 +33,11 @@ import io.github.mgrtomaszzurawski.ksef.sample.runner.SessionRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.TestDataRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.TokenRunner;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefPkcs12Credentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

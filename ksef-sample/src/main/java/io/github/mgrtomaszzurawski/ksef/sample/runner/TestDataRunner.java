@@ -16,23 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
 
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.TestDataClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.TestDataIdentifierType;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.TestSubjectIdentifierType;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.TestSubjectType;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPermissionsRevokeBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestPersonCreateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestRateLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSessionLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSubjectCreateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.TestSubjectLimitsBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.TestDataClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.model.TestDataIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.model.TestSubjectIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.model.TestSubjectType;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestPermissionsGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestPermissionsRevokeBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestPersonCreateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestRateLimitsBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestSessionLimitsBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestSubjectCreateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestSubjectLimitsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

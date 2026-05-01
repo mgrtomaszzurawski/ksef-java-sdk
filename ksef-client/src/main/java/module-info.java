@@ -5,12 +5,51 @@
 
 module io.github.mgrtomaszzurawski.ksef {
 
-    // SDK public API
+    // SDK public API — entry point
     exports io.github.mgrtomaszzurawski.ksef.sdk;
+
+    // Configuration: environments, identifiers, retry policy
+    exports io.github.mgrtomaszzurawski.ksef.sdk.config;
+
+    // Authentication: credentials and auth-flow models
+    exports io.github.mgrtomaszzurawski.ksef.sdk.authentication;
+
+    // Common shared types (StatusInfo, TokenInfo, public-key models)
+    exports io.github.mgrtomaszzurawski.ksef.sdk.common;
+
+    // Invoicing functionality (online + batch sessions, invoice ops, QR, batch helper)
+    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing.batch;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.invoicing.qrcode;
+
+    // Permissions functionality
+    exports io.github.mgrtomaszzurawski.ksef.sdk.permissions;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.permissions.model;
+
+    // Tokens functionality
+    exports io.github.mgrtomaszzurawski.ksef.sdk.tokens;
+
+    // Certificates functionality
+    exports io.github.mgrtomaszzurawski.ksef.sdk.certificates;
+
+    // Peppol functionality
+    exports io.github.mgrtomaszzurawski.ksef.sdk.peppol;
+
+    // Limits and rate-limit queries
+    exports io.github.mgrtomaszzurawski.ksef.sdk.limits;
+
+    // Test data functionality (api-test environment helpers)
+    exports io.github.mgrtomaszzurawski.ksef.sdk.testdata;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.testdata.model;
+
+    // Exception hierarchy
     exports io.github.mgrtomaszzurawski.ksef.sdk.exception;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.model;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.model.builder;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.paging;
+
+    // Internal mechanisms (sdk.internal.*) are NOT exported.
 
     // Required modules
     requires java.net.http;

@@ -23,8 +23,8 @@ package io.github.mgrtomaszzurawski.ksef.sample;
 
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

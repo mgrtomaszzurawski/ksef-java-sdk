@@ -22,7 +22,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.qrcode.QrCodeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
