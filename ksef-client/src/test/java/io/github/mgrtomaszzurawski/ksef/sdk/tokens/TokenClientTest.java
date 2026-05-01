@@ -165,10 +165,9 @@ class TokenClientTest {
     void getStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        var tokensX = ksef.tokens();
+        var tokens = ksef.tokens();
 
-
-        assertThrows(IllegalArgumentException.class, () -> tokensX.getStatus("../../../etc/passwd"));
+        assertThrows(IllegalArgumentException.class, () -> tokens.getStatus("../../../etc/passwd"));
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

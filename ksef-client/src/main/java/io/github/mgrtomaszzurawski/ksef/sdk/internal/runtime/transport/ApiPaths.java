@@ -19,6 +19,8 @@ public final class ApiPaths {
     /** Common prefix for every KSeF REST endpoint. */
     public static final String API_BASE = "/api/v2";
 
+    private static final String SEPARATOR = "/";
+
     public static final String AUTH = API_BASE + "/auth";
     public static final String CERTIFICATES = API_BASE + "/certificates";
     public static final String INVOICES = API_BASE + "/invoices";
@@ -41,13 +43,11 @@ public final class ApiPaths {
      * {@code "/api/v2/sessions/&lt;ref&gt;/invoices"}.
      */
     public static String subPath(String base, String... segments) {
-        StringBuilder sb = new StringBuilder(base);
+        StringBuilder path = new StringBuilder(base);
         for (String segment : segments) {
-            sb.append(SEPARATOR).append(segment);
+            path.append(SEPARATOR).append(segment);
         }
-        return sb.toString();
+        return path.toString();
     }
-
-    private static final String SEPARATOR = "/";
 }
 

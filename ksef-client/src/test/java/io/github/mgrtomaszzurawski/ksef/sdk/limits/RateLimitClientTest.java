@@ -77,9 +77,9 @@ class RateLimitClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        var rateLimitsX = ksef.rateLimits();
+        var rateLimits = ksef.rateLimits();
 
-        assertThrows(KsefAuthException.class, () -> rateLimitsX.getRateLimits());
+        assertThrows(KsefAuthException.class, () -> rateLimits.getRateLimits());
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

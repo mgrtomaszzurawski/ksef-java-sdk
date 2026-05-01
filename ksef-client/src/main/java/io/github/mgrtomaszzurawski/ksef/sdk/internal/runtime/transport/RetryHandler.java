@@ -65,7 +65,10 @@ public final class RetryHandler {
             return callOnce(call, operationName);
         }
 
-        KsefException lastException = new KsefException(ERR_RETRY_LOOP_NEVER_ENTERED, 0, null);
+        // Sentinel — only surfaced if RetryPolicy.maxAttempts validation is bypassed.
+        // RetryPolicy.Builder rejects maxAttempts < 1, so this branch is unreachable in normal flow.
+        KsefException lastException = new KsefException(ERR_RETRY_LOOP_NEVER_ENTERED,
+                new IllegalStateException(ERR_RETRY_LOOP_NEVER_ENTERED));
         for (int attempt = 1; attempt <= policy.maxAttempts(); attempt++) {
             AttemptResult<T> result = attemptOnce(call, attempt, operationName);
             if (result.success()) {

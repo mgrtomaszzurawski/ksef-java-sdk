@@ -137,9 +137,9 @@ class AuthAutoRefreshTest {
         KsefClient ksef = createClientWithStaleSession(wmInfo);
 
         // then
-        var rateLimitsX = ksef.rateLimits();
+        var rateLimits = ksef.rateLimits();
 
-        assertThrows(KsefAuthException.class, () -> rateLimitsX.getRateLimits());
+        assertThrows(KsefAuthException.class, () -> rateLimits.getRateLimits());
         verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
         verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
     }

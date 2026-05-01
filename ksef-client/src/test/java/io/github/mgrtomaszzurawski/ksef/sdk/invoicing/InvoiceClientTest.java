@@ -101,9 +101,9 @@ class InvoiceClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        var invoicesX = ksef.invoices();
+        var invoices = ksef.invoices();
 
-        assertThrows(KsefNotFoundException.class, () -> invoicesX.getByKsefNumber(TEST_KSEF_NUMBER));
+        assertThrows(KsefNotFoundException.class, () -> invoices.getByKsefNumber(TEST_KSEF_NUMBER));
     }
 
     @Test
@@ -185,9 +185,9 @@ class InvoiceClientTest {
                 .metadataOnly();
 
         // then
-        var invoicesX = ksef.invoices();
+        var invoices = ksef.invoices();
 
-        assertThrows(KsefServerException.class, () -> invoicesX.exportInvoices(exportBuilder));
+        assertThrows(KsefServerException.class, () -> invoices.exportInvoices(exportBuilder));
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

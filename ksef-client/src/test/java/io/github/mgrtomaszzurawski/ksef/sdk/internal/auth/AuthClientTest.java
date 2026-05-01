@@ -155,9 +155,9 @@ class AuthClientTest {
         KsefClient ksef = createClient(wmInfo);
 
         // then
-        var authX = ksef.auth();
+        var auth = ksef.auth();
 
-        assertThrows(KsefRateLimitException.class, () -> authX.requestChallenge());
+        assertThrows(KsefRateLimitException.class, () -> auth.requestChallenge());
     }
 
     @Test
@@ -305,11 +305,11 @@ class AuthClientTest {
         TestCertificates testCerts = TestCertificates.generateRsa();
         var auth = ksef.auth();
         var cert = testCerts.certificate();
-        var key = testCerts.privateKey();
+        var privateKey = testCerts.privateKey();
 
         // then
         assertThrows(KsefAuthException.class,
-                () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, key, TEST_NIP));
+                () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, privateKey, TEST_NIP));
     }
 
     @Test
@@ -324,11 +324,11 @@ class AuthClientTest {
         TestCertificates testCerts = TestCertificates.generateRsa();
         var auth = ksef.auth();
         var cert = testCerts.certificate();
-        var key = testCerts.privateKey();
+        var privateKey = testCerts.privateKey();
 
         // then
         assertThrows(KsefServerException.class,
-                () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, key, TEST_NIP));
+                () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, privateKey, TEST_NIP));
     }
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {

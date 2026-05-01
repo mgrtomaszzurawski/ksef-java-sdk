@@ -147,9 +147,9 @@ class PeppolClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        var peppolX = ksef.peppol();
+        var peppol = ksef.peppol();
 
-        assertThrows(IllegalArgumentException.class, () -> peppolX.query(-1, CUSTOM_PAGE_SIZE));
+        assertThrows(IllegalArgumentException.class, () -> peppol.query(-1, CUSTOM_PAGE_SIZE));
     }
 
     @Test
@@ -158,9 +158,9 @@ class PeppolClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        var peppolX = ksef.peppol();
+        var peppol = ksef.peppol();
 
-        assertThrows(IllegalArgumentException.class, () -> peppolX.query(CUSTOM_PAGE_OFFSET, 0));
+        assertThrows(IllegalArgumentException.class, () -> peppol.query(CUSTOM_PAGE_OFFSET, 0));
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

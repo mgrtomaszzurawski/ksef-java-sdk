@@ -94,9 +94,9 @@ class LimitsClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        var limitsX = ksef.limits();
+        var limits = ksef.limits();
 
-        assertThrows(KsefServerException.class, () -> limitsX.getContextLimits());
+        assertThrows(KsefServerException.class, () -> limits.getContextLimits());
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

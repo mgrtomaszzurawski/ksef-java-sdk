@@ -76,20 +76,22 @@ class BatchPackageBuilderTest {
     @Test
     void build_whenNullInvoices_throwsNullPointerException() {
         // given
-        byte[] key = aesKey();
-        byte[] iv = aesIv();
+        byte[] sessionAesKey = aesKey();
+        byte[] sessionInitVector = aesIv();
         // when / then
-        assertThrows(NullPointerException.class, () -> BatchPackageBuilder.build(null, key, iv));
+        assertThrows(NullPointerException.class,
+                () -> BatchPackageBuilder.build(null, sessionAesKey, sessionInitVector));
     }
 
     @Test
     void build_whenEmptyInvoices_throwsIllegalArgumentException() {
         // given
-        byte[] key = aesKey();
-        byte[] iv = aesIv();
+        byte[] sessionAesKey = aesKey();
+        byte[] sessionInitVector = aesIv();
         List<byte[]> empty = List.of();
         // when / then
-        assertThrows(IllegalArgumentException.class, () -> BatchPackageBuilder.build(empty, key, iv));
+        assertThrows(IllegalArgumentException.class,
+                () -> BatchPackageBuilder.build(empty, sessionAesKey, sessionInitVector));
     }
 
     @Test

@@ -424,20 +424,18 @@ class PermissionClientTest {
     void revokeCommon_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        var permissionsX = ksef.permissions();
+        var permissions = ksef.permissions();
 
-
-        assertThrows(IllegalArgumentException.class, () -> permissionsX.revokeCommon("../../../etc/passwd"));
+        assertThrows(IllegalArgumentException.class, () -> permissions.revokeCommon("../../../etc/passwd"));
     }
 
     @Test
     void getOperationStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        var permissionsX = ksef.permissions();
+        var permissions = ksef.permissions();
 
-
-        assertThrows(IllegalArgumentException.class, () -> permissionsX.getOperationStatus("../../../etc/passwd"));
+        assertThrows(IllegalArgumentException.class, () -> permissions.getOperationStatus("../../../etc/passwd"));
     }
 
     // --- Helpers ---

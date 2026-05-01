@@ -196,6 +196,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
      * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
      * @return an open session — use with try-with-resources
      */
+    @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefSession openSession(FormCode formCode) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         ensureOpen();
@@ -216,9 +217,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                         .initializationVector(initVector));
 
         OnlineSession session = sessionClient.openOnline(request);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Opened KSeF session {}, formCode={}", session.referenceNumber(), formCode);
-        }
+        LOG.debug("Opened KSeF session {}, formCode={}", session.referenceNumber(), formCode);
 
         return new KsefSession(sessionClient, session.referenceNumber(), aesKey, initVector);
     }
@@ -242,6 +241,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
      * @param batchFileSpec metadata describing the encrypted ZIP file and its parts
      * @return an open batch session — use with try-with-resources
      */
+    @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefBatchSession openBatchSession(FormCode formCode,
                                                           BatchFileSpec batchFileSpec) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
@@ -265,9 +265,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .batchFile(toBatchFileInfoRaw(batchFileSpec));
 
         BatchSession session = sessionClient.openBatch(request);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
-        }
+        LOG.debug("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), null);
@@ -293,6 +291,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
      * @param invoiceXmls non-empty list of raw invoice XML byte arrays
      * @return an open batch session pre-loaded with the encrypted part bytes
      */
+    @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefBatchSession openBatchSession(FormCode formCode,
                                                           List<byte[]> invoiceXmls) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
@@ -319,10 +318,8 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .batchFile(toBatchFileInfoRaw(pkg.spec()));
 
         BatchSession session = sessionClient.openBatch(request);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Opened KSeF batch session {} with {} invoices, formCode={}",
-                    session.referenceNumber(), invoiceXmls.size(), formCode);
-        }
+        LOG.debug("Opened KSeF batch session {} with {} invoices, formCode={}",
+                session.referenceNumber(), invoiceXmls.size(), formCode);
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), pkg);
