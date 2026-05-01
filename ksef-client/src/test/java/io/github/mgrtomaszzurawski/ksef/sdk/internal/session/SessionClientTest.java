@@ -9,16 +9,16 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -261,8 +261,9 @@ class SessionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        assertThrows(KsefAuthException.class,
-                () -> ksef.sessions().openOnline(new OpenOnlineSessionRequestRaw()));
+        var sessions = ksef.sessions();
+        OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw();
+        assertThrows(KsefAuthException.class, () -> sessions.openOnline(request));
     }
 
     @Test
@@ -274,8 +275,10 @@ class SessionClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
+        var sessions = ksef.sessions();
+        SendInvoiceRequestRaw request = new SendInvoiceRequestRaw();
         assertThrows(KsefServerException.class,
-                () -> ksef.sessions().sendInvoice(TEST_SESSION_REF, new SendInvoiceRequestRaw()));
+                () -> sessions.sendInvoice(TEST_SESSION_REF, request));
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

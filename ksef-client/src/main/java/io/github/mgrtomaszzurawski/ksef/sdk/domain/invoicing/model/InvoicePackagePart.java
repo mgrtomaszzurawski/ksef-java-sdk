@@ -7,6 +7,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoicePackagePartRaw;
 import java.net.URI;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * A downloadable part of an invoice export package.
@@ -43,5 +45,45 @@ public record InvoicePackagePart(
                 raw.getEncryptedPartSize(),
                 raw.getEncryptedPartHash(),
                 raw.getExpirationDate());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof InvoicePackagePart other)) {
+            return false;
+        }
+        return ordinalNumber == other.ordinalNumber
+                && Objects.equals(partName, other.partName)
+                && Objects.equals(method, other.method)
+                && Objects.equals(url, other.url)
+                && Objects.equals(partSize, other.partSize)
+                && Arrays.equals(partHash, other.partHash)
+                && Objects.equals(encryptedPartSize, other.encryptedPartSize)
+                && Arrays.equals(encryptedPartHash, other.encryptedPartHash)
+                && Objects.equals(expirationDate, other.expirationDate);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(ordinalNumber, partName, method, url, partSize, encryptedPartSize, expirationDate);
+        result = 31 * result + Arrays.hashCode(partHash);
+        result = 31 * result + Arrays.hashCode(encryptedPartHash);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "InvoicePackagePart[ordinalNumber=" + ordinalNumber
+                + ", partName=" + partName
+                + ", method=" + method
+                + ", url=" + url
+                + ", partSize=" + partSize
+                + ", partHash=byte[" + (partHash == null ? 0 : partHash.length) + "]"
+                + ", encryptedPartSize=" + encryptedPartSize
+                + ", encryptedPartHash=byte[" + (encryptedPartHash == null ? 0 : encryptedPartHash.length) + "]"
+                + ", expirationDate=" + expirationDate + "]";
     }
 }

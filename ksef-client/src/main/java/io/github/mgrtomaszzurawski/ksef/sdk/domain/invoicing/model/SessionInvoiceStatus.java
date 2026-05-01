@@ -7,6 +7,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
 import java.net.URI;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Status of an invoice within a session.
@@ -55,5 +57,54 @@ public record SessionInvoiceStatus(
                 raw.getUpoDownloadUrlExpirationDate(),
                 InvoicingMode.from(raw.getInvoicingMode()),
                 InvoiceStatusInfo.from(raw.getStatus()));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof SessionInvoiceStatus other)) {
+            return false;
+        }
+        return ordinalNumber == other.ordinalNumber
+                && Objects.equals(invoiceNumber, other.invoiceNumber)
+                && Objects.equals(ksefNumber, other.ksefNumber)
+                && Objects.equals(referenceNumber, other.referenceNumber)
+                && Arrays.equals(invoiceHash, other.invoiceHash)
+                && Objects.equals(invoiceFileName, other.invoiceFileName)
+                && Objects.equals(acquisitionDate, other.acquisitionDate)
+                && Objects.equals(invoicingDate, other.invoicingDate)
+                && Objects.equals(permanentStorageDate, other.permanentStorageDate)
+                && Objects.equals(upoDownloadUrl, other.upoDownloadUrl)
+                && Objects.equals(upoDownloadUrlExpirationDate, other.upoDownloadUrlExpirationDate)
+                && invoicingMode == other.invoicingMode
+                && Objects.equals(status, other.status);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(ordinalNumber, invoiceNumber, ksefNumber, referenceNumber,
+                invoiceFileName, acquisitionDate, invoicingDate, permanentStorageDate,
+                upoDownloadUrl, upoDownloadUrlExpirationDate, invoicingMode, status);
+        result = 31 * result + Arrays.hashCode(invoiceHash);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "SessionInvoiceStatus[ordinalNumber=" + ordinalNumber
+                + ", invoiceNumber=" + invoiceNumber
+                + ", ksefNumber=" + ksefNumber
+                + ", referenceNumber=" + referenceNumber
+                + ", invoiceHash=byte[" + (invoiceHash == null ? 0 : invoiceHash.length) + "]"
+                + ", invoiceFileName=" + invoiceFileName
+                + ", acquisitionDate=" + acquisitionDate
+                + ", invoicingDate=" + invoicingDate
+                + ", permanentStorageDate=" + permanentStorageDate
+                + ", upoDownloadUrl=" + upoDownloadUrl
+                + ", upoDownloadUrlExpirationDate=" + upoDownloadUrlExpirationDate
+                + ", invoicingMode=" + invoicingMode
+                + ", status=" + status + "]";
     }
 }

@@ -19,6 +19,7 @@ package io.github.mgrtomaszzurawski.ksef.sample;
 
 import io.github.mgrtomaszzurawski.ksef.sample.util.CertificateCsrUtil;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
@@ -30,7 +31,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;

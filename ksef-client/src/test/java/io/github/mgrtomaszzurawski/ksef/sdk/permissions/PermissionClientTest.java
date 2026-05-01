@@ -7,10 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.permissions;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionGrantBuilder;
@@ -33,6 +32,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -412,27 +412,30 @@ class PermissionClientTest {
 
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        assertThrows(KsefAuthException.class,
-                () -> ksef.permissions().grantPerson(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
-                        .description(TEST_DESCRIPTION)
-                        .personDetails("Jan", "Kowalski")
-                        .invoiceRead()));
+        var permissions = ksef.permissions();
+        var builder = PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
+                .description(TEST_DESCRIPTION)
+                .personDetails("Jan", "Kowalski")
+                .invoiceRead();
+        assertThrows(KsefAuthException.class, () -> permissions.grantPerson(builder));
     }
 
     @Test
     void revokeCommon_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> ksef.permissions().revokeCommon("../../../etc/passwd"));
+        var permissions = ksef.permissions();
+
+        assertThrows(IllegalArgumentException.class, () -> permissions.revokeCommon("../../../etc/passwd"));
     }
 
     @Test
     void getOperationStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> ksef.permissions().getOperationStatus("../../../etc/passwd"));
+        var permissions = ksef.permissions();
+
+        assertThrows(IllegalArgumentException.class, () -> permissions.getOperationStatus("../../../etc/passwd"));
     }
 
     // --- Helpers ---

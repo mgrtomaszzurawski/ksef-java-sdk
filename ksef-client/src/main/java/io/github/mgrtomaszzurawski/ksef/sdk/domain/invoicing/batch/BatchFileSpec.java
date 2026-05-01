@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -57,6 +58,33 @@ public record BatchFileSpec(long fileSize, byte[] fileHash, List<Part> parts) {
         return fileHash.clone();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof BatchFileSpec other)) {
+            return false;
+        }
+        return fileSize == other.fileSize
+                && Arrays.equals(fileHash, other.fileHash)
+                && Objects.equals(parts, other.parts);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(fileSize, parts);
+        result = 31 * result + Arrays.hashCode(fileHash);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "BatchFileSpec[fileSize=" + fileSize
+                + ", fileHash=byte[" + (fileHash == null ? 0 : fileHash.length) + "]"
+                + ", parts=" + parts + "]";
+    }
+
     /**
      * Metadata for a single part of the batch file.
      *
@@ -86,6 +114,33 @@ public record BatchFileSpec(long fileSize, byte[] fileHash, List<Part> parts) {
         @Override
         public byte[] fileHash() {
             return fileHash.clone();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Part other)) {
+                return false;
+            }
+            return ordinalNumber == other.ordinalNumber
+                    && fileSize == other.fileSize
+                    && Arrays.equals(fileHash, other.fileHash);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(ordinalNumber, fileSize);
+            result = 31 * result + Arrays.hashCode(fileHash);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "Part[ordinalNumber=" + ordinalNumber
+                    + ", fileSize=" + fileSize
+                    + ", fileHash=byte[" + (fileHash == null ? 0 : fileHash.length) + "]]";
         }
     }
 }

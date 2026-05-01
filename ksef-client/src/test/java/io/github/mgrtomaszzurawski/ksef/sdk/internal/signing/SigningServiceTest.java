@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.signing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.signing.SigningService;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -13,8 +14,6 @@ import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.signing.SigningService;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -82,18 +81,21 @@ class SigningServiceTest {
         X509Certificate certificate = generateSelfSignedCertificate(keyPair, SHA256_WITH_RSA);
 
         // then
+        java.security.PrivateKey privateKey = keyPair.getPrivate();
         assertThrows(KsefCryptoException.class,
-                () -> SigningService.signXml(null, certificate, keyPair.getPrivate()));
+                () -> SigningService.signXml(null, certificate, privateKey));
     }
 
     @Test
     void signXml_whenNullCertificate_throwsCryptoException() throws Exception {
         // given
         KeyPair keyPair = generateRsaKeyPair();
+        byte[] xmlBytes = TEST_XML.getBytes();
+        java.security.PrivateKey privateKey = keyPair.getPrivate();
 
         // then
         assertThrows(KsefCryptoException.class,
-                () -> SigningService.signXml(TEST_XML.getBytes(), null, keyPair.getPrivate()));
+                () -> SigningService.signXml(xmlBytes, null, privateKey));
     }
 
     @Test
@@ -101,10 +103,11 @@ class SigningServiceTest {
         // given
         KeyPair keyPair = generateRsaKeyPair();
         X509Certificate certificate = generateSelfSignedCertificate(keyPair, SHA256_WITH_RSA);
+        byte[] xmlBytes = TEST_XML.getBytes();
 
         // then
         assertThrows(KsefCryptoException.class,
-                () -> SigningService.signXml(TEST_XML.getBytes(), certificate, null));
+                () -> SigningService.signXml(xmlBytes, certificate, null));
     }
 
     private static KeyPair generateRsaKeyPair() throws Exception {

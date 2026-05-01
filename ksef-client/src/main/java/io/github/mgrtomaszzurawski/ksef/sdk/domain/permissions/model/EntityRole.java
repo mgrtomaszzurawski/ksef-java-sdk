@@ -17,14 +17,13 @@ public record EntityRole(
         OffsetDateTime startDate) {
 
     public static EntityRole from(EntityRoleRaw raw) {
-        PermissionIdentifier parentId = raw.getParentEntityIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getParentEntityIdentifier().getType() != null ? raw.getParentEntityIdentifier().getType().getValue() : null,
-                        raw.getParentEntityIdentifier().getValue())
-                : null;
-        return new EntityRole(
-                parentId,
-                raw.getRole() != null ? raw.getRole().getValue() : null,
-                raw.getDescription(), raw.getStartDate());
+        var parentRaw = raw.getParentEntityIdentifier();
+        PermissionIdentifier parentId = null;
+        if (parentRaw != null) {
+            String type = parentRaw.getType() != null ? parentRaw.getType().getValue() : null;
+            parentId = new PermissionIdentifier(type, parentRaw.getValue());
+        }
+        String role = raw.getRole() != null ? raw.getRole().getValue() : null;
+        return new EntityRole(parentId, role, raw.getDescription(), raw.getStartDate());
     }
 }

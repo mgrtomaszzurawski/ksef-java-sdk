@@ -7,18 +7,19 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 
 /**
  * Client for KSeF session and subject limit queries.
  */
 public final class LimitsClient {
 
-    private static final String PATH_CONTEXT_LIMITS = "/api/v2/limits/context";
-    private static final String PATH_SUBJECT_LIMITS = "/api/v2/limits/subject";
+    private static final String PATH_CONTEXT_LIMITS = ApiPaths.LIMITS + "/context";
+    private static final String PATH_SUBJECT_LIMITS = ApiPaths.LIMITS + "/subject";
 
     private static final String OP_GET_CONTEXT_LIMITS = "getContextLimits";
     private static final String OP_GET_SUBJECT_LIMITS = "getSubjectLimits";

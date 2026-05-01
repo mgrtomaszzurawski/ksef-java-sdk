@@ -46,6 +46,7 @@ public sealed interface KsefCredentials
      * @throws IllegalStateException if the identifier type is not {@code NIP}
      * @deprecated use {@link #identifier()} — supports all four KSeF identifier types
      */
+    @SuppressWarnings("java:S1133") // forRemoval=false: intentional permanent deprecation for backward-compat ergonomics.
     @Deprecated(since = "0.2.0", forRemoval = false)
     default String nip() {
         KsefIdentifier id = identifier();

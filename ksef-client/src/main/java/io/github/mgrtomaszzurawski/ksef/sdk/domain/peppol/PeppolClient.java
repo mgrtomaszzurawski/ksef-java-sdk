@@ -6,9 +6,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 
 /**
  * Client for KSeF Peppol service provider queries.
@@ -18,7 +19,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersR
  */
 public final class PeppolClient {
 
-    private static final String PATH_PEPPOL_QUERY = "/api/v2/peppol/query";
+    private static final String PATH_PEPPOL_QUERY = ApiPaths.PEPPOL + "/query";
     private static final String OP_QUERY_PROVIDERS = "queryPeppolProviders";
 
     private static final String QUERY_PARAM_PAGE_OFFSET = "pageOffset";

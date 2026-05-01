@@ -7,9 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.util.Base64;
@@ -137,7 +137,9 @@ class AuthAutoRefreshTest {
         KsefClient ksef = createClientWithStaleSession(wmInfo);
 
         // then
-        assertThrows(KsefAuthException.class, () -> ksef.rateLimits().getRateLimits());
+        var rateLimits = ksef.rateLimits();
+
+        assertThrows(KsefAuthException.class, () -> rateLimits.getRateLimits());
         verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
         verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
     }

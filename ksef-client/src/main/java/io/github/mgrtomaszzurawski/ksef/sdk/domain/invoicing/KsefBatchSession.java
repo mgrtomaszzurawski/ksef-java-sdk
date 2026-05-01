@@ -5,13 +5,13 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -258,26 +258,35 @@ public final class KsefBatchSession implements AutoCloseable {
             sleep(STATUS_POLL_DELAY_MS);
             SessionStatus sessionStatus = sessionClient.getStatus(referenceNumber);
             Integer code = sessionStatus.status() != null ? sessionStatus.status().code() : null;
-            if (code != null && !code.equals(lastCode)) {
-                LOG.debug("Batch session {} status code transition: {} -> {} (attempt {})",
-                        referenceNumber, lastCode, code, attempt + 1);
-                lastCode = code;
-            }
+            lastCode = logStatusTransition(lastCode, code, attempt);
             // Any code >= 200 is terminal: 200 = success; others = various failures.
             // Codes < 200 (100=open, 170=closing) are intermediate.
             if (code != null && code >= STATUS_CODE_OK) {
-                if (code == STATUS_CODE_OK) {
-                    LOG.info("Batch session {} processing complete", referenceNumber);
-                } else {
-                    LOG.warn("Batch session {} reached terminal failure state — code={} description={}",
-                            referenceNumber, code,
-                            sessionStatus.status() != null ? sessionStatus.status().description() : null);
-                }
+                logTerminalState(code, sessionStatus);
                 return;
             }
         }
         LOG.warn("Batch session {} polling timed out after {} attempts — last status code={} — processing may not be complete yet",
                 referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
+    }
+
+    private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {
+        if (code != null && !code.equals(lastCode)) {
+            LOG.debug("Batch session {} status code transition: {} -> {} (attempt {})",
+                    referenceNumber, lastCode, code, attempt + 1);
+            return code;
+        }
+        return lastCode;
+    }
+
+    private void logTerminalState(int code, SessionStatus sessionStatus) {
+        if (code == STATUS_CODE_OK) {
+            LOG.info("Batch session {} processing complete", referenceNumber);
+        } else {
+            String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
+            LOG.warn("Batch session {} reached terminal failure state — code={} description={}",
+                    referenceNumber, code, description);
+        }
     }
 
     private static boolean isSessionBusy(KsefException exception) {

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.List;
 
@@ -17,7 +18,7 @@ import java.util.List;
  */
 public final class SecurityClient {
 
-    private static final String PATH_PUBLIC_KEY_CERTS = "/api/v2/security/public-key-certificates";
+    private static final String PATH_PUBLIC_KEY_CERTS = ApiPaths.SECURITY + "/public-key-certificates";
     private static final String OP_GET_PUBLIC_KEYS = "getPublicKeyCertificates";
 
     private final HttpSupport http;

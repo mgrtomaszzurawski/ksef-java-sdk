@@ -12,7 +12,6 @@ import java.time.OffsetDateTime;
  * Status of an authentication operation.
  *
  * @param startDate when the authentication was initiated
- * @param authenticationMethod legacy authentication method (deprecated in KSeF API)
  * @param authenticationMethodInfo detailed authentication method information
  * @param status current operation status
  * @param tokenRedeemed whether the operation token has been redeemed
@@ -21,7 +20,6 @@ import java.time.OffsetDateTime;
  */
 public record AuthenticationStatus(
         OffsetDateTime startDate,
-        AuthenticationMethod authenticationMethod,
         AuthenticationMethodInfo authenticationMethodInfo,
         StatusInfo status,
         Boolean tokenRedeemed,
@@ -31,7 +29,6 @@ public record AuthenticationStatus(
     public static AuthenticationStatus from(AuthenticationOperationStatusResponseRaw raw) {
         return new AuthenticationStatus(
                 raw.getStartDate(),
-                AuthenticationMethod.from(raw.getAuthenticationMethod()),
                 AuthenticationMethodInfo.from(raw.getAuthenticationMethodInfo()),
                 StatusInfo.from(raw.getStatus()),
                 raw.getIsTokenRedeemed(),

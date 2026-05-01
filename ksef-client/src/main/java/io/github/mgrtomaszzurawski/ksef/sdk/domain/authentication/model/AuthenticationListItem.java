@@ -13,7 +13,6 @@ import java.time.OffsetDateTime;
  *
  * @param referenceNumber session reference number
  * @param startDate when the session was started
- * @param authenticationMethod legacy authentication method (deprecated in KSeF API)
  * @param authenticationMethodInfo detailed authentication method information
  * @param status current session status
  * @param tokenRedeemed whether the operation token has been redeemed
@@ -24,7 +23,6 @@ import java.time.OffsetDateTime;
 public record AuthenticationListItem(
         String referenceNumber,
         OffsetDateTime startDate,
-        AuthenticationMethod authenticationMethod,
         AuthenticationMethodInfo authenticationMethodInfo,
         StatusInfo status,
         Boolean tokenRedeemed,
@@ -36,7 +34,6 @@ public record AuthenticationListItem(
         return new AuthenticationListItem(
                 raw.getReferenceNumber(),
                 raw.getStartDate(),
-                AuthenticationMethod.from(raw.getAuthenticationMethod()),
                 AuthenticationMethodInfo.from(raw.getAuthenticationMethodInfo()),
                 StatusInfo.from(raw.getStatus()),
                 raw.getIsTokenRedeemed(),

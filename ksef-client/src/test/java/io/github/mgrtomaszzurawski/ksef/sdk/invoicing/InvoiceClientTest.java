@@ -7,17 +7,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -101,8 +101,9 @@ class InvoiceClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        assertThrows(KsefNotFoundException.class,
-                () -> ksef.invoices().getByKsefNumber(TEST_KSEF_NUMBER));
+        var invoices = ksef.invoices();
+
+        assertThrows(KsefNotFoundException.class, () -> invoices.getByKsefNumber(TEST_KSEF_NUMBER));
     }
 
     @Test
@@ -184,8 +185,9 @@ class InvoiceClientTest {
                 .metadataOnly();
 
         // then
-        assertThrows(KsefServerException.class,
-                () -> ksef.invoices().exportInvoices(exportBuilder));
+        var invoices = ksef.invoices();
+
+        assertThrows(KsefServerException.class, () -> invoices.exportInvoices(exportBuilder));
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

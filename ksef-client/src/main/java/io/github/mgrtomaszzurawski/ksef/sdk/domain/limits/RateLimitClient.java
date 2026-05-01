@@ -6,16 +6,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ApiRateLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 
 /**
  * Client for KSeF API rate limit information.
  */
 public final class RateLimitClient {
 
-    private static final String PATH_RATE_LIMITS = "/api/v2/rate-limits";
+    private static final String PATH_RATE_LIMITS = ApiPaths.RATE_LIMITS;
 
     private static final String OP_GET_RATE_LIMITS = "getRateLimits";
 

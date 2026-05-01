@@ -33,16 +33,18 @@ public record TokenDetail(
         List<String> statusDetails) {
 
     public static TokenDetail from(TokenStatusResponseRaw raw) {
-        TokenIdentifier author = raw.getAuthorIdentifier() != null
-                ? new TokenIdentifier(
-                        raw.getAuthorIdentifier().getType() != null ? raw.getAuthorIdentifier().getType().getValue() : null,
-                        raw.getAuthorIdentifier().getValue())
-                : null;
-        TokenIdentifier context = raw.getContextIdentifier() != null
-                ? new TokenIdentifier(
-                        raw.getContextIdentifier().getType() != null ? raw.getContextIdentifier().getType().getValue() : null,
-                        raw.getContextIdentifier().getValue())
-                : null;
+        var authorRaw = raw.getAuthorIdentifier();
+        TokenIdentifier author = null;
+        if (authorRaw != null) {
+            String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
+            author = new TokenIdentifier(type, authorRaw.getValue());
+        }
+        var ctxRaw = raw.getContextIdentifier();
+        TokenIdentifier context = null;
+        if (ctxRaw != null) {
+            String type = ctxRaw.getType() != null ? ctxRaw.getType().getValue() : null;
+            context = new TokenIdentifier(type, ctxRaw.getValue());
+        }
         List<TokenPermissionType> perms = raw.getRequestedPermissions() != null
                 ? raw.getRequestedPermissions().stream().map(TokenPermissionType::from).toList()
                 : List.of();

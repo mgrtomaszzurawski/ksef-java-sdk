@@ -19,14 +19,14 @@ public record EntityPermission(
         Boolean canDelegate) {
 
     public static EntityPermission from(EntityPermissionItemRaw raw) {
-        PermissionIdentifier ctxId = raw.getContextIdentifier() != null
-                ? new PermissionIdentifier(
-                        raw.getContextIdentifier().getType() != null ? raw.getContextIdentifier().getType().getValue() : null,
-                        raw.getContextIdentifier().getValue())
-                : null;
-        return new EntityPermission(
-                raw.getId(), ctxId,
-                raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null,
-                raw.getDescription(), raw.getStartDate(), raw.getCanDelegate());
+        var ctxRaw = raw.getContextIdentifier();
+        PermissionIdentifier ctxId = null;
+        if (ctxRaw != null) {
+            String type = ctxRaw.getType() != null ? ctxRaw.getType().getValue() : null;
+            ctxId = new PermissionIdentifier(type, ctxRaw.getValue());
+        }
+        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
+        return new EntityPermission(raw.getId(), ctxId, scope, raw.getDescription(),
+                raw.getStartDate(), raw.getCanDelegate());
     }
 }

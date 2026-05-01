@@ -11,14 +11,15 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateRangeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -30,10 +31,10 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  */
 public final class InvoiceClient {
 
-    private static final String PATH_INVOICES_KSEF = "/api/v2/invoices/ksef/";
-    private static final String PATH_QUERY_METADATA = "/api/v2/invoices/query/metadata";
-    private static final String PATH_EXPORTS = "/api/v2/invoices/exports";
-    private static final String PATH_EXPORT_STATUS = "/api/v2/invoices/exports/";
+    private static final String PATH_INVOICES_KSEF = ApiPaths.INVOICES + "/ksef/";
+    private static final String PATH_QUERY_METADATA = ApiPaths.INVOICES + "/query/metadata";
+    private static final String PATH_EXPORTS = ApiPaths.INVOICES + "/exports";
+    private static final String PATH_EXPORT_STATUS = ApiPaths.INVOICES + "/exports/";
 
     private static final String OP_GET_BY_KSEF = "getInvoiceByKsefNumber";
     private static final String OP_QUERY_METADATA = "queryInvoicesMetadata";

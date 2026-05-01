@@ -119,36 +119,44 @@ class KsefCredentialsTest {
     void certificateCredentials_whenNullCertificate_throwsNullPointerException() throws Exception {
         // given
         TestCertificates certs = TestCertificates.generateRsa();
+        java.security.PrivateKey privateKey = certs.privateKey();
 
         // when / then
         assertThrows(NullPointerException.class,
-                () -> new KsefCertificateCredentials(null, certs.privateKey(), VALID_NIP));
+                () -> new KsefCertificateCredentials(null, privateKey, VALID_NIP));
     }
 
     @Test
     void certificateCredentials_whenNullKey_throwsNullPointerException() throws Exception {
         // given
         TestCertificates certs = TestCertificates.generateRsa();
+        java.security.cert.X509Certificate cert = certs.certificate();
 
         // when / then
         assertThrows(NullPointerException.class,
-                () -> new KsefCertificateCredentials(certs.certificate(), null, VALID_NIP));
+                () -> new KsefCertificateCredentials(cert, null, VALID_NIP));
     }
 
     // --- KsefPkcs12Credentials ---
 
     @Test
     void pkcs12Credentials_whenNullPath_throwsNullPointerException() {
+        // given
+        char[] password = KEYSTORE_PASSWORD.toCharArray();
+
         // when / then
         assertThrows(NullPointerException.class,
-                () -> new KsefPkcs12Credentials(null, KEYSTORE_PASSWORD.toCharArray(), VALID_NIP));
+                () -> new KsefPkcs12Credentials(null, password, VALID_NIP));
     }
 
     @Test
     void pkcs12Credentials_whenNullPassword_throwsNullPointerException() {
+        // given
+        Path path = Path.of(KEYSTORE_PATH);
+
         // when / then
         assertThrows(NullPointerException.class,
-                () -> new KsefPkcs12Credentials(Path.of(KEYSTORE_PATH), null, VALID_NIP));
+                () -> new KsefPkcs12Credentials(path, null, VALID_NIP));
     }
 
     @Test

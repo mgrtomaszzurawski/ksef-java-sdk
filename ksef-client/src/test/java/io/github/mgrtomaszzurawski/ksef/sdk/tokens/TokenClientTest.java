@@ -7,14 +7,14 @@ package io.github.mgrtomaszzurawski.ksef.sdk.tokens;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -156,16 +156,18 @@ class TokenClientTest {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
         // then
-        assertThrows(KsefAuthException.class,
-                () -> ksef.tokens().generate(TokenGenerateBuilder.create("test description").invoiceRead()));
+        var tokens = ksef.tokens();
+        var builder = TokenGenerateBuilder.create("test description").invoiceRead();
+        assertThrows(KsefAuthException.class, () -> tokens.generate(builder));
     }
 
     @Test
     void getStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createAuthenticatedClient(wmInfo);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> ksef.tokens().getStatus("../../../etc/passwd"));
+        var tokens = ksef.tokens();
+
+        assertThrows(IllegalArgumentException.class, () -> tokens.getStatus("../../../etc/passwd"));
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

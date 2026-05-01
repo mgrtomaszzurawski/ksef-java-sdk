@@ -5,6 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesListItemRaw;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * A retrieved certificate with its details.
@@ -26,5 +28,34 @@ public record RetrievedCertificate(
                 raw.getCertificateName(),
                 raw.getCertificateSerialNumber(),
                 raw.getCertificateType() != null ? raw.getCertificateType().getValue() : null);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof RetrievedCertificate other)) {
+            return false;
+        }
+        return Arrays.equals(certificate, other.certificate)
+                && Objects.equals(certificateName, other.certificateName)
+                && Objects.equals(certificateSerialNumber, other.certificateSerialNumber)
+                && Objects.equals(certificateType, other.certificateType);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(certificateName, certificateSerialNumber, certificateType);
+        result = 31 * result + Arrays.hashCode(certificate);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "RetrievedCertificate[certificate=byte[" + (certificate == null ? 0 : certificate.length) + "]"
+                + ", certificateName=" + certificateName
+                + ", certificateSerialNumber=" + certificateSerialNumber
+                + ", certificateType=" + certificateType + "]";
     }
 }
