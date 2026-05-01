@@ -88,7 +88,8 @@ public final class DemoApp {
                 .build()) {
 
             DemoContext context = new DemoContext(client, mode, state,
-                    properties.ksefToken(), properties.nipIdentifier(), properties.environment());
+                    properties.ksefToken(), properties.nipIdentifier(),
+                    credentials.identifier().type(), properties.environment());
 
             List<DemoRunner> runners = buildRunners(mode);
             DemoSession session = new DemoSession(context);

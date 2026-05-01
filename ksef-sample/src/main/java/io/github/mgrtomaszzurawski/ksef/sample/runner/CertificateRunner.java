@@ -20,12 +20,17 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateListItem;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
+import io.github.mgrtomaszzurawski.ksef.sample.util.CertificateCsrUtil;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateEnrollmentStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateListItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.KsefCertificateType;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateEnrollBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +45,11 @@ import java.util.List;
  * authenticated with PKCS#12/certificate credentials. With token credentials
  * these operations are skipped (server returns 403).</p>
  *
- * <p>Enrollment and revoke are skipped to preserve cert quota (max 12/month).</p>
+ * <p>Enrollment and revoke default to SKIP to preserve the monthly cert quota
+ * (max 12/month). Set <code>-Ddemo.cert.test=true</code> to opt in to a single
+ * enroll → poll-for-serial → revoke round-trip — useful as a smoke test on a
+ * fresh quota window. The newly enrolled cert is revoked immediately after the
+ * serial appears, so the only quota cost is one enrollment slot.</p>
  */
 public final class CertificateRunner implements DemoRunner {
 
@@ -49,7 +58,22 @@ public final class CertificateRunner implements DemoRunner {
     private static final String OP_GET_LIMITS = "getLimits";
     private static final String OP_GET_ENROLLMENT_DATA = "getEnrollmentData";
     private static final String OP_QUERY = "query";
-    private static final String SKIP_QUOTA = "skipped to preserve cert quota (max 12/month)";
+    private static final String OP_ENROLL = "enroll";
+    private static final String OP_REVOKE = "revoke";
+    private static final String SKIP_QUOTA =
+            "skipped to preserve cert quota (max 12/month) — enable with -Ddemo.cert.test=true";
+    private static final String SKIP_NO_ENROLLMENT_DATA =
+            "skipped — getEnrollmentData failed earlier (likely token auth, requires XAdES)";
+    private static final String SKIP_REVOKE_NO_SERIAL =
+            "skipped — enroll did not yield a serial number, nothing to revoke";
+
+    private static final String CERT_TEST_PROPERTY = "demo.cert.test";
+    private static final String FLAG_TRUE = "true";
+    private static final String CERT_NAME = "SDK Demo Cert auto-revoked";
+    private static final long ENROLL_POLL_INITIAL_DELAY_MS = 1000L;
+    private static final long ENROLL_POLL_MAX_DELAY_MS = 10000L;
+    private static final int ENROLL_POLL_BACKOFF_MULTIPLIER = 2;
+    private static final long ENROLL_POLL_TIMEOUT_MS = 300_000L;
 
     @Override
     public String name() { return NAME; }
@@ -58,18 +82,10 @@ public final class CertificateRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
 
-        // 1. Get limits (works with any auth method)
         runGetLimits(context, results);
-
-        // 2. Get enrollment data (requires XAdES auth, may fail with token auth)
-        runGetEnrollmentData(context, results);
-
-        // 3. Query certificates (requires XAdES auth, may fail with token auth)
+        CertificateEnrollmentData enrollmentData = runGetEnrollmentData(context, results);
         runQuery(context, results);
-
-        // 4-5. Enroll + revoke — skipped to preserve monthly quota
-        results.add(RunResult.skip(NAME, "enroll", SKIP_QUOTA));
-        results.add(RunResult.skip(NAME, "revoke", SKIP_QUOTA));
+        runEnrollRevokeCycle(context, enrollmentData, results);
 
         return results;
     }
@@ -96,7 +112,7 @@ public final class CertificateRunner implements DemoRunner {
         }
     }
 
-    private void runGetEnrollmentData(DemoContext context, List<RunResult> results) {
+    private CertificateEnrollmentData runGetEnrollmentData(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             CertificateEnrollmentData response = context.client().certificates()
@@ -104,9 +120,11 @@ public final class CertificateRunner implements DemoRunner {
             LOG.info("[{}] enrollment data: cn={}", NAME, response.commonName());
             results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
                     "cn=" + response.commonName()));
+            return response;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
                     errorMessage(exception)));
+            return null;
         }
     }
 
@@ -129,6 +147,95 @@ public final class CertificateRunner implements DemoRunner {
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QUERY, elapsed(start),
                     errorMessage(exception)));
+        }
+    }
+
+    private void runEnrollRevokeCycle(DemoContext context,
+                                      CertificateEnrollmentData enrollmentData,
+                                      List<RunResult> results) {
+        if (!FLAG_TRUE.equals(System.getProperty(CERT_TEST_PROPERTY))) {
+            results.add(RunResult.skip(NAME, OP_ENROLL, SKIP_QUOTA));
+            results.add(RunResult.skip(NAME, OP_REVOKE, SKIP_QUOTA));
+            return;
+        }
+        if (enrollmentData == null) {
+            results.add(RunResult.skip(NAME, OP_ENROLL, SKIP_NO_ENROLLMENT_DATA));
+            results.add(RunResult.skip(NAME, OP_REVOKE, SKIP_NO_ENROLLMENT_DATA));
+            return;
+        }
+
+        String enrollmentRef = runEnroll(context, enrollmentData, results);
+        if (enrollmentRef == null) {
+            results.add(RunResult.skip(NAME, OP_REVOKE, SKIP_REVOKE_NO_SERIAL));
+            return;
+        }
+
+        String serialNumber = pollEnrollmentSerial(context, enrollmentRef);
+        if (serialNumber == null) {
+            results.add(RunResult.skip(NAME, OP_REVOKE, SKIP_REVOKE_NO_SERIAL));
+            return;
+        }
+
+        runRevoke(context, serialNumber, results);
+    }
+
+    private String runEnroll(DemoContext context,
+                             CertificateEnrollmentData enrollmentData,
+                             List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            CertificateCsrUtil.CsrResult csr = CertificateCsrUtil.generate(enrollmentData);
+            CertificateEnrollBuilder builder = CertificateEnrollBuilder.create(
+                    CERT_NAME, KsefCertificateType.AUTHENTICATION, csr.csrDer());
+            EnrollCertificateResult response = context.client().certificates().enroll(builder);
+            String referenceNumber = response.referenceNumber();
+            LOG.info("[{}] enrolled certificate, ref={}", NAME, referenceNumber);
+            results.add(RunResult.ok(NAME, OP_ENROLL, elapsed(start), "ref=" + referenceNumber));
+            return referenceNumber;
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_ENROLL, elapsed(start), errorMessage(exception)));
+            return null;
+        }
+    }
+
+    private String pollEnrollmentSerial(DemoContext context, String enrollmentRef) {
+        long delay = ENROLL_POLL_INITIAL_DELAY_MS;
+        long deadline = System.currentTimeMillis() + ENROLL_POLL_TIMEOUT_MS;
+        int attempt = 0;
+        while (System.currentTimeMillis() < deadline) {
+            attempt++;
+            try {
+                CertificateEnrollmentStatus status = context.client().certificates()
+                        .getEnrollmentStatus(enrollmentRef);
+                String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
+                LOG.info("[{}] enrollment poll #{} code={} serial={}",
+                        NAME, attempt, code, status.certificateSerialNumber());
+                if (status.certificateSerialNumber() != null) {
+                    return status.certificateSerialNumber();
+                }
+            } catch (Exception exception) {
+                LOG.warn("[{}] enrollment poll #{} failed: {}", NAME, attempt, exception.getMessage());
+            }
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
+            delay = Math.min(delay * ENROLL_POLL_BACKOFF_MULTIPLIER, ENROLL_POLL_MAX_DELAY_MS);
+        }
+        LOG.warn("[{}] enrollment poll timed out after {}ms", NAME, ENROLL_POLL_TIMEOUT_MS);
+        return null;
+    }
+
+    private void runRevoke(DemoContext context, String serialNumber, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            context.client().certificates().revoke(serialNumber);
+            LOG.info("[{}] revoked certificate serial={}", NAME, serialNumber);
+            results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start), "serial=" + serialNumber));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_REVOKE, elapsed(start), errorMessage(exception)));
         }
     }
 }

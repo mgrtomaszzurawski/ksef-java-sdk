@@ -30,20 +30,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateEnrollBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.CertificateQueryBuilder;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.pkcs.PKCS10CertificationRequest;
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
+import io.github.mgrtomaszzurawski.ksef.sample.util.CertificateCsrUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 import java.util.Comparator;
 import java.util.List;
 
@@ -71,17 +62,6 @@ public final class CertProbe {
     private static final Path CREDENTIALS_FILE = Path.of("ksef-credentials.properties");
     private static final String CERT_NAME = "Probe Cert RCA Verify";
     private static final String STATUS_ACTIVE = "Active";
-    private static final String RSA_ALGORITHM = "RSA";
-    private static final String DN_CN_PREFIX = "CN=";
-    private static final String DN_COUNTRY_PREFIX = ",C=";
-    private static final String DN_GIVEN_NAME_PREFIX = ",GIVENNAME=";
-    private static final String DN_SURNAME_PREFIX = ",SURNAME=";
-    private static final String DN_SERIAL_NUMBER_PREFIX = ",SERIALNUMBER=";
-    private static final String DN_ORGANIZATION_PREFIX = ",O=";
-    private static final String OID_ORGANIZATION_IDENTIFIER = "2.5.4.97";
-    private static final String DN_ORGANIZATION_IDENTIFIER_PREFIX = "," + OID_ORGANIZATION_IDENTIFIER + "=";
-    private static final int RSA_KEY_SIZE = 2048;
-    private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
     private static final int AUTH_STATUS_OK = 200;
     private static final int POLL_INITIAL_DELAY_MS = 1000;
     private static final int POLL_MAX_DELAY_MS = 10000;
@@ -168,10 +148,9 @@ public final class CertProbe {
         section("STEP 6: enroll new cert");
         CertificateEnrollmentData enrollData = client.certificates().getEnrollmentData();
         LOG.info("Enrollment data: cn={}", enrollData.commonName());
-        KeyPair newKeyPair = generateKeyPair();
-        byte[] csrBytes = generateCsr(enrollData, newKeyPair);
+        CertificateCsrUtil.CsrResult csr = CertificateCsrUtil.generate(enrollData);
         CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder.create(
-                CERT_NAME, KsefCertificateType.AUTHENTICATION, csrBytes);
+                CERT_NAME, KsefCertificateType.AUTHENTICATION, csr.csrDer());
 
         EnrollCertificateResult enrollResult;
         try {
@@ -265,39 +244,6 @@ public final class CertProbe {
             LOG.info("[{}] certificate: remaining={} limit={}",
                     label, limits.certificate().remaining(), limits.certificate().limit());
         }
-    }
-
-    private static KeyPair generateKeyPair() throws Exception {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA_ALGORITHM);
-        keyPairGenerator.initialize(RSA_KEY_SIZE);
-        return keyPairGenerator.generateKeyPair();
-    }
-
-    private static byte[] generateCsr(CertificateEnrollmentData data, KeyPair keyPair) throws Exception {
-        StringBuilder subjectDn = new StringBuilder();
-        subjectDn.append(DN_CN_PREFIX).append(data.commonName());
-        subjectDn.append(DN_COUNTRY_PREFIX).append(data.countryName());
-        if (data.givenName() != null) {
-            subjectDn.append(DN_GIVEN_NAME_PREFIX).append(data.givenName());
-        }
-        if (data.surname() != null) {
-            subjectDn.append(DN_SURNAME_PREFIX).append(data.surname());
-        }
-        if (data.serialNumber() != null) {
-            subjectDn.append(DN_SERIAL_NUMBER_PREFIX).append(data.serialNumber());
-        }
-        if (data.organizationName() != null) {
-            subjectDn.append(DN_ORGANIZATION_PREFIX).append(data.organizationName());
-        }
-        if (data.organizationIdentifier() != null) {
-            subjectDn.append(DN_ORGANIZATION_IDENTIFIER_PREFIX).append(data.organizationIdentifier());
-        }
-        X500Name subject = new X500Name(subjectDn.toString());
-        JcaPKCS10CertificationRequestBuilder csrBuilder =
-                new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
-        ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM).build(keyPair.getPrivate());
-        PKCS10CertificationRequest certificationRequest = csrBuilder.build(signer);
-        return certificationRequest.getEncoded();
     }
 
     private static void section(String title) {

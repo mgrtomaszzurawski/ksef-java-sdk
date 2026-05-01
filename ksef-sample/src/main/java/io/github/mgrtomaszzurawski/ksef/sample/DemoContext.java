@@ -18,6 +18,7 @@
 package io.github.mgrtomaszzurawski.ksef.sample;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefIdentifier;
 
 /**
  * Shared mutable state passed to all demo runners.
@@ -31,18 +32,21 @@ public final class DemoContext {
     private final DemoState state;
     private final String ksefToken;
     private final String nipIdentifier;
+    private final KsefIdentifier.Type identifierType;
     private final String environment;
     private String sessionReferenceNumber;
     private String invoiceReferenceNumber;
     private String invoiceKsefNumber;
 
     public DemoContext(KsefClient client, DemoMode mode, DemoState state,
-                       String ksefToken, String nipIdentifier, String environment) {
+                       String ksefToken, String nipIdentifier,
+                       KsefIdentifier.Type identifierType, String environment) {
         this.client = client;
         this.mode = mode;
         this.state = state;
         this.ksefToken = ksefToken;
         this.nipIdentifier = nipIdentifier;
+        this.identifierType = identifierType;
         this.environment = environment;
     }
 
@@ -51,6 +55,7 @@ public final class DemoContext {
     public DemoState state() { return state; }
     public String ksefToken() { return ksefToken; }
     public String nipIdentifier() { return nipIdentifier; }
+    public KsefIdentifier.Type identifierType() { return identifierType; }
     public String environment() { return environment; }
 
     public String sessionReferenceNumber() { return sessionReferenceNumber; }

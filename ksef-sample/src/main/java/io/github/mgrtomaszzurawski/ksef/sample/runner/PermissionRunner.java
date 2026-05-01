@@ -20,6 +20,7 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.model.builder.EntityAuthorizationPermissionsQueryBuilder;
@@ -100,6 +101,8 @@ public final class PermissionRunner implements DemoRunner {
     private static final String GRANT_EU_ENTITY_DESC = "SDK Demo EU entity grant - will be revoked";
 
     private static final String DEPENDS_ON_GRANT = "depends on grant";
+    private static final String SKIP_REQUIRES_NIP_VAT_UE =
+            "requires NipVatUe-context credentials (current creds are NIP-context)";
 
     @Override
     public String name() { return NAME; }
@@ -192,6 +195,11 @@ public final class PermissionRunner implements DemoRunner {
     }
 
     private void runEuEntityGrantCycle(DemoContext context, List<RunResult> results) {
+        if (context.identifierType() != KsefIdentifier.Type.NIP_VAT_UE) {
+            results.add(RunResult.skip(NAME, OP_GRANT_EU_ENTITY, SKIP_REQUIRES_NIP_VAT_UE));
+            results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[euEntity]", SKIP_REQUIRES_NIP_VAT_UE));
+            return;
+        }
         String operationRef = runGrantEuEntity(context, results);
         if (operationRef != null) {
             runRevokeCommon(context, operationRef, results);
