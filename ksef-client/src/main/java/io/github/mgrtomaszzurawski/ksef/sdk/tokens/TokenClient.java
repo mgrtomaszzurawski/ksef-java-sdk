@@ -3,20 +3,14 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.tokens;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
-
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.GenerateTokenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenDetail;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenList;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenGenerateBuilder;
-
 import java.util.Objects;
-
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
 
 /**

@@ -3,14 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 

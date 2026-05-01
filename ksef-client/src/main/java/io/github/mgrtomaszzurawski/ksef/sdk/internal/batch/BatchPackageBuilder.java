@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.batch;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.batch.BatchFileSpec;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -53,6 +52,11 @@ import java.util.zip.ZipOutputStream;
  *
  * <p>The temporary ZIP file is deleted immediately after the encrypt-and-split pass.
  * Part files remain until {@link BatchPackage#cleanup()} is called.
+ *
+ * @apiNote Module-internal — declared {@code public} only so {@code KsefClient}
+ * (in package {@code sdk}) can call into it. Its package
+ * {@code sdk.internal.batch} is intentionally not exported via {@code module-info.java};
+ * consumers cannot reach this type.
  */
 public final class BatchPackageBuilder {
 

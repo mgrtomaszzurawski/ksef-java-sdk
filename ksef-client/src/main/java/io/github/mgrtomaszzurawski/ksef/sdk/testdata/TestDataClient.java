@@ -3,16 +3,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.testdata;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
-
 import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionRevokeRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.BlockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
@@ -23,7 +22,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestRateLimitsBuild
 import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestSessionLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder.TestSubjectLimitsBuilder;
-
 import java.time.LocalDate;
 import java.util.Objects;
 

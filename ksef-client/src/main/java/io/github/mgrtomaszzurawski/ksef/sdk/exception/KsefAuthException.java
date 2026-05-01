@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-
 /**
  * Thrown on HTTP 401 (Unauthorized) or 403 (Forbidden).
  * Indicates authentication or authorization failure.

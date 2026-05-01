@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions.model;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityRole;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryEntityRolesResponseRaw;
-
 import java.util.List;
 
 /**

@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.session.SessionClient;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionInvoiceStatus;
@@ -61,6 +60,11 @@ public final class KsefSession implements AutoCloseable {
     private final byte[] initVector;
     private volatile boolean closed;
 
+    /**
+     * @apiNote Internal — constructed by {@code KsefClient.openSession(FormCode)}.
+     * The {@link SessionClient} parameter type lives in a non-exported package,
+     * so this constructor is not callable from consumer code despite being public.
+     */
     public KsefSession(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
         this.sessionClient = sessionClient;

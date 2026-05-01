@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.session;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
-
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
@@ -22,7 +22,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionStatus;
-
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
 
 /**

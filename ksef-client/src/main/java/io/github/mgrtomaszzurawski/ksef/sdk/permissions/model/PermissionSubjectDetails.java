@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions.model;
-
 /**
  * Details about a permission subject (person or entity).
  *

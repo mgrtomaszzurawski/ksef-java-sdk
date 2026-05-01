@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.peppol;
-import io.github.mgrtomaszzurawski.ksef.sdk.peppol.PeppolProvider;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
-
 import java.util.List;
 
 /**

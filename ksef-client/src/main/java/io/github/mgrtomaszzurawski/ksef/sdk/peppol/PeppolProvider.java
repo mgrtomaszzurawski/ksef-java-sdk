@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.peppol;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.PeppolProviderRaw;
-
 import java.time.OffsetDateTime;
 
 /**

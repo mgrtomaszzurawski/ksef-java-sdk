@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
-
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
@@ -34,7 +34,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermission
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonalPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.SubunitPermissionGrantBuilder;
 import org.junit.jupiter.api.Test;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;

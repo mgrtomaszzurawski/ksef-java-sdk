@@ -3,20 +3,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.tokens;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
-
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.GenerateTokenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenDetail;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenList;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenGenerateBuilder;
 import org.junit.jupiter.api.Test;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;

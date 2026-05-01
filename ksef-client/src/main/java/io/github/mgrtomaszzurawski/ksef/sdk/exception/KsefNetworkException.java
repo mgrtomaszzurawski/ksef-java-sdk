@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-
 /**
  * Thrown on I/O errors, timeouts, and connection failures.
  * Status code is always 0 (no HTTP response received).

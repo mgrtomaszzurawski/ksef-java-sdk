@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoicePackage;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
-
 import java.time.OffsetDateTime;
 
 /**

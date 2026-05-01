@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.PartUploadRequest;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionResponseRaw;
-
 import java.util.List;
 
 /**

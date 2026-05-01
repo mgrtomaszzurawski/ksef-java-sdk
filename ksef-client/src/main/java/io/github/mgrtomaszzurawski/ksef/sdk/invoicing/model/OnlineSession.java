@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionResponseRaw;
-
 import java.time.OffsetDateTime;
 
 /**

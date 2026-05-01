@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationContextIdentifierTypeRaw;
@@ -27,9 +26,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationTokenRefresh;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationTokens;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.signing.SigningService;
-
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
-
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;

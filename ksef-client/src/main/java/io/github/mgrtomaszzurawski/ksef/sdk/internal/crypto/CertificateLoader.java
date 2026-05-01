@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;

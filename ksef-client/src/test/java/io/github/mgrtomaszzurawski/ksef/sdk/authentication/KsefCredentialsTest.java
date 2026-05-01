@@ -3,17 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefCertificateCredentials;
-
 import org.junit.jupiter.api.Test;
-
 import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

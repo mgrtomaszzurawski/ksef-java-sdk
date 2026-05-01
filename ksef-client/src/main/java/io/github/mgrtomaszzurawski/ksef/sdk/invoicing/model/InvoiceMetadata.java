@@ -3,15 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoicingMode;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceType;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceThirdSubject;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceSeller;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceBuyer;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.FormCode;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataRaw;
-
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;

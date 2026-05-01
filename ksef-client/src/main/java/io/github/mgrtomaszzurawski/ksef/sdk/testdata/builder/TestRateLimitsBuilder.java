@@ -3,13 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder;
-import io.github.mgrtomaszzurawski.ksef.sdk.testdata.TestDataClient;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.ApiRateLimitValuesOverrideRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.ApiRateLimitsOverrideRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SetRateLimitsRequestRaw;
-
-import java.util.Objects;
 
 /**
  * Builder for KSeF test rate limits override requests.

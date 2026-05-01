@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;

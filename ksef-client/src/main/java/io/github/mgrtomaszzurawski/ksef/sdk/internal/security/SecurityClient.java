@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.security;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
-
 import java.util.List;
 
 /**

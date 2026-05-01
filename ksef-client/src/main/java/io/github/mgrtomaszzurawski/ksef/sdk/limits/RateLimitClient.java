@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.limits;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
-
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
-import io.github.mgrtomaszzurawski.ksef.sdk.limits.ApiRateLimits;
 
 /**
  * Client for KSeF API rate limit information.

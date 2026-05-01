@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
-
 import java.time.OffsetDateTime;
 
 /**

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.PermissionClient;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionStateRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionTypeRaw;
@@ -17,7 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryReque
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsTargetIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsTargetIdentifierTypeRaw;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

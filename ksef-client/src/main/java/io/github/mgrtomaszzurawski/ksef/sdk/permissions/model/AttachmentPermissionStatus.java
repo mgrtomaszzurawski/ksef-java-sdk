@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.CheckAttachmentPermissionStatusResponseRaw;
-
 import java.time.OffsetDateTime;
 
 /**

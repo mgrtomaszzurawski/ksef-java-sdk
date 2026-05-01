@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.UpoPageResponseRaw;
-
 import java.net.URI;
 import java.time.OffsetDateTime;
 

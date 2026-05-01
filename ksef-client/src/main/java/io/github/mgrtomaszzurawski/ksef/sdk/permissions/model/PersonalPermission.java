@@ -3,11 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions.model;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionSubjectDetails;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionIdentifier;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionRaw;
-
 import java.time.OffsetDateTime;
 
 /**

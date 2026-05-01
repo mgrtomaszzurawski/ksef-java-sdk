@@ -3,12 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.tokens;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenPermissionType;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenIdentifier;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseItemRaw;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 

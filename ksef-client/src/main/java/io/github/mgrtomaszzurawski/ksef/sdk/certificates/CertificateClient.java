@@ -3,14 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.certificates;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
-
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateRevocationReasonRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateRevocationReason;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRaw;
@@ -18,18 +16,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequest
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentData;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateQueryResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.EnrollCertificateResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.RetrieveCertificatesResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateQueryBuilder;
-
 import java.util.List;
 import java.util.Objects;
-
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
 
 /**

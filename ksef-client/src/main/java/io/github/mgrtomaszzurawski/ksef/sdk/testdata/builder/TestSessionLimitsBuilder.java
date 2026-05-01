@@ -3,13 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder;
-import io.github.mgrtomaszzurawski.ksef.sdk.testdata.TestDataClient;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.BatchSessionContextLimitsOverrideRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OnlineSessionContextLimitsOverrideRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SetSessionLimitsRequestRaw;
-
-import java.util.Objects;
 
 /**
  * Builder for KSeF test session limits override requests.

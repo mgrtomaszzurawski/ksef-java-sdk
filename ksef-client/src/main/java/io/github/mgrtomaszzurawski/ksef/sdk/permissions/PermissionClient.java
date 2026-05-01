@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
-
 import io.github.mgrtomaszzurawski.ksef.client.model.CheckAttachmentPermissionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationResponseRaw;
@@ -43,9 +43,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermission
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonalPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.SubunitPermissionGrantBuilder;
-
 import java.util.Objects;
-
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
 
 /**

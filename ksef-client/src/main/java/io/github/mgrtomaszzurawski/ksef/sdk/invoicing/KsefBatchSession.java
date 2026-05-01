@@ -3,20 +3,17 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.KsefSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.batch.BatchFileSpec;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.batch.BatchPackageBuilder;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -90,6 +87,10 @@ public final class KsefBatchSession implements AutoCloseable {
      * Package-private constructor used by tests and by {@link KsefClient} when opening a
      * batch session from a pre-built {@link BatchFileSpec} (no part files available —
      * {@link #uploadParts()} will fail).
+     *
+     * @apiNote Internal — constructed by {@code KsefClient.openBatchSession(...)}.
+     * The {@link SessionClient} parameter type lives in a non-exported package, so
+     * this constructor is not callable from consumer code despite being public.
      */
     public KsefBatchSession(SessionClient sessionClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests) {
@@ -100,6 +101,8 @@ public final class KsefBatchSession implements AutoCloseable {
      * Full constructor — used by {@link KsefClient} when the session was opened from a
      * list of raw invoices and the SDK retains references to the encrypted part files
      * for upload + cleanup.
+     *
+     * @apiNote Internal — see the alternative-overload note above.
      */
     public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,

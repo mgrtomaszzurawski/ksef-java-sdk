@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder;
-import io.github.mgrtomaszzurawski.ksef.sdk.testdata.TestDataClient;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifierTypeRaw;
@@ -12,7 +11,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierTy
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.testdata.model.TestDataPermissionType;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

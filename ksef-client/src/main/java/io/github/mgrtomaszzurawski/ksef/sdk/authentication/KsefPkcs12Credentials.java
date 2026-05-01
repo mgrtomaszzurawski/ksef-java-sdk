@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefCertificateCredentials;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import java.nio.file.Path;
 import java.util.Objects;
 

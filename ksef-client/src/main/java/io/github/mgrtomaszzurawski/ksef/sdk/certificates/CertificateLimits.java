@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.certificates;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateLimit;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
 

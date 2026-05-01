@@ -3,12 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.certificates;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateClient;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.KsefCertificateType;
-
 import java.time.OffsetDateTime;
 
 /**

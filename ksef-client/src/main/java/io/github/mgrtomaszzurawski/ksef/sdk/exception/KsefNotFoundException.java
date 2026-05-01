@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-
 /**
  * Thrown on HTTP 404 (Not Found) or 410 (Gone).
  */

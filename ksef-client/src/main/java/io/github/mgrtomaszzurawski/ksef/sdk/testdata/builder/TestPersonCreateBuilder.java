@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.testdata.builder;
-import io.github.mgrtomaszzurawski.ksef.sdk.testdata.TestDataClient;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.PersonCreateRequestRaw;
-
 import java.time.OffsetDateTime;
 import java.util.Objects;
 

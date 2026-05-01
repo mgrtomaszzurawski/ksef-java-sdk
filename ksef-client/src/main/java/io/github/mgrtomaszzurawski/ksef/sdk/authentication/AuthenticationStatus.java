@@ -3,12 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationMethodInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.AuthenticationMethod;
-
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationOperationStatusResponseRaw;
-
 import java.time.OffsetDateTime;
 
 /**

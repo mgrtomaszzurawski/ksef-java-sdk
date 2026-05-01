@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.session.SessionClient;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.CryptoService;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;

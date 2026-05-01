@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.common;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.StatusInfoRaw;
-
 import java.util.List;
 
 /**

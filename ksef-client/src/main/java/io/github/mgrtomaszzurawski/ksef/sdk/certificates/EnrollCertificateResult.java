@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.certificates;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
-
 import java.time.OffsetDateTime;
 
 /**

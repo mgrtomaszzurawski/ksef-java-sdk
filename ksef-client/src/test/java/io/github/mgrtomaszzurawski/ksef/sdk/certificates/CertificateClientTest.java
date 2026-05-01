@@ -3,28 +3,16 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.certificates;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
-
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateRevocationReason;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentData;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollmentStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateQueryResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.EnrollCertificateResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.RetrieveCertificatesResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateQueryBuilder;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
