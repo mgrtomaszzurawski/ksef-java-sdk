@@ -194,12 +194,29 @@ public final class SessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             SessionInvoiceStatus response = session.invoiceStatus(invoiceRef);
-            LOG.info("[{}] invoice status: code={}", NAME,
-                    response.status() != null ? response.status().code() : "null");
+            logInvoiceStatus("invoice status", response);
             results.add(RunResult.ok(NAME, OP_GET_INVOICE_STATUS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_INVOICE_STATUS, elapsed(start),
                     errorMessage(exception)));
+        }
+    }
+
+    private void logInvoiceStatus(String label, SessionInvoiceStatus invoice) {
+        if (invoice == null || invoice.status() == null) {
+            LOG.info("[{}] {}: <no status>", NAME, label);
+            return;
+        }
+        LOG.info("[{}] {}: code={} description={} ksefNumber={}",
+                NAME, label,
+                invoice.status().code(),
+                invoice.status().description(),
+                invoice.ksefNumber());
+        List<String> details = invoice.status().details();
+        if (details != null && !details.isEmpty()) {
+            for (String detail : details) {
+                LOG.info("[{}]   detail: {}", NAME, detail);
+            }
         }
     }
 
@@ -234,10 +251,15 @@ public final class SessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             SessionInvoices response = session.failedInvoices();
-            int count = response.invoices() != null ? response.invoices().size() : 0;
-            LOG.info("[{}] failed invoices: {} found", NAME, count);
+            List<SessionInvoiceStatus> failed = response.invoices() != null
+                    ? response.invoices()
+                    : List.of();
+            LOG.info("[{}] failed invoices: {} found", NAME, failed.size());
+            for (SessionInvoiceStatus invoice : failed) {
+                logInvoiceStatus("failed invoice", invoice);
+            }
             results.add(RunResult.ok(NAME, OP_GET_FAILED, elapsed(start),
-                    count + " failed"));
+                    failed.size() + " failed"));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_FAILED, elapsed(start),
                     errorMessage(exception)));

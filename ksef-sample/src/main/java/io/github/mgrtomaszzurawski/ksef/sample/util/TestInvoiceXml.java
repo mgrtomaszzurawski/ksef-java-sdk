@@ -101,6 +101,16 @@ public final class TestInvoiceXml {
                       <P_17>2</P_17>
                       <P_18>2</P_18>
                       <P_18A>2</P_18A>
+                      <Zwolnienie>
+                        <P_19N>1</P_19N>
+                      </Zwolnienie>
+                      <NoweSrodkiTransportu>
+                        <P_22N>1</P_22N>
+                      </NoweSrodkiTransportu>
+                      <P_23>2</P_23>
+                      <PMarzy>
+                        <P_PMarzyN>1</P_PMarzyN>
+                      </PMarzy>
                     </Adnotacje>
                     <RodzajFaktury>VAT</RodzajFaktury>
                     <FaWiersz>
