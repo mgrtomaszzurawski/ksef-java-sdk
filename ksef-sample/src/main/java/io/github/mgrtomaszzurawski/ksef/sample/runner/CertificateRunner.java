@@ -16,27 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateClient;
-
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
-
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.CertificateCsrUtil;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateEnrollBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.KsefCertificateType;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateQueryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
  * Runner for CertificateClient operations.

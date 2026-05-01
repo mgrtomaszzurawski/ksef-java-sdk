@@ -4,8 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
 
 /**
  * Access and refresh tokens obtained by redeeming the operation token.

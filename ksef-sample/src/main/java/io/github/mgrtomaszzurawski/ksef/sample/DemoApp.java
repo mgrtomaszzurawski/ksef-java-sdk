@@ -34,18 +34,17 @@ import io.github.mgrtomaszzurawski.ksef.sample.runner.TestDataRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.TokenRunner;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Main entry point for the KSeF demo application.

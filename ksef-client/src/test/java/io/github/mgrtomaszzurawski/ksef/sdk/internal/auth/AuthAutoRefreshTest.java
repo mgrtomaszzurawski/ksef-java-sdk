@@ -4,16 +4,16 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
-import org.junit.jupiter.api.Test;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.util.Base64;
+import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;

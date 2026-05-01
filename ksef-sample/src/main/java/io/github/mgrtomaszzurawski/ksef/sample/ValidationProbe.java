@@ -23,11 +23,8 @@ package io.github.mgrtomaszzurawski.ksef.sample;
 
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import java.io.FileInputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -35,6 +32,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Validation probe — sends invalid requests to KSeF endpoints and logs

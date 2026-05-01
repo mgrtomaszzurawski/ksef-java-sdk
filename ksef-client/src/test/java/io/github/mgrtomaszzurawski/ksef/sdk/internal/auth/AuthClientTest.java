@@ -4,22 +4,22 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationList;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationTokenRefresh;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationTokens;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;

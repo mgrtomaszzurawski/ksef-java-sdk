@@ -4,11 +4,11 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.security;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
 import java.util.List;
 
 /**

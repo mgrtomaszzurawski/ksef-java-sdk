@@ -16,32 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.InvoiceClient;
-
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_BACKOFF_MULTIPLIER;
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_INITIAL_DELAY_MS;
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_TIMEOUT_MS;
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
-
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.ExportInvoicesResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceExportStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceMetadataResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder.InvoiceExportBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder.InvoiceExportBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.builder.InvoiceQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceExportStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.InvoiceMetadataResult;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_BACKOFF_MULTIPLIER;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_INITIAL_DELAY_MS;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_TIMEOUT_MS;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
  * Runner for InvoiceClient operations. queryMetadata works in AUTH_SAFE and FULL modes.

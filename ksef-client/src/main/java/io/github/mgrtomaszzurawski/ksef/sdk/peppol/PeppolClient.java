@@ -4,11 +4,11 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.peppol;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.peppol.model.PeppolProvidersResult;
+import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.peppol.model.PeppolProvidersResult;
 
 /**
  * Client for KSeF Peppol service provider queries.

@@ -4,10 +4,10 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import org.junit.jupiter.api.Test;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

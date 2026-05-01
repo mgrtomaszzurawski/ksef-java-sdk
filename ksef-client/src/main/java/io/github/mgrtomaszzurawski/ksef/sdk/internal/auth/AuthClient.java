@@ -4,34 +4,34 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.client.model.AllowedIpsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationContextIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AllowedIpsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationListResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthorizationPolicyRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationOperationStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenRefreshResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.AuthorizationPolicyRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InitTokenAuthenticationRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.CryptoService;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationList;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationTokenRefresh;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationTokens;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.signing.SigningService;
-import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
 
 /**
  * Client for KSeF authentication operations.

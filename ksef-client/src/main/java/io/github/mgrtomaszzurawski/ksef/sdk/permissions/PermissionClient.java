@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.client.model.CheckAttachmentPermissionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationResponseRaw;
@@ -20,18 +18,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubordinateEntityRoles
 import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubunitPermissionsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.AttachmentPermissionStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityAuthorizationPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityRoles;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EuEntityPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PersonPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PersonalPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.SubordinateEntityRoles;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.SubunitPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityPermissionGrantBuilder;
@@ -43,6 +32,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermission
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonalPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.SubunitPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.AttachmentPermissionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityAuthorizationPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityRoles;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EuEntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PersonPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PersonalPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.SubordinateEntityRoles;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.SubunitPermissions;
 import java.util.Objects;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
 

@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.session;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
@@ -15,6 +13,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.OnlineSession;

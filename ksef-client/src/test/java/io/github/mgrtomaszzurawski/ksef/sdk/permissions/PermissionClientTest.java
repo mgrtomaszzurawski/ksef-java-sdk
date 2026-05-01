@@ -4,24 +4,13 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.AttachmentPermissionStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityAuthorizationPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityRoles;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EuEntityPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PersonPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PersonalPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.SubordinateEntityRoles;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.SubunitPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityPermissionGrantBuilder;
@@ -33,6 +22,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermission
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonalPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.SubunitPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.AttachmentPermissionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityAuthorizationPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EntityRoles;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.EuEntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PersonPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PersonalPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.SubordinateEntityRoles;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.SubunitPermissions;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
