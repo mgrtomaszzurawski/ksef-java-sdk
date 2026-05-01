@@ -16,13 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.PermissionClient;
-
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
-
+import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
+import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.EntityPermissionGrantBuilder;
@@ -34,13 +31,13 @@ import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermission
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.PersonalPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder.SubunitPermissionGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
-import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.github.mgrtomaszzurawski.ksef.sdk.permissions.model.PermissionOperationResult;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
  * Runner for PermissionClient operations. Exercises every grant variant (person, entity,

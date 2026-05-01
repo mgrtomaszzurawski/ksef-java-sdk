@@ -14,12 +14,12 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationChallenge;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationChallenge;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.certificates.CertificateClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
@@ -33,6 +33,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.CertificateLoader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.security.SecurityClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.session.SessionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.RetryHandler;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.InvoiceClient;
@@ -47,21 +48,21 @@ import io.github.mgrtomaszzurawski.ksef.sdk.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.testdata.TestDataClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.tokens.TokenClient;
-import org.openapitools.jackson.nullable.JsonNullableModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
-import java.util.List;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import org.openapitools.jackson.nullable.JsonNullableModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Main entry point for the KSeF Java SDK.
@@ -85,7 +86,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * }
  * }</pre>
  */
-public final class KsefClient implements AutoCloseable {
+public final class KsefClient implements AutoCloseable, HttpRuntime {
 
     private static final Logger LOG = LoggerFactory.getLogger(KsefClient.class);
 
@@ -437,6 +438,9 @@ public final class KsefClient implements AutoCloseable {
 
     /** SDK infrastructure — not part of the consumer-facing API. */
     public KsefEnvironment environment() { return environment; }
+
+    @Override
+    public String baseUrl() { return environment.baseUrl(); }
 
     /** SDK infrastructure — not part of the consumer-facing API. */
     public HttpClient httpClient() { return httpClient; }

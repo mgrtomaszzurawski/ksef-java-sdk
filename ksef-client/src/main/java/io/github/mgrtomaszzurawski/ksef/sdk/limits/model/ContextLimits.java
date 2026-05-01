@@ -4,9 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.limits.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.OnlineSessionLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.BatchSessionLimits;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.BatchSessionLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.OnlineSessionLimits;
 
 /**
  * Effective context limits for online and batch sessions.

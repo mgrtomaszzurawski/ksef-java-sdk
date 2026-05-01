@@ -4,16 +4,16 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.tokens;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenList;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenDetail;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.GenerateTokenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.builder.TokenGenerateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.builder.TokenGenerateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenList;
 import java.util.Objects;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport.requireSafePathSegment;
 

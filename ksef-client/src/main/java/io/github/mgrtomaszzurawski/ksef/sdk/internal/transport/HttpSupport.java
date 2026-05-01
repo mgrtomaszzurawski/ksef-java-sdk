@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.transport;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.io.IOException;
 import java.net.URI;
@@ -39,10 +38,10 @@ public final class HttpSupport {
     private static final Pattern SAFE_PATH_SEGMENT = Pattern.compile("^[A-Za-z0-9._\\-]+$");
     private static final String ERR_UNSAFE_PATH = "Unsafe path segment: ";
 
-    private final KsefClient ksef;
+    private final HttpRuntime runtime;
 
-    public HttpSupport(KsefClient ksef) {
-        this.ksef = ksef;
+    public HttpSupport(HttpRuntime runtime) {
+        this.runtime = runtime;
     }
 
     /**
@@ -64,14 +63,14 @@ public final class HttpSupport {
      * Build a URI from a path relative to the base URL.
      */
     public URI uri(String path) {
-        return URI.create(ksef.environment().baseUrl() + path);
+        return URI.create(runtime.baseUrl() + path);
     }
 
     /**
      * Send a GET request and deserialize the JSON response.
      */
     public <T> T get(String path, Class<T> responseType, String operationName) {
-        return ksef.retryHandler().execute(() -> {
+        return runtime.retryHandler().execute(() -> {
             HttpRequest request = newGetBuilder(path).build();
             return sendAndDeserialize(request, responseType);
         }, operationName);
@@ -82,7 +81,7 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public <T> T getAuthenticated(String path, String token, Class<T> responseType, String operationName) {
-        return ksef.retryHandler().execute(() -> sendAuthenticatedJson(
+        return runtime.retryHandler().execute(() -> sendAuthenticatedJson(
                 bearer -> newGetBuilder(path)
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .build(),
@@ -93,7 +92,7 @@ public final class HttpSupport {
      * Send a GET request and deserialize a JSON array response.
      */
     public <T> List<T> getList(String path, TypeReference<List<T>> typeRef, String operationName) {
-        return ksef.retryHandler().execute(() -> {
+        return runtime.retryHandler().execute(() -> {
             HttpRequest request = newGetBuilder(path).build();
             return sendAndDeserializeList(request, typeRef);
         }, operationName);
@@ -103,7 +102,7 @@ public final class HttpSupport {
      * Send a POST request with no body and deserialize the JSON response.
      */
     public <T> T postNoBody(String path, Class<T> responseType, String operationName) {
-        return ksef.retryHandler().executePost(() -> {
+        return runtime.retryHandler().executePost(() -> {
             HttpRequest request = newPostBuilder(path)
                     .header(ACCEPT, APPLICATION_JSON)
                     .POST(HttpRequest.BodyPublishers.noBody())
@@ -116,8 +115,8 @@ public final class HttpSupport {
      * Send a POST request with JSON body and deserialize the response.
      */
     public <T> T postJson(String path, Object body, Class<T> responseType, String operationName) {
-        return ksef.retryHandler().executePost(() -> {
-            String jsonBody = ksef.objectMapper().writeValueAsString(body);
+        return runtime.retryHandler().executePost(() -> {
+            String jsonBody = runtime.objectMapper().writeValueAsString(body);
             HttpRequest request = newPostBuilder(path)
                     .header(CONTENT_TYPE, APPLICATION_JSON)
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -132,8 +131,8 @@ public final class HttpSupport {
      */
     public <T> T postJsonAuthenticated(String path, Object body, String token,
                                        Class<T> responseType, String operationName) {
-        return ksef.retryHandler().executePost(() -> {
-            String jsonBody = ksef.objectMapper().writeValueAsString(body);
+        return runtime.retryHandler().executePost(() -> {
+            String jsonBody = runtime.objectMapper().writeValueAsString(body);
             return sendAuthenticatedJson(
                     bearer -> newPostBuilder(path)
                             .header(CONTENT_TYPE, APPLICATION_JSON)
@@ -149,7 +148,7 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public <T> T postAuthenticated(String path, String token, Class<T> responseType, String operationName) {
-        return ksef.retryHandler().executePost(() -> sendAuthenticatedJson(
+        return runtime.retryHandler().executePost(() -> sendAuthenticatedJson(
                 bearer -> newPostBuilder(path)
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .POST(HttpRequest.BodyPublishers.noBody())
@@ -161,7 +160,7 @@ public final class HttpSupport {
      * Send a POST with XML body (for XAdES signed auth requests).
      */
     public <T> T postXml(String path, String xmlBody, Class<T> responseType, String operationName) {
-        return ksef.retryHandler().executePost(() -> {
+        return runtime.retryHandler().executePost(() -> {
             HttpRequest request = newPostBuilder(path)
                     .header(CONTENT_TYPE, APPLICATION_XML)
                     .POST(HttpRequest.BodyPublishers.ofString(xmlBody))
@@ -175,8 +174,8 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public void postJsonAuthenticatedNoContent(String path, Object body, String token, String operationName) {
-        ksef.retryHandler().run(() -> {
-            String jsonBody = ksef.objectMapper().writeValueAsString(body);
+        runtime.retryHandler().run(() -> {
+            String jsonBody = runtime.objectMapper().writeValueAsString(body);
             sendAuthenticatedNoContent(
                     bearer -> newPostBuilder(path)
                             .header(CONTENT_TYPE, APPLICATION_JSON)
@@ -191,8 +190,8 @@ public final class HttpSupport {
      * Send a POST with JSON body and expect no content (204). No authentication.
      */
     public void postJsonNoContent(String path, Object body, String operationName) {
-        ksef.retryHandler().run(() -> {
-            String jsonBody = ksef.objectMapper().writeValueAsString(body);
+        runtime.retryHandler().run(() -> {
+            String jsonBody = runtime.objectMapper().writeValueAsString(body);
             HttpRequest request = newPostBuilder(path)
                     .header(CONTENT_TYPE, APPLICATION_JSON)
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -206,7 +205,7 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public void postNoBodyAuthenticated(String path, String token, String operationName) {
-        ksef.retryHandler().run(() -> sendAuthenticatedNoContent(
+        runtime.retryHandler().run(() -> sendAuthenticatedNoContent(
                 bearer -> newPostBuilder(path)
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .POST(HttpRequest.BodyPublishers.noBody())
@@ -219,10 +218,10 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public byte[] getAuthenticatedBytes(String path, String token, String operationName) {
-        return ksef.retryHandler().execute(() -> sendAuthenticatedBytes(
+        return runtime.retryHandler().execute(() -> sendAuthenticatedBytes(
                 bearer -> HttpRequest.newBuilder()
                         .uri(uri(path))
-                        .timeout(ksef.readTimeout())
+                        .timeout(runtime.readTimeout())
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .GET()
                         .build(),
@@ -235,10 +234,10 @@ public final class HttpSupport {
      */
     public <T> T deleteAuthenticatedWithResponse(String path, String token,
                                                   Class<T> responseType, String operationName) {
-        return ksef.retryHandler().execute(() -> sendAuthenticatedJson(
+        return runtime.retryHandler().execute(() -> sendAuthenticatedJson(
                 bearer -> HttpRequest.newBuilder()
                         .uri(uri(path))
-                        .timeout(ksef.readTimeout())
+                        .timeout(runtime.readTimeout())
                         .header(ACCEPT, APPLICATION_JSON)
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .DELETE()
@@ -251,10 +250,10 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public void deleteAuthenticated(String path, String token, String operationName) {
-        ksef.retryHandler().run(() -> sendAuthenticatedNoContent(
+        runtime.retryHandler().run(() -> sendAuthenticatedNoContent(
                 bearer -> HttpRequest.newBuilder()
                         .uri(uri(path))
-                        .timeout(ksef.readTimeout())
+                        .timeout(runtime.readTimeout())
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .DELETE()
                         .build(),
@@ -264,7 +263,7 @@ public final class HttpSupport {
     private HttpRequest.Builder newGetBuilder(String path) {
         return HttpRequest.newBuilder()
                 .uri(uri(path))
-                .timeout(ksef.readTimeout())
+                .timeout(runtime.readTimeout())
                 .header(ACCEPT, APPLICATION_JSON)
                 .GET();
     }
@@ -272,7 +271,7 @@ public final class HttpSupport {
     private HttpRequest.Builder newPostBuilder(String path) {
         return HttpRequest.newBuilder()
                 .uri(uri(path))
-                .timeout(ksef.readTimeout());
+                .timeout(runtime.readTimeout());
     }
 
     /**
@@ -286,7 +285,7 @@ public final class HttpSupport {
         HttpRequest request = requestBuilder.apply(initialToken);
         HttpResponse<String> response = send(request);
         if (response.statusCode() == HTTP_UNAUTHORIZED && tryReauthenticate()) {
-            String freshToken = ksef.sessionContext().token();
+            String freshToken = runtime.sessionContext().token();
             request = requestBuilder.apply(freshToken);
             response = send(request);
         }
@@ -301,7 +300,7 @@ public final class HttpSupport {
         HttpRequest request = requestBuilder.apply(initialToken);
         HttpResponse<String> response = send(request);
         if (response.statusCode() == HTTP_UNAUTHORIZED && tryReauthenticate()) {
-            String freshToken = ksef.sessionContext().token();
+            String freshToken = runtime.sessionContext().token();
             request = requestBuilder.apply(freshToken);
             response = send(request);
         }
@@ -316,7 +315,7 @@ public final class HttpSupport {
         HttpRequest request = requestBuilder.apply(initialToken);
         HttpResponse<byte[]> response = sendBytes(request);
         if (response.statusCode() == HTTP_UNAUTHORIZED && tryReauthenticate()) {
-            String freshToken = ksef.sessionContext().token();
+            String freshToken = runtime.sessionContext().token();
             request = requestBuilder.apply(freshToken);
             response = sendBytes(request);
         }
@@ -335,7 +334,7 @@ public final class HttpSupport {
      */
     private boolean tryReauthenticate() {
         try {
-            ksef.reauthenticate();
+            runtime.reauthenticate();
             return true;
         } catch (RuntimeException ignored) {
             return false;
@@ -362,7 +361,7 @@ public final class HttpSupport {
         if (status != HTTP_OK) {
             throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body());
         }
-        return ksef.objectMapper().readValue(response.body(), typeRef);
+        return runtime.objectMapper().readValue(response.body(), typeRef);
     }
 
     private void sendExpectNoContent(HttpRequest request) throws IOException {
@@ -379,7 +378,7 @@ public final class HttpSupport {
 
     private HttpResponse<String> send(HttpRequest request) throws IOException {
         try {
-            return ksef.httpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            return runtime.httpClient().send(request, HttpResponse.BodyHandlers.ofString());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
@@ -388,7 +387,7 @@ public final class HttpSupport {
 
     private HttpResponse<byte[]> sendBytes(HttpRequest request) throws IOException {
         try {
-            return ksef.httpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
+            return runtime.httpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
@@ -396,7 +395,7 @@ public final class HttpSupport {
     }
 
     private <T> T deserialize(String body, Class<T> responseType) throws IOException {
-        return ksef.objectMapper().readValue(body, responseType);
+        return runtime.objectMapper().readValue(body, responseType);
     }
 
 }

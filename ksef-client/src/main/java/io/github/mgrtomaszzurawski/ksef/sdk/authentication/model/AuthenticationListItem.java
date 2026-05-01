@@ -4,8 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationListItemRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
 
 /**

@@ -5,24 +5,24 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.batch.BatchFileSpec;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.session.SessionClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.batch.BatchPackageBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.batch.BatchPackageBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.session.SessionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.batch.BatchFileSpec;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model.SessionStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An open KSeF batch session for bulk invoice submission via ZIP package.

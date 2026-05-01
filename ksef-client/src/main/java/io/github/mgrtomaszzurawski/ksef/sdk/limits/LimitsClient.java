@@ -4,13 +4,13 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.limits;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.limits.model.SubjectLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.limits.model.ContextLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.limits.model.ContextLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.limits.model.SubjectLimits;
 
 /**
  * Client for KSeF session and subject limit queries.

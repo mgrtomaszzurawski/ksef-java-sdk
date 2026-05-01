@@ -4,8 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
 
 /**

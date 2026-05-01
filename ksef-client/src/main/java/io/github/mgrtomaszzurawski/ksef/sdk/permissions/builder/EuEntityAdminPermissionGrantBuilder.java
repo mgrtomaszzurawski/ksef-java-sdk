@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions.builder;
 
+import io.github.mgrtomaszzurawski.ksef.client.model.EntityByFingerprintDetailsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsContextIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsGrantRequestRaw;
@@ -12,7 +13,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermi
 import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityDetailsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionSubjectDetailsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionSubjectDetailsTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityByFingerprintDetailsRaw;
 import java.util.Objects;
 
 /**

@@ -18,14 +18,16 @@
 package io.github.mgrtomaszzurawski.ksef.sample.util;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentData;
+import java.io.IOException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
-
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 
 /**
  * Generates a PKCS#10 CSR (DER) using subject fields supplied by KSeF
@@ -51,19 +53,21 @@ public final class CertificateCsrUtil {
     /**
      * Generate a fresh RSA key pair plus a CSR DER built from the supplied enrollment data.
      */
-    public static CsrResult generate(CertificateEnrollmentData data) throws Exception {
+    public static CsrResult generate(CertificateEnrollmentData data)
+            throws NoSuchAlgorithmException, OperatorCreationException, IOException {
         KeyPair keyPair = generateKeyPair();
         byte[] csrDer = buildCsr(data, keyPair);
         return new CsrResult(csrDer, keyPair);
     }
 
-    private static KeyPair generateKeyPair() throws Exception {
+    private static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA_ALGORITHM);
         keyPairGenerator.initialize(RSA_KEY_SIZE);
         return keyPairGenerator.generateKeyPair();
     }
 
-    private static byte[] buildCsr(CertificateEnrollmentData data, KeyPair keyPair) throws Exception {
+    private static byte[] buildCsr(CertificateEnrollmentData data, KeyPair keyPair)
+            throws OperatorCreationException, IOException {
         StringBuilder subjectDn = new StringBuilder();
         subjectDn.append(DN_CN_PREFIX).append(data.commonName());
         subjectDn.append(DN_COUNTRY_PREFIX).append(data.countryName());
@@ -94,6 +98,19 @@ public final class CertificateCsrUtil {
      * Tuple of CSR DER bytes and the key pair backing it. Caller keeps the key
      * pair if it intends to use the issued certificate; the demo runners discard
      * it because they revoke the cert immediately after the round-trip.
+     *
+     * <p>The compact constructor and accessor defensively clone the byte array so
+     * the record exposes an independent copy of the CSR payload, consistent with
+     * the SpotBugs {@code EI_EXPOSE_REP} mitigation applied elsewhere in the SDK.
      */
-    public record CsrResult(byte[] csrDer, KeyPair keyPair) { }
+    public record CsrResult(byte[] csrDer, KeyPair keyPair) {
+        public CsrResult {
+            csrDer = csrDer.clone();
+        }
+
+        @Override
+        public byte[] csrDer() {
+            return csrDer.clone();
+        }
+    }
 }

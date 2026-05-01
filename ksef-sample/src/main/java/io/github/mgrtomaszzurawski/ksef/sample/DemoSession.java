@@ -20,11 +20,10 @@ package io.github.mgrtomaszzurawski.ksef.sample;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunReport;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.DemoRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Orchestrates demo runner execution. Runs each runner in order, catches unexpected

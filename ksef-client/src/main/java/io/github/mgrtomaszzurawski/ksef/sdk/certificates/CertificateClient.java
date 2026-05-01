@@ -4,17 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.certificates;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.RetrieveCertificatesResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.EnrollCertificateResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateRevocationReason;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateQueryResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentData;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
@@ -24,6 +13,17 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRa
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateEnrollBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder.CertificateQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateEnrollmentStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateQueryResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.EnrollCertificateResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.RetrieveCertificatesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.transport.HttpSupport;
 import java.util.List;
 import java.util.Objects;

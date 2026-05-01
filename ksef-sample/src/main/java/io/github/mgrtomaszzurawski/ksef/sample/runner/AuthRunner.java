@@ -17,26 +17,20 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
-import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
-
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.AuthClient;
+import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
+import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationList;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationTokenRefresh;
 import io.github.mgrtomaszzurawski.ksef.sdk.authentication.model.AuthenticationTokens;
-import io.github.mgrtomaszzurawski.ksef.sdk.limits.model.ContextLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
-import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
-import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.AuthClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.limits.model.ContextLimits;
 import java.io.ByteArrayInputStream;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
@@ -44,6 +38,10 @@ import java.security.cert.X509Certificate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
+import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
  * Runner for authentication. Uses the high-level {@code client.authenticate()} API

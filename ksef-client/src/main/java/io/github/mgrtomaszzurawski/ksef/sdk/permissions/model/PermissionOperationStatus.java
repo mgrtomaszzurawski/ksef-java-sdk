@@ -4,8 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationStatusResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 
 /**
  * Status of a permission operation.

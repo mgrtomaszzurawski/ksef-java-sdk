@@ -4,8 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.authentication.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
 
 /**
  * Result of initiating authentication (XAdES or token flow).

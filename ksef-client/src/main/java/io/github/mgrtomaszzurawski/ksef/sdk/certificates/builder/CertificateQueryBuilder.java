@@ -4,9 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.certificates.builder;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.KsefCertificateType;
-import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.CertificateStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.certificates.model.KsefCertificateType;
 import java.time.OffsetDateTime;
 
 /**

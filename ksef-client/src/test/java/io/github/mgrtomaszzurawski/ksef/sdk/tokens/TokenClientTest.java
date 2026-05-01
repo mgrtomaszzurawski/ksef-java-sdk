@@ -4,17 +4,17 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.tokens;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenList;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenDetail;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.GenerateTokenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.tokens.builder.TokenGenerateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.authentication.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.builder.TokenGenerateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.tokens.model.TokenList;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
