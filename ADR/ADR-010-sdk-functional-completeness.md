@@ -2,6 +2,7 @@
 
 **Date:** 2026-04-21
 **Status:** Accepted
+**Last verified:** 2026-05-02
 **Extends:** ADR-008 (API redesign)
 
 ## Context
