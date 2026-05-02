@@ -55,7 +55,8 @@ class InvoiceClientTest {
                   "invoiceType": "Vat"
                 }
               ],
-              "hasMore": false
+              "hasMore": false,
+              "isTruncated": false
             }
             """.formatted(TEST_KSEF_NUMBER);
 
