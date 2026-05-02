@@ -1,5 +1,5 @@
 /*
- * KSeF Sample App - Demo application exercising the KSeF Java SDK against the live demo server
+ * KSeF Demo App - Demo application exercising the KSeF Java SDK against the live demo server
  * Copyright © 2026 Tomasz Zurawski (${email})
  *
  * This program is free software: you can redistribute it and/or modify

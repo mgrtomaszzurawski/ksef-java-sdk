@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 
 @WireMockTest
 class SessionClientTest {
@@ -99,7 +100,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            OnlineSession response = ksef.sessions().openOnline(new OpenOnlineSessionRequestRaw());
+            OnlineSession response = new SessionClient(ksef).openOnline(new OpenOnlineSessionRequestRaw());
 
             // then
             assertEquals(TEST_SESSION_REF, response.referenceNumber());
@@ -120,7 +121,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SendInvoiceResult response = ksef.sessions().sendInvoice(
+            SendInvoiceResult response = new SessionClient(ksef).sendInvoice(
                     TEST_SESSION_REF, new SendInvoiceRequestRaw());
 
             // then
@@ -139,7 +140,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            ksef.sessions().closeOnline(TEST_SESSION_REF);
+            new SessionClient(ksef).closeOnline(TEST_SESSION_REF);
 
             // then
             verify(postRequestedFor(urlEqualTo(closePath))
@@ -160,7 +161,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionStatus response = ksef.sessions().getStatus(TEST_SESSION_REF);
+            SessionStatus response = new SessionClient(ksef).getStatus(TEST_SESSION_REF);
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
@@ -181,7 +182,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionInvoices response = ksef.sessions().getInvoices(TEST_SESSION_REF);
+            SessionInvoices response = new SessionClient(ksef).getInvoices(TEST_SESSION_REF);
 
             // then
             assertEquals(1, response.invoices().size());
@@ -202,7 +203,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionInvoiceStatus response = ksef.sessions()
+            SessionInvoiceStatus response = new SessionClient(ksef)
                     .getInvoiceStatus(TEST_SESSION_REF, TEST_INVOICE_REF);
 
             // then
@@ -223,7 +224,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] upoBytes = ksef.sessions().getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
+            byte[] upoBytes = new SessionClient(ksef).getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
 
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
@@ -243,7 +244,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] upoBytes = ksef.sessions().getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
+            byte[] upoBytes = new SessionClient(ksef).getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
 
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
@@ -262,7 +263,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // then
-            var sessions = ksef.sessions();
+            var sessions = new SessionClient(ksef);
             OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw();
             assertThrows(KsefAuthException.class, () -> sessions.openOnline(request));
         }
@@ -277,7 +278,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // then
-            var sessions = ksef.sessions();
+            var sessions = new SessionClient(ksef);
             SendInvoiceRequestRaw request = new SendInvoiceRequestRaw();
             assertThrows(KsefServerException.class,
                     () -> sessions.sendInvoice(TEST_SESSION_REF, request));

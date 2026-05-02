@@ -1,5 +1,5 @@
 /*
- * KSeF Sample App - Demo application exercising the KSeF Java SDK against the live demo server
+ * KSeF Demo App - Demo application exercising the KSeF Java SDK against the live demo server
  * Copyright © 2026 Tomasz Zurawski (${email})
  *
  * This program is free software: you can redistribute it and/or modify
@@ -36,6 +36,7 @@ import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
 
 /**
  * Standalone probe to verify two RCAs:
@@ -219,7 +220,7 @@ public final class CertProbe {
         int delay = POLL_INITIAL_DELAY_MS;
         long deadline = System.currentTimeMillis() + AUTH_POLL_TIMEOUT_MS;
         while (System.currentTimeMillis() < deadline) {
-            AuthenticationStatus authStatus = client.auth().getStatus(authRef);
+            AuthenticationStatus authStatus = new AuthClient(client).getStatus(authRef);
             if (authStatus.status() != null && authStatus.status().code() == AUTH_STATUS_OK) {
                 return;
             }
