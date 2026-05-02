@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class DemoSession {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DemoSession.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DemoSession.class);
     private static final String LOG_HEADER = "=== {} ===";
     private static final String LOG_DONE = "[{}] done in {} ms ({} results)";
     private static final String LOG_FAIL = "[{}] UNEXPECTED FAIL in {} ms: {}";
@@ -49,17 +49,17 @@ public final class DemoSession {
         RunReport report = new RunReport();
         for (DemoRunner runner : runners) {
             String header = runner.name().toUpperCase(Locale.ROOT);
-            LOG.info(LOG_HEADER, header);
+            LOGGER.info(LOG_HEADER, header);
             long start = System.currentTimeMillis();
             try {
                 List<RunResult> results = runner.run(context);
                 long elapsed = System.currentTimeMillis() - start;
-                LOG.info(LOG_DONE, runner.name(), elapsed, results.size());
+                LOGGER.info(LOG_DONE, runner.name(), elapsed, results.size());
                 report.addAll(results);
             } catch (Exception exception) {
                 long elapsed = System.currentTimeMillis() - start;
                 String detail = exception.getClass().getSimpleName() + ": " + exception.getMessage();
-                LOG.error(LOG_FAIL, runner.name(), elapsed, detail);
+                LOGGER.error(LOG_FAIL, runner.name(), elapsed, detail);
                 report.add(RunResult.fail(runner.name(), "UNEXPECTED", elapsed, detail));
             }
         }

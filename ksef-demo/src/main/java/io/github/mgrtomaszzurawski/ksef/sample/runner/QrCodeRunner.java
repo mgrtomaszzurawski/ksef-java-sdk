@@ -32,7 +32,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  */
 public final class QrCodeRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(QrCodeRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(QrCodeRunner.class);
     private static final String NAME = "qrcode";
     private static final String OP_URL = "getVerificationUrl";
     private static final String OP_QR = "generateQrCode";
@@ -53,7 +53,7 @@ public final class QrCodeRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             String verificationUrl = service.getVerificationUrl(TEST_KSEF_NUMBER);
-            LOG.info("[{}] verification URL: {}", NAME, verificationUrl);
+            LOGGER.info("[{}] verification URL: {}", NAME, verificationUrl);
             results.add(RunResult.ok(NAME, OP_URL, elapsed(start), verificationUrl));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_URL, elapsed(start), errorMessage(exception)));
@@ -63,7 +63,7 @@ public final class QrCodeRunner implements DemoRunner {
         start = System.currentTimeMillis();
         try {
             byte[] pngBytes = service.generateQrCode(TEST_KSEF_NUMBER);
-            LOG.info("[{}] QR code generated: {} bytes PNG", NAME, pngBytes.length);
+            LOGGER.info("[{}] QR code generated: {} bytes PNG", NAME, pngBytes.length);
             results.add(RunResult.ok(NAME, OP_QR, elapsed(start), pngBytes.length + " bytes"));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QR, elapsed(start), errorMessage(exception)));

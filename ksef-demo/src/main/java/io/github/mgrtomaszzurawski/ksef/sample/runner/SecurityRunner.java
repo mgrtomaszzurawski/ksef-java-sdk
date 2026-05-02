@@ -37,7 +37,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityCli
  */
 public final class SecurityRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityRunner.class);
     private static final String NAME = "security";
     private static final String OP_GET_CERTS = "getPublicKeyCertificates";
 
@@ -51,10 +51,10 @@ public final class SecurityRunner implements DemoRunner {
         try {
             List<PublicKeyCertificate> certs = new SecurityClient(context.client())
                     .getPublicKeyCertificates();
-            LOG.info("[{}] fetched {} certificates", NAME, certs.size());
+            LOGGER.info("[{}] fetched {} certificates", NAME, certs.size());
 
             for (PublicKeyCertificate cert : certs) {
-                LOG.info("[{}] cert usage={}, valid={} to {}", NAME,
+                LOGGER.info("[{}] cert usage={}, valid={} to {}", NAME,
                         cert.usage(), cert.validFrom(), cert.validTo());
             }
 

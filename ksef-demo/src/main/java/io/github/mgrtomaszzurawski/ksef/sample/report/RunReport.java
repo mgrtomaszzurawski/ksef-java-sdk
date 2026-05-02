@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class RunReport {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RunReport.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RunReport.class);
     private static final String SUMMARY_FORMAT = "--- Summary: {} OK, {} FAIL, {} SKIP ---";
     private static final int EXIT_SUCCESS = 0;
     private static final int EXIT_FAILURE = 1;
@@ -68,11 +68,11 @@ public final class RunReport {
     public void print() {
         for (RunResult result : results) {
             if (result.status() == RunStatus.FAIL) {
-                LOG.error("{}", result);
+                LOGGER.error("{}", result);
             } else {
-                LOG.info("{}", result);
+                LOGGER.info("{}", result);
             }
         }
-        LOG.info(SUMMARY_FORMAT, okCount(), failCount(), skipCount());
+        LOGGER.info(SUMMARY_FORMAT, okCount(), failCount(), skipCount());
     }
 }
