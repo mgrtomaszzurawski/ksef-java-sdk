@@ -46,6 +46,11 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  * UPO retrieval (by invoice ref and by KSeF number), and a
  * negative-path stale-session-recovery probe.
  */
+@SuppressWarnings({
+    "java:S2629", // demo-runner logging is always at INFO; eager arg eval is intentional
+    "java:S1141", // Sonar flags one nested try block; refactoring would obscure the dual-session probe shape
+    "java:S1168"  // upo() returns null in failure path to match SDK's contract on missing UPO
+})
 public final class SessionRunner implements DemoRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SessionRunner.class);

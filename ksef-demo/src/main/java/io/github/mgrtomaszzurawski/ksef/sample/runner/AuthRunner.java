@@ -61,6 +61,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  *       /current endpoint exercised by {@code terminateAuth})</li>
  * </ul>
  */
+@SuppressWarnings("java:S2629") // demo-runner logging is always at INFO; eager arg eval is intentional
 public final class AuthRunner implements DemoRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthRunner.class);

@@ -52,6 +52,7 @@ public final class PermissionRunner implements DemoRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PermissionRunner.class);
     private static final String NAME = "permission";
+    private static final String SUFFIX_PERMISSIONS = " permissions";
 
     private static final String OP_GRANT_PERSON = "grantPerson";
     private static final String OP_GRANT_ENTITY = "grantEntity";
@@ -384,7 +385,7 @@ public final class PermissionRunner implements DemoRunner {
             var response = context.client().permissions().queryPersonal(PersonalPermissionsQueryBuilder.create());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] personal permissions: {} found", NAME, count);
-            results.add(RunResult.ok(NAME, OP_QUERY_PERSONAL, elapsed(start), count + " permissions"));
+            results.add(RunResult.ok(NAME, OP_QUERY_PERSONAL, elapsed(start), count + SUFFIX_PERMISSIONS));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QUERY_PERSONAL, elapsed(start), errorMessage(exception)));
         }
@@ -398,7 +399,7 @@ public final class PermissionRunner implements DemoRunner {
             var response = context.client().permissions().queryPersons(builder);
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] person permissions: {} found", NAME, count);
-            results.add(RunResult.ok(NAME, OP_QUERY_PERSONS, elapsed(start), count + " permissions"));
+            results.add(RunResult.ok(NAME, OP_QUERY_PERSONS, elapsed(start), count + SUFFIX_PERMISSIONS));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QUERY_PERSONS, elapsed(start), errorMessage(exception)));
         }
@@ -410,7 +411,7 @@ public final class PermissionRunner implements DemoRunner {
             var response = context.client().permissions().querySubunits();
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] subunit permissions: {} found", NAME, count);
-            results.add(RunResult.ok(NAME, OP_QUERY_SUBUNITS, elapsed(start), count + " permissions"));
+            results.add(RunResult.ok(NAME, OP_QUERY_SUBUNITS, elapsed(start), count + SUFFIX_PERMISSIONS));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QUERY_SUBUNITS, elapsed(start), errorMessage(exception)));
         }
@@ -422,7 +423,7 @@ public final class PermissionRunner implements DemoRunner {
             var response = context.client().permissions().queryEntities();
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] entity permissions: {} found", NAME, count);
-            results.add(RunResult.ok(NAME, OP_QUERY_ENTITIES, elapsed(start), count + " permissions"));
+            results.add(RunResult.ok(NAME, OP_QUERY_ENTITIES, elapsed(start), count + SUFFIX_PERMISSIONS));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QUERY_ENTITIES, elapsed(start), errorMessage(exception)));
         }
@@ -471,7 +472,7 @@ public final class PermissionRunner implements DemoRunner {
             var response = context.client().permissions().queryEuEntities(EuEntityPermissionsQueryBuilder.create());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] EU entity permissions: {} found", NAME, count);
-            results.add(RunResult.ok(NAME, OP_QUERY_EU_ENTITIES, elapsed(start), count + " permissions"));
+            results.add(RunResult.ok(NAME, OP_QUERY_EU_ENTITIES, elapsed(start), count + SUFFIX_PERMISSIONS));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QUERY_EU_ENTITIES, elapsed(start), errorMessage(exception)));
         }

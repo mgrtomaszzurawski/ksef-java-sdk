@@ -54,6 +54,10 @@ import org.slf4j.LoggerFactory;
  *   8. Read /certificates/limits AFTER enroll
  *   9. If serial appeared, revoke the new cert too (cleanup)
  */
+@SuppressWarnings({
+    "java:S2629", // CLI probe; INFO is always enabled — eager arg eval is intentional
+    "java:S112"   // Probe wraps generic Exception around RuntimeException paths to log+exit cleanly
+})
 public final class CertProbe {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CertProbe.class);

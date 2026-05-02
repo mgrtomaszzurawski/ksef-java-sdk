@@ -49,6 +49,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  * fresh quota window. The newly enrolled cert is revoked immediately after the
  * serial appears, so the only quota cost is one enrollment slot.</p>
  */
+@SuppressWarnings("java:S2629") // demo-runner logging is always at INFO; eager arg eval is intentional
 public final class CertificateRunner implements DemoRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CertificateRunner.class);
