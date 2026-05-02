@@ -39,7 +39,7 @@ public record SubunitPermission(
             String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
             authorId = new PermissionIdentifier(type, authorRaw.getValue());
         }
-        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
+        String scope = raw.getPermissionScope().getValue();
         return new SubunitPermission(raw.getId(), authzId, subunitId, authorId,
                 scope, raw.getDescription(), raw.getSubunitName(), raw.getStartDate());
     }

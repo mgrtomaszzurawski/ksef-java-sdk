@@ -36,7 +36,7 @@ public record InvoicePackagePart(
 
     public static InvoicePackagePart from(InvoicePackagePartRaw raw) {
         return new InvoicePackagePart(
-                raw.getOrdinalNumber() != null ? raw.getOrdinalNumber() : 0,
+                raw.getOrdinalNumber(),
                 raw.getPartName(),
                 raw.getMethod(),
                 raw.getUrl(),

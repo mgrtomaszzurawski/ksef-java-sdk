@@ -23,7 +23,7 @@ public record InvoiceStatusInfo(int code, String description, List<String> detai
             return null;
         }
         return new InvoiceStatusInfo(
-                raw.getCode() != null ? raw.getCode() : 0,
+                raw.getCode(),
                 raw.getDescription(),
                 raw.getDetails() != null ? List.copyOf(raw.getDetails()) : List.of(),
                 raw.getExtensions() != null ? Map.copyOf(raw.getExtensions()) : Map.of());

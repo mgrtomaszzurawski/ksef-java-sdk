@@ -16,9 +16,7 @@ import java.util.List;
 public record SubunitPermissions(List<SubunitPermission> permissions, boolean hasMore) {
 
     public static SubunitPermissions from(QuerySubunitPermissionsResponseRaw raw) {
-        List<SubunitPermission> mapped = raw.getPermissions() != null
-                ? raw.getPermissions().stream().map(SubunitPermission::from).toList()
-                : List.of();
+        List<SubunitPermission> mapped = raw.getPermissions().stream().map(SubunitPermission::from).toList();
         return new SubunitPermissions(mapped, Boolean.TRUE.equals(raw.getHasMore()));
     }
 }

@@ -25,7 +25,7 @@ public record AuthenticationChallenge(
         return new AuthenticationChallenge(
                 raw.getChallenge(),
                 raw.getTimestamp(),
-                raw.getTimestampMs() != null ? raw.getTimestampMs() : 0L,
+                raw.getTimestampMs(),
                 raw.getClientIp());
     }
 }

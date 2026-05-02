@@ -35,9 +35,7 @@ public record InvoicePackage(
         if (raw == null) {
             return null;
         }
-        List<InvoicePackagePart> mappedParts = raw.getParts() != null
-                ? raw.getParts().stream().map(InvoicePackagePart::from).toList()
-                : List.of();
+        List<InvoicePackagePart> mappedParts = raw.getParts().stream().map(InvoicePackagePart::from).toList();
         return new InvoicePackage(
                 raw.getInvoiceCount(),
                 raw.getSize(),

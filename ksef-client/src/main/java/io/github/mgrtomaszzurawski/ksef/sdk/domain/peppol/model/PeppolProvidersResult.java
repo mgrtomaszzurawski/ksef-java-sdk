@@ -16,9 +16,7 @@ import java.util.List;
 public record PeppolProvidersResult(List<PeppolProvider> providers, boolean hasMore) {
 
     public static PeppolProvidersResult from(QueryPeppolProvidersResponseRaw raw) {
-        List<PeppolProvider> mapped = raw.getPeppolProviders() != null
-                ? raw.getPeppolProviders().stream().map(PeppolProvider::from).toList()
-                : List.of();
+        List<PeppolProvider> mapped = raw.getPeppolProviders().stream().map(PeppolProvider::from).toList();
         boolean more = raw.getHasMore() != null && raw.getHasMore();
         return new PeppolProvidersResult(mapped, more);
     }

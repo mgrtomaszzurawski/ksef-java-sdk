@@ -21,7 +21,7 @@ public record StatusInfo(int code, String description, List<String> details) {
             return null;
         }
         return new StatusInfo(
-                raw.getCode() != null ? raw.getCode() : 0,
+                raw.getCode(),
                 raw.getDescription(),
                 raw.getDetails() != null ? List.copyOf(raw.getDetails()) : List.of());
     }

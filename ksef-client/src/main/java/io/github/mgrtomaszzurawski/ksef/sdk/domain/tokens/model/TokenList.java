@@ -16,9 +16,7 @@ import java.util.List;
 public record TokenList(String continuationToken, List<TokenListItem> tokens) {
 
     public static TokenList from(QueryTokensResponseRaw raw) {
-        List<TokenListItem> mapped = raw.getTokens() != null
-                ? raw.getTokens().stream().map(TokenListItem::from).toList()
-                : List.of();
+        List<TokenListItem> mapped = raw.getTokens().stream().map(TokenListItem::from).toList();
         return new TokenList(raw.getContinuationToken(), mapped);
     }
 }

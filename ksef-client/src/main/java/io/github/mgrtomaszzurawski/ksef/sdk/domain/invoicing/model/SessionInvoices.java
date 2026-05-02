@@ -16,9 +16,7 @@ import java.util.List;
 public record SessionInvoices(String continuationToken, List<SessionInvoiceStatus> invoices) {
 
     public static SessionInvoices from(SessionInvoicesResponseRaw raw) {
-        List<SessionInvoiceStatus> mapped = raw.getInvoices() != null
-                ? raw.getInvoices().stream().map(SessionInvoiceStatus::from).toList()
-                : List.of();
+        List<SessionInvoiceStatus> mapped = raw.getInvoices().stream().map(SessionInvoiceStatus::from).toList();
         return new SessionInvoices(raw.getContinuationToken(), mapped);
     }
 }

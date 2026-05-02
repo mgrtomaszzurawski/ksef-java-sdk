@@ -18,9 +18,7 @@ public record UpoInfo(List<UpoPage> pages) {
         if (raw == null) {
             return null;
         }
-        List<UpoPage> mappedPages = raw.getPages() != null
-                ? raw.getPages().stream().map(UpoPage::from).toList()
-                : List.of();
+        List<UpoPage> mappedPages = raw.getPages().stream().map(UpoPage::from).toList();
         return new UpoInfo(mappedPages);
     }
 }

@@ -16,9 +16,7 @@ import java.util.List;
 public record BatchSession(String referenceNumber, List<PartUploadRequest> partUploadRequests) {
 
     public static BatchSession from(OpenBatchSessionResponseRaw raw) {
-        List<PartUploadRequest> parts = raw.getPartUploadRequests() != null
-                ? raw.getPartUploadRequests().stream().map(PartUploadRequest::from).toList()
-                : List.of();
+        List<PartUploadRequest> parts = raw.getPartUploadRequests().stream().map(PartUploadRequest::from).toList();
         return new BatchSession(raw.getReferenceNumber(), parts);
     }
 }

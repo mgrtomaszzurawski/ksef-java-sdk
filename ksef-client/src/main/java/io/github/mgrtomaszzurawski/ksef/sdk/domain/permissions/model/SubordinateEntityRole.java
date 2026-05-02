@@ -23,7 +23,7 @@ public record SubordinateEntityRole(
             String type = subRaw.getType() != null ? subRaw.getType().getValue() : null;
             subId = new PermissionIdentifier(type, subRaw.getValue());
         }
-        String role = raw.getRole() != null ? raw.getRole().getValue() : null;
+        String role = raw.getRole().getValue();
         return new SubordinateEntityRole(subId, role, raw.getDescription(), raw.getStartDate());
     }
 }

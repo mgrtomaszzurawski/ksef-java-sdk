@@ -45,9 +45,7 @@ public record TokenListItem(
             String type = ctxRaw.getType() != null ? ctxRaw.getType().getValue() : null;
             context = new TokenIdentifier(type, ctxRaw.getValue());
         }
-        List<TokenPermissionType> perms = raw.getRequestedPermissions() != null
-                ? raw.getRequestedPermissions().stream().map(TokenPermissionType::from).toList()
-                : List.of();
+        List<TokenPermissionType> perms = raw.getRequestedPermissions().stream().map(TokenPermissionType::from).toList();
         return new TokenListItem(
                 raw.getReferenceNumber(),
                 author,

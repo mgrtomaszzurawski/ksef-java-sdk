@@ -27,7 +27,7 @@ public record EuEntityPermission(
             String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
             authorId = new PermissionIdentifier(type, authorRaw.getValue());
         }
-        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
+        String scope = raw.getPermissionScope().getValue();
         return new EuEntityPermission(raw.getId(), authorId, raw.getVatUeIdentifier(),
                 raw.getEuEntityName(), raw.getAuthorizedFingerprintIdentifier(),
                 scope, raw.getDescription(), raw.getStartDate());
