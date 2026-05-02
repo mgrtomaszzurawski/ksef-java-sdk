@@ -11,6 +11,12 @@ This is the first public release. The SDK has been developed iteratively against
 the live KSeF demo environment; ADRs in `ADR/` document each architectural
 decision in chronological order.
 
+### Changed
+
+- Targets KSeF API 2.4.0 (was 2.2.1). Upstream changes are additive: token-on-self
+  permission operations, retention/410 Gone responses, optional Problem Details
+  format, increased rate limits.
+
 ### Added
 
 - OpenAPI-generated client for KSeF REST API v2 (60+ live operations across 11
