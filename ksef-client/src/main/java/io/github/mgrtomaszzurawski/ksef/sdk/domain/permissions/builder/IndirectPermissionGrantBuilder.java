@@ -135,6 +135,20 @@ public final class IndirectPermissionGrantBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public IndirectPermissionGrantBuilder toBuilder() {
+        IndirectPermissionGrantBuilder copy = new IndirectPermissionGrantBuilder(this.identifierType, this.identifierValue);
+        copy.description = this.description;
+        copy.firstName = this.firstName;
+        copy.lastName = this.lastName;
+        copy.targetType = this.targetType;
+        copy.targetValue = this.targetValue;
+        copy.permissions.addAll(this.permissions);
+        return copy;
+    }
+
+    /**
      * Build the indirect permission grant request.
      *
      * @return the request ready to pass to {@code PermissionClient.grantIndirect()}

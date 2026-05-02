@@ -78,6 +78,19 @@ public final class InvoiceExportBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     * Note: each call to {@link #build()} produces fresh AES key + IV — round-trip
+     * equality on the resulting Raw applies only to {@code filters} and
+     * {@code onlyMetadata}, not to the encryption material.
+     */
+    public InvoiceExportBuilder toBuilder() {
+        InvoiceExportBuilder copy = new InvoiceExportBuilder(this.ksefPublicKey);
+        copy.filters = this.filters;
+        copy.onlyMetadata = this.onlyMetadata;
+        return copy;
+    }
+
+    /**
      * Build the export request. Generates AES key, IV, and encrypts the symmetric
      * key with the KSeF public key automatically.
      *

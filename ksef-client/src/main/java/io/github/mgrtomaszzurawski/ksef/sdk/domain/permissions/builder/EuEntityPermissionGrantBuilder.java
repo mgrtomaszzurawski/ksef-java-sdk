@@ -86,6 +86,18 @@ public final class EuEntityPermissionGrantBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public EuEntityPermissionGrantBuilder toBuilder() {
+        EuEntityPermissionGrantBuilder copy = new EuEntityPermissionGrantBuilder(this.fingerprintValue);
+        copy.description = this.description;
+        copy.subjectFullName = this.subjectFullName;
+        copy.subjectAddress = this.subjectAddress;
+        copy.permissions.addAll(this.permissions);
+        return copy;
+    }
+
+    /**
      * Build the EU entity permission grant request.
      *
      * @return the request ready to pass to {@code PermissionClient.grantEuEntity()}

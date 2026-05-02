@@ -118,6 +118,26 @@ public final class TestRateLimitsBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public TestRateLimitsBuilder toBuilder() {
+        TestRateLimitsBuilder copy = new TestRateLimitsBuilder();
+        copy.onlineSession = this.onlineSession;
+        copy.batchSession = this.batchSession;
+        copy.invoiceSend = this.invoiceSend;
+        copy.invoiceStatus = this.invoiceStatus;
+        copy.sessionList = this.sessionList;
+        copy.sessionInvoiceList = this.sessionInvoiceList;
+        copy.sessionMisc = this.sessionMisc;
+        copy.invoiceMetadata = this.invoiceMetadata;
+        copy.invoiceExport = this.invoiceExport;
+        copy.invoiceExportStatus = this.invoiceExportStatus;
+        copy.invoiceDownload = this.invoiceDownload;
+        copy.other = this.other;
+        return copy;
+    }
+
+    /**
      * Build the rate limits request.
      *
      * @return the request ready to pass to {@code TestDataClient.setRateLimits()}

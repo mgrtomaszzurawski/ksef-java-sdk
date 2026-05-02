@@ -83,6 +83,16 @@ public final class TestPermissionsRevokeBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public TestPermissionsRevokeBuilder toBuilder() {
+        TestPermissionsRevokeBuilder copy = new TestPermissionsRevokeBuilder(this.contextNip);
+        copy.authorizedType = this.authorizedType;
+        copy.authorizedValue = this.authorizedValue;
+        return copy;
+    }
+
+    /**
      * Build the permissions revocation request.
      *
      * @return the request ready to pass to {@code TestDataClient.revokePermissions()}

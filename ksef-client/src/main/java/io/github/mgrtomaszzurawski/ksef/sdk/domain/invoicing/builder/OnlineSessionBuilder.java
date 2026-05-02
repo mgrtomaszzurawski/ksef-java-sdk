@@ -110,6 +110,14 @@ public final class OnlineSessionBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     * Note: each call to {@link #build()} produces fresh AES key + IV.
+     */
+    public OnlineSessionBuilder toBuilder() {
+        return new OnlineSessionBuilder(this.systemCode, this.schemaVersion, this.formCodeValue, this.ksefPublicKey);
+    }
+
+    /**
      * Build the session opening request. Generates AES key and encrypts it
      * with the KSeF public key automatically. Returns both the request and
      * the AES key/IV needed for encrypting invoices within this session.

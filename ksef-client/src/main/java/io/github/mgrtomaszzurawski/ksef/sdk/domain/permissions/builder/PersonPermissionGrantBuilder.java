@@ -127,6 +127,18 @@ public final class PersonPermissionGrantBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public PersonPermissionGrantBuilder toBuilder() {
+        PersonPermissionGrantBuilder copy = new PersonPermissionGrantBuilder(this.identifierType, this.identifierValue);
+        copy.description = this.description;
+        copy.firstName = this.firstName;
+        copy.lastName = this.lastName;
+        copy.permissions.addAll(this.permissions);
+        return copy;
+    }
+
+    /**
      * Build the permission grant request.
      *
      * @return the request ready to pass to {@code PermissionClient.grantPerson()}

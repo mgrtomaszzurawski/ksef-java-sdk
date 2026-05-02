@@ -105,6 +105,20 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public EntityAuthorizationPermissionsQueryBuilder toBuilder() {
+        EntityAuthorizationPermissionsQueryBuilder copy =
+                new EntityAuthorizationPermissionsQueryBuilder(this.queryType);
+        copy.authorizingType = this.authorizingType;
+        copy.authorizingValue = this.authorizingValue;
+        copy.authorizedType = this.authorizedType;
+        copy.authorizedValue = this.authorizedValue;
+        copy.permissionTypes.addAll(this.permissionTypes);
+        return copy;
+    }
+
+    /**
      * Build the entity authorization permissions query request.
      *
      * @return the request ready to pass to {@code PermissionClient.queryAuthorizations()}

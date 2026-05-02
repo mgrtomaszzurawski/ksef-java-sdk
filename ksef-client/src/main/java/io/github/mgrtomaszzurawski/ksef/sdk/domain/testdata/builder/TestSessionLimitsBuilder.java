@@ -74,6 +74,16 @@ public final class TestSessionLimitsBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public TestSessionLimitsBuilder toBuilder() {
+        TestSessionLimitsBuilder copy = new TestSessionLimitsBuilder();
+        copy.onlineSession = this.onlineSession;
+        copy.batchSession = this.batchSession;
+        return copy;
+    }
+
+    /**
      * Build the session limits request.
      *
      * @return the request ready to pass to {@code TestDataClient.setSessionLimits()}

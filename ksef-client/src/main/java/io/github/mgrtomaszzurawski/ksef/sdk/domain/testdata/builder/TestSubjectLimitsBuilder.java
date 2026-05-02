@@ -67,6 +67,16 @@ public final class TestSubjectLimitsBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public TestSubjectLimitsBuilder toBuilder() {
+        TestSubjectLimitsBuilder copy = new TestSubjectLimitsBuilder(this.subjectIdentifierType);
+        copy.maxEnrollments = this.maxEnrollments;
+        copy.maxCertificates = this.maxCertificates;
+        return copy;
+    }
+
+    /**
      * Build the subject limits request.
      *
      * @return the request ready to pass to {@code TestDataClient.setSubjectLimits()}

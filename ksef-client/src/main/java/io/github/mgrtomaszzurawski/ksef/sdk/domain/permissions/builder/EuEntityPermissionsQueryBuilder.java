@@ -74,6 +74,17 @@ public final class EuEntityPermissionsQueryBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public EuEntityPermissionsQueryBuilder toBuilder() {
+        EuEntityPermissionsQueryBuilder copy = new EuEntityPermissionsQueryBuilder();
+        copy.vatUeIdentifier = this.vatUeIdentifier;
+        copy.authorizedFingerprintIdentifier = this.authorizedFingerprintIdentifier;
+        copy.permissionTypes.addAll(this.permissionTypes);
+        return copy;
+    }
+
+    /**
      * Build the EU entity permissions query request.
      *
      * @return the request ready to pass to {@code PermissionClient.queryEuEntities()}

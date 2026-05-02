@@ -162,6 +162,23 @@ public final class InvoiceQueryBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public InvoiceQueryBuilder toBuilder() {
+        InvoiceQueryBuilder copy = new InvoiceQueryBuilder(this.subjectType);
+        copy.dateType = this.dateType;
+        copy.dateFrom = this.dateFrom;
+        copy.dateTo = this.dateTo;
+        copy.ksefNumber = this.ksefNumber;
+        copy.invoiceNumber = this.invoiceNumber;
+        copy.sellerNip = this.sellerNip;
+        copy.invoicingMode = this.invoicingMode;
+        copy.selfInvoicing = this.selfInvoicing;
+        copy.hasAttachment = this.hasAttachment;
+        return copy;
+    }
+
+    /**
      * Build the query filters. Validates required fields and date range constraints.
      *
      * @return the filters ready to pass to {@code InvoiceClient.queryMetadata()}

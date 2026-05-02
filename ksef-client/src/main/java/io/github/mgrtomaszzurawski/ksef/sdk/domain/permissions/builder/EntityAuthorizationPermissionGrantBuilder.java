@@ -99,6 +99,18 @@ public final class EntityAuthorizationPermissionGrantBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public EntityAuthorizationPermissionGrantBuilder toBuilder() {
+        EntityAuthorizationPermissionGrantBuilder copy =
+                new EntityAuthorizationPermissionGrantBuilder(this.identifierType, this.identifierValue);
+        copy.description = this.description;
+        copy.fullName = this.fullName;
+        copy.permission = this.permission;
+        return copy;
+    }
+
+    /**
      * Build the authorization permission grant request.
      *
      * @return the request ready to pass to {@code PermissionClient.grantAuthorization()}

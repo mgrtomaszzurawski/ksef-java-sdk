@@ -143,6 +143,17 @@ public final class TestPermissionsGrantBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public TestPermissionsGrantBuilder toBuilder() {
+        TestPermissionsGrantBuilder copy = new TestPermissionsGrantBuilder(this.contextNip);
+        copy.authorizedType = this.authorizedType;
+        copy.authorizedValue = this.authorizedValue;
+        copy.permissions.addAll(this.permissions);
+        return copy;
+    }
+
+    /**
      * Build the permissions grant request.
      *
      * @return the request ready to pass to {@code TestDataClient.grantPermissions()}

@@ -75,6 +75,16 @@ public final class TestPersonCreateBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public TestPersonCreateBuilder toBuilder() {
+        TestPersonCreateBuilder copy = new TestPersonCreateBuilder(this.nip, this.pesel, this.isBailiff, this.description);
+        copy.isDeceased = this.isDeceased;
+        copy.createdDate = this.createdDate;
+        return copy;
+    }
+
+    /**
      * Build the person creation request.
      *
      * @return the request ready to pass to {@code TestDataClient.createPerson()}

@@ -91,6 +91,17 @@ public final class EntityPermissionGrantBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public EntityPermissionGrantBuilder toBuilder() {
+        EntityPermissionGrantBuilder copy = new EntityPermissionGrantBuilder(this.identifierValue);
+        copy.description = this.description;
+        copy.fullName = this.fullName;
+        copy.permissions.addAll(this.permissions);
+        return copy;
+    }
+
+    /**
      * Build the entity permission grant request.
      *
      * @return the request ready to pass to {@code PermissionClient.grantEntity()}

@@ -228,6 +228,24 @@ public final class PersonPermissionsQueryBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public PersonPermissionsQueryBuilder toBuilder() {
+        PersonPermissionsQueryBuilder copy = new PersonPermissionsQueryBuilder(this.queryType);
+        copy.authorType = this.authorType;
+        copy.authorValue = this.authorValue;
+        copy.authorizedType = this.authorizedType;
+        copy.authorizedValue = this.authorizedValue;
+        copy.contextType = this.contextType;
+        copy.contextValue = this.contextValue;
+        copy.targetType = this.targetType;
+        copy.targetValue = this.targetValue;
+        copy.permissionTypes.addAll(this.permissionTypes);
+        copy.permissionState = this.permissionState;
+        return copy;
+    }
+
+    /**
      * Build the person permissions query request.
      *
      * @return the request ready to pass to {@code PermissionClient.queryPersons()}

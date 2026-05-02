@@ -83,6 +83,16 @@ public final class TokenGenerateBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     * Useful for partial updates: tweak one field on a copy without mutating the original.
+     */
+    public TokenGenerateBuilder toBuilder() {
+        TokenGenerateBuilder copy = new TokenGenerateBuilder(this.description);
+        copy.permissions.addAll(this.permissions);
+        return copy;
+    }
+
+    /**
      * Build the token generation request. Validates description length and permissions.
      *
      * @return the request ready to pass to {@code TokenClient.generate()}
