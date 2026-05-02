@@ -407,6 +407,44 @@
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
             </plugin>
+
+            <!--
+                JaCoCo coverage agent + report (USER-REVIEW-REMARKS finding #7,
+                PLAN A.9). The `check` goal is intentionally NOT enabled yet —
+                turning it on now with the target threshold (METHOD coverage
+                ratio 1.00 on all `domain.*.builder.*` classes) would fail the
+                build on 139 currently-uncovered builder methods across 24
+                classes. Each missing method needs a unit test (or WireMock
+                integration test) before the gate can switch on.
+
+                Follow-up plan: ratchet the gate up by writing tests for each
+                builder, then add the `check` execution back with
+                `<minimum>1.00</minimum>`. Tracked under PLAN A.9.
+
+                For now, `mvn verify` produces a JaCoCo HTML report under
+                `target/site/jacoco/` so contributors can see coverage
+                without the build failing.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
