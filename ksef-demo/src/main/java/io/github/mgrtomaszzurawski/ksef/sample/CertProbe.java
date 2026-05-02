@@ -139,14 +139,13 @@ public final class CertProbe {
     }
 
     private static void logCertificateInventory(List<CertificateListItem> certs) {
-        if (!LOGGER.isInfoEnabled()) {
-            return;
-        }
-        LOGGER.info("Found {} certificates total", certs.size());
-        for (CertificateListItem cert : certs) {
-            LOGGER.info("  serial={} status={} validFrom={} requestDate={} name={}",
-                    cert.certificateSerialNumber(), cert.status(), cert.validFrom(),
-                    cert.requestDate(), cert.name());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Found {} certificates total", certs.size());
+            for (CertificateListItem cert : certs) {
+                LOGGER.info("  serial={} status={} validFrom={} requestDate={} name={}",
+                        cert.certificateSerialNumber(), cert.status(), cert.validFrom(),
+                        cert.requestDate(), cert.name());
+            }
         }
     }
 

@@ -233,11 +233,10 @@ public final class SessionRunner implements DemoRunner {
             LOGGER.info(LOG_INVOICE_STATUS_NULL, NAME, label, NO_STATUS_PLACEHOLDER);
             return;
         }
-        LOGGER.info(LOG_INVOICE_STATUS,
-                NAME, label,
-                invoice.status().code(),
-                invoice.status().description(),
-                invoice.ksefNumber());
+        Integer code = invoice.status().code();
+        String description = invoice.status().description();
+        String ksefNumber = invoice.ksefNumber();
+        LOGGER.info(LOG_INVOICE_STATUS, NAME, label, code, description, ksefNumber);
         List<String> details = invoice.status().details();
         if (details != null && !details.isEmpty()) {
             for (String detail : details) {
@@ -370,18 +369,4 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    /**
-     * Best-effort cleanup — failures here would mask the underlying test result
-     * so they are intentionally swallowed.
-     */
-    private static void quietClose(KsefSession session) {
-        if (session == null) {
-            return;
-        }
-        try {
-            session.close();
-        } catch (Exception ignored) {
-            // intentionally ignored
-        }
-    }
 }
