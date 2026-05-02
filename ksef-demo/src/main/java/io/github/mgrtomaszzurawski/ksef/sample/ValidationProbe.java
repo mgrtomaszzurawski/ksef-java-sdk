@@ -107,19 +107,20 @@ public final class ValidationProbe {
         LOGGER.info("Environment: {}", ksefUrl);
         LOGGER.debug("NIP: {}", nipIdentifier);
 
-        KsefClient client = KsefClient.builder(KsefEnvironment.custom(ksefUrl))
+        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(ksefUrl))
                 .credentials(new KsefTokenCredentials(ksefToken, nipIdentifier))
-                .build();
-        client.authenticate();
-        LOGGER.info("Authenticated successfully");
+                .build()) {
+            client.authenticate();
+            LOGGER.info("Authenticated successfully");
 
-        String bearer = client.sessionContext().token();
+            String bearer = client.sessionContext().token();
 
-        ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
-        probe.runAllProbes();
+            ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
+            probe.runAllProbes();
 
-        client.terminateAuth();
-        LOGGER.info("Session terminated. Probe complete.");
+            client.terminateAuth();
+            LOGGER.info("Session terminated. Probe complete.");
+        }
     }
 
     private void runAllProbes() {

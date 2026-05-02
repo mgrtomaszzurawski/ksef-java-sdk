@@ -48,19 +48,20 @@ public final class DemoSession {
     public RunReport execute(List<DemoRunner> runners) {
         RunReport report = new RunReport();
         for (DemoRunner runner : runners) {
-            String header = runner.name().toUpperCase(Locale.ROOT);
+            String runnerName = runner.name();
+            String header = runnerName.toUpperCase(Locale.ROOT);
             LOGGER.info(LOG_HEADER, header);
             long start = System.currentTimeMillis();
             try {
                 List<RunResult> results = runner.run(context);
                 long elapsed = System.currentTimeMillis() - start;
-                LOGGER.info(LOG_DONE, runner.name(), elapsed, results.size());
+                LOGGER.info(LOG_DONE, runnerName, elapsed, results.size());
                 report.addAll(results);
             } catch (Exception exception) {
                 long elapsed = System.currentTimeMillis() - start;
                 String detail = exception.getClass().getSimpleName() + ": " + exception.getMessage();
-                LOGGER.error(LOG_FAIL, runner.name(), elapsed, detail);
-                report.add(RunResult.fail(runner.name(), "UNEXPECTED", elapsed, detail));
+                LOGGER.error(LOG_FAIL, runnerName, elapsed, detail);
+                report.add(RunResult.fail(runnerName, "UNEXPECTED", elapsed, detail));
             }
         }
         return report;
