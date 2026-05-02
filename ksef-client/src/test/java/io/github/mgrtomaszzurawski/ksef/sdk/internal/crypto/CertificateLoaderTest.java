@@ -194,7 +194,7 @@ class CertificateLoaderTest {
         assertNotNull(exception.getMessage());
     }
 
-    private static KeyStore loadTestKeyStore() throws Exception {
+    private static KeyStore loadTestKeyStore() {
         InputStream inputStream = new ByteArrayInputStream(testKeystoreBytes);
         return CertificateLoader.loadKeyStore(inputStream, KEYSTORE_PASSWORD);
     }

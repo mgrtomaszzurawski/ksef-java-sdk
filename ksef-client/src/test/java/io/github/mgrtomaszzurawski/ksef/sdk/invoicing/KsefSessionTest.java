@@ -69,26 +69,28 @@ class KsefSessionTest {
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SEND_INVOICE_RESPONSE)));
+        stubCloseAndStatusOk();
 
-        KsefSession session = createSession(wmInfo);
+        try (KsefSession session = createSession(wmInfo)) {
+            // when
+            var result = session.send(TEST_INVOICE_XML);
 
-        // when
-        var result = session.send(TEST_INVOICE_XML);
-
-        // then
-        assertNotNull(result);
-        assertEquals(TEST_INVOICE_REF, result.referenceNumber());
+            // then
+            assertNotNull(result);
+            assertEquals(TEST_INVOICE_REF, result.referenceNumber());
+        }
     }
 
     @Test
     void send_whenSessionClosed_throwsIllegalStateException(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        KsefSession session = createSession(wmInfo);
-        session.close();
+        try (KsefSession session = createSession(wmInfo)) {
+            session.close();
 
-        // when / then
-        assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            // when / then
+            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+        }
     }
 
     @Test
@@ -109,39 +111,41 @@ class KsefSessionTest {
 
         stubStatusOk();
 
-        KsefSession session = createSession(wmInfo);
+        try (KsefSession session = createSession(wmInfo)) {
+            // when — should not throw despite the first 415
+            session.close();
 
-        // when — should not throw despite the first 415
-        session.close();
-
-        // then — session is closed, send should fail
-        assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            // then — session is closed, send should fail
+            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+        }
     }
 
     @Test
     void close_whenAlreadyClosed_isNoOp(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        KsefSession session = createSession(wmInfo);
-        session.close();
+        try (KsefSession session = createSession(wmInfo)) {
+            session.close();
 
-        // when — second close should be a no-op, no error
-        session.close();
+            // when — second close should be a no-op, no error
+            session.close();
 
-        // then — still closed
-        assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            // then — still closed
+            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+        }
     }
 
     @Test
     void referenceNumber_returnsSessionRef(WireMockRuntimeInfo wmInfo) {
         // given
-        KsefSession session = createSession(wmInfo);
+        stubCloseAndStatusOk();
+        try (KsefSession session = createSession(wmInfo)) {
+            // when
+            String referenceNumber = session.referenceNumber();
 
-        // when
-        String referenceNumber = session.referenceNumber();
-
-        // then
-        assertEquals(TEST_SESSION_REF, referenceNumber);
+            // then
+            assertEquals(TEST_SESSION_REF, referenceNumber);
+        }
     }
 
     @Test
@@ -155,14 +159,15 @@ class KsefSessionTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, OCTET_STREAM)
                         .withBody(TEST_UPO_CONTENT)));
 
-        KsefSession session = createSession(wmInfo);
-        session.close();
+        try (KsefSession session = createSession(wmInfo)) {
+            session.close();
 
-        // when
-        byte[] upoBytes = session.upo(TEST_INVOICE_REF);
+            // when
+            byte[] upoBytes = session.upo(TEST_INVOICE_REF);
 
-        // then
-        assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+            // then
+            assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+        }
     }
 
     private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {

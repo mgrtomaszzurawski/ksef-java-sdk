@@ -187,7 +187,7 @@ class AuthClientTest {
     @Test
     void redeemTokens_whenAuthenticated_updatesSessionWithAccessToken(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — authenticate first
-        stubXadesAuth(wmInfo);
+        stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
             new AuthClient(ksef).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
@@ -212,7 +212,7 @@ class AuthClientTest {
     @Test
     void refreshToken_whenValidRefreshToken_updatesSessionToken(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — authenticate and redeem first
-        stubXadesAuth(wmInfo);
+        stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
             new AuthClient(ksef).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
@@ -236,7 +236,7 @@ class AuthClientTest {
     @Test
     void getStatus_whenAuthenticated_returnsOperationStatus(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
-        stubXadesAuth(wmInfo);
+        stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             authenticateClient(ksef);
 
@@ -258,7 +258,7 @@ class AuthClientTest {
     @Test
     void listSessions_whenAuthenticated_returnsSessionList(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
-        stubXadesAuth(wmInfo);
+        stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             authenticateClient(ksef);
 
@@ -281,7 +281,7 @@ class AuthClientTest {
     @Test
     void terminateCurrentSession_whenAuthenticated_clearsSessionContext(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
-        stubXadesAuth(wmInfo);
+        stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             authenticateClient(ksef);
             assertTrue(ksef.sessionContext().isActive());
@@ -345,7 +345,7 @@ class AuthClientTest {
                 .build();
     }
 
-    private static void stubXadesAuth(WireMockRuntimeInfo wmInfo) {
+    private static void stubXadesAuth() {
         stubFor(post(urlEqualTo(PATH_XADES))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)
