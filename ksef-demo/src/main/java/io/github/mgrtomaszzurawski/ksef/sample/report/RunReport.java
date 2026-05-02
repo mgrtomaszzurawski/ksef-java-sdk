@@ -43,15 +43,15 @@ public final class RunReport {
     }
 
     public long okCount() {
-        return results.stream().filter(r -> r.status() == RunStatus.OK).count();
+        return results.stream().filter(result -> result.status() == RunStatus.OK).count();
     }
 
     public long failCount() {
-        return results.stream().filter(r -> r.status() == RunStatus.FAIL).count();
+        return results.stream().filter(result -> result.status() == RunStatus.FAIL).count();
     }
 
     public long skipCount() {
-        return results.stream().filter(r -> r.status() == RunStatus.SKIP).count();
+        return results.stream().filter(result -> result.status() == RunStatus.SKIP).count();
     }
 
     public boolean hasFailures() {

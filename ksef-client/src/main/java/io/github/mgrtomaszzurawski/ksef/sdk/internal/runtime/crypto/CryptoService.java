@@ -69,7 +69,7 @@ public final class CryptoService {
     private static final int AES_IV_BYTES = 16;
     private static final int ECDH_SHARED_SECRET_SIZE = 32;
 
-    // SecureRandom is thread-safe; single shared instance is intentional.
+    /** SecureRandom is thread-safe; a single shared instance is intentional. */
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private CryptoService() {

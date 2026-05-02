@@ -49,7 +49,6 @@ public final class QrCodeRunner implements DemoRunner {
         boolean isTestEnv = context.environment().contains(ENV_DEMO) || context.environment().contains(ENV_TEST);
         QrCodeService service = new QrCodeService(isTestEnv);
 
-        // getVerificationUrl
         long start = System.currentTimeMillis();
         try {
             String verificationUrl = service.getVerificationUrl(TEST_KSEF_NUMBER);
@@ -59,7 +58,6 @@ public final class QrCodeRunner implements DemoRunner {
             results.add(RunResult.fail(NAME, OP_URL, elapsed(start), errorMessage(exception)));
         }
 
-        // generateQrCode
         start = System.currentTimeMillis();
         try {
             byte[] pngBytes = service.generateQrCode(TEST_KSEF_NUMBER);

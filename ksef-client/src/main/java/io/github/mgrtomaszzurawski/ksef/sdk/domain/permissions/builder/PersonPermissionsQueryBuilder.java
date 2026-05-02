@@ -68,8 +68,6 @@ public final class PersonPermissionsQueryBuilder {
         return new PersonPermissionsQueryBuilder(PersonPermissionsQueryTypeRaw.PERMISSIONS_GRANTED_IN_CURRENT_CONTEXT);
     }
 
-    // --- Author identifier ---
-
     /**
      * Filter by author NIP.
      */
@@ -106,8 +104,6 @@ public final class PersonPermissionsQueryBuilder {
         return this;
     }
 
-    // --- Authorized identifier ---
-
     /**
      * Filter by authorized person NIP.
      */
@@ -135,8 +131,6 @@ public final class PersonPermissionsQueryBuilder {
         return this;
     }
 
-    // --- Context identifier ---
-
     /**
      * Filter by context NIP.
      */
@@ -154,8 +148,6 @@ public final class PersonPermissionsQueryBuilder {
         this.contextValue = internalId;
         return this;
     }
-
-    // --- Target identifier ---
 
     /**
      * Filter by target NIP.
@@ -183,8 +175,6 @@ public final class PersonPermissionsQueryBuilder {
         this.targetValue = internalId;
         return this;
     }
-
-    // --- Permission types ---
 
     public PersonPermissionsQueryBuilder invoiceRead() {
         permissionTypes.add(PersonPermissionTypeRaw.INVOICE_READ);
@@ -220,8 +210,6 @@ public final class PersonPermissionsQueryBuilder {
         permissionTypes.add(PersonPermissionTypeRaw.INTROSPECTION);
         return this;
     }
-
-    // --- Permission state ---
 
     /**
      * Filter by active permissions only.

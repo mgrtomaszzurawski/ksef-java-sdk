@@ -57,8 +57,6 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
         return new EntityAuthorizationPermissionsQueryBuilder(QueryTypeRaw.RECEIVED);
     }
 
-    // --- Authorizing identifier ---
-
     /**
      * Filter by authorizing entity NIP.
      */
@@ -67,8 +65,6 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
         this.authorizingValue = nip;
         return this;
     }
-
-    // --- Authorized identifier ---
 
     /**
      * Filter by authorized entity NIP.
@@ -87,8 +83,6 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
         this.authorizedValue = peppolId;
         return this;
     }
-
-    // --- Permission types ---
 
     public EntityAuthorizationPermissionsQueryBuilder selfInvoicing() {
         permissionTypes.add(InvoicePermissionTypeRaw.SELF_INVOICING);

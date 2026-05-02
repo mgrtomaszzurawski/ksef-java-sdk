@@ -70,10 +70,8 @@ public final class InvoiceRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
 
-        // queryMetadata — works in AUTH_SAFE and FULL
         runQueryMetadata(context, results);
 
-        // Export and getByKsefNumber — FULL only
         if (context.mode() != DemoMode.FULL) {
             results.add(RunResult.skip(NAME, OP_EXPORT, SKIP_NOT_FULL));
             results.add(RunResult.skip(NAME, OP_EXPORT_STATUS, SKIP_NOT_FULL));
@@ -81,17 +79,15 @@ public final class InvoiceRunner implements DemoRunner {
             return results;
         }
 
-        // exportInvoices
         String exportRef = runExportInvoices(context, results);
 
-        // getExportStatus (poll until ready)
         if (exportRef != null) {
             pollExportStatus(context, exportRef, results);
         } else {
             results.add(RunResult.skip(NAME, OP_EXPORT_STATUS, SKIP_NO_EXPORT_REF));
         }
 
-        // getByKsefNumber — needs invoiceKsefNumber from SessionRunner
+        // getByKsefNumber depends on the KSeF number captured by SessionRunner.
         String ksefNumber = context.invoiceKsefNumber();
         if (ksefNumber != null) {
             runGetByKsefNumber(context, ksefNumber, results);
@@ -149,8 +145,8 @@ public final class InvoiceRunner implements DemoRunner {
     }
 
     private static java.security.PublicKey extractEncryptionKey(DemoContext context) {
-        PublicKeyCertificate cert = new SecurityClient(context.client()).getPublicKeyCertificates().stream()
-                .filter(c -> c.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
+        PublicKeyCertificate certificate = new SecurityClient(context.client()).getPublicKeyCertificates().stream()
+                .filter(cert -> cert.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_ENCRYPTION_CERT));
         try {
@@ -158,10 +154,10 @@ public final class InvoiceRunner implements DemoRunner {
                     java.security.cert.CertificateFactory.getInstance(CERT_TYPE_X509);
             java.security.cert.X509Certificate x509 =
                     (java.security.cert.X509Certificate) factory.generateCertificate(
-                            new java.io.ByteArrayInputStream(cert.certificate()));
+                            new java.io.ByteArrayInputStream(certificate.certificate()));
             return x509.getPublicKey();
-        } catch (Exception ex) {
-            throw new IllegalStateException(ERR_KEY_EXTRACT, ex);
+        } catch (Exception keyExtractFailure) {
+            throw new IllegalStateException(ERR_KEY_EXTRACT, keyExtractFailure);
         }
     }
 
