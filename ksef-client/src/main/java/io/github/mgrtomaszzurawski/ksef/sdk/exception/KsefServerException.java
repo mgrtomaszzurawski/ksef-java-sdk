@@ -3,11 +3,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
+
+import java.io.Serial;
+
 /**
  * Thrown on HTTP 5xx server errors.
  */
 public class KsefServerException extends KsefException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     public KsefServerException(String message, Throwable cause, int statusCode, String responseBody) {

@@ -3,11 +3,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
+
+import java.io.Serial;
+
 /**
  * Thrown on encryption or signing failures.
  */
 public class KsefCryptoException extends KsefException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     public KsefCryptoException(String message, Throwable cause) {
