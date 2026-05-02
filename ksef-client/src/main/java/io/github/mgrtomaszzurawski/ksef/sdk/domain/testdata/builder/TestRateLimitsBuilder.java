@@ -133,18 +133,42 @@ public final class TestRateLimitsBuilder {
         }
 
         ApiRateLimitsOverrideRaw rateLimits = new ApiRateLimitsOverrideRaw();
-        rateLimits.setOnlineSession(onlineSession);
-        rateLimits.setBatchSession(batchSession);
-        rateLimits.setInvoiceSend(invoiceSend);
-        rateLimits.setInvoiceStatus(invoiceStatus);
-        rateLimits.setSessionList(sessionList);
-        rateLimits.setSessionInvoiceList(sessionInvoiceList);
-        rateLimits.setSessionMisc(sessionMisc);
-        rateLimits.setInvoiceMetadata(invoiceMetadata);
-        rateLimits.setInvoiceExport(invoiceExport);
-        rateLimits.setInvoiceExportStatus(invoiceExportStatus);
-        rateLimits.setInvoiceDownload(invoiceDownload);
-        rateLimits.setOther(other);
+        if (onlineSession != null) {
+            rateLimits.setOnlineSession(onlineSession);
+        }
+        if (batchSession != null) {
+            rateLimits.setBatchSession(batchSession);
+        }
+        if (invoiceSend != null) {
+            rateLimits.setInvoiceSend(invoiceSend);
+        }
+        if (invoiceStatus != null) {
+            rateLimits.setInvoiceStatus(invoiceStatus);
+        }
+        if (sessionList != null) {
+            rateLimits.setSessionList(sessionList);
+        }
+        if (sessionInvoiceList != null) {
+            rateLimits.setSessionInvoiceList(sessionInvoiceList);
+        }
+        if (sessionMisc != null) {
+            rateLimits.setSessionMisc(sessionMisc);
+        }
+        if (invoiceMetadata != null) {
+            rateLimits.setInvoiceMetadata(invoiceMetadata);
+        }
+        if (invoiceExport != null) {
+            rateLimits.setInvoiceExport(invoiceExport);
+        }
+        if (invoiceExportStatus != null) {
+            rateLimits.setInvoiceExportStatus(invoiceExportStatus);
+        }
+        if (invoiceDownload != null) {
+            rateLimits.setInvoiceDownload(invoiceDownload);
+        }
+        if (other != null) {
+            rateLimits.setOther(other);
+        }
 
         SetRateLimitsRequestRaw request = new SetRateLimitsRequestRaw();
         request.setRateLimits(rateLimits);
