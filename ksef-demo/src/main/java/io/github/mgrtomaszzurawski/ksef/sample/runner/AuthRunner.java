@@ -22,15 +22,16 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationList;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationTokenRefresh;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationTokens;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 import java.io.ByteArrayInputStream;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
@@ -42,14 +43,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 
 /**
  * Runner for authentication. Uses the high-level {@code client.authenticate()} API
  * which handles the full flow internally: challenge → encrypt/sign → poll → redeem.
  *
  * <p>After this runner completes, the KsefClient session context is populated with a valid
- * bearer token that all subsequent runners use automatically.</p>
+ * bearer token that all subsequent runners use automatically.
  *
  * <p>Additional auth-area operations exercised here:
  * <ul>
@@ -60,11 +60,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityCli
  *   <li>{@code terminateSessionByRef} — terminate a specific session by reference (vs.
  *       /current endpoint exercised by {@code terminateAuth})</li>
  * </ul>
- * </p>
  */
 public final class AuthRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AuthRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthRunner.class);
     private static final String NAME = "auth";
     private static final String OP_AUTHENTICATE = "authenticate";
     private static final String OP_TERMINATE = "terminateAuth";
@@ -78,6 +77,11 @@ public final class AuthRunner implements DemoRunner {
     private static final String CERT_TYPE_X509 = "X.509";
     private static final String INVALID_JWT = "invalid-jwt";
     private static final String NIP_PREFIX = "NIP=";
+    private static final String SESSIONS_LABEL = " sessions";
+    private static final String VALID_UNTIL_PREFIX = "validUntil=";
+    private static final String REF_PREFIX = "ref=";
+    private static final String AUTO_REFRESH_SUCCEEDED = "auto-refresh succeeded";
+
     private static final int AUTH_POLL_DELAY_MS = 2000;
     private static final int AUTH_POLL_MAX_ATTEMPTS = 15;
     private static final int STATUS_CODE_OK = 200;
@@ -90,33 +94,27 @@ public final class AuthRunner implements DemoRunner {
     private static final String ERR_INTERRUPTED = "Interrupted while polling auth status";
     private static final String ERR_CERT_PARSE = "Failed to extract public key from KSeF certificate";
 
+    private static final String LOG_AUTHENTICATED = "[{}] authenticated as NIP {}";
+    private static final String LOG_TERMINATED = "[{}] auth session terminated";
+    private static final String LOG_RE_AUTHENTICATED = "[{}] re-authenticated after terminate";
+    private static final String LOG_ACTIVE_SESSIONS = "[{}] active auth sessions: {}";
+    private static final String LOG_REFRESH_OK = "[{}] refreshed access token, validUntil={}";
+    private static final String LOG_FORCE_REAUTH_OK = "[{}] auto-reauth recovered: contextLimits retrieved={}";
+    private static final String LOG_TERMINATED_BY_REF = "[{}] terminated session by ref={}";
+    private static final String LOG_RE_AUTHENTICATED_AFTER_BY_REF = "[{}] re-authenticated after terminateSessionByRef";
+
     @Override
     public String name() { return NAME; }
 
     @Override
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
-
-        // 1. Authenticate (challenge → encrypt/sign → poll → redeem — all inside SDK)
         runAuthenticate(context, results);
-
-        // 2. Terminate + re-authenticate (verifies session lifecycle works end-to-end)
         runTerminateAndReAuthenticate(context, results);
-
-        // 3. List active auth sessions
         runListSessions(context, results);
-
-        // 4. Refresh access token via refresh token (uses manual auth flow internally
-        //    because the SDK auto-redeems the refresh token during authenticate())
         runRefreshToken(context, results);
-
-        // 5. Force a 401 by corrupting the JWT, then perform a GET — SDK should auto-refresh
         runForceReAuthOnExpiredToken(context, results);
-
-        // 6. Terminate the current session by its reference number (alternative to
-        //    the /current endpoint exercised by terminateAuth) and re-authenticate
         runTerminateSessionByRefAndReAuthenticate(context, results);
-
         return results;
     }
 
@@ -124,7 +122,7 @@ public final class AuthRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             context.client().authenticate();
-            LOG.info("[{}] authenticated as NIP {}", NAME, context.nipIdentifier());
+            LOGGER.info(LOG_AUTHENTICATED, NAME, context.nipIdentifier());
             results.add(RunResult.ok(NAME, OP_AUTHENTICATE, elapsed(start),
                     NIP_PREFIX + context.nipIdentifier()));
         } catch (Exception exception) {
@@ -134,11 +132,10 @@ public final class AuthRunner implements DemoRunner {
     }
 
     private void runTerminateAndReAuthenticate(DemoContext context, List<RunResult> results) {
-        // Terminate
         long start = System.currentTimeMillis();
         try {
             context.client().terminateAuth();
-            LOG.info("[{}] auth session terminated", NAME);
+            LOGGER.info(LOG_TERMINATED, NAME);
             results.add(RunResult.ok(NAME, OP_TERMINATE, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_TERMINATE, elapsed(start),
@@ -146,15 +143,14 @@ public final class AuthRunner implements DemoRunner {
             return;
         }
 
-        // Re-authenticate (proves full lifecycle: auth → terminate → auth again)
-        start = System.currentTimeMillis();
+        long reAuthStart = System.currentTimeMillis();
         try {
             context.client().authenticate();
-            LOG.info("[{}] re-authenticated after terminate", NAME);
-            results.add(RunResult.ok(NAME, OP_RE_AUTHENTICATE, elapsed(start),
+            LOGGER.info(LOG_RE_AUTHENTICATED, NAME);
+            results.add(RunResult.ok(NAME, OP_RE_AUTHENTICATE, elapsed(reAuthStart),
                     NIP_PREFIX + context.nipIdentifier()));
         } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_RE_AUTHENTICATE, elapsed(start),
+            results.add(RunResult.fail(NAME, OP_RE_AUTHENTICATE, elapsed(reAuthStart),
                     errorMessage(exception)));
         }
     }
@@ -164,21 +160,26 @@ public final class AuthRunner implements DemoRunner {
         try {
             AuthenticationList list = new AuthClient(context.client()).listSessions();
             int count = list.items().size();
-            LOG.info("[{}] active auth sessions: {}", NAME, count);
+            LOGGER.info(LOG_ACTIVE_SESSIONS, NAME, count);
             results.add(RunResult.ok(NAME, OP_LIST_SESSIONS, elapsed(start),
-                    count + " sessions"));
+                    count + SESSIONS_LABEL));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_LIST_SESSIONS, elapsed(start),
                     errorMessage(exception)));
         }
     }
 
+    /**
+     * Tears down the current SDK-managed session, runs a manual flow that
+     * captures the refresh token, refreshes it, then restores a normally-
+     * managed session for subsequent runners. The manual flow is needed because
+     * {@code KsefClient.authenticate()} auto-redeems and discards the refresh
+     * token internally.
+     */
     private void runRefreshToken(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         KsefClient client = context.client();
         try {
-            // Tear down the current session so we can run a manual flow that captures
-            // the refresh token (the SDK's authenticate() redeems and discards it).
             client.terminateAuth();
 
             AuthenticationTokens tokens = manualAuthenticate(context);
@@ -190,47 +191,52 @@ public final class AuthRunner implements DemoRunner {
                     tokens.refreshToken().token());
             OffsetDateTime validUntil = refreshed.accessToken() != null
                     ? refreshed.accessToken().validUntil() : null;
-            LOG.info("[{}] refreshed access token, validUntil={}", NAME, validUntil);
+            LOGGER.info(LOG_REFRESH_OK, NAME, validUntil);
             results.add(RunResult.ok(NAME, OP_REFRESH_TOKEN, elapsed(start),
-                    "validUntil=" + validUntil));
+                    VALID_UNTIL_PREFIX + validUntil));
 
-            // Tear down the manually-established session and re-authenticate via the
-            // SDK so the rest of the demo runs against a normally-managed session.
             new AuthClient(client).terminateCurrentSession();
             client.authenticate();
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_REFRESH_TOKEN, elapsed(start),
                     errorMessage(exception)));
-            // Best-effort recovery so subsequent runners still have a session.
             tryRecoverAuth(client);
         }
     }
 
+    /**
+     * Swaps the JWT for a syntactically-bogus one (without changing expiry) and
+     * issues an authenticated GET. The next request will get HTTP 401 from the
+     * server, which the SDK should transparently recover from via
+     * {@code reauthenticate()}.
+     */
     private void runForceReAuthOnExpiredToken(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         KsefClient client = context.client();
         try {
             SessionContext sessionContext = client.sessionContext();
-            // Swap the JWT for a syntactically-bogus one without changing expiry.
-            // The next authenticated request will get HTTP 401 from the server,
-            // which the SDK should transparently recover from via reauthenticate().
             OffsetDateTime fakeExpiry = OffsetDateTime.now().plusHours(FUTURE_EXPIRY_HOURS);
             sessionContext.refreshToken(INVALID_JWT, fakeExpiry);
 
-            // Any authenticated GET will do — limits.getContextLimits is cheap.
             ContextLimits limits = client.limits().getContextLimits();
             boolean recovered = limits != null;
-            LOG.info("[{}] auto-reauth recovered: contextLimits retrieved={}", NAME, recovered);
+            LOGGER.info(LOG_FORCE_REAUTH_OK, NAME, recovered);
             results.add(RunResult.ok(NAME, OP_FORCE_REAUTH, elapsed(start),
-                    "auto-refresh succeeded"));
+                    AUTO_REFRESH_SUCCEEDED));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_FORCE_REAUTH, elapsed(start),
                     errorMessage(exception)));
-            // Best-effort recovery so subsequent runners still have a session.
             tryRecoverAuth(client);
         }
     }
 
+    /**
+     * Terminates the current session by its reference number (alternative to
+     * the {@code /current} endpoint exercised by {@code terminateAuth}) and
+     * re-authenticates. Uses {@code reauthenticate()} (not {@code authenticate()})
+     * because the SDK's {@code authenticated} flag is still true after a
+     * terminate-by-ref bypass; {@code reauthenticate()} clears state first.
+     */
     private void runTerminateSessionByRefAndReAuthenticate(DemoContext context,
                                                            List<RunResult> results) {
         long start = System.currentTimeMillis();
@@ -240,27 +246,24 @@ public final class AuthRunner implements DemoRunner {
             AuthenticationList list = new AuthClient(client).listSessions();
             currentRef = findCurrentSessionRef(list);
             new AuthClient(client).terminateSession(currentRef);
-            LOG.info("[{}] terminated session by ref={}", NAME, currentRef);
+            LOGGER.info(LOG_TERMINATED_BY_REF, NAME, currentRef);
             results.add(RunResult.ok(NAME, OP_TERMINATE_BY_REF, elapsed(start),
-                    "ref=" + currentRef));
+                    REF_PREFIX + currentRef));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_TERMINATE_BY_REF, elapsed(start),
                     errorMessage(exception)));
             return;
         }
 
-        // Re-authenticate so subsequent runners (if any) have a valid session.
-        start = System.currentTimeMillis();
+        long reAuthStart = System.currentTimeMillis();
         try {
-            // The SDK's `authenticated` flag is still true (we bypassed terminateAuth),
-            // so force a clean re-auth via reauthenticate() which clears state first.
             client.reauthenticate();
-            LOG.info("[{}] re-authenticated after terminateSessionByRef", NAME);
+            LOGGER.info(LOG_RE_AUTHENTICATED_AFTER_BY_REF, NAME);
             results.add(RunResult.ok(NAME, OP_RE_AUTHENTICATE_AFTER_TERMINATE_BY_REF,
-                    elapsed(start), NIP_PREFIX + context.nipIdentifier()));
+                    elapsed(reAuthStart), NIP_PREFIX + context.nipIdentifier()));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_RE_AUTHENTICATE_AFTER_TERMINATE_BY_REF,
-                    elapsed(start), errorMessage(exception)));
+                    elapsed(reAuthStart), errorMessage(exception)));
         }
     }
 
@@ -286,17 +289,17 @@ public final class AuthRunner implements DemoRunner {
     }
 
     private static PublicKey fetchTokenEncryptionKey(KsefClient client) {
-        PublicKeyCertificate cert = new SecurityClient(client).getPublicKeyCertificates().stream()
-                .filter(c -> c.usage().contains(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION))
+        PublicKeyCertificate certificate = new SecurityClient(client).getPublicKeyCertificates().stream()
+                .filter(cert -> cert.usage().contains(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_PUBLIC_KEY));
         try {
             CertificateFactory factory = CertificateFactory.getInstance(CERT_TYPE_X509);
             X509Certificate x509 = (X509Certificate) factory.generateCertificate(
-                    new ByteArrayInputStream(cert.certificate()));
+                    new ByteArrayInputStream(certificate.certificate()));
             return x509.getPublicKey();
-        } catch (java.security.cert.CertificateException ex) {
-            throw new IllegalStateException(ERR_CERT_PARSE, ex);
+        } catch (java.security.cert.CertificateException exception) {
+            throw new IllegalStateException(ERR_CERT_PARSE, exception);
         }
     }
 
@@ -314,17 +317,21 @@ public final class AuthRunner implements DemoRunner {
     private static void sleep(int millis) {
         try {
             Thread.sleep(millis);
-        } catch (InterruptedException ex) {
+        } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException(ERR_INTERRUPTED, ex);
+            throw new IllegalStateException(ERR_INTERRUPTED, interrupted);
         }
     }
 
+    /**
+     * Best-effort recovery so subsequent runners still have a session.
+     * Swallows failures — downstream runners will report their own.
+     */
     private static void tryRecoverAuth(KsefClient client) {
         try {
             client.reauthenticate();
         } catch (Exception ignored) {
-            // Best-effort — if recovery fails, downstream runners will report their own failures.
+            // intentionally ignored
         }
     }
 }
