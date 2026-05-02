@@ -37,7 +37,10 @@ import org.slf4j.LoggerFactory;
  * validation results so the operator can capture
  * {@code mvn exec:java -pl ksef-demo} stdout into a report file.
  */
-@SuppressWarnings("java:S2629") // CLI probe; INFO is always enabled — eager arg eval is intentional
+@SuppressWarnings({
+    "java:S2629", // CLI probe; INFO is always enabled — eager arg eval is intentional
+    "java:S1075"  // KSeF API paths are intentionally hardcoded — the probe targets specific endpoints by URI
+})
 public final class ValidationProbe {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ValidationProbe.class);
