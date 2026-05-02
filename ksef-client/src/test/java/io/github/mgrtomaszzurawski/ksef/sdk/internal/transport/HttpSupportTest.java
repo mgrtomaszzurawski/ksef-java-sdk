@@ -40,7 +40,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 @WireMockTest
 class HttpSupportTest {
 
-    private static final String TEST_PATH = "/api/v2/test/resource";
+    private static final String TEST_PATH = "/v2/test/resource";
     private static final String TEST_CHALLENGE = "20260404-CR-AAAAAAAAAA-BBBBBBBBBB-CC";
     private static final String TEST_TOKEN = "test-token";
     private static final String BEARER_TOKEN = "Bearer test-token";
@@ -200,7 +200,7 @@ class HttpSupportTest {
     }
 
     private static HttpSupport createHttpSupport(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(TEST_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();

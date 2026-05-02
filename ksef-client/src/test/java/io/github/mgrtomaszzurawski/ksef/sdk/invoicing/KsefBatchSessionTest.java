@@ -44,8 +44,8 @@ class KsefBatchSessionTest {
     private static final String SCENARIO_BUSY_THEN_OK = "batch-busy-then-ok";
     private static final String STATE_RETRY = "retry";
     private static final String STATE_STARTED = "Started";
-    private static final String BATCH_BASE = "/api/v2/sessions/batch";
-    private static final String SESSIONS_BASE = "/api/v2/sessions";
+    private static final String BATCH_BASE = "/v2/sessions/batch";
+    private static final String SESSIONS_BASE = "/v2/sessions";
 
     private static final String SESSION_STATUS_OK_RESPONSE = """
             {
@@ -157,7 +157,7 @@ class KsefBatchSessionTest {
     }
 
     private static KsefBatchSession createSession(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();

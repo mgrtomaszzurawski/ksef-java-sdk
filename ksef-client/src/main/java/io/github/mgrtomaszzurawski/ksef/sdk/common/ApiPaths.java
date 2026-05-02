@@ -7,12 +7,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
 /**
  * Centralised KSeF REST API path prefixes (ADR-014).
  *
- * <p>Every endpoint path lives under {@code /api/v2/}. Each domain client
- * builds its concrete paths from the appropriate base constant rather than
- * duplicating the version + domain segment in every {@code PATH_*} constant.
+ * <p>Each domain client builds its concrete paths from the appropriate base
+ * constant rather than duplicating the domain segment in every
+ * {@code PATH_*} constant.
  *
- * <p>Changing the API major version (e.g. {@code v2 -> v3}) only touches
- * {@link #API_BASE}.
+ * <p>The API version segment ({@code /v2}) is part of the server URL
+ * configured via {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment}
+ * — these path constants do <strong>not</strong> repeat it.
  *
  * <p>Public so consumer-side tooling (custom probes, validation harnesses,
  * raw {@code java.net.http.HttpClient} integrations) can build URLs using the
@@ -24,22 +25,19 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
  */
 public final class ApiPaths {
 
-    /** Common prefix for every KSeF REST endpoint. */
-    public static final String API_BASE = "/api/v2";
-
     private static final String SEPARATOR = "/";
 
-    public static final String AUTH = API_BASE + "/auth";
-    public static final String CERTIFICATES = API_BASE + "/certificates";
-    public static final String INVOICES = API_BASE + "/invoices";
-    public static final String LIMITS = API_BASE + "/limits";
-    public static final String PEPPOL = API_BASE + "/peppol";
-    public static final String PERMISSIONS = API_BASE + "/permissions";
-    public static final String RATE_LIMITS = API_BASE + "/rate-limits";
-    public static final String SECURITY = API_BASE + "/security";
-    public static final String SESSIONS = API_BASE + "/sessions";
-    public static final String TESTDATA = API_BASE + "/testdata";
-    public static final String TOKENS = API_BASE + "/tokens";
+    public static final String AUTH = "/auth";
+    public static final String CERTIFICATES = "/certificates";
+    public static final String INVOICES = "/invoices";
+    public static final String LIMITS = "/limits";
+    public static final String PEPPOL = "/peppol";
+    public static final String PERMISSIONS = "/permissions";
+    public static final String RATE_LIMITS = "/rate-limits";
+    public static final String SECURITY = "/security";
+    public static final String SESSIONS = "/sessions";
+    public static final String TESTDATA = "/testdata";
+    public static final String TOKENS = "/tokens";
 
     private ApiPaths() { }
 
@@ -48,7 +46,7 @@ public final class ApiPaths {
      * Each segment is appended verbatim — caller is responsible for any encoding.
      *
      * <p>Example: {@code subPath(SESSIONS, ref, "invoices")} →
-     * {@code "/api/v2/sessions/&lt;ref&gt;/invoices"}.
+     * {@code "/sessions/&lt;ref&gt;/invoices"}.
      */
     public static String subPath(String base, String... segments) {
         StringBuilder path = new StringBuilder(base);

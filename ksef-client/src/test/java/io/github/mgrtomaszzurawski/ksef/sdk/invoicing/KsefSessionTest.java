@@ -54,7 +54,7 @@ class KsefSessionTest {
 
     private static final byte[] TEST_UPO_CONTENT = "<UPO>receipt</UPO>".getBytes(StandardCharsets.UTF_8);
     private static final byte[] TEST_INVOICE_XML = "<Invoice>test</Invoice>".getBytes(StandardCharsets.UTF_8);
-    private static final String SESSIONS_BASE = "/api/v2/sessions";
+    private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
     private static final String SCENARIO_BUSY_THEN_OK = "busy-then-ok";
     private static final String STATE_STARTED = "Started";
@@ -171,7 +171,7 @@ class KsefSessionTest {
     }
 
     private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();

@@ -27,7 +27,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 @WireMockTest
 class SecurityClientTest {
 
-    private static final String PATH_PUBLIC_KEY_CERTS = "/api/v2/security/public-key-certificates";
+    private static final String PATH_PUBLIC_KEY_CERTS = "/v2/security/public-key-certificates";
     private static final String PUBLIC_KEY_CERTS_RESPONSE = """
             [
               {
@@ -77,7 +77,7 @@ class SecurityClientTest {
     }
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {
-        return KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        return KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();

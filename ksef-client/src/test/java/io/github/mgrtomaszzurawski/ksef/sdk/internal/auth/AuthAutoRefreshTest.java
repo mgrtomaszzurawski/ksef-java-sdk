@@ -42,12 +42,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 @WireMockTest
 class AuthAutoRefreshTest {
 
-    private static final String TARGET_PATH = "/api/v2/rate-limits";
-    private static final String PATH_SECURITY = "/api/v2/security/public-key-certificates";
-    private static final String PATH_CHALLENGE = "/api/v2/auth/challenge";
-    private static final String PATH_KSEF_TOKEN = "/api/v2/auth/ksef-token";
-    private static final String PATH_AUTH_STATUS_PATTERN = "/api/v2/auth/[A-Za-z0-9.\\-]+";
-    private static final String PATH_TOKEN_REDEEM = "/api/v2/auth/token/redeem";
+    private static final String TARGET_PATH = "/v2/rate-limits";
+    private static final String PATH_SECURITY = "/v2/security/public-key-certificates";
+    private static final String PATH_CHALLENGE = "/v2/auth/challenge";
+    private static final String PATH_KSEF_TOKEN = "/v2/auth/ksef-token";
+    private static final String PATH_AUTH_STATUS_PATTERN = "/v2/auth/[A-Za-z0-9.\\-]+";
+    private static final String PATH_TOKEN_REDEEM = "/v2/auth/token/redeem";
     private static final String NIP = "1234567890";
     private static final String INITIAL_TOKEN = "stale-jwt-from-prior-session";
     private static final String FRESH_TOKEN = "fresh-jwt-after-reauth";
@@ -228,7 +228,7 @@ class AuthAutoRefreshTest {
      * the SDK re-authenticates and retries with a fresh token.
      */
     private static KsefClient createClientWithStaleSession(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(TEST_NIP_SHORT, NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();

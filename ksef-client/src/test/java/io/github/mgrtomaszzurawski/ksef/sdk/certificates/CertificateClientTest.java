@@ -50,7 +50,7 @@ class CertificateClientTest {
     private static final int KSEF_STATUS_OK = 200;
     private static final String CREDENTIALS_TOKEN = "test-token";
     private static final String CREDENTIALS_NIP = "1234567890";
-    private static final String PATH_ENROLLMENTS = "/api/v2/certificates/enrollments";
+    private static final String PATH_ENROLLMENTS = "/v2/certificates/enrollments";
     private static final String COMMON_NAME = "KSeF Certificate";
     private static final String COUNTRY_NAME = "PL";
 
@@ -99,7 +99,7 @@ class CertificateClientTest {
     @Test
     void getLimits_whenAuthenticated_returnsLimits(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/certificates/limits"))
+        stubFor(get(urlEqualTo("/v2/certificates/limits"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -121,7 +121,7 @@ class CertificateClientTest {
     @Test
     void getEnrollmentData_whenAuthenticated_returnsData(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/certificates/enrollments/data"))
+        stubFor(get(urlEqualTo("/v2/certificates/enrollments/data"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -186,7 +186,7 @@ class CertificateClientTest {
     @Test
     void retrieve_whenAuthenticated_returnsCertificates(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/certificates/retrieve"))
+        stubFor(post(urlEqualTo("/v2/certificates/retrieve"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -207,7 +207,7 @@ class CertificateClientTest {
     @Test
     void revoke_whenAuthenticated_sendsRevokeRequest(WireMockRuntimeInfo wmInfo) {
         // given
-        String revokePath = "/api/v2/certificates/" + TEST_CERT_SERIAL + "/revoke";
+        String revokePath = "/v2/certificates/" + TEST_CERT_SERIAL + "/revoke";
         stubFor(post(urlEqualTo(revokePath))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
@@ -226,7 +226,7 @@ class CertificateClientTest {
     @Test
     void query_whenAuthenticated_returnsCertificates(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/certificates/query"))
+        stubFor(post(urlEqualTo("/v2/certificates/query"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -272,7 +272,7 @@ class CertificateClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(CREDENTIALS_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();

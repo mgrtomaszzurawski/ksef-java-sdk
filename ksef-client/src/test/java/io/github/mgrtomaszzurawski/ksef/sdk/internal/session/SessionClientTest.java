@@ -87,7 +87,7 @@ class SessionClientTest {
             """;
 
     private static final byte[] TEST_UPO_CONTENT = "<UPO>receipt</UPO>".getBytes(StandardCharsets.UTF_8);
-    private static final String SESSIONS_BASE = "/api/v2/sessions";
+    private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
     private static final String CREDENTIALS_TOKEN = "test-token";
     private static final String CREDENTIALS_NIP = "1234567890";
@@ -263,7 +263,7 @@ class SessionClientTest {
         // so after the SDK retries once on 401 the auth exception propagates.
         stubFor(post(urlEqualTo(ONLINE_BASE))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
-        stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
+        stubFor(get(urlEqualTo("/v2/security/public-key-certificates"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
@@ -292,7 +292,7 @@ class SessionClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(CREDENTIALS_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();

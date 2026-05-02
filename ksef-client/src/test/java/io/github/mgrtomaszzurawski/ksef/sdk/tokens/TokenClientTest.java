@@ -75,7 +75,7 @@ class TokenClientTest {
     @Test
     void generate_whenAuthenticated_returnsTokenResponse(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/tokens"))
+        stubFor(post(urlEqualTo("/v2/tokens"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -96,7 +96,7 @@ class TokenClientTest {
     @Test
     void list_whenAuthenticated_returnsTokenList(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/tokens"))
+        stubFor(get(urlEqualTo("/v2/tokens"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -118,7 +118,7 @@ class TokenClientTest {
     @Test
     void getStatus_whenTokenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/tokens/" + TEST_TOKEN_REF))
+        stubFor(get(urlEqualTo("/v2/tokens/" + TEST_TOKEN_REF))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -139,7 +139,7 @@ class TokenClientTest {
     @Test
     void revoke_whenTokenExists_sendsDeleteRequest(WireMockRuntimeInfo wmInfo) {
         // given
-        String deletePath = "/api/v2/tokens/" + TEST_TOKEN_REF;
+        String deletePath = "/v2/tokens/" + TEST_TOKEN_REF;
         stubFor(delete(urlEqualTo(deletePath))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
@@ -159,9 +159,9 @@ class TokenClientTest {
     void generate_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
         // given — both the target endpoint and the reauth security endpoint return 401,
         // so after the SDK retries once on 401 the auth exception propagates.
-        stubFor(post(urlEqualTo("/api/v2/tokens"))
+        stubFor(post(urlEqualTo("/v2/tokens"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
-        stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
+        stubFor(get(urlEqualTo("/v2/security/public-key-certificates"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
@@ -184,7 +184,7 @@ class TokenClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
