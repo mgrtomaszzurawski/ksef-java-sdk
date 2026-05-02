@@ -100,8 +100,8 @@ public final class InvoiceQueryBuilder {
     /**
      * Optional upper bound for the date range.
      */
-    public InvoiceQueryBuilder dateTo(OffsetDateTime to) {
-        this.dateTo = to;
+    public InvoiceQueryBuilder dateTo(OffsetDateTime endDate) {
+        this.dateTo = endDate;
         return this;
     }
 

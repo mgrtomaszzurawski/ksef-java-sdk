@@ -128,8 +128,6 @@ public final class PermissionRunner implements DemoRunner {
         return results;
     }
 
-    // ==================== Grant cycles ====================
-
     private void runPersonGrantCycle(DemoContext context, List<RunResult> results) {
         String operationRef = runGrantPerson(context, results);
         if (operationRef != null) {
@@ -199,8 +197,6 @@ public final class PermissionRunner implements DemoRunner {
             results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[euEntity]", DEPENDS_ON_GRANT));
         }
     }
-
-    // ==================== Individual grant methods ====================
 
     private String runGrantPerson(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
@@ -337,8 +333,6 @@ public final class PermissionRunner implements DemoRunner {
         }
     }
 
-    // ==================== Status / shared ====================
-
     private void runGetOperationStatus(DemoContext context, String referenceNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
@@ -362,8 +356,6 @@ public final class PermissionRunner implements DemoRunner {
         }
     }
 
-    // ==================== Revoke methods ====================
-
     private void runRevokeCommon(DemoContext context, String permissionId, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
@@ -385,8 +377,6 @@ public final class PermissionRunner implements DemoRunner {
             results.add(RunResult.fail(NAME, OP_REVOKE_AUTHORIZATION, elapsed(start), errorMessage(exception)));
         }
     }
-
-    // ==================== Query methods ====================
 
     private void runQueryPersonal(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();

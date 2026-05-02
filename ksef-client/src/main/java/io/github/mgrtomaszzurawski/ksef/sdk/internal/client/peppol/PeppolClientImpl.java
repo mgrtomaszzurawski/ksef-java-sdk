@@ -26,6 +26,10 @@ public final class PeppolClientImpl implements PeppolClient {
     private static final String QUERY_PARAM_PAGE_OFFSET = "pageOffset";
     private static final String QUERY_PARAM_PAGE_SIZE = "pageSize";
 
+    private static final String QUERY_STRING_PREFIX = "?";
+    private static final String QUERY_PARAM_ASSIGN = "=";
+    private static final String QUERY_PARAM_SEPARATOR = "&";
+
     private static final int DEFAULT_PAGE_OFFSET = 0;
     private static final int DEFAULT_PAGE_SIZE = 10;
 
@@ -67,8 +71,8 @@ public final class PeppolClientImpl implements PeppolClient {
             throw new IllegalArgumentException(ERR_PAGE_SIZE_NOT_POSITIVE);
         }
         String path = PATH_PEPPOL_QUERY
-                + "?" + QUERY_PARAM_PAGE_OFFSET + "=" + pageOffset
-                + "&" + QUERY_PARAM_PAGE_SIZE + "=" + pageSize;
+                + QUERY_STRING_PREFIX + QUERY_PARAM_PAGE_OFFSET + QUERY_PARAM_ASSIGN + pageOffset
+                + QUERY_PARAM_SEPARATOR + QUERY_PARAM_PAGE_SIZE + QUERY_PARAM_ASSIGN + pageSize;
         String token = sessionContext.token();
         QueryPeppolProvidersResponseRaw raw = http.getAuthenticated(path, token,
                 QueryPeppolProvidersResponseRaw.class, OP_QUERY_PROVIDERS);

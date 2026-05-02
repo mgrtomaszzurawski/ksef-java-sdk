@@ -41,6 +41,14 @@ public final class TestPermissionsGrantBuilder {
     private static final String ERR_NULL_PERMISSION_TYPE = "permissionType is required";
     private static final String ERR_NULL_DESCRIPTION = "description is required";
 
+    private static final String DESC_INVOICE_READ = "InvoiceRead";
+    private static final String DESC_INVOICE_WRITE = "InvoiceWrite";
+    private static final String DESC_CREDENTIALS_READ = "CredentialsRead";
+    private static final String DESC_CREDENTIALS_MANAGE = "CredentialsManage";
+    private static final String DESC_INTROSPECTION = "Introspection";
+    private static final String DESC_ENFORCEMENT_OPERATIONS = "EnforcementOperations";
+    private static final String DESC_SUBUNIT_MANAGE = "SubunitManage";
+
     private final String contextNip;
     private TestDataAuthorizedIdentifierTypeRaw authorizedType;
     private String authorizedValue;
@@ -107,31 +115,31 @@ public final class TestPermissionsGrantBuilder {
     }
 
     public TestPermissionsGrantBuilder invoiceRead() {
-        return permission(TestDataPermissionType.INVOICE_READ, "InvoiceRead");
+        return permission(TestDataPermissionType.INVOICE_READ, DESC_INVOICE_READ);
     }
 
     public TestPermissionsGrantBuilder invoiceWrite() {
-        return permission(TestDataPermissionType.INVOICE_WRITE, "InvoiceWrite");
+        return permission(TestDataPermissionType.INVOICE_WRITE, DESC_INVOICE_WRITE);
     }
 
     public TestPermissionsGrantBuilder credentialsRead() {
-        return permission(TestDataPermissionType.CREDENTIALS_READ, "CredentialsRead");
+        return permission(TestDataPermissionType.CREDENTIALS_READ, DESC_CREDENTIALS_READ);
     }
 
     public TestPermissionsGrantBuilder credentialsManage() {
-        return permission(TestDataPermissionType.CREDENTIALS_MANAGE, "CredentialsManage");
+        return permission(TestDataPermissionType.CREDENTIALS_MANAGE, DESC_CREDENTIALS_MANAGE);
     }
 
     public TestPermissionsGrantBuilder introspection() {
-        return permission(TestDataPermissionType.INTROSPECTION, "Introspection");
+        return permission(TestDataPermissionType.INTROSPECTION, DESC_INTROSPECTION);
     }
 
     public TestPermissionsGrantBuilder enforcementOperations() {
-        return permission(TestDataPermissionType.ENFORCEMENT_OPERATIONS, "EnforcementOperations");
+        return permission(TestDataPermissionType.ENFORCEMENT_OPERATIONS, DESC_ENFORCEMENT_OPERATIONS);
     }
 
     public TestPermissionsGrantBuilder subunitManage() {
-        return permission(TestDataPermissionType.SUBUNIT_MANAGE, "SubunitManage");
+        return permission(TestDataPermissionType.SUBUNIT_MANAGE, DESC_SUBUNIT_MANAGE);
     }
 
     /**

@@ -34,9 +34,9 @@ final class RunnerHelper {
      * Extract a detailed error message from an exception, including KSeF response body if available.
      */
     static String errorMessage(Exception exception) {
-        if (exception instanceof KsefException ksefEx && ksefEx.responseBody() != null) {
+        if (exception instanceof KsefException ksefException && ksefException.responseBody() != null) {
             return exception.getClass().getSimpleName() + ": " + exception.getMessage()
-                    + " | body: " + ksefEx.responseBody();
+                    + " | body: " + ksefException.responseBody();
         }
         return exception.getClass().getSimpleName() + ": " + exception.getMessage();
     }

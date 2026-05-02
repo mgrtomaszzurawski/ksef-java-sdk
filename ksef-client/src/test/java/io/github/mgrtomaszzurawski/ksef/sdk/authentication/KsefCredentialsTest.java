@@ -29,8 +29,6 @@ class KsefCredentialsTest {
     private static final String KEYSTORE_PASSWORD = "test-password";
     private static final String KEYSTORE_PATH = "/tmp/test.p12";
 
-    // --- validateNip ---
-
     @Test
     void validateNip_whenValidNip_doesNotThrow() {
         // given
@@ -73,8 +71,6 @@ class KsefCredentialsTest {
         assertThrows(IllegalArgumentException.class, () -> KsefCredentials.validateNip(nip));
     }
 
-    // --- KsefTokenCredentials ---
-
     @Test
     void tokenCredentials_whenValidInputs_createsSuccessfully() {
         // given / when
@@ -113,8 +109,6 @@ class KsefCredentialsTest {
         assertNotNull(result);
     }
 
-    // --- KsefCertificateCredentials ---
-
     @Test
     void certificateCredentials_whenNullCertificate_throwsNullPointerException() throws Exception {
         // given
@@ -136,8 +130,6 @@ class KsefCredentialsTest {
         assertThrows(NullPointerException.class,
                 () -> new KsefCertificateCredentials(cert, null, VALID_NIP));
     }
-
-    // --- KsefPkcs12Credentials ---
 
     @Test
     void pkcs12Credentials_whenNullPath_throwsNullPointerException() {
@@ -174,21 +166,19 @@ class KsefCredentialsTest {
         assertNotNull(result);
     }
 
-    // --- Identifier-based factories (Part A) ---
-
     private static final String PEPPOL_VALUE = "PPL000123";
     private static final String INTERNAL_VALUE = "1234567890-12345";
 
     @Test
     void tokenCredentials_whenIdentifierConstructor_returnsIdentifier() {
         // given
-        KsefIdentifier id = KsefIdentifier.peppolId(PEPPOL_VALUE);
+        KsefIdentifier identifier = KsefIdentifier.peppolId(PEPPOL_VALUE);
 
         // when
-        KsefTokenCredentials credentials = new KsefTokenCredentials(VALID_TOKEN, id);
+        KsefTokenCredentials credentials = new KsefTokenCredentials(VALID_TOKEN, identifier);
 
         // then
-        assertEquals(id, credentials.identifier());
+        assertEquals(identifier, credentials.identifier());
         assertEquals(KsefIdentifier.Type.PEPPOL_ID, credentials.identifier().type());
     }
 

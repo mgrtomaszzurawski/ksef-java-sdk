@@ -43,6 +43,9 @@ class KsefBatchSessionTest {
 
     private static final String SCENARIO_BUSY_THEN_OK = "batch-busy-then-ok";
     private static final String STATE_RETRY = "retry";
+    private static final String STATE_STARTED = "Started";
+    private static final String BATCH_BASE = "/api/v2/sessions/batch";
+    private static final String SESSIONS_BASE = "/api/v2/sessions";
 
     private static final String SESSION_STATUS_OK_RESPONSE = """
             {
@@ -55,18 +58,16 @@ class KsefBatchSessionTest {
             {"exception":{"exceptionCode":21405,"description":"Session busy (415)"}}
             """;
 
-    // --- Tests ---
-
     @Test
     void referenceNumber_returnsBatchSessionRef(WireMockRuntimeInfo wmInfo) {
         // given
         KsefBatchSession session = createSession(wmInfo);
 
         // when
-        String ref = session.referenceNumber();
+        String referenceNumber = session.referenceNumber();
 
         // then
-        assertEquals(TEST_BATCH_REF, ref);
+        assertEquals(TEST_BATCH_REF, referenceNumber);
     }
 
     @Test
@@ -117,15 +118,15 @@ class KsefBatchSessionTest {
     @Test
     void close_whenSessionBusy415_retriesAndSucceeds(WireMockRuntimeInfo wmInfo) {
         // given — first close returns 415 (busy), second succeeds
-        stubFor(post(urlEqualTo("/api/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
+        stubFor(post(urlEqualTo(BATCH_BASE + "/" + TEST_BATCH_REF + "/close"))
                 .inScenario(SCENARIO_BUSY_THEN_OK)
-                .whenScenarioStateIs("Started")
+                .whenScenarioStateIs(STATE_STARTED)
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_SESSION_BUSY)
                         .withBody(SESSION_BUSY_BODY))
                 .willSetStateTo(STATE_RETRY));
 
-        stubFor(post(urlEqualTo("/api/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
+        stubFor(post(urlEqualTo(BATCH_BASE + "/" + TEST_BATCH_REF + "/close"))
                 .inScenario(SCENARIO_BUSY_THEN_OK)
                 .whenScenarioStateIs(STATE_RETRY)
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
@@ -152,8 +153,6 @@ class KsefBatchSessionTest {
         assertDoesNotThrow(session::close);
     }
 
-    // --- Helper methods ---
-
     private static KsefBatchSession createSession(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
                 .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
@@ -171,13 +170,13 @@ class KsefBatchSessionTest {
     }
 
     private static void stubCloseAndStatusOk() {
-        stubFor(post(urlEqualTo("/api/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
+        stubFor(post(urlEqualTo(BATCH_BASE + "/" + TEST_BATCH_REF + "/close"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
         stubStatusOk();
     }
 
     private static void stubStatusOk() {
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_BATCH_REF))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_BATCH_REF))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)

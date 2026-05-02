@@ -48,6 +48,11 @@ class CertificateClientTest {
     private static final String TEST_CERT_NAME = "Test Auth Certificate";
     private static final byte[] TEST_CSR = new byte[]{0x30, 0x42};
     private static final int KSEF_STATUS_OK = 200;
+    private static final String CREDENTIALS_TOKEN = "test-token";
+    private static final String CREDENTIALS_NIP = "1234567890";
+    private static final String PATH_ENROLLMENTS = "/api/v2/certificates/enrollments";
+    private static final String COMMON_NAME = "KSeF Certificate";
+    private static final String COUNTRY_NAME = "PL";
 
     private static final String LIMITS_RESPONSE = """
             {
@@ -129,15 +134,15 @@ class CertificateClientTest {
             CertificateEnrollmentData response = ksef.certificates().getEnrollmentData();
 
             // then
-            assertEquals("KSeF Certificate", response.commonName());
-            assertEquals("PL", response.countryName());
+            assertEquals(COMMON_NAME, response.commonName());
+            assertEquals(COUNTRY_NAME, response.countryName());
         }
     }
 
     @Test
     void enroll_whenAuthenticated_returnsReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/certificates/enrollments"))
+        stubFor(post(urlEqualTo(PATH_ENROLLMENTS))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -159,7 +164,7 @@ class CertificateClientTest {
     @Test
     void getEnrollmentStatus_whenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/certificates/enrollments/" + TEST_ENROLLMENT_REF))
+        stubFor(get(urlEqualTo(PATH_ENROLLMENTS + "/" + TEST_ENROLLMENT_REF))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -243,7 +248,7 @@ class CertificateClientTest {
     @Test
     void enroll_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/certificates/enrollments"))
+        stubFor(post(urlEqualTo(PATH_ENROLLMENTS))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
@@ -268,7 +273,7 @@ class CertificateClientTest {
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
-                .credentials(new KsefTokenCredentials("test-token", "1234567890"))
+                .credentials(new KsefTokenCredentials(CREDENTIALS_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
         ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);

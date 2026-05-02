@@ -13,6 +13,9 @@ class RetryPolicyTest {
 
     private static final int CUSTOM_MAX_ATTEMPTS = 5;
     private static final long CUSTOM_MAX_RETRY_AFTER = 120L;
+    private static final int DEFAULT_MAX_ATTEMPTS = 3;
+    private static final int NEGATIVE_MAX_ATTEMPTS = -1;
+    private static final long NEGATIVE_MAX_RETRY_AFTER = -1L;
 
     @Test
     void builder_defaults_areReasonable() {
@@ -21,7 +24,7 @@ class RetryPolicyTest {
 
         // then
         assertTrue(policy.enabled());
-        assertEquals(3, policy.maxAttempts());
+        assertEquals(DEFAULT_MAX_ATTEMPTS, policy.maxAttempts());
         assertTrue(policy.retryOn5xx());
         assertTrue(policy.retryOn429());
         assertEquals(RetryPolicy.BackoffStrategy.EXPONENTIAL, policy.backoffStrategy());
@@ -50,13 +53,13 @@ class RetryPolicyTest {
 
     @Test
     void build_whenMaxAttemptsNegative_throwsIllegalArgument() {
-        RetryPolicy.Builder builder = RetryPolicy.builder().maxAttempts(-1);
+        RetryPolicy.Builder builder = RetryPolicy.builder().maxAttempts(NEGATIVE_MAX_ATTEMPTS);
         assertThrows(IllegalArgumentException.class, builder::build);
     }
 
     @Test
     void build_whenMaxRetryAfterNegative_throwsIllegalArgument() {
-        RetryPolicy.Builder builder = RetryPolicy.builder().maxRetryAfterSeconds(-1);
+        RetryPolicy.Builder builder = RetryPolicy.builder().maxRetryAfterSeconds(NEGATIVE_MAX_RETRY_AFTER);
         assertThrows(IllegalArgumentException.class, builder::build);
     }
 

@@ -40,12 +40,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
 @WireMockTest
 class AuthClientTest {
 
-    private static final String PATH_CHALLENGE = "/api/v2/auth/challenge";
-    private static final String PATH_XADES = "/api/v2/auth/xades-signature";
-    private static final String PATH_TOKEN_REDEEM = "/api/v2/auth/token/redeem";
-    private static final String PATH_TOKEN_REFRESH = "/api/v2/auth/token/refresh";
-    private static final String PATH_SESSIONS = "/api/v2/auth/sessions";
-    private static final String PATH_SESSIONS_CURRENT = "/api/v2/auth/sessions/current";
+    private static final String AUTH_BASE = "/api/v2/auth";
+    private static final String PATH_CHALLENGE = AUTH_BASE + "/challenge";
+    private static final String PATH_XADES = AUTH_BASE + "/xades-signature";
+    private static final String PATH_TOKEN_REDEEM = AUTH_BASE + "/token/redeem";
+    private static final String PATH_TOKEN_REFRESH = AUTH_BASE + "/token/refresh";
+    private static final String PATH_SESSIONS = AUTH_BASE + "/sessions";
+    private static final String PATH_SESSIONS_CURRENT = AUTH_BASE + "/sessions/current";
+    private static final String CREDENTIALS_TOKEN = "test-token";
+    private static final String CREDENTIALS_NIP = "1234567890";
     private static final String TEST_CHALLENGE = "20260404-CR-AAAAAAAAAA-BBBBBBBBBB-CC";
     private static final String TEST_REFERENCE_NUMBER = "20260404-AU-1234567890-ABCDEF1234-01";
     private static final String TEST_TOKEN = "eyJhbGciOiJIUzI1NiJ9.test-payload.signature";
@@ -237,7 +240,7 @@ class AuthClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
             authenticateClient(ksef);
 
-            stubFor(get(urlEqualTo("/api/v2/auth/" + TEST_REFERENCE_NUMBER))
+            stubFor(get(urlEqualTo(AUTH_BASE + "/" + TEST_REFERENCE_NUMBER))
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                     .willReturn(aResponse()
                             .withStatus(TestHttpConstants.HTTP_OK)
@@ -337,7 +340,7 @@ class AuthClientTest {
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {
         return KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
-                .credentials(new KsefTokenCredentials("test-token", "1234567890"))
+                .credentials(new KsefTokenCredentials(CREDENTIALS_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
     }

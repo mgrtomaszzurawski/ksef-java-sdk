@@ -69,6 +69,4 @@ public final class QrCodeRunner implements DemoRunner {
 
         return results;
     }
-
-
 }

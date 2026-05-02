@@ -71,6 +71,22 @@ public final class AuthClient {
     private static final String XML_CLOSE_BRACKET = ">";
     private static final String XML_END_TAG_PREFIX = "</";
 
+    private static final String XML_ELEMENT_NIP = "Nip";
+    private static final String XML_ELEMENT_INTERNAL_ID = "InternalId";
+    private static final String XML_ELEMENT_NIP_VAT_UE = "NipVatUe";
+    private static final String XML_ELEMENT_PEPPOL_ID = "PeppolId";
+
+    private static final String XML_ESCAPE_AMP_FROM = "&";
+    private static final String XML_ESCAPE_AMP_TO = "&amp;";
+    private static final String XML_ESCAPE_LT_FROM = "<";
+    private static final String XML_ESCAPE_LT_TO = "&lt;";
+    private static final String XML_ESCAPE_GT_FROM = ">";
+    private static final String XML_ESCAPE_GT_TO = "&gt;";
+    private static final String XML_ESCAPE_QUOT_FROM = "\"";
+    private static final String XML_ESCAPE_QUOT_TO = "&quot;";
+    private static final String XML_ESCAPE_APOS_FROM = "'";
+    private static final String XML_ESCAPE_APOS_TO = "&apos;";
+
     private final HttpSupport http;
     private final SessionContext sessionContext;
 
@@ -286,19 +302,19 @@ public final class AuthClient {
 
     private static String xmlElementForType(KsefIdentifier.Type type) {
         return switch (type) {
-            case NIP -> "Nip";
-            case INTERNAL_ID -> "InternalId";
-            case NIP_VAT_UE -> "NipVatUe";
-            case PEPPOL_ID -> "PeppolId";
+            case NIP -> XML_ELEMENT_NIP;
+            case INTERNAL_ID -> XML_ELEMENT_INTERNAL_ID;
+            case NIP_VAT_UE -> XML_ELEMENT_NIP_VAT_UE;
+            case PEPPOL_ID -> XML_ELEMENT_PEPPOL_ID;
         };
     }
 
     private static String escapeXml(String input) {
         return input
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&apos;");
+                .replace(XML_ESCAPE_AMP_FROM, XML_ESCAPE_AMP_TO)
+                .replace(XML_ESCAPE_LT_FROM, XML_ESCAPE_LT_TO)
+                .replace(XML_ESCAPE_GT_FROM, XML_ESCAPE_GT_TO)
+                .replace(XML_ESCAPE_QUOT_FROM, XML_ESCAPE_QUOT_TO)
+                .replace(XML_ESCAPE_APOS_FROM, XML_ESCAPE_APOS_TO);
     }
 }

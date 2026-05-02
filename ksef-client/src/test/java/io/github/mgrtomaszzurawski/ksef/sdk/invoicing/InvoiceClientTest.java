@@ -43,6 +43,9 @@ class InvoiceClientTest {
     private static final String TEST_EXPORT_REF = "20260404-EX-1234567890-ABCDEF1234-05";
     private static final int KSEF_STATUS_OK = 200;
     private static final byte[] TEST_INVOICE_XML = "<Faktura>test invoice</Faktura>".getBytes(StandardCharsets.UTF_8);
+    private static final String INVOICES_BASE = "/api/v2/invoices";
+    private static final String PATH_EXPORTS = INVOICES_BASE + "/exports";
+    private static final String EMPTY_JSON = "{}";
 
     private static final String QUERY_METADATA_RESPONSE = """
             {
@@ -71,7 +74,7 @@ class InvoiceClientTest {
     @Test
     void getByKsefNumber_whenInvoiceExists_returnsXmlBytes(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/invoices/ksef/" + TEST_KSEF_NUMBER))
+        stubFor(get(urlEqualTo(INVOICES_BASE + "/ksef/" + TEST_KSEF_NUMBER))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -91,8 +94,8 @@ class InvoiceClientTest {
     @Test
     void getByKsefNumber_whenNotFound_throwsNotFoundException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/invoices/ksef/" + TEST_KSEF_NUMBER))
-                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NOT_FOUND).withBody("{}")));
+        stubFor(get(urlEqualTo(INVOICES_BASE + "/ksef/" + TEST_KSEF_NUMBER))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NOT_FOUND).withBody(EMPTY_JSON)));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
@@ -106,7 +109,7 @@ class InvoiceClientTest {
     @Test
     void queryMetadata_whenFiltersMatch_returnsMetadataList(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/invoices/query/metadata"))
+        stubFor(post(urlEqualTo(INVOICES_BASE + "/query/metadata"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -129,7 +132,7 @@ class InvoiceClientTest {
     @Test
     void exportInvoices_whenRequested_returnsExportReference(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
-        stubFor(post(urlEqualTo("/api/v2/invoices/exports"))
+        stubFor(post(urlEqualTo(PATH_EXPORTS))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)
@@ -154,7 +157,7 @@ class InvoiceClientTest {
     @Test
     void getExportStatus_whenExportCompleted_returnsCompletedStatus(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/invoices/exports/" + TEST_EXPORT_REF))
+        stubFor(get(urlEqualTo(PATH_EXPORTS + "/" + TEST_EXPORT_REF))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -174,8 +177,8 @@ class InvoiceClientTest {
     @Test
     void exportInvoices_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
-        stubFor(post(urlEqualTo("/api/v2/invoices/exports"))
-                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
+        stubFor(post(urlEqualTo(PATH_EXPORTS))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody(EMPTY_JSON)));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             InvoiceExportBuilder exportBuilder = InvoiceExportBuilder.create(

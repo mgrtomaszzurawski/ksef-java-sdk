@@ -60,10 +60,8 @@ public final class CertProbe {
     private static final Path CREDENTIALS_FILE = Path.of("ksef-credentials.properties");
     private static final String CERT_NAME = "Probe Cert RCA Verify";
     private static final String STATUS_ACTIVE = "Active";
-    private static final int AUTH_STATUS_OK = 200;
     private static final int POLL_INITIAL_DELAY_MS = 1000;
     private static final int POLL_MAX_DELAY_MS = 10000;
-    private static final int AUTH_POLL_TIMEOUT_MS = 60000;
     /** 5 minutes — enrollment can take a while in the test environment. */
     private static final int ENROLL_POLL_TIMEOUT_MS = 300000;
     private static final int POLL_BACKOFF_MULTIPLIER = 2;

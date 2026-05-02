@@ -114,6 +114,4 @@ public final class TokenRunner implements DemoRunner {
             results.add(RunResult.fail(NAME, OP_REVOKE, elapsed(start), errorMessage(exception)));
         }
     }
-
-
 }

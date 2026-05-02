@@ -51,8 +51,6 @@ class TestDataClientTest {
     private static final int RATE_PER_MINUTE = 100;
     private static final int RATE_PER_HOUR = 1000;
 
-    // --- Subject tests (unauthenticated) ---
-
     @Test
     void createSubject_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
@@ -86,8 +84,6 @@ class TestDataClientTest {
         }
     }
 
-    // --- Person tests (unauthenticated) ---
-
     @Test
     void createPerson_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
@@ -120,8 +116,6 @@ class TestDataClientTest {
             verify(postRequestedFor(urlEqualTo("/api/v2/testdata/person/remove")));
         }
     }
-
-    // --- Permissions tests (unauthenticated) ---
 
     @Test
     void grantPermissions_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
@@ -158,8 +152,6 @@ class TestDataClientTest {
         }
     }
 
-    // --- Attachment tests (unauthenticated) ---
-
     @Test
     void grantAttachment_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
@@ -192,8 +184,6 @@ class TestDataClientTest {
         }
     }
 
-    // --- Context blocking tests (unauthenticated) ---
-
     @Test
     void blockContext_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
@@ -225,8 +215,6 @@ class TestDataClientTest {
             verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/unblock")));
         }
     }
-
-    // --- Session limits tests (authenticated) ---
 
     @Test
     void setSessionLimits_whenAuthenticated_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
@@ -266,8 +254,6 @@ class TestDataClientTest {
         }
     }
 
-    // --- Subject limits tests (authenticated) ---
-
     @Test
     void setSubjectLimits_whenAuthenticated_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
@@ -304,8 +290,6 @@ class TestDataClientTest {
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
         }
     }
-
-    // --- Rate limits tests (authenticated) ---
 
     @Test
     void setRateLimits_whenAuthenticated_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
@@ -362,8 +346,6 @@ class TestDataClientTest {
         }
     }
 
-    // --- Error tests ---
-
     @Test
     void createSubject_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
@@ -378,8 +360,6 @@ class TestDataClientTest {
             assertThrows(KsefServerException.class, () -> testData.createSubject(builder));
         }
     }
-
-    // --- Helpers ---
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {
         return KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))

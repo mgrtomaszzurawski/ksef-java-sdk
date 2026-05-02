@@ -44,6 +44,7 @@ public final class SigningService {
 
     private static final String ERR_SIGN_FAILED = "XAdES signing failed";
     private static final String ERR_KEY_MISMATCH = "Certificate and private key algorithm mismatch";
+    private static final String ERR_NULL_INPUTS = "xmlContent, certificate, and privateKey must not be null";
     private static final String PKCS12_TYPE = "PKCS12";
     private static final String KEYSTORE_ALIAS = "signing-key";
     private static final int EC_FIELD_SIZE_256 = 256;
@@ -63,7 +64,7 @@ public final class SigningService {
     public static String signXml(byte[] xmlContent, X509Certificate certificate, PrivateKey privateKey) {
         if (xmlContent == null || certificate == null || privateKey == null) {
             throw new KsefCryptoException(ERR_SIGN_FAILED,
-                    new IllegalArgumentException("xmlContent, certificate, and privateKey must not be null"));
+                    new IllegalArgumentException(ERR_NULL_INPUTS));
         }
         try {
             DSSDocument document = new InMemoryDocument(xmlContent, null, MimeTypeEnum.XML);
@@ -158,11 +159,11 @@ public final class SigningService {
         return DigestAlgorithm.SHA512;
     }
 
-    private static boolean isRsaPair(X509Certificate cert, PrivateKey privateKey) {
-        return cert.getPublicKey() instanceof RSAPublicKey && privateKey instanceof RSAPrivateKey;
+    private static boolean isRsaPair(X509Certificate certificate, PrivateKey privateKey) {
+        return certificate.getPublicKey() instanceof RSAPublicKey && privateKey instanceof RSAPrivateKey;
     }
 
-    private static boolean isEcdsaPair(X509Certificate cert, PrivateKey privateKey) {
-        return cert.getPublicKey() instanceof ECPublicKey && privateKey instanceof ECPrivateKey;
+    private static boolean isEcdsaPair(X509Certificate certificate, PrivateKey privateKey) {
+        return certificate.getPublicKey() instanceof ECPublicKey && privateKey instanceof ECPrivateKey;
     }
 }

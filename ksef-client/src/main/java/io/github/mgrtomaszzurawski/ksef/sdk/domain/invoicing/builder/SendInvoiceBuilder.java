@@ -86,8 +86,8 @@ public final class SendInvoiceBuilder {
         try {
             MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
             return digest.digest(data);
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException(ERR_SHA256_UNAVAILABLE, ex);
+        } catch (NoSuchAlgorithmException missingAlgorithm) {
+            throw new IllegalStateException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
         }
     }
 }

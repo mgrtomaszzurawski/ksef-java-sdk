@@ -177,8 +177,8 @@ class AuthAutoRefreshTest {
      * challenge, ksef-token init, status poll, and redeem.
      */
     private static void stubAuthFlowSuccess() throws Exception {
-        TestCertificates rsa = TestCertificates.generateRsa();
-        String certBase64 = Base64.getEncoder().encodeToString(rsa.certificate().getEncoded());
+        TestCertificates rsaCertificate = TestCertificates.generateRsa();
+        String certBase64 = Base64.getEncoder().encodeToString(rsaCertificate.certificate().getEncoded());
 
         String publicKeysResponse = """
                 [

@@ -21,11 +21,11 @@ class KsefIdentifierTest {
     @Test
     void nip_whenValidValue_createsIdentifier() {
         // when
-        KsefIdentifier id = KsefIdentifier.nip(VALID_NIP);
+        KsefIdentifier identifier = KsefIdentifier.nip(VALID_NIP);
 
         // then
-        assertEquals(KsefIdentifier.Type.NIP, id.type());
-        assertEquals(VALID_NIP, id.value());
+        assertEquals(KsefIdentifier.Type.NIP, identifier.type());
+        assertEquals(VALID_NIP, identifier.value());
     }
 
     @Test
@@ -52,31 +52,31 @@ class KsefIdentifierTest {
     @Test
     void internalId_whenValidValue_createsIdentifier() {
         // when
-        KsefIdentifier id = KsefIdentifier.internalId(VALID_INTERNAL_ID);
+        KsefIdentifier identifier = KsefIdentifier.internalId(VALID_INTERNAL_ID);
 
         // then
-        assertEquals(KsefIdentifier.Type.INTERNAL_ID, id.type());
-        assertEquals(VALID_INTERNAL_ID, id.value());
+        assertEquals(KsefIdentifier.Type.INTERNAL_ID, identifier.type());
+        assertEquals(VALID_INTERNAL_ID, identifier.value());
     }
 
     @Test
     void nipVatUe_whenValidValue_createsIdentifier() {
         // when
-        KsefIdentifier id = KsefIdentifier.nipVatUe(VALID_NIP_VAT_UE);
+        KsefIdentifier identifier = KsefIdentifier.nipVatUe(VALID_NIP_VAT_UE);
 
         // then
-        assertEquals(KsefIdentifier.Type.NIP_VAT_UE, id.type());
-        assertEquals(VALID_NIP_VAT_UE, id.value());
+        assertEquals(KsefIdentifier.Type.NIP_VAT_UE, identifier.type());
+        assertEquals(VALID_NIP_VAT_UE, identifier.value());
     }
 
     @Test
     void peppolId_whenValidValue_createsIdentifier() {
         // when
-        KsefIdentifier id = KsefIdentifier.peppolId(VALID_PEPPOL_ID);
+        KsefIdentifier identifier = KsefIdentifier.peppolId(VALID_PEPPOL_ID);
 
         // then
-        assertEquals(KsefIdentifier.Type.PEPPOL_ID, id.type());
-        assertEquals(VALID_PEPPOL_ID, id.value());
+        assertEquals(KsefIdentifier.Type.PEPPOL_ID, identifier.type());
+        assertEquals(VALID_PEPPOL_ID, identifier.value());
     }
 
     @Test

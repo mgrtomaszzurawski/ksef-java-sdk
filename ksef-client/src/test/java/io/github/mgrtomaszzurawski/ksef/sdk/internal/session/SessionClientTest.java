@@ -87,11 +87,16 @@ class SessionClientTest {
             """;
 
     private static final byte[] TEST_UPO_CONTENT = "<UPO>receipt</UPO>".getBytes(StandardCharsets.UTF_8);
+    private static final String SESSIONS_BASE = "/api/v2/sessions";
+    private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
+    private static final String CREDENTIALS_TOKEN = "test-token";
+    private static final String CREDENTIALS_NIP = "1234567890";
+    private static final String OCTET_STREAM = "application/octet-stream";
 
     @Test
     void openOnline_whenAuthenticated_returnsSessionReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/sessions/online"))
+        stubFor(post(urlEqualTo(ONLINE_BASE))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -112,7 +117,7 @@ class SessionClientTest {
     @Test
     void sendInvoice_whenSessionOpen_returnsInvoiceReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/invoices"))
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)
@@ -133,7 +138,7 @@ class SessionClientTest {
     @Test
     void closeOnline_whenSessionOpen_sendsPostAndExpectsNoContent(WireMockRuntimeInfo wmInfo) {
         // given
-        String closePath = "/api/v2/sessions/online/" + TEST_SESSION_REF + "/close";
+        String closePath = ONLINE_BASE + "/" + TEST_SESSION_REF + "/close";
         stubFor(post(urlEqualTo(closePath))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
@@ -152,7 +157,7 @@ class SessionClientTest {
     @Test
     void getStatus_whenSessionExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -173,7 +178,7 @@ class SessionClientTest {
     @Test
     void getInvoices_whenSessionHasInvoices_returnsInvoiceList(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/invoices"))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -194,7 +199,7 @@ class SessionClientTest {
     @Test
     void getInvoiceStatus_whenInvoiceExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/invoices/" + TEST_INVOICE_REF))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices/" + TEST_INVOICE_REF))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -215,11 +220,11 @@ class SessionClientTest {
     @Test
     void getUpoByReference_whenAvailable_returnsUpoBytes(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/upo/" + TEST_UPO_REF))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/upo/" + TEST_UPO_REF))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, "application/octet-stream")
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, OCTET_STREAM)
                         .withBody(TEST_UPO_CONTENT)));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
@@ -235,7 +240,7 @@ class SessionClientTest {
     @Test
     void getUpoByKsefNumber_whenAvailable_returnsUpoBytes(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF
                 + "/invoices/ksef/" + TEST_KSEF_NUMBER + "/upo"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
@@ -256,7 +261,7 @@ class SessionClientTest {
     void openOnline_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
         // given — both the target endpoint and the reauth security endpoint return 401,
         // so after the SDK retries once on 401 the auth exception propagates.
-        stubFor(post(urlEqualTo("/api/v2/sessions/online"))
+        stubFor(post(urlEqualTo(ONLINE_BASE))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
         stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
@@ -273,7 +278,7 @@ class SessionClientTest {
     @Test
     void sendInvoice_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/invoices"))
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
@@ -288,7 +293,7 @@ class SessionClientTest {
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
-                .credentials(new KsefTokenCredentials("test-token", "1234567890"))
+                .credentials(new KsefTokenCredentials(CREDENTIALS_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
         ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
