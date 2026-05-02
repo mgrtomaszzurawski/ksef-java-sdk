@@ -25,6 +25,90 @@ public final class PermissionsRequestMappers {
 
     private PermissionsRequestMappers() { }
 
+    public static io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw toIndirectPermissionsGrantRequestRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionGrantRequest req) {
+        var subjectId = new io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierRaw()
+                .type(toIndirectSubjectIdentifierTypeRaw(req.identifierType()))
+                .value(req.identifierValue());
+        var personDetails = new io.github.mgrtomaszzurawski.ksef.client.model.PersonDetailsRaw()
+                .firstName(req.firstName())
+                .lastName(req.lastName());
+        var subjectDetails = new io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsRaw()
+                .subjectDetailsType(io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
+                .personById(personDetails);
+        var perms = new ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionTypeRaw>(req.permissions().size());
+        for (var type : req.permissions()) {
+            perms.add(toIndirectPermissionTypeRaw(type));
+        }
+        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw();
+        raw.setSubjectIdentifier(subjectId);
+        raw.setPermissions(perms);
+        raw.setDescription(req.description());
+        raw.setSubjectDetails(subjectDetails);
+        if (req.targetType() != null) {
+            var targetId = new io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsTargetIdentifierRaw()
+                    .type(toIndirectTargetIdentifierTypeRaw(req.targetType()));
+            if (req.targetValue() != null) {
+                targetId.value(req.targetValue());
+            }
+            raw.setTargetIdentifier(targetId);
+        }
+        return raw;
+    }
+
+    public static io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw toIndirectSubjectIdentifierTypeRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubjectIdentifierType value) {
+        return switch (value) {
+            case NIP -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw.NIP;
+            case PESEL -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw.PESEL;
+            case FINGERPRINT -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw.FINGERPRINT;
+        };
+    }
+
+    public static io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsTargetIdentifierTypeRaw toIndirectTargetIdentifierTypeRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectTargetIdentifierType value) {
+        return switch (value) {
+            case NIP -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsTargetIdentifierTypeRaw.NIP;
+            case ALL_PARTNERS -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsTargetIdentifierTypeRaw.ALL_PARTNERS;
+            case INTERNAL_ID -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsTargetIdentifierTypeRaw.INTERNAL_ID;
+        };
+    }
+
+    public static io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionTypeRaw toIndirectPermissionTypeRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionType value) {
+        return switch (value) {
+            case INVOICE_READ -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionTypeRaw.INVOICE_READ;
+            case INVOICE_WRITE -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionTypeRaw.INVOICE_WRITE;
+        };
+    }
+
+    public static io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsGrantRequestRaw toEuEntityAdministrationPermissionsGrantRequestRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityAdminPermissionGrantRequest req) {
+        var subjectId = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsSubjectIdentifierRaw()
+                .type(io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsSubjectIdentifierTypeRaw.FINGERPRINT)
+                .value(req.fingerprintValue());
+        var contextId = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsContextIdentifierRaw()
+                .type(io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsContextIdentifierTypeRaw.NIP_VAT_UE)
+                .value(req.contextValue());
+        var entityByFp = new io.github.mgrtomaszzurawski.ksef.client.model.EntityByFingerprintDetailsRaw()
+                .fullName(req.subjectFullName())
+                .address(req.subjectAddress());
+        var subjectDetails = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionSubjectDetailsRaw()
+                .subjectDetailsType(io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionSubjectDetailsTypeRaw.ENTITY_BY_FINGERPRINT)
+                .entityByFp(entityByFp);
+        var euDetails = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityDetailsRaw()
+                .fullName(req.euEntityFullName())
+                .address(req.euEntityAddress());
+        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsGrantRequestRaw();
+        raw.setSubjectIdentifier(subjectId);
+        raw.setContextIdentifier(contextId);
+        raw.setDescription(req.description());
+        raw.setEuEntityName(req.euEntityName());
+        raw.setSubjectDetails(subjectDetails);
+        raw.setEuEntityDetails(euDetails);
+        return raw;
+    }
+
     public static io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw toSubunitPermissionsGrantRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissionGrantRequest req) {
         var subjectId = new io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsSubjectIdentifierRaw()

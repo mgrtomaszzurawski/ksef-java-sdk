@@ -4,34 +4,18 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsTargetIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsTargetIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonDetailsRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionGrantRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectTargetIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubjectIdentifierType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Builder for indirect permission grant requests (through an intermediary entity).
- * <p>
- * Required: subject identifier (NIP, PESEL, or fingerprint), description (5-256 chars),
- * at least one permission, person details (firstName + lastName).
- * Optional: target identifier.
- * <p>
- * Usage:
- * <pre>{@code
- * var builder = IndirectPermissionGrantBuilder
- *     .forNip("1234567890")
- *     .description("Indirect invoice access")
- *     .personDetails("Jan", "Kowalski")
- *     .invoiceRead();
- * }</pre>
+ * <p>Required: subject identifier (NIP/PESEL/Fingerprint), description (5-256 chars),
+ * personDetails, at least one permission. Optional: target identifier.
  */
 public final class IndirectPermissionGrantBuilder {
 
@@ -48,39 +32,30 @@ public final class IndirectPermissionGrantBuilder {
     private static final String ERR_NULL_TARGET_NIP = "target NIP is required";
     private static final String ERR_NULL_INTERNAL_ID = "internal ID is required";
 
-    private final IndirectPermissionsSubjectIdentifierTypeRaw identifierType;
+    private final PersonSubjectIdentifierType identifierType;
     private final String identifierValue;
     private String description;
     private String firstName;
     private String lastName;
-    private IndirectPermissionsTargetIdentifierTypeRaw targetType;
+    private IndirectTargetIdentifierType targetType;
     private String targetValue;
-    private final List<IndirectPermissionTypeRaw> permissions = new ArrayList<>();
+    private final List<IndirectPermissionType> permissions = new ArrayList<>();
 
-    private IndirectPermissionGrantBuilder(IndirectPermissionsSubjectIdentifierTypeRaw type, String value) {
+    private IndirectPermissionGrantBuilder(PersonSubjectIdentifierType type, String value) {
         this.identifierType = type;
         this.identifierValue = Objects.requireNonNull(value, ERR_NULL_IDENTIFIER_VALUE);
     }
 
-    /**
-     * Grant indirect permissions to a subject identified by NIP.
-     */
     public static IndirectPermissionGrantBuilder forNip(String nip) {
-        return new IndirectPermissionGrantBuilder(IndirectPermissionsSubjectIdentifierTypeRaw.NIP, nip);
+        return new IndirectPermissionGrantBuilder(PersonSubjectIdentifierType.NIP, nip);
     }
 
-    /**
-     * Grant indirect permissions to a subject identified by PESEL.
-     */
     public static IndirectPermissionGrantBuilder forPesel(String pesel) {
-        return new IndirectPermissionGrantBuilder(IndirectPermissionsSubjectIdentifierTypeRaw.PESEL, pesel);
+        return new IndirectPermissionGrantBuilder(PersonSubjectIdentifierType.PESEL, pesel);
     }
 
-    /**
-     * Grant indirect permissions to a subject identified by certificate fingerprint.
-     */
     public static IndirectPermissionGrantBuilder forFingerprint(String fingerprint) {
-        return new IndirectPermissionGrantBuilder(IndirectPermissionsSubjectIdentifierTypeRaw.FINGERPRINT, fingerprint);
+        return new IndirectPermissionGrantBuilder(PersonSubjectIdentifierType.FINGERPRINT, fingerprint);
     }
 
     public IndirectPermissionGrantBuilder description(String description) {
@@ -88,55 +63,40 @@ public final class IndirectPermissionGrantBuilder {
         return this;
     }
 
-    /**
-     * Set person details (required by KSeF server).
-     */
     public IndirectPermissionGrantBuilder personDetails(String firstName, String lastName) {
         this.firstName = Objects.requireNonNull(firstName, ERR_NULL_FIRST_NAME);
         this.lastName = Objects.requireNonNull(lastName, ERR_NULL_LAST_NAME);
         return this;
     }
 
-    /**
-     * Set target entity by NIP.
-     */
     public IndirectPermissionGrantBuilder targetNip(String nip) {
-        this.targetType = IndirectPermissionsTargetIdentifierTypeRaw.NIP;
+        this.targetType = IndirectTargetIdentifierType.NIP;
         this.targetValue = Objects.requireNonNull(nip, ERR_NULL_TARGET_NIP);
         return this;
     }
 
-    /**
-     * Set target to all partners.
-     */
     public IndirectPermissionGrantBuilder targetAllPartners() {
-        this.targetType = IndirectPermissionsTargetIdentifierTypeRaw.ALL_PARTNERS;
+        this.targetType = IndirectTargetIdentifierType.ALL_PARTNERS;
         this.targetValue = null;
         return this;
     }
 
-    /**
-     * Set target by internal ID.
-     */
     public IndirectPermissionGrantBuilder targetInternalId(String internalId) {
-        this.targetType = IndirectPermissionsTargetIdentifierTypeRaw.INTERNAL_ID;
+        this.targetType = IndirectTargetIdentifierType.INTERNAL_ID;
         this.targetValue = Objects.requireNonNull(internalId, ERR_NULL_INTERNAL_ID);
         return this;
     }
 
     public IndirectPermissionGrantBuilder invoiceRead() {
-        permissions.add(IndirectPermissionTypeRaw.INVOICE_READ);
+        permissions.add(IndirectPermissionType.INVOICE_READ);
         return this;
     }
 
     public IndirectPermissionGrantBuilder invoiceWrite() {
-        permissions.add(IndirectPermissionTypeRaw.INVOICE_WRITE);
+        permissions.add(IndirectPermissionType.INVOICE_WRITE);
         return this;
     }
 
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     */
     public IndirectPermissionGrantBuilder toBuilder() {
         IndirectPermissionGrantBuilder copy = new IndirectPermissionGrantBuilder(this.identifierType, this.identifierValue);
         copy.description = this.description;
@@ -148,15 +108,7 @@ public final class IndirectPermissionGrantBuilder {
         return copy;
     }
 
-    /**
-     * Build the indirect permission grant request.
-     *
-     * @return the request ready to pass to {@code PermissionClient.grantIndirect()}
-     * @throws IllegalStateException if required fields are missing or invalid
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public IndirectPermissionsGrantRequestRaw build() {
+    public IndirectPermissionGrantRequest build() {
         Objects.requireNonNull(description, ERR_DESCRIPTION_REQUIRED);
         if (description.length() < DESCRIPTION_MIN_LENGTH || description.length() > DESCRIPTION_MAX_LENGTH) {
             throw new IllegalStateException(ERR_DESCRIPTION_LENGTH);
@@ -167,34 +119,7 @@ public final class IndirectPermissionGrantBuilder {
         if (firstName == null || lastName == null) {
             throw new IllegalStateException(ERR_SUBJECT_DETAILS_REQUIRED);
         }
-
-        IndirectPermissionsSubjectIdentifierRaw subjectId = new IndirectPermissionsSubjectIdentifierRaw()
-                .type(identifierType)
-                .value(identifierValue);
-
-        PersonDetailsRaw personDetails = new PersonDetailsRaw()
-                .firstName(firstName)
-                .lastName(lastName);
-
-        PersonPermissionSubjectDetailsRaw subjectDetails = new PersonPermissionSubjectDetailsRaw()
-                .subjectDetailsType(PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
-                .personById(personDetails);
-
-        IndirectPermissionsGrantRequestRaw request = new IndirectPermissionsGrantRequestRaw();
-        request.setSubjectIdentifier(subjectId);
-        request.setPermissions(new ArrayList<>(permissions));
-        request.setDescription(description);
-        request.setSubjectDetails(subjectDetails);
-
-        if (targetType != null) {
-            IndirectPermissionsTargetIdentifierRaw targetId = new IndirectPermissionsTargetIdentifierRaw()
-                    .type(targetType);
-            if (targetValue != null) {
-                targetId.value(targetValue);
-            }
-            request.setTargetIdentifier(targetId);
-        }
-
-        return request;
+        return new IndirectPermissionGrantRequest(identifierType, identifierValue, description,
+                firstName, lastName, targetType, targetValue, permissions);
     }
 }
