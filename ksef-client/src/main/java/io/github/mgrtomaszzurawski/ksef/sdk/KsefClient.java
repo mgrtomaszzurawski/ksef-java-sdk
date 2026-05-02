@@ -35,6 +35,14 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.RateLimitClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.CertificateClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoiceClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.LimitsClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.RateLimitClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.PeppolClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.PermissionClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.TestDataClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.TokenClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
@@ -145,14 +153,14 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         this.authClient = new AuthClient(this);
         this.securityClient = new SecurityClient(this);
         this.sessionClient = new SessionClient(this);
-        this.invoiceClient = new InvoiceClient(this);
-        this.tokenClient = new TokenClient(this);
-        this.permissionClient = new PermissionClient(this);
-        this.certificateClient = new CertificateClient(this);
-        this.limitsClient = new LimitsClient(this);
-        this.rateLimitClient = new RateLimitClient(this);
-        this.testDataClient = new TestDataClient(this);
-        this.peppolClient = new PeppolClient(this);
+        this.invoiceClient = new InvoiceClientImpl(this);
+        this.tokenClient = new TokenClientImpl(this);
+        this.permissionClient = new PermissionClientImpl(this);
+        this.certificateClient = new CertificateClientImpl(this);
+        this.limitsClient = new LimitsClientImpl(this);
+        this.rateLimitClient = new RateLimitClientImpl(this);
+        this.testDataClient = new TestDataClientImpl(this);
+        this.peppolClient = new PeppolClientImpl(this);
     }
 
     // --- Authentication ---
@@ -426,18 +434,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         return peppolClient;
     }
 
-    // --- Internal client accessors (for advanced use / probe utilities) ---
-
-    /** Low-level auth client. Prefer {@link #authenticate()} for normal use. */
-    public AuthClient auth() { return authClient; }
-
-    /** Low-level session client. Prefer {@link #openSession(FormCode)} for normal use. */
-    public SessionClient sessions() { return sessionClient; }
-
-    /** Low-level security client. Keys are fetched automatically by the SDK. */
-    public SecurityClient security() { return securityClient; }
-
-    // --- Infrastructure accessors (used by internal clients across packages) ---
+    // --- Infrastructure accessors (used by internal clients across packages; ADR-013 HttpRuntime contract) ---
 
     /** SDK infrastructure — not part of the consumer-facing API. */
     public KsefEnvironment environment() { return environment; }

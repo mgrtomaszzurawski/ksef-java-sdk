@@ -1,5 +1,5 @@
 /*
- * KSeF Sample App - Demo application exercising the KSeF Java SDK against the live demo server
+ * KSeF Demo App - Demo application exercising the KSeF Java SDK against the live demo server
  * Copyright © 2026 Tomasz Zurawski (${email})
  *
  * This program is free software: you can redistribute it and/or modify
@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 
 /**
  * Runner for session operations using the KsefSession API.
@@ -317,7 +318,7 @@ public final class SessionRunner implements DemoRunner {
         context.setInvoiceKsefNumber(ksefNumber);
 
         try {
-            byte[] upoByKsef = context.client().sessions().getUpoByKsefNumber(
+            byte[] upoByKsef = new SessionClient(context.client()).getUpoByKsefNumber(
                     session.referenceNumber(), ksefNumber);
             LOG.info("[{}] UPO by KSeF number retrieved, size={} bytes", NAME, upoByKsef.length);
 

@@ -1,5 +1,5 @@
 /*
- * KSeF Sample App - Demo application exercising the KSeF Java SDK against the live demo server
+ * KSeF Demo App - Demo application exercising the KSeF Java SDK against the live demo server
  * Copyright © 2026 Tomasz Zurawski (${email})
  *
  * This program is free software: you can redistribute it and/or modify
@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 
 /**
  * Runner for authentication. Uses the high-level {@code client.authenticate()} API
@@ -161,7 +162,7 @@ public final class AuthRunner implements DemoRunner {
     private void runListSessions(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            AuthenticationList list = context.client().auth().listSessions();
+            AuthenticationList list = new AuthClient(context.client()).listSessions();
             int count = list.items().size();
             LOG.info("[{}] active auth sessions: {}", NAME, count);
             results.add(RunResult.ok(NAME, OP_LIST_SESSIONS, elapsed(start),
@@ -185,7 +186,7 @@ public final class AuthRunner implements DemoRunner {
                 throw new IllegalStateException(ERR_NO_REFRESH_TOKEN);
             }
 
-            AuthenticationTokenRefresh refreshed = client.auth().refreshToken(
+            AuthenticationTokenRefresh refreshed = new AuthClient(client).refreshToken(
                     tokens.refreshToken().token());
             OffsetDateTime validUntil = refreshed.accessToken() != null
                     ? refreshed.accessToken().validUntil() : null;
@@ -195,7 +196,7 @@ public final class AuthRunner implements DemoRunner {
 
             // Tear down the manually-established session and re-authenticate via the
             // SDK so the rest of the demo runs against a normally-managed session.
-            client.auth().terminateCurrentSession();
+            new AuthClient(client).terminateCurrentSession();
             client.authenticate();
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_REFRESH_TOKEN, elapsed(start),
@@ -236,9 +237,9 @@ public final class AuthRunner implements DemoRunner {
         KsefClient client = context.client();
         String currentRef;
         try {
-            AuthenticationList list = client.auth().listSessions();
+            AuthenticationList list = new AuthClient(client).listSessions();
             currentRef = findCurrentSessionRef(list);
-            client.auth().terminateSession(currentRef);
+            new AuthClient(client).terminateSession(currentRef);
             LOG.info("[{}] terminated session by ref={}", NAME, currentRef);
             results.add(RunResult.ok(NAME, OP_TERMINATE_BY_REF, elapsed(start),
                     "ref=" + currentRef));
@@ -274,7 +275,7 @@ public final class AuthRunner implements DemoRunner {
 
     private static AuthenticationTokens manualAuthenticate(DemoContext context) {
         KsefClient client = context.client();
-        AuthClient authClient = client.auth();
+        AuthClient authClient = new AuthClient(client);
 
         PublicKey tokenKey = fetchTokenEncryptionKey(client);
         AuthenticationChallenge challenge = authClient.requestChallenge();
@@ -285,7 +286,7 @@ public final class AuthRunner implements DemoRunner {
     }
 
     private static PublicKey fetchTokenEncryptionKey(KsefClient client) {
-        PublicKeyCertificate cert = client.security().getPublicKeyCertificates().stream()
+        PublicKeyCertificate cert = new SecurityClient(client).getPublicKeyCertificates().stream()
                 .filter(c -> c.usage().contains(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_PUBLIC_KEY));

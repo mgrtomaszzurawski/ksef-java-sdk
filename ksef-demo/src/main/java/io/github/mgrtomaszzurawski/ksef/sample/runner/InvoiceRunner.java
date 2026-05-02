@@ -1,5 +1,5 @@
 /*
- * KSeF Sample App - Demo application exercising the KSeF Java SDK against the live demo server
+ * KSeF Demo App - Demo application exercising the KSeF Java SDK against the live demo server
  * Copyright © 2026 Tomasz Zurawski (${email})
  *
  * This program is free software: you can redistribute it and/or modify
@@ -39,6 +39,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_I
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_TIMEOUT_MS;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 
 /**
  * Runner for InvoiceClient operations. queryMetadata works in AUTH_SAFE and FULL modes.
@@ -148,7 +149,7 @@ public final class InvoiceRunner implements DemoRunner {
     }
 
     private static java.security.PublicKey extractEncryptionKey(DemoContext context) {
-        PublicKeyCertificate cert = context.client().security().getPublicKeyCertificates().stream()
+        PublicKeyCertificate cert = new SecurityClient(context.client()).getPublicKeyCertificates().stream()
                 .filter(c -> c.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_ENCRYPTION_CERT));
