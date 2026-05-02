@@ -166,6 +166,22 @@ mvn spotbugs:check pmd:check checkstyle:check -pl ksef-client
 mvn verify -pl ksef-client  # produces target/site/jacoco/index.html
 ```
 
+## Logging
+
+The SDK uses SLF4J. No logging backend is bundled — your application picks the implementation (Logback, Log4j2, `slf4j-simple`, etc.).
+
+**Default level should be `WARN`** for the SDK logger (`io.github.mgrtomaszzurawski.ksef`). Per AWS/Azure SDK guidelines, leaving the SDK at `WARN` keeps production logs quiet; consumers turn on `DEBUG` only when diagnosing a specific problem.
+
+```xml
+<!-- logback.xml — show only terminal failures by default -->
+<logger name="io.github.mgrtomaszzurawski.ksef" level="WARN"/>
+
+<!-- Diagnostic mode: log every HTTP request/response + per-call entry -->
+<logger name="io.github.mgrtomaszzurawski.ksef" level="DEBUG"/>
+```
+
+What you'll see at `DEBUG`: HTTP method + URI, response status + elapsed ms, per-domain operation entry. Bodies are never logged (they carry NIPs, PESELs, JWT tokens, AES keys, full invoice XML — `RODO` violation if leaked).
+
 ## Architecture
 
 See:
