@@ -296,14 +296,14 @@ public final class ValidationProbe {
             HttpResponse<String> resp = httpClient.send(reqBuilder.build(),
                     HttpResponse.BodyHandlers.ofString());
 
-            System.out.printf("| %s | %d | %s | %s |%n",
+            LOG.info("| {} | {} | {} | {} |",
                     truncate(description),
                     resp.statusCode(),
                     extractExceptionCode(resp.body()),
                     extractDetails(resp.body()));
 
         } catch (Exception ex) {
-            System.out.printf("| %s | ERR | - | %s |%n", description, ex.getMessage());
+            LOG.info("| {} | ERR | - | {} |", description, ex.getMessage());
         }
     }
 
@@ -322,14 +322,14 @@ public final class ValidationProbe {
             HttpResponse<String> resp = httpClient.send(reqBuilder.build(),
                     HttpResponse.BodyHandlers.ofString());
 
-            System.out.printf("| %s | %d | %s | %s |%n",
+            LOG.info("| {} | {} | {} | {} |",
                     truncate(description),
                     resp.statusCode(),
                     extractExceptionCode(resp.body()),
                     extractDetails(resp.body()));
 
         } catch (Exception ex) {
-            System.out.printf("| %s | ERR | - | %s |%n", description, ex.getMessage());
+            LOG.info("| {} | ERR | - | {} |", description, ex.getMessage());
         }
     }
 
