@@ -29,6 +29,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
@@ -102,7 +103,7 @@ public final class KsefClient implements AutoCloseable {
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
     private static final String ERR_FORM_CODE_NULL = "formCode must not be null";
-    private static final String ERR_BATCH_FILE_SPEC_NULL = "batchFileSpec must not be null";
+    private static final String ERR_BATCH_PACKAGE_NULL = "preparedPackage must not be null";
     private static final String ERR_INVOICES_NULL = "invoices must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
@@ -240,35 +241,34 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Open a batch KSeF session for bulk invoice submission via ZIP package.
+     * Open a batch KSeF session from a caller-prepared, already-encrypted package.
      *
-     * <p>Authenticates lazily if not already authenticated. Generates AES encryption key,
-     * encrypts it with the KSeF public key, and opens the batch session. The returned
-     * {@link KsefBatchSession} contains upload URLs for each ZIP part.
+     * <p>Manual entry point for advanced flows where the consumer streams or
+     * externally encrypts the batch parts. The {@link PreparedBatchPackage}
+     * <strong>must</strong> contain the AES key and IV that were used to
+     * encrypt {@code partBytes} — the SDK uses them verbatim to register the
+     * encryption material with KSeF (RSA-wrapped against the KSeF
+     * SymmetricKeyEncryption certificate). Mismatched key/IV results in a
+     * KSeF-side decryption failure.
      *
-     * <p>Batch session flow:
-     * <ol>
-     *   <li>Open session with this method</li>
-     *   <li>Upload encrypted ZIP parts to the URLs from
-     *       {@link KsefBatchSession#partUploadRequests()}</li>
-     *   <li>Close the session via {@link KsefBatchSession#close()}</li>
-     * </ol>
+     * <p>For the common case where the SDK should build and encrypt the
+     * package itself, prefer {@link #openBatchSession(FormCode, List)}.
      *
      * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
-     * @param batchFileSpec metadata describing the encrypted ZIP file and its parts
+     * @param preparedPackage caller-prepared spec + key/IV + encrypted part bytes
      * @return an open batch session — use with try-with-resources
      */
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefBatchSession openBatchSession(FormCode formCode,
-                                                          BatchFileSpec batchFileSpec) {
+                                                          PreparedBatchPackage preparedPackage) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
-        Objects.requireNonNull(batchFileSpec, ERR_BATCH_FILE_SPEC_NULL);
+        Objects.requireNonNull(preparedPackage, ERR_BATCH_PACKAGE_NULL);
         ensureOpen();
         ensureAuthenticated();
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
-        byte[] aesKey = CryptoService.generateAesKey();
-        byte[] initVector = CryptoService.generateIv();
+        byte[] aesKey = preparedPackage.aesKey();
+        byte[] initVector = preparedPackage.initVector();
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
 
         OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
@@ -279,7 +279,7 @@ public final class KsefClient implements AutoCloseable {
                 .encryption(new EncryptionInfoRaw()
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(batchFileSpec));
+                .batchFile(toBatchFileInfoRaw(preparedPackage.spec()));
 
         BatchSession session = sessionClient.openBatch(request);
         LOGGER.debug(LOG_OPENED_BATCH_SESSION, session.referenceNumber(), formCode);
