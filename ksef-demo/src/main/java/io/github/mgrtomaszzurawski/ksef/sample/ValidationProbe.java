@@ -18,6 +18,7 @@
 package io.github.mgrtomaszzurawski.ksef.sample;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import java.io.FileInputStream;
@@ -37,10 +38,6 @@ import org.slf4j.LoggerFactory;
  * validation results so the operator can capture
  * {@code mvn exec:java -pl ksef-demo} stdout into a report file.
  */
-@SuppressWarnings({
-    "java:S2629", // CLI probe; INFO is always enabled — eager arg eval is intentional
-    "java:S1075"  // KSeF API paths are intentionally hardcoded — the probe targets specific endpoints by URI
-})
 public final class ValidationProbe {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ValidationProbe.class);
@@ -91,8 +88,8 @@ public final class ValidationProbe {
     private static final String DESC_VALID_REQUEST = "Valid request";
     private static final String DESC_INVALID_REF = "Invalid reference number";
 
-    private static final String PATH_AUTH_CHALLENGE = "/api/v2/auth/challenge";
-    private static final String PATH_INVOICES_QUERY_METADATA = "/api/v2/invoices/query/metadata";
+    private static final String PATH_AUTH_CHALLENGE = ApiPaths.AUTH + "/challenge";
+    private static final String PATH_INVOICES_QUERY_METADATA = ApiPaths.INVOICES + "/query/metadata";
 
     private final String baseUrl;
     private final String bearerToken;
@@ -345,11 +342,14 @@ public final class ValidationProbe {
 
     private void sendAndLog(HttpRequest request, String description) throws java.io.IOException, InterruptedException {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        LOGGER.info(LOG_TABLE_ROW,
-                truncate(description),
-                response.statusCode(),
-                extractExceptionCode(response.body()),
-                extractDetails(response.body()));
+        if (LOGGER.isInfoEnabled()) {
+            String body = response.body();
+            LOGGER.info(LOG_TABLE_ROW,
+                    truncate(description),
+                    response.statusCode(),
+                    extractExceptionCode(body),
+                    extractDetails(body));
+        }
     }
 
     private static String extractExceptionCode(String json) {

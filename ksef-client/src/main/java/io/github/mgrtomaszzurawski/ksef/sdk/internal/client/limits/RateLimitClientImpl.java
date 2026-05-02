@@ -9,7 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.RateLimitClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ApiRateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

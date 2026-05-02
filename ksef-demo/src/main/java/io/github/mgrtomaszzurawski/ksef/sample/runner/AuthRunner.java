@@ -61,7 +61,6 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  *       /current endpoint exercised by {@code terminateAuth})</li>
  * </ul>
  */
-@SuppressWarnings("java:S2629") // demo-runner logging is always at INFO; eager arg eval is intentional
 public final class AuthRunner implements DemoRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthRunner.class);
@@ -123,9 +122,11 @@ public final class AuthRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             context.client().authenticate();
-            LOGGER.info(LOG_AUTHENTICATED, NAME, context.nipIdentifier());
-            results.add(RunResult.ok(NAME, OP_AUTHENTICATE, elapsed(start),
-                    NIP_PREFIX + context.nipIdentifier()));
+            String nip = context.nipIdentifier();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_AUTHENTICATED, NAME, nip);
+            }
+            results.add(RunResult.ok(NAME, OP_AUTHENTICATE, elapsed(start), NIP_PREFIX + nip));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_AUTHENTICATE, elapsed(start),
                     errorMessage(exception)));

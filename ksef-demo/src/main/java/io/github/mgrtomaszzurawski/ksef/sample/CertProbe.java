@@ -54,10 +54,6 @@ import org.slf4j.LoggerFactory;
  *   8. Read /certificates/limits AFTER enroll
  *   9. If serial appeared, revoke the new cert too (cleanup)
  */
-@SuppressWarnings({
-    "java:S2629", // CLI probe; INFO is always enabled — eager arg eval is intentional
-    "java:S112"   // Probe wraps generic Exception around RuntimeException paths to log+exit cleanly
-})
 public final class CertProbe {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CertProbe.class);
@@ -90,92 +86,139 @@ public final class CertProbe {
                 .credentials(credentials).build()) {
             client.authenticate();
             run(client);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("Probe interrupted", interrupted);
+            System.exit(EXIT_FAILURE);
         } catch (Exception exception) {
             LOGGER.error("Probe failed", exception);
             System.exit(EXIT_FAILURE);
         }
     }
 
-    private static void run(KsefClient client) throws Exception {
+    private static void run(KsefClient client)
+            throws InterruptedException,
+                   java.security.NoSuchAlgorithmException,
+                   org.bouncycastle.operator.OperatorCreationException,
+                   java.io.IOException {
         section("STEP 1: XAdES authentication (handled by SDK)");
         LOGGER.info("XAdES session active (authenticated via KsefClient.authenticate())");
 
         section("STEP 2: certificates/limits BEFORE");
-        CertificateLimits limitsBefore = client.certificates().getLimits();
-        printLimits("BEFORE", limitsBefore);
+        printLimits("BEFORE", client.certificates().getLimits());
 
+        queryAndRevokeYoungestActive(client);
+        EnrollCertificateResult enrollResult = enrollNewCert(client);
+        if (enrollResult == null) {
+            return;
+        }
+        cleanupEnrolled(client, enrollResult);
+
+        section("PROBE COMPLETE");
+    }
+
+    private static void queryAndRevokeYoungestActive(KsefClient client) {
         section("STEP 3: query active certificates");
         CertificateQueryResult queryResult = client.certificates().query(CertificateQueryBuilder.create());
         List<CertificateListItem> certs = queryResult.certificates();
-        LOGGER.info("Found {} certificates total", certs.size());
-        for (CertificateListItem cert : certs) {
-            LOGGER.info("  serial={} status={} validFrom={} requestDate={} name={}",
-                    cert.certificateSerialNumber(), cert.status(), cert.validFrom(), cert.requestDate(), cert.name());
-        }
+        logCertificateInventory(certs);
+
         List<CertificateListItem> active = certs.stream()
                 .filter(cert -> STATUS_ACTIVE.equalsIgnoreCase(cert.status()))
                 .toList();
-        LOGGER.info("Active count: {}", active.size());
-
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Active count: {}", active.size());
+        }
         if (active.isEmpty()) {
             LOGGER.warn("No active certs to revoke. Skipping revoke step.");
-        } else {
-            section("STEP 4: revoke youngest active cert");
-            CertificateListItem youngest = active.stream()
-                    .max(Comparator.comparing(CertProbe::certSortKey,
-                            Comparator.nullsFirst(Comparator.naturalOrder())))
-                    .orElseThrow();
-            LOGGER.info("Youngest active: serial={} validFrom={} name={}",
-                    youngest.certificateSerialNumber(), youngest.validFrom(), youngest.name());
-            try {
-                client.certificates().revoke(youngest.certificateSerialNumber());
-                LOGGER.info("REVOKE OK serial={}", youngest.certificateSerialNumber());
-            } catch (Exception exception) {
-                LOGGER.error("REVOKE FAILED", exception);
-            }
-
-            section("STEP 5: certificates/limits AFTER revoke");
-            CertificateLimits limitsAfterRevoke = client.certificates().getLimits();
-            printLimits("AFTER_REVOKE", limitsAfterRevoke);
+            return;
         }
+        revokeYoungest(client, active);
+        section("STEP 5: certificates/limits AFTER revoke");
+        printLimits("AFTER_REVOKE", client.certificates().getLimits());
+    }
 
+    private static void logCertificateInventory(List<CertificateListItem> certs) {
+        if (!LOGGER.isInfoEnabled()) {
+            return;
+        }
+        LOGGER.info("Found {} certificates total", certs.size());
+        for (CertificateListItem cert : certs) {
+            LOGGER.info("  serial={} status={} validFrom={} requestDate={} name={}",
+                    cert.certificateSerialNumber(), cert.status(), cert.validFrom(),
+                    cert.requestDate(), cert.name());
+        }
+    }
+
+    private static void revokeYoungest(KsefClient client, List<CertificateListItem> active) {
+        section("STEP 4: revoke youngest active cert");
+        CertificateListItem youngest = active.stream()
+                .max(Comparator.comparing(CertProbe::certSortKey,
+                        Comparator.nullsFirst(Comparator.naturalOrder())))
+                .orElseThrow();
+        String youngestSerial = youngest.certificateSerialNumber();
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Youngest active: serial={} validFrom={} name={}",
+                    youngestSerial, youngest.validFrom(), youngest.name());
+        }
+        try {
+            client.certificates().revoke(youngestSerial);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("REVOKE OK serial={}", youngestSerial);
+            }
+        } catch (Exception exception) {
+            LOGGER.error("REVOKE FAILED", exception);
+        }
+    }
+
+    private static EnrollCertificateResult enrollNewCert(KsefClient client)
+            throws java.security.NoSuchAlgorithmException,
+                   org.bouncycastle.operator.OperatorCreationException,
+                   java.io.IOException {
         section("STEP 6: enroll new cert");
         CertificateEnrollmentData enrollData = client.certificates().getEnrollmentData();
-        LOGGER.info("Enrollment data: cn={}", enrollData.commonName());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Enrollment data: cn={}", enrollData.commonName());
+        }
         CertificateCsrUtil.CsrResult csr = CertificateCsrUtil.generate(enrollData);
         CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder.create(
                 CERT_NAME, KsefCertificateType.AUTHENTICATION, csr.csrDer());
 
-        EnrollCertificateResult enrollResult;
         try {
-            enrollResult = client.certificates().enroll(enrollBuilder);
-            LOGGER.info("ENROLL OK ref={}", enrollResult.referenceNumber());
+            EnrollCertificateResult enrollResult = client.certificates().enroll(enrollBuilder);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("ENROLL OK ref={}", enrollResult.referenceNumber());
+            }
+            return enrollResult;
         } catch (Exception exception) {
             LOGGER.error("ENROLL FAILED", exception);
             section("STEP 8: certificates/limits AFTER failed enroll");
             printLimits("AFTER_FAILED_ENROLL", client.certificates().getLimits());
-            return;
+            return null;
         }
+    }
 
+    private static void cleanupEnrolled(KsefClient client, EnrollCertificateResult enrollResult)
+            throws InterruptedException {
         section("STEP 7: poll enrollment status for serial number");
         String enrolledSerial = pollEnrollmentSerial(client, enrollResult.referenceNumber());
 
         section("STEP 8: certificates/limits AFTER enroll");
         printLimits("AFTER_ENROLL", client.certificates().getLimits());
 
-        if (enrolledSerial != null) {
-            section("STEP 9: cleanup — revoke newly enrolled cert");
-            try {
-                client.certificates().revoke(enrolledSerial);
-                LOGGER.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
-            } catch (Exception exception) {
-                LOGGER.error("CLEANUP REVOKE FAILED", exception);
-            }
-        } else {
+        if (enrolledSerial == null) {
             LOGGER.warn("No serial obtained — cannot cleanup. Cert may still consume slot.");
+            return;
         }
-
-        section("PROBE COMPLETE");
+        section("STEP 9: cleanup — revoke newly enrolled cert");
+        try {
+            client.certificates().revoke(enrolledSerial);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
+            }
+        } catch (Exception exception) {
+            LOGGER.error("CLEANUP REVOKE FAILED", exception);
+        }
     }
 
     private static String pollEnrollmentSerial(KsefClient client, String enrollmentRef) throws InterruptedException {
@@ -189,13 +232,15 @@ public final class CertProbe {
                 CertificateEnrollmentStatus status = client.certificates().getEnrollmentStatus(enrollmentRef);
                 String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
                 String description = status.status() != null ? status.status().description() : "null";
-                LOGGER.info("  poll #{} status code={} desc={} serial={}",
-                        attempt, code, description, status.certificateSerialNumber());
-                if (status.certificateSerialNumber() != null) {
-                    LOGGER.info("SERIAL OBTAINED after {}ms: {}",
-                            System.currentTimeMillis() - startTime,
-                            status.certificateSerialNumber());
-                    return status.certificateSerialNumber();
+                String serial = status.certificateSerialNumber();
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("  poll #{} status code={} desc={} serial={}", attempt, code, description, serial);
+                }
+                if (serial != null) {
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info("SERIAL OBTAINED after {}ms: {}", System.currentTimeMillis() - startTime, serial);
+                    }
+                    return serial;
                 }
             } catch (Exception exception) {
                 LOGGER.warn("  poll #{} failed (will retry): {}", attempt, exception.getMessage());
