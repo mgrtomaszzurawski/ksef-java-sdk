@@ -16,7 +16,7 @@ import java.util.Objects;
  * <p>
  * Usage:
  * <pre>{@code
- * PersonCreateRequestRaw request = TestPersonCreateBuilder
+ * TestPersonCreateRequest request = TestPersonCreateBuilder
  *     .create("1234567890", "12345678901", false, "Test person")
  *     .build();
  * }</pre>

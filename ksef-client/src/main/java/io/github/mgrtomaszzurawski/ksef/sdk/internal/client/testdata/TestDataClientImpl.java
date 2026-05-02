@@ -102,7 +102,8 @@ public final class TestDataClientImpl implements TestDataClient {
     public void createSubject(TestSubjectCreateBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_CREATE_SUBJECT);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        http.postJsonNoContent(PATH_SUBJECT, builder.build(), OP_CREATE_SUBJECT);
+        http.postJsonNoContent(PATH_SUBJECT,
+                TestdataMappers.toSubjectCreateRequestRaw(builder.build()), OP_CREATE_SUBJECT);
     }
 
     /**
@@ -155,7 +156,8 @@ public final class TestDataClientImpl implements TestDataClient {
     public void grantPermissions(TestPermissionsGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_PERMISSIONS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        http.postJsonNoContent(PATH_PERMISSIONS, builder.build(), OP_GRANT_PERMISSIONS);
+        http.postJsonNoContent(PATH_PERMISSIONS,
+                TestdataMappers.toTestDataPermissionsGrantRequestRaw(builder.build()), OP_GRANT_PERMISSIONS);
     }
 
     /**
@@ -167,7 +169,8 @@ public final class TestDataClientImpl implements TestDataClient {
     public void revokePermissions(TestPermissionsRevokeBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_REVOKE_PERMISSIONS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        http.postJsonNoContent(PATH_PERMISSIONS_REVOKE, builder.build(), OP_REVOKE_PERMISSIONS);
+        http.postJsonNoContent(PATH_PERMISSIONS_REVOKE,
+                TestdataMappers.toTestDataPermissionsRevokeRequestRaw(builder.build()), OP_REVOKE_PERMISSIONS);
     }
 
     /**

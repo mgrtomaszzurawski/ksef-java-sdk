@@ -4,32 +4,17 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
-import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataAuthorizedIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataPermission;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataPermissionType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Builder for KSeF test permissions grant requests.
- * <p>
- * Required: contextNip, authorizedIdentifier (type + value), at least one permission.
- * <p>
- * Usage:
- * <pre>{@code
- * TestDataPermissionsGrantRequestRaw request = TestPermissionsGrantBuilder
- *     .create("1234567890")
- *     .authorizedNip("0987654321")
- *     .invoiceRead()
- *     .invoiceWrite()
- *     .build();
- * }</pre>
+ * <p>Required: contextNip, authorizedIdentifier, at least one permission.
  */
 public final class TestPermissionsGrantBuilder {
 
@@ -51,68 +36,40 @@ public final class TestPermissionsGrantBuilder {
     private static final String DESC_SUBUNIT_MANAGE = "SubunitManage";
 
     private final String contextNip;
-    private TestDataAuthorizedIdentifierTypeRaw authorizedType;
+    private TestDataAuthorizedIdentifierType authorizedType;
     private String authorizedValue;
-    private final List<TestDataPermissionRaw> permissions = new ArrayList<>();
+    private final List<TestDataPermission> permissions = new ArrayList<>();
 
     private TestPermissionsGrantBuilder(String contextNip) {
         this.contextNip = Objects.requireNonNull(contextNip, ERR_NULL_CONTEXT_NIP);
     }
 
-    /**
-     * Create a builder for the given context NIP (the taxpayer granting permissions).
-     *
-     * @param contextNip NIP of the context (taxpayer entity)
-     */
     public static TestPermissionsGrantBuilder create(String contextNip) {
         return new TestPermissionsGrantBuilder(contextNip);
     }
 
-    /**
-     * Set the authorized identifier as a NIP.
-     *
-     * @param nip NIP of the entity receiving permissions
-     */
     public TestPermissionsGrantBuilder authorizedNip(String nip) {
-        this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.NIP;
+        this.authorizedType = TestDataAuthorizedIdentifierType.NIP;
         this.authorizedValue = Objects.requireNonNull(nip, ERR_NULL_NIP);
         return this;
     }
 
-    /**
-     * Set the authorized identifier as a PESEL.
-     *
-     * @param pesel PESEL of the person receiving permissions
-     */
     public TestPermissionsGrantBuilder authorizedPesel(String pesel) {
-        this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.PESEL;
+        this.authorizedType = TestDataAuthorizedIdentifierType.PESEL;
         this.authorizedValue = Objects.requireNonNull(pesel, ERR_NULL_PESEL);
         return this;
     }
 
-    /**
-     * Set the authorized identifier as a certificate fingerprint.
-     *
-     * @param fingerprint certificate fingerprint of the entity receiving permissions
-     */
     public TestPermissionsGrantBuilder authorizedFingerprint(String fingerprint) {
-        this.authorizedType = TestDataAuthorizedIdentifierTypeRaw.FINGERPRINT;
+        this.authorizedType = TestDataAuthorizedIdentifierType.FINGERPRINT;
         this.authorizedValue = Objects.requireNonNull(fingerprint, ERR_NULL_FINGERPRINT);
         return this;
     }
 
-    /**
-     * Add a permission with the given type and description.
-     *
-     * @param permissionType the permission type
-     * @param description human-readable description
-     */
     public TestPermissionsGrantBuilder permission(TestDataPermissionType permissionType, String description) {
-        TestDataPermissionRaw perm = new TestDataPermissionRaw();
-        perm.setPermissionType(TestdataMappers.toTestDataPermissionTypeRaw(
-                Objects.requireNonNull(permissionType, ERR_NULL_PERMISSION_TYPE)));
-        perm.setDescription(Objects.requireNonNull(description, ERR_NULL_DESCRIPTION));
-        permissions.add(perm);
+        permissions.add(new TestDataPermission(
+                Objects.requireNonNull(permissionType, ERR_NULL_PERMISSION_TYPE),
+                Objects.requireNonNull(description, ERR_NULL_DESCRIPTION)));
         return this;
     }
 
@@ -144,9 +101,6 @@ public final class TestPermissionsGrantBuilder {
         return permission(TestDataPermissionType.SUBUNIT_MANAGE, DESC_SUBUNIT_MANAGE);
     }
 
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     */
     public TestPermissionsGrantBuilder toBuilder() {
         TestPermissionsGrantBuilder copy = new TestPermissionsGrantBuilder(this.contextNip);
         copy.authorizedType = this.authorizedType;
@@ -155,34 +109,13 @@ public final class TestPermissionsGrantBuilder {
         return copy;
     }
 
-    /**
-     * Build the permissions grant request.
-     *
-     * @return the request ready to pass to {@code TestDataClient.grantPermissions()}
-     * @throws IllegalStateException if validation fails
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public TestDataPermissionsGrantRequestRaw build() {
+    public TestPermissionsGrantRequest build() {
         if (authorizedType == null || authorizedValue == null) {
             throw new IllegalStateException(ERR_AUTHORIZED_REQUIRED);
         }
         if (permissions.isEmpty()) {
             throw new IllegalStateException(ERR_PERMISSIONS_EMPTY);
         }
-
-        TestDataContextIdentifierRaw context = new TestDataContextIdentifierRaw();
-        context.setType(TestDataContextIdentifierTypeRaw.NIP);
-        context.setValue(contextNip);
-
-        TestDataAuthorizedIdentifierRaw authorized = new TestDataAuthorizedIdentifierRaw();
-        authorized.setType(authorizedType);
-        authorized.setValue(authorizedValue);
-
-        TestDataPermissionsGrantRequestRaw request = new TestDataPermissionsGrantRequestRaw();
-        request.setContextIdentifier(context);
-        request.setAuthorizedIdentifier(authorized);
-        request.setPermissions(new ArrayList<>(permissions));
-        return request;
+        return new TestPermissionsGrantRequest(contextNip, authorizedType, authorizedValue, permissions);
     }
 }
