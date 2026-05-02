@@ -128,7 +128,8 @@ public final class TestDataClientImpl implements TestDataClient {
     public void createPerson(TestPersonCreateBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_CREATE_PERSON);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        http.postJsonNoContent(PATH_PERSON, builder.build(), OP_CREATE_PERSON);
+        http.postJsonNoContent(PATH_PERSON,
+                TestdataMappers.toPersonCreateRequestRaw(builder.build()), OP_CREATE_PERSON);
     }
 
     /**
@@ -262,7 +263,8 @@ public final class TestDataClientImpl implements TestDataClient {
         LOGGER.debug(LOG_CALL, OP_SET_SESSION_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS, builder.build(), token, OP_SET_SESSION_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS,
+                TestdataMappers.toSetSessionLimitsRequestRaw(builder.build()), token, OP_SET_SESSION_LIMITS);
     }
 
     /**
@@ -285,7 +287,8 @@ public final class TestDataClientImpl implements TestDataClient {
         LOGGER.debug(LOG_CALL, OP_SET_SUBJECT_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS, builder.build(), token, OP_SET_SUBJECT_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS,
+                TestdataMappers.toSetSubjectLimitsRequestRaw(builder.build()), token, OP_SET_SUBJECT_LIMITS);
     }
 
     /**
@@ -308,7 +311,8 @@ public final class TestDataClientImpl implements TestDataClient {
         LOGGER.debug(LOG_CALL, OP_SET_RATE_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS, builder.build(), token, OP_SET_RATE_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS,
+                TestdataMappers.toSetRateLimitsRequestRaw(builder.build()), token, OP_SET_RATE_LIMITS);
     }
 
     /**

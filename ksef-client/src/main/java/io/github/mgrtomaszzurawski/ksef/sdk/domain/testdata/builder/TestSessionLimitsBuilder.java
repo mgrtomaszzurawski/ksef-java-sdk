@@ -4,78 +4,37 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.BatchSessionContextLimitsOverrideRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.OnlineSessionContextLimitsOverrideRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SetSessionLimitsRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLimitsRequest;
 
 /**
  * Builder for KSeF test session limits override requests.
- * <p>
- * Required: onlineSession and batchSession limits.
- * <p>
- * Usage:
- * <pre>{@code
- * SetSessionLimitsRequestRaw request = TestSessionLimitsBuilder.create()
- *     .onlineSession(100, 200, 500)
- *     .batchSession(100, 200, 1000)
- *     .build();
- * }</pre>
+ * <p>Required: onlineSession and batchSession limits.
  */
 public final class TestSessionLimitsBuilder {
 
     private static final String ERR_ONLINE_REQUIRED = "onlineSession limits are required";
     private static final String ERR_BATCH_REQUIRED = "batchSession limits are required";
 
-    private OnlineSessionContextLimitsOverrideRaw onlineSession;
-    private BatchSessionContextLimitsOverrideRaw batchSession;
+    private TestSessionLimits onlineSession;
+    private TestSessionLimits batchSession;
 
-    private TestSessionLimitsBuilder() {
-    }
+    private TestSessionLimitsBuilder() { }
 
-    /**
-     * Create a new session limits builder.
-     */
     public static TestSessionLimitsBuilder create() {
         return new TestSessionLimitsBuilder();
     }
 
-    /**
-     * Set online session limits.
-     *
-     * @param maxInvoiceSizeMb max single invoice size in MB
-     * @param maxInvoiceWithAttachmentSizeMb max invoice with attachment size in MB
-     * @param maxInvoices max number of invoices per session
-     */
-    public TestSessionLimitsBuilder onlineSession(int maxInvoiceSizeMb, int maxInvoiceWithAttachmentSizeMb,
-                                                   int maxInvoices) {
-        OnlineSessionContextLimitsOverrideRaw limits = new OnlineSessionContextLimitsOverrideRaw();
-        limits.setMaxInvoiceSizeInMB(maxInvoiceSizeMb);
-        limits.setMaxInvoiceWithAttachmentSizeInMB(maxInvoiceWithAttachmentSizeMb);
-        limits.setMaxInvoices(maxInvoices);
-        this.onlineSession = limits;
+    public TestSessionLimitsBuilder onlineSession(int maxInvoiceSizeMb, int maxInvoiceWithAttachmentSizeMb, int maxInvoices) {
+        this.onlineSession = new TestSessionLimits(maxInvoiceSizeMb, maxInvoiceWithAttachmentSizeMb, maxInvoices);
         return this;
     }
 
-    /**
-     * Set batch session limits.
-     *
-     * @param maxInvoiceSizeMb max single invoice size in MB
-     * @param maxInvoiceWithAttachmentSizeMb max invoice with attachment size in MB
-     * @param maxInvoices max number of invoices per session
-     */
-    public TestSessionLimitsBuilder batchSession(int maxInvoiceSizeMb, int maxInvoiceWithAttachmentSizeMb,
-                                                  int maxInvoices) {
-        BatchSessionContextLimitsOverrideRaw limits = new BatchSessionContextLimitsOverrideRaw();
-        limits.setMaxInvoiceSizeInMB(maxInvoiceSizeMb);
-        limits.setMaxInvoiceWithAttachmentSizeInMB(maxInvoiceWithAttachmentSizeMb);
-        limits.setMaxInvoices(maxInvoices);
-        this.batchSession = limits;
+    public TestSessionLimitsBuilder batchSession(int maxInvoiceSizeMb, int maxInvoiceWithAttachmentSizeMb, int maxInvoices) {
+        this.batchSession = new TestSessionLimits(maxInvoiceSizeMb, maxInvoiceWithAttachmentSizeMb, maxInvoices);
         return this;
     }
 
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     */
     public TestSessionLimitsBuilder toBuilder() {
         TestSessionLimitsBuilder copy = new TestSessionLimitsBuilder();
         copy.onlineSession = this.onlineSession;
@@ -83,24 +42,13 @@ public final class TestSessionLimitsBuilder {
         return copy;
     }
 
-    /**
-     * Build the session limits request.
-     *
-     * @return the request ready to pass to {@code TestDataClient.setSessionLimits()}
-     * @throws IllegalStateException if validation fails
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public SetSessionLimitsRequestRaw build() {
+    public TestSessionLimitsRequest build() {
         if (onlineSession == null) {
             throw new IllegalStateException(ERR_ONLINE_REQUIRED);
         }
         if (batchSession == null) {
             throw new IllegalStateException(ERR_BATCH_REQUIRED);
         }
-        SetSessionLimitsRequestRaw request = new SetSessionLimitsRequestRaw();
-        request.setOnlineSession(onlineSession);
-        request.setBatchSession(batchSession);
-        return request;
+        return new TestSessionLimitsRequest(onlineSession, batchSession);
     }
 }

@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonCreateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -91,18 +91,7 @@ public final class TestPersonCreateBuilder {
      *
      * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
-    public PersonCreateRequestRaw build() {
-        PersonCreateRequestRaw request = new PersonCreateRequestRaw();
-        request.setNip(nip);
-        request.setPesel(pesel);
-        request.setIsBailiff(isBailiff);
-        request.setDescription(description);
-        if (isDeceased != null) {
-            request.setIsDeceased(isDeceased);
-        }
-        if (createdDate != null) {
-            request.setCreatedDate(createdDate);
-        }
-        return request;
+    public TestPersonCreateRequest build() {
+        return new TestPersonCreateRequest(nip, pesel, isBailiff, description, isDeceased, createdDate);
     }
 }
