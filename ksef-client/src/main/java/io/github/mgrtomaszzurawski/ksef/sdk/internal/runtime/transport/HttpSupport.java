@@ -13,6 +13,8 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Shared HTTP request/response handling for domain clients.
@@ -23,6 +25,10 @@ import java.util.regex.Pattern;
  * propagates to the caller.
  */
 public final class HttpSupport {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpSupport.class);
+    private static final String LOG_REQUEST = "[{}] {}";
+    private static final String LOG_RESPONSE = "[{}] {} -> {} ({}ms)";
 
     private static final String CONTENT_TYPE = "Content-Type";
     private static final String ACCEPT = "Accept";
@@ -377,8 +383,13 @@ public final class HttpSupport {
     }
 
     private HttpResponse<String> send(HttpRequest request) throws IOException {
+        long start = System.currentTimeMillis();
+        LOGGER.debug(LOG_REQUEST, request.method(), request.uri());
         try {
-            return runtime.httpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = runtime.httpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            LOGGER.debug(LOG_RESPONSE, request.method(), request.uri(),
+                    response.statusCode(), System.currentTimeMillis() - start);
+            return response;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
@@ -386,8 +397,13 @@ public final class HttpSupport {
     }
 
     private HttpResponse<byte[]> sendBytes(HttpRequest request) throws IOException {
+        long start = System.currentTimeMillis();
+        LOGGER.debug(LOG_REQUEST, request.method(), request.uri());
         try {
-            return runtime.httpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
+            HttpResponse<byte[]> response = runtime.httpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
+            LOGGER.debug(LOG_RESPONSE, request.method(), request.uri(),
+                    response.statusCode(), System.currentTimeMillis() - start);
+            return response;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
