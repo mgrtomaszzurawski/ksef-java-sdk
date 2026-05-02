@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.CheckAttachmentPermissionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsQueryRequestRaw;

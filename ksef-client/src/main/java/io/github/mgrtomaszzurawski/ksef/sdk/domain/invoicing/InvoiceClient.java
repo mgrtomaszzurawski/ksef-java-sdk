@@ -21,14 +21,9 @@ public interface InvoiceClient {
 
     public byte[] getByKsefNumber(String ksefNumber);
 
-    public InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query);
-
-    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query);
-
-    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults);
-
-    public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder);
-
-    public InvoiceExportStatus getExportStatus(String referenceNumber);
-
+    InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query);
+    List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query);
+    List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults);
+    ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder);
+    InvoiceExportStatus getExportStatus(String referenceNumber);
 }

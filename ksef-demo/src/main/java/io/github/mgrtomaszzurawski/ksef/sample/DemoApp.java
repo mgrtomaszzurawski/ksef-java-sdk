@@ -58,7 +58,7 @@ public final class DemoApp {
     private static final String ERR_MISSING_TOKEN = "ksef.token is required in credentials file";
     private static final String ERR_MISSING_NIP = "ksef.nip is required in credentials file";
     private static final String ERR_MISSING_ENV = "ksef.environment is required in credentials file";
-    private static final String ERR_INVALID_MODE = "Invalid demo.mode: ";
+    private static final String ERR_INVALID_MODE = "Invalid demo.mode: {}";
     private static final int EXIT_FAILURE = 1;
 
     private DemoApp() { }
@@ -108,17 +108,17 @@ public final class DemoApp {
     }
 
     private static DemoMode resolveMode(String[] args) {
-        String modeStr = System.getProperty("demo.mode");
-        if (modeStr == null && args.length > 0) {
-            modeStr = args[0];
+        String modeName = System.getProperty("demo.mode");
+        if (modeName == null && args.length > 0) {
+            modeName = args[0];
         }
-        if (modeStr == null) {
+        if (modeName == null) {
             return DemoMode.READ_ONLY;
         }
         try {
-            return DemoMode.valueOf(modeStr.toUpperCase());
+            return DemoMode.valueOf(modeName.toUpperCase());
         } catch (IllegalArgumentException exception) {
-            LOG.error(ERR_INVALID_MODE + modeStr);
+            LOG.error(ERR_INVALID_MODE, modeName);
             System.exit(EXIT_FAILURE);
             return DemoMode.READ_ONLY;
         }

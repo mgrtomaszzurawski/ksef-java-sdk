@@ -22,20 +22,14 @@ import java.util.List;
  */
 public interface CertificateClient {
 
-    public CertificateLimits getLimits();
-
-    public CertificateEnrollmentData getEnrollmentData();
-
-    public EnrollCertificateResult enroll(CertificateEnrollBuilder builder);
-
-    public CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber);
-
-    public RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers);
-
+    CertificateLimits getLimits();
+    CertificateEnrollmentData getEnrollmentData();
+    EnrollCertificateResult enroll(CertificateEnrollBuilder builder);
+    CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber);
+    RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers);
     public void revoke(String certificateSerialNumber);
 
     public void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
 
-    public CertificateQueryResult query(CertificateQueryBuilder builder);
-
+    CertificateQueryResult query(CertificateQueryBuilder builder);
 }

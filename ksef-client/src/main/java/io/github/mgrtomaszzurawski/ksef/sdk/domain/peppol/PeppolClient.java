@@ -15,8 +15,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersR
  */
 public interface PeppolClient {
 
-    public PeppolProvidersResult query();
-
-    public PeppolProvidersResult query(int pageOffset, int pageSize);
-
+    PeppolProvidersResult query();
+    PeppolProvidersResult query(int pageOffset, int pageSize);
 }

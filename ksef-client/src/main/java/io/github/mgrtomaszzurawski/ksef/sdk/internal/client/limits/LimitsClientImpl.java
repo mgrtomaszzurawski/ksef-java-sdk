@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;

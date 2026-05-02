@@ -34,42 +34,23 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPerm
  */
 public interface PermissionClient {
 
-    public PermissionOperationResult grantPerson(PersonPermissionGrantBuilder builder);
-
-    public PermissionOperationResult grantEntity(EntityPermissionGrantBuilder builder);
-
-    public PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantBuilder builder);
-
-    public PermissionOperationResult grantIndirect(IndirectPermissionGrantBuilder builder);
-
-    public PermissionOperationResult grantSubunit(SubunitPermissionGrantBuilder builder);
-
-    public PermissionOperationResult grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder builder);
-
-    public PermissionOperationResult grantEuEntity(EuEntityPermissionGrantBuilder builder);
-
-    public PermissionOperationResult revokeCommon(String permissionId);
-
-    public PermissionOperationResult revokeAuthorization(String permissionId);
-
-    public PermissionOperationStatus getOperationStatus(String referenceNumber);
-
-    public AttachmentPermissionStatus getAttachmentStatus();
-
-    public PersonalPermissions queryPersonal(PersonalPermissionsQueryBuilder builder);
-
-    public PersonPermissions queryPersons(PersonPermissionsQueryBuilder builder);
-
-    public SubunitPermissions querySubunits();
-
-    public EntityPermissions queryEntities();
-
-    public EntityRoles queryEntityRoles();
-
-    public SubordinateEntityRoles querySubordinateRoles();
-
-    public EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
-
-    public EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder);
-
+    PermissionOperationResult grantPerson(PersonPermissionGrantBuilder builder);
+    PermissionOperationResult grantEntity(EntityPermissionGrantBuilder builder);
+    PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantBuilder builder);
+    PermissionOperationResult grantIndirect(IndirectPermissionGrantBuilder builder);
+    PermissionOperationResult grantSubunit(SubunitPermissionGrantBuilder builder);
+    PermissionOperationResult grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder builder);
+    PermissionOperationResult grantEuEntity(EuEntityPermissionGrantBuilder builder);
+    PermissionOperationResult revokeCommon(String permissionId);
+    PermissionOperationResult revokeAuthorization(String permissionId);
+    PermissionOperationStatus getOperationStatus(String referenceNumber);
+    AttachmentPermissionStatus getAttachmentStatus();
+    PersonalPermissions queryPersonal(PersonalPermissionsQueryBuilder builder);
+    PersonPermissions queryPersons(PersonPermissionsQueryBuilder builder);
+    SubunitPermissions querySubunits();
+    EntityPermissions queryEntities();
+    EntityRoles queryEntityRoles();
+    SubordinateEntityRoles querySubordinateRoles();
+    EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
+    EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder);
 }

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;

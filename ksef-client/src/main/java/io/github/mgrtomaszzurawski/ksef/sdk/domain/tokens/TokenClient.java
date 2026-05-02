@@ -15,12 +15,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
  */
 public interface TokenClient {
 
-    public GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder);
-
-    public TokenList list();
-
-    public TokenDetail getStatus(String referenceNumber);
-
+    GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder);
+    TokenList list();
+    TokenDetail getStatus(String referenceNumber);
     public void revoke(String referenceNumber);
 
 }

@@ -13,8 +13,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;
  */
 public interface LimitsClient {
 
-    public ContextLimits getContextLimits();
-
-    public SubjectLimits getSubjectLimits();
-
+    ContextLimits getContextLimits();
+    SubjectLimits getSubjectLimits();
 }

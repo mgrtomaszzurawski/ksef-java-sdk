@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
