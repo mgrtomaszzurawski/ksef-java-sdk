@@ -43,7 +43,7 @@ public final class RateLimitRunner implements DemoRunner {
         List<RunResult> results = new ArrayList<>();
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().rateLimits().getRateLimits();
+            context.client().rateLimits().getRateLimits();
             LOG.info("[{}] rate limits fetched", NAME);
             results.add(RunResult.ok(NAME, OP_GET, elapsed(start)));
         } catch (Exception exception) {

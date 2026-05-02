@@ -157,7 +157,6 @@ public final class SessionRunner implements DemoRunner {
             KsefSession session = context.client().openSession(FormCode.FA2);
             String sessionRef = session.referenceNumber();
             LOG.info("[{}] opened session ref={}", NAME, sessionRef);
-            context.setSessionReferenceNumber(sessionRef);
             context.state().setSessionReferenceNumber(sessionRef);
             results.add(RunResult.ok(NAME, OP_OPEN_SESSION, elapsed(start),
                     "ref=" + sessionRef));
@@ -177,7 +176,6 @@ public final class SessionRunner implements DemoRunner {
             SendInvoiceResult sendResult = session.send(invoiceXml);
             String invoiceRef = sendResult.referenceNumber();
             LOG.info("[{}] sent invoice ref={}", NAME, invoiceRef);
-            context.setInvoiceReferenceNumber(invoiceRef);
             results.add(RunResult.ok(NAME, OP_SEND_INVOICE, elapsed(start),
                     "ref=" + invoiceRef));
             return invoiceRef;

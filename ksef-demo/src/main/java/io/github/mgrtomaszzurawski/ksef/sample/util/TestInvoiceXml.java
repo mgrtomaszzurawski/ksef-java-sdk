@@ -140,8 +140,4 @@ public final class TestInvoiceXml {
 
         return xml.getBytes(StandardCharsets.UTF_8);
     }
-
-    public static String schemaVersion() { return SCHEMA_VERSION; }
-    public static String systemCode() { return SYSTEM_CODE; }
-    public static String formCodeValue() { return FORM_CODE_VALUE; }
 }
