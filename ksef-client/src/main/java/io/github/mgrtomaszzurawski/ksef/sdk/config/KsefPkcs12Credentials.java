@@ -61,9 +61,7 @@ public record KsefPkcs12Credentials(Path keystorePath, char[] password, KsefIden
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(keystorePath, identifier);
-        result = 31 * result + Arrays.hashCode(password);
-        return result;
+        return Objects.hash(keystorePath, identifier, Arrays.hashCode(password));
     }
 
     @Override

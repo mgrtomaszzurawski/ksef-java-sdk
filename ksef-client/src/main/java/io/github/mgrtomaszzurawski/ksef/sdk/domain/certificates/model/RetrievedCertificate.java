@@ -46,9 +46,7 @@ public record RetrievedCertificate(
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(certificateName, certificateSerialNumber, certificateType);
-        result = 31 * result + Arrays.hashCode(certificate);
-        return result;
+        return Objects.hash(certificateName, certificateSerialNumber, certificateType, Arrays.hashCode(certificate));
     }
 
     @Override

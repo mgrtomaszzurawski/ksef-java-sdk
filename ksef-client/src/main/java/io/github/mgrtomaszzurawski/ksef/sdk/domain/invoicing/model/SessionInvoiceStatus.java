@@ -84,11 +84,10 @@ public record SessionInvoiceStatus(
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(ordinalNumber, invoiceNumber, ksefNumber, referenceNumber,
+        return Objects.hash(ordinalNumber, invoiceNumber, ksefNumber, referenceNumber,
                 invoiceFileName, acquisitionDate, invoicingDate, permanentStorageDate,
-                upoDownloadUrl, upoDownloadUrlExpirationDate, invoicingMode, status);
-        result = 31 * result + Arrays.hashCode(invoiceHash);
-        return result;
+                upoDownloadUrl, upoDownloadUrlExpirationDate, invoicingMode, status,
+                Arrays.hashCode(invoiceHash));
     }
 
     @Override

@@ -98,10 +98,7 @@ public final class OnlineSessionBuilder {
 
         @Override
         public int hashCode() {
-            int result = Objects.hashCode(request);
-            result = 31 * result + Arrays.hashCode(aesKey);
-            result = 31 * result + Arrays.hashCode(initVector);
-            return result;
+            return Objects.hash(request, Arrays.hashCode(aesKey), Arrays.hashCode(initVector));
         }
 
         @Override

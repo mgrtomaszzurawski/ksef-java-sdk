@@ -73,9 +73,7 @@ public record BatchFileSpec(long fileSize, byte[] fileHash, List<Part> parts) {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(fileSize, parts);
-        result = 31 * result + Arrays.hashCode(fileHash);
-        return result;
+        return Objects.hash(fileSize, parts, Arrays.hashCode(fileHash));
     }
 
     @Override
@@ -131,9 +129,7 @@ public record BatchFileSpec(long fileSize, byte[] fileHash, List<Part> parts) {
 
         @Override
         public int hashCode() {
-            int result = Objects.hash(ordinalNumber, fileSize);
-            result = 31 * result + Arrays.hashCode(fileHash);
-            return result;
+            return Objects.hash(ordinalNumber, fileSize, Arrays.hashCode(fileHash));
         }
 
         @Override
