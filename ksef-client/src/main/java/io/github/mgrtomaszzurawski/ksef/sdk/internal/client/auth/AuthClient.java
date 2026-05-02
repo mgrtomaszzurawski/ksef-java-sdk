@@ -215,6 +215,9 @@ public final class AuthClient {
         sessionContext.refreshToken(
                 response.getAccessToken().getToken(),
                 response.getAccessToken().getValidUntil());
+        if (response.getRefreshToken() != null && response.getRefreshToken().getToken() != null) {
+            sessionContext.storeRefreshToken(response.getRefreshToken().getToken());
+        }
         return AuthenticationTokens.from(response);
     }
 

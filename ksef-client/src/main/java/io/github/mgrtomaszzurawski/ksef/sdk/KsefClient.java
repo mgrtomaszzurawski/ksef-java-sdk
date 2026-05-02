@@ -119,7 +119,10 @@ public final class KsefClient implements AutoCloseable {
     private static final String LOG_OPENED_BATCH_SESSION_WITH_INVOICES =
             "Opened KSeF batch session {} with {} invoices, formCode={}";
     private static final String LOG_TERMINATED = "Terminated KSeF auth session";
-    private static final String LOG_REAUTHENTICATED = "Re-authenticated with KSeF after 401 (token refresh)";
+    private static final String LOG_REAUTHENTICATED = "Re-authenticated with KSeF after 401 (full auth flow)";
+    private static final String LOG_REFRESHED = "Refreshed KSeF access token via /auth/token/refresh";
+    private static final String LOG_REFRESH_FAILED =
+            "Refresh-token endpoint failed ({}); falling back to full re-auth";
     private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(30);
     private static final int AUTH_POLL_DELAY_MS = 2000;
@@ -359,23 +362,44 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Force re-authentication: clear the current JWT and obtain a fresh access token.
+     * Force re-authentication: obtain a fresh access token.
      *
      * <p>Used by the SDK internally when an authenticated request returns HTTP 401
-     * (token expired). Resets the authenticated flag and the public key cache (the
-     * KSeF certificate may have rotated), clears the session JWT, and re-runs the
-     * full auth flow.
+     * (token expired). When a refresh token captured from the previous redeem
+     * response is still available, the client prefers a single
+     * {@code POST /auth/token/refresh} call over the full challenge-response
+     * cycle. Any failure on the refresh endpoint falls back to a full
+     * re-authentication.
      *
      * <p>Thread-safe: serialized on this {@link KsefClient} so concurrent 401s only
      * trigger one re-auth.
      */
     public synchronized void reauthenticate() {
         ensureOpen();
+        if (tryRefreshToken()) {
+            return;
+        }
         authenticated = false;
         publicKeyCache.clear();
         sessionContext.clear();
         authenticate();
         LOGGER.debug(LOG_REAUTHENTICATED);
+    }
+
+    private boolean tryRefreshToken() {
+        String refreshToken = sessionContext.refreshToken();
+        if (refreshToken == null) {
+            return false;
+        }
+        try {
+            authClient.refreshToken(refreshToken);
+            authenticated = true;
+            LOGGER.debug(LOG_REFRESHED);
+            return true;
+        } catch (RuntimeException refreshFailure) {
+            LOGGER.debug(LOG_REFRESH_FAILED, refreshFailure.getClass().getSimpleName());
+            return false;
+        }
     }
 
     /**
