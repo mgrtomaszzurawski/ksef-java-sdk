@@ -383,26 +383,25 @@ public final class HttpSupport {
     }
 
     private HttpResponse<String> send(HttpRequest request) throws IOException {
-        long start = System.currentTimeMillis();
-        LOGGER.debug(LOG_REQUEST, request.method(), request.uri());
-        try {
-            HttpResponse<String> response = runtime.httpClient().send(request, HttpResponse.BodyHandlers.ofString());
-            LOGGER.debug(LOG_RESPONSE, request.method(), request.uri(),
-                    response.statusCode(), System.currentTimeMillis() - start);
-            return response;
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
-        }
+        return sendWithLogging(request, HttpResponse.BodyHandlers.ofString());
     }
 
     private HttpResponse<byte[]> sendBytes(HttpRequest request) throws IOException {
+        return sendWithLogging(request, HttpResponse.BodyHandlers.ofByteArray());
+    }
+
+    private <T> HttpResponse<T> sendWithLogging(HttpRequest request, HttpResponse.BodyHandler<T> bodyHandler)
+            throws IOException {
         long start = System.currentTimeMillis();
-        LOGGER.debug(LOG_REQUEST, request.method(), request.uri());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(LOG_REQUEST, request.method(), request.uri());
+        }
         try {
-            HttpResponse<byte[]> response = runtime.httpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
-            LOGGER.debug(LOG_RESPONSE, request.method(), request.uri(),
-                    response.statusCode(), System.currentTimeMillis() - start);
+            HttpResponse<T> response = runtime.httpClient().send(request, bodyHandler);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(LOG_RESPONSE, request.method(), request.uri(),
+                        response.statusCode(), System.currentTimeMillis() - start);
+            }
             return response;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
