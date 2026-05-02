@@ -52,6 +52,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityCli
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.TestDataClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.TokenClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.IdentifierMasking;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
@@ -112,7 +113,7 @@ public final class KsefClient implements AutoCloseable {
     private static final String ERR_INTERRUPTED = "Interrupted while polling";
     private static final String CERT_TYPE_X509 = "X.509";
 
-    private static final String LOG_AUTHENTICATED = "Authenticated with KSeF as {}";
+    private static final String LOG_AUTHENTICATED = "Authenticated with KSeF as {} {}";
     private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
     private static final String LOG_OPENED_BATCH_SESSION = "Opened KSeF batch session {}, formCode={}";
     private static final String LOG_OPENED_BATCH_SESSION_WITH_INVOICES =
@@ -199,7 +200,9 @@ public final class KsefClient implements AutoCloseable {
         }
         doAuthenticate();
         authenticated = true;
-        LOGGER.debug(LOG_AUTHENTICATED, credentials.identifier());
+        KsefIdentifier identifier = credentials.identifier();
+        LOGGER.debug(LOG_AUTHENTICATED, identifier.type(),
+                IdentifierMasking.maskTail(identifier.value()));
     }
 
     /**
