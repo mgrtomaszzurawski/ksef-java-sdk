@@ -62,7 +62,7 @@ public final class SessionRunner implements DemoRunner {
     private static final String OP_UPO_BY_KSEF = "getUpoByKsefNumber";
     private static final String OP_STALE_SESSION_RECOVERY = "staleSessionRecovery";
 
-    private static final String SKIP_NOT_FULL = "FULL mode only";
+    private static final String SKIP_NOT_FULL = "FULL mode only — sends a real invoice";
     private static final String SKIP_NO_KSEF_NUMBER =
             "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
     private static final String FAIL_UPO_BYTES_DIFFER =
@@ -102,11 +102,7 @@ public final class SessionRunner implements DemoRunner {
     @Override
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
-
-        if (context.mode() != DemoMode.FULL) {
-            results.add(RunResult.skip(NAME, OP_OPEN_SESSION, SKIP_NOT_FULL));
-            return results;
-        }
+        boolean fullMode = context.mode() == DemoMode.FULL;
 
         runStaleSessionRecovery(context, results);
 
@@ -116,15 +112,18 @@ public final class SessionRunner implements DemoRunner {
         }
 
         try (session) {
-            String invoiceRef = runSendInvoice(context, session, results);
-            if (invoiceRef != null) {
-                runGetInvoiceStatus(session, invoiceRef, results);
+            String invoiceRef = null;
+            if (fullMode) {
+                invoiceRef = runSendInvoice(context, session, results);
+                if (invoiceRef != null) {
+                    runGetInvoiceStatus(session, invoiceRef, results);
+                }
             }
             runGetStatus(session, results);
             runGetInvoices(session, results);
             runGetFailedInvoices(session, results);
             boolean closed = runClose(session, results);
-            if (closed && invoiceRef != null) {
+            if (fullMode && closed && invoiceRef != null) {
                 byte[] upoByInvoiceRef = runGetUpo(session, invoiceRef, results);
                 runGetUpoByKsefNumber(context, session, invoiceRef, upoByInvoiceRef, results);
             }

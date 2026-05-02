@@ -18,7 +18,6 @@
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
-import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
@@ -42,8 +41,13 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 
 /**
- * Runner for InvoiceClient operations. queryMetadata works in AUTH_SAFE and FULL modes.
- * exportInvoices and getByKsefNumber require FULL mode (need invoice refs from SessionRunner).
+ * Runner for InvoiceClient operations.
+ *
+ * <p>All operations run in both AUTH_SAFE and FULL modes — they're either
+ * read-only (queryMetadata, getExportStatus, getByKsefNumber) or start a
+ * non-destructive read-side job (exportInvoices). In AUTH_SAFE mode
+ * getByKsefNumber falls back to the first invoice from queryMetadata
+ * when the FULL-mode SessionRunner did not populate a KSeF number.</p>
  */
 public final class InvoiceRunner implements DemoRunner {
 
@@ -53,8 +57,8 @@ public final class InvoiceRunner implements DemoRunner {
     private static final String OP_EXPORT = "exportInvoices";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
     private static final String OP_GET_BY_KSEF = "getByKsefNumber";
-    private static final String SKIP_NOT_FULL = "FULL mode only (needs invoice refs)";
-    private static final String SKIP_NO_KSEF_NUMBER = "no KSeF number available from SessionRunner";
+    private static final String SKIP_NO_KSEF_NUMBER =
+            "no KSeF number available — queryMetadata returned empty and no FULL-mode ref in context";
     private static final String SKIP_NO_EXPORT_REF = "export not started";
     private static final int EXPORT_STATUS_OK = 200;
     private static final int EXPORT_POLL_MAX_DELAY_MS = 10000;
@@ -70,25 +74,21 @@ public final class InvoiceRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
 
-        runQueryMetadata(context, results);
-
-        if (context.mode() != DemoMode.FULL) {
-            results.add(RunResult.skip(NAME, OP_EXPORT, SKIP_NOT_FULL));
-            results.add(RunResult.skip(NAME, OP_EXPORT_STATUS, SKIP_NOT_FULL));
-            results.add(RunResult.skip(NAME, OP_GET_BY_KSEF, SKIP_NOT_FULL));
-            return results;
-        }
+        InvoiceMetadataResult metadata = runQueryMetadata(context, results);
 
         String exportRef = runExportInvoices(context, results);
-
         if (exportRef != null) {
             pollExportStatus(context, exportRef, results);
         } else {
             results.add(RunResult.skip(NAME, OP_EXPORT_STATUS, SKIP_NO_EXPORT_REF));
         }
 
-        // getByKsefNumber depends on the KSeF number captured by SessionRunner.
+        // Prefer the KSeF number captured by SessionRunner in FULL mode; fall back to the first
+        // metadata result so AUTH_SAFE can exercise getByKsefNumber against an existing invoice.
         String ksefNumber = context.invoiceKsefNumber();
+        if (ksefNumber == null && metadata != null && metadata.invoices() != null && !metadata.invoices().isEmpty()) {
+            ksefNumber = metadata.invoices().get(0).ksefNumber();
+        }
         if (ksefNumber != null) {
             runGetByKsefNumber(context, ksefNumber, results);
         } else {
@@ -98,7 +98,7 @@ public final class InvoiceRunner implements DemoRunner {
         return results;
     }
 
-    private void runQueryMetadata(DemoContext context, List<RunResult> results) {
+    private InvoiceMetadataResult runQueryMetadata(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC)
@@ -111,11 +111,15 @@ public final class InvoiceRunner implements DemoRunner {
             InvoiceMetadataResult response = context.client().invoices().queryMetadata(query);
             int count = response.invoices() != null ? response.invoices().size() : 0;
             boolean hasMore = response.hasMore();
-            LOGGER.info("[{}] queryMetadata: {} invoices, hasMore={}", NAME, count, hasMore);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("[{}] queryMetadata: {} invoices, hasMore={}", NAME, count, hasMore);
+            }
             results.add(RunResult.ok(NAME, OP_QUERY_METADATA, elapsed(start),
                     count + " invoices, hasMore=" + hasMore));
+            return response;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_QUERY_METADATA, elapsed(start), errorMessage(exception)));
+            return null;
         }
     }
 
