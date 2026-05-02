@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifie
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataPermissionType;
 import java.util.ArrayList;
@@ -108,7 +109,8 @@ public final class TestPermissionsGrantBuilder {
      */
     public TestPermissionsGrantBuilder permission(TestDataPermissionType permissionType, String description) {
         TestDataPermissionRaw perm = new TestDataPermissionRaw();
-        perm.setPermissionType(Objects.requireNonNull(permissionType, ERR_NULL_PERMISSION_TYPE).toRaw());
+        perm.setPermissionType(TestdataMappers.toTestDataPermissionTypeRaw(
+                Objects.requireNonNull(permissionType, ERR_NULL_PERMISSION_TYPE)));
         perm.setDescription(Objects.requireNonNull(description, ERR_NULL_DESCRIPTION));
         permissions.add(perm);
         return this;

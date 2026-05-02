@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataBuyerRaw;
-
 /**
  * Invoice buyer information from metadata.
  *
@@ -15,19 +13,4 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataBuyerRaw;
  */
 public record InvoiceBuyer(BuyerIdentifierType identifierType, String identifierValue, String name) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static InvoiceBuyer from(InvoiceMetadataBuyerRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        BuyerIdentifierType idType = null;
-        String idValue = null;
-        if (raw.getIdentifier() != null) {
-            idType = BuyerIdentifierType.from(raw.getIdentifier().getType());
-            idValue = raw.getIdentifier().getValue();
-        }
-        return new InvoiceBuyer(idType, idValue, raw.getName());
-    }
 }

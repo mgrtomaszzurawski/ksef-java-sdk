@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionItemRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -18,14 +17,4 @@ public record EntityPermission(
         OffsetDateTime startDate,
         Boolean canDelegate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static EntityPermission from(EntityPermissionItemRaw raw) {
-        var ctxRaw = raw.getContextIdentifier();
-        PermissionIdentifier ctxId = new PermissionIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue());
-        String scope = raw.getPermissionScope().getValue();
-        return new EntityPermission(raw.getId(), ctxId, scope, raw.getDescription(),
-                raw.getStartDate(), raw.getCanDelegate());
-    }
 }

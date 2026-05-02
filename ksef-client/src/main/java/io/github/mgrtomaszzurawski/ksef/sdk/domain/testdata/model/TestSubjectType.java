@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectTypeRaw;
-
 /**
  * Type of test subject in KSeF.
  */
@@ -15,11 +13,4 @@ public enum TestSubjectType {
     VAT_GROUP,
     JST;
 
-    public SubjectTypeRaw toRaw() {
-        return switch (this) {
-            case ENFORCEMENT_AUTHORITY -> SubjectTypeRaw.ENFORCEMENT_AUTHORITY;
-            case VAT_GROUP -> SubjectTypeRaw.VAT_GROUP;
-            case JST -> SubjectTypeRaw.JST;
-        };
-    }
 }

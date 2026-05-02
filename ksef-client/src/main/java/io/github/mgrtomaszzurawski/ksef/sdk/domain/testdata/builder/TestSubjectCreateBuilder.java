@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubjectCreateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,7 +102,7 @@ public final class TestSubjectCreateBuilder {
     public SubjectCreateRequestRaw build() {
         SubjectCreateRequestRaw request = new SubjectCreateRequestRaw();
         request.setSubjectNip(subjectNip);
-        request.setSubjectType(subjectType.toRaw());
+        request.setSubjectType(TestdataMappers.toSubjectTypeRaw(subjectType));
         request.setDescription(description);
         if (!subunits.isEmpty()) {
             request.setSubunits(new ArrayList<>(subunits));

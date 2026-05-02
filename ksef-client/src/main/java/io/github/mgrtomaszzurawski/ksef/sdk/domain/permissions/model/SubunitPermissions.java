@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubunitPermissionsResponseRaw;
 import java.util.List;
 
 /**
@@ -15,11 +14,4 @@ import java.util.List;
  */
 public record SubunitPermissions(List<SubunitPermission> permissions, boolean hasMore) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static SubunitPermissions from(QuerySubunitPermissionsResponseRaw raw) {
-        List<SubunitPermission> mapped = raw.getPermissions().stream().map(SubunitPermission::from).toList();
-        return new SubunitPermissions(mapped, raw.getHasMore());
-    }
 }

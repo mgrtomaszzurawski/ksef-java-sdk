@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
 
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
@@ -157,7 +158,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
         String token = sessionContext.token();
         ExportInvoicesResponseRaw raw = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
                 ExportInvoicesResponseRaw.class, OP_EXPORT);
-        return ExportInvoicesResult.from(raw);
+        return InvoicingMappers.toExportInvoicesResult(raw);
     }
 
     /**
@@ -173,13 +174,13 @@ public final class InvoiceClientImpl implements InvoiceClient {
         String token = sessionContext.token();
         InvoiceExportStatusResponseRaw raw = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
                 InvoiceExportStatusResponseRaw.class, OP_EXPORT_STATUS);
-        return InvoiceExportStatus.from(raw);
+        return InvoicingMappers.toInvoiceExportStatus(raw);
     }
 
     private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters) {
         String token = sessionContext.token();
         QueryInvoicesMetadataResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
-        return InvoiceMetadataResult.from(raw);
+        return InvoicingMappers.toInvoiceMetadataResult(raw);
     }
 }

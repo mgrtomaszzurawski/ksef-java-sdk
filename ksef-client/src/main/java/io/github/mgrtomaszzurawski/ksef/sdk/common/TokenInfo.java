@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.common;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.TokenInfoRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -15,13 +14,4 @@ import java.time.OffsetDateTime;
  */
 public record TokenInfo(String token, OffsetDateTime validUntil) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static TokenInfo from(TokenInfoRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return new TokenInfo(raw.getToken(), raw.getValidUntil());
-    }
 }

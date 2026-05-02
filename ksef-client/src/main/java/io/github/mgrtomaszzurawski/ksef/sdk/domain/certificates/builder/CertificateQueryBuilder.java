@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.mapping.CertificatesMappers;
 import java.time.OffsetDateTime;
 
 /**
@@ -119,10 +120,10 @@ public final class CertificateQueryBuilder {
             request.setName(name);
         }
         if (type != null) {
-            request.setType(type.toRaw());
+            request.setType(CertificatesMappers.toKsefCertificateTypeRaw(type));
         }
         if (status != null) {
-            request.setStatus(status.toRaw());
+            request.setStatus(CertificatesMappers.toCertificateListItemStatusRaw(status));
         }
         if (expiresAfter != null) {
             request.setExpiresAfter(expiresAfter);

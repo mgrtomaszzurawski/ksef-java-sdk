@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
-
 /**
  * Invoice form code identifying the schema version.
  *
@@ -15,13 +13,4 @@ import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
  */
 public record FormCodeInfo(String systemCode, String schemaVersion, String value) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static FormCodeInfo from(FormCodeRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return new FormCodeInfo(raw.getSystemCode(), raw.getSchemaVersion(), raw.getValue());
-    }
 }

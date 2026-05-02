@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoicePackagePartRaw;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -33,22 +32,6 @@ public record InvoicePackagePart(
         Long encryptedPartSize,
         byte[] encryptedPartHash,
         OffsetDateTime expirationDate) {
-
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static InvoicePackagePart from(InvoicePackagePartRaw raw) {
-        return new InvoicePackagePart(
-                raw.getOrdinalNumber(),
-                raw.getPartName(),
-                raw.getMethod(),
-                raw.getUrl(),
-                raw.getPartSize(),
-                raw.getPartHash(),
-                raw.getEncryptedPartSize(),
-                raw.getEncryptedPartHash(),
-                raw.getExpirationDate());
-    }
 
     @Override
     public boolean equals(Object o) {

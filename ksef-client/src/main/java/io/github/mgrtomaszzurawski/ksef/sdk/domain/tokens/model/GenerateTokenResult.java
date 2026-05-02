@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
-
 /**
  * Result of generating a new KSeF API token.
  *
@@ -14,10 +12,4 @@ import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
  */
 public record GenerateTokenResult(String referenceNumber, String token) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static GenerateTokenResult from(GenerateTokenResponseRaw raw) {
-        return new GenerateTokenResult(raw.getReferenceNumber(), raw.getToken());
-    }
 }

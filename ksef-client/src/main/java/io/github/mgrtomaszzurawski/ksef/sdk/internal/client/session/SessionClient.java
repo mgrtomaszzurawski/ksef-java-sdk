@@ -26,6 +26,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSuppo
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
 
 /**
  * Client for KSeF session operations — online and batch session lifecycle,
@@ -79,7 +80,7 @@ public final class SessionClient {
         String token = sessionContext.token();
         OpenOnlineSessionResponseRaw raw = http.postJsonAuthenticated(PATH_ONLINE, request, token,
                 OpenOnlineSessionResponseRaw.class, OP_OPEN_ONLINE);
-        return OnlineSession.from(raw);
+        return InvoicingMappers.toOnlineSession(raw);
     }
 
     /**
@@ -96,7 +97,7 @@ public final class SessionClient {
         String path = ApiPaths.subPath(PATH_ONLINE, referenceNumber) + SEGMENT_INVOICES;
         SendInvoiceResponseRaw raw = http.postJsonAuthenticated(path, request, token,
                 SendInvoiceResponseRaw.class, OP_SEND_INVOICE);
-        return SendInvoiceResult.from(raw);
+        return InvoicingMappers.toSendInvoiceResult(raw);
     }
 
     /**
@@ -123,7 +124,7 @@ public final class SessionClient {
         String token = sessionContext.token();
         OpenBatchSessionResponseRaw raw = http.postJsonAuthenticated(PATH_BATCH, request, token,
                 OpenBatchSessionResponseRaw.class, OP_OPEN_BATCH);
-        return BatchSession.from(raw);
+        return InvoicingMappers.toBatchSession(raw);
     }
 
     /**
@@ -151,7 +152,7 @@ public final class SessionClient {
         String token = sessionContext.token();
         SessionStatusResponseRaw raw = http.getAuthenticated(ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber), token,
                 SessionStatusResponseRaw.class, OP_GET_STATUS);
-        return SessionStatus.from(raw);
+        return InvoicingMappers.toSessionStatus(raw);
     }
 
     /**
@@ -166,7 +167,7 @@ public final class SessionClient {
         String token = sessionContext.token();
         String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_INVOICES;
         SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES);
-        return SessionInvoices.from(raw);
+        return InvoicingMappers.toSessionInvoices(raw);
     }
 
     /**
@@ -184,7 +185,7 @@ public final class SessionClient {
         String sessionPath = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_INVOICES;
         String path = ApiPaths.subPath(sessionPath, invoiceReferenceNumber);
         SessionInvoiceStatusResponseRaw raw = http.getAuthenticated(path, token, SessionInvoiceStatusResponseRaw.class, OP_GET_INVOICE_STATUS);
-        return SessionInvoiceStatus.from(raw);
+        return InvoicingMappers.toSessionInvoiceStatus(raw);
     }
 
     /**
@@ -199,7 +200,7 @@ public final class SessionClient {
         String token = sessionContext.token();
         String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_FAILED;
         SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
-        return SessionInvoices.from(raw);
+        return InvoicingMappers.toSessionInvoices(raw);
     }
 
     /**

@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
-
 /**
  * Data required for certificate enrollment (CSR generation).
  *
@@ -28,18 +26,4 @@ public record CertificateEnrollmentData(
         String organizationName,
         String organizationIdentifier) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static CertificateEnrollmentData from(CertificateEnrollmentDataResponseRaw raw) {
-        return new CertificateEnrollmentData(
-                raw.getCommonName(),
-                raw.getCountryName(),
-                raw.getGivenName(),
-                raw.getSurname(),
-                raw.getSerialNumber(),
-                raw.getUniqueIdentifier(),
-                raw.getOrganizationName(),
-                raw.getOrganizationIdentifier());
-    }
 }

@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.CertificateSubjectLimitsOve
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollmentSubjectLimitsOverrideRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SetSubjectLimitsRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
 import java.util.Objects;
 
 /**
@@ -85,7 +86,7 @@ public final class TestSubjectLimitsBuilder {
      */
     public SetSubjectLimitsRequestRaw build() {
         SetSubjectLimitsRequestRaw request = new SetSubjectLimitsRequestRaw();
-        request.setSubjectIdentifierType(subjectIdentifierType.toRaw());
+        request.setSubjectIdentifierType(TestdataMappers.toSubjectIdentifierTypeRaw(subjectIdentifierType));
         if (maxEnrollments != null) {
             EnrollmentSubjectLimitsOverrideRaw enrollment = new EnrollmentSubjectLimitsOverrideRaw();
             enrollment.setMaxEnrollments(maxEnrollments);

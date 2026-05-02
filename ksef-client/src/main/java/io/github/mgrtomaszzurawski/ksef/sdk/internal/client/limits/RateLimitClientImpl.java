@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.mapping.LimitsMappers;
 
 /**
  * Implementation of {@link RateLimitClient}. Constructed by {@code KsefClient};
@@ -40,6 +41,6 @@ public final class RateLimitClientImpl implements RateLimitClient {
         String token = sessionContext.token();
         EffectiveApiRateLimitsRaw raw = http.getAuthenticated(PATH_RATE_LIMITS, token,
                 EffectiveApiRateLimitsRaw.class, OP_GET_RATE_LIMITS);
-        return ApiRateLimits.from(raw);
+        return LimitsMappers.toApiRateLimits(raw);
     }
 }

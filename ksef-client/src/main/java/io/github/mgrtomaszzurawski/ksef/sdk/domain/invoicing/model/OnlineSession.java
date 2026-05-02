@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionResponseRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -15,10 +14,4 @@ import java.time.OffsetDateTime;
  */
 public record OnlineSession(String referenceNumber, OffsetDateTime validUntil) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static OnlineSession from(OpenOnlineSessionResponseRaw raw) {
-        return new OnlineSession(raw.getReferenceNumber(), raw.getValidUntil());
-    }
 }

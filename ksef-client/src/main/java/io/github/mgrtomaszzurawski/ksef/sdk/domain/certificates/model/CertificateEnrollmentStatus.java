@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
 
@@ -20,13 +19,4 @@ public record CertificateEnrollmentStatus(
         StatusInfo status,
         String certificateSerialNumber) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static CertificateEnrollmentStatus from(CertificateEnrollmentStatusResponseRaw raw) {
-        return new CertificateEnrollmentStatus(
-                raw.getRequestDate(),
-                StatusInfo.from(raw.getStatus()),
-                raw.getCertificateSerialNumber());
-    }
 }

@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -20,15 +19,4 @@ public record EuEntityPermission(
         String description,
         OffsetDateTime startDate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static EuEntityPermission from(EuEntityPermissionRaw raw) {
-        var authorRaw = raw.getAuthorIdentifier();
-        PermissionIdentifier authorId = new PermissionIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
-        String scope = raw.getPermissionScope().getValue();
-        return new EuEntityPermission(raw.getId(), authorId, raw.getVatUeIdentifier(),
-                raw.getEuEntityName(), raw.getAuthorizedFingerprintIdentifier(),
-                scope, raw.getDescription(), raw.getStartDate());
-    }
 }

@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationGrantRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -19,20 +18,4 @@ public record EntityAuthorizationGrant(
         String description,
         OffsetDateTime startDate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static EntityAuthorizationGrant from(EntityAuthorizationGrantRaw raw) {
-        var authorRaw = raw.getAuthorIdentifier();
-        PermissionIdentifier authorId = authorRaw != null
-                ? new PermissionIdentifier(authorRaw.getType().getValue(), authorRaw.getValue())
-                : null;
-        var authzRaw = raw.getAuthorizedEntityIdentifier();
-        PermissionIdentifier authzEntityId = new PermissionIdentifier(authzRaw.getType().getValue(), authzRaw.getValue());
-        var authingRaw = raw.getAuthorizingEntityIdentifier();
-        PermissionIdentifier authingEntityId = new PermissionIdentifier(authingRaw.getType().getValue(), authingRaw.getValue());
-        String authScope = raw.getAuthorizationScope().getValue();
-        return new EntityAuthorizationGrant(raw.getId(), authorId, authzEntityId, authingEntityId,
-                authScope, raw.getDescription(), raw.getStartDate());
-    }
 }

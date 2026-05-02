@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSessionLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSessionLimits;
 
@@ -16,12 +15,4 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession
  */
 public record ContextLimits(OnlineSessionLimits onlineSession, BatchSessionLimits batchSession) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static ContextLimits from(EffectiveContextLimitsRaw raw) {
-        return new ContextLimits(
-                OnlineSessionLimits.from(raw.getOnlineSession()),
-                BatchSessionLimits.from(raw.getBatchSession()));
-    }
 }

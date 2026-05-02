@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CheckAttachmentPermissionStatusResponseRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -15,12 +14,4 @@ import java.time.OffsetDateTime;
  */
 public record AttachmentPermissionStatus(Boolean attachmentAllowed, OffsetDateTime revokedDate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static AttachmentPermissionStatus from(CheckAttachmentPermissionStatusResponseRaw raw) {
-        return new AttachmentPermissionStatus(
-                raw.getIsAttachmentAllowed(),
-                raw.getRevokedDate());
-    }
 }

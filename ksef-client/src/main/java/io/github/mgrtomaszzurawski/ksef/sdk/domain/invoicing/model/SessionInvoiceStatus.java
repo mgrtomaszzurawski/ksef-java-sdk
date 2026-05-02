@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -41,26 +40,6 @@ public record SessionInvoiceStatus(
         OffsetDateTime upoDownloadUrlExpirationDate,
         InvoicingMode invoicingMode,
         InvoiceStatusInfo status) {
-
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static SessionInvoiceStatus from(SessionInvoiceStatusResponseRaw raw) {
-        return new SessionInvoiceStatus(
-                raw.getOrdinalNumber(),
-                raw.getInvoiceNumber(),
-                raw.getKsefNumber(),
-                raw.getReferenceNumber(),
-                raw.getInvoiceHash(),
-                raw.getInvoiceFileName(),
-                raw.getAcquisitionDate(),
-                raw.getInvoicingDate(),
-                raw.getPermanentStorageDate(),
-                raw.getUpoDownloadUrl(),
-                raw.getUpoDownloadUrlExpirationDate(),
-                InvoicingMode.from(raw.getInvoicingMode()),
-                InvoiceStatusInfo.from(raw.getStatus()));
-    }
 
     @Override
     public boolean equals(Object o) {

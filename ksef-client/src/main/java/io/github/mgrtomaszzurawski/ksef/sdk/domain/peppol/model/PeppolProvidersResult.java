@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
 import java.util.List;
 
 /**
@@ -15,11 +14,4 @@ import java.util.List;
  */
 public record PeppolProvidersResult(List<PeppolProvider> providers, boolean hasMore) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static PeppolProvidersResult from(QueryPeppolProvidersResponseRaw raw) {
-        List<PeppolProvider> mapped = raw.getPeppolProviders().stream().map(PeppolProvider::from).toList();
-        return new PeppolProvidersResult(mapped, raw.getHasMore());
-    }
 }

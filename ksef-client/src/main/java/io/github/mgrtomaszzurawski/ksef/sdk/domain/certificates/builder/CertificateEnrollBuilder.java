@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.mapping.CertificatesMappers;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -87,7 +88,7 @@ public final class CertificateEnrollBuilder {
     public EnrollCertificateRequestRaw build() {
         EnrollCertificateRequestRaw request = new EnrollCertificateRequestRaw();
         request.setCertificateName(certificateName);
-        request.setCertificateType(certificateType.toRaw());
+        request.setCertificateType(CertificatesMappers.toKsefCertificateTypeRaw(certificateType));
         request.setCsr(csr.clone());
         if (validFrom != null) {
             request.setValidFrom(validFrom);

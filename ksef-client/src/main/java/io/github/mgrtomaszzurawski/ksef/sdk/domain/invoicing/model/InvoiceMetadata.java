@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataRaw;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -56,36 +55,6 @@ public record InvoiceMetadata(
         byte[] invoiceHash,
         byte[] hashOfCorrectedInvoice,
         List<InvoiceThirdSubject> thirdSubjects) {
-
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static InvoiceMetadata from(InvoiceMetadataRaw raw) {
-        List<InvoiceThirdSubject> subjects = raw.getThirdSubjects() != null
-                ? raw.getThirdSubjects().stream().map(InvoiceThirdSubject::from).toList()
-                : List.of();
-        return new InvoiceMetadata(
-                raw.getKsefNumber(),
-                raw.getInvoiceNumber(),
-                raw.getIssueDate(),
-                raw.getInvoicingDate(),
-                raw.getAcquisitionDate(),
-                raw.getPermanentStorageDate(),
-                InvoiceSeller.from(raw.getSeller()),
-                InvoiceBuyer.from(raw.getBuyer()),
-                raw.getNetAmount(),
-                raw.getGrossAmount(),
-                raw.getVatAmount(),
-                raw.getCurrency(),
-                InvoicingMode.from(raw.getInvoicingMode()),
-                InvoiceType.from(raw.getInvoiceType()),
-                FormCodeInfo.from(raw.getFormCode()),
-                raw.getIsSelfInvoicing(),
-                raw.getHasAttachment(),
-                raw.getInvoiceHash(),
-                raw.getHashOfCorrectedInvoice(),
-                subjects);
-    }
 
     @Override
     public boolean equals(Object o) {

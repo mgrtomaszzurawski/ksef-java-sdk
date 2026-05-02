@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
-
 /**
  * Type of KSeF certificate.
  */
@@ -14,10 +12,4 @@ public enum KsefCertificateType {
     AUTHENTICATION,
     OFFLINE;
 
-    public KsefCertificateTypeRaw toRaw() {
-        return switch (this) {
-            case AUTHENTICATION -> KsefCertificateTypeRaw.AUTHENTICATION;
-            case OFFLINE -> KsefCertificateTypeRaw.OFFLINE;
-        };
-    }
 }

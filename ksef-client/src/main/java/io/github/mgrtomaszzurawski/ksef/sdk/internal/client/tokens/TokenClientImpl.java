@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.mapping.TokensMappers;
 
 /**
  * Client for KSeF API token management — generate, list, query status, and revoke tokens.
@@ -60,7 +61,7 @@ public final class TokenClientImpl implements TokenClient {
         String token = sessionContext.token();
         GenerateTokenResponseRaw raw = http.postJsonAuthenticated(PATH_TOKENS,
                 tokenBuilder.build(), token, GenerateTokenResponseRaw.class, OP_GENERATE);
-        return GenerateTokenResult.from(raw);
+        return TokensMappers.toGenerateTokenResult(raw);
     }
 
     /**
@@ -74,7 +75,7 @@ public final class TokenClientImpl implements TokenClient {
         String token = sessionContext.token();
         QueryTokensResponseRaw raw = http.getAuthenticated(PATH_TOKENS, token,
                 QueryTokensResponseRaw.class, OP_LIST);
-        return TokenList.from(raw);
+        return TokensMappers.toTokenList(raw);
     }
 
     /**
@@ -90,7 +91,7 @@ public final class TokenClientImpl implements TokenClient {
         String token = sessionContext.token();
         TokenStatusResponseRaw raw = http.getAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token,
                 TokenStatusResponseRaw.class, OP_GET_STATUS);
-        return TokenDetail.from(raw);
+        return TokensMappers.toTokenDetail(raw);
     }
 
     /**

@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateListItemRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -35,28 +34,4 @@ public record CertificateListItem(
         OffsetDateTime lastUseDate,
         OffsetDateTime requestDate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static CertificateListItem from(CertificateListItemRaw raw) {
-        String subIdType = null;
-        String subIdValue = null;
-        if (raw.getSubjectIdentifier() != null) {
-            subIdType = raw.getSubjectIdentifier().getType() != null
-                    ? raw.getSubjectIdentifier().getType().getValue() : null;
-            subIdValue = raw.getSubjectIdentifier().getValue();
-        }
-        return new CertificateListItem(
-                raw.getCertificateSerialNumber(),
-                raw.getName(),
-                raw.getType().getValue(),
-                raw.getCommonName(),
-                raw.getStatus().getValue(),
-                subIdType,
-                subIdValue,
-                raw.getValidFrom(),
-                raw.getValidTo(),
-                raw.getLastUseDate(),
-                raw.getRequestDate());
-    }
 }

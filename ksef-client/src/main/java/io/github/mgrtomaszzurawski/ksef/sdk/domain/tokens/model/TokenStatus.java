@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenStatusRaw;
-
 /**
  * Lifecycle status of a KSeF API token.
  */
@@ -17,19 +15,4 @@ public enum TokenStatus {
     REVOKED,
     FAILED;
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static TokenStatus from(AuthenticationTokenStatusRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return switch (raw) {
-            case PENDING -> PENDING;
-            case ACTIVE -> ACTIVE;
-            case REVOKING -> REVOKING;
-            case REVOKED -> REVOKED;
-            case FAILED -> FAILED;
-        };
-    }
 }

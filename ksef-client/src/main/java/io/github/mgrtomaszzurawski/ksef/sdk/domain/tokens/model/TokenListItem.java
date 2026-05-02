@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseItemRaw;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -32,24 +31,4 @@ public record TokenListItem(
         TokenStatus status,
         List<String> statusDetails) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static TokenListItem from(QueryTokensResponseItemRaw raw) {
-        var authorRaw = raw.getAuthorIdentifier();
-        TokenIdentifier author = new TokenIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
-        var ctxRaw = raw.getContextIdentifier();
-        TokenIdentifier context = new TokenIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue());
-        List<TokenPermissionType> perms = raw.getRequestedPermissions().stream().map(TokenPermissionType::from).toList();
-        return new TokenListItem(
-                raw.getReferenceNumber(),
-                author,
-                context,
-                raw.getDescription(),
-                perms,
-                raw.getDateCreated(),
-                raw.getLastUseDate(),
-                TokenStatus.from(raw.getStatus()),
-                raw.getStatusDetails() != null ? List.copyOf(raw.getStatusDetails()) : List.of());
-    }
 }

@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitValuesRaw;
-
 /**
  * Rate limit values for a specific operation type.
  *
@@ -15,13 +13,4 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitValues
  */
 public record RateLimitValues(Integer perSecond, Integer perMinute, Integer perHour) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static RateLimitValues from(EffectiveApiRateLimitValuesRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return new RateLimitValues(raw.getPerSecond(), raw.getPerMinute(), raw.getPerHour());
-    }
 }

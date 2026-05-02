@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -33,25 +32,4 @@ public record PersonPermission(
         OffsetDateTime startDate,
         Boolean canDelegate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static PersonPermission from(PersonPermissionRaw raw) {
-        var authzRaw = raw.getAuthorizedIdentifier();
-        PermissionIdentifier authzId = new PermissionIdentifier(authzRaw.getType().getValue(), authzRaw.getValue());
-        var ctxRaw = raw.getContextIdentifier();
-        PermissionIdentifier ctxId = ctxRaw != null
-                ? new PermissionIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue())
-                : null;
-        var targetRaw = raw.getTargetIdentifier();
-        PermissionIdentifier targetId = targetRaw != null
-                ? new PermissionIdentifier(targetRaw.getType().getValue(), targetRaw.getValue())
-                : null;
-        var authorRaw = raw.getAuthorIdentifier();
-        PermissionIdentifier authorId = new PermissionIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
-        String scope = raw.getPermissionScope().getValue();
-        String state = raw.getPermissionState().getValue();
-        return new PersonPermission(raw.getId(), authzId, ctxId, targetId, authorId,
-                scope, raw.getDescription(), state, raw.getStartDate(), raw.getCanDelegate());
-    }
 }

@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenRefreshResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
 
 /**
  * Result of refreshing an access token.
@@ -15,6 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
 public record AuthenticationTokenRefresh(TokenInfo accessToken) {
 
     public static AuthenticationTokenRefresh from(AuthenticationTokenRefreshResponseRaw raw) {
-        return new AuthenticationTokenRefresh(TokenInfo.from(raw.getAccessToken()));
+        return new AuthenticationTokenRefresh(CommonMappers.toTokenInfo(raw.getAccessToken()));
     }
 }

@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 
 /**
@@ -14,10 +13,4 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
  */
 public record PermissionOperationStatus(StatusInfo status) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static PermissionOperationStatus from(PermissionsOperationStatusResponseRaw raw) {
-        return new PermissionOperationStatus(StatusInfo.from(raw.getStatus()));
-    }
 }

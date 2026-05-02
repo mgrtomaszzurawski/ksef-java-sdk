@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
-
 /**
  * Result of sending an invoice within a session.
  *
@@ -13,10 +11,4 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
  */
 public record SendInvoiceResult(String referenceNumber) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static SendInvoiceResult from(SendInvoiceResponseRaw raw) {
-        return new SendInvoiceResult(raw.getReferenceNumber());
-    }
 }

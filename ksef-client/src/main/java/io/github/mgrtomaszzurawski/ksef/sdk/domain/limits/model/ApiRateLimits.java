@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitsRaw;
-
 /**
  * Effective API rate limits for all operation types.
  *
@@ -36,22 +34,4 @@ public record ApiRateLimits(
         RateLimitValues invoiceDownload,
         RateLimitValues other) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static ApiRateLimits from(EffectiveApiRateLimitsRaw raw) {
-        return new ApiRateLimits(
-                RateLimitValues.from(raw.getOnlineSession()),
-                RateLimitValues.from(raw.getBatchSession()),
-                RateLimitValues.from(raw.getInvoiceSend()),
-                RateLimitValues.from(raw.getInvoiceStatus()),
-                RateLimitValues.from(raw.getSessionList()),
-                RateLimitValues.from(raw.getSessionInvoiceList()),
-                RateLimitValues.from(raw.getSessionMisc()),
-                RateLimitValues.from(raw.getInvoiceMetadata()),
-                RateLimitValues.from(raw.getInvoiceExport()),
-                RateLimitValues.from(raw.getInvoiceExportStatus()),
-                RateLimitValues.from(raw.getInvoiceDownload()),
-                RateLimitValues.from(raw.getOther()));
-    }
 }

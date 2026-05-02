@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PeppolProviderRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -16,10 +15,4 @@ import java.time.OffsetDateTime;
  */
 public record PeppolProvider(String id, String name, OffsetDateTime dateCreated) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static PeppolProvider from(PeppolProviderRaw raw) {
-        return new PeppolProvider(raw.getId(), raw.getName(), raw.getDateCreated());
-    }
 }

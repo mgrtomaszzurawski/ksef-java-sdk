@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateListItemStatusRaw;
-
 /**
  * Status of a KSeF certificate.
  */
@@ -16,12 +14,4 @@ public enum CertificateStatus {
     REVOKED,
     EXPIRED;
 
-    public CertificateListItemStatusRaw toRaw() {
-        return switch (this) {
-            case ACTIVE -> CertificateListItemStatusRaw.ACTIVE;
-            case BLOCKED -> CertificateListItemStatusRaw.BLOCKED;
-            case REVOKED -> CertificateListItemStatusRaw.REVOKED;
-            case EXPIRED -> CertificateListItemStatusRaw.EXPIRED;
-        };
-    }
 }

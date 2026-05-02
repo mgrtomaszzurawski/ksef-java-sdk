@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesListItemRaw;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -21,17 +20,6 @@ public record RetrievedCertificate(
         String certificateName,
         String certificateSerialNumber,
         String certificateType) {
-
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static RetrievedCertificate from(RetrieveCertificatesListItemRaw raw) {
-        return new RetrievedCertificate(
-                raw.getCertificate(),
-                raw.getCertificateName(),
-                raw.getCertificateSerialNumber(),
-                raw.getCertificateType().getValue());
-    }
 
     @Override
     public boolean equals(Object o) {

@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.BuyerIdentifierTypeRaw;
-
 /**
  * Type of buyer identifier.
  */
@@ -16,18 +14,4 @@ public enum BuyerIdentifierType {
     OTHER,
     NONE;
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static BuyerIdentifierType from(BuyerIdentifierTypeRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return switch (raw) {
-            case NIP -> NIP;
-            case VAT_UE -> VAT_UE;
-            case OTHER -> OTHER;
-            case NONE -> NONE;
-        };
-    }
 }

@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionRevokeRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.BlockContextAuthenticationRequestRaw;
@@ -13,6 +12,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsRevokeBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPersonCreateBuilder;
@@ -22,7 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectC
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -225,7 +226,7 @@ public final class TestDataClientImpl implements TestDataClient {
         Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
         Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
-        identifier.setType(identifierType.toRaw());
+        identifier.setType(TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(identifierType));
         identifier.setValue(identifierValue);
         BlockContextAuthenticationRequestRaw request = new BlockContextAuthenticationRequestRaw();
         request.setContextIdentifier(identifier);
@@ -244,7 +245,7 @@ public final class TestDataClientImpl implements TestDataClient {
         Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
         Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
-        identifier.setType(identifierType.toRaw());
+        identifier.setType(TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(identifierType));
         identifier.setValue(identifierValue);
         UnblockContextAuthenticationRequestRaw request = new UnblockContextAuthenticationRequestRaw();
         request.setContextIdentifier(identifier);
