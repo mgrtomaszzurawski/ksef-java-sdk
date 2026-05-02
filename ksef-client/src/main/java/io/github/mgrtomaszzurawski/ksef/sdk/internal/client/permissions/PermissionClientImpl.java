@@ -160,7 +160,8 @@ public final class PermissionClientImpl implements PermissionClient {
         LOGGER.debug(LOG_CALL, OP_GRANT_AUTHORIZATION);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION, builder.build(), token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION,
+                PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_AUTHORIZATION);
         return PermissionsMappers.toPermissionOperationResult(raw);
     }
@@ -192,7 +193,8 @@ public final class PermissionClientImpl implements PermissionClient {
         LOGGER.debug(LOG_CALL, OP_GRANT_SUBUNIT);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_SUBUNIT, builder.build(), token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_SUBUNIT,
+                PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_SUBUNIT);
         return PermissionsMappers.toPermissionOperationResult(raw);
     }
