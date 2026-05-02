@@ -26,9 +26,10 @@ public final class SessionContext {
     }
 
     /**
-     * Update token after refresh (keeps same reference number and refresh token).
+     * Replace the access token (and its expiry) after a successful refresh,
+     * preserving the current reference number and refresh token.
      */
-    public void refreshToken(String newToken, OffsetDateTime newExpiry) {
+    public void updateAccessToken(String newToken, OffsetDateTime newExpiry) {
         state.updateAndGet(current -> {
             if (current == null) {
                 throw new IllegalStateException(ERR_NO_SESSION);

@@ -301,8 +301,8 @@ public final class KsefBatchSession implements AutoCloseable {
             return;
         }
         String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
-        java.util.List<String> details = sessionStatus.status() != null
-                ? sessionStatus.status().details() : java.util.List.of();
+        List<String> details = sessionStatus.status() != null
+                ? sessionStatus.status().details() : List.of();
         LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
         throw new KsefSessionTerminalFailureException(referenceNumber, code, description, details);
     }

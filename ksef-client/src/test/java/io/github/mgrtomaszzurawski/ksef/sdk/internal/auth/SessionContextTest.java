@@ -62,7 +62,7 @@ class SessionContextTest {
     }
 
     @Test
-    void refreshToken_updatesTokenKeepsReference() {
+    void updateAccessToken_updatesTokenKeepsReference() {
         // given
         OffsetDateTime expiry = OffsetDateTime.now().plusHours(1);
         context.activate(TOKEN, REFERENCE_NUMBER, expiry);
@@ -70,7 +70,7 @@ class SessionContextTest {
         OffsetDateTime newExpiry = OffsetDateTime.now().plusHours(2);
 
         // when
-        context.refreshToken(REFRESHED_TOKEN, newExpiry);
+        context.updateAccessToken(REFRESHED_TOKEN, newExpiry);
 
         // then
         assertEquals(REFRESHED_TOKEN, context.token());
@@ -78,12 +78,12 @@ class SessionContextTest {
     }
 
     @Test
-    void refreshToken_whenNoSession_throwsIllegalState() {
+    void updateAccessToken_whenNoSession_throwsIllegalState() {
         // given
         OffsetDateTime expiry = OffsetDateTime.now().plusHours(1);
 
         // then
-        assertThrows(IllegalStateException.class, () -> context.refreshToken(REFRESHED_TOKEN, expiry));
+        assertThrows(IllegalStateException.class, () -> context.updateAccessToken(REFRESHED_TOKEN, expiry));
     }
 
     @Test

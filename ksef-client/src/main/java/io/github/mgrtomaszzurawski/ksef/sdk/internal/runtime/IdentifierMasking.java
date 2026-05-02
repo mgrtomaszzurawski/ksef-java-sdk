@@ -14,7 +14,6 @@ public final class IdentifierMasking {
 
     private static final int VISIBLE_TAIL_LENGTH = 4;
     private static final String MASK_PREFIX = "***";
-    private static final String EMPTY = "";
 
     private IdentifierMasking() {
     }
@@ -31,10 +30,5 @@ public final class IdentifierMasking {
         }
         int from = Math.max(0, value.length() - VISIBLE_TAIL_LENGTH);
         return MASK_PREFIX + value.substring(from);
-    }
-
-    /** Convenience: empty string for null input, otherwise the value itself. */
-    public static String safeString(String value) {
-        return value == null ? EMPTY : value;
     }
 }

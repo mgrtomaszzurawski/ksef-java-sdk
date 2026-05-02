@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,15 @@ class KsefSessionTest {
     private static final String SESSION_STATUS_OK_RESPONSE = """
             {
               "status": {"code": 200, "description": "Completed"},
+              "dateCreated": "2026-04-18T12:00:00+02:00"
+            }
+            """;
+
+    private static final int TERMINAL_FAILURE_CODE = 415;
+    private static final String TERMINAL_FAILURE_DESCRIPTION = "Schema validation rejected";
+    private static final String SESSION_STATUS_TERMINAL_FAILURE_RESPONSE = """
+            {
+              "status": {"code": 415, "description": "Schema validation rejected", "details": ["bad faktura"]},
               "dateCreated": "2026-04-18T12:00:00+02:00"
             }
             """;
@@ -168,6 +178,27 @@ class KsefSessionTest {
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
         }
+    }
+
+    @Test
+    void close_whenTerminalStatusNot200_throwsTerminalFailureException(WireMockRuntimeInfo wmInfo) {
+        // given — close itself succeeds, but the status poll surfaces a terminal failure
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/close"))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(SESSION_STATUS_TERMINAL_FAILURE_RESPONSE)));
+
+        KsefSession session = createSession(wmInfo);
+
+        // when / then
+        KsefSessionTerminalFailureException failure =
+                assertThrows(KsefSessionTerminalFailureException.class, session::close);
+        assertEquals(TERMINAL_FAILURE_CODE, failure.code());
+        assertEquals(TERMINAL_FAILURE_DESCRIPTION, failure.description());
+        assertEquals(TEST_SESSION_REF, failure.referenceNumber());
     }
 
     private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {

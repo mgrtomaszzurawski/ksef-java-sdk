@@ -212,7 +212,7 @@ public final class AuthClient {
         String operationToken = sessionContext.token();
         AuthenticationTokensResponseRaw response = http.postAuthenticated(
                 PATH_TOKEN_REDEEM, operationToken, AuthenticationTokensResponseRaw.class, OP_REDEEM);
-        sessionContext.refreshToken(
+        sessionContext.updateAccessToken(
                 response.getAccessToken().getToken(),
                 response.getAccessToken().getValidUntil());
         if (response.getRefreshToken() != null && response.getRefreshToken().getToken() != null) {
@@ -232,7 +232,7 @@ public final class AuthClient {
         LOGGER.debug(LOG_CALL, OP_REFRESH);
         AuthenticationTokenRefreshResponseRaw response = http.postAuthenticated(
                 PATH_TOKEN_REFRESH, refreshToken, AuthenticationTokenRefreshResponseRaw.class, OP_REFRESH);
-        sessionContext.refreshToken(
+        sessionContext.updateAccessToken(
                 response.getAccessToken().getToken(),
                 response.getAccessToken().getValidUntil());
         return AuthenticationTokenRefresh.from(response);

@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,8 +241,8 @@ public final class KsefSession implements AutoCloseable {
             return;
         }
         String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
-        java.util.List<String> details = sessionStatus.status() != null
-                ? sessionStatus.status().details() : java.util.List.of();
+        List<String> details = sessionStatus.status() != null
+                ? sessionStatus.status().details() : List.of();
         LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
         throw new KsefSessionTerminalFailureException(referenceNumber, code, description, details);
     }
