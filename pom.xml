@@ -42,7 +42,58 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.outputTimestamp>2026-04-03T00:00:00Z</project.build.outputTimestamp>
+        <gpg.plugin.version>3.2.7</gpg.plugin.version>
+        <central.publishing.plugin.version>0.7.0</central.publishing.plugin.version>
     </properties>
+
+    <!--
+        Release profile — activated via `mvn ... -Prelease` for Maven Central
+        publishing. Signs all artifacts with GPG and uploads via Sonatype's
+        central-publishing-maven-plugin (the OSSRH replacement, Central Portal).
+
+        Requires GPG key configured locally and `<server>` credentials in
+        ~/.m2/settings.xml with id `central` containing
+        Sonatype Central Portal user token.
+    -->
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${gpg.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${central.publishing.plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>false</autoPublish>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <build>
         <pluginManagement>
