@@ -62,8 +62,6 @@ public final class SessionClient {
         this.sessionContext = ksef.sessionContext();
     }
 
-    // --- Online session ---
-
     /**
      * Open an online (interactive) session for invoice submission.
      *
@@ -105,8 +103,6 @@ public final class SessionClient {
         http.postNoBodyAuthenticated(path, token, OP_CLOSE_ONLINE);
     }
 
-    // --- Batch session ---
-
     /**
      * Open a batch session for bulk invoice submission.
      *
@@ -131,8 +127,6 @@ public final class SessionClient {
         String path = ApiPaths.subPath(PATH_BATCH, referenceNumber) + SEGMENT_CLOSE;
         http.postNoBodyAuthenticated(path, token, OP_CLOSE_BATCH);
     }
-
-    // --- Session status and invoices ---
 
     /**
      * Get the status of a session (online or batch).
@@ -192,8 +186,6 @@ public final class SessionClient {
         SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
         return SessionInvoices.from(raw);
     }
-
-    // --- UPO retrieval ---
 
     /**
      * Download UPO (official receipt) by UPO reference number.

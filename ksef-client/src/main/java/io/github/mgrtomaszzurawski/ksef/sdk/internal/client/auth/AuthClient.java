@@ -58,6 +58,19 @@ public final class AuthClient {
     private static final String OP_TERMINATE_CURRENT = "terminateCurrentSession";
     private static final String OP_TERMINATE = "terminateSession";
 
+    private static final String XML_PROLOG = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+    private static final String AUTH_TOKEN_REQUEST_OPEN =
+            "<AuthTokenRequest xmlns=\"http://ksef.mf.gov.pl/auth/token/2.0\">";
+    private static final String AUTH_TOKEN_REQUEST_CLOSE = "</AuthTokenRequest>";
+    private static final String CHALLENGE_OPEN = "<Challenge>";
+    private static final String CHALLENGE_CLOSE = "</Challenge>";
+    private static final String CONTEXT_IDENTIFIER_OPEN = "<ContextIdentifier><";
+    private static final String CONTEXT_IDENTIFIER_INNER_CLOSE = "></ContextIdentifier>";
+    private static final String SUBJECT_IDENTIFIER_TYPE_FIXED =
+            "<SubjectIdentifierType>certificateSubject</SubjectIdentifierType>";
+    private static final String XML_CLOSE_BRACKET = ">";
+    private static final String XML_END_TAG_PREFIX = "</";
+
     private final HttpSupport http;
     private final SessionContext sessionContext;
 
@@ -252,13 +265,14 @@ public final class AuthClient {
 
     private static String buildAuthTokenRequestXml(String challenge, KsefIdentifier identifier) {
         String elementName = xmlElementForType(identifier.type());
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
-                + "<AuthTokenRequest xmlns=\"http://ksef.mf.gov.pl/auth/token/2.0\">"
-                + "<Challenge>" + escapeXml(challenge) + "</Challenge>"
-                + "<ContextIdentifier><" + elementName + ">" + escapeXml(identifier.value())
-                + "</" + elementName + "></ContextIdentifier>"
-                + "<SubjectIdentifierType>certificateSubject</SubjectIdentifierType>"
-                + "</AuthTokenRequest>";
+        return XML_PROLOG
+                + AUTH_TOKEN_REQUEST_OPEN
+                + CHALLENGE_OPEN + escapeXml(challenge) + CHALLENGE_CLOSE
+                + CONTEXT_IDENTIFIER_OPEN + elementName + XML_CLOSE_BRACKET
+                + escapeXml(identifier.value())
+                + XML_END_TAG_PREFIX + elementName + CONTEXT_IDENTIFIER_INNER_CLOSE
+                + SUBJECT_IDENTIFIER_TYPE_FIXED
+                + AUTH_TOKEN_REQUEST_CLOSE;
     }
 
     private static AuthenticationContextIdentifierTypeRaw toRawType(KsefIdentifier.Type type) {
