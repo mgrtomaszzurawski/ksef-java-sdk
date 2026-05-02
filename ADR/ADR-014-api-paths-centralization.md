@@ -2,6 +2,7 @@
 
 **Date:** 2026-05-01
 **Status:** Accepted
+**Last verified:** 2026-05-02
 **Trigger:** PR #27 SonarQube cleanup. Rule java:S1075 (string literals
 that look like URIs) flagged 76 occurrences across the 11 domain clients.
 Every client carried its own copies of `"/api/v2/<area>/..."` literals,

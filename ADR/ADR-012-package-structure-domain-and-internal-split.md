@@ -2,6 +2,7 @@
 
 **Date:** 2026-05-01
 **Status:** Accepted
+**Last verified:** 2026-05-02
 **Trigger:** PR #25, #26, dev commit `59d3703`. The pre-Phase-9 state had 27
 files at the `sdk/` package root, 90 records flat in `sdk/model/`, 25 builders
 flat in `sdk/model/builder/` — file count, not semantics, was the de-facto rule
@@ -165,3 +166,36 @@ but JPMS prevents consumer reach.
   bucket)
 - NoviCloud SDK `resources/<domain>/` pattern — inspiration, adapted to
   KSeF's functionality-not-resource shape
+
+---
+
+## Amendment 2026-05-02 — credentials promoted to `config/`, auth records pushed to `internal/`
+
+User-review pass (see `context/USER-REVIEW-REMARKS-2026-05-01-2130.md`
+findings #2 and #11) revealed two follow-up moves that refine this
+decision without overturning it:
+
+1. **`KsefCredentials` + 3 implementations moved from
+   `domain/authentication/` to `config/`.** Rationale: from the
+   consumer setup-flow standpoint, credentials are configuration handed
+   to `KsefClient.builder()` — same role as `KsefEnvironment`,
+   `KsefIdentifier`, `RetryPolicy`. Treating them as a domain bucket was
+   misleading because the bucket had no client/builder/service of its
+   own, only input + output records.
+
+2. **Authentication response records moved from
+   `domain/authentication/model/` to `internal/client/auth/model/`,**
+   next to their only producer `AuthClient`. Currently still exported
+   via `module-info` to keep `KsefClient.auth()` accessor working;
+   removal of that export tracked under finding #3 / fork (a) (planned:
+   ADR-016).
+
+3. **`domain/authentication/` package deleted entirely.**
+
+Net effect: `domain/` now only contains buckets that genuinely have a
+client at the bucket root (invoicing, permissions, tokens, certificates,
+peppol, limits, testdata = 7 buckets). Sub-split convention §2 of this
+ADR remains unchanged — credentials stayed compliant with "headline
+types live at the bucket root" simply by being relocated to `config/`,
+which itself follows the sentinel-package rule (one *kind* of type per
+package).
