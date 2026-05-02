@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionResponseRaw
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
@@ -90,14 +91,15 @@ public final class SessionClient {
      * @param request the invoice payload (encrypted content, hashes, sizes)
      * @return response with the invoice reference number
      */
-    public SendInvoiceResult sendInvoice(String referenceNumber, SendInvoiceRequestRaw request) {
+    public SendInvoiceResult sendInvoice(String referenceNumber, SendInvoiceRequest request) {
         LOGGER.debug(LOG_CALL_REF, OP_SEND_INVOICE, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = ApiPaths.subPath(PATH_ONLINE, referenceNumber) + SEGMENT_INVOICES;
-        SendInvoiceResponseRaw raw = http.postJsonAuthenticated(path, request, token,
+        SendInvoiceRequestRaw raw = InvoicingMappers.toSendInvoiceRequestRaw(request);
+        SendInvoiceResponseRaw raw2 = http.postJsonAuthenticated(path, raw, token,
                 SendInvoiceResponseRaw.class, OP_SEND_INVOICE);
-        return InvoicingMappers.toSendInvoiceResult(raw);
+        return InvoicingMappers.toSendInvoiceResult(raw2);
     }
 
     /**

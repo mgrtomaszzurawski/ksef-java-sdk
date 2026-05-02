@@ -68,6 +68,18 @@ public final class InvoicingMappers {
 
     private InvoicingMappers() { }
 
+    public static io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw toSendInvoiceRequestRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest request) {
+        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw();
+        raw.setInvoiceHash(request.invoiceHash());
+        raw.setInvoiceSize(request.invoiceSize());
+        raw.setEncryptedInvoiceHash(request.encryptedInvoiceHash());
+        raw.setEncryptedInvoiceSize(request.encryptedInvoiceSize());
+        raw.setEncryptedInvoiceContent(request.encryptedInvoiceContent());
+        raw.setOfflineMode(request.offlineMode());
+        return raw;
+    }
+
     public static BatchSession toBatchSession(OpenBatchSessionResponseRaw raw) {
             List<PartUploadRequest> parts = raw.getPartUploadRequests().stream().map(InvoicingMappers::toPartUploadRequest).toList();
             return new BatchSession(raw.getReferenceNumber(), parts);
