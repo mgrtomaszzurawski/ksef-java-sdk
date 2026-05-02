@@ -143,7 +143,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     private KsefClient(Builder builder) {
         this.environment = builder.environment;
         this.credentials = builder.credentials;
-        this.readTimeout = DEFAULT_READ_TIMEOUT;
+        this.readTimeout = builder.readTimeout;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(builder.connectTimeout)
                 .build();
@@ -476,6 +476,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         private final KsefEnvironment environment;
         private KsefCredentials credentials;
         private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+        private Duration readTimeout = DEFAULT_READ_TIMEOUT;
         private RetryPolicy retryPolicy = RetryPolicy.builder().build();
 
         private Builder(KsefEnvironment environment) {
@@ -495,6 +496,18 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
 
         public Builder connectTimeout(Duration connectTimeout) {
             this.connectTimeout = connectTimeout;
+            return this;
+        }
+
+        /**
+         * Set the per-request read timeout. Bounds how long the SDK waits for a
+         * single KSeF response. Default 30s.
+         *
+         * @param readTimeout the read timeout
+         * @return this builder
+         */
+        public Builder readTimeout(Duration readTimeout) {
+            this.readTimeout = readTimeout;
             return this;
         }
 
