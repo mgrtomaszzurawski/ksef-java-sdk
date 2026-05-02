@@ -23,6 +23,6 @@ public record TestSubjectCreateRequest(
         Objects.requireNonNull(subjectNip, "subjectNip");
         Objects.requireNonNull(subjectType, "subjectType");
         Objects.requireNonNull(description, "description");
-        subunits = subunits == null ? List.of() : List.copyOf(subunits);
+        subunits = (subunits == null) ? List.of() : List.copyOf(subunits);
     }
 }

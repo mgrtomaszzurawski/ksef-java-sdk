@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingRequestMappers;
 
 /**
  * Client for KSeF session operations — online and batch session lifecycle,
@@ -96,7 +97,7 @@ public final class SessionClient {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = ApiPaths.subPath(PATH_ONLINE, referenceNumber) + SEGMENT_INVOICES;
-        SendInvoiceRequestRaw raw = InvoicingMappers.toSendInvoiceRequestRaw(request);
+        SendInvoiceRequestRaw raw = InvoicingRequestMappers.toSendInvoiceRequestRaw(request);
         SendInvoiceResponseRaw raw2 = http.postJsonAuthenticated(path, raw, token,
                 SendInvoiceResponseRaw.class, OP_SEND_INVOICE);
         return InvoicingMappers.toSendInvoiceResult(raw2);

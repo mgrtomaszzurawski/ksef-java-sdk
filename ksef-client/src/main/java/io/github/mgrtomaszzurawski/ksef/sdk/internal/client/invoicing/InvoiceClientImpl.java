@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingRequestMappers;
 
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
@@ -85,7 +86,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
-        return doQueryMetadata(InvoicingMappers.toInvoiceQueryFiltersRaw(query.build()));
+        return doQueryMetadata(InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build()));
     }
 
     /**
@@ -114,7 +115,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults) {
         LOGGER.debug(LOG_CALL_MAX, OP_QUERY_METADATA, maxResults);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
-        InvoiceQueryFiltersRaw filters = InvoicingMappers.toInvoiceQueryFiltersRaw(query.build());
+        InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build());
         List<InvoiceMetadata> allInvoices = new ArrayList<>();
 
         while (true) {
@@ -154,7 +155,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder) {
         LOGGER.debug(LOG_CALL, OP_EXPORT);
         Objects.requireNonNull(exportBuilder, ERR_NULL_EXPORT);
-        InvoiceExportRequestRaw request = InvoicingMappers.toInvoiceExportRequestRaw(exportBuilder.build());
+        InvoiceExportRequestRaw request = InvoicingRequestMappers.toInvoiceExportRequestRaw(exportBuilder.build());
         String token = sessionContext.token();
         ExportInvoicesResponseRaw raw = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
                 ExportInvoicesResponseRaw.class, OP_EXPORT);

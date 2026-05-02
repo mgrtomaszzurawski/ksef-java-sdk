@@ -48,11 +48,11 @@ public final class TestdataMappers {
         raw.setAuthorizedIdentifier(authorized);
 
         var perms = new java.util.ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionRaw>(request.permissions().size());
-        for (var p : request.permissions()) {
-            var pr = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionRaw();
-            pr.setPermissionType(toTestDataPermissionTypeRaw(p.permissionType()));
-            pr.setDescription(p.description());
-            perms.add(pr);
+        for (var perm : request.permissions()) {
+            var permRaw = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionRaw();
+            permRaw.setPermissionType(toTestDataPermissionTypeRaw(perm.permissionType()));
+            permRaw.setDescription(perm.description());
+            perms.add(permRaw);
         }
         raw.setPermissions(perms);
         return raw;
@@ -75,10 +75,10 @@ public final class TestdataMappers {
         raw.setDescription(request.description());
         if (!request.subunits().isEmpty()) {
             var subunits = new java.util.ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.SubunitRaw>(request.subunits().size());
-            for (var sub : request.subunits()) {
+            for (var subunit : request.subunits()) {
                 var subRaw = new io.github.mgrtomaszzurawski.ksef.client.model.SubunitRaw();
-                subRaw.setSubjectNip(sub.subjectNip());
-                subRaw.setDescription(sub.description());
+                subRaw.setSubjectNip(subunit.subjectNip());
+                subRaw.setDescription(subunit.description());
                 subunits.add(subRaw);
             }
             raw.setSubunits(subunits);
