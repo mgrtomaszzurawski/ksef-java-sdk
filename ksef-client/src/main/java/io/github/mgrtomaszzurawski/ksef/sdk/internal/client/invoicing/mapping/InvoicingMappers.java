@@ -68,6 +68,62 @@ public final class InvoicingMappers {
 
     private InvoicingMappers() { }
 
+    public static io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw toInvoiceExportRequestRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest request) {
+        return new io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw()
+                .encryption(new io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw()
+                        .encryptedSymmetricKey(request.encryptedSymmetricKey())
+                        .initializationVector(request.initVector()))
+                .onlyMetadata(request.onlyMetadata())
+                .filters(toInvoiceQueryFiltersRaw(request.filters()));
+    }
+
+    public static io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw toInvoiceQueryFiltersRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters filters) {
+        var dateRange = new io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateRangeRaw()
+                .dateType(toInvoiceQueryDateTypeRaw(filters.dateType()))
+                .from(filters.dateFrom());
+        if (filters.dateTo() != null) {
+            dateRange.to(filters.dateTo());
+        }
+        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw()
+                .subjectType(toInvoiceQuerySubjectTypeRaw(filters.subjectType()))
+                .dateRange(dateRange);
+        if (filters.ksefNumber() != null) { raw.ksefNumber(filters.ksefNumber()); }
+        if (filters.invoiceNumber() != null) { raw.invoiceNumber(filters.invoiceNumber()); }
+        if (filters.sellerNip() != null) { raw.sellerNip(filters.sellerNip()); }
+        if (filters.invoicingMode() != null) { raw.invoicingMode(toInvoicingModeRaw(filters.invoicingMode())); }
+        if (filters.selfInvoicing() != null) { raw.isSelfInvoicing(filters.selfInvoicing()); }
+        if (filters.hasAttachment() != null) { raw.hasAttachment(filters.hasAttachment()); }
+        return raw;
+    }
+
+    public static io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQuerySubjectTypeRaw toInvoiceQuerySubjectTypeRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType value) {
+        return switch (value) {
+            case SUBJECT1 -> io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQuerySubjectTypeRaw.SUBJECT1;
+            case SUBJECT2 -> io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQuerySubjectTypeRaw.SUBJECT2;
+            case SUBJECT3 -> io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQuerySubjectTypeRaw.SUBJECT3;
+        };
+    }
+
+    public static io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateTypeRaw toInvoiceQueryDateTypeRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType value) {
+        return switch (value) {
+            case INVOICING -> io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateTypeRaw.INVOICING;
+            case PERMANENT_STORAGE -> io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateTypeRaw.PERMANENT_STORAGE;
+            case ISSUE -> io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryDateTypeRaw.ISSUE;
+        };
+    }
+
+    public static io.github.mgrtomaszzurawski.ksef.client.model.InvoicingModeRaw toInvoicingModeRaw(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicingMode value) {
+        return switch (value) {
+            case ONLINE -> io.github.mgrtomaszzurawski.ksef.client.model.InvoicingModeRaw.ONLINE;
+            case OFFLINE -> io.github.mgrtomaszzurawski.ksef.client.model.InvoicingModeRaw.OFFLINE;
+        };
+    }
+
     public static io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw toSendInvoiceRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest request) {
         var raw = new io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw();
