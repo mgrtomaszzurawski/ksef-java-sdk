@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.mapping.PermissionsMappers;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.mapping.PermissionsRequestMappers;
 
 /**
  * Client for KSeF permission management — granting, revoking, and querying permissions
@@ -125,7 +126,8 @@ public final class PermissionClientImpl implements PermissionClient {
         LOGGER.debug(LOG_CALL, OP_GRANT_PERSON);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_PERSON, builder.build(), token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_PERSON,
+                PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_PERSON);
         return PermissionsMappers.toPermissionOperationResult(raw);
     }
@@ -141,7 +143,8 @@ public final class PermissionClientImpl implements PermissionClient {
         LOGGER.debug(LOG_CALL, OP_GRANT_ENTITY);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_ENTITY, builder.build(), token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_ENTITY,
+                PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_ENTITY);
         return PermissionsMappers.toPermissionOperationResult(raw);
     }
@@ -221,7 +224,8 @@ public final class PermissionClientImpl implements PermissionClient {
         LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
-        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY, builder.build(), token,
+        PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY,
+                PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY);
         return PermissionsMappers.toPermissionOperationResult(raw);
     }

@@ -4,30 +4,16 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityDetailsRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsGrantRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsSubjectIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsSubjectIdentifierTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionEntry;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionGrantRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Builder for entity permission grant requests.
- * <p>
- * Required: subject NIP, description (5-256 chars), at least one permission, entity details (fullName).
- * <p>
- * Usage:
- * <pre>{@code
- * var builder = EntityPermissionGrantBuilder
- *     .forNip("1234567890")
- *     .description("Invoice access for partner entity")
- *     .entityDetails("Firma Sp. z o.o.")
- *     .invoiceRead()
- *     .invoiceWrite();
- * }</pre>
+ * <p>Required: NIP, description (5-256 chars), at least one permission, entityDetails (fullName).
  */
 public final class EntityPermissionGrantBuilder {
 
@@ -44,15 +30,12 @@ public final class EntityPermissionGrantBuilder {
     private final String identifierValue;
     private String description;
     private String fullName;
-    private final List<EntityPermissionRaw> permissions = new ArrayList<>();
+    private final List<EntityPermissionEntry> permissions = new ArrayList<>();
 
     private EntityPermissionGrantBuilder(String nip) {
         this.identifierValue = Objects.requireNonNull(nip, ERR_NULL_NIP);
     }
 
-    /**
-     * Grant permissions to an entity identified by NIP.
-     */
     public static EntityPermissionGrantBuilder forNip(String nip) {
         return new EntityPermissionGrantBuilder(nip);
     }
@@ -62,37 +45,31 @@ public final class EntityPermissionGrantBuilder {
         return this;
     }
 
-    /**
-     * Set entity details (required by KSeF server).
-     */
     public EntityPermissionGrantBuilder entityDetails(String fullName) {
         this.fullName = Objects.requireNonNull(fullName, ERR_NULL_FULL_NAME);
         return this;
     }
 
     public EntityPermissionGrantBuilder invoiceRead() {
-        permissions.add(new EntityPermissionRaw().type(EntityPermissionTypeRaw.INVOICE_READ));
+        permissions.add(new EntityPermissionEntry(EntityPermissionType.INVOICE_READ, false));
         return this;
     }
 
     public EntityPermissionGrantBuilder invoiceReadDelegatable() {
-        permissions.add(new EntityPermissionRaw().type(EntityPermissionTypeRaw.INVOICE_READ).canDelegate(true));
+        permissions.add(new EntityPermissionEntry(EntityPermissionType.INVOICE_READ, true));
         return this;
     }
 
     public EntityPermissionGrantBuilder invoiceWrite() {
-        permissions.add(new EntityPermissionRaw().type(EntityPermissionTypeRaw.INVOICE_WRITE));
+        permissions.add(new EntityPermissionEntry(EntityPermissionType.INVOICE_WRITE, false));
         return this;
     }
 
     public EntityPermissionGrantBuilder invoiceWriteDelegatable() {
-        permissions.add(new EntityPermissionRaw().type(EntityPermissionTypeRaw.INVOICE_WRITE).canDelegate(true));
+        permissions.add(new EntityPermissionEntry(EntityPermissionType.INVOICE_WRITE, true));
         return this;
     }
 
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     */
     public EntityPermissionGrantBuilder toBuilder() {
         EntityPermissionGrantBuilder copy = new EntityPermissionGrantBuilder(this.identifierValue);
         copy.description = this.description;
@@ -101,15 +78,7 @@ public final class EntityPermissionGrantBuilder {
         return copy;
     }
 
-    /**
-     * Build the entity permission grant request.
-     *
-     * @return the request ready to pass to {@code PermissionClient.grantEntity()}
-     * @throws IllegalStateException if required fields are missing or invalid
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public EntityPermissionsGrantRequestRaw build() {
+    public EntityPermissionGrantRequest build() {
         Objects.requireNonNull(description, ERR_DESCRIPTION_REQUIRED);
         if (description.length() < DESCRIPTION_MIN_LENGTH || description.length() > DESCRIPTION_MAX_LENGTH) {
             throw new IllegalStateException(ERR_DESCRIPTION_LENGTH);
@@ -120,19 +89,6 @@ public final class EntityPermissionGrantBuilder {
         if (fullName == null) {
             throw new IllegalStateException(ERR_ENTITY_DETAILS_REQUIRED);
         }
-
-        EntityPermissionsSubjectIdentifierRaw subjectId = new EntityPermissionsSubjectIdentifierRaw()
-                .type(EntityPermissionsSubjectIdentifierTypeRaw.NIP)
-                .value(identifierValue);
-
-        EntityDetailsRaw entityDetails = new EntityDetailsRaw()
-                .fullName(fullName);
-
-        EntityPermissionsGrantRequestRaw request = new EntityPermissionsGrantRequestRaw();
-        request.setSubjectIdentifier(subjectId);
-        request.setPermissions(new ArrayList<>(permissions));
-        request.setDescription(description);
-        request.setSubjectDetails(entityDetails);
-        return request;
+        return new EntityPermissionGrantRequest(identifierValue, description, fullName, permissions);
     }
 }
