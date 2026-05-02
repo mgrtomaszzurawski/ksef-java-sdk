@@ -18,40 +18,40 @@ import java.time.LocalDate;
 /** Public API for TestDataClient. */
 public interface TestDataClient {
 
-    public void createSubject(TestSubjectCreateBuilder builder);
+    void createSubject(TestSubjectCreateBuilder builder);
 
-    public void removeSubject(String subjectNip);
+    void removeSubject(String subjectNip);
 
-    public void createPerson(TestPersonCreateBuilder builder);
+    void createPerson(TestPersonCreateBuilder builder);
 
-    public void removePerson(String nip);
+    void removePerson(String nip);
 
-    public void grantPermissions(TestPermissionsGrantBuilder builder);
+    void grantPermissions(TestPermissionsGrantBuilder builder);
 
-    public void revokePermissions(TestPermissionsRevokeBuilder builder);
+    void revokePermissions(TestPermissionsRevokeBuilder builder);
 
-    public void grantAttachment(String nip);
+    void grantAttachment(String nip);
 
-    public void revokeAttachment(String nip);
+    void revokeAttachment(String nip);
 
-    public void revokeAttachment(String nip, LocalDate expectedEndDate);
+    void revokeAttachment(String nip, LocalDate expectedEndDate);
 
-    public void blockContext(TestDataIdentifierType identifierType, String identifierValue);
+    void blockContext(TestDataIdentifierType identifierType, String identifierValue);
 
-    public void unblockContext(TestDataIdentifierType identifierType, String identifierValue);
+    void unblockContext(TestDataIdentifierType identifierType, String identifierValue);
 
-    public void setSessionLimits(TestSessionLimitsBuilder builder);
+    void setSessionLimits(TestSessionLimitsBuilder builder);
 
-    public void resetSessionLimits();
+    void resetSessionLimits();
 
-    public void setSubjectLimits(TestSubjectLimitsBuilder builder);
+    void setSubjectLimits(TestSubjectLimitsBuilder builder);
 
-    public void resetSubjectLimits();
+    void resetSubjectLimits();
 
-    public void setRateLimits(TestRateLimitsBuilder builder);
+    void setRateLimits(TestRateLimitsBuilder builder);
 
-    public void resetRateLimits();
+    void resetRateLimits();
 
-    public void setProductionRateLimits();
+    void setProductionRateLimits();
 
 }
