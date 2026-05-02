@@ -5,12 +5,14 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.mapping;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenStatusRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseItemRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenPermissionTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenGenerateRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
@@ -26,6 +28,29 @@ import java.util.List;
 public final class TokensMappers {
 
     private TokensMappers() { }
+
+    public static GenerateTokenRequestRaw toGenerateTokenRequestRaw(TokenGenerateRequest request) {
+        GenerateTokenRequestRaw raw = new GenerateTokenRequestRaw();
+        raw.setDescription(request.description());
+        java.util.List<TokenPermissionTypeRaw> permissions = new java.util.ArrayList<>(request.permissions().size());
+        for (TokenPermissionType type : request.permissions()) {
+            permissions.add(toTokenPermissionTypeRaw(type));
+        }
+        raw.setPermissions(permissions);
+        return raw;
+    }
+
+    public static TokenPermissionTypeRaw toTokenPermissionTypeRaw(TokenPermissionType value) {
+        return switch (value) {
+            case INVOICE_READ -> TokenPermissionTypeRaw.INVOICE_READ;
+            case INVOICE_WRITE -> TokenPermissionTypeRaw.INVOICE_WRITE;
+            case CREDENTIALS_READ -> TokenPermissionTypeRaw.CREDENTIALS_READ;
+            case CREDENTIALS_MANAGE -> TokenPermissionTypeRaw.CREDENTIALS_MANAGE;
+            case SUBUNIT_MANAGE -> TokenPermissionTypeRaw.SUBUNIT_MANAGE;
+            case ENFORCEMENT_OPERATIONS -> TokenPermissionTypeRaw.ENFORCEMENT_OPERATIONS;
+            case INTROSPECTION -> TokenPermissionTypeRaw.INTROSPECTION;
+        };
+    }
 
     public static GenerateTokenResult toGenerateTokenResult(GenerateTokenResponseRaw raw) {
             return new GenerateTokenResult(raw.getReferenceNumber(), raw.getToken());

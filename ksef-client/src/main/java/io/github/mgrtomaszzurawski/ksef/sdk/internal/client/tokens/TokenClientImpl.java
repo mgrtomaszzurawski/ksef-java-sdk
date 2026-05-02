@@ -60,7 +60,8 @@ public final class TokenClientImpl implements TokenClient {
         Objects.requireNonNull(tokenBuilder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         GenerateTokenResponseRaw raw = http.postJsonAuthenticated(PATH_TOKENS,
-                tokenBuilder.build(), token, GenerateTokenResponseRaw.class, OP_GENERATE);
+                TokensMappers.toGenerateTokenRequestRaw(tokenBuilder.build()), token,
+                GenerateTokenResponseRaw.class, OP_GENERATE);
         return TokensMappers.toGenerateTokenResult(raw);
     }
 

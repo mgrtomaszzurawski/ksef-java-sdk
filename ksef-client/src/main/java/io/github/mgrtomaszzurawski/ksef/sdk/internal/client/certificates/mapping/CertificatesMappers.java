@@ -11,12 +11,16 @@ import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRa
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateListItemRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateListItemStatusRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateRevocationReasonRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.KsefCertificateTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesListItemRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateLimit;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateLimits;
@@ -38,6 +42,37 @@ import java.util.List;
 public final class CertificatesMappers {
 
     private CertificatesMappers() { }
+
+    public static EnrollCertificateRequestRaw toEnrollCertificateRequestRaw(CertificateEnrollRequest request) {
+        EnrollCertificateRequestRaw raw = new EnrollCertificateRequestRaw();
+        raw.setCertificateName(request.certificateName());
+        raw.setCertificateType(toKsefCertificateTypeRaw(request.certificateType()));
+        raw.setCsr(request.csr());
+        if (request.validFrom() != null) {
+            raw.setValidFrom(request.validFrom());
+        }
+        return raw;
+    }
+
+    public static QueryCertificatesRequestRaw toQueryCertificatesRequestRaw(CertificateQueryRequest request) {
+        QueryCertificatesRequestRaw raw = new QueryCertificatesRequestRaw();
+        if (request.serialNumber() != null) {
+            raw.setCertificateSerialNumber(request.serialNumber());
+        }
+        if (request.name() != null) {
+            raw.setName(request.name());
+        }
+        if (request.type() != null) {
+            raw.setType(toKsefCertificateTypeRaw(request.type()));
+        }
+        if (request.status() != null) {
+            raw.setStatus(toCertificateListItemStatusRaw(request.status()));
+        }
+        if (request.expiresAfter() != null) {
+            raw.setExpiresAfter(request.expiresAfter());
+        }
+        return raw;
+    }
 
     public static CertificateEnrollmentData toCertificateEnrollmentData(CertificateEnrollmentDataResponseRaw raw) {
             return new CertificateEnrollmentData(

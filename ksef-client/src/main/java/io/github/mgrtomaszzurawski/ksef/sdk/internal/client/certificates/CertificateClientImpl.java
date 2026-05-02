@@ -111,7 +111,7 @@ public final class CertificateClientImpl implements CertificateClient {
     public EnrollCertificateResult enroll(CertificateEnrollBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_ENROLL);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        EnrollCertificateRequestRaw request = builder.build();
+        EnrollCertificateRequestRaw request = CertificatesMappers.toEnrollCertificateRequestRaw(builder.build());
         String token = sessionContext.token();
         EnrollCertificateResponseRaw raw = http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
                 EnrollCertificateResponseRaw.class, OP_ENROLL);
@@ -196,7 +196,7 @@ public final class CertificateClientImpl implements CertificateClient {
         LOGGER.debug(LOG_CALL, OP_QUERY);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY, builder.build(), token,
+        QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY, CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()), token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);
         return CertificatesMappers.toCertificateQueryResult(raw);
     }

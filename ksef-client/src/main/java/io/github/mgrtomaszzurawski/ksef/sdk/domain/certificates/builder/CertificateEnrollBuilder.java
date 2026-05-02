@@ -4,25 +4,15 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.mapping.CertificatesMappers;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
 /**
  * Builder for KSeF certificate enrollment requests.
- * <p>
- * Required: certificateName, certificateType, csr (PKCS#10 in DER format).
+ * <p>Required: certificateName, certificateType, csr (PKCS#10 in DER format).
  * Optional: validFrom.
- * <p>
- * Usage:
- * <pre>{@code
- * EnrollCertificateRequestRaw request = CertificateEnrollBuilder
- *     .create("My Auth Cert", KsefCertificateType.AUTHENTICATION, csrBytes)
- *     .validFrom(OffsetDateTime.now().plusDays(1))
- *     .build();
- * }</pre>
  */
 public final class CertificateEnrollBuilder {
 
@@ -46,53 +36,24 @@ public final class CertificateEnrollBuilder {
         this.csr = csr.clone();
     }
 
-    /**
-     * Create a builder with required fields.
-     *
-     * @param certificateName human-readable certificate name
-     * @param certificateType Authentication or Offline
-     * @param csr PKCS#10 certificate signing request in DER format
-     */
     public static CertificateEnrollBuilder create(String certificateName,
-                                                   KsefCertificateType certificateType,
-                                                   byte[] csr) {
+                                                  KsefCertificateType certificateType,
+                                                  byte[] csr) {
         return new CertificateEnrollBuilder(certificateName, certificateType, csr);
     }
 
-    /**
-     * Set the optional validity start date. If not set, the certificate is valid from issuance.
-     *
-     * @param validFrom validity start date
-     */
     public CertificateEnrollBuilder validFrom(OffsetDateTime validFrom) {
         this.validFrom = validFrom;
         return this;
     }
 
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     */
     public CertificateEnrollBuilder toBuilder() {
         CertificateEnrollBuilder copy = new CertificateEnrollBuilder(this.certificateName, this.certificateType, this.csr);
         copy.validFrom = this.validFrom;
         return copy;
     }
 
-    /**
-     * Build the enrollment request.
-     *
-     * @return the request ready to pass to {@code CertificateClient.enroll()}
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public EnrollCertificateRequestRaw build() {
-        EnrollCertificateRequestRaw request = new EnrollCertificateRequestRaw();
-        request.setCertificateName(certificateName);
-        request.setCertificateType(CertificatesMappers.toKsefCertificateTypeRaw(certificateType));
-        request.setCsr(csr.clone());
-        if (validFrom != null) {
-            request.setValidFrom(validFrom);
-        }
-        return request;
+    public CertificateEnrollRequest build() {
+        return new CertificateEnrollRequest(certificateName, certificateType, csr, validFrom);
     }
 }
