@@ -86,3 +86,19 @@ a usage example for SDK consumers.
 - CertProbe and ValidationProbe remain as standalone utilities for deep endpoint
   exploration when needed — they use `client.auth()` and `client.sessions()` directly
   (these accessors are public but documented as internal).
+
+---
+
+## Amendment 2026-05-01 — module renamed `ksef-sample` → `ksef-demo`
+
+The body above refers to the module as `ksef-sample`; that artifactId
+was renamed to `ksef-demo` to match the official CIRFMF/ksef-client-java
+SDK naming and to align with the internal `Demo*` class vocabulary
+(`DemoApp`, `DemoContext`, `DemoSession`, `DemoState`, `DemoMode`).
+Purpose-shift decision unchanged — the rename only completes the
+naming consistency. See finding #11 in
+`context/USER-REVIEW-REMARKS-2026-05-01-2130.md`.
+
+Related: finding #3 in the same file plans removal of
+`client.auth()` / `client.sessions()` accessors mentioned above
+(fork (a) — KsefClient becomes the true single entry point).

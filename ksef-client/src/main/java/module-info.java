@@ -11,9 +11,11 @@ module io.github.mgrtomaszzurawski.ksef {
     // Configuration: environments, identifiers, retry policy
     exports io.github.mgrtomaszzurawski.ksef.sdk.config;
 
-    // Authentication: credentials and auth-flow models
-    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model;
+    // Authentication: auth-flow response models exposed via KsefClient.auth() accessor.
+    // TODO Phase 9 fork (a): remove this export once AuthClient is no longer
+    // publicly accessible and the high-level KsefClient API doesn't return
+    // these records — see USER-REVIEW-REMARKS finding #3.
+    exports io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 
     // Common shared types (StatusInfo, TokenInfo, public-key models)
     exports io.github.mgrtomaszzurawski.ksef.sdk.common;

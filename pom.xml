@@ -36,7 +36,7 @@
 
     <modules>
         <module>ksef-client</module>
-        <module>ksef-sample</module>
+        <module>ksef-demo</module>
     </modules>
 
     <properties>

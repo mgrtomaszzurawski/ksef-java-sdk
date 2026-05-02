@@ -18,3 +18,15 @@ Two Maven modules:
 - SDK jar has minimal transitive dependencies
 - Sample app demonstrates real usage patterns against KSeF TE
 - Sample app can be used for manual integration testing with test certificates
+
+---
+
+## Amendment 2026-05-01 — module renamed `ksef-sample` → `ksef-demo`
+
+The "sample-app" terminology used throughout this ADR was renamed to
+`ksef-demo` to align with the official CIRFMF/ksef-client-java SDK
+naming convention and with the internal `Demo*` class vocabulary
+already in use (`DemoApp`, `DemoContext`, `DemoSession`, etc.). The
+decision and module split documented above remain unchanged — only
+the artifactId moved. See finding #11 in
+`context/USER-REVIEW-REMARKS-2026-05-01-2130.md` for full reasoning.
