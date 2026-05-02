@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.mgrtomaszzurawski</groupId>
         <artifactId>ksef-java-sdk</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
     </parent>
 
     <artifactId>ksef-client</artifactId>
@@ -312,8 +312,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler.plugin.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
@@ -334,6 +333,13 @@
                     <onlyAnalyze>io.github.mgrtomaszzurawski.ksef.sdk.-</onlyAnalyze>
                     <excludeFilterFile>${project.basedir}/../spotbugs-exclude.xml</excludeFilterFile>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>spotbugs-verify</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- PMD (exclude generated code) -->
@@ -353,6 +359,13 @@
                         <excludeRoot>${project.build.directory}/generated-sources/xjc-auth</excludeRoot>
                     </excludeRoots>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>pmd-verify</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Checkstyle (SDK code + tests only) -->
@@ -370,6 +383,13 @@
                     </testSourceDirectories>
                     <excludes>module-info.java</excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle-verify</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Source jar -->

@@ -190,7 +190,7 @@ See:
 
 ## License
 
-[AGPL-3.0-only](LICENSE) — copyleft license. Suitable for SaaS / internal-tool use; commercial OEM use requires a separate agreement (planned to switch to Apache-2.0 at 1.0 — see ADR-007).
+[AGPL-3.0-only](LICENSE.txt) — copyleft license. Suitable for SaaS / internal-tool use; commercial OEM use requires a separate agreement (planned to switch to Apache-2.0 at 1.0 — see ADR-007).
 
 ## Status
 
