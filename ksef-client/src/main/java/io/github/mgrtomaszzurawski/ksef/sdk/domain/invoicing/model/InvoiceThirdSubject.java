@@ -20,6 +20,9 @@ public record InvoiceThirdSubject(
         String name,
         Integer role) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoiceThirdSubject from(InvoiceMetadataThirdSubjectRaw raw) {
         ThirdSubjectIdentifierType idType = null;
         String idValue = null;

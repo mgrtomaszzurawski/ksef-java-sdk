@@ -15,6 +15,9 @@ import java.time.OffsetDateTime;
  */
 public record OnlineSession(String referenceNumber, OffsetDateTime validUntil) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static OnlineSession from(OpenOnlineSessionResponseRaw raw) {
         return new OnlineSession(raw.getReferenceNumber(), raw.getValidUntil());
     }

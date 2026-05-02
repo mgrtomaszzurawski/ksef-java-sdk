@@ -97,6 +97,8 @@ public final class TestPermissionsRevokeBuilder {
      *
      * @return the request ready to pass to {@code TestDataClient.revokePermissions()}
      * @throws IllegalStateException if validation fails
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public TestDataPermissionsRevokeRequestRaw build() {
         if (authorizedType == null || authorizedValue == null) {

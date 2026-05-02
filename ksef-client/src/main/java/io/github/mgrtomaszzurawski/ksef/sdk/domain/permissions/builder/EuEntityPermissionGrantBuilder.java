@@ -102,6 +102,8 @@ public final class EuEntityPermissionGrantBuilder {
      *
      * @return the request ready to pass to {@code PermissionClient.grantEuEntity()}
      * @throws IllegalStateException if required fields are missing or invalid
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public EuEntityPermissionsGrantRequestRaw build() {
         Objects.requireNonNull(description, ERR_DESCRIPTION_REQUIRED);

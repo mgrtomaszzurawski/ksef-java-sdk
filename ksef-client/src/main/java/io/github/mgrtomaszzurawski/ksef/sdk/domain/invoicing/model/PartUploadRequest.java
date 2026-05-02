@@ -18,6 +18,9 @@ import java.util.Map;
  */
 public record PartUploadRequest(int ordinalNumber, String method, URI url, Map<String, String> headers) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static PartUploadRequest from(PartUploadRequestRaw raw) {
         return new PartUploadRequest(
                 raw.getOrdinalNumber(),

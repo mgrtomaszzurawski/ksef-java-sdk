@@ -15,6 +15,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.OnlineSessionEffectiveConte
  */
 public record OnlineSessionLimits(Integer maxInvoiceSizeInMB, Integer maxInvoiceWithAttachmentSizeInMB, Integer maxInvoices) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static OnlineSessionLimits from(OnlineSessionEffectiveContextLimitsRaw raw) {
         if (raw == null) {
             return null;

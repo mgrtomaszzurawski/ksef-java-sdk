@@ -74,6 +74,8 @@ public final class SendInvoiceBuilder {
      * session's AES key and computes SHA-256 hashes automatically.
      *
      * @return the request ready to pass to {@code SessionClient.sendInvoice()}
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public SendInvoiceRequestRaw build() {
         byte[] encryptedContent = CryptoService.encryptAes(invoiceContent, aesKey, initVector);

@@ -183,6 +183,8 @@ public final class InvoiceQueryBuilder {
      *
      * @return the filters ready to pass to {@code InvoiceClient.queryMetadata()}
      * @throws IllegalStateException if required fields are missing or constraints violated
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public InvoiceQueryFiltersRaw build() {
         Objects.requireNonNull(dateFrom, ERR_DATE_FROM_REQUIRED);

@@ -16,6 +16,9 @@ import java.util.List;
  */
 public record StatusInfo(int code, String description, List<String> details) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static StatusInfo from(StatusInfoRaw raw) {
         if (raw == null) {
             return null;

@@ -22,6 +22,9 @@ public record InvoiceExportStatus(
         OffsetDateTime packageExpirationDate,
         InvoicePackage invoicePackage) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoiceExportStatus from(InvoiceExportStatusResponseRaw raw) {
         return new InvoiceExportStatus(
                 StatusInfo.from(raw.getStatus()),

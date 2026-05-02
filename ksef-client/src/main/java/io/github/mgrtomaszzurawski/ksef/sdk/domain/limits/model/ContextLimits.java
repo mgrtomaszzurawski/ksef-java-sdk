@@ -16,6 +16,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession
  */
 public record ContextLimits(OnlineSessionLimits onlineSession, BatchSessionLimits batchSession) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static ContextLimits from(EffectiveContextLimitsRaw raw) {
         return new ContextLimits(
                 OnlineSessionLimits.from(raw.getOnlineSession()),

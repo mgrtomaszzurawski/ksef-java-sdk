@@ -31,6 +31,9 @@ public record InvoicePackage(
         OffsetDateTime lastPermanentStorageDate,
         OffsetDateTime permanentStorageHwmDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoicePackage from(InvoicePackageRaw raw) {
         if (raw == null) {
             return null;

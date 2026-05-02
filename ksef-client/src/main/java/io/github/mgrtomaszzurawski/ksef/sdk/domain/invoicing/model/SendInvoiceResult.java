@@ -13,6 +13,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
  */
 public record SendInvoiceResult(String referenceNumber) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static SendInvoiceResult from(SendInvoiceResponseRaw raw) {
         return new SendInvoiceResult(raw.getReferenceNumber());
     }

@@ -142,6 +142,8 @@ public final class TestRateLimitsBuilder {
      *
      * @return the request ready to pass to {@code TestDataClient.setRateLimits()}
      * @throws IllegalStateException if no rate limit category has been set
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public SetRateLimitsRequestRaw build() {
         boolean hasAny = onlineSession != null || batchSession != null || invoiceSend != null

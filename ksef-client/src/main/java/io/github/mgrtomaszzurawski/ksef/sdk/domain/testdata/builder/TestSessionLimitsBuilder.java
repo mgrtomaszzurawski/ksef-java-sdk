@@ -88,6 +88,8 @@ public final class TestSessionLimitsBuilder {
      *
      * @return the request ready to pass to {@code TestDataClient.setSessionLimits()}
      * @throws IllegalStateException if validation fails
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public SetSessionLimitsRequestRaw build() {
         if (onlineSession == null) {

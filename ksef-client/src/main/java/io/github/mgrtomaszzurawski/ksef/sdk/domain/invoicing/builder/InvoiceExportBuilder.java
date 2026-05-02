@@ -96,6 +96,8 @@ public final class InvoiceExportBuilder {
      *
      * @return the request ready to pass to {@code InvoiceClient.exportInvoices()}
      * @throws IllegalStateException if filters are not set
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public InvoiceExportRequestRaw build() {
         Objects.requireNonNull(filters, ERR_NULL_FILTERS);

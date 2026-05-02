@@ -16,6 +16,9 @@ public record EntityRole(
         String description,
         OffsetDateTime startDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static EntityRole from(EntityRoleRaw raw) {
         var parentRaw = raw.getParentEntityIdentifier();
         PermissionIdentifier parentId = parentRaw != null

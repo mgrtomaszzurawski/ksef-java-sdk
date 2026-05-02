@@ -22,6 +22,9 @@ public record InvoiceMetadataResult(
         OffsetDateTime permanentStorageHwmDate,
         List<InvoiceMetadata> invoices) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoiceMetadataResult from(QueryInvoicesMetadataResponseRaw raw) {
         List<InvoiceMetadata> mapped = raw.getInvoices().stream().map(InvoiceMetadata::from).toList();
         return new InvoiceMetadataResult(

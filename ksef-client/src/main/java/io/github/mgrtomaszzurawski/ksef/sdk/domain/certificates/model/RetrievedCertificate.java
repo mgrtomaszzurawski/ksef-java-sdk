@@ -22,6 +22,9 @@ public record RetrievedCertificate(
         String certificateSerialNumber,
         String certificateType) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static RetrievedCertificate from(RetrieveCertificatesListItemRaw raw) {
         return new RetrievedCertificate(
                 raw.getCertificate(),

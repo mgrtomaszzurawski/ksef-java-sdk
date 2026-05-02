@@ -249,6 +249,8 @@ public final class PersonPermissionsQueryBuilder {
      * Build the person permissions query request.
      *
      * @return the request ready to pass to {@code PermissionClient.queryPersons()}
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public PersonPermissionsQueryRequestRaw build() {
         PersonPermissionsQueryRequestRaw request = new PersonPermissionsQueryRequestRaw();

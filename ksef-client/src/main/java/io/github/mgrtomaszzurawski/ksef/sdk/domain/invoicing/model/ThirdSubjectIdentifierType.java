@@ -17,6 +17,9 @@ public enum ThirdSubjectIdentifierType {
     OTHER,
     NONE;
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static ThirdSubjectIdentifierType from(ThirdSubjectIdentifierTypeRaw raw) {
         if (raw == null) {
             return null;

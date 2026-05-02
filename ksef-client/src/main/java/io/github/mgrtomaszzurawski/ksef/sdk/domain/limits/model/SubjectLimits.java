@@ -16,6 +16,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EnrollmentEffectiveSubjectL
  */
 public record SubjectLimits(Integer maxEnrollments, Integer maxCertificates) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static SubjectLimits from(EffectiveSubjectLimitsRaw raw) {
         EnrollmentEffectiveSubjectLimitsRaw enrollment = raw.getEnrollment();
         CertificateEffectiveSubjectLimitsRaw certificate = raw.getCertificate();

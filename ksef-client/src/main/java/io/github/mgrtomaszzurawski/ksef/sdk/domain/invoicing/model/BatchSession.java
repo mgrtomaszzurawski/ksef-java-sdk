@@ -15,6 +15,9 @@ import java.util.List;
  */
 public record BatchSession(String referenceNumber, List<PartUploadRequest> partUploadRequests) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static BatchSession from(OpenBatchSessionResponseRaw raw) {
         List<PartUploadRequest> parts = raw.getPartUploadRequests().stream().map(PartUploadRequest::from).toList();
         return new BatchSession(raw.getReferenceNumber(), parts);

@@ -12,6 +12,9 @@ import java.util.List;
  */
 public record SubordinateEntityRoles(List<SubordinateEntityRole> roles, boolean hasMore) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static SubordinateEntityRoles from(QuerySubordinateEntityRolesResponseRaw raw) {
         List<SubordinateEntityRole> mapped = raw.getRoles().stream().map(SubordinateEntityRole::from).toList();
         return new SubordinateEntityRoles(mapped, raw.getHasMore());

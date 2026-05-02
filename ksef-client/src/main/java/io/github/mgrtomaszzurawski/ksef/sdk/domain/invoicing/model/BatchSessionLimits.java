@@ -15,6 +15,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.BatchSessionEffectiveContex
  */
 public record BatchSessionLimits(Integer maxInvoiceSizeInMB, Integer maxInvoiceWithAttachmentSizeInMB, Integer maxInvoices) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static BatchSessionLimits from(BatchSessionEffectiveContextLimitsRaw raw) {
         if (raw == null) {
             return null;

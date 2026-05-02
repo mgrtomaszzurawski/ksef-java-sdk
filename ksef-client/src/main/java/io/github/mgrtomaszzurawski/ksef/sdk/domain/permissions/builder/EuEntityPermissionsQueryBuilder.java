@@ -88,6 +88,8 @@ public final class EuEntityPermissionsQueryBuilder {
      * Build the EU entity permissions query request.
      *
      * @return the request ready to pass to {@code PermissionClient.queryEuEntities()}
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public EuEntityPermissionsQueryRequestRaw build() {
         EuEntityPermissionsQueryRequestRaw request = new EuEntityPermissionsQueryRequestRaw();

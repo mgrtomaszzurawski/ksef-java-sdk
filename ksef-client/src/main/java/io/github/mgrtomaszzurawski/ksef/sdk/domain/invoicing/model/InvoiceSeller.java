@@ -14,6 +14,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataSellerRaw;
  */
 public record InvoiceSeller(String nip, String name) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoiceSeller from(InvoiceMetadataSellerRaw raw) {
         if (raw == null) {
             return null;

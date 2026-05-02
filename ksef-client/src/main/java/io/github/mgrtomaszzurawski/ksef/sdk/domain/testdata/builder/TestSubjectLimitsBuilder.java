@@ -80,6 +80,8 @@ public final class TestSubjectLimitsBuilder {
      * Build the subject limits request.
      *
      * @return the request ready to pass to {@code TestDataClient.setSubjectLimits()}
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public SetSubjectLimitsRequestRaw build() {
         SetSubjectLimitsRequestRaw request = new SetSubjectLimitsRequestRaw();

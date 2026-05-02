@@ -115,6 +115,8 @@ public final class EntityAuthorizationPermissionGrantBuilder {
      *
      * @return the request ready to pass to {@code PermissionClient.grantAuthorization()}
      * @throws IllegalStateException if required fields are missing or invalid
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public EntityAuthorizationPermissionsGrantRequestRaw build() {
         Objects.requireNonNull(description, ERR_DESCRIPTION_REQUIRED);

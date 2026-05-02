@@ -18,6 +18,9 @@ public record EntityPermission(
         OffsetDateTime startDate,
         Boolean canDelegate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static EntityPermission from(EntityPermissionItemRaw raw) {
         var ctxRaw = raw.getContextIdentifier();
         PermissionIdentifier ctxId = new PermissionIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue());

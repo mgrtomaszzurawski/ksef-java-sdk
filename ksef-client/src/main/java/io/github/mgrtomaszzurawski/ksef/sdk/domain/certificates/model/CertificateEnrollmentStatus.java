@@ -20,6 +20,9 @@ public record CertificateEnrollmentStatus(
         StatusInfo status,
         String certificateSerialNumber) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static CertificateEnrollmentStatus from(CertificateEnrollmentStatusResponseRaw raw) {
         return new CertificateEnrollmentStatus(
                 raw.getRequestDate(),

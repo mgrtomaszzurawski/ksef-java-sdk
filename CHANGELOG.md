@@ -17,6 +17,17 @@ decision in chronological order.
   permission operations, retention/410 Gone responses, optional Problem Details
   format, increased rate limits.
 
+### Known limitations
+
+- `Builder.build()` and `Record.from(*Raw)` bridge methods reference
+  OpenAPI-generated `*Raw` types in their signatures. The `client.model`
+  package is not exported via JPMS, so JPMS named-module consumers cannot
+  invoke these methods directly. The documented public flows (passing a
+  builder into a domain client method, receiving a record from a domain
+  client method) are unaffected. See [ADR-018](ADR/ADR-018-raw-types-on-internal-bridge-methods.md);
+  0.2.0 will eliminate `*Raw` from these signatures via SDK-owned request
+  records and internal mapper extraction.
+
 ### Added
 
 - OpenAPI-generated client for KSeF REST API v2 (60+ live operations across 11

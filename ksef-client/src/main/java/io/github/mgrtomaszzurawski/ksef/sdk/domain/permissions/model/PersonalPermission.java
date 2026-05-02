@@ -35,6 +35,9 @@ public record PersonalPermission(
         OffsetDateTime startDate,
         Boolean canDelegate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static PersonalPermission from(PersonalPermissionRaw raw) {
         var ctxRaw = raw.getContextIdentifier();
         PermissionIdentifier ctxId = ctxRaw != null

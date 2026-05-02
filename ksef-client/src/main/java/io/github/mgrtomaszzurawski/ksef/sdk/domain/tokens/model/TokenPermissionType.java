@@ -19,6 +19,9 @@ public enum TokenPermissionType {
     ENFORCEMENT_OPERATIONS,
     INTROSPECTION;
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static TokenPermissionType from(TokenPermissionTypeRaw raw) {
         if (raw == null) {
             return null;

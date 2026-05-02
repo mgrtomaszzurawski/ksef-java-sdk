@@ -33,6 +33,9 @@ public record PersonPermission(
         OffsetDateTime startDate,
         Boolean canDelegate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static PersonPermission from(PersonPermissionRaw raw) {
         var authzRaw = raw.getAuthorizedIdentifier();
         PermissionIdentifier authzId = new PermissionIdentifier(authzRaw.getType().getValue(), authzRaw.getValue());

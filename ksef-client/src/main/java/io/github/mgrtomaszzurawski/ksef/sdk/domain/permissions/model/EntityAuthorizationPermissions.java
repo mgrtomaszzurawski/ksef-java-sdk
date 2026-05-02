@@ -12,6 +12,9 @@ import java.util.List;
  */
 public record EntityAuthorizationPermissions(List<EntityAuthorizationGrant> authorizationGrants, boolean hasMore) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static EntityAuthorizationPermissions from(QueryEntityAuthorizationPermissionsResponseRaw raw) {
         List<EntityAuthorizationGrant> mapped = raw.getAuthorizationGrants().stream().map(EntityAuthorizationGrant::from).toList();
         return new EntityAuthorizationPermissions(mapped, raw.getHasMore());

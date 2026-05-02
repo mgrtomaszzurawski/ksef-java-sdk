@@ -13,6 +13,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
  */
 public record ExportInvoicesResult(String referenceNumber) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static ExportInvoicesResult from(ExportInvoicesResponseRaw raw) {
         return new ExportInvoicesResult(raw.getReferenceNumber());
     }

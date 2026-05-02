@@ -15,6 +15,9 @@ import java.util.List;
  */
 public record SessionInvoices(String continuationToken, List<SessionInvoiceStatus> invoices) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static SessionInvoices from(SessionInvoicesResponseRaw raw) {
         List<SessionInvoiceStatus> mapped = raw.getInvoices().stream().map(SessionInvoiceStatus::from).toList();
         return new SessionInvoices(raw.getContinuationToken(), mapped);

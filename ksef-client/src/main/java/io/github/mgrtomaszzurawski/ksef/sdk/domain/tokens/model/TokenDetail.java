@@ -32,6 +32,9 @@ public record TokenDetail(
         TokenStatus status,
         List<String> statusDetails) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static TokenDetail from(TokenStatusResponseRaw raw) {
         var authorRaw = raw.getAuthorIdentifier();
         TokenIdentifier author = new TokenIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());

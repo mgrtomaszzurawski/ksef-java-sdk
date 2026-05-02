@@ -14,6 +14,9 @@ import java.util.List;
  */
 public record RetrieveCertificatesResult(List<RetrievedCertificate> certificates) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static RetrieveCertificatesResult from(RetrieveCertificatesResponseRaw raw) {
         List<RetrievedCertificate> mapped = raw.getCertificates().stream().map(RetrievedCertificate::from).toList();
         return new RetrieveCertificatesResult(mapped);

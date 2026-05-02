@@ -34,6 +34,9 @@ public record InvoicePackagePart(
         byte[] encryptedPartHash,
         OffsetDateTime expirationDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoicePackagePart from(InvoicePackagePartRaw raw) {
         return new InvoicePackagePart(
                 raw.getOrdinalNumber(),

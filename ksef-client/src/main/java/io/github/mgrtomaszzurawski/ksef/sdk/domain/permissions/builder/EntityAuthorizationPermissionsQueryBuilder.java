@@ -122,6 +122,8 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
      * Build the entity authorization permissions query request.
      *
      * @return the request ready to pass to {@code PermissionClient.queryAuthorizations()}
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public EntityAuthorizationPermissionsQueryRequestRaw build() {
         EntityAuthorizationPermissionsQueryRequestRaw request =

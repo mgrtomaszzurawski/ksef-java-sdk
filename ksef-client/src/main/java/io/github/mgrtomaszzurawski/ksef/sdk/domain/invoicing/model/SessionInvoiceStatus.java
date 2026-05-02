@@ -42,6 +42,9 @@ public record SessionInvoiceStatus(
         InvoicingMode invoicingMode,
         InvoiceStatusInfo status) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static SessionInvoiceStatus from(SessionInvoiceStatusResponseRaw raw) {
         return new SessionInvoiceStatus(
                 raw.getOrdinalNumber(),

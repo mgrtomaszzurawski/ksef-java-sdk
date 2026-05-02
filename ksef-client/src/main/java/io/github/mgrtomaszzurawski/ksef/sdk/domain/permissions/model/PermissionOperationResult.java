@@ -13,6 +13,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationRespons
  */
 public record PermissionOperationResult(String referenceNumber) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static PermissionOperationResult from(PermissionsOperationResponseRaw raw) {
         return new PermissionOperationResult(raw.getReferenceNumber());
     }
