@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.session;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
@@ -128,7 +128,7 @@ class SessionClientTest {
 
             // when
             SendInvoiceResult response = new SessionClient(ksef).sendInvoice(
-                    TEST_SESSION_REF, new SendInvoiceRequestRaw());
+                    TEST_SESSION_REF, new SendInvoiceRequest(new byte[]{}, 0L, new byte[]{}, 0L, new byte[]{}, false));
 
             // then
             assertEquals(TEST_INVOICE_REF, response.referenceNumber());
@@ -285,7 +285,7 @@ class SessionClientTest {
 
             // then
             var sessions = new SessionClient(ksef);
-            SendInvoiceRequestRaw request = new SendInvoiceRequestRaw();
+            SendInvoiceRequest request = new SendInvoiceRequest(new byte[]{}, 0L, new byte[]{}, 0L, new byte[]{}, false);
             assertThrows(KsefServerException.class,
                     () -> sessions.sendInvoice(TEST_SESSION_REF, request));
         }
