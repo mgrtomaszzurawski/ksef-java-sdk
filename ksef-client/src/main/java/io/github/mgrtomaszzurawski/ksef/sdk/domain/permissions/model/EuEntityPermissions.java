@@ -14,6 +14,6 @@ public record EuEntityPermissions(List<EuEntityPermission> permissions, boolean 
 
     public static EuEntityPermissions from(QueryEuEntityPermissionsResponseRaw raw) {
         List<EuEntityPermission> mapped = raw.getPermissions().stream().map(EuEntityPermission::from).toList();
-        return new EuEntityPermissions(mapped, Boolean.TRUE.equals(raw.getHasMore()));
+        return new EuEntityPermissions(mapped, raw.getHasMore());
     }
 }

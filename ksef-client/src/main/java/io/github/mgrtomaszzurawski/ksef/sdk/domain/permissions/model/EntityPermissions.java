@@ -14,6 +14,6 @@ public record EntityPermissions(List<EntityPermission> permissions, boolean hasM
 
     public static EntityPermissions from(QueryEntityPermissionsResponseRaw raw) {
         List<EntityPermission> mapped = raw.getPermissions().stream().map(EntityPermission::from).toList();
-        return new EntityPermissions(mapped, Boolean.TRUE.equals(raw.getHasMore()));
+        return new EntityPermissions(mapped, raw.getHasMore());
     }
 }

@@ -14,6 +14,6 @@ public record EntityAuthorizationPermissions(List<EntityAuthorizationGrant> auth
 
     public static EntityAuthorizationPermissions from(QueryEntityAuthorizationPermissionsResponseRaw raw) {
         List<EntityAuthorizationGrant> mapped = raw.getAuthorizationGrants().stream().map(EntityAuthorizationGrant::from).toList();
-        return new EntityAuthorizationPermissions(mapped, Boolean.TRUE.equals(raw.getHasMore()));
+        return new EntityAuthorizationPermissions(mapped, raw.getHasMore());
     }
 }

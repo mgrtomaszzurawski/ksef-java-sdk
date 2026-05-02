@@ -17,6 +17,6 @@ public record CertificateQueryResult(List<CertificateListItem> certificates, boo
 
     public static CertificateQueryResult from(QueryCertificatesResponseRaw raw) {
         List<CertificateListItem> mapped = raw.getCertificates().stream().map(CertificateListItem::from).toList();
-        return new CertificateQueryResult(mapped, Boolean.TRUE.equals(raw.getHasMore()));
+        return new CertificateQueryResult(mapped, raw.getHasMore());
     }
 }

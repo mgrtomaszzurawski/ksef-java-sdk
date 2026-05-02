@@ -17,7 +17,7 @@ public record CertificateLimits(boolean canRequest, CertificateLimit enrollment,
 
     public static CertificateLimits from(CertificateLimitsResponseRaw raw) {
         return new CertificateLimits(
-                Boolean.TRUE.equals(raw.getCanRequest()),
+                raw.getCanRequest(),
                 CertificateLimit.from(raw.getEnrollment()),
                 CertificateLimit.from(raw.getCertificate()));
     }

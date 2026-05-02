@@ -14,6 +14,6 @@ public record SubordinateEntityRoles(List<SubordinateEntityRole> roles, boolean 
 
     public static SubordinateEntityRoles from(QuerySubordinateEntityRolesResponseRaw raw) {
         List<SubordinateEntityRole> mapped = raw.getRoles().stream().map(SubordinateEntityRole::from).toList();
-        return new SubordinateEntityRoles(mapped, Boolean.TRUE.equals(raw.getHasMore()));
+        return new SubordinateEntityRoles(mapped, raw.getHasMore());
     }
 }
