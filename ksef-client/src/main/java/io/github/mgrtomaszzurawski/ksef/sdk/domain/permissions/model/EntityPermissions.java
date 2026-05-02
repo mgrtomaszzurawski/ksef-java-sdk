@@ -13,9 +13,7 @@ import java.util.List;
 public record EntityPermissions(List<EntityPermission> permissions, boolean hasMore) {
 
     public static EntityPermissions from(QueryEntityPermissionsResponseRaw raw) {
-        List<EntityPermission> mapped = raw.getPermissions() != null
-                ? raw.getPermissions().stream().map(EntityPermission::from).toList()
-                : List.of();
+        List<EntityPermission> mapped = raw.getPermissions().stream().map(EntityPermission::from).toList();
         return new EntityPermissions(mapped, Boolean.TRUE.equals(raw.getHasMore()));
     }
 }

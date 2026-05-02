@@ -27,7 +27,7 @@ public record RetrievedCertificate(
                 raw.getCertificate(),
                 raw.getCertificateName(),
                 raw.getCertificateSerialNumber(),
-                raw.getCertificateType() != null ? raw.getCertificateType().getValue() : null);
+                raw.getCertificateType().getValue());
     }
 
     @Override

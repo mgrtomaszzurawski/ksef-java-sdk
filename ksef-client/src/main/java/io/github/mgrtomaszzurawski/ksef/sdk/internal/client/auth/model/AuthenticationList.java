@@ -16,9 +16,7 @@ import java.util.List;
 public record AuthenticationList(String continuationToken, List<AuthenticationListItem> items) {
 
     public static AuthenticationList from(AuthenticationListResponseRaw raw) {
-        List<AuthenticationListItem> mappedItems = raw.getItems() != null
-                ? raw.getItems().stream().map(AuthenticationListItem::from).toList()
-                : List.of();
+        List<AuthenticationListItem> mappedItems = raw.getItems().stream().map(AuthenticationListItem::from).toList();
         return new AuthenticationList(raw.getContinuationToken(), mappedItems);
     }
 }

@@ -25,7 +25,7 @@ public record EntityPermission(
             String type = ctxRaw.getType() != null ? ctxRaw.getType().getValue() : null;
             ctxId = new PermissionIdentifier(type, ctxRaw.getValue());
         }
-        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
+        String scope = raw.getPermissionScope().getValue();
         return new EntityPermission(raw.getId(), ctxId, scope, raw.getDescription(),
                 raw.getStartDate(), raw.getCanDelegate());
     }

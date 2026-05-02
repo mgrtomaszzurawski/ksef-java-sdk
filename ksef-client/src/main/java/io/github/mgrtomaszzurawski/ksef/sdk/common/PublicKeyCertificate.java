@@ -25,9 +25,7 @@ public record PublicKeyCertificate(
         List<PublicKeyCertificateUsage> usage) {
 
     public static PublicKeyCertificate from(PublicKeyCertificateRaw raw) {
-        List<PublicKeyCertificateUsage> mappedUsage = raw.getUsage() != null
-                ? raw.getUsage().stream().map(PublicKeyCertificateUsage::from).toList()
-                : List.of();
+        List<PublicKeyCertificateUsage> mappedUsage = raw.getUsage().stream().map(PublicKeyCertificateUsage::from).toList();
         return new PublicKeyCertificate(
                 raw.getCertificate(),
                 raw.getValidFrom(),

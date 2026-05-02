@@ -44,7 +44,7 @@ public record SessionInvoiceStatus(
 
     public static SessionInvoiceStatus from(SessionInvoiceStatusResponseRaw raw) {
         return new SessionInvoiceStatus(
-                raw.getOrdinalNumber() != null ? raw.getOrdinalNumber() : 0,
+                raw.getOrdinalNumber(),
                 raw.getInvoiceNumber(),
                 raw.getKsefNumber(),
                 raw.getReferenceNumber(),

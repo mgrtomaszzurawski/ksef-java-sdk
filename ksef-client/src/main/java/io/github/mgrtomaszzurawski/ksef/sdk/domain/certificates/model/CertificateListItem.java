@@ -46,9 +46,9 @@ public record CertificateListItem(
         return new CertificateListItem(
                 raw.getCertificateSerialNumber(),
                 raw.getName(),
-                raw.getType() != null ? raw.getType().getValue() : null,
+                raw.getType().getValue(),
                 raw.getCommonName(),
-                raw.getStatus() != null ? raw.getStatus().getValue() : null,
+                raw.getStatus().getValue(),
                 subIdType,
                 subIdValue,
                 raw.getValidFrom(),

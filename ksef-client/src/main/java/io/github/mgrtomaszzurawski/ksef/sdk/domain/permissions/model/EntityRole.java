@@ -23,7 +23,7 @@ public record EntityRole(
             String type = parentRaw.getType() != null ? parentRaw.getType().getValue() : null;
             parentId = new PermissionIdentifier(type, parentRaw.getValue());
         }
-        String role = raw.getRole() != null ? raw.getRole().getValue() : null;
+        String role = raw.getRole().getValue();
         return new EntityRole(parentId, role, raw.getDescription(), raw.getStartDate());
     }
 }

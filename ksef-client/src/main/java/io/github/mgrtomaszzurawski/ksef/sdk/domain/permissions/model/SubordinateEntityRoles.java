@@ -13,9 +13,7 @@ import java.util.List;
 public record SubordinateEntityRoles(List<SubordinateEntityRole> roles, boolean hasMore) {
 
     public static SubordinateEntityRoles from(QuerySubordinateEntityRolesResponseRaw raw) {
-        List<SubordinateEntityRole> mapped = raw.getRoles() != null
-                ? raw.getRoles().stream().map(SubordinateEntityRole::from).toList()
-                : List.of();
+        List<SubordinateEntityRole> mapped = raw.getRoles().stream().map(SubordinateEntityRole::from).toList();
         return new SubordinateEntityRoles(mapped, Boolean.TRUE.equals(raw.getHasMore()));
     }
 }

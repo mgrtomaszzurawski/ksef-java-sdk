@@ -16,9 +16,7 @@ import java.util.List;
 public record PersonalPermissions(List<PersonalPermission> permissions, boolean hasMore) {
 
     public static PersonalPermissions from(QueryPersonalPermissionsResponseRaw raw) {
-        List<PersonalPermission> mapped = raw.getPermissions() != null
-                ? raw.getPermissions().stream().map(PersonalPermission::from).toList()
-                : List.of();
+        List<PersonalPermission> mapped = raw.getPermissions().stream().map(PersonalPermission::from).toList();
         return new PersonalPermissions(mapped, Boolean.TRUE.equals(raw.getHasMore()));
     }
 }

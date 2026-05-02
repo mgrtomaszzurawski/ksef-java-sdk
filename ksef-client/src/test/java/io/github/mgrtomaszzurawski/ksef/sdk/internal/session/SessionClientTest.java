@@ -81,6 +81,7 @@ class SessionClientTest {
 
     private static final String INVOICE_STATUS_RESPONSE = """
             {
+              "ordinalNumber": 1,
               "status": {"code": 200, "description": "Processed"}
             }
             """;

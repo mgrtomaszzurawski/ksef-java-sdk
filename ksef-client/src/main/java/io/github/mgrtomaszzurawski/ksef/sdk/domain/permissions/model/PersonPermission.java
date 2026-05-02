@@ -58,8 +58,8 @@ public record PersonPermission(
             String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
             authorId = new PermissionIdentifier(type, authorRaw.getValue());
         }
-        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
-        String state = raw.getPermissionState() != null ? raw.getPermissionState().getValue() : null;
+        String scope = raw.getPermissionScope().getValue();
+        String state = raw.getPermissionState().getValue();
         return new PersonPermission(raw.getId(), authzId, ctxId, targetId, authorId,
                 scope, raw.getDescription(), state, raw.getStartDate(), raw.getCanDelegate());
     }

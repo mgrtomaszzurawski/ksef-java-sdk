@@ -20,7 +20,7 @@ public record PartUploadRequest(int ordinalNumber, String method, URI url, Map<S
 
     public static PartUploadRequest from(PartUploadRequestRaw raw) {
         return new PartUploadRequest(
-                raw.getOrdinalNumber() != null ? raw.getOrdinalNumber() : 0,
+                raw.getOrdinalNumber(),
                 raw.getMethod(),
                 raw.getUrl(),
                 raw.getHeaders() != null ? Map.copyOf(raw.getHeaders()) : Map.of());

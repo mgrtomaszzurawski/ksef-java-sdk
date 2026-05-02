@@ -16,9 +16,7 @@ import java.util.List;
 public record CertificateQueryResult(List<CertificateListItem> certificates, boolean hasMore) {
 
     public static CertificateQueryResult from(QueryCertificatesResponseRaw raw) {
-        List<CertificateListItem> mapped = raw.getCertificates() != null
-                ? raw.getCertificates().stream().map(CertificateListItem::from).toList()
-                : List.of();
+        List<CertificateListItem> mapped = raw.getCertificates().stream().map(CertificateListItem::from).toList();
         return new CertificateQueryResult(mapped, Boolean.TRUE.equals(raw.getHasMore()));
     }
 }

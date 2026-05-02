@@ -38,7 +38,7 @@ public record EntityAuthorizationGrant(
             String type = authingRaw.getType() != null ? authingRaw.getType().getValue() : null;
             authingEntityId = new PermissionIdentifier(type, authingRaw.getValue());
         }
-        String authScope = raw.getAuthorizationScope() != null ? raw.getAuthorizationScope().getValue() : null;
+        String authScope = raw.getAuthorizationScope().getValue();
         return new EntityAuthorizationGrant(raw.getId(), authorId, authzEntityId, authingEntityId,
                 authScope, raw.getDescription(), raw.getStartDate());
     }

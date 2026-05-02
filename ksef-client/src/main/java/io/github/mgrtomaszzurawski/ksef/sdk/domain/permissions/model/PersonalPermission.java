@@ -63,8 +63,8 @@ public record PersonalPermission(
                 ? new PermissionSubjectDetails(null, null,
                         raw.getSubjectEntityDetails().getFullName())
                 : null;
-        String scope = raw.getPermissionScope() != null ? raw.getPermissionScope().getValue() : null;
-        String state = raw.getPermissionState() != null ? raw.getPermissionState().getValue() : null;
+        String scope = raw.getPermissionScope().getValue();
+        String state = raw.getPermissionState().getValue();
         return new PersonalPermission(raw.getId(), ctxId, authzId, targetId, scope,
                 raw.getDescription(), personDetails, entityDetails, state,
                 raw.getStartDate(), raw.getCanDelegate());
