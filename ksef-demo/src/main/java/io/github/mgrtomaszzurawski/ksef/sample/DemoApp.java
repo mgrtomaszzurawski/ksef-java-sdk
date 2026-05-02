@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class DemoApp {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DemoApp.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DemoApp.class);
     private static final Path CREDENTIALS_FILE = Path.of("ksef-credentials.properties");
     private static final Path STATE_FILE = Path.of("demo-state.json");
     private static final String ERR_MISSING_TOKEN = "ksef.token is required in credentials file";
@@ -65,7 +65,7 @@ public final class DemoApp {
 
     public static void main(String[] args) {
         DemoMode mode = resolveMode(args);
-        LOG.info("KSeF Demo App starting in {} mode", mode);
+        LOGGER.info("KSeF Demo App starting in {} mode", mode);
 
         AppProperties properties = AppProperties.load(CREDENTIALS_FILE);
         validateProperties(properties);
@@ -74,7 +74,7 @@ public final class DemoApp {
         try {
             state = DemoState.load(STATE_FILE);
         } catch (IOException exception) {
-            LOG.error("Failed to load state file: {}", exception.getMessage());
+            LOGGER.error("Failed to load state file: {}", exception.getMessage());
             System.exit(EXIT_FAILURE);
             return;
         }
@@ -99,7 +99,7 @@ public final class DemoApp {
             try {
                 state.save(STATE_FILE);
             } catch (IOException exception) {
-                LOG.error("Failed to save state file: {}", exception.getMessage());
+                LOGGER.error("Failed to save state file: {}", exception.getMessage());
             }
 
             report.print();
@@ -118,7 +118,7 @@ public final class DemoApp {
         try {
             return DemoMode.valueOf(modeName.toUpperCase());
         } catch (IllegalArgumentException exception) {
-            LOG.error(ERR_INVALID_MODE, modeName);
+            LOGGER.error(ERR_INVALID_MODE, modeName);
             System.exit(EXIT_FAILURE);
             return DemoMode.READ_ONLY;
         }
@@ -126,15 +126,15 @@ public final class DemoApp {
 
     private static void validateProperties(AppProperties properties) {
         if (properties.ksefToken() == null || properties.ksefToken().isBlank()) {
-            LOG.error(ERR_MISSING_TOKEN);
+            LOGGER.error(ERR_MISSING_TOKEN);
             System.exit(EXIT_FAILURE);
         }
         if (properties.nipIdentifier() == null || properties.nipIdentifier().isBlank()) {
-            LOG.error(ERR_MISSING_NIP);
+            LOGGER.error(ERR_MISSING_NIP);
             System.exit(EXIT_FAILURE);
         }
         if (properties.environment() == null || properties.environment().isBlank()) {
-            LOG.error(ERR_MISSING_ENV);
+            LOGGER.error(ERR_MISSING_ENV);
             System.exit(EXIT_FAILURE);
         }
     }

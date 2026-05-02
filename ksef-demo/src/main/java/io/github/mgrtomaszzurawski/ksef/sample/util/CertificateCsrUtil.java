@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Objects;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -111,6 +113,29 @@ public final class CertificateCsrUtil {
         @Override
         public byte[] csrDer() {
             return csrDer.clone();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof CsrResult that)) {
+                return false;
+            }
+            return Arrays.equals(csrDer, that.csrDer)
+                    && Objects.equals(keyPair, that.keyPair);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(csrDer) * 31 + Objects.hashCode(keyPair);
+        }
+
+        @Override
+        public String toString() {
+            return "CsrResult[csrDer=byte[" + (csrDer == null ? 0 : csrDer.length)
+                    + "], keyPair=" + (keyPair == null ? "null" : "<redacted>") + "]";
         }
     }
 }

@@ -31,7 +31,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  */
 public final class LimitsRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LimitsRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LimitsRunner.class);
     private static final String NAME = "limits";
     private static final String OP_CONTEXT = "getContextLimits";
     private static final String OP_SUBJECT = "getSubjectLimits";
@@ -46,7 +46,7 @@ public final class LimitsRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             context.client().limits().getContextLimits();
-            LOG.info("[{}] context limits fetched", NAME);
+            LOGGER.info("[{}] context limits fetched", NAME);
             results.add(RunResult.ok(NAME, OP_CONTEXT, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_CONTEXT, elapsed(start), errorMessage(exception)));
@@ -55,7 +55,7 @@ public final class LimitsRunner implements DemoRunner {
         start = System.currentTimeMillis();
         try {
             context.client().limits().getSubjectLimits();
-            LOG.info("[{}] subject limits fetched", NAME);
+            LOGGER.info("[{}] subject limits fetched", NAME);
             results.add(RunResult.ok(NAME, OP_SUBJECT, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_SUBJECT, elapsed(start), errorMessage(exception)));

@@ -163,6 +163,14 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
+    /**
+     * Opens a KSeF session and transfers ownership to the caller.
+     *
+     * <p>The returned session must be closed by the caller. The orchestrating
+     * {@link #run(DemoContext)} method wraps the returned session in
+     * try-with-resources before any subsequent operation is invoked on it.
+     */
+    @SuppressWarnings("java:S2095")
     private KsefSession runOpenSession(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {

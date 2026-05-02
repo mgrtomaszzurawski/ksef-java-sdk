@@ -58,7 +58,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
  */
 public final class CertProbe {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CertProbe.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CertProbe.class);
     private static final Path CREDENTIALS_FILE = Path.of("ksef-credentials.properties");
     private static final String CERT_NAME = "Probe Cert RCA Verify";
     private static final String STATUS_ACTIVE = "Active";
@@ -76,7 +76,7 @@ public final class CertProbe {
     public static void main(String[] args) {
         AppProperties properties = AppProperties.load(CREDENTIALS_FILE);
         if (!properties.hasCertificate()) {
-            LOG.error("No certificate configured in {}", CREDENTIALS_FILE);
+            LOGGER.error("No certificate configured in {}", CREDENTIALS_FILE);
             System.exit(EXIT_FAILURE);
         }
 
@@ -91,7 +91,7 @@ public final class CertProbe {
             client.authenticate();
             run(client, properties.nipIdentifier());
         } catch (Exception exception) {
-            LOG.error("Probe failed", exception);
+            LOGGER.error("Probe failed", exception);
             System.exit(EXIT_FAILURE);
         }
     }
@@ -99,7 +99,7 @@ public final class CertProbe {
     private static void run(KsefClient client, String nipIdentifier) throws Exception {
         // STEP 1: Already authenticated via client.authenticate() in main
         section("STEP 1: XAdES authentication (handled by SDK)");
-        LOG.info("XAdES session active (authenticated via KsefClient.authenticate())");
+        LOGGER.info("XAdES session active (authenticated via KsefClient.authenticate())");
 
         // STEP 2: Limits BEFORE
         section("STEP 2: certificates/limits BEFORE");
@@ -110,18 +110,18 @@ public final class CertProbe {
         section("STEP 3: query active certificates");
         CertificateQueryResult queryResult = client.certificates().query(CertificateQueryBuilder.create());
         List<CertificateListItem> certs = queryResult.certificates();
-        LOG.info("Found {} certificates total", certs.size());
+        LOGGER.info("Found {} certificates total", certs.size());
         for (CertificateListItem cert : certs) {
-            LOG.info("  serial={} status={} validFrom={} requestDate={} name={}",
+            LOGGER.info("  serial={} status={} validFrom={} requestDate={} name={}",
                     cert.certificateSerialNumber(), cert.status(), cert.validFrom(), cert.requestDate(), cert.name());
         }
         List<CertificateListItem> active = certs.stream()
                 .filter(cert -> STATUS_ACTIVE.equalsIgnoreCase(cert.status()))
                 .toList();
-        LOG.info("Active count: {}", active.size());
+        LOGGER.info("Active count: {}", active.size());
 
         if (active.isEmpty()) {
-            LOG.warn("No active certs to revoke. Skipping revoke step.");
+            LOGGER.warn("No active certs to revoke. Skipping revoke step.");
         } else {
             // STEP 4: Revoke youngest
             section("STEP 4: revoke youngest active cert");
@@ -129,13 +129,13 @@ public final class CertProbe {
                     .max(Comparator.comparing(CertProbe::certSortKey,
                             Comparator.nullsFirst(Comparator.naturalOrder())))
                     .orElseThrow();
-            LOG.info("Youngest active: serial={} validFrom={} name={}",
+            LOGGER.info("Youngest active: serial={} validFrom={} name={}",
                     youngest.certificateSerialNumber(), youngest.validFrom(), youngest.name());
             try {
                 client.certificates().revoke(youngest.certificateSerialNumber());
-                LOG.info("REVOKE OK serial={}", youngest.certificateSerialNumber());
+                LOGGER.info("REVOKE OK serial={}", youngest.certificateSerialNumber());
             } catch (Exception exception) {
-                LOG.error("REVOKE FAILED", exception);
+                LOGGER.error("REVOKE FAILED", exception);
             }
 
             // STEP 5: Limits AFTER revoke
@@ -147,7 +147,7 @@ public final class CertProbe {
         // STEP 6: Enroll new
         section("STEP 6: enroll new cert");
         CertificateEnrollmentData enrollData = client.certificates().getEnrollmentData();
-        LOG.info("Enrollment data: cn={}", enrollData.commonName());
+        LOGGER.info("Enrollment data: cn={}", enrollData.commonName());
         CertificateCsrUtil.CsrResult csr = CertificateCsrUtil.generate(enrollData);
         CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder.create(
                 CERT_NAME, KsefCertificateType.AUTHENTICATION, csr.csrDer());
@@ -155,9 +155,9 @@ public final class CertProbe {
         EnrollCertificateResult enrollResult;
         try {
             enrollResult = client.certificates().enroll(enrollBuilder);
-            LOG.info("ENROLL OK ref={}", enrollResult.referenceNumber());
+            LOGGER.info("ENROLL OK ref={}", enrollResult.referenceNumber());
         } catch (Exception exception) {
-            LOG.error("ENROLL FAILED", exception);
+            LOGGER.error("ENROLL FAILED", exception);
             section("STEP 8: certificates/limits AFTER failed enroll");
             printLimits("AFTER_FAILED_ENROLL", client.certificates().getLimits());
             return;
@@ -176,12 +176,12 @@ public final class CertProbe {
             section("STEP 9: cleanup — revoke newly enrolled cert");
             try {
                 client.certificates().revoke(enrolledSerial);
-                LOG.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
+                LOGGER.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
             } catch (Exception exception) {
-                LOG.error("CLEANUP REVOKE FAILED", exception);
+                LOGGER.error("CLEANUP REVOKE FAILED", exception);
             }
         } else {
-            LOG.warn("No serial obtained — cannot cleanup. Cert may still consume slot.");
+            LOGGER.warn("No serial obtained — cannot cleanup. Cert may still consume slot.");
         }
 
         section("PROBE COMPLETE");
@@ -198,21 +198,21 @@ public final class CertProbe {
                 CertificateEnrollmentStatus status = client.certificates().getEnrollmentStatus(enrollmentRef);
                 String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
                 String description = status.status() != null ? status.status().description() : "null";
-                LOG.info("  poll #{} status code={} desc={} serial={}",
+                LOGGER.info("  poll #{} status code={} desc={} serial={}",
                         attempt, code, description, status.certificateSerialNumber());
                 if (status.certificateSerialNumber() != null) {
-                    LOG.info("SERIAL OBTAINED after {}ms: {}",
+                    LOGGER.info("SERIAL OBTAINED after {}ms: {}",
                             System.currentTimeMillis() - startTime,
                             status.certificateSerialNumber());
                     return status.certificateSerialNumber();
                 }
             } catch (Exception exception) {
-                LOG.warn("  poll #{} failed (will retry): {}", attempt, exception.getMessage());
+                LOGGER.warn("  poll #{} failed (will retry): {}", attempt, exception.getMessage());
             }
             Thread.sleep(delay);
             delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
         }
-        LOG.warn("TIMEOUT after {}ms — serial never appeared", ENROLL_POLL_TIMEOUT_MS);
+        LOGGER.warn("TIMEOUT after {}ms — serial never appeared", ENROLL_POLL_TIMEOUT_MS);
         return null;
     }
 
@@ -235,20 +235,20 @@ public final class CertProbe {
     }
 
     private static void printLimits(String label, CertificateLimits limits) {
-        LOG.info("[{}] canRequest={}", label, limits.canRequest());
+        LOGGER.info("[{}] canRequest={}", label, limits.canRequest());
         if (limits.enrollment() != null) {
-            LOG.info("[{}] enrollment: remaining={} limit={}",
+            LOGGER.info("[{}] enrollment: remaining={} limit={}",
                     label, limits.enrollment().remaining(), limits.enrollment().limit());
         }
         if (limits.certificate() != null) {
-            LOG.info("[{}] certificate: remaining={} limit={}",
+            LOGGER.info("[{}] certificate: remaining={} limit={}",
                     label, limits.certificate().remaining(), limits.certificate().limit());
         }
     }
 
     private static void section(String title) {
-        LOG.info(SEPARATOR);
-        LOG.info(title);
-        LOG.info(SEPARATOR);
+        LOGGER.info(SEPARATOR);
+        LOGGER.info(title);
+        LOGGER.info(SEPARATOR);
     }
 }

@@ -51,7 +51,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  */
 public final class CertificateRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CertificateRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CertificateRunner.class);
     private static final String NAME = "certificate";
     private static final String OP_GET_LIMITS = "getLimits";
     private static final String OP_GET_ENROLLMENT_DATA = "getEnrollmentData";
@@ -98,7 +98,7 @@ public final class CertificateRunner implements DemoRunner {
             String certificate = response.certificate() != null
                     ? response.certificate().remaining() + "/" + response.certificate().limit()
                     : "n/a";
-            LOG.info("[{}] limits: canRequest={} enrollment={} certificate={}",
+            LOGGER.info("[{}] limits: canRequest={} enrollment={} certificate={}",
                     NAME, response.canRequest(), enrollment, certificate);
             results.add(RunResult.ok(NAME, OP_GET_LIMITS, elapsed(start),
                     "canRequest=" + response.canRequest()
@@ -115,7 +115,7 @@ public final class CertificateRunner implements DemoRunner {
         try {
             CertificateEnrollmentData response = context.client().certificates()
                     .getEnrollmentData();
-            LOG.info("[{}] enrollment data: cn={}", NAME, response.commonName());
+            LOGGER.info("[{}] enrollment data: cn={}", NAME, response.commonName());
             results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
                     "cn=" + response.commonName()));
             return response;
@@ -133,10 +133,10 @@ public final class CertificateRunner implements DemoRunner {
                     .query(CertificateQueryBuilder.create());
             List<CertificateListItem> certs = response.certificates();
             int count = certs != null ? certs.size() : 0;
-            LOG.info("[{}] queried certificates: {} found", NAME, count);
+            LOGGER.info("[{}] queried certificates: {} found", NAME, count);
             if (certs != null) {
                 for (CertificateListItem cert : certs) {
-                    LOG.info("[{}]   serial={} status={} name={}",
+                    LOGGER.info("[{}]   serial={} status={} name={}",
                             NAME, cert.certificateSerialNumber(), cert.status(), cert.name());
                 }
             }
@@ -187,7 +187,7 @@ public final class CertificateRunner implements DemoRunner {
                     CERT_NAME, KsefCertificateType.AUTHENTICATION, csr.csrDer());
             EnrollCertificateResult response = context.client().certificates().enroll(builder);
             String referenceNumber = response.referenceNumber();
-            LOG.info("[{}] enrolled certificate, ref={}", NAME, referenceNumber);
+            LOGGER.info("[{}] enrolled certificate, ref={}", NAME, referenceNumber);
             results.add(RunResult.ok(NAME, OP_ENROLL, elapsed(start), "ref=" + referenceNumber));
             return referenceNumber;
         } catch (Exception exception) {
@@ -206,13 +206,13 @@ public final class CertificateRunner implements DemoRunner {
                 CertificateEnrollmentStatus status = context.client().certificates()
                         .getEnrollmentStatus(enrollmentRef);
                 String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
-                LOG.info("[{}] enrollment poll #{} code={} serial={}",
+                LOGGER.info("[{}] enrollment poll #{} code={} serial={}",
                         NAME, attempt, code, status.certificateSerialNumber());
                 if (status.certificateSerialNumber() != null) {
                     return status.certificateSerialNumber();
                 }
             } catch (Exception exception) {
-                LOG.warn("[{}] enrollment poll #{} failed: {}", NAME, attempt, exception.getMessage());
+                LOGGER.warn("[{}] enrollment poll #{} failed: {}", NAME, attempt, exception.getMessage());
             }
             try {
                 Thread.sleep(delay);
@@ -222,7 +222,7 @@ public final class CertificateRunner implements DemoRunner {
             }
             delay = Math.min(delay * ENROLL_POLL_BACKOFF_MULTIPLIER, ENROLL_POLL_MAX_DELAY_MS);
         }
-        LOG.warn("[{}] enrollment poll timed out after {}ms", NAME, ENROLL_POLL_TIMEOUT_MS);
+        LOGGER.warn("[{}] enrollment poll timed out after {}ms", NAME, ENROLL_POLL_TIMEOUT_MS);
         return null;
     }
 
@@ -230,7 +230,7 @@ public final class CertificateRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             context.client().certificates().revoke(serialNumber);
-            LOG.info("[{}] revoked certificate serial={}", NAME, serialNumber);
+            LOGGER.info("[{}] revoked certificate serial={}", NAME, serialNumber);
             results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start), "serial=" + serialNumber));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_REVOKE, elapsed(start), errorMessage(exception)));

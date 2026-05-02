@@ -54,11 +54,10 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  */
 public final class TestDataRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TestDataRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestDataRunner.class);
 
     private static final String NAME = "testdata";
 
-    // --- Operation names ---
     private static final String OP_CREATE_SUBJECT = "createSubject";
     private static final String OP_REMOVE_SUBJECT = "removeSubject";
     private static final String OP_CREATE_PERSON = "createPerson";
@@ -73,7 +72,6 @@ public final class TestDataRunner implements DemoRunner {
     private static final String OP_SET_SUBJECT_LIMITS = "setSubjectLimits";
     private static final String OP_SET_RATE_LIMITS = "setRateLimits";
 
-    // --- Skip reasons ---
     private static final String SKIP_PROD_REASON = "Test data endpoints only available in test environments";
     private static final String SKIP_NOT_DEPLOYED_REASON =
             "TestData endpoints not deployed on this env (api-demo returns 404; they live on api-test)";
@@ -83,12 +81,10 @@ public final class TestDataRunner implements DemoRunner {
     private static final String SKIP_DEPENDS_ON_GRANT_ATTACHMENT = "depends on grantAttachment";
     private static final String SKIP_DEPENDS_ON_BLOCK_CONTEXT = "depends on blockContext";
 
-    // --- Environment markers (lower-cased substring match) ---
     private static final String ENV_DEMO = "api-demo";
     private static final String ENV_TEST = "test";
     private static final String ENV_PREPROD = "preprod";
 
-    // --- Test data values ---
     private static final String SUBJECT_DESCRIPTION = "SDK Demo test subject - will be removed";
     private static final String PERSON_DESCRIPTION = "SDK Demo test person - will be removed";
     private static final int NIP_DIGITS = 10;
@@ -101,19 +97,18 @@ public final class TestDataRunner implements DemoRunner {
     private static final int LEADING_DIGIT_MIN = 1;
     private static final int LEADING_DIGIT_MAX = 9;
 
-    // --- Session limits values (small reasonable defaults) ---
     private static final int SESSION_MAX_INVOICE_SIZE_MB = 1;
     private static final int SESSION_MAX_INVOICE_WITH_ATTACHMENT_MB = 4;
     private static final int SESSION_MAX_INVOICES = 100;
 
-    // --- Subject limits values ---
     private static final int SUBJECT_MAX_ENROLLMENTS = 10;
     private static final int SUBJECT_MAX_CERTIFICATES = 5;
 
-    // --- Rate limits values ---
     private static final int RATE_PER_SECOND = 5;
     private static final int RATE_PER_MINUTE = 50;
     private static final int RATE_PER_HOUR = 500;
+
+    private static final String NIP_PREFIX = "nip=";
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -141,28 +136,20 @@ public final class TestDataRunner implements DemoRunner {
             return results;
         }
 
-        // 1. createSubject + removeSubject
         runSubjectPair(testData, results);
 
-        // 2. createPerson + removePerson
         runPersonPair(testData, results);
 
-        // 3. grantPermissions + revokePermissions
         runPermissionsPair(testData, context, results);
 
-        // 4. grantAttachment + revokeAttachment
         runAttachmentPair(testData, results);
 
-        // 5. blockContext + unblockContext
         runContextBlockPair(testData, results);
 
-        // 6. setSessionLimits (no undo endpoint per task spec)
         runSetSessionLimits(testData, results);
 
-        // 7. setSubjectLimits
         runSetSubjectLimits(testData, results);
 
-        // 8. setRateLimits
         runSetRateLimits(testData, results);
 
         return results;
@@ -195,8 +182,8 @@ public final class TestDataRunner implements DemoRunner {
         try {
             testData.createSubject(TestSubjectCreateBuilder.create(
                     subjectNip, TestSubjectType.JST, SUBJECT_DESCRIPTION));
-            LOG.info("[{}] created test subject nip={}", NAME, subjectNip);
-            results.add(RunResult.ok(NAME, OP_CREATE_SUBJECT, elapsed(start), "nip=" + subjectNip));
+            LOGGER.info("[{}] created test subject nip={}", NAME, subjectNip);
+            results.add(RunResult.ok(NAME, OP_CREATE_SUBJECT, elapsed(start), NIP_PREFIX + subjectNip));
             createdOk = true;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_CREATE_SUBJECT, elapsed(start), errorMessage(exception)));
@@ -210,10 +197,10 @@ public final class TestDataRunner implements DemoRunner {
         long removeStart = System.currentTimeMillis();
         try {
             testData.removeSubject(subjectNip);
-            LOG.info("[{}] removed test subject nip={}", NAME, subjectNip);
-            results.add(RunResult.ok(NAME, OP_REMOVE_SUBJECT, elapsed(removeStart), "nip=" + subjectNip));
+            LOGGER.info("[{}] removed test subject nip={}", NAME, subjectNip);
+            results.add(RunResult.ok(NAME, OP_REMOVE_SUBJECT, elapsed(removeStart), NIP_PREFIX + subjectNip));
         } catch (Exception exception) {
-            LOG.warn("[{}] removeSubject failed for nip={} - test data left on server",
+            LOGGER.warn("[{}] removeSubject failed for nip={} - test data left on server",
                     NAME, subjectNip);
             results.add(RunResult.fail(NAME, OP_REMOVE_SUBJECT, elapsed(removeStart),
                     errorMessage(exception)));
@@ -228,9 +215,9 @@ public final class TestDataRunner implements DemoRunner {
         try {
             testData.createPerson(TestPersonCreateBuilder.create(
                     personNip, pesel, false, PERSON_DESCRIPTION));
-            LOG.info("[{}] created test person nip={} pesel={}", NAME, personNip, pesel);
+            LOGGER.info("[{}] created test person nip={} pesel={}", NAME, personNip, pesel);
             results.add(RunResult.ok(NAME, OP_CREATE_PERSON, elapsed(start),
-                    "nip=" + personNip + " pesel=" + pesel));
+                    NIP_PREFIX + personNip + " pesel=" + pesel));
             createdOk = true;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_CREATE_PERSON, elapsed(start), errorMessage(exception)));
@@ -244,10 +231,10 @@ public final class TestDataRunner implements DemoRunner {
         long removeStart = System.currentTimeMillis();
         try {
             testData.removePerson(personNip);
-            LOG.info("[{}] removed test person nip={}", NAME, personNip);
-            results.add(RunResult.ok(NAME, OP_REMOVE_PERSON, elapsed(removeStart), "nip=" + personNip));
+            LOGGER.info("[{}] removed test person nip={}", NAME, personNip);
+            results.add(RunResult.ok(NAME, OP_REMOVE_PERSON, elapsed(removeStart), NIP_PREFIX + personNip));
         } catch (Exception exception) {
-            LOG.warn("[{}] removePerson failed for nip={} - test data left on server",
+            LOGGER.warn("[{}] removePerson failed for nip={} - test data left on server",
                     NAME, personNip);
             results.add(RunResult.fail(NAME, OP_REMOVE_PERSON, elapsed(removeStart),
                     errorMessage(exception)));
@@ -264,7 +251,7 @@ public final class TestDataRunner implements DemoRunner {
             testData.grantPermissions(TestPermissionsGrantBuilder.create(contextNip)
                     .authorizedNip(authorizedNip)
                     .invoiceRead());
-            LOG.info("[{}] granted test permissions context={} authorized={}",
+            LOGGER.info("[{}] granted test permissions context={} authorized={}",
                     NAME, contextNip, authorizedNip);
             results.add(RunResult.ok(NAME, OP_GRANT_PERMISSIONS, elapsed(start),
                     "authorized=" + authorizedNip));
@@ -283,12 +270,12 @@ public final class TestDataRunner implements DemoRunner {
         try {
             testData.revokePermissions(TestPermissionsRevokeBuilder.create(contextNip)
                     .authorizedNip(authorizedNip));
-            LOG.info("[{}] revoked test permissions context={} authorized={}",
+            LOGGER.info("[{}] revoked test permissions context={} authorized={}",
                     NAME, contextNip, authorizedNip);
             results.add(RunResult.ok(NAME, OP_REVOKE_PERMISSIONS, elapsed(revokeStart),
                     "authorized=" + authorizedNip));
         } catch (Exception exception) {
-            LOG.warn("[{}] revokePermissions failed for authorized={} - test data left on server",
+            LOGGER.warn("[{}] revokePermissions failed for authorized={} - test data left on server",
                     NAME, authorizedNip);
             results.add(RunResult.fail(NAME, OP_REVOKE_PERMISSIONS, elapsed(revokeStart),
                     errorMessage(exception)));
@@ -301,8 +288,8 @@ public final class TestDataRunner implements DemoRunner {
         boolean grantedOk = false;
         try {
             testData.grantAttachment(attachmentNip);
-            LOG.info("[{}] granted test attachment nip={}", NAME, attachmentNip);
-            results.add(RunResult.ok(NAME, OP_GRANT_ATTACHMENT, elapsed(start), "nip=" + attachmentNip));
+            LOGGER.info("[{}] granted test attachment nip={}", NAME, attachmentNip);
+            results.add(RunResult.ok(NAME, OP_GRANT_ATTACHMENT, elapsed(start), NIP_PREFIX + attachmentNip));
             grantedOk = true;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_ATTACHMENT, elapsed(start),
@@ -317,11 +304,11 @@ public final class TestDataRunner implements DemoRunner {
         long revokeStart = System.currentTimeMillis();
         try {
             testData.revokeAttachment(attachmentNip);
-            LOG.info("[{}] revoked test attachment nip={}", NAME, attachmentNip);
+            LOGGER.info("[{}] revoked test attachment nip={}", NAME, attachmentNip);
             results.add(RunResult.ok(NAME, OP_REVOKE_ATTACHMENT, elapsed(revokeStart),
-                    "nip=" + attachmentNip));
+                    NIP_PREFIX + attachmentNip));
         } catch (Exception exception) {
-            LOG.warn("[{}] revokeAttachment failed for nip={} - test data left on server",
+            LOGGER.warn("[{}] revokeAttachment failed for nip={} - test data left on server",
                     NAME, attachmentNip);
             results.add(RunResult.fail(NAME, OP_REVOKE_ATTACHMENT, elapsed(revokeStart),
                     errorMessage(exception)));
@@ -334,8 +321,8 @@ public final class TestDataRunner implements DemoRunner {
         boolean blockedOk = false;
         try {
             testData.blockContext(TestDataIdentifierType.NIP, blockNip);
-            LOG.info("[{}] blocked context nip={}", NAME, blockNip);
-            results.add(RunResult.ok(NAME, OP_BLOCK_CONTEXT, elapsed(start), "nip=" + blockNip));
+            LOGGER.info("[{}] blocked context nip={}", NAME, blockNip);
+            results.add(RunResult.ok(NAME, OP_BLOCK_CONTEXT, elapsed(start), NIP_PREFIX + blockNip));
             blockedOk = true;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_BLOCK_CONTEXT, elapsed(start),
@@ -350,11 +337,11 @@ public final class TestDataRunner implements DemoRunner {
         long unblockStart = System.currentTimeMillis();
         try {
             testData.unblockContext(TestDataIdentifierType.NIP, blockNip);
-            LOG.info("[{}] unblocked context nip={}", NAME, blockNip);
+            LOGGER.info("[{}] unblocked context nip={}", NAME, blockNip);
             results.add(RunResult.ok(NAME, OP_UNBLOCK_CONTEXT, elapsed(unblockStart),
-                    "nip=" + blockNip));
+                    NIP_PREFIX + blockNip));
         } catch (Exception exception) {
-            LOG.warn("[{}] unblockContext failed for nip={} - context still blocked on server",
+            LOGGER.warn("[{}] unblockContext failed for nip={} - context still blocked on server",
                     NAME, blockNip);
             results.add(RunResult.fail(NAME, OP_UNBLOCK_CONTEXT, elapsed(unblockStart),
                     errorMessage(exception)));
@@ -371,7 +358,7 @@ public final class TestDataRunner implements DemoRunner {
                     .batchSession(SESSION_MAX_INVOICE_SIZE_MB,
                             SESSION_MAX_INVOICE_WITH_ATTACHMENT_MB,
                             SESSION_MAX_INVOICES));
-            LOG.info("[{}] session limits applied", NAME);
+            LOGGER.info("[{}] session limits applied", NAME);
             results.add(RunResult.ok(NAME, OP_SET_SESSION_LIMITS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_SET_SESSION_LIMITS, elapsed(start),
@@ -385,7 +372,7 @@ public final class TestDataRunner implements DemoRunner {
             testData.setSubjectLimits(TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP)
                     .maxEnrollments(SUBJECT_MAX_ENROLLMENTS)
                     .maxCertificates(SUBJECT_MAX_CERTIFICATES));
-            LOG.info("[{}] subject limits applied", NAME);
+            LOGGER.info("[{}] subject limits applied", NAME);
             results.add(RunResult.ok(NAME, OP_SET_SUBJECT_LIMITS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_SET_SUBJECT_LIMITS, elapsed(start),
@@ -398,7 +385,7 @@ public final class TestDataRunner implements DemoRunner {
         try {
             testData.setRateLimits(TestRateLimitsBuilder.create()
                     .invoiceSend(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR));
-            LOG.info("[{}] rate limits applied", NAME);
+            LOGGER.info("[{}] rate limits applied", NAME);
             results.add(RunResult.ok(NAME, OP_SET_RATE_LIMITS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_SET_RATE_LIMITS, elapsed(start),
