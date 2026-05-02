@@ -24,19 +24,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class PeppolClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
-    private static final String AUTH_HEADER = "Authorization";
-    private static final String BEARER_TOKEN = "Bearer " + TEST_TOKEN;
-    private static final String CONTENT_TYPE_HEADER = "Content-Type";
-    private static final String APPLICATION_JSON = "application/json";
-
-    private static final int HTTP_OK = 200;
-
+    private static final String AUTH_HEADER = TestHttpConstants.AUTHORIZATION_HEADER;
+    private static final String BEARER_TOKEN = TestHttpConstants.BEARER_PREFIX + TEST_TOKEN;
+    private static final String CONTENT_TYPE_HEADER = TestHttpConstants.CONTENT_TYPE_HEADER;
+    private static final String APPLICATION_JSON = TestHttpConstants.APPLICATION_JSON;
     private static final String DEFAULT_QUERY_URL = "/api/v2/peppol/query?pageOffset=0&pageSize=10";
     private static final String PAGED_QUERY_URL = "/api/v2/peppol/query?pageOffset=2&pageSize=5";
 
@@ -76,25 +74,26 @@ class PeppolClientTest {
         stubFor(get(urlEqualTo(DEFAULT_QUERY_URL))
                 .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
+                        .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(CONTENT_TYPE_HEADER, APPLICATION_JSON)
                         .withBody(TWO_PROVIDERS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        PeppolProvidersResult result = ksef.peppol().query();
+            // when
+            PeppolProvidersResult result = ksef.peppol().query();
 
-        // then
-        assertNotNull(result);
-        assertEquals(EXPECTED_PROVIDER_COUNT, result.providers().size());
-        assertEquals(PROVIDER_ID_1, result.providers().get(0).id());
-        assertEquals(PROVIDER_NAME_1, result.providers().get(0).name());
-        assertNotNull(result.providers().get(0).dateCreated());
-        assertEquals(PROVIDER_ID_2, result.providers().get(1).id());
-        assertTrue(result.hasMore());
-        verify(getRequestedFor(urlEqualTo(DEFAULT_QUERY_URL))
-                .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN)));
+            // then
+            assertNotNull(result);
+            assertEquals(EXPECTED_PROVIDER_COUNT, result.providers().size());
+            assertEquals(PROVIDER_ID_1, result.providers().get(0).id());
+            assertEquals(PROVIDER_NAME_1, result.providers().get(0).name());
+            assertNotNull(result.providers().get(0).dateCreated());
+            assertEquals(PROVIDER_ID_2, result.providers().get(1).id());
+            assertTrue(result.hasMore());
+            verify(getRequestedFor(urlEqualTo(DEFAULT_QUERY_URL))
+                    .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN)));
+        }
     }
 
     @Test
@@ -103,21 +102,22 @@ class PeppolClientTest {
         stubFor(get(urlEqualTo(PAGED_QUERY_URL))
                 .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
+                        .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(CONTENT_TYPE_HEADER, APPLICATION_JSON)
                         .withBody(TWO_PROVIDERS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        PeppolProvidersResult result = ksef.peppol().query(CUSTOM_PAGE_OFFSET, CUSTOM_PAGE_SIZE);
+            // when
+            PeppolProvidersResult result = ksef.peppol().query(CUSTOM_PAGE_OFFSET, CUSTOM_PAGE_SIZE);
 
-        // then
-        assertNotNull(result);
-        assertEquals(EXPECTED_PROVIDER_COUNT, result.providers().size());
-        assertTrue(result.hasMore());
-        verify(getRequestedFor(urlEqualTo(PAGED_QUERY_URL))
-                .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN)));
+            // then
+            assertNotNull(result);
+            assertEquals(EXPECTED_PROVIDER_COUNT, result.providers().size());
+            assertTrue(result.hasMore());
+            verify(getRequestedFor(urlEqualTo(PAGED_QUERY_URL))
+                    .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN)));
+        }
     }
 
     @Test
@@ -126,41 +126,44 @@ class PeppolClientTest {
         stubFor(get(urlEqualTo(DEFAULT_QUERY_URL))
                 .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
+                        .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(CONTENT_TYPE_HEADER, APPLICATION_JSON)
                         .withBody(EMPTY_PROVIDERS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        PeppolProvidersResult result = ksef.peppol().query();
+            // when
+            PeppolProvidersResult result = ksef.peppol().query();
 
-        // then
-        assertNotNull(result);
-        assertTrue(result.providers().isEmpty());
-        assertFalse(result.hasMore());
+            // then
+            assertNotNull(result);
+            assertTrue(result.providers().isEmpty());
+            assertFalse(result.hasMore());
+        }
     }
 
     @Test
     void query_whenPageOffsetNegative_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         // given
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // then
-        var peppol = ksef.peppol();
+            // then
+            var peppol = ksef.peppol();
 
-        assertThrows(IllegalArgumentException.class, () -> peppol.query(-1, CUSTOM_PAGE_SIZE));
+            assertThrows(IllegalArgumentException.class, () -> peppol.query(-1, CUSTOM_PAGE_SIZE));
+        }
     }
 
     @Test
     void query_whenPageSizeZero_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
         // given
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // then
-        var peppol = ksef.peppol();
+            // then
+            var peppol = ksef.peppol();
 
-        assertThrows(IllegalArgumentException.class, () -> peppol.query(CUSTOM_PAGE_OFFSET, 0));
+            assertThrows(IllegalArgumentException.class, () -> peppol.query(CUSTOM_PAGE_OFFSET, 0));
+        }
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

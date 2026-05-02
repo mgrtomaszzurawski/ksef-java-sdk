@@ -32,6 +32,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class TestDataClientTest {
@@ -42,11 +43,6 @@ class TestDataClientTest {
     private static final String TEST_PESEL = "82060411457";
     private static final String TEST_AUTHORIZED_NIP = "0987654321";
     private static final String TEST_DESCRIPTION = "Test data entry";
-
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_NO_CONTENT = 204;
-    private static final int HTTP_SERVER_ERROR = 500;
-
     private static final int LIMIT_INVOICE_SIZE_MB = 100;
     private static final int LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB = 200;
     private static final int LIMIT_MAX_INVOICES_ONLINE = 500;
@@ -61,31 +57,33 @@ class TestDataClientTest {
     void createSubject_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/subject"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().createSubject(
-                TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION));
+            // when
+            ksef.testData().createSubject(
+                    TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION));
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/subject")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/subject")));
+        }
     }
 
     @Test
     void removeSubject_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/subject/remove"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().removeSubject(TEST_NIP);
+            // when
+            ksef.testData().removeSubject(TEST_NIP);
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/subject/remove")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/subject/remove")));
+        }
     }
 
     // --- Person tests (unauthenticated) ---
@@ -94,31 +92,33 @@ class TestDataClientTest {
     void createPerson_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/person"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().createPerson(
-                TestPersonCreateBuilder.create(TEST_NIP, TEST_PESEL, false, TEST_DESCRIPTION));
+            // when
+            ksef.testData().createPerson(
+                    TestPersonCreateBuilder.create(TEST_NIP, TEST_PESEL, false, TEST_DESCRIPTION));
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/person")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/person")));
+        }
     }
 
     @Test
     void removePerson_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/person/remove"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().removePerson(TEST_NIP);
+            // when
+            ksef.testData().removePerson(TEST_NIP);
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/person/remove")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/person/remove")));
+        }
     }
 
     // --- Permissions tests (unauthenticated) ---
@@ -127,33 +127,35 @@ class TestDataClientTest {
     void grantPermissions_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/permissions"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().grantPermissions(TestPermissionsGrantBuilder.create(TEST_NIP)
-                .authorizedNip(TEST_AUTHORIZED_NIP)
-                .invoiceRead());
+            // when
+            ksef.testData().grantPermissions(TestPermissionsGrantBuilder.create(TEST_NIP)
+                    .authorizedNip(TEST_AUTHORIZED_NIP)
+                    .invoiceRead());
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/permissions")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/permissions")));
+        }
     }
 
     @Test
     void revokePermissions_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/permissions/revoke"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().revokePermissions(TestPermissionsRevokeBuilder.create(TEST_NIP)
-                .authorizedNip(TEST_AUTHORIZED_NIP));
+            // when
+            ksef.testData().revokePermissions(TestPermissionsRevokeBuilder.create(TEST_NIP)
+                    .authorizedNip(TEST_AUTHORIZED_NIP));
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/permissions/revoke")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/permissions/revoke")));
+        }
     }
 
     // --- Attachment tests (unauthenticated) ---
@@ -162,30 +164,32 @@ class TestDataClientTest {
     void grantAttachment_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/attachment"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().grantAttachment(TEST_NIP);
+            // when
+            ksef.testData().grantAttachment(TEST_NIP);
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/attachment")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/attachment")));
+        }
     }
 
     @Test
     void revokeAttachment_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/attachment/revoke"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().revokeAttachment(TEST_NIP);
+            // when
+            ksef.testData().revokeAttachment(TEST_NIP);
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/attachment/revoke")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/attachment/revoke")));
+        }
     }
 
     // --- Context blocking tests (unauthenticated) ---
@@ -194,30 +198,32 @@ class TestDataClientTest {
     void blockContext_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/context/block"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().blockContext(TestDataIdentifierType.NIP, TEST_NIP);
+            // when
+            ksef.testData().blockContext(TestDataIdentifierType.NIP, TEST_NIP);
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/block")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/block")));
+        }
     }
 
     @Test
     void unblockContext_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/context/unblock"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        ksef.testData().unblockContext(TestDataIdentifierType.NIP, TEST_NIP);
+            // when
+            ksef.testData().unblockContext(TestDataIdentifierType.NIP, TEST_NIP);
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/unblock")));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/context/unblock")));
+        }
     }
 
     // --- Session limits tests (authenticated) ---
@@ -226,36 +232,38 @@ class TestDataClientTest {
     void setSessionLimits_whenAuthenticated_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/limits/context/session"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.testData().setSessionLimits(TestSessionLimitsBuilder.create()
-                .onlineSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_ONLINE)
-                .batchSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_BATCH));
+            // when
+            ksef.testData().setSessionLimits(TestSessionLimitsBuilder.create()
+                    .onlineSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_ONLINE)
+                    .batchSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_BATCH));
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/limits/context/session"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/limits/context/session"))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     @Test
     void resetSessionLimits_whenAuthenticated_sendsDeleteRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(delete(urlEqualTo("/api/v2/testdata/limits/context/session"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.testData().resetSessionLimits();
+            // when
+            ksef.testData().resetSessionLimits();
 
-        // then
-        verify(deleteRequestedFor(urlEqualTo("/api/v2/testdata/limits/context/session"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(deleteRequestedFor(urlEqualTo("/api/v2/testdata/limits/context/session"))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     // --- Subject limits tests (authenticated) ---
@@ -264,35 +272,37 @@ class TestDataClientTest {
     void setSubjectLimits_whenAuthenticated_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/limits/subject/certificate"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.testData().setSubjectLimits(
-                TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP));
+            // when
+            ksef.testData().setSubjectLimits(
+                    TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP));
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/limits/subject/certificate"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/limits/subject/certificate"))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     @Test
     void resetSubjectLimits_whenAuthenticated_sendsDeleteRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(delete(urlEqualTo("/api/v2/testdata/limits/subject/certificate"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.testData().resetSubjectLimits();
+            // when
+            ksef.testData().resetSubjectLimits();
 
-        // then
-        verify(deleteRequestedFor(urlEqualTo("/api/v2/testdata/limits/subject/certificate"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(deleteRequestedFor(urlEqualTo("/api/v2/testdata/limits/subject/certificate"))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     // --- Rate limits tests (authenticated) ---
@@ -301,52 +311,55 @@ class TestDataClientTest {
     void setRateLimits_whenAuthenticated_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/rate-limits"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.testData().setRateLimits(TestRateLimitsBuilder.create()
-                .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR));
+            // when
+            ksef.testData().setRateLimits(TestRateLimitsBuilder.create()
+                    .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR));
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/rate-limits"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/rate-limits"))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     @Test
     void resetRateLimits_whenAuthenticated_sendsDeleteRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(delete(urlEqualTo("/api/v2/testdata/rate-limits"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.testData().resetRateLimits();
+            // when
+            ksef.testData().resetRateLimits();
 
-        // then
-        verify(deleteRequestedFor(urlEqualTo("/api/v2/testdata/rate-limits"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(deleteRequestedFor(urlEqualTo("/api/v2/testdata/rate-limits"))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     @Test
     void setProductionRateLimits_whenAuthenticated_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/rate-limits/production"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.testData().setProductionRateLimits();
+            // when
+            ksef.testData().setProductionRateLimits();
 
-        // then
-        verify(postRequestedFor(urlEqualTo("/api/v2/testdata/rate-limits/production"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(postRequestedFor(urlEqualTo("/api/v2/testdata/rate-limits/production"))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     // --- Error tests ---
@@ -355,14 +368,15 @@ class TestDataClientTest {
     void createSubject_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/testdata/subject"))
-                .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // then
-        var testData = ksef.testData();
-        var builder = TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION);
-        assertThrows(KsefServerException.class, () -> testData.createSubject(builder));
+            // then
+            var testData = ksef.testData();
+            var builder = TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION);
+            assertThrows(KsefServerException.class, () -> testData.createSubject(builder));
+        }
     }
 
     // --- Helpers ---

@@ -28,6 +28,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class TokenClientTest {
@@ -36,11 +37,6 @@ class TokenClientTest {
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
     private static final String TEST_TOKEN_REF = "20260404-TK-1234567890-ABCDEF1234-07";
     private static final String TEST_GENERATED_TOKEN = "generated-ksef-token-value-abc123";
-
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_NO_CONTENT = 204;
-    private static final int HTTP_UNAUTHORIZED = 401;
-
     private static final String GENERATE_RESPONSE = """
             {
               "referenceNumber": "%s",
@@ -69,61 +65,64 @@ class TokenClientTest {
     void generate_whenAuthenticated_returnsTokenResponse(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/tokens"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(GENERATE_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        GenerateTokenResult response = ksef.tokens().generate(TokenGenerateBuilder.create("test description").invoiceRead());
+            // when
+            GenerateTokenResult response = ksef.tokens().generate(TokenGenerateBuilder.create("test description").invoiceRead());
 
-        // then
-        assertEquals(TEST_TOKEN_REF, response.referenceNumber());
-        assertEquals(TEST_GENERATED_TOKEN, response.token());
+            // then
+            assertEquals(TEST_TOKEN_REF, response.referenceNumber());
+            assertEquals(TEST_GENERATED_TOKEN, response.token());
+        }
     }
 
     @Test
     void list_whenAuthenticated_returnsTokenList(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/tokens"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(LIST_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        TokenList response = ksef.tokens().list();
+            // when
+            TokenList response = ksef.tokens().list();
 
-        // then
-        assertNotNull(response.tokens());
-        assertEquals(1, response.tokens().size());
-        assertEquals(TEST_TOKEN_REF, response.tokens().get(0).referenceNumber());
+            // then
+            assertNotNull(response.tokens());
+            assertEquals(1, response.tokens().size());
+            assertEquals(TEST_TOKEN_REF, response.tokens().get(0).referenceNumber());
+        }
     }
 
     @Test
     void getStatus_whenTokenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/tokens/" + TEST_TOKEN_REF))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(STATUS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        TokenDetail response = ksef.tokens().getStatus(TEST_TOKEN_REF);
+            // when
+            TokenDetail response = ksef.tokens().getStatus(TEST_TOKEN_REF);
 
-        // then
-        assertEquals(TEST_TOKEN_REF, response.referenceNumber());
-        assertNotNull(response.dateCreated());
+            // then
+            assertEquals(TEST_TOKEN_REF, response.referenceNumber());
+            assertNotNull(response.dateCreated());
+        }
     }
 
     @Test
@@ -131,17 +130,18 @@ class TokenClientTest {
         // given
         String deletePath = "/api/v2/tokens/" + TEST_TOKEN_REF;
         stubFor(delete(urlEqualTo(deletePath))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.tokens().revoke(TEST_TOKEN_REF);
+            // when
+            ksef.tokens().revoke(TEST_TOKEN_REF);
 
-        // then
-        verify(deleteRequestedFor(urlEqualTo(deletePath))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(deleteRequestedFor(urlEqualTo(deletePath))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     @Test
@@ -149,25 +149,27 @@ class TokenClientTest {
         // given — both the target endpoint and the reauth security endpoint return 401,
         // so after the SDK retries once on 401 the auth exception propagates.
         stubFor(post(urlEqualTo("/api/v2/tokens"))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
         stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // then
-        var tokens = ksef.tokens();
-        var builder = TokenGenerateBuilder.create("test description").invoiceRead();
-        assertThrows(KsefAuthException.class, () -> tokens.generate(builder));
+            // then
+            var tokens = ksef.tokens();
+            var builder = TokenGenerateBuilder.create("test description").invoiceRead();
+            assertThrows(KsefAuthException.class, () -> tokens.generate(builder));
+        }
     }
 
     @Test
     void getStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        var tokens = ksef.tokens();
+            var tokens = ksef.tokens();
 
-        assertThrows(IllegalArgumentException.class, () -> tokens.getStatus("../../../etc/passwd"));
+            assertThrows(IllegalArgumentException.class, () -> tokens.getStatus("../../../etc/passwd"));
+        }
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

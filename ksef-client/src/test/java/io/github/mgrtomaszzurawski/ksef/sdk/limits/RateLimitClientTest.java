@@ -21,16 +21,13 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class RateLimitClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
-
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_UNAUTHORIZED = 401;
-
     private static final int RATE_PER_SECOND = 10;
     private static final int RATE_PER_MINUTE = 100;
     private static final int RATE_PER_HOUR = 1000;
@@ -47,22 +44,23 @@ class RateLimitClientTest {
     void getRateLimits_whenAuthenticated_returnsLimits(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/rate-limits"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(RATE_LIMITS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ApiRateLimits response = ksef.rateLimits().getRateLimits();
+            // when
+            ApiRateLimits response = ksef.rateLimits().getRateLimits();
 
-        // then
-        assertNotNull(response.onlineSession());
-        assertEquals(Integer.valueOf(RATE_PER_SECOND), response.onlineSession().perSecond());
-        assertEquals(Integer.valueOf(RATE_PER_MINUTE), response.onlineSession().perMinute());
-        assertEquals(Integer.valueOf(RATE_PER_HOUR), response.onlineSession().perHour());
+            // then
+            assertNotNull(response.onlineSession());
+            assertEquals(Integer.valueOf(RATE_PER_SECOND), response.onlineSession().perSecond());
+            assertEquals(Integer.valueOf(RATE_PER_MINUTE), response.onlineSession().perMinute());
+            assertEquals(Integer.valueOf(RATE_PER_HOUR), response.onlineSession().perHour());
+        }
     }
 
     @Test
@@ -70,16 +68,17 @@ class RateLimitClientTest {
         // given — both the target endpoint and the reauth security endpoint return 401,
         // so after the SDK retries once on 401 the auth exception propagates.
         stubFor(get(urlEqualTo("/api/v2/rate-limits"))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
         stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // then
-        var rateLimits = ksef.rateLimits();
+            // then
+            var rateLimits = ksef.rateLimits();
 
-        assertThrows(KsefAuthException.class, rateLimits::getRateLimits);
+            assertThrows(KsefAuthException.class, rateLimits::getRateLimits);
+        }
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

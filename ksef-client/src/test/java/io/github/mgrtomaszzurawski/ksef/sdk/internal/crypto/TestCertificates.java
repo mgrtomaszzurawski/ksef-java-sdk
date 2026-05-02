@@ -9,7 +9,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -30,10 +29,7 @@ public final class TestCertificates {
     private static final int CERT_VALIDITY_DAYS = 365;
     private static final String CERT_SUBJECT = "CN=Test";
     private static final String RSA_ALGORITHM = "RSA";
-    private static final String EC_ALGORITHM = "EC";
-    private static final String EC_CURVE = "secp256r1";
     private static final String SHA256_WITH_RSA = "SHA256WithRSA";
-    private static final String SHA256_WITH_ECDSA = "SHA256WithECDSA";
 
     private final X509Certificate certificate;
     private final PrivateKey privateKey;
@@ -56,14 +52,6 @@ public final class TestCertificates {
         keyPairGen.initialize(RSA_KEY_SIZE);
         KeyPair keyPair = keyPairGen.generateKeyPair();
         X509Certificate cert = buildSelfSignedCertificate(keyPair, SHA256_WITH_RSA);
-        return new TestCertificates(cert, keyPair.getPrivate());
-    }
-
-    public static TestCertificates generateEcdsa() throws Exception {
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(EC_ALGORITHM);
-        keyPairGen.initialize(new ECGenParameterSpec(EC_CURVE));
-        KeyPair keyPair = keyPairGen.generateKeyPair();
-        X509Certificate cert = buildSelfSignedCertificate(keyPair, SHA256_WITH_ECDSA);
         return new TestCertificates(cert, keyPair.getPrivate());
     }
 

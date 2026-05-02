@@ -13,6 +13,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 class RetryHandlerTest {
 
@@ -20,11 +21,8 @@ class RetryHandlerTest {
     private static final String EXPECTED_RESULT = "success";
     private static final String ERROR_MESSAGE = "server error";
     private static final String RESPONSE_BODY = "{}";
-    private static final int HTTP_INTERNAL_SERVER_ERROR = 500;
-    private static final int HTTP_TOO_MANY_REQUESTS = 429;
-
     @Test
-    void execute_whenNoRetry_callsOnce() throws IOException {
+    void execute_whenNoRetry_callsOnce() {
         // given
         RetryPolicy policy = RetryPolicy.builder().enabled(false).build();
         RetryHandler handler = new RetryHandler(policy);
@@ -37,7 +35,7 @@ class RetryHandlerTest {
     }
 
     @Test
-    void execute_whenSuccess_returnsResult() throws IOException {
+    void execute_whenSuccess_returnsResult() {
         // given
         RetryPolicy policy = RetryPolicy.builder().build();
         RetryHandler handler = new RetryHandler(policy);
@@ -58,7 +56,7 @@ class RetryHandlerTest {
         // then
         assertThrows(KsefServerException.class, () ->
                 handler.execute(() -> {
-                    throw new KsefServerException(ERROR_MESSAGE, null, HTTP_INTERNAL_SERVER_ERROR, RESPONSE_BODY);
+                    throw new KsefServerException(ERROR_MESSAGE, null, TestHttpConstants.HTTP_SERVER_ERROR, RESPONSE_BODY);
                 }, OPERATION_NAME));
     }
 
@@ -71,7 +69,7 @@ class RetryHandlerTest {
         // then
         assertThrows(KsefRateLimitException.class, () ->
                 handler.execute(() -> {
-                    throw new KsefRateLimitException(ERROR_MESSAGE, null, HTTP_TOO_MANY_REQUESTS, RESPONSE_BODY);
+                    throw new KsefRateLimitException(ERROR_MESSAGE, null, TestHttpConstants.HTTP_TOO_MANY_REQUESTS, RESPONSE_BODY);
                 }, OPERATION_NAME));
     }
 
@@ -89,7 +87,7 @@ class RetryHandlerTest {
     }
 
     @Test
-    void executePost_whenRetryPostDisabled_callsOnce() throws IOException {
+    void executePost_whenRetryPostDisabled_callsOnce() {
         // given
         RetryPolicy policy = RetryPolicy.builder().retryPost(false).build();
         RetryHandler handler = new RetryHandler(policy);

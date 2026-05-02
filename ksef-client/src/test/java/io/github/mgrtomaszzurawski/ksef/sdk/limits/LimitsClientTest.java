@@ -23,16 +23,13 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class LimitsClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
-
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_SERVER_ERROR = 500;
-
     private static final String CONTEXT_LIMITS_RESPONSE = """
             {
               "onlineSession": {"maxInvoicesPerSession": 100, "maxSessionDuration": 3600},
@@ -48,55 +45,58 @@ class LimitsClientTest {
     void getContextLimits_whenAuthenticated_returnsLimits(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/limits/context"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(CONTEXT_LIMITS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ContextLimits response = ksef.limits().getContextLimits();
+            // when
+            ContextLimits response = ksef.limits().getContextLimits();
 
-        // then
-        assertNotNull(response.onlineSession());
-        assertNotNull(response.batchSession());
+            // then
+            assertNotNull(response.onlineSession());
+            assertNotNull(response.batchSession());
+        }
     }
 
     @Test
     void getSubjectLimits_whenAuthenticated_returnsLimits(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/limits/subject"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SUBJECT_LIMITS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        SubjectLimits response = ksef.limits().getSubjectLimits();
+            // when
+            SubjectLimits response = ksef.limits().getSubjectLimits();
 
-        // then
-        assertNotNull(response);
-        verify(getRequestedFor(urlEqualTo("/api/v2/limits/subject"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            assertNotNull(response);
+            verify(getRequestedFor(urlEqualTo("/api/v2/limits/subject"))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     @Test
     void getContextLimits_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/limits/context"))
-                .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // then
-        var limits = ksef.limits();
+            // then
+            var limits = ksef.limits();
 
-        assertThrows(KsefServerException.class, limits::getContextLimits);
+            assertThrows(KsefServerException.class, limits::getContextLimits);
+        }
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
