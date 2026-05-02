@@ -14,6 +14,13 @@
         <Class name="io.github.mgrtomaszzurawski.ksef.sdk.KsefClient"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
+    <!-- KsefHttpRuntime is the internal HttpRuntime adapter — its accessors
+         exist to share the same ObjectMapper/SessionContext across domain
+         clients within the SDK module. The package is non-exported via JPMS. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefHttpRuntime"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
     <!-- Java records with mutable fields (List, byte[], Map, X509Certificate, PrivateKey, char[]).
          Records are immutable by intent — the JVM guarantees no setter methods.
          SpotBugs flags the auto-generated accessor as "exposing mutable state"
