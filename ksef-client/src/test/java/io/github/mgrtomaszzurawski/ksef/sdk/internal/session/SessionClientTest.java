@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class SessionClientTest {
@@ -42,15 +43,7 @@ class SessionClientTest {
     private static final String TEST_INVOICE_REF = "20260404-IN-1234567890-ABCDEF1234-02";
     private static final String TEST_UPO_REF = "20260404-UP-1234567890-ABCDEF1234-03";
     private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
-
-    private static final int HTTP_OK = 200;
     private static final int KSEF_STATUS_OK = 200;
-    private static final int HTTP_CREATED = 201;
-    private static final int HTTP_ACCEPTED = 202;
-    private static final int HTTP_NO_CONTENT = 204;
-    private static final int HTTP_UNAUTHORIZED = 401;
-    private static final int HTTP_SERVER_ERROR = 500;
-
     private static final String OPEN_ONLINE_RESPONSE = """
             {
               "referenceNumber": "%s",
@@ -97,40 +90,42 @@ class SessionClientTest {
     void openOnline_whenAuthenticated_returnsSessionReference(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/sessions/online"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(OPEN_ONLINE_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        OnlineSession response = ksef.sessions().openOnline(new OpenOnlineSessionRequestRaw());
+            // when
+            OnlineSession response = ksef.sessions().openOnline(new OpenOnlineSessionRequestRaw());
 
-        // then
-        assertEquals(TEST_SESSION_REF, response.referenceNumber());
-        assertNotNull(response.validUntil());
+            // then
+            assertEquals(TEST_SESSION_REF, response.referenceNumber());
+            assertNotNull(response.validUntil());
+        }
     }
 
     @Test
     void sendInvoice_whenSessionOpen_returnsInvoiceReference(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/invoices"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_ACCEPTED)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SEND_INVOICE_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        SendInvoiceResult response = ksef.sessions().sendInvoice(
-                TEST_SESSION_REF, new SendInvoiceRequestRaw());
+            // when
+            SendInvoiceResult response = ksef.sessions().sendInvoice(
+                    TEST_SESSION_REF, new SendInvoiceRequestRaw());
 
-        // then
-        assertEquals(TEST_INVOICE_REF, response.referenceNumber());
+            // then
+            assertEquals(TEST_INVOICE_REF, response.referenceNumber());
+        }
     }
 
     @Test
@@ -138,96 +133,101 @@ class SessionClientTest {
         // given
         String closePath = "/api/v2/sessions/online/" + TEST_SESSION_REF + "/close";
         stubFor(post(urlEqualTo(closePath))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        ksef.sessions().closeOnline(TEST_SESSION_REF);
+            // when
+            ksef.sessions().closeOnline(TEST_SESSION_REF);
 
-        // then
-        verify(postRequestedFor(urlEqualTo(closePath))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN)));
+            // then
+            verify(postRequestedFor(urlEqualTo(closePath))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
+        }
     }
 
     @Test
     void getStatus_whenSessionExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SESSION_STATUS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        SessionStatus response = ksef.sessions().getStatus(TEST_SESSION_REF);
+            // when
+            SessionStatus response = ksef.sessions().getStatus(TEST_SESSION_REF);
 
-        // then
-        assertEquals(KSEF_STATUS_OK, response.status().code());
-        assertNotNull(response.dateCreated());
+            // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertNotNull(response.dateCreated());
+        }
     }
 
     @Test
     void getInvoices_whenSessionHasInvoices_returnsInvoiceList(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/invoices"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SESSION_INVOICES_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        SessionInvoices response = ksef.sessions().getInvoices(TEST_SESSION_REF);
+            // when
+            SessionInvoices response = ksef.sessions().getInvoices(TEST_SESSION_REF);
 
-        // then
-        assertEquals(1, response.invoices().size());
-        assertEquals(TEST_INVOICE_REF, response.invoices().get(0).referenceNumber());
+            // then
+            assertEquals(1, response.invoices().size());
+            assertEquals(TEST_INVOICE_REF, response.invoices().get(0).referenceNumber());
+        }
     }
 
     @Test
     void getInvoiceStatus_whenInvoiceExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/invoices/" + TEST_INVOICE_REF))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(INVOICE_STATUS_RESPONSE)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        SessionInvoiceStatus response = ksef.sessions()
-                .getInvoiceStatus(TEST_SESSION_REF, TEST_INVOICE_REF);
+            // when
+            SessionInvoiceStatus response = ksef.sessions()
+                    .getInvoiceStatus(TEST_SESSION_REF, TEST_INVOICE_REF);
 
-        // then
-        assertEquals(KSEF_STATUS_OK, response.status().code());
+            // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
+        }
     }
 
     @Test
     void getUpoByReference_whenAvailable_returnsUpoBytes(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF + "/upo/" + TEST_UPO_REF))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/octet-stream")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, "application/octet-stream")
                         .withBody(TEST_UPO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        byte[] upoBytes = ksef.sessions().getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
+            // when
+            byte[] upoBytes = ksef.sessions().getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
 
-        // then
-        assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+            // then
+            assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+        }
     }
 
     @Test
@@ -235,18 +235,19 @@ class SessionClientTest {
         // given
         stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF
                 + "/invoices/ksef/" + TEST_KSEF_NUMBER + "/upo"))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
+                        .withStatus(TestHttpConstants.HTTP_OK)
                         .withBody(TEST_UPO_CONTENT)));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // when
-        byte[] upoBytes = ksef.sessions().getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
+            // when
+            byte[] upoBytes = ksef.sessions().getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
 
-        // then
-        assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+            // then
+            assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+        }
     }
 
     @Test
@@ -254,31 +255,33 @@ class SessionClientTest {
         // given — both the target endpoint and the reauth security endpoint return 401,
         // so after the SDK retries once on 401 the auth exception propagates.
         stubFor(post(urlEqualTo("/api/v2/sessions/online"))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
         stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // then
-        var sessions = ksef.sessions();
-        OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw();
-        assertThrows(KsefAuthException.class, () -> sessions.openOnline(request));
+            // then
+            var sessions = ksef.sessions();
+            OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw();
+            assertThrows(KsefAuthException.class, () -> sessions.openOnline(request));
+        }
     }
 
     @Test
     void sendInvoice_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/invoices"))
-                .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
 
-        KsefClient ksef = createAuthenticatedClient(wmInfo);
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-        // then
-        var sessions = ksef.sessions();
-        SendInvoiceRequestRaw request = new SendInvoiceRequestRaw();
-        assertThrows(KsefServerException.class,
-                () -> sessions.sendInvoice(TEST_SESSION_REF, request));
+            // then
+            var sessions = ksef.sessions();
+            SendInvoiceRequestRaw request = new SendInvoiceRequestRaw();
+            assertThrows(KsefServerException.class,
+                    () -> sessions.sendInvoice(TEST_SESSION_REF, request));
+        }
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

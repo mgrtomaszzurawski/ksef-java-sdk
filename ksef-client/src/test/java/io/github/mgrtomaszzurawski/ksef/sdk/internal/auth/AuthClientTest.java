@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class AuthClientTest {
@@ -44,14 +45,6 @@ class AuthClientTest {
     private static final String PATH_TOKEN_REFRESH = "/api/v2/auth/token/refresh";
     private static final String PATH_SESSIONS = "/api/v2/auth/sessions";
     private static final String PATH_SESSIONS_CURRENT = "/api/v2/auth/sessions/current";
-
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_ACCEPTED = 202;
-    private static final int HTTP_NO_CONTENT = 204;
-    private static final int HTTP_UNAUTHORIZED = 401;
-    private static final int HTTP_TOO_MANY = 429;
-    private static final int HTTP_SERVER_ERROR = 500;
-
     private static final String TEST_CHALLENGE = "20260404-CR-AAAAAAAAAA-BBBBBBBBBB-CC";
     private static final String TEST_REFERENCE_NUMBER = "20260404-AU-1234567890-ABCDEF1234-01";
     private static final String TEST_TOKEN = "eyJhbGciOiJIUzI1NiJ9.test-payload.signature";
@@ -129,19 +122,20 @@ class AuthClientTest {
         // given
         stubFor(post(urlEqualTo(PATH_CHALLENGE))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(CHALLENGE_RESPONSE)));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // when
-        AuthenticationChallenge response = ksef.auth().requestChallenge();
+            // when
+            AuthenticationChallenge response = ksef.auth().requestChallenge();
 
-        // then
-        assertEquals(TEST_CHALLENGE, response.challenge());
-        assertNotNull(response.timestamp());
-        assertNotNull(response.clientIp());
+            // then
+            assertEquals(TEST_CHALLENGE, response.challenge());
+            assertNotNull(response.timestamp());
+            assertNotNull(response.clientIp());
+        }
     }
 
     @Test
@@ -149,148 +143,155 @@ class AuthClientTest {
         // given
         stubFor(post(urlEqualTo(PATH_CHALLENGE))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_TOO_MANY)
+                        .withStatus(TestHttpConstants.HTTP_TOO_MANY_REQUESTS)
                         .withBody("{\"error\":\"Rate limit exceeded\"}")));
 
-        KsefClient ksef = createClient(wmInfo);
+        try (KsefClient ksef = createClient(wmInfo)) {
 
-        // then
-        var auth = ksef.auth();
+            // then
+            var auth = ksef.auth();
 
-        assertThrows(KsefRateLimitException.class, () -> auth.requestChallenge());
+            assertThrows(KsefRateLimitException.class, () -> auth.requestChallenge());
+        }
     }
 
     @Test
     void authenticateWithXades_whenValidSignature_activatesSession(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubFor(post(urlEqualTo(PATH_XADES))
-                .withHeader("Content-Type", containing("application/xml"))
+                .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, containing(TestHttpConstants.APPLICATION_XML))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_ACCEPTED)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(AUTH_INIT_RESPONSE)));
 
-        KsefClient ksef = createClient(wmInfo);
-        TestCertificates testCerts = TestCertificates.generateRsa();
+        try (KsefClient ksef = createClient(wmInfo)) {
+            TestCertificates testCerts = TestCertificates.generateRsa();
 
-        // when
-        AuthenticationInit response = ksef.auth().authenticateWithXades(
-                TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+            // when
+            AuthenticationInit response = ksef.auth().authenticateWithXades(
+                    TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
-        // then
-        assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
-        assertEquals(TEST_TOKEN, response.authenticationToken().token());
-        assertTrue(ksef.sessionContext().isActive());
-        assertEquals(TEST_TOKEN, ksef.sessionContext().token());
+            // then
+            assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
+            assertEquals(TEST_TOKEN, response.authenticationToken().token());
+            assertTrue(ksef.sessionContext().isActive());
+            assertEquals(TEST_TOKEN, ksef.sessionContext().token());
+        }
     }
 
     @Test
     void redeemTokens_whenAuthenticated_updatesSessionWithAccessToken(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — authenticate first
         stubXadesAuth(wmInfo);
-        KsefClient ksef = createClient(wmInfo);
-        TestCertificates testCerts = TestCertificates.generateRsa();
-        ksef.auth().authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+        try (KsefClient ksef = createClient(wmInfo)) {
+            TestCertificates testCerts = TestCertificates.generateRsa();
+            ksef.auth().authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
-        stubFor(post(urlEqualTo(PATH_TOKEN_REDEEM))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(TOKENS_RESPONSE)));
+            stubFor(post(urlEqualTo(PATH_TOKEN_REDEEM))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                    .willReturn(aResponse()
+                            .withStatus(TestHttpConstants.HTTP_OK)
+                            .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                            .withBody(TOKENS_RESPONSE)));
 
-        // when
-        AuthenticationTokens response = ksef.auth().redeemTokens();
+            // when
+            AuthenticationTokens response = ksef.auth().redeemTokens();
 
-        // then
-        assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
-        assertEquals(TEST_REFRESH_TOKEN, response.refreshToken().token());
-        assertEquals(TEST_ACCESS_TOKEN, ksef.sessionContext().token());
+            // then
+            assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
+            assertEquals(TEST_REFRESH_TOKEN, response.refreshToken().token());
+            assertEquals(TEST_ACCESS_TOKEN, ksef.sessionContext().token());
+        }
     }
 
     @Test
     void refreshToken_whenValidRefreshToken_updatesSessionToken(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — authenticate and redeem first
         stubXadesAuth(wmInfo);
-        KsefClient ksef = createClient(wmInfo);
-        TestCertificates testCerts = TestCertificates.generateRsa();
-        ksef.auth().authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+        try (KsefClient ksef = createClient(wmInfo)) {
+            TestCertificates testCerts = TestCertificates.generateRsa();
+            ksef.auth().authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
-        stubFor(post(urlEqualTo(PATH_TOKEN_REFRESH))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_REFRESH_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(REFRESH_RESPONSE)));
+            stubFor(post(urlEqualTo(PATH_TOKEN_REFRESH))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_REFRESH_TOKEN))
+                    .willReturn(aResponse()
+                            .withStatus(TestHttpConstants.HTTP_OK)
+                            .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                            .withBody(REFRESH_RESPONSE)));
 
-        // when
-        AuthenticationTokenRefresh response = ksef.auth().refreshToken(TEST_REFRESH_TOKEN);
+            // when
+            AuthenticationTokenRefresh response = ksef.auth().refreshToken(TEST_REFRESH_TOKEN);
 
-        // then
-        assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
-        assertEquals(TEST_ACCESS_TOKEN, ksef.sessionContext().token());
+            // then
+            assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
+            assertEquals(TEST_ACCESS_TOKEN, ksef.sessionContext().token());
+        }
     }
 
     @Test
     void getStatus_whenAuthenticated_returnsOperationStatus(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubXadesAuth(wmInfo);
-        KsefClient ksef = createClient(wmInfo);
-        authenticateClient(ksef);
+        try (KsefClient ksef = createClient(wmInfo)) {
+            authenticateClient(ksef);
 
-        stubFor(get(urlEqualTo("/api/v2/auth/" + TEST_REFERENCE_NUMBER))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(STATUS_RESPONSE)));
+            stubFor(get(urlEqualTo("/api/v2/auth/" + TEST_REFERENCE_NUMBER))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                    .willReturn(aResponse()
+                            .withStatus(TestHttpConstants.HTTP_OK)
+                            .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                            .withBody(STATUS_RESPONSE)));
 
-        // when
-        AuthenticationStatus response = ksef.auth().getStatus(TEST_REFERENCE_NUMBER);
+            // when
+            AuthenticationStatus response = ksef.auth().getStatus(TEST_REFERENCE_NUMBER);
 
-        // then
-        assertNotNull(response.status());
+            // then
+            assertNotNull(response.status());
+        }
     }
 
     @Test
     void listSessions_whenAuthenticated_returnsSessionList(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubXadesAuth(wmInfo);
-        KsefClient ksef = createClient(wmInfo);
-        authenticateClient(ksef);
+        try (KsefClient ksef = createClient(wmInfo)) {
+            authenticateClient(ksef);
 
-        stubFor(get(urlEqualTo(PATH_SESSIONS))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(SESSIONS_LIST_RESPONSE)));
+            stubFor(get(urlEqualTo(PATH_SESSIONS))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                    .willReturn(aResponse()
+                            .withStatus(TestHttpConstants.HTTP_OK)
+                            .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                            .withBody(SESSIONS_LIST_RESPONSE)));
 
-        // when
-        AuthenticationList response = ksef.auth().listSessions();
+            // when
+            AuthenticationList response = ksef.auth().listSessions();
 
-        // then
-        assertNotNull(response.items());
-        assertFalse(response.items().isEmpty());
+            // then
+            assertNotNull(response.items());
+            assertFalse(response.items().isEmpty());
+        }
     }
 
     @Test
     void terminateCurrentSession_whenAuthenticated_clearsSessionContext(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubXadesAuth(wmInfo);
-        KsefClient ksef = createClient(wmInfo);
-        authenticateClient(ksef);
-        assertTrue(ksef.sessionContext().isActive());
+        try (KsefClient ksef = createClient(wmInfo)) {
+            authenticateClient(ksef);
+            assertTrue(ksef.sessionContext().isActive());
 
-        stubFor(delete(urlEqualTo(PATH_SESSIONS_CURRENT))
-                .withHeader("Authorization", equalTo("Bearer " + TEST_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+            stubFor(delete(urlEqualTo(PATH_SESSIONS_CURRENT))
+                    .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                    .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
-        // when
-        ksef.auth().terminateCurrentSession();
+            // when
+            ksef.auth().terminateCurrentSession();
 
-        // then
-        assertFalse(ksef.sessionContext().isActive());
+            // then
+            assertFalse(ksef.sessionContext().isActive());
+        }
     }
 
     @Test
@@ -298,18 +299,19 @@ class AuthClientTest {
         // given
         stubFor(post(urlEqualTo(PATH_XADES))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_UNAUTHORIZED)
+                        .withStatus(TestHttpConstants.HTTP_UNAUTHORIZED)
                         .withBody("{\"error\":\"Invalid certificate\"}")));
 
-        KsefClient ksef = createClient(wmInfo);
-        TestCertificates testCerts = TestCertificates.generateRsa();
-        var auth = ksef.auth();
-        var cert = testCerts.certificate();
-        var privateKey = testCerts.privateKey();
+        try (KsefClient ksef = createClient(wmInfo)) {
+            TestCertificates testCerts = TestCertificates.generateRsa();
+            var auth = ksef.auth();
+            var cert = testCerts.certificate();
+            var privateKey = testCerts.privateKey();
 
-        // then
-        assertThrows(KsefAuthException.class,
-                () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, privateKey, TEST_NIP));
+            // then
+            assertThrows(KsefAuthException.class,
+                    () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, privateKey, TEST_NIP));
+        }
     }
 
     @Test
@@ -317,18 +319,19 @@ class AuthClientTest {
         // given
         stubFor(post(urlEqualTo(PATH_XADES))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_SERVER_ERROR)
+                        .withStatus(TestHttpConstants.HTTP_SERVER_ERROR)
                         .withBody("{\"error\":\"Internal error\"}")));
 
-        KsefClient ksef = createClient(wmInfo);
-        TestCertificates testCerts = TestCertificates.generateRsa();
-        var auth = ksef.auth();
-        var cert = testCerts.certificate();
-        var privateKey = testCerts.privateKey();
+        try (KsefClient ksef = createClient(wmInfo)) {
+            TestCertificates testCerts = TestCertificates.generateRsa();
+            var auth = ksef.auth();
+            var cert = testCerts.certificate();
+            var privateKey = testCerts.privateKey();
 
-        // then
-        assertThrows(KsefServerException.class,
-                () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, privateKey, TEST_NIP));
+            // then
+            assertThrows(KsefServerException.class,
+                    () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, privateKey, TEST_NIP));
+        }
     }
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {
@@ -341,8 +344,8 @@ class AuthClientTest {
     private static void stubXadesAuth(WireMockRuntimeInfo wmInfo) {
         stubFor(post(urlEqualTo(PATH_XADES))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_ACCEPTED)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(AUTH_INIT_RESPONSE)));
     }
 

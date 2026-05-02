@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class KsefSessionTest {
@@ -33,12 +34,6 @@ class KsefSessionTest {
     private static final String TEST_INVOICE_REF = "20260418-IN-1234567890-ABCDEF1234-02";
     private static final String TEST_NIP = "1234567890";
     private static final String TEST_KSEF_TOKEN = "test-ksef-token";
-
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_ACCEPTED = 202;
-    private static final int HTTP_NO_CONTENT = 204;
-    private static final int HTTP_SESSION_BUSY = 415;
-    private static final int KSEF_STATUS_OK = 200;
 
     private static final String SEND_INVOICE_RESPONSE = """
             {
@@ -65,8 +60,8 @@ class KsefSessionTest {
         // given
         stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/invoices"))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_ACCEPTED)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SEND_INVOICE_RESPONSE)));
 
         KsefSession session = createSession(wmInfo);
@@ -97,14 +92,14 @@ class KsefSessionTest {
                 .inScenario("busy-then-ok")
                 .whenScenarioStateIs("Started")
                 .willReturn(aResponse()
-                        .withStatus(HTTP_SESSION_BUSY)
+                        .withStatus(TestHttpConstants.HTTP_SESSION_BUSY)
                         .withBody(SESSION_BUSY_BODY))
                 .willSetStateTo("retry"));
 
         stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/close"))
                 .inScenario("busy-then-ok")
                 .whenScenarioStateIs("retry")
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
         stubStatusOk();
 
@@ -150,8 +145,8 @@ class KsefSessionTest {
         stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF
                 + "/invoices/" + TEST_INVOICE_REF + "/upo"))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/octet-stream")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, "application/octet-stream")
                         .withBody(TEST_UPO_CONTENT)));
 
         KsefSession session = createSession(wmInfo);
@@ -181,15 +176,15 @@ class KsefSessionTest {
 
     private static void stubCloseAndStatusOk() {
         stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/close"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
         stubStatusOk();
     }
 
     private static void stubStatusOk() {
         stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SESSION_STATUS_OK_RESPONSE)));
     }
 }

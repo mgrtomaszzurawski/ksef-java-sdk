@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class KsefBatchSessionTest {
@@ -35,11 +37,6 @@ class KsefBatchSessionTest {
     private static final String TEST_BATCH_REF = "20260418-BA-1234567890-ABCDEF1234-01";
     private static final String TEST_NIP = "1234567890";
     private static final String TEST_KSEF_TOKEN = "test-ksef-token";
-
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_NO_CONTENT = 204;
-    private static final int HTTP_SESSION_BUSY = 415;
-
     private static final String UPLOAD_URL = "https://upload.example.com/part1";
     private static final String UPLOAD_METHOD = "PUT";
     private static final int PART_ORDINAL = 1;
@@ -86,7 +83,8 @@ class KsefBatchSessionTest {
         assertEquals(UPLOAD_METHOD, parts.get(0).method());
         assertEquals(URI.create(UPLOAD_URL), parts.get(0).url());
         PartUploadRequest extraPart = samplePart();
-        assertThrows(UnsupportedOperationException.class, () -> parts.add(extraPart));
+        Executable mutationAttempt = () -> parts.add(extraPart);
+        assertThrows(UnsupportedOperationException.class, mutationAttempt);
     }
 
     @Test
@@ -100,7 +98,7 @@ class KsefBatchSessionTest {
 
         // then
         assertNotNull(status);
-        assertEquals(HTTP_OK, status.status().code());
+        assertEquals(TestHttpConstants.HTTP_OK, status.status().code());
     }
 
     @Test
@@ -123,14 +121,14 @@ class KsefBatchSessionTest {
                 .inScenario(SCENARIO_BUSY_THEN_OK)
                 .whenScenarioStateIs("Started")
                 .willReturn(aResponse()
-                        .withStatus(HTTP_SESSION_BUSY)
+                        .withStatus(TestHttpConstants.HTTP_SESSION_BUSY)
                         .withBody(SESSION_BUSY_BODY))
                 .willSetStateTo(STATE_RETRY));
 
         stubFor(post(urlEqualTo("/api/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
                 .inScenario(SCENARIO_BUSY_THEN_OK)
                 .whenScenarioStateIs(STATE_RETRY)
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
         stubStatusOk();
 
@@ -174,15 +172,15 @@ class KsefBatchSessionTest {
 
     private static void stubCloseAndStatusOk() {
         stubFor(post(urlEqualTo("/api/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
         stubStatusOk();
     }
 
     private static void stubStatusOk() {
         stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_BATCH_REF))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SESSION_STATUS_OK_RESPONSE)));
     }
 }

@@ -26,6 +26,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 /**
  * Tests for automatic token refresh and retry on HTTP 401.
@@ -47,10 +48,6 @@ class AuthAutoRefreshTest {
     private static final String PATH_KSEF_TOKEN = "/api/v2/auth/ksef-token";
     private static final String PATH_AUTH_STATUS_PATTERN = "/api/v2/auth/[A-Za-z0-9.\\-]+";
     private static final String PATH_TOKEN_REDEEM = "/api/v2/auth/token/redeem";
-
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_UNAUTHORIZED = 401;
-
     private static final String NIP = "1234567890";
     private static final String INITIAL_TOKEN = "stale-jwt-from-prior-session";
     private static final String FRESH_TOKEN = "fresh-jwt-after-reauth";
@@ -104,69 +101,72 @@ class AuthAutoRefreshTest {
     void request_when401_reauthenticatesAndRetries(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — first call returns 401 with the stale token, second call returns 200 with the fresh token
         stubFor(get(urlEqualTo(TARGET_PATH))
-                .withHeader("Authorization", equalTo("Bearer " + INITIAL_TOKEN))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + INITIAL_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
         stubFor(get(urlEqualTo(TARGET_PATH))
-                .withHeader("Authorization", equalTo("Bearer " + FRESH_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + FRESH_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(RATE_LIMITS_OK_BODY)));
         stubAuthFlowSuccess();
 
-        KsefClient ksef = createClientWithStaleSession(wmInfo);
+        try (KsefClient ksef = createClientWithStaleSession(wmInfo)) {
 
-        // when
-        ksef.rateLimits().getRateLimits();
+            // when
+            ksef.rateLimits().getRateLimits();
 
-        // then — both attempts hit the target, reauth flow ran exactly once
-        verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
-        verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
-        verify(1, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
-        verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-        assertEquals(FRESH_TOKEN, ksef.sessionContext().token());
+            // then — both attempts hit the target, reauth flow ran exactly once
+            verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
+            verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
+            verify(1, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
+            verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
+            assertEquals(FRESH_TOKEN, ksef.sessionContext().token());
+        }
     }
 
     @Test
     void request_whenSecond401_throwsAuthException(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — both attempts return 401, reauth itself succeeds, exception propagates
         stubFor(get(urlEqualTo(TARGET_PATH))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{\"error\":\"expired\"}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{\"error\":\"expired\"}")));
         stubAuthFlowSuccess();
 
-        KsefClient ksef = createClientWithStaleSession(wmInfo);
+        try (KsefClient ksef = createClientWithStaleSession(wmInfo)) {
 
-        // then
-        var rateLimits = ksef.rateLimits();
+            // then
+            var rateLimits = ksef.rateLimits();
 
-        assertThrows(KsefAuthException.class, () -> rateLimits.getRateLimits());
-        verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
-        verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
+            assertThrows(KsefAuthException.class, () -> rateLimits.getRateLimits());
+            verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
+            verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
+        }
     }
 
     @Test
     void request_when200_doesNotReauthenticate(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — happy path: target returns 200 immediately, no reauth should happen
         stubFor(get(urlEqualTo(TARGET_PATH))
-                .withHeader("Authorization", equalTo("Bearer " + INITIAL_TOKEN))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + INITIAL_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(RATE_LIMITS_OK_BODY)));
         // Stub auth flow too — it must NOT be called
         stubAuthFlowSuccess();
 
-        KsefClient ksef = createClientWithStaleSession(wmInfo);
+        try (KsefClient ksef = createClientWithStaleSession(wmInfo)) {
 
-        // when
-        ksef.rateLimits().getRateLimits();
+            // when
+            ksef.rateLimits().getRateLimits();
 
-        // then — exactly one request, no reauth
-        verify(1, getRequestedFor(urlEqualTo(TARGET_PATH)));
-        verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
-        verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
-        verify(0, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-        assertEquals(INITIAL_TOKEN, ksef.sessionContext().token());
+            // then — exactly one request, no reauth
+            verify(1, getRequestedFor(urlEqualTo(TARGET_PATH)));
+            verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
+            verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
+            verify(0, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
+            assertEquals(INITIAL_TOKEN, ksef.sessionContext().token());
+        }
     }
 
     /**
@@ -193,32 +193,32 @@ class AuthAutoRefreshTest {
 
         stubFor(get(urlEqualTo(PATH_SECURITY))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(publicKeysResponse)));
 
         stubFor(post(urlEqualTo(PATH_CHALLENGE))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(CHALLENGE_RESPONSE)));
 
         stubFor(post(urlEqualTo(PATH_KSEF_TOKEN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(AUTH_INIT_RESPONSE)));
 
         stubFor(get(urlPathMatching(PATH_AUTH_STATUS_PATTERN))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(AUTH_STATUS_RESPONSE)));
 
         stubFor(post(urlEqualTo(PATH_TOKEN_REDEEM))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(TOKENS_REDEEM_RESPONSE)));
     }
 

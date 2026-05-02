@@ -22,14 +22,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
 class SecurityClientTest {
 
     private static final String PATH_PUBLIC_KEY_CERTS = "/api/v2/security/public-key-certificates";
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_SERVER_ERROR = 500;
-
     private static final String PUBLIC_KEY_CERTS_RESPONSE = """
             [
               {
@@ -46,19 +44,20 @@ class SecurityClientTest {
         // given
         stubFor(get(urlEqualTo(PATH_PUBLIC_KEY_CERTS))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(PUBLIC_KEY_CERTS_RESPONSE)));
 
-        KsefClient ksef = createClient(wmInfo);
-        SecurityClient securityClient = ksef.security();
+        try (KsefClient ksef = createClient(wmInfo)) {
+            SecurityClient securityClient = ksef.security();
 
-        // when
-        List<PublicKeyCertificate> certs = securityClient.getPublicKeyCertificates();
+            // when
+            List<PublicKeyCertificate> certs = securityClient.getPublicKeyCertificates();
 
-        // then
-        assertFalse(certs.isEmpty());
-        assertEquals(1, certs.size());
+            // then
+            assertFalse(certs.isEmpty());
+            assertEquals(1, certs.size());
+        }
     }
 
     @Test
@@ -66,14 +65,15 @@ class SecurityClientTest {
         // given
         stubFor(get(urlEqualTo(PATH_PUBLIC_KEY_CERTS))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_SERVER_ERROR)
+                        .withStatus(TestHttpConstants.HTTP_SERVER_ERROR)
                         .withBody("{\"error\":\"Internal Server Error\"}")));
 
-        KsefClient ksef = createClient(wmInfo);
-        SecurityClient securityClient = ksef.security();
+        try (KsefClient ksef = createClient(wmInfo)) {
+            SecurityClient securityClient = ksef.security();
 
-        // then
-        assertThrows(KsefServerException.class, securityClient::getPublicKeyCertificates);
+            // then
+            assertThrows(KsefServerException.class, securityClient::getPublicKeyCertificates);
+        }
     }
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {

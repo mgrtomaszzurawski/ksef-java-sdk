@@ -30,6 +30,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 /**
  * Tests for HttpSupport using generated model classes from the opened client.model package.
@@ -40,13 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class HttpSupportTest {
 
     private static final String TEST_PATH = "/api/v2/test/resource";
-    private static final int HTTP_OK = 200;
-    private static final int HTTP_NO_CONTENT = 204;
-    private static final int HTTP_UNAUTHORIZED = 401;
-    private static final int HTTP_NOT_FOUND = 404;
-    private static final int HTTP_TOO_MANY = 429;
-    private static final int HTTP_SERVER_ERROR = 500;
-
     private static final String TEST_CHALLENGE = "20260404-CR-AAAAAAAAAA-BBBBBBBBBB-CC";
     private static final String CHALLENGE_JSON = """
             {
@@ -62,8 +56,8 @@ class HttpSupportTest {
         // given
         stubFor(get(urlEqualTo(TEST_PATH))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(CHALLENGE_JSON)));
 
         HttpSupport http = createHttpSupport(wmInfo);
@@ -80,7 +74,7 @@ class HttpSupportTest {
     void get_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo(TEST_PATH))
-                .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
 
         HttpSupport http = createHttpSupport(wmInfo);
 
@@ -93,7 +87,7 @@ class HttpSupportTest {
     void get_whenNotFound_throwsNotFoundException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo(TEST_PATH))
-                .willReturn(aResponse().withStatus(HTTP_NOT_FOUND).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NOT_FOUND).withBody("{}")));
 
         HttpSupport http = createHttpSupport(wmInfo);
 
@@ -106,7 +100,7 @@ class HttpSupportTest {
     void get_whenTooManyRequests_throwsRateLimitException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo(TEST_PATH))
-                .willReturn(aResponse().withStatus(HTTP_TOO_MANY).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_TOO_MANY_REQUESTS).withBody("{}")));
 
         HttpSupport http = createHttpSupport(wmInfo);
 
@@ -119,7 +113,7 @@ class HttpSupportTest {
     void get_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo(TEST_PATH))
-                .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
 
         HttpSupport http = createHttpSupport(wmInfo);
 
@@ -132,10 +126,10 @@ class HttpSupportTest {
     void getAuthenticated_whenBearerToken_sendsAuthorizationHeader(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo(TEST_PATH))
-                .withHeader("Authorization", equalTo("Bearer test-token"))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo("Bearer test-token"))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(CHALLENGE_JSON)));
 
         HttpSupport http = createHttpSupport(wmInfo);
@@ -152,10 +146,10 @@ class HttpSupportTest {
     void postJson_whenOk_returnsDeserializedResponse(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo(TEST_PATH))
-                .withHeader("Content-Type", containing("application/json"))
+                .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, containing(TestHttpConstants.APPLICATION_JSON))
                 .willReturn(aResponse()
-                        .withStatus(HTTP_OK)
-                        .withHeader("Content-Type", "application/json")
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(CHALLENGE_JSON)));
 
         HttpSupport http = createHttpSupport(wmInfo);
@@ -172,8 +166,8 @@ class HttpSupportTest {
     void deleteAuthenticated_whenNoContent_sendsDeleteWithAuthHeader(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(delete(urlEqualTo(TEST_PATH))
-                .withHeader("Authorization", equalTo("Bearer test-token"))
-                .willReturn(aResponse().withStatus(HTTP_NO_CONTENT)));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo("Bearer test-token"))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
         HttpSupport http = createHttpSupport(wmInfo);
 
@@ -182,14 +176,14 @@ class HttpSupportTest {
 
         // then
         verify(deleteRequestedFor(urlEqualTo(TEST_PATH))
-                .withHeader("Authorization", equalTo("Bearer test-token")));
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo("Bearer test-token")));
     }
 
     @Test
     void deleteAuthenticated_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(delete(urlEqualTo(TEST_PATH))
-                .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR).withBody("{}")));
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
 
         HttpSupport http = createHttpSupport(wmInfo);
 
