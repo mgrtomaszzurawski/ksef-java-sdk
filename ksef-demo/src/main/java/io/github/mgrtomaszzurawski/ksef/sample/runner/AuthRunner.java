@@ -216,7 +216,7 @@ public final class AuthRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         KsefClient client = context.client();
         try {
-            SessionContext sessionContext = client.sessionContext();
+            SessionContext sessionContext = client.runtime().sessionContext();
             OffsetDateTime fakeExpiry = OffsetDateTime.now().plusHours(FUTURE_EXPIRY_HOURS);
             sessionContext.refreshToken(INVALID_JWT, fakeExpiry);
 
@@ -286,7 +286,7 @@ public final class AuthRunner implements DemoRunner {
         AuthenticationChallenge challenge = authClient.requestChallenge();
         authClient.authenticateWithToken(challenge, context.ksefToken(),
                 context.nipIdentifier(), tokenKey);
-        pollAuthStatus(authClient, client.sessionContext().referenceNumber());
+        pollAuthStatus(authClient, client.runtime().sessionContext().referenceNumber());
         return authClient.redeemTokens();
     }
 
