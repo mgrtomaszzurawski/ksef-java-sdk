@@ -167,8 +167,8 @@ public final class DemoApp {
             runners.add(new PeppolRunner());
             runners.add(new TestDataRunner());
             // BatchSessionRunner is FULL-only: KSeF rejects close on an empty batch
-            // (21205 "Pakiet nie może być pusty"), so the runner cannot probe lifecycle
-            // without actually uploading invoice parts.
+            // (server error 21205 "package must not be empty"), so the runner cannot
+            // probe lifecycle without actually uploading invoice parts.
             if (mode == DemoMode.FULL) {
                 runners.add(new BatchSessionRunner());
             }

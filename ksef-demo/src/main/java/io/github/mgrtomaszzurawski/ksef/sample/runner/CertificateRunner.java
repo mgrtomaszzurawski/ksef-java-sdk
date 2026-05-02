@@ -115,11 +115,11 @@ public final class CertificateRunner implements DemoRunner {
         try {
             CertificateEnrollmentData response = context.client().certificates()
                     .getEnrollmentData();
-            String cn = response.commonName();
+            String commonName = response.commonName();
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("[{}] enrollment data: cn={}", NAME, cn);
+                LOGGER.info("[{}] enrollment data: cn={}", NAME, commonName);
             }
-            results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start), "cn=" + cn));
+            results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start), "cn=" + commonName));
             return response;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),

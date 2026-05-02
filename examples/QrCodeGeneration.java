@@ -20,6 +20,11 @@ import java.nio.file.Path;
 
 public final class QrCodeGeneration {
 
+    private static final String ENV_TEST = "TEST";
+    private static final String ENV_DEMO = "DEMO";
+    private static final String ENV_LOWER_TEST = "test";
+    private static final String ENV_LOWER_DEMO = "demo";
+
     private QrCodeGeneration() { }
 
     public static void main(String[] args) throws Exception {
@@ -46,6 +51,7 @@ public final class QrCodeGeneration {
             return true;
         }
         String upper = envName.toUpperCase();
-        return upper.equals("TEST") || upper.equals("DEMO") || upper.contains("test") || upper.contains("demo");
+        return upper.equals(ENV_TEST) || upper.equals(ENV_DEMO)
+                || upper.contains(ENV_LOWER_TEST) || upper.contains(ENV_LOWER_DEMO);
     }
 }
