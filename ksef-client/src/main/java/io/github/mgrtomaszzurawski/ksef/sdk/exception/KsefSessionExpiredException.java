@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
+import java.io.Serial;
+
 /**
  * Thrown when a KSeF session has expired or been terminated.
  * This is a KSeF-specific auth error distinct from generic 401/403.
@@ -11,6 +13,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 @SuppressWarnings("java:S110") // Exception hierarchy depth is part of the public API contract: extends KsefAuthException so consumers can catch the broader auth category.
 public class KsefSessionExpiredException extends KsefAuthException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     public KsefSessionExpiredException(String message, Throwable cause, int statusCode, String responseBody) {

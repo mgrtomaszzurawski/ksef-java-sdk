@@ -98,10 +98,7 @@ public final class OnlineSessionBuilder {
 
         @Override
         public int hashCode() {
-            int result = Objects.hashCode(request);
-            result = 31 * result + Arrays.hashCode(aesKey);
-            result = 31 * result + Arrays.hashCode(initVector);
-            return result;
+            return Objects.hash(request, Arrays.hashCode(aesKey), Arrays.hashCode(initVector));
         }
 
         @Override
@@ -110,6 +107,14 @@ public final class OnlineSessionBuilder {
                     + ", aesKey=<redacted>"
                     + ", initVector=<redacted>]";
         }
+    }
+
+    /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     * Note: each call to {@link #build()} produces fresh AES key + IV.
+     */
+    public OnlineSessionBuilder toBuilder() {
+        return new OnlineSessionBuilder(this.systemCode, this.schemaVersion, this.formCodeValue, this.ksefPublicKey);
     }
 
     /**

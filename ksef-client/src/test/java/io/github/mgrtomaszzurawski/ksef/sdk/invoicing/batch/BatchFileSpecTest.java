@@ -32,8 +32,6 @@ class BatchFileSpecTest {
         return new BatchFileSpec.Part(ordinal, PART_SIZE, sampleHash());
     }
 
-    // --- BatchFileSpec construction ---
-
     @Test
     void create_whenValidInputs_createsSpec() {
         // given
@@ -95,8 +93,6 @@ class BatchFileSpecTest {
         assertEquals(PART_TWO, spec.parts().get(1).ordinalNumber());
     }
 
-    // --- BatchFileSpec defensive copy of fileHash ---
-
     @Test
     void fileHash_whenInputMutatedAfterConstruction_returnsOriginalHash() {
         // given
@@ -136,8 +132,6 @@ class BatchFileSpecTest {
         assertNotSame(first, second);
     }
 
-    // --- BatchFileSpec parts immutability ---
-
     @Test
     void parts_whenSourceListMutated_doesNotAffectSpec() {
         // given
@@ -163,8 +157,6 @@ class BatchFileSpecTest {
         assertThrows(UnsupportedOperationException.class, () -> parts.add(extraPart));
     }
 
-    // --- BatchFileSpec.Part construction ---
-
     @Test
     void partCreate_whenValidInputs_createsPart() {
         // given
@@ -185,8 +177,6 @@ class BatchFileSpecTest {
         assertThrows(NullPointerException.class,
                 () -> new BatchFileSpec.Part(PART_ONE, PART_SIZE, null));
     }
-
-    // --- BatchFileSpec.Part defensive copy of fileHash ---
 
     @Test
     void partFileHash_whenInputMutatedAfterConstruction_returnsOriginalHash() {

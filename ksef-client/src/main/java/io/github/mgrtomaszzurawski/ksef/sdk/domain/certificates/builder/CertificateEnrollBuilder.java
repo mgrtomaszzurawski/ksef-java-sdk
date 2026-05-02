@@ -69,6 +69,15 @@ public final class CertificateEnrollBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public CertificateEnrollBuilder toBuilder() {
+        CertificateEnrollBuilder copy = new CertificateEnrollBuilder(this.certificateName, this.certificateType, this.csr);
+        copy.validFrom = this.validFrom;
+        return copy;
+    }
+
+    /**
      * Build the enrollment request.
      *
      * @return the request ready to pass to {@code CertificateClient.enroll()}

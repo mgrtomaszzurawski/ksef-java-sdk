@@ -22,10 +22,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectC
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.time.LocalDate;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Client for KSeF test environment data management — creating/removing test subjects,
@@ -38,7 +40,9 @@ import java.util.Objects;
 @SuppressWarnings("PMD.TestClassWithoutTestCases") // Not a test class — manages KSeF test environment data
 public final class TestDataClientImpl implements TestDataClient {
 
-    // --- Unauthenticated paths ---
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestDataClientImpl.class);
+    private static final String LOG_CALL = "→ {}";
+
     private static final String PATH_SUBJECT = ApiPaths.TESTDATA + "/subject";
     private static final String PATH_SUBJECT_REMOVE = ApiPaths.TESTDATA + "/subject/remove";
     private static final String PATH_PERSON = ApiPaths.TESTDATA + "/person";
@@ -50,13 +54,11 @@ public final class TestDataClientImpl implements TestDataClient {
     private static final String PATH_CONTEXT_BLOCK = ApiPaths.TESTDATA + "/context/block";
     private static final String PATH_CONTEXT_UNBLOCK = ApiPaths.TESTDATA + "/context/unblock";
 
-    // --- Authenticated paths ---
     private static final String PATH_SESSION_LIMITS = ApiPaths.TESTDATA + "/limits/context/session";
     private static final String PATH_SUBJECT_LIMITS = ApiPaths.TESTDATA + "/limits/subject/certificate";
     private static final String PATH_RATE_LIMITS = ApiPaths.TESTDATA + "/rate-limits";
     private static final String PATH_RATE_LIMITS_PRODUCTION = ApiPaths.TESTDATA + "/rate-limits/production";
 
-    // --- Operation names ---
     private static final String OP_CREATE_SUBJECT = "createTestSubject";
     private static final String OP_REMOVE_SUBJECT = "removeTestSubject";
     private static final String OP_CREATE_PERSON = "createTestPerson";
@@ -90,8 +92,6 @@ public final class TestDataClientImpl implements TestDataClient {
         this.sessionContext = ksef.sessionContext();
     }
 
-    // --- Subject management (unauthenticated) ---
-
     /**
      * Create a test subject (taxpayer entity) in the test environment.
      *
@@ -99,6 +99,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void createSubject(TestSubjectCreateBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_CREATE_SUBJECT);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_SUBJECT, builder.build(), OP_CREATE_SUBJECT);
     }
@@ -110,13 +111,12 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void removeSubject(String subjectNip) {
+        LOGGER.debug(LOG_CALL, OP_REMOVE_SUBJECT);
         Objects.requireNonNull(subjectNip, ERR_NULL_SUBJECT_NIP);
         SubjectRemoveRequestRaw request = new SubjectRemoveRequestRaw();
         request.setSubjectNip(subjectNip);
         http.postJsonNoContent(PATH_SUBJECT_REMOVE, request, OP_REMOVE_SUBJECT);
     }
-
-    // --- Person management (unauthenticated) ---
 
     /**
      * Create a test person in the test environment.
@@ -125,6 +125,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void createPerson(TestPersonCreateBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_CREATE_PERSON);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_PERSON, builder.build(), OP_CREATE_PERSON);
     }
@@ -136,13 +137,12 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void removePerson(String nip) {
+        LOGGER.debug(LOG_CALL, OP_REMOVE_PERSON);
         Objects.requireNonNull(nip, ERR_NULL_NIP);
         PersonRemoveRequestRaw request = new PersonRemoveRequestRaw();
         request.setNip(nip);
         http.postJsonNoContent(PATH_PERSON_REMOVE, request, OP_REMOVE_PERSON);
     }
-
-    // --- Permission management (unauthenticated) ---
 
     /**
      * Grant test permissions in the test environment.
@@ -151,6 +151,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void grantPermissions(TestPermissionsGrantBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_PERMISSIONS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_PERMISSIONS, builder.build(), OP_GRANT_PERMISSIONS);
     }
@@ -162,11 +163,10 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void revokePermissions(TestPermissionsRevokeBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_REVOKE_PERMISSIONS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_PERMISSIONS_REVOKE, builder.build(), OP_REVOKE_PERMISSIONS);
     }
-
-    // --- Attachment management (unauthenticated) ---
 
     /**
      * Grant attachment permissions in the test environment.
@@ -175,6 +175,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void grantAttachment(String nip) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_ATTACHMENT);
         Objects.requireNonNull(nip, ERR_NULL_NIP);
         AttachmentPermissionGrantRequestRaw request = new AttachmentPermissionGrantRequestRaw();
         request.setNip(nip);
@@ -188,6 +189,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void revokeAttachment(String nip) {
+        LOGGER.debug(LOG_CALL, OP_REVOKE_ATTACHMENT);
         Objects.requireNonNull(nip, ERR_NULL_NIP);
         AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
         request.setNip(nip);
@@ -202,6 +204,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void revokeAttachment(String nip, LocalDate expectedEndDate) {
+        LOGGER.debug(LOG_CALL, OP_REVOKE_ATTACHMENT);
         Objects.requireNonNull(nip, ERR_NULL_NIP);
         Objects.requireNonNull(expectedEndDate, ERR_NULL_EXPECTED_END_DATE);
         AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
@@ -209,8 +212,6 @@ public final class TestDataClientImpl implements TestDataClient {
         request.setExpectedEndDate(expectedEndDate);
         http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, request, OP_REVOKE_ATTACHMENT);
     }
-
-    // --- Context blocking (unauthenticated) ---
 
     /**
      * Block authentication for a context in the test environment.
@@ -220,6 +221,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void blockContext(TestDataIdentifierType identifierType, String identifierValue) {
+        LOGGER.debug(LOG_CALL, OP_BLOCK_CONTEXT);
         Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
         Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
@@ -238,6 +240,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void unblockContext(TestDataIdentifierType identifierType, String identifierValue) {
+        LOGGER.debug(LOG_CALL, OP_UNBLOCK_CONTEXT);
         Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
         Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
@@ -248,8 +251,6 @@ public final class TestDataClientImpl implements TestDataClient {
         http.postJsonNoContent(PATH_CONTEXT_UNBLOCK, request, OP_UNBLOCK_CONTEXT);
     }
 
-    // --- Session limits (authenticated) ---
-
     /**
      * Set session limits override in the test environment.
      *
@@ -257,6 +258,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void setSessionLimits(TestSessionLimitsBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_SET_SESSION_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS, builder.build(), token, OP_SET_SESSION_LIMITS);
@@ -267,11 +269,10 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void resetSessionLimits() {
+        LOGGER.debug(LOG_CALL, OP_RESET_SESSION_LIMITS);
         String token = sessionContext.token();
         http.deleteAuthenticated(PATH_SESSION_LIMITS, token, OP_RESET_SESSION_LIMITS);
     }
-
-    // --- Subject limits (authenticated) ---
 
     /**
      * Set subject certificate limits override in the test environment.
@@ -280,6 +281,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void setSubjectLimits(TestSubjectLimitsBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_SET_SUBJECT_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS, builder.build(), token, OP_SET_SUBJECT_LIMITS);
@@ -290,11 +292,10 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void resetSubjectLimits() {
+        LOGGER.debug(LOG_CALL, OP_RESET_SUBJECT_LIMITS);
         String token = sessionContext.token();
         http.deleteAuthenticated(PATH_SUBJECT_LIMITS, token, OP_RESET_SUBJECT_LIMITS);
     }
-
-    // --- Rate limits (authenticated) ---
 
     /**
      * Set rate limit overrides in the test environment.
@@ -303,6 +304,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void setRateLimits(TestRateLimitsBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_SET_RATE_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS, builder.build(), token, OP_SET_RATE_LIMITS);
@@ -313,6 +315,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void resetRateLimits() {
+        LOGGER.debug(LOG_CALL, OP_RESET_RATE_LIMITS);
         String token = sessionContext.token();
         http.deleteAuthenticated(PATH_RATE_LIMITS, token, OP_RESET_RATE_LIMITS);
     }
@@ -322,6 +325,7 @@ public final class TestDataClientImpl implements TestDataClient {
      */
     @Override
     public void setProductionRateLimits() {
+        LOGGER.debug(LOG_CALL, OP_SET_PRODUCTION_RATE_LIMITS);
         String token = sessionContext.token();
         http.postNoBodyAuthenticated(PATH_RATE_LIMITS_PRODUCTION, token, OP_SET_PRODUCTION_RATE_LIMITS);
     }

@@ -57,8 +57,6 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
         return new EntityAuthorizationPermissionsQueryBuilder(QueryTypeRaw.RECEIVED);
     }
 
-    // --- Authorizing identifier ---
-
     /**
      * Filter by authorizing entity NIP.
      */
@@ -67,8 +65,6 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
         this.authorizingValue = nip;
         return this;
     }
-
-    // --- Authorized identifier ---
 
     /**
      * Filter by authorized entity NIP.
@@ -88,8 +84,6 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
         return this;
     }
 
-    // --- Permission types ---
-
     public EntityAuthorizationPermissionsQueryBuilder selfInvoicing() {
         permissionTypes.add(InvoicePermissionTypeRaw.SELF_INVOICING);
         return this;
@@ -108,6 +102,20 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
     public EntityAuthorizationPermissionsQueryBuilder pefInvoicing() {
         permissionTypes.add(InvoicePermissionTypeRaw.PEF_INVOICING);
         return this;
+    }
+
+    /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public EntityAuthorizationPermissionsQueryBuilder toBuilder() {
+        EntityAuthorizationPermissionsQueryBuilder copy =
+                new EntityAuthorizationPermissionsQueryBuilder(this.queryType);
+        copy.authorizingType = this.authorizingType;
+        copy.authorizingValue = this.authorizingValue;
+        copy.authorizedType = this.authorizedType;
+        copy.authorizedValue = this.authorizedValue;
+        copy.permissionTypes.addAll(this.permissionTypes);
+        return copy;
     }
 
     /**

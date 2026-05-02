@@ -19,11 +19,13 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExport
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 
 /**
@@ -31,6 +33,11 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  * and exporting invoices.
  */
 public final class InvoiceClientImpl implements InvoiceClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceClientImpl.class);
+    private static final String LOG_CALL = "→ {}";
+    private static final String LOG_CALL_REF = "→ {} ref={}";
+    private static final String LOG_CALL_MAX = "→ {} maxResults={}";
 
     private static final String PATH_INVOICES_KSEF = ApiPaths.INVOICES + "/ksef/";
     private static final String PATH_QUERY_METADATA = ApiPaths.INVOICES + "/query/metadata";
@@ -61,6 +68,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      */
     @Override
     public byte[] getByKsefNumber(String ksefNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_GET_BY_KSEF, ksefNumber);
         requireSafePathSegment(ksefNumber);
         String token = sessionContext.token();
         return http.getAuthenticatedBytes(PATH_INVOICES_KSEF + ksefNumber, token, OP_GET_BY_KSEF);
@@ -74,6 +82,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      */
     @Override
     public InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         return doQueryMetadata(query.build());
     }
@@ -102,6 +111,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      */
     @Override
     public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults) {
+        LOGGER.debug(LOG_CALL_MAX, OP_QUERY_METADATA, maxResults);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         InvoiceQueryFiltersRaw filters = query.build();
         List<InvoiceMetadata> allInvoices = new ArrayList<>();
@@ -141,6 +151,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      */
     @Override
     public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder) {
+        LOGGER.debug(LOG_CALL, OP_EXPORT);
         Objects.requireNonNull(exportBuilder, ERR_NULL_EXPORT);
         InvoiceExportRequestRaw request = exportBuilder.build();
         String token = sessionContext.token();
@@ -157,6 +168,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      */
     @Override
     public InvoiceExportStatus getExportStatus(String referenceNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_EXPORT_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         InvoiceExportStatusResponseRaw raw = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,

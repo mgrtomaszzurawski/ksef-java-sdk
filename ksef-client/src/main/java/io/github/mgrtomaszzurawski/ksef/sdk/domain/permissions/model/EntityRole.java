@@ -18,11 +18,9 @@ public record EntityRole(
 
     public static EntityRole from(EntityRoleRaw raw) {
         var parentRaw = raw.getParentEntityIdentifier();
-        PermissionIdentifier parentId = null;
-        if (parentRaw != null) {
-            String type = parentRaw.getType() != null ? parentRaw.getType().getValue() : null;
-            parentId = new PermissionIdentifier(type, parentRaw.getValue());
-        }
+        PermissionIdentifier parentId = parentRaw != null
+                ? new PermissionIdentifier(parentRaw.getType().getValue(), parentRaw.getValue())
+                : null;
         String role = raw.getRole().getValue();
         return new EntityRole(parentId, role, raw.getDescription(), raw.getStartDate());
     }

@@ -25,8 +25,8 @@ public record InvoiceMetadataResult(
     public static InvoiceMetadataResult from(QueryInvoicesMetadataResponseRaw raw) {
         List<InvoiceMetadata> mapped = raw.getInvoices().stream().map(InvoiceMetadata::from).toList();
         return new InvoiceMetadataResult(
-                Boolean.TRUE.equals(raw.getHasMore()),
-                Boolean.TRUE.equals(raw.getIsTruncated()),
+                raw.getHasMore(),
+                raw.getIsTruncated(),
                 raw.getPermanentStorageHwmDate(),
                 mapped);
     }

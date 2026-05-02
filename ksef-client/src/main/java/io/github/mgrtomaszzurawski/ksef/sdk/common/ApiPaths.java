@@ -2,10 +2,10 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
+package io.github.mgrtomaszzurawski.ksef.sdk.common;
 
 /**
- * Centralised KSeF REST API path prefixes.
+ * Centralised KSeF REST API path prefixes (ADR-014).
  *
  * <p>Every endpoint path lives under {@code /api/v2/}. Each domain client
  * builds its concrete paths from the appropriate base constant rather than
@@ -13,6 +13,14 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
  *
  * <p>Changing the API major version (e.g. {@code v2 -> v3}) only touches
  * {@link #API_BASE}.
+ *
+ * <p>Public so consumer-side tooling (custom probes, validation harnesses,
+ * raw {@code java.net.http.HttpClient} integrations) can build URLs using the
+ * same source of truth as the SDK itself.
+ *
+ * @apiNote Public for consumer URL construction. The SDK's domain clients
+ *          consume these constants internally — consumers usually don't need
+ *          to touch them.
  */
 public final class ApiPaths {
 
@@ -50,4 +58,3 @@ public final class ApiPaths {
         return path.toString();
     }
 }
-

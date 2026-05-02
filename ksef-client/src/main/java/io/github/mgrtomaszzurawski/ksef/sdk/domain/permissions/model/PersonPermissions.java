@@ -17,6 +17,6 @@ public record PersonPermissions(List<PersonPermission> permissions, boolean hasM
 
     public static PersonPermissions from(QueryPersonPermissionsResponseRaw raw) {
         List<PersonPermission> mapped = raw.getPermissions().stream().map(PersonPermission::from).toList();
-        return new PersonPermissions(mapped, Boolean.TRUE.equals(raw.getHasMore()));
+        return new PersonPermissions(mapped, raw.getHasMore());
     }
 }

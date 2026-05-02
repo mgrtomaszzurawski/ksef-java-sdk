@@ -61,6 +61,15 @@ public final class SendInvoiceBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public SendInvoiceBuilder toBuilder() {
+        SendInvoiceBuilder copy = new SendInvoiceBuilder(this.invoiceContent, this.aesKey, this.initVector);
+        copy.offlineMode = this.offlineMode;
+        return copy;
+    }
+
+    /**
      * Build the send invoice request. Encrypts the invoice content with the
      * session's AES key and computes SHA-256 hashes automatically.
      *
@@ -86,8 +95,8 @@ public final class SendInvoiceBuilder {
         try {
             MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
             return digest.digest(data);
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException(ERR_SHA256_UNAVAILABLE, ex);
+        } catch (NoSuchAlgorithmException missingAlgorithm) {
+            throw new IllegalStateException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
         }
     }
 }

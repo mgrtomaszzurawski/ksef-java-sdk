@@ -111,6 +111,21 @@ public final class EuEntityAdminPermissionGrantBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public EuEntityAdminPermissionGrantBuilder toBuilder() {
+        EuEntityAdminPermissionGrantBuilder copy = new EuEntityAdminPermissionGrantBuilder(this.fingerprintValue);
+        copy.contextValue = this.contextValue;
+        copy.description = this.description;
+        copy.euEntityName = this.euEntityName;
+        copy.subjectFullName = this.subjectFullName;
+        copy.subjectAddress = this.subjectAddress;
+        copy.euEntityFullName = this.euEntityFullName;
+        copy.euEntityAddress = this.euEntityAddress;
+        return copy;
+    }
+
+    /**
      * Build the EU entity admin permission grant request.
      *
      * @return the request ready to pass to {@code PermissionClient.grantEuEntityAdmin()}

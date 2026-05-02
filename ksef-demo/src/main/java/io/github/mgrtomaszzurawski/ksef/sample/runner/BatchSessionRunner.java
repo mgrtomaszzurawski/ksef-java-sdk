@@ -18,7 +18,6 @@
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
-import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
@@ -48,7 +47,6 @@ public final class BatchSessionRunner implements DemoRunner {
     private static final String OP_UPLOAD_PARTS = "uploadParts";
     private static final String OP_GET_STATUS = "getStatus";
     private static final String OP_CLOSE = "close";
-    private static final String SKIP_NOT_FULL = "FULL mode only";
     private static final int INVOICE_COUNT = 3;
 
     @Override
@@ -57,12 +55,6 @@ public final class BatchSessionRunner implements DemoRunner {
     @Override
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
-
-        if (context.mode() != DemoMode.FULL) {
-            results.add(RunResult.skip(NAME, OP_OPEN_BATCH, SKIP_NOT_FULL));
-            return results;
-        }
-
         List<byte[]> invoiceXmls = generateInvoices(context.nipIdentifier());
 
         long openStart = System.currentTimeMillis();
@@ -77,10 +69,14 @@ public final class BatchSessionRunner implements DemoRunner {
 
         try (KsefBatchSession session = batch) {
             String batchRef = session.referenceNumber();
-            LOGGER.info("[{}] opened batch session ref={}, invoices={}, parts={}",
-                    NAME, batchRef, invoiceXmls.size(), session.partUploadRequests().size());
+            int invoiceCount = invoiceXmls.size();
+            int partCount = session.partUploadRequests().size();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("[{}] opened batch session ref={}, invoices={}, parts={}",
+                        NAME, batchRef, invoiceCount, partCount);
+            }
             results.add(RunResult.ok(NAME, OP_OPEN_BATCH, elapsed(openStart),
-                    "ref=" + batchRef + ", " + invoiceXmls.size() + " invoices"));
+                    "ref=" + batchRef + ", " + invoiceCount + " invoices"));
 
             runUploadParts(session, results);
             runGetStatus(session, results);

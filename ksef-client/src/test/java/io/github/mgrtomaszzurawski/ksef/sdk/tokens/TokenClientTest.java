@@ -47,7 +47,15 @@ class TokenClientTest {
     private static final String LIST_RESPONSE = """
             {
               "tokens": [
-                {"referenceNumber": "%s", "description": "Test token"}
+                {
+                  "referenceNumber": "%s",
+                  "description": "Test token",
+                  "authorIdentifier": {"type": "Nip", "value": "1234567890"},
+                  "contextIdentifier": {"type": "Nip", "value": "1234567890"},
+                  "requestedPermissions": ["InvoiceRead"],
+                  "status": "Active",
+                  "dateCreated": "2026-04-04T12:00:00+02:00"
+                }
               ]
             }
             """.formatted(TEST_TOKEN_REF);
@@ -56,6 +64,9 @@ class TokenClientTest {
             {
               "referenceNumber": "%s",
               "description": "Test token",
+              "authorIdentifier": {"type": "Nip", "value": "1234567890"},
+              "contextIdentifier": {"type": "Nip", "value": "1234567890"},
+              "requestedPermissions": ["InvoiceRead"],
               "status": "Active",
               "dateCreated": "2026-04-04T12:00:00+02:00"
             }

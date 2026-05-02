@@ -25,13 +25,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.Authentic
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationTokens;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.signing.SigningService;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 
 /**
@@ -39,6 +41,10 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  * Supports XAdES signature-based and KSeF token-based authentication flows.
  */
 public final class AuthClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthClient.class);
+    private static final String LOG_CALL = "→ {}";
+    private static final String LOG_CALL_REF = "→ {} ref={}";
 
     private static final String PATH_CHALLENGE = ApiPaths.AUTH + "/challenge";
     private static final String PATH_XADES_SIGNATURE = ApiPaths.AUTH + "/xades-signature";
@@ -58,6 +64,35 @@ public final class AuthClient {
     private static final String OP_TERMINATE_CURRENT = "terminateCurrentSession";
     private static final String OP_TERMINATE = "terminateSession";
 
+    private static final String XML_PROLOG = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+    private static final String AUTH_TOKEN_REQUEST_OPEN =
+            "<AuthTokenRequest xmlns=\"http://ksef.mf.gov.pl/auth/token/2.0\">";
+    private static final String AUTH_TOKEN_REQUEST_CLOSE = "</AuthTokenRequest>";
+    private static final String CHALLENGE_OPEN = "<Challenge>";
+    private static final String CHALLENGE_CLOSE = "</Challenge>";
+    private static final String CONTEXT_IDENTIFIER_OPEN = "<ContextIdentifier><";
+    private static final String CONTEXT_IDENTIFIER_INNER_CLOSE = "></ContextIdentifier>";
+    private static final String SUBJECT_IDENTIFIER_TYPE_FIXED =
+            "<SubjectIdentifierType>certificateSubject</SubjectIdentifierType>";
+    private static final String XML_CLOSE_BRACKET = ">";
+    private static final String XML_END_TAG_PREFIX = "</";
+
+    private static final String XML_ELEMENT_NIP = "Nip";
+    private static final String XML_ELEMENT_INTERNAL_ID = "InternalId";
+    private static final String XML_ELEMENT_NIP_VAT_UE = "NipVatUe";
+    private static final String XML_ELEMENT_PEPPOL_ID = "PeppolId";
+
+    private static final String XML_ESCAPE_AMP_FROM = "&";
+    private static final String XML_ESCAPE_AMP_TO = "&amp;";
+    private static final String XML_ESCAPE_LT_FROM = "<";
+    private static final String XML_ESCAPE_LT_TO = "&lt;";
+    private static final String XML_ESCAPE_GT_FROM = ">";
+    private static final String XML_ESCAPE_GT_TO = "&gt;";
+    private static final String XML_ESCAPE_QUOT_FROM = "\"";
+    private static final String XML_ESCAPE_QUOT_TO = "&quot;";
+    private static final String XML_ESCAPE_APOS_FROM = "'";
+    private static final String XML_ESCAPE_APOS_TO = "&apos;";
+
     private final HttpSupport http;
     private final SessionContext sessionContext;
 
@@ -75,6 +110,7 @@ public final class AuthClient {
      * @return challenge response containing the challenge string and timestamp
      */
     public AuthenticationChallenge requestChallenge() {
+        LOGGER.debug(LOG_CALL, OP_CHALLENGE);
         AuthenticationChallengeResponseRaw raw = http.postNoBody(PATH_CHALLENGE, AuthenticationChallengeResponseRaw.class, OP_CHALLENGE);
         return AuthenticationChallenge.from(raw);
     }
@@ -108,6 +144,7 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithXades(
             String challenge, X509Certificate certificate, PrivateKey privateKey,
             KsefIdentifier identifier) {
+        LOGGER.debug(LOG_CALL, OP_AUTH_XADES);
         String authXml = buildAuthTokenRequestXml(challenge, identifier);
         String signedXml = SigningService.signXml(authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey);
         AuthenticationInitResponseRaw response = http.postXml(
@@ -145,6 +182,7 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithToken(
             AuthenticationChallenge challenge,
             String ksefToken, KsefIdentifier identifier, PublicKey ksefPublicKey) {
+        LOGGER.debug(LOG_CALL, OP_AUTH_TOKEN);
         Instant challengeTimestamp = Instant.ofEpochMilli(challenge.timestampMs());
         byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, challengeTimestamp, ksefPublicKey);
         AllowedIpsRaw allowedIps = new AllowedIpsRaw()
@@ -170,6 +208,7 @@ public final class AuthClient {
      * @return response with access and refresh tokens
      */
     public AuthenticationTokens redeemTokens() {
+        LOGGER.debug(LOG_CALL, OP_REDEEM);
         String operationToken = sessionContext.token();
         AuthenticationTokensResponseRaw response = http.postAuthenticated(
                 PATH_TOKEN_REDEEM, operationToken, AuthenticationTokensResponseRaw.class, OP_REDEEM);
@@ -187,6 +226,7 @@ public final class AuthClient {
      * @return response with the new access token
      */
     public AuthenticationTokenRefresh refreshToken(String refreshToken) {
+        LOGGER.debug(LOG_CALL, OP_REFRESH);
         AuthenticationTokenRefreshResponseRaw response = http.postAuthenticated(
                 PATH_TOKEN_REFRESH, refreshToken, AuthenticationTokenRefreshResponseRaw.class, OP_REFRESH);
         sessionContext.refreshToken(
@@ -202,6 +242,7 @@ public final class AuthClient {
      * @return status response with authentication state details
      */
     public AuthenticationStatus getStatus(String referenceNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         AuthenticationOperationStatusResponseRaw raw = http.getAuthenticated(
@@ -216,6 +257,7 @@ public final class AuthClient {
      * @return list response with session items and continuation token
      */
     public AuthenticationList listSessions() {
+        LOGGER.debug(LOG_CALL, OP_LIST_SESSIONS);
         String token = sessionContext.token();
         AuthenticationListResponseRaw raw = http.getAuthenticated(PATH_SESSIONS, token,
                 AuthenticationListResponseRaw.class, OP_LIST_SESSIONS);
@@ -227,6 +269,7 @@ public final class AuthClient {
      * Clears the session context.
      */
     public void terminateCurrentSession() {
+        LOGGER.debug(LOG_CALL, OP_TERMINATE_CURRENT);
         String token = sessionContext.token();
         http.deleteAuthenticated(PATH_SESSIONS_CURRENT, token, OP_TERMINATE_CURRENT);
         sessionContext.clear();
@@ -238,6 +281,7 @@ public final class AuthClient {
      * @param referenceNumber the reference number of the session to terminate
      */
     public void terminateSession(String referenceNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_TERMINATE, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         http.deleteAuthenticated(ApiPaths.subPath(PATH_SESSIONS, referenceNumber), token, OP_TERMINATE);
@@ -252,13 +296,14 @@ public final class AuthClient {
 
     private static String buildAuthTokenRequestXml(String challenge, KsefIdentifier identifier) {
         String elementName = xmlElementForType(identifier.type());
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
-                + "<AuthTokenRequest xmlns=\"http://ksef.mf.gov.pl/auth/token/2.0\">"
-                + "<Challenge>" + escapeXml(challenge) + "</Challenge>"
-                + "<ContextIdentifier><" + elementName + ">" + escapeXml(identifier.value())
-                + "</" + elementName + "></ContextIdentifier>"
-                + "<SubjectIdentifierType>certificateSubject</SubjectIdentifierType>"
-                + "</AuthTokenRequest>";
+        return XML_PROLOG
+                + AUTH_TOKEN_REQUEST_OPEN
+                + CHALLENGE_OPEN + escapeXml(challenge) + CHALLENGE_CLOSE
+                + CONTEXT_IDENTIFIER_OPEN + elementName + XML_CLOSE_BRACKET
+                + escapeXml(identifier.value())
+                + XML_END_TAG_PREFIX + elementName + CONTEXT_IDENTIFIER_INNER_CLOSE
+                + SUBJECT_IDENTIFIER_TYPE_FIXED
+                + AUTH_TOKEN_REQUEST_CLOSE;
     }
 
     private static AuthenticationContextIdentifierTypeRaw toRawType(KsefIdentifier.Type type) {
@@ -272,19 +317,19 @@ public final class AuthClient {
 
     private static String xmlElementForType(KsefIdentifier.Type type) {
         return switch (type) {
-            case NIP -> "Nip";
-            case INTERNAL_ID -> "InternalId";
-            case NIP_VAT_UE -> "NipVatUe";
-            case PEPPOL_ID -> "PeppolId";
+            case NIP -> XML_ELEMENT_NIP;
+            case INTERNAL_ID -> XML_ELEMENT_INTERNAL_ID;
+            case NIP_VAT_UE -> XML_ELEMENT_NIP_VAT_UE;
+            case PEPPOL_ID -> XML_ELEMENT_PEPPOL_ID;
         };
     }
 
     private static String escapeXml(String input) {
         return input
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&apos;");
+                .replace(XML_ESCAPE_AMP_FROM, XML_ESCAPE_AMP_TO)
+                .replace(XML_ESCAPE_LT_FROM, XML_ESCAPE_LT_TO)
+                .replace(XML_ESCAPE_GT_FROM, XML_ESCAPE_GT_TO)
+                .replace(XML_ESCAPE_QUOT_FROM, XML_ESCAPE_QUOT_TO)
+                .replace(XML_ESCAPE_APOS_FROM, XML_ESCAPE_APOS_TO);
     }
 }

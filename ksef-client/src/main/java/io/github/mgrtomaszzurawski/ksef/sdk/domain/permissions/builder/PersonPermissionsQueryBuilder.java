@@ -68,8 +68,6 @@ public final class PersonPermissionsQueryBuilder {
         return new PersonPermissionsQueryBuilder(PersonPermissionsQueryTypeRaw.PERMISSIONS_GRANTED_IN_CURRENT_CONTEXT);
     }
 
-    // --- Author identifier ---
-
     /**
      * Filter by author NIP.
      */
@@ -106,8 +104,6 @@ public final class PersonPermissionsQueryBuilder {
         return this;
     }
 
-    // --- Authorized identifier ---
-
     /**
      * Filter by authorized person NIP.
      */
@@ -135,8 +131,6 @@ public final class PersonPermissionsQueryBuilder {
         return this;
     }
 
-    // --- Context identifier ---
-
     /**
      * Filter by context NIP.
      */
@@ -154,8 +148,6 @@ public final class PersonPermissionsQueryBuilder {
         this.contextValue = internalId;
         return this;
     }
-
-    // --- Target identifier ---
 
     /**
      * Filter by target NIP.
@@ -183,8 +175,6 @@ public final class PersonPermissionsQueryBuilder {
         this.targetValue = internalId;
         return this;
     }
-
-    // --- Permission types ---
 
     public PersonPermissionsQueryBuilder invoiceRead() {
         permissionTypes.add(PersonPermissionTypeRaw.INVOICE_READ);
@@ -221,8 +211,6 @@ public final class PersonPermissionsQueryBuilder {
         return this;
     }
 
-    // --- Permission state ---
-
     /**
      * Filter by active permissions only.
      */
@@ -237,6 +225,24 @@ public final class PersonPermissionsQueryBuilder {
     public PersonPermissionsQueryBuilder inactiveOnly() {
         this.permissionState = PermissionStateRaw.INACTIVE;
         return this;
+    }
+
+    /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public PersonPermissionsQueryBuilder toBuilder() {
+        PersonPermissionsQueryBuilder copy = new PersonPermissionsQueryBuilder(this.queryType);
+        copy.authorType = this.authorType;
+        copy.authorValue = this.authorValue;
+        copy.authorizedType = this.authorizedType;
+        copy.authorizedValue = this.authorizedValue;
+        copy.contextType = this.contextType;
+        copy.contextValue = this.contextValue;
+        copy.targetType = this.targetType;
+        copy.targetValue = this.targetValue;
+        copy.permissionTypes.addAll(this.permissionTypes);
+        copy.permissionState = this.permissionState;
+        return copy;
     }
 
     /**

@@ -43,9 +43,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPer
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 
 /**
@@ -54,7 +56,10 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  */
 public final class PermissionClientImpl implements PermissionClient {
 
-    // --- Grant paths ---
+    private static final Logger LOGGER = LoggerFactory.getLogger(PermissionClientImpl.class);
+    private static final String LOG_CALL = "→ {}";
+    private static final String LOG_CALL_REF = "→ {} ref={}";
+
     private static final String PATH_GRANT_PERSON = ApiPaths.PERMISSIONS + "/persons/grants";
     private static final String PATH_GRANT_ENTITY = ApiPaths.PERMISSIONS + "/entities/grants";
     private static final String PATH_GRANT_AUTHORIZATION = ApiPaths.PERMISSIONS + "/authorizations/grants";
@@ -63,15 +68,12 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String PATH_GRANT_EU_ENTITY_ADMIN = ApiPaths.PERMISSIONS + "/eu-entities/administration/grants";
     private static final String PATH_GRANT_EU_ENTITY = ApiPaths.PERMISSIONS + "/eu-entities/grants";
 
-    // --- Revoke paths ---
     private static final String PATH_REVOKE_COMMON = ApiPaths.PERMISSIONS + "/common/grants/";
     private static final String PATH_REVOKE_AUTHORIZATION = ApiPaths.PERMISSIONS + "/authorizations/grants/";
 
-    // --- Status paths ---
     private static final String PATH_OPERATION_STATUS = ApiPaths.PERMISSIONS + "/operations/";
     private static final String PATH_ATTACHMENT_STATUS = ApiPaths.PERMISSIONS + "/attachments/status";
 
-    // --- Query paths ---
     private static final String PATH_QUERY_PERSONAL = ApiPaths.PERMISSIONS + "/query/personal/grants";
     private static final String PATH_QUERY_PERSONS = ApiPaths.PERMISSIONS + "/query/persons/grants";
     private static final String PATH_QUERY_SUBUNITS = ApiPaths.PERMISSIONS + "/query/subunits/grants";
@@ -81,7 +83,6 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String PATH_QUERY_AUTHORIZATIONS = ApiPaths.PERMISSIONS + "/query/authorizations/grants";
     private static final String PATH_QUERY_EU_ENTITIES = ApiPaths.PERMISSIONS + "/query/eu-entities/grants";
 
-    // --- Operation names ---
     private static final String OP_GRANT_PERSON = "grantPersonPermissions";
     private static final String OP_GRANT_ENTITY = "grantEntityPermissions";
     private static final String OP_GRANT_AUTHORIZATION = "grantAuthorizationPermissions";
@@ -102,7 +103,6 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String OP_QUERY_AUTHORIZATIONS = "queryAuthorizationPermissions";
     private static final String OP_QUERY_EU_ENTITIES = "queryEuEntityPermissions";
 
-    // --- Null-check error messages ---
     private static final String ERR_BUILDER_NULL = "builder must not be null";
 
     private final HttpSupport http;
@@ -113,8 +113,6 @@ public final class PermissionClientImpl implements PermissionClient {
         this.sessionContext = ksef.sessionContext();
     }
 
-    // --- Grant operations ---
-
     /**
      * Grant permissions to a person (identified by PESEL or NIP).
      *
@@ -123,6 +121,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult grantPerson(PersonPermissionGrantBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_PERSON);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_PERSON, builder.build(), token,
@@ -138,6 +137,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult grantEntity(EntityPermissionGrantBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_ENTITY);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_ENTITY, builder.build(), token,
@@ -153,6 +153,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_AUTHORIZATION);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION, builder.build(), token,
@@ -168,6 +169,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult grantIndirect(IndirectPermissionGrantBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_INDIRECT);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_INDIRECT, builder.build(), token,
@@ -183,6 +185,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult grantSubunit(SubunitPermissionGrantBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_SUBUNIT);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_SUBUNIT, builder.build(), token,
@@ -198,6 +201,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY_ADMIN);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY_ADMIN, builder.build(), token,
@@ -213,14 +217,13 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult grantEuEntity(EuEntityPermissionGrantBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY, builder.build(), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY);
         return PermissionOperationResult.from(raw);
     }
-
-    // --- Revoke operations ---
 
     /**
      * Revoke a common permission by permission ID.
@@ -230,6 +233,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult revokeCommon(String permissionId) {
+        LOGGER.debug(LOG_CALL_REF, OP_REVOKE_COMMON, permissionId);
         requireSafePathSegment(permissionId);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.deleteAuthenticatedWithResponse(PATH_REVOKE_COMMON + permissionId, token,
@@ -245,14 +249,13 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationResult revokeAuthorization(String permissionId) {
+        LOGGER.debug(LOG_CALL_REF, OP_REVOKE_AUTHORIZATION, permissionId);
         requireSafePathSegment(permissionId);
         String token = sessionContext.token();
         PermissionsOperationResponseRaw raw = http.deleteAuthenticatedWithResponse(PATH_REVOKE_AUTHORIZATION + permissionId, token,
                 PermissionsOperationResponseRaw.class, OP_REVOKE_AUTHORIZATION);
         return PermissionOperationResult.from(raw);
     }
-
-    // --- Status operations ---
 
     /**
      * Get the status of a permissions operation.
@@ -262,6 +265,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PermissionOperationStatus getOperationStatus(String referenceNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_GET_OPERATION_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         PermissionsOperationStatusResponseRaw raw = http.getAuthenticated(PATH_OPERATION_STATUS + referenceNumber, token,
@@ -276,13 +280,12 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public AttachmentPermissionStatus getAttachmentStatus() {
+        LOGGER.debug(LOG_CALL, OP_GET_ATTACHMENT_STATUS);
         String token = sessionContext.token();
         CheckAttachmentPermissionStatusResponseRaw raw = http.getAuthenticated(PATH_ATTACHMENT_STATUS, token,
                 CheckAttachmentPermissionStatusResponseRaw.class, OP_GET_ATTACHMENT_STATUS);
         return AttachmentPermissionStatus.from(raw);
     }
-
-    // --- Query operations ---
 
     /**
      * Query personal permissions (permissions granted to the authenticated user).
@@ -292,6 +295,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PersonalPermissions queryPersonal(PersonalPermissionsQueryBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_PERSONAL);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         QueryPersonalPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_PERSONAL, builder.build(), token,
@@ -307,6 +311,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public PersonPermissions queryPersons(PersonPermissionsQueryBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_PERSONS);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         QueryPersonPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_PERSONS, builder.build(), token,
@@ -321,6 +326,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public SubunitPermissions querySubunits() {
+        LOGGER.debug(LOG_CALL, OP_QUERY_SUBUNITS);
         String token = sessionContext.token();
         QuerySubunitPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_SUBUNITS,
                 new SubunitPermissionsQueryRequestRaw(), token,
@@ -335,6 +341,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public EntityPermissions queryEntities() {
+        LOGGER.debug(LOG_CALL, OP_QUERY_ENTITIES);
         String token = sessionContext.token();
         QueryEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_ENTITIES,
                 new EntityPermissionsQueryRequestRaw(), token,
@@ -349,6 +356,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public EntityRoles queryEntityRoles() {
+        LOGGER.debug(LOG_CALL, OP_QUERY_ENTITY_ROLES);
         String token = sessionContext.token();
         QueryEntityRolesResponseRaw raw = http.getAuthenticated(PATH_QUERY_ENTITY_ROLES, token,
                 QueryEntityRolesResponseRaw.class, OP_QUERY_ENTITY_ROLES);
@@ -362,6 +370,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public SubordinateEntityRoles querySubordinateRoles() {
+        LOGGER.debug(LOG_CALL, OP_QUERY_SUBORDINATE);
         String token = sessionContext.token();
         QuerySubordinateEntityRolesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_SUBORDINATE,
                 new SubordinateEntityRolesQueryRequestRaw(), token,
@@ -377,6 +386,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_AUTHORIZATIONS);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         QueryEntityAuthorizationPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_AUTHORIZATIONS,
@@ -393,6 +403,7 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_EU_ENTITIES);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
         String token = sessionContext.token();
         QueryEuEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_EU_ENTITIES,

@@ -65,10 +65,7 @@ public final class RetryHandler {
             return callOnce(call, operationName);
         }
 
-        // Sentinel — only surfaced if RetryPolicy.maxAttempts validation is bypassed.
-        // RetryPolicy.Builder rejects maxAttempts < 1, so this branch is unreachable in normal flow.
-        KsefException lastException = new KsefException(ERR_RETRY_LOOP_NEVER_ENTERED,
-                new IllegalStateException(ERR_RETRY_LOOP_NEVER_ENTERED));
+        KsefException lastException = sentinelForUnreachableLoopExit();
         for (int attempt = 1; attempt <= policy.maxAttempts(); attempt++) {
             AttemptResult<T> result = attemptOnce(call, attempt, operationName);
             if (result.success()) {
@@ -136,6 +133,17 @@ public final class RetryHandler {
             Thread.currentThread().interrupt();
             throw new KsefNetworkException(operationName, interrupted);
         }
+    }
+
+    /**
+     * Returns a sentinel exception that should never surface — only reachable
+     * if {@code RetryPolicy.maxAttempts} validation is bypassed.
+     * {@code RetryPolicy.Builder} rejects {@code maxAttempts < 1}, so this
+     * branch is unreachable in normal flow.
+     */
+    private static KsefException sentinelForUnreachableLoopExit() {
+        return new KsefException(ERR_RETRY_LOOP_NEVER_ENTERED,
+                new IllegalStateException(ERR_RETRY_LOOP_NEVER_ENTERED));
     }
 
     private long calculateBackoff(int attempt) {

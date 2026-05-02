@@ -91,6 +91,19 @@ public final class CertificateQueryBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public CertificateQueryBuilder toBuilder() {
+        CertificateQueryBuilder copy = new CertificateQueryBuilder();
+        copy.serialNumber = this.serialNumber;
+        copy.name = this.name;
+        copy.type = this.type;
+        copy.status = this.status;
+        copy.expiresAfter = this.expiresAfter;
+        return copy;
+    }
+
+    /**
      * Build the query request.
      *
      * @return the request ready to pass to {@code CertificateClient.query()}

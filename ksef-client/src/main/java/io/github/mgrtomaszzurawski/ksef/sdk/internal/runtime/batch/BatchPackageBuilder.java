@@ -111,11 +111,11 @@ public final class BatchPackageBuilder {
             zipFile = writeZipToTempFile(invoices);
             BatchFileSpec spec = splitAndEncrypt(zipFile, aesKey, initVector, maxPartSize, partFiles);
             return new BatchPackage(spec, List.copyOf(partFiles));
-        } catch (RuntimeException | IOException ex) {
+        } catch (RuntimeException | IOException buildFailure) {
             cleanupQuietly(partFiles);
-            throw (ex instanceof RuntimeException re)
-                    ? re
-                    : new IllegalStateException(ERR_BUILD, ex);
+            throw (buildFailure instanceof RuntimeException runtimeFailure)
+                    ? runtimeFailure
+                    : new IllegalStateException(ERR_BUILD, buildFailure);
         } finally {
             if (zipFile != null) {
                 deleteQuietly(zipFile);
@@ -220,8 +220,8 @@ public final class BatchPackageBuilder {
     private static MessageDigest newSha256() {
         try {
             return MessageDigest.getInstance(SHA_256);
-        } catch (NoSuchAlgorithmException ex) {
-            throw new KsefCryptoException(ERR_HASH_ALGORITHM, ex);
+        } catch (NoSuchAlgorithmException missingAlgorithm) {
+            throw new KsefCryptoException(ERR_HASH_ALGORITHM, missingAlgorithm);
         }
     }
 

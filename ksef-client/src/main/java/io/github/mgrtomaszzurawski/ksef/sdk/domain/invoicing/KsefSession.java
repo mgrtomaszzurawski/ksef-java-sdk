@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class KsefSession implements AutoCloseable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(KsefSession.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KsefSession.class);
 
     private static final int STATUS_CODE_OK = 200;
     private static final int CLOSE_POLL_INITIAL_DELAY_MS = 1000;
@@ -45,13 +45,26 @@ public final class KsefSession implements AutoCloseable {
     private static final int CLOSE_POLL_BACKOFF_MULTIPLIER = 2;
     private static final long CLOSE_TIMEOUT_MS = 60000;
     private static final int STATUS_POLL_DELAY_MS = 3000;
-    // 5-minute safety budget. Polling actually exits immediately on any terminal state
-    // (code >= 200), so this is only hit when KSeF is genuinely stalled.
+    /**
+     * 5-minute safety budget (100 × 3000ms). Polling exits immediately on any
+     * terminal state (code &gt;= 200), so this cap only triggers when KSeF is
+     * genuinely stalled.
+     */
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
     private static final String ERR_SESSION_CLOSED = "Session is already closed";
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for session to become closeable";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
+
+    private static final String LOG_CLOSED = "Closed KSeF session {}";
+    private static final String LOG_CLOSE_BUSY_RETRY = "Session {} still busy (415), retrying in {}ms";
+    private static final String LOG_POLL_TIMEOUT =
+            "Session {} polling timed out after {} attempts — last status code={} — UPO may not be available yet";
+    private static final String LOG_STATUS_TRANSITION =
+            "Session {} status code transition: {} -> {} (attempt {})";
+    private static final String LOG_PROCESSING_COMPLETE = "Session {} processing complete";
+    private static final String LOG_TERMINAL_FAILURE =
+            "Session {} reached terminal failure state — code={} description={}";
 
     private final SessionClient sessionClient;
     private final String referenceNumber;
@@ -177,12 +190,11 @@ public final class KsefSession implements AutoCloseable {
         while (elapsed(start) < CLOSE_TIMEOUT_MS) {
             try {
                 sessionClient.closeOnline(referenceNumber);
-                LOG.info("Closed KSeF session {}", referenceNumber);
+                LOGGER.debug(LOG_CLOSED, referenceNumber);
                 return;
             } catch (KsefException exception) {
                 if (isSessionBusy(exception)) {
-                    LOG.debug("Session {} still busy (415), retrying in {}ms",
-                            referenceNumber, delay);
+                    LOGGER.debug(LOG_CLOSE_BUSY_RETRY, referenceNumber, delay);
                     sleep(delay);
                     delay = Math.min(delay * CLOSE_POLL_BACKOFF_MULTIPLIER, CLOSE_POLL_MAX_DELAY_MS);
                 } else {
@@ -193,6 +205,11 @@ public final class KsefSession implements AutoCloseable {
         throw new IllegalStateException(ERR_CLOSE_TIMEOUT);
     }
 
+    /**
+     * Polls session status until terminal. Any code &gt;= 200 is terminal:
+     * 200 = success; 415/440/445/etc. = various failures. Codes &lt; 200
+     * (100=open, 170=closing) are intermediate.
+     */
     private void pollUntilComplete() {
         Integer lastCode = null;
         for (int attempt = 0; attempt < STATUS_POLL_MAX_ATTEMPTS; attempt++) {
@@ -200,21 +217,17 @@ public final class KsefSession implements AutoCloseable {
             SessionStatus sessionStatus = sessionClient.getStatus(referenceNumber);
             Integer code = sessionStatus.status() != null ? sessionStatus.status().code() : null;
             lastCode = logStatusTransition(lastCode, code, attempt);
-            // Any code >= 200 is terminal: 200 = success; 415/440/445/etc. = various failures.
-            // Codes < 200 (100=open, 170=closing) are intermediate.
             if (code != null && code >= STATUS_CODE_OK) {
                 logTerminalState(code, sessionStatus);
                 return;
             }
         }
-        LOG.warn("Session {} polling timed out after {} attempts — last status code={} — UPO may not be available yet",
-                referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
+        LOGGER.warn(LOG_POLL_TIMEOUT, referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {
         if (code != null && !code.equals(lastCode)) {
-            LOG.debug("Session {} status code transition: {} -> {} (attempt {})",
-                    referenceNumber, lastCode, code, attempt + 1);
+            LOGGER.debug(LOG_STATUS_TRANSITION, referenceNumber, lastCode, code, attempt + 1);
             return code;
         }
         return lastCode;
@@ -222,11 +235,10 @@ public final class KsefSession implements AutoCloseable {
 
     private void logTerminalState(int code, SessionStatus sessionStatus) {
         if (code == STATUS_CODE_OK) {
-            LOG.info("Session {} processing complete", referenceNumber);
+            LOGGER.debug(LOG_PROCESSING_COMPLETE, referenceNumber);
         } else {
             String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
-            LOG.warn("Session {} reached terminal failure state — code={} description={}",
-                    referenceNumber, code, description);
+            LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
         }
     }
 
@@ -242,9 +254,9 @@ public final class KsefSession implements AutoCloseable {
     private static void sleep(int millis) {
         try {
             Thread.sleep(millis);
-        } catch (InterruptedException ex) {
+        } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException(ERR_INTERRUPTED, ex);
+            throw new IllegalStateException(ERR_INTERRUPTED, interrupted);
         }
     }
 }

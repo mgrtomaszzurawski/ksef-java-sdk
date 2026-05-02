@@ -14,9 +14,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenRes
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 
 /**
@@ -24,7 +26,12 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  */
 public final class TokenClientImpl implements TokenClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TokenClientImpl.class);
+    private static final String LOG_CALL = "→ {}";
+    private static final String LOG_CALL_REF = "→ {} ref={}";
+
     private static final String PATH_TOKENS = ApiPaths.TOKENS;
+    private static final String PATH_SEPARATOR = "/";
 
     private static final String OP_GENERATE = "generateToken";
     private static final String OP_LIST = "listTokens";
@@ -48,6 +55,7 @@ public final class TokenClientImpl implements TokenClient {
      */
     @Override
     public GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder) {
+        LOGGER.debug(LOG_CALL, OP_GENERATE);
         Objects.requireNonNull(tokenBuilder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
         GenerateTokenResponseRaw raw = http.postJsonAuthenticated(PATH_TOKENS,
@@ -62,6 +70,7 @@ public final class TokenClientImpl implements TokenClient {
      */
     @Override
     public TokenList list() {
+        LOGGER.debug(LOG_CALL, OP_LIST);
         String token = sessionContext.token();
         QueryTokensResponseRaw raw = http.getAuthenticated(PATH_TOKENS, token,
                 QueryTokensResponseRaw.class, OP_LIST);
@@ -76,9 +85,10 @@ public final class TokenClientImpl implements TokenClient {
      */
     @Override
     public TokenDetail getStatus(String referenceNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_GET_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        TokenStatusResponseRaw raw = http.getAuthenticated(PATH_TOKENS + "/" + referenceNumber, token,
+        TokenStatusResponseRaw raw = http.getAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token,
                 TokenStatusResponseRaw.class, OP_GET_STATUS);
         return TokenDetail.from(raw);
     }
@@ -90,8 +100,9 @@ public final class TokenClientImpl implements TokenClient {
      */
     @Override
     public void revoke(String referenceNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_REVOKE, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        http.deleteAuthenticated(PATH_TOKENS + "/" + referenceNumber, token, OP_REVOKE);
+        http.deleteAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token, OP_REVOKE);
     }
 }

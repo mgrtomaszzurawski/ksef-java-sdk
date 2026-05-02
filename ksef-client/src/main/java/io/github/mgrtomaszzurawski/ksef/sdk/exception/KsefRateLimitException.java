@@ -3,12 +3,16 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
+
+import java.io.Serial;
+
 /**
  * Thrown on HTTP 429 (Too Many Requests).
  * The KSeF API returns rate limit information in the response body.
  */
 public class KsefRateLimitException extends KsefException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     public KsefRateLimitException(String message, Throwable cause, int statusCode, String responseBody) {

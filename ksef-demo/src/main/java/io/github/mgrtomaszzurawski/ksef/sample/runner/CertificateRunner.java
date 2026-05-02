@@ -115,9 +115,11 @@ public final class CertificateRunner implements DemoRunner {
         try {
             CertificateEnrollmentData response = context.client().certificates()
                     .getEnrollmentData();
-            LOGGER.info("[{}] enrollment data: cn={}", NAME, response.commonName());
-            results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
-                    "cn=" + response.commonName()));
+            String commonName = response.commonName();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("[{}] enrollment data: cn={}", NAME, commonName);
+            }
+            results.add(RunResult.ok(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start), "cn=" + commonName));
             return response;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_ENROLLMENT_DATA, elapsed(start),
@@ -133,11 +135,13 @@ public final class CertificateRunner implements DemoRunner {
                     .query(CertificateQueryBuilder.create());
             List<CertificateListItem> certs = response.certificates();
             int count = certs != null ? certs.size() : 0;
-            LOGGER.info("[{}] queried certificates: {} found", NAME, count);
-            if (certs != null) {
-                for (CertificateListItem cert : certs) {
-                    LOGGER.info("[{}]   serial={} status={} name={}",
-                            NAME, cert.certificateSerialNumber(), cert.status(), cert.name());
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("[{}] queried certificates: {} found", NAME, count);
+                if (certs != null) {
+                    for (CertificateListItem cert : certs) {
+                        LOGGER.info("[{}]   serial={} status={} name={}",
+                                NAME, cert.certificateSerialNumber(), cert.status(), cert.name());
+                    }
                 }
             }
             results.add(RunResult.ok(NAME, OP_QUERY, elapsed(start),
@@ -206,13 +210,17 @@ public final class CertificateRunner implements DemoRunner {
                 CertificateEnrollmentStatus status = context.client().certificates()
                         .getEnrollmentStatus(enrollmentRef);
                 String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
-                LOGGER.info("[{}] enrollment poll #{} code={} serial={}",
-                        NAME, attempt, code, status.certificateSerialNumber());
-                if (status.certificateSerialNumber() != null) {
-                    return status.certificateSerialNumber();
+                String serial = status.certificateSerialNumber();
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("[{}] enrollment poll #{} code={} serial={}", NAME, attempt, code, serial);
+                }
+                if (serial != null) {
+                    return serial;
                 }
             } catch (Exception exception) {
-                LOGGER.warn("[{}] enrollment poll #{} failed: {}", NAME, attempt, exception.getMessage());
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("[{}] enrollment poll #{} failed: {}", NAME, attempt, exception.getMessage());
+                }
             }
             try {
                 Thread.sleep(delay);

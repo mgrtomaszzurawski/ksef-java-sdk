@@ -100,8 +100,8 @@ public final class InvoiceQueryBuilder {
     /**
      * Optional upper bound for the date range.
      */
-    public InvoiceQueryBuilder dateTo(OffsetDateTime to) {
-        this.dateTo = to;
+    public InvoiceQueryBuilder dateTo(OffsetDateTime endDate) {
+        this.dateTo = endDate;
         return this;
     }
 
@@ -159,6 +159,23 @@ public final class InvoiceQueryBuilder {
     public InvoiceQueryBuilder hasAttachment(boolean hasAttachment) {
         this.hasAttachment = hasAttachment;
         return this;
+    }
+
+    /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public InvoiceQueryBuilder toBuilder() {
+        InvoiceQueryBuilder copy = new InvoiceQueryBuilder(this.subjectType);
+        copy.dateType = this.dateType;
+        copy.dateFrom = this.dateFrom;
+        copy.dateTo = this.dateTo;
+        copy.ksefNumber = this.ksefNumber;
+        copy.invoiceNumber = this.invoiceNumber;
+        copy.sellerNip = this.sellerNip;
+        copy.invoicingMode = this.invoicingMode;
+        copy.selfInvoicing = this.selfInvoicing;
+        copy.hasAttachment = this.hasAttachment;
+        return copy;
     }
 
     /**

@@ -34,17 +34,9 @@ public record TokenListItem(
 
     public static TokenListItem from(QueryTokensResponseItemRaw raw) {
         var authorRaw = raw.getAuthorIdentifier();
-        TokenIdentifier author = null;
-        if (authorRaw != null) {
-            String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
-            author = new TokenIdentifier(type, authorRaw.getValue());
-        }
+        TokenIdentifier author = new TokenIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
         var ctxRaw = raw.getContextIdentifier();
-        TokenIdentifier context = null;
-        if (ctxRaw != null) {
-            String type = ctxRaw.getType() != null ? ctxRaw.getType().getValue() : null;
-            context = new TokenIdentifier(type, ctxRaw.getValue());
-        }
+        TokenIdentifier context = new TokenIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue());
         List<TokenPermissionType> perms = raw.getRequestedPermissions().stream().map(TokenPermissionType::from).toList();
         return new TokenListItem(
                 raw.getReferenceNumber(),

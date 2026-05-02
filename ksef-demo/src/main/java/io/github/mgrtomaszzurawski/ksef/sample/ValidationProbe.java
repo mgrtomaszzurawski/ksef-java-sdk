@@ -18,6 +18,7 @@
 package io.github.mgrtomaszzurawski.ksef.sample;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import java.io.FileInputStream;
@@ -78,8 +79,17 @@ public final class ValidationProbe {
     private static final String LOG_TABLE_ROW = "| {} | {} | {} | {} |";
     private static final String LOG_TABLE_ERROR_ROW = "| {} | ERR | - | {} |";
 
-    private static final String NON_DIGIT_REGEX = "[^0-9]";
+    private static final String NON_DIGIT_REGEX = "\\D";
     private static final String EMPTY = "";
+
+    private static final String BODY_EMPTY_OBJECT = "{}";
+    private static final String DESC_EMPTY_BODY = "Empty body";
+    private static final String DESC_NULL_REQUIRED = "Null required fields";
+    private static final String DESC_VALID_REQUEST = "Valid request";
+    private static final String DESC_INVALID_REF = "Invalid reference number";
+
+    private static final String PATH_AUTH_CHALLENGE = ApiPaths.AUTH + "/challenge";
+    private static final String PATH_INVOICES_QUERY_METADATA = ApiPaths.INVOICES + "/query/metadata";
 
     private final String baseUrl;
     private final String bearerToken;
@@ -107,19 +117,20 @@ public final class ValidationProbe {
         LOGGER.info("Environment: {}", ksefUrl);
         LOGGER.debug("NIP: {}", nipIdentifier);
 
-        KsefClient client = KsefClient.builder(KsefEnvironment.custom(ksefUrl))
+        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(ksefUrl))
                 .credentials(new KsefTokenCredentials(ksefToken, nipIdentifier))
-                .build();
-        client.authenticate();
-        LOGGER.info("Authenticated successfully");
+                .build()) {
+            client.authenticate();
+            LOGGER.info("Authenticated successfully");
 
-        String bearer = client.sessionContext().token();
+            String bearer = client.sessionContext().token();
 
-        ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
-        probe.runAllProbes();
+            ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
+            probe.runAllProbes();
 
-        client.terminateAuth();
-        LOGGER.info("Session terminated. Probe complete.");
+            client.terminateAuth();
+            LOGGER.info("Session terminated. Probe complete.");
+        }
     }
 
     private void runAllProbes() {
@@ -136,17 +147,17 @@ public final class ValidationProbe {
         probeEndpoint(METHOD_GET, "/api/v2/security/public-key-certificates", null, false,
                 "No body needed, always returns certificates");
 
-        probeEndpoint(METHOD_POST, "/api/v2/auth/challenge", null, false,
+        probeEndpoint(METHOD_POST, PATH_AUTH_CHALLENGE, null, false,
                 "No body needed");
-        probeEndpoint(METHOD_POST, "/api/v2/auth/challenge", "{}", false,
+        probeEndpoint(METHOD_POST, PATH_AUTH_CHALLENGE, "{}", false,
                 "Empty body accepted");
-        probeEndpoint(METHOD_POST, "/api/v2/auth/challenge", "{\"foo\":\"bar\"}", false,
+        probeEndpoint(METHOD_POST, PATH_AUTH_CHALLENGE, "{\"foo\":\"bar\"}", false,
                 "Unknown fields ignored");
 
         LOGGER.info("### POST /api/v2/auth/ksef-token");
         probeAndLog("/api/v2/auth/ksef-token", false, new String[][]{
-            {"{}", "Empty body"},
-            {"{\"challenge\":null,\"contextIdentifier\":null,\"encryptedToken\":null}", "Null required fields"},
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
+            {"{\"challenge\":null,\"contextIdentifier\":null,\"encryptedToken\":null}", DESC_NULL_REQUIRED},
             {"{\"challenge\":\"\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"\"},\"encryptedToken\":\"\"}", "Empty strings"},
             {"{\"challenge\":123}", "Wrong type (int for string)"},
             {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"INVALID\",\"value\":\"1234567890\"},\"encryptedToken\":\"dGVzdA==\"}", "Invalid enum value"},
@@ -160,8 +171,8 @@ public final class ValidationProbe {
         LOGGER.info("## Authenticated Endpoints");
 
         LOGGER.info("### POST /api/v2/invoices/query/metadata");
-        probeAndLog("/api/v2/invoices/query/metadata", true, new String[][]{
-            {"{}", "Empty body"},
+        probeAndLog(PATH_INVOICES_QUERY_METADATA, true, new String[][]{
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
             {"{\"subjectType\":null}", "Null subjectType"},
             {"{\"subjectType\":\"INVALID\"}", "Invalid enum"},
             {"{\"subjectType\":\"Subject1\",\"dateRange\":null}", "Null dateRange"},
@@ -174,7 +185,7 @@ public final class ValidationProbe {
 
         LOGGER.info("### POST /api/v2/tokens");
         probeAndLog("/api/v2/tokens", true, new String[][]{
-            {"{}", "Empty body"},
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
             {"{\"description\":null}", "Null description"},
             {"{\"description\":\"\"}", "Empty description"},
             {"{\"description\":\"test\",\"requestedPermissions\":null}", "Null permissions"},
@@ -184,18 +195,18 @@ public final class ValidationProbe {
         });
 
         LOGGER.info("### GET /api/v2/limits/context");
-        probeEndpoint(METHOD_GET, "/api/v2/limits/context", null, true, "Valid request");
+        probeEndpoint(METHOD_GET, "/api/v2/limits/context", null, true, DESC_VALID_REQUEST);
 
         LOGGER.info("### GET /api/v2/limits/subject");
-        probeEndpoint(METHOD_GET, "/api/v2/limits/subject", null, true, "Valid request");
+        probeEndpoint(METHOD_GET, "/api/v2/limits/subject", null, true, DESC_VALID_REQUEST);
 
         LOGGER.info("### GET /api/v2/rate-limits");
-        probeEndpoint(METHOD_GET, "/api/v2/rate-limits", null, true, "Valid request");
+        probeEndpoint(METHOD_GET, "/api/v2/rate-limits", null, true, DESC_VALID_REQUEST);
 
         LOGGER.info("### POST /api/v2/permissions/persons/grants");
         probeAndLog("/api/v2/permissions/persons/grants", true, new String[][]{
-            {"{}", "Empty body"},
-            {"{\"permission\":null,\"subjectIdentifier\":null}", "Null required fields"},
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
+            {"{\"permission\":null,\"subjectIdentifier\":null}", DESC_NULL_REQUIRED},
             {"{\"permission\":\"INVALID\",\"subjectIdentifier\":{\"type\":\"Pesel\",\"value\":\"12345678901\"},\"description\":\"test\"}", "Invalid permission enum"},
             {"{\"permission\":\"InvoiceRead\",\"subjectIdentifier\":{\"type\":\"Pesel\",\"value\":\"123\"},\"description\":\"test\"}", "Invalid PESEL (too short)"},
             {"{\"permission\":\"InvoiceRead\",\"subjectIdentifier\":{\"type\":\"Pesel\",\"value\":\"\"},\"description\":\"test\"}", "Empty PESEL"},
@@ -203,14 +214,14 @@ public final class ValidationProbe {
 
         LOGGER.info("### POST /api/v2/permissions/entities/grants");
         probeAndLog("/api/v2/permissions/entities/grants", true, new String[][]{
-            {"{}", "Empty body"},
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
             {"{\"permission\":\"InvoiceRead\",\"subjectIdentifier\":{\"type\":\"Nip\",\"value\":\"123\"},\"description\":\"test\"}", "Invalid NIP format"},
         });
 
         LOGGER.info("### POST /api/v2/certificates/enrollments");
         probeAndLog("/api/v2/certificates/enrollments", true, new String[][]{
-            {"{}", "Empty body"},
-            {"{\"certificateName\":null,\"certificateType\":null,\"csr\":null}", "Null required fields"},
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
+            {"{\"certificateName\":null,\"certificateType\":null,\"csr\":null}", DESC_NULL_REQUIRED},
             {"{\"certificateName\":\"\",\"certificateType\":\"Authentication\",\"csr\":\"test\"}", "Empty certificate name"},
             {"{\"certificateName\":\"test<script>\",\"certificateType\":\"Authentication\",\"csr\":\"test\"}", "XSS in certificate name"},
             {"{\"certificateName\":\"test\",\"certificateType\":\"INVALID\",\"csr\":\"test\"}", "Invalid certificate type"},
@@ -218,34 +229,34 @@ public final class ValidationProbe {
 
         LOGGER.info("### POST /api/v2/invoices/exports");
         probeAndLog("/api/v2/invoices/exports", true, new String[][]{
-            {"{}", "Empty body"},
-            {"{\"encryption\":null,\"filters\":null}", "Null required fields"},
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
+            {"{\"encryption\":null,\"filters\":null}", DESC_NULL_REQUIRED},
             {"{\"encryption\":{},\"filters\":{}}", "Empty nested objects"},
         });
 
         LOGGER.info("### GET /api/v2/sessions/{ref}");
-        probeEndpoint(METHOD_GET, "/api/v2/sessions/invalid-ref-number", null, true, "Invalid reference number");
+        probeEndpoint(METHOD_GET, "/api/v2/sessions/invalid-ref-number", null, true, DESC_INVALID_REF);
         probeEndpoint(METHOD_GET, "/api/v2/sessions/", null, true, "Empty reference number");
         probeEndpoint(METHOD_GET, "/api/v2/sessions/" + "A".repeat(TEST_LONG_REF_LENGTH), null, true, "Very long reference number");
 
         LOGGER.info("### GET /api/v2/auth/{ref}");
-        probeEndpoint(METHOD_GET, "/api/v2/auth/invalid-ref", null, true, "Invalid reference number");
+        probeEndpoint(METHOD_GET, "/api/v2/auth/invalid-ref", null, true, DESC_INVALID_REF);
 
         LOGGER.info("### GET /api/v2/tokens/{ref}");
-        probeEndpoint(METHOD_GET, "/api/v2/tokens/invalid-ref", null, true, "Invalid reference number");
+        probeEndpoint(METHOD_GET, "/api/v2/tokens/invalid-ref", null, true, DESC_INVALID_REF);
 
         LOGGER.info("### DELETE /api/v2/tokens/{ref}");
-        probeEndpoint(METHOD_DELETE, "/api/v2/tokens/invalid-ref-to-delete", null, true, "Invalid reference number");
+        probeEndpoint(METHOD_DELETE, "/api/v2/tokens/invalid-ref-to-delete", null, true, DESC_INVALID_REF);
 
         LOGGER.info("### GET /api/v2/certificates/limits");
-        probeEndpoint(METHOD_GET, "/api/v2/certificates/limits", null, true, "Valid request");
+        probeEndpoint(METHOD_GET, "/api/v2/certificates/limits", null, true, DESC_VALID_REQUEST);
 
         LOGGER.info("### GET /api/v2/certificates/enrollments/data");
-        probeEndpoint(METHOD_GET, "/api/v2/certificates/enrollments/data", null, true, "Valid request");
+        probeEndpoint(METHOD_GET, "/api/v2/certificates/enrollments/data", null, true, DESC_VALID_REQUEST);
 
         LOGGER.info("### POST /api/v2/permissions/query/personal/grants");
         probeAndLog("/api/v2/permissions/query/personal/grants", true, new String[][]{
-            {"{}", "Empty body"},
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
             {"{\"pageSize\":0}", "pageSize=0"},
             {"{\"pageSize\":-1}", "pageSize=-1"},
             {"{\"pageSize\":999999}", "pageSize too large"},
@@ -253,22 +264,22 @@ public final class ValidationProbe {
 
         LOGGER.info("### POST /api/v2/permissions/query/persons/grants");
         probeAndLog("/api/v2/permissions/query/persons/grants", true, new String[][]{
-            {"{}", "Empty body"},
+            {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
         });
 
         LOGGER.info("### GET /api/v2/permissions/attachments/status");
-        probeEndpoint(METHOD_GET, "/api/v2/permissions/attachments/status", null, true, "Valid request");
+        probeEndpoint(METHOD_GET, "/api/v2/permissions/attachments/status", null, true, DESC_VALID_REQUEST);
 
         LOGGER.info("### GET /api/v2/permissions/operations/{ref}");
-        probeEndpoint(METHOD_GET, "/api/v2/permissions/operations/invalid-ref", null, true, "Invalid reference number");
+        probeEndpoint(METHOD_GET, "/api/v2/permissions/operations/invalid-ref", null, true, DESC_INVALID_REF);
 
         LOGGER.info("### Wrong Content-Type test");
-        probeWithContentType("/api/v2/invoices/query/metadata", "text/plain", "{\"subjectType\":\"Subject1\"}", true, "text/plain content type");
-        probeWithContentType("/api/v2/invoices/query/metadata", "application/xml", "<xml/>", true, "XML content type");
+        probeWithContentType(PATH_INVOICES_QUERY_METADATA, "text/plain", "{\"subjectType\":\"Subject1\"}", true, "text/plain content type");
+        probeWithContentType(PATH_INVOICES_QUERY_METADATA, "application/xml", "<xml/>", true, "XML content type");
 
         LOGGER.info("### Missing auth test");
         probeEndpoint(METHOD_GET, "/api/v2/limits/context", null, false, "No auth on authenticated endpoint");
-        probeEndpoint(METHOD_POST, "/api/v2/invoices/query/metadata", "{\"subjectType\":\"Subject1\"}", false, "No auth on POST endpoint");
+        probeEndpoint(METHOD_POST, PATH_INVOICES_QUERY_METADATA, "{\"subjectType\":\"Subject1\"}", false, "No auth on POST endpoint");
     }
 
     private void probeAndLog(String path, boolean auth, String[][] tests) {
@@ -331,11 +342,14 @@ public final class ValidationProbe {
 
     private void sendAndLog(HttpRequest request, String description) throws java.io.IOException, InterruptedException {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        LOGGER.info(LOG_TABLE_ROW,
-                truncate(description),
-                response.statusCode(),
-                extractExceptionCode(response.body()),
-                extractDetails(response.body()));
+        if (LOGGER.isInfoEnabled()) {
+            String body = response.body();
+            LOGGER.info(LOG_TABLE_ROW,
+                    truncate(description),
+                    response.statusCode(),
+                    extractExceptionCode(body),
+                    extractDetails(body));
+        }
     }
 
     private static String extractExceptionCode(String json) {

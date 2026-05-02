@@ -100,8 +100,6 @@ class PermissionClientTest {
             }
             """;
 
-    // --- Grant tests ---
-
     @Test
     void grantPerson_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
@@ -230,8 +228,6 @@ class PermissionClientTest {
         }
     }
 
-    // --- Revoke tests ---
-
     @Test
     void revokeCommon_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         stubFor(delete(urlEqualTo("/api/v2/permissions/common/grants/" + TEST_PERMISSION_ID))
@@ -266,8 +262,6 @@ class PermissionClientTest {
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
-
-    // --- Status tests ---
 
     @Test
     void getOperationStatus_whenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
@@ -304,8 +298,6 @@ class PermissionClientTest {
             assertTrue(response.attachmentAllowed());
         }
     }
-
-    // --- Query tests ---
 
     @Test
     void queryPersonal_whenAuthenticated_returnsPermissions(WireMockRuntimeInfo wmInfo) {
@@ -416,8 +408,6 @@ class PermissionClientTest {
         }
     }
 
-    // --- Error and security tests ---
-
     @Test
     void grantPerson_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
         // given — both the target endpoint and the reauth security endpoint return 401,
@@ -457,8 +447,6 @@ class PermissionClientTest {
             assertThrows(IllegalArgumentException.class, () -> permissions.getOperationStatus("../../../etc/passwd"));
         }
     }
-
-    // --- Helpers ---
 
     private static void stubGrantEndpoint(String path) {
         stubFor(post(urlEqualTo(path))

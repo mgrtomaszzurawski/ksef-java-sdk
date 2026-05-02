@@ -14,6 +14,6 @@ public record EntityRoles(List<EntityRole> roles, boolean hasMore) {
 
     public static EntityRoles from(QueryEntityRolesResponseRaw raw) {
         List<EntityRole> mapped = raw.getRoles().stream().map(EntityRole::from).toList();
-        return new EntityRoles(mapped, Boolean.TRUE.equals(raw.getHasMore()));
+        return new EntityRoles(mapped, raw.getHasMore());
     }
 }

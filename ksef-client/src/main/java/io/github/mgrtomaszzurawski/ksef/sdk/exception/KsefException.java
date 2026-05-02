@@ -3,12 +3,16 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
+
+import java.io.Serial;
+
 /**
  * Base exception for all KSeF SDK errors.
  * All subclasses are unchecked (extend RuntimeException).
  */
 public class KsefException extends RuntimeException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
     private static final String ERR_UNKNOWN_STATUS = "Unexpected HTTP status: ";
     private static final int HTTP_UNAUTHORIZED = 401;

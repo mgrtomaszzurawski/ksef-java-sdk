@@ -82,6 +82,16 @@ public final class TestSubjectCreateBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public TestSubjectCreateBuilder toBuilder() {
+        TestSubjectCreateBuilder copy = new TestSubjectCreateBuilder(this.subjectNip, this.subjectType, this.description);
+        copy.subunits.addAll(this.subunits);
+        copy.createdDate = this.createdDate;
+        return copy;
+    }
+
+    /**
      * Build the subject creation request.
      *
      * @return the request ready to pass to {@code TestDataClient.createSubject()}

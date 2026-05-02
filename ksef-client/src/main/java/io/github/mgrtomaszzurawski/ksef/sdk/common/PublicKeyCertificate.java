@@ -49,9 +49,7 @@ public record PublicKeyCertificate(
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(validFrom, validTo, usage);
-        result = 31 * result + Arrays.hashCode(certificate);
-        return result;
+        return Objects.hash(validFrom, validTo, usage, Arrays.hashCode(certificate));
     }
 
     @Override

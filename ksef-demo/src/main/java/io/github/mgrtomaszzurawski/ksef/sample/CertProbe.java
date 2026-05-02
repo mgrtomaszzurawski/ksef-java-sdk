@@ -21,7 +21,6 @@ import io.github.mgrtomaszzurawski.ksef.sample.util.CertificateCsrUtil;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
@@ -36,7 +35,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
 
 /**
  * Standalone probe to verify two RCAs:
@@ -62,11 +60,10 @@ public final class CertProbe {
     private static final Path CREDENTIALS_FILE = Path.of("ksef-credentials.properties");
     private static final String CERT_NAME = "Probe Cert RCA Verify";
     private static final String STATUS_ACTIVE = "Active";
-    private static final int AUTH_STATUS_OK = 200;
     private static final int POLL_INITIAL_DELAY_MS = 1000;
     private static final int POLL_MAX_DELAY_MS = 10000;
-    private static final int AUTH_POLL_TIMEOUT_MS = 60000;
-    private static final int ENROLL_POLL_TIMEOUT_MS = 300000; // 5 minutes
+    /** 5 minutes — enrollment can take a while in the test environment. */
+    private static final int ENROLL_POLL_TIMEOUT_MS = 300000;
     private static final int POLL_BACKOFF_MULTIPLIER = 2;
     private static final int EXIT_FAILURE = 1;
     private static final String SEPARATOR = "================================================================";
@@ -87,104 +84,140 @@ public final class CertProbe {
 
         try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(properties.environment()))
                 .credentials(credentials).build()) {
-            // CertProbe uses cert-based XAdES auth (handled internally by authenticate())
             client.authenticate();
-            run(client, properties.nipIdentifier());
+            run(client);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("Probe interrupted", interrupted);
+            System.exit(EXIT_FAILURE);
         } catch (Exception exception) {
             LOGGER.error("Probe failed", exception);
             System.exit(EXIT_FAILURE);
         }
     }
 
-    private static void run(KsefClient client, String nipIdentifier) throws Exception {
-        // STEP 1: Already authenticated via client.authenticate() in main
+    private static void run(KsefClient client)
+            throws InterruptedException,
+                   java.security.NoSuchAlgorithmException,
+                   org.bouncycastle.operator.OperatorCreationException,
+                   java.io.IOException {
         section("STEP 1: XAdES authentication (handled by SDK)");
         LOGGER.info("XAdES session active (authenticated via KsefClient.authenticate())");
 
-        // STEP 2: Limits BEFORE
         section("STEP 2: certificates/limits BEFORE");
-        CertificateLimits limitsBefore = client.certificates().getLimits();
-        printLimits("BEFORE", limitsBefore);
+        printLimits("BEFORE", client.certificates().getLimits());
 
-        // STEP 3: Query active certs
+        queryAndRevokeYoungestActive(client);
+        EnrollCertificateResult enrollResult = enrollNewCert(client);
+        if (enrollResult == null) {
+            return;
+        }
+        cleanupEnrolled(client, enrollResult);
+
+        section("PROBE COMPLETE");
+    }
+
+    private static void queryAndRevokeYoungestActive(KsefClient client) {
         section("STEP 3: query active certificates");
         CertificateQueryResult queryResult = client.certificates().query(CertificateQueryBuilder.create());
         List<CertificateListItem> certs = queryResult.certificates();
-        LOGGER.info("Found {} certificates total", certs.size());
-        for (CertificateListItem cert : certs) {
-            LOGGER.info("  serial={} status={} validFrom={} requestDate={} name={}",
-                    cert.certificateSerialNumber(), cert.status(), cert.validFrom(), cert.requestDate(), cert.name());
-        }
+        logCertificateInventory(certs);
+
         List<CertificateListItem> active = certs.stream()
                 .filter(cert -> STATUS_ACTIVE.equalsIgnoreCase(cert.status()))
                 .toList();
-        LOGGER.info("Active count: {}", active.size());
-
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Active count: {}", active.size());
+        }
         if (active.isEmpty()) {
             LOGGER.warn("No active certs to revoke. Skipping revoke step.");
-        } else {
-            // STEP 4: Revoke youngest
-            section("STEP 4: revoke youngest active cert");
-            CertificateListItem youngest = active.stream()
-                    .max(Comparator.comparing(CertProbe::certSortKey,
-                            Comparator.nullsFirst(Comparator.naturalOrder())))
-                    .orElseThrow();
-            LOGGER.info("Youngest active: serial={} validFrom={} name={}",
-                    youngest.certificateSerialNumber(), youngest.validFrom(), youngest.name());
-            try {
-                client.certificates().revoke(youngest.certificateSerialNumber());
-                LOGGER.info("REVOKE OK serial={}", youngest.certificateSerialNumber());
-            } catch (Exception exception) {
-                LOGGER.error("REVOKE FAILED", exception);
-            }
-
-            // STEP 5: Limits AFTER revoke
-            section("STEP 5: certificates/limits AFTER revoke");
-            CertificateLimits limitsAfterRevoke = client.certificates().getLimits();
-            printLimits("AFTER_REVOKE", limitsAfterRevoke);
+            return;
         }
+        revokeYoungest(client, active);
+        section("STEP 5: certificates/limits AFTER revoke");
+        printLimits("AFTER_REVOKE", client.certificates().getLimits());
+    }
 
-        // STEP 6: Enroll new
+    private static void logCertificateInventory(List<CertificateListItem> certs) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Found {} certificates total", certs.size());
+            for (CertificateListItem cert : certs) {
+                LOGGER.info("  serial={} status={} validFrom={} requestDate={} name={}",
+                        cert.certificateSerialNumber(), cert.status(), cert.validFrom(),
+                        cert.requestDate(), cert.name());
+            }
+        }
+    }
+
+    private static void revokeYoungest(KsefClient client, List<CertificateListItem> active) {
+        section("STEP 4: revoke youngest active cert");
+        CertificateListItem youngest = active.stream()
+                .max(Comparator.comparing(CertProbe::certSortKey,
+                        Comparator.nullsFirst(Comparator.naturalOrder())))
+                .orElseThrow();
+        String youngestSerial = youngest.certificateSerialNumber();
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Youngest active: serial={} validFrom={} name={}",
+                    youngestSerial, youngest.validFrom(), youngest.name());
+        }
+        try {
+            client.certificates().revoke(youngestSerial);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("REVOKE OK serial={}", youngestSerial);
+            }
+        } catch (Exception exception) {
+            LOGGER.error("REVOKE FAILED", exception);
+        }
+    }
+
+    private static EnrollCertificateResult enrollNewCert(KsefClient client)
+            throws java.security.NoSuchAlgorithmException,
+                   org.bouncycastle.operator.OperatorCreationException,
+                   java.io.IOException {
         section("STEP 6: enroll new cert");
         CertificateEnrollmentData enrollData = client.certificates().getEnrollmentData();
-        LOGGER.info("Enrollment data: cn={}", enrollData.commonName());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Enrollment data: cn={}", enrollData.commonName());
+        }
         CertificateCsrUtil.CsrResult csr = CertificateCsrUtil.generate(enrollData);
         CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder.create(
                 CERT_NAME, KsefCertificateType.AUTHENTICATION, csr.csrDer());
 
-        EnrollCertificateResult enrollResult;
         try {
-            enrollResult = client.certificates().enroll(enrollBuilder);
-            LOGGER.info("ENROLL OK ref={}", enrollResult.referenceNumber());
+            EnrollCertificateResult enrollResult = client.certificates().enroll(enrollBuilder);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("ENROLL OK ref={}", enrollResult.referenceNumber());
+            }
+            return enrollResult;
         } catch (Exception exception) {
             LOGGER.error("ENROLL FAILED", exception);
             section("STEP 8: certificates/limits AFTER failed enroll");
             printLimits("AFTER_FAILED_ENROLL", client.certificates().getLimits());
-            return;
+            return null;
         }
+    }
 
-        // STEP 7: Poll for serial
+    private static void cleanupEnrolled(KsefClient client, EnrollCertificateResult enrollResult)
+            throws InterruptedException {
         section("STEP 7: poll enrollment status for serial number");
         String enrolledSerial = pollEnrollmentSerial(client, enrollResult.referenceNumber());
 
-        // STEP 8: Limits AFTER enroll
         section("STEP 8: certificates/limits AFTER enroll");
         printLimits("AFTER_ENROLL", client.certificates().getLimits());
 
-        // STEP 9: Cleanup new cert
-        if (enrolledSerial != null) {
-            section("STEP 9: cleanup — revoke newly enrolled cert");
-            try {
-                client.certificates().revoke(enrolledSerial);
-                LOGGER.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
-            } catch (Exception exception) {
-                LOGGER.error("CLEANUP REVOKE FAILED", exception);
-            }
-        } else {
+        if (enrolledSerial == null) {
             LOGGER.warn("No serial obtained — cannot cleanup. Cert may still consume slot.");
+            return;
         }
-
-        section("PROBE COMPLETE");
+        section("STEP 9: cleanup — revoke newly enrolled cert");
+        try {
+            client.certificates().revoke(enrolledSerial);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
+            }
+        } catch (Exception exception) {
+            LOGGER.error("CLEANUP REVOKE FAILED", exception);
+        }
     }
 
     private static String pollEnrollmentSerial(KsefClient client, String enrollmentRef) throws InterruptedException {
@@ -198,13 +231,15 @@ public final class CertProbe {
                 CertificateEnrollmentStatus status = client.certificates().getEnrollmentStatus(enrollmentRef);
                 String code = status.status() != null ? Integer.toString(status.status().code()) : "null";
                 String description = status.status() != null ? status.status().description() : "null";
-                LOGGER.info("  poll #{} status code={} desc={} serial={}",
-                        attempt, code, description, status.certificateSerialNumber());
-                if (status.certificateSerialNumber() != null) {
-                    LOGGER.info("SERIAL OBTAINED after {}ms: {}",
-                            System.currentTimeMillis() - startTime,
-                            status.certificateSerialNumber());
-                    return status.certificateSerialNumber();
+                String serial = status.certificateSerialNumber();
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("  poll #{} status code={} desc={} serial={}", attempt, code, description, serial);
+                }
+                if (serial != null) {
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info("SERIAL OBTAINED after {}ms: {}", System.currentTimeMillis() - startTime, serial);
+                    }
+                    return serial;
                 }
             } catch (Exception exception) {
                 LOGGER.warn("  poll #{} failed (will retry): {}", attempt, exception.getMessage());
@@ -214,20 +249,6 @@ public final class CertProbe {
         }
         LOGGER.warn("TIMEOUT after {}ms — serial never appeared", ENROLL_POLL_TIMEOUT_MS);
         return null;
-    }
-
-    private static void pollAuth(KsefClient client, String authRef) throws InterruptedException {
-        int delay = POLL_INITIAL_DELAY_MS;
-        long deadline = System.currentTimeMillis() + AUTH_POLL_TIMEOUT_MS;
-        while (System.currentTimeMillis() < deadline) {
-            AuthenticationStatus authStatus = new AuthClient(client).getStatus(authRef);
-            if (authStatus.status() != null && authStatus.status().code() == AUTH_STATUS_OK) {
-                return;
-            }
-            Thread.sleep(delay);
-            delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
-        }
-        throw new IllegalStateException("Auth timeout for " + authRef);
     }
 
     private static java.time.OffsetDateTime certSortKey(CertificateListItem cert) {

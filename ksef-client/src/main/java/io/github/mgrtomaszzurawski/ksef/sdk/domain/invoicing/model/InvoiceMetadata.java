@@ -116,13 +116,11 @@ public record InvoiceMetadata(
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(ksefNumber, invoiceNumber, issueDate, invoicingDate,
+        return Objects.hash(ksefNumber, invoiceNumber, issueDate, invoicingDate,
                 acquisitionDate, permanentStorageDate, seller, buyer, netAmount, grossAmount,
                 vatAmount, currency, invoicingMode, invoiceType, formCode, selfInvoicing,
-                hasAttachment, thirdSubjects);
-        result = 31 * result + Arrays.hashCode(invoiceHash);
-        result = 31 * result + Arrays.hashCode(hashOfCorrectedInvoice);
-        return result;
+                hasAttachment, thirdSubjects,
+                Arrays.hashCode(invoiceHash), Arrays.hashCode(hashOfCorrectedInvoice));
     }
 
     @Override

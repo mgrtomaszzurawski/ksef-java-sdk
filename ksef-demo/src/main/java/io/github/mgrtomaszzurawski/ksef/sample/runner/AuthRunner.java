@@ -122,9 +122,11 @@ public final class AuthRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             context.client().authenticate();
-            LOGGER.info(LOG_AUTHENTICATED, NAME, context.nipIdentifier());
-            results.add(RunResult.ok(NAME, OP_AUTHENTICATE, elapsed(start),
-                    NIP_PREFIX + context.nipIdentifier()));
+            String nip = context.nipIdentifier();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_AUTHENTICATED, NAME, nip);
+            }
+            results.add(RunResult.ok(NAME, OP_AUTHENTICATE, elapsed(start), NIP_PREFIX + nip));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_AUTHENTICATE, elapsed(start),
                     errorMessage(exception)));
@@ -305,7 +307,7 @@ public final class AuthRunner implements DemoRunner {
 
     private static void pollAuthStatus(AuthClient authClient, String referenceNumber) {
         for (int attempt = 0; attempt < AUTH_POLL_MAX_ATTEMPTS; attempt++) {
-            sleep(AUTH_POLL_DELAY_MS);
+            sleep();
             AuthenticationStatus status = authClient.getStatus(referenceNumber);
             if (status.status() != null && status.status().code() == STATUS_CODE_OK) {
                 return;
@@ -314,9 +316,9 @@ public final class AuthRunner implements DemoRunner {
         throw new IllegalStateException(ERR_AUTH_TIMEOUT);
     }
 
-    private static void sleep(int millis) {
+    private static void sleep() {
         try {
-            Thread.sleep(millis);
+            Thread.sleep(AUTH_POLL_DELAY_MS);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(ERR_INTERRUPTED, interrupted);

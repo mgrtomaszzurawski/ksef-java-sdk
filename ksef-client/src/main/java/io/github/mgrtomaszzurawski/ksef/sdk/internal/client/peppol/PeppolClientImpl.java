@@ -9,8 +9,10 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersRespons
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Client for KSeF Peppol service provider queries.
@@ -20,11 +22,18 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSuppo
  */
 public final class PeppolClientImpl implements PeppolClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PeppolClientImpl.class);
+    private static final String LOG_CALL = "→ {} pageOffset={} pageSize={}";
+
     private static final String PATH_PEPPOL_QUERY = ApiPaths.PEPPOL + "/query";
     private static final String OP_QUERY_PROVIDERS = "queryPeppolProviders";
 
     private static final String QUERY_PARAM_PAGE_OFFSET = "pageOffset";
     private static final String QUERY_PARAM_PAGE_SIZE = "pageSize";
+
+    private static final String QUERY_STRING_PREFIX = "?";
+    private static final String QUERY_PARAM_ASSIGN = "=";
+    private static final String QUERY_PARAM_SEPARATOR = "&";
 
     private static final int DEFAULT_PAGE_OFFSET = 0;
     private static final int DEFAULT_PAGE_SIZE = 10;
@@ -60,6 +69,7 @@ public final class PeppolClientImpl implements PeppolClient {
      */
     @Override
     public PeppolProvidersResult query(int pageOffset, int pageSize) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_PROVIDERS, pageOffset, pageSize);
         if (pageOffset < 0) {
             throw new IllegalArgumentException(ERR_PAGE_OFFSET_NEGATIVE);
         }
@@ -67,8 +77,8 @@ public final class PeppolClientImpl implements PeppolClient {
             throw new IllegalArgumentException(ERR_PAGE_SIZE_NOT_POSITIVE);
         }
         String path = PATH_PEPPOL_QUERY
-                + "?" + QUERY_PARAM_PAGE_OFFSET + "=" + pageOffset
-                + "&" + QUERY_PARAM_PAGE_SIZE + "=" + pageSize;
+                + QUERY_STRING_PREFIX + QUERY_PARAM_PAGE_OFFSET + QUERY_PARAM_ASSIGN + pageOffset
+                + QUERY_PARAM_SEPARATOR + QUERY_PARAM_PAGE_SIZE + QUERY_PARAM_ASSIGN + pageSize;
         String token = sessionContext.token();
         QueryPeppolProvidersResponseRaw raw = http.getAuthenticated(path, token,
                 QueryPeppolProvidersResponseRaw.class, OP_QUERY_PROVIDERS);

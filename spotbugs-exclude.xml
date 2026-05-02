@@ -17,30 +17,53 @@
     <!-- Java records with mutable fields (List, byte[], Map, X509Certificate, PrivateKey, char[]).
          Records are immutable by intent — the JVM guarantees no setter methods.
          SpotBugs flags the auto-generated accessor as "exposing mutable state"
-         but there is no way to defensively copy in a record accessor. -->
+         but there is no way to defensively copy in a record accessor. Domain
+         model records under sdk.domain.<feature>.model.* (ADR-012 layout) all
+         use unmodifiable List from .toList()/List.copyOf() in their from()
+         factories. -->
     <Match>
-        <Package name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.model\..*"/>
+        <Package name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\..*\.model"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Same defensive-copy pattern in the internal auth model (AuthenticationList). -->
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Top-level records under sdk.common (PublicKeyCertificate has byte[] cert
+         field) and sdk.config (credentials hold char[] / X509Certificate /
+         PrivateKey by design — identity objects that cannot be meaningfully
+         copied). -->
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.common"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
     <Match>
-        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.model"/>
-        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
-    </Match>
-    <!-- Credentials records hold mutable objects (X509Certificate, PrivateKey, char[])
-         by design — these are identity objects that cannot be meaningfully copied. -->
-    <Match>
-        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.KsefCertificateCredentials"/>
-        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
-    </Match>
-    <Match>
-        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.KsefPkcs12Credentials"/>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.config"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
     <!-- KsefBatchSession.partUploadRequests() returns a List that was already
          List.copyOf'd in the constructor (immutable). SpotBugs cannot detect
          the defensive copy pattern. -->
     <Match>
-        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.KsefBatchSession"/>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession"/>
         <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <!-- KsefSession holds session-scoped AES key + IV byte[] received from
+         OnlineSessionBuilder. Defensive-copying every byte[] hop in the auth
+         flow adds noise without security benefit — the SDK is the sole owner
+         of these arrays for the session's lifetime. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- OnlineSessionBuilder.SessionOpenResult is an internal-handoff record
+         (KsefClient consumes it once to construct a KsefSession). The byte[]
+         aesKey/initVector are session-scoped secrets; defensive copies would
+         force per-call clones for no real benefit since the builder owns
+         the only references. -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.builder\.OnlineSessionBuilder\$SessionOpenResult"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 </FindBugsFilter>

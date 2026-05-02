@@ -62,7 +62,7 @@ public final class SessionRunner implements DemoRunner {
     private static final String OP_UPO_BY_KSEF = "getUpoByKsefNumber";
     private static final String OP_STALE_SESSION_RECOVERY = "staleSessionRecovery";
 
-    private static final String SKIP_NOT_FULL = "FULL mode only";
+    private static final String SKIP_NOT_FULL = "FULL mode only — sends a real invoice";
     private static final String SKIP_NO_KSEF_NUMBER =
             "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
     private static final String FAIL_UPO_BYTES_DIFFER =
@@ -102,11 +102,7 @@ public final class SessionRunner implements DemoRunner {
     @Override
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
-
-        if (context.mode() != DemoMode.FULL) {
-            results.add(RunResult.skip(NAME, OP_OPEN_SESSION, SKIP_NOT_FULL));
-            return results;
-        }
+        boolean fullMode = context.mode() == DemoMode.FULL;
 
         runStaleSessionRecovery(context, results);
 
@@ -116,15 +112,18 @@ public final class SessionRunner implements DemoRunner {
         }
 
         try (session) {
-            String invoiceRef = runSendInvoice(context, session, results);
-            if (invoiceRef != null) {
-                runGetInvoiceStatus(session, invoiceRef, results);
+            String invoiceRef = null;
+            if (fullMode) {
+                invoiceRef = runSendInvoice(context, session, results);
+                if (invoiceRef != null) {
+                    runGetInvoiceStatus(session, invoiceRef, results);
+                }
             }
             runGetStatus(session, results);
             runGetInvoices(session, results);
             runGetFailedInvoices(session, results);
             boolean closed = runClose(session, results);
-            if (closed && invoiceRef != null) {
+            if (fullMode && closed && invoiceRef != null) {
                 byte[] upoByInvoiceRef = runGetUpo(session, invoiceRef, results);
                 runGetUpoByKsefNumber(context, session, invoiceRef, upoByInvoiceRef, results);
             }
@@ -139,27 +138,33 @@ public final class SessionRunner implements DemoRunner {
      */
     private void runStaleSessionRecovery(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
-        KsefSession firstSession = null;
-        KsefSession secondSession = null;
-        try {
-            firstSession = context.client().openSession(FormCode.FA2);
-            LOGGER.info(LOG_FIRST_SESSION_OPENED, NAME, firstSession.referenceNumber());
-            try {
-                secondSession = context.client().openSession(FormCode.FA2);
-                LOGGER.info(LOG_CONCURRENT_PERMITTED, NAME, secondSession.referenceNumber());
-                results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
-                        OK_CONCURRENT_PERMITTED));
-            } catch (Exception rejected) {
-                LOGGER.info(LOG_CONCURRENT_REJECTED, NAME, rejected.getClass().getSimpleName());
-                results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
-                        OK_CONCURRENT_REJECTED_PREFIX + rejected.getClass().getSimpleName()));
+        try (KsefSession firstSession = context.client().openSession(FormCode.FA2)) {
+            String firstRef = firstSession.referenceNumber();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_FIRST_SESSION_OPENED, NAME, firstRef);
             }
+            attemptConcurrentSession(context, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
                     errorMessage(exception)));
-        } finally {
-            quietClose(secondSession);
-            quietClose(firstSession);
+        }
+    }
+
+    private void attemptConcurrentSession(DemoContext context, List<RunResult> results, long start) {
+        try (KsefSession second = context.client().openSession(FormCode.FA2)) {
+            String secondRef = second.referenceNumber();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_CONCURRENT_PERMITTED, NAME, secondRef);
+            }
+            results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
+                    OK_CONCURRENT_PERMITTED));
+        } catch (Exception rejected) {
+            String rejectedClass = rejected.getClass().getSimpleName();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_CONCURRENT_REJECTED, NAME, rejectedClass);
+            }
+            results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
+                    OK_CONCURRENT_REJECTED_PREFIX + rejectedClass));
         }
     }
 
@@ -220,15 +225,17 @@ public final class SessionRunner implements DemoRunner {
     }
 
     private void logInvoiceStatus(String label, SessionInvoiceStatus invoice) {
+        if (!LOGGER.isInfoEnabled()) {
+            return;
+        }
         if (invoice == null || invoice.status() == null) {
             LOGGER.info(LOG_INVOICE_STATUS_NULL, NAME, label, NO_STATUS_PLACEHOLDER);
             return;
         }
-        LOGGER.info(LOG_INVOICE_STATUS,
-                NAME, label,
-                invoice.status().code(),
-                invoice.status().description(),
-                invoice.ksefNumber());
+        Integer code = invoice.status().code();
+        String description = invoice.status().description();
+        String ksefNumber = invoice.ksefNumber();
+        LOGGER.info(LOG_INVOICE_STATUS, NAME, label, code, description, ksefNumber);
         List<String> details = invoice.status().details();
         if (details != null && !details.isEmpty()) {
             for (String detail : details) {
@@ -242,7 +249,9 @@ public final class SessionRunner implements DemoRunner {
         try {
             SessionStatus response = session.status();
             Object code = response.status() != null ? response.status().code() : NULL_LITERAL;
-            LOGGER.info(LOG_SESSION_STATUS, NAME, code);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_SESSION_STATUS, NAME, code);
+            }
             results.add(RunResult.ok(NAME, OP_GET_STATUS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_STATUS, elapsed(start),
@@ -302,14 +311,16 @@ public final class SessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             byte[] upo = session.upo(invoiceRef);
-            LOGGER.info(LOG_UPO_RETRIEVED, NAME, upo.length);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_UPO_RETRIEVED, NAME, upo.length);
+            }
             results.add(RunResult.ok(NAME, OP_UPO, elapsed(start),
                     upo.length + BYTES_LABEL));
             return upo;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_UPO, elapsed(start),
                     errorMessage(exception)));
-            return null;
+            return new byte[0];
         }
     }
 
@@ -344,7 +355,7 @@ public final class SessionRunner implements DemoRunner {
                     session.referenceNumber(), ksefNumber);
             LOGGER.info(LOG_UPO_BY_KSEF_RETRIEVED, NAME, upoByKsef.length);
 
-            if (upoByInvoiceRef != null && !Arrays.equals(upoByInvoiceRef, upoByKsef)) {
+            if (upoByInvoiceRef.length > 0 && !Arrays.equals(upoByInvoiceRef, upoByKsef)) {
                 results.add(RunResult.fail(NAME, OP_UPO_BY_KSEF, elapsed(start),
                         FAIL_UPO_BYTES_DIFFER));
                 return;
@@ -357,18 +368,4 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    /**
-     * Best-effort cleanup — failures here would mask the underlying test result
-     * so they are intentionally swallowed.
-     */
-    private static void quietClose(KsefSession session) {
-        if (session == null) {
-            return;
-        }
-        try {
-            session.close();
-        } catch (Exception ignored) {
-            // intentionally ignored
-        }
-    }
 }

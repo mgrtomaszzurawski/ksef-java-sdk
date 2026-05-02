@@ -51,11 +51,11 @@ public final class TestCertificates {
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
         keyPairGen.initialize(RSA_KEY_SIZE);
         KeyPair keyPair = keyPairGen.generateKeyPair();
-        X509Certificate cert = buildSelfSignedCertificate(keyPair, SHA256_WITH_RSA);
+        X509Certificate cert = buildSelfSignedCertificate(keyPair);
         return new TestCertificates(cert, keyPair.getPrivate());
     }
 
-    private static X509Certificate buildSelfSignedCertificate(KeyPair keyPair, String sigAlgorithm) throws Exception {
+    private static X509Certificate buildSelfSignedCertificate(KeyPair keyPair) throws Exception {
         X500Name issuer = new X500Name(CERT_SUBJECT);
         Instant notBefore = Instant.now();
         Instant notAfter = notBefore.plus(CERT_VALIDITY_DAYS, ChronoUnit.DAYS);
@@ -65,7 +65,7 @@ public final class TestCertificates {
                 Date.from(notBefore), Date.from(notAfter),
                 issuer, keyPair.getPublic());
 
-        ContentSigner signer = new JcaContentSignerBuilder(sigAlgorithm).build(keyPair.getPrivate());
+        ContentSigner signer = new JcaContentSignerBuilder(SHA256_WITH_RSA).build(keyPair.getPrivate());
         X509CertificateHolder certHolder = certBuilder.build(signer);
         return new JcaX509CertificateConverter().getCertificate(certHolder);
     }

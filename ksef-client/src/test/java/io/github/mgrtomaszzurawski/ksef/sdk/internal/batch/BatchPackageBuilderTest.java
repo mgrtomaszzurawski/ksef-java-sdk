@@ -50,9 +50,9 @@ class BatchPackageBuilderTest {
     }
 
     private static byte[] aesIv() {
-        byte[] iv = new byte[AES_IV_BYTES];
-        Arrays.fill(iv, AES_IV_FILL);
-        return iv;
+        byte[] initVector = new byte[AES_IV_BYTES];
+        Arrays.fill(initVector, AES_IV_FILL);
+        return initVector;
     }
 
     private static byte[] sha256(byte[] data) throws Exception {
@@ -64,13 +64,13 @@ class BatchPackageBuilderTest {
      * concatenate the plaintext chunks → the original (unencrypted) ZIP.
      */
     private static byte[] decryptAndConcat(List<Path> partFiles) throws Exception {
-        ByteArrayOutputStream all = new ByteArrayOutputStream();
+        ByteArrayOutputStream concatenated = new ByteArrayOutputStream();
         for (Path part : partFiles) {
             byte[] encrypted = Files.readAllBytes(part);
             byte[] decrypted = CryptoService.decryptAes(encrypted, aesKey(), aesIv());
-            all.write(decrypted);
+            concatenated.write(decrypted);
         }
-        return all.toByteArray();
+        return concatenated.toByteArray();
     }
 
     @Test
@@ -100,21 +100,21 @@ class BatchPackageBuilderTest {
         byte[] invoice = INVOICE_ONE_XML.getBytes(StandardCharsets.UTF_8);
 
         // when
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+        BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 List.of(invoice), aesKey(), aesIv());
 
         // then
         try {
-            assertEquals(1, pkg.spec().parts().size());
-            assertEquals(FIRST_PART_ORDINAL, pkg.spec().parts().get(0).ordinalNumber());
-            assertEquals(1, pkg.partFiles().size());
+            assertEquals(1, batchPackage.spec().parts().size());
+            assertEquals(FIRST_PART_ORDINAL, batchPackage.spec().parts().get(0).ordinalNumber());
+            assertEquals(1, batchPackage.partFiles().size());
 
             // fileSize/fileHash describe the unencrypted ZIP — recover it by decrypting
-            byte[] zipBytes = decryptAndConcat(pkg.partFiles());
-            assertEquals(zipBytes.length, pkg.spec().fileSize());
-            assertArrayEquals(sha256(zipBytes), pkg.spec().fileHash());
+            byte[] zipBytes = decryptAndConcat(batchPackage.partFiles());
+            assertEquals(zipBytes.length, batchPackage.spec().fileSize());
+            assertArrayEquals(sha256(zipBytes), batchPackage.spec().fileHash());
         } finally {
-            pkg.cleanup();
+            batchPackage.cleanup();
         }
     }
 
@@ -125,20 +125,20 @@ class BatchPackageBuilderTest {
         byte[] invoiceTwo = INVOICE_TWO_XML.getBytes(StandardCharsets.UTF_8);
 
         // when
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+        BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 List.of(invoiceOne, invoiceTwo), aesKey(), aesIv());
 
         // then — decrypt each part, concat, parse as ZIP
         try {
-            byte[] zipBytes = decryptAndConcat(pkg.partFiles());
+            byte[] zipBytes = decryptAndConcat(batchPackage.partFiles());
 
             Set<String> entryNames = new HashSet<>();
             List<byte[]> contents = new ArrayList<>();
-            try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+            try (ZipInputStream zipStream = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
                 ZipEntry entry;
-                while ((entry = zip.getNextEntry()) != null) {
+                while ((entry = zipStream.getNextEntry()) != null) {
                     entryNames.add(entry.getName());
-                    contents.add(zip.readAllBytes());
+                    contents.add(zipStream.readAllBytes());
                 }
             }
             assertEquals(EXPECTED_TWO_INVOICES, entryNames.size());
@@ -146,7 +146,7 @@ class BatchPackageBuilderTest {
                     || Arrays.equals(contents.get(0), invoiceOne)
                     || Arrays.equals(contents.get(1), invoiceOne));
         } finally {
-            pkg.cleanup();
+            batchPackage.cleanup();
         }
     }
 
@@ -159,22 +159,22 @@ class BatchPackageBuilderTest {
                 INVOICE_THREE_XML.getBytes(StandardCharsets.UTF_8));
 
         // when
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+        BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 invoices, aesKey(), aesIv(), SMALL_PART_SIZE);
 
         // then — multiple parts produced, ordinals are 1-based and contiguous
         try {
-            assertTrue(pkg.spec().parts().size() > 1, "expected multiple parts");
-            for (int index = 0; index < pkg.spec().parts().size(); index++) {
-                assertEquals(index + 1, pkg.spec().parts().get(index).ordinalNumber());
+            assertTrue(batchPackage.spec().parts().size() > 1, "expected multiple parts");
+            for (int index = 0; index < batchPackage.spec().parts().size(); index++) {
+                assertEquals(index + 1, batchPackage.spec().parts().get(index).ordinalNumber());
             }
 
             // decrypt each part and concat — should equal original unencrypted ZIP
-            byte[] zipBytes = decryptAndConcat(pkg.partFiles());
-            assertEquals(pkg.spec().fileSize(), zipBytes.length);
-            assertArrayEquals(sha256(zipBytes), pkg.spec().fileHash());
+            byte[] zipBytes = decryptAndConcat(batchPackage.partFiles());
+            assertEquals(batchPackage.spec().fileSize(), zipBytes.length);
+            assertArrayEquals(sha256(zipBytes), batchPackage.spec().fileHash());
         } finally {
-            pkg.cleanup();
+            batchPackage.cleanup();
         }
     }
 
@@ -186,20 +186,20 @@ class BatchPackageBuilderTest {
                 INVOICE_TWO_XML.getBytes(StandardCharsets.UTF_8));
 
         // when
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+        BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 invoices, aesKey(), aesIv(), SMALL_PART_SIZE);
 
         // then — each spec.parts().fileHash matches sha256(encrypted part file content)
         try {
-            for (int index = 0; index < pkg.partFiles().size(); index++) {
-                byte[] content = Files.readAllBytes(pkg.partFiles().get(index));
+            for (int index = 0; index < batchPackage.partFiles().size(); index++) {
+                byte[] content = Files.readAllBytes(batchPackage.partFiles().get(index));
                 byte[] expectedHash = sha256(content);
                 assertEquals(EXPECTED_HASH_BYTES, expectedHash.length);
-                assertArrayEquals(expectedHash, pkg.spec().parts().get(index).fileHash());
-                assertEquals(content.length, pkg.spec().parts().get(index).fileSize());
+                assertArrayEquals(expectedHash, batchPackage.spec().parts().get(index).fileHash());
+                assertEquals(content.length, batchPackage.spec().parts().get(index).fileSize());
             }
         } finally {
-            pkg.cleanup();
+            batchPackage.cleanup();
         }
     }
 
@@ -209,16 +209,16 @@ class BatchPackageBuilderTest {
         byte[] invoice = INVOICE_ONE_XML.getBytes(StandardCharsets.UTF_8);
 
         // when
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+        BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 List.of(invoice), aesKey(), aesIv());
 
         // then — fileHash describes the *unencrypted* ZIP (per KSeF spec)
         try {
-            byte[] zipBytes = decryptAndConcat(pkg.partFiles());
-            assertArrayEquals(sha256(zipBytes), pkg.spec().fileHash());
-            assertEquals(zipBytes.length, pkg.spec().fileSize());
+            byte[] zipBytes = decryptAndConcat(batchPackage.partFiles());
+            assertArrayEquals(sha256(zipBytes), batchPackage.spec().fileHash());
+            assertEquals(zipBytes.length, batchPackage.spec().fileSize());
         } finally {
-            pkg.cleanup();
+            batchPackage.cleanup();
         }
     }
 
@@ -230,17 +230,17 @@ class BatchPackageBuilderTest {
                 INVOICE_TWO_XML.getBytes(StandardCharsets.UTF_8));
 
         // when — small part size forces multiple parts
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+        BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 invoices, aesKey(), aesIv(), SMALL_PART_SIZE);
 
         // then — ordinals start at 1
         try {
-            assertEquals(FIRST_PART_ORDINAL, pkg.spec().parts().get(0).ordinalNumber());
-            if (pkg.spec().parts().size() >= EXPECTED_TWO_INVOICES) {
-                assertEquals(SECOND_PART_ORDINAL, pkg.spec().parts().get(1).ordinalNumber());
+            assertEquals(FIRST_PART_ORDINAL, batchPackage.spec().parts().get(0).ordinalNumber());
+            if (batchPackage.spec().parts().size() >= EXPECTED_TWO_INVOICES) {
+                assertEquals(SECOND_PART_ORDINAL, batchPackage.spec().parts().get(1).ordinalNumber());
             }
         } finally {
-            pkg.cleanup();
+            batchPackage.cleanup();
         }
     }
 
@@ -248,15 +248,15 @@ class BatchPackageBuilderTest {
     void cleanup_deletesPartFiles() {
         // given
         byte[] invoice = INVOICE_ONE_XML.getBytes(StandardCharsets.UTF_8);
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+        BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 List.of(invoice), aesKey(), aesIv());
-        List<Path> partFiles = pkg.partFiles();
+        List<Path> partFiles = batchPackage.partFiles();
         for (Path part : partFiles) {
             assertTrue(Files.exists(part), "part file should exist before cleanup");
         }
 
         // when
-        pkg.cleanup();
+        batchPackage.cleanup();
 
         // then
         for (Path part : partFiles) {
@@ -268,11 +268,11 @@ class BatchPackageBuilderTest {
     void cleanup_isIdempotent() {
         // given
         byte[] invoice = INVOICE_ONE_XML.getBytes(StandardCharsets.UTF_8);
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
+        BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 List.of(invoice), aesKey(), aesIv());
-        pkg.cleanup();
+        batchPackage.cleanup();
 
         // when / then — second call must not throw
-        assertDoesNotThrow(pkg::cleanup);
+        assertDoesNotThrow(batchPackage::cleanup);
     }
 }

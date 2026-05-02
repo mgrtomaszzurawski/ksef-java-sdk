@@ -16,13 +16,11 @@ public final class TestHttpConstants {
 
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String CONTENT_TYPE_HEADER = "Content-Type";
-    public static final String ACCEPT_HEADER = "Accept";
     public static final String BEARER_PREFIX = "Bearer ";
     public static final String APPLICATION_JSON = "application/json";
     public static final String APPLICATION_XML = "application/xml";
 
     public static final int HTTP_OK = 200;
-    public static final int HTTP_CREATED = 201;
     public static final int HTTP_ACCEPTED = 202;
     public static final int HTTP_NO_CONTENT = 204;
     public static final int HTTP_BAD_REQUEST = 400;
@@ -33,7 +31,6 @@ public final class TestHttpConstants {
     public static final int HTTP_TOO_MANY_REQUESTS = 429;
     public static final int HTTP_SERVER_ERROR = 500;
     public static final int HTTP_BAD_GATEWAY = 502;
-    public static final int HTTP_SERVICE_UNAVAILABLE = 503;
 
     private TestHttpConstants() { }
 }

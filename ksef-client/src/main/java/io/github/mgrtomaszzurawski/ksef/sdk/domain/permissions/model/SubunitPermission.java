@@ -22,23 +22,11 @@ public record SubunitPermission(
 
     public static SubunitPermission from(SubunitPermissionRaw raw) {
         var authzRaw = raw.getAuthorizedIdentifier();
-        PermissionIdentifier authzId = null;
-        if (authzRaw != null) {
-            String type = authzRaw.getType() != null ? authzRaw.getType().getValue() : null;
-            authzId = new PermissionIdentifier(type, authzRaw.getValue());
-        }
+        PermissionIdentifier authzId = new PermissionIdentifier(authzRaw.getType().getValue(), authzRaw.getValue());
         var subunitRaw = raw.getSubunitIdentifier();
-        PermissionIdentifier subunitId = null;
-        if (subunitRaw != null) {
-            String type = subunitRaw.getType() != null ? subunitRaw.getType().getValue() : null;
-            subunitId = new PermissionIdentifier(type, subunitRaw.getValue());
-        }
+        PermissionIdentifier subunitId = new PermissionIdentifier(subunitRaw.getType().getValue(), subunitRaw.getValue());
         var authorRaw = raw.getAuthorIdentifier();
-        PermissionIdentifier authorId = null;
-        if (authorRaw != null) {
-            String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
-            authorId = new PermissionIdentifier(type, authorRaw.getValue());
-        }
+        PermissionIdentifier authorId = new PermissionIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
         String scope = raw.getPermissionScope().getValue();
         return new SubunitPermission(raw.getId(), authzId, subunitId, authorId,
                 scope, raw.getDescription(), raw.getSubunitName(), raw.getStartDate());

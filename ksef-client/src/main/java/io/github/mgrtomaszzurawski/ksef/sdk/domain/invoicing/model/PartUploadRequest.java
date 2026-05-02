@@ -23,6 +23,6 @@ public record PartUploadRequest(int ordinalNumber, String method, URI url, Map<S
                 raw.getOrdinalNumber(),
                 raw.getMethod(),
                 raw.getUrl(),
-                raw.getHeaders() != null ? Map.copyOf(raw.getHeaders()) : Map.of());
+                Map.copyOf(raw.getHeaders()));
     }
 }

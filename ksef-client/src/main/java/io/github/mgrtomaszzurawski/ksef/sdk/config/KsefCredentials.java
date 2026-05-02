@@ -49,11 +49,11 @@ public sealed interface KsefCredentials
     @SuppressWarnings("java:S1133") // forRemoval=false: intentional permanent deprecation for backward-compat ergonomics.
     @Deprecated(since = "0.2.0", forRemoval = false)
     default String nip() {
-        KsefIdentifier id = identifier();
-        if (id.type() != KsefIdentifier.Type.NIP) {
+        KsefIdentifier identifier = identifier();
+        if (identifier.type() != KsefIdentifier.Type.NIP) {
             throw new IllegalStateException(ERR_NOT_NIP);
         }
-        return id.value();
+        return identifier.value();
     }
 
     /**

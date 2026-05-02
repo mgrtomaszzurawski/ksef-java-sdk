@@ -68,10 +68,8 @@ public record InvoicePackagePart(
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(ordinalNumber, partName, method, url, partSize, encryptedPartSize, expirationDate);
-        result = 31 * result + Arrays.hashCode(partHash);
-        result = 31 * result + Arrays.hashCode(encryptedPartHash);
-        return result;
+        return Objects.hash(ordinalNumber, partName, method, url, partSize, encryptedPartSize, expirationDate,
+                Arrays.hashCode(partHash), Arrays.hashCode(encryptedPartHash));
     }
 
     @Override

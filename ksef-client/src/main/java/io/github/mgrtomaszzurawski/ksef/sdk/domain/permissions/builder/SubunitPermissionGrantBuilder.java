@@ -122,6 +122,20 @@ public final class SubunitPermissionGrantBuilder {
     }
 
     /**
+     * Return a fresh builder pre-populated with this builder's current field values.
+     */
+    public SubunitPermissionGrantBuilder toBuilder() {
+        SubunitPermissionGrantBuilder copy = new SubunitPermissionGrantBuilder(this.identifierType, this.identifierValue);
+        copy.contextType = this.contextType;
+        copy.contextValue = this.contextValue;
+        copy.description = this.description;
+        copy.firstName = this.firstName;
+        copy.lastName = this.lastName;
+        copy.subunitName = this.subunitName;
+        return copy;
+    }
+
+    /**
      * Build the subunit permission grant request.
      *
      * @return the request ready to pass to {@code PermissionClient.grantSubunit()}

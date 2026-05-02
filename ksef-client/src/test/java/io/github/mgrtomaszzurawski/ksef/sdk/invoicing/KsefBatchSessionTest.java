@@ -43,6 +43,9 @@ class KsefBatchSessionTest {
 
     private static final String SCENARIO_BUSY_THEN_OK = "batch-busy-then-ok";
     private static final String STATE_RETRY = "retry";
+    private static final String STATE_STARTED = "Started";
+    private static final String BATCH_BASE = "/api/v2/sessions/batch";
+    private static final String SESSIONS_BASE = "/api/v2/sessions";
 
     private static final String SESSION_STATUS_OK_RESPONSE = """
             {
@@ -55,104 +58,103 @@ class KsefBatchSessionTest {
             {"exception":{"exceptionCode":21405,"description":"Session busy (415)"}}
             """;
 
-    // --- Tests ---
-
     @Test
     void referenceNumber_returnsBatchSessionRef(WireMockRuntimeInfo wmInfo) {
         // given
-        KsefBatchSession session = createSession(wmInfo);
+        stubCloseAndStatusOk();
+        try (KsefBatchSession session = createSession(wmInfo)) {
+            // when
+            String referenceNumber = session.referenceNumber();
 
-        // when
-        String ref = session.referenceNumber();
-
-        // then
-        assertEquals(TEST_BATCH_REF, ref);
+            // then
+            assertEquals(TEST_BATCH_REF, referenceNumber);
+        }
     }
 
     @Test
     void partUploadRequests_returnsImmutableList(WireMockRuntimeInfo wmInfo) {
         // given
-        KsefBatchSession session = createSession(wmInfo);
+        stubCloseAndStatusOk();
+        try (KsefBatchSession session = createSession(wmInfo)) {
+            // when
+            List<PartUploadRequest> parts = session.partUploadRequests();
 
-        // when
-        List<PartUploadRequest> parts = session.partUploadRequests();
-
-        // then
-        assertEquals(1, parts.size());
-        assertEquals(PART_ORDINAL, parts.get(0).ordinalNumber());
-        assertEquals(UPLOAD_METHOD, parts.get(0).method());
-        assertEquals(URI.create(UPLOAD_URL), parts.get(0).url());
-        PartUploadRequest extraPart = samplePart();
-        Executable mutationAttempt = () -> parts.add(extraPart);
-        assertThrows(UnsupportedOperationException.class, mutationAttempt);
+            // then
+            assertEquals(1, parts.size());
+            assertEquals(PART_ORDINAL, parts.get(0).ordinalNumber());
+            assertEquals(UPLOAD_METHOD, parts.get(0).method());
+            assertEquals(URI.create(UPLOAD_URL), parts.get(0).url());
+            PartUploadRequest extraPart = samplePart();
+            Executable mutationAttempt = () -> parts.add(extraPart);
+            assertThrows(UnsupportedOperationException.class, mutationAttempt);
+        }
     }
 
     @Test
     void status_returnsSessionStatus(WireMockRuntimeInfo wmInfo) {
         // given
-        stubStatusOk();
-        KsefBatchSession session = createSession(wmInfo);
+        stubCloseAndStatusOk();
+        try (KsefBatchSession session = createSession(wmInfo)) {
+            // when
+            SessionStatus status = session.status();
 
-        // when
-        SessionStatus status = session.status();
-
-        // then
-        assertNotNull(status);
-        assertEquals(TestHttpConstants.HTTP_OK, status.status().code());
+            // then
+            assertNotNull(status);
+            assertEquals(TestHttpConstants.HTTP_OK, status.status().code());
+        }
     }
 
     @Test
     void close_whenSessionReady_callsCloseAndPolls(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        KsefBatchSession session = createSession(wmInfo);
+        try (KsefBatchSession session = createSession(wmInfo)) {
+            // when — first close should not throw
+            session.close();
 
-        // when — first close should not throw
-        session.close();
-
-        // then — second close is no-op (idempotent), no error
-        assertDoesNotThrow(session::close);
+            // then — second close is no-op (idempotent), no error
+            assertDoesNotThrow(session::close);
+        }
     }
 
     @Test
     void close_whenSessionBusy415_retriesAndSucceeds(WireMockRuntimeInfo wmInfo) {
         // given — first close returns 415 (busy), second succeeds
-        stubFor(post(urlEqualTo("/api/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
+        stubFor(post(urlEqualTo(BATCH_BASE + "/" + TEST_BATCH_REF + "/close"))
                 .inScenario(SCENARIO_BUSY_THEN_OK)
-                .whenScenarioStateIs("Started")
+                .whenScenarioStateIs(STATE_STARTED)
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_SESSION_BUSY)
                         .withBody(SESSION_BUSY_BODY))
                 .willSetStateTo(STATE_RETRY));
 
-        stubFor(post(urlEqualTo("/api/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
+        stubFor(post(urlEqualTo(BATCH_BASE + "/" + TEST_BATCH_REF + "/close"))
                 .inScenario(SCENARIO_BUSY_THEN_OK)
                 .whenScenarioStateIs(STATE_RETRY)
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
         stubStatusOk();
 
-        KsefBatchSession session = createSession(wmInfo);
+        try (KsefBatchSession session = createSession(wmInfo)) {
+            // when — should not throw despite the first 415
+            assertDoesNotThrow(session::close);
 
-        // when — should not throw despite the first 415
-        assertDoesNotThrow(session::close);
-
-        // then — second call confirms close completed successfully (idempotent)
-        assertDoesNotThrow(session::close);
+            // then — second call confirms close completed successfully (idempotent)
+            assertDoesNotThrow(session::close);
+        }
     }
 
     @Test
     void close_whenAlreadyClosed_isNoOp(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        KsefBatchSession session = createSession(wmInfo);
-        session.close();
+        try (KsefBatchSession session = createSession(wmInfo)) {
+            session.close();
 
-        // when / then — second call is a no-op (no error, no extra HTTP call)
-        assertDoesNotThrow(session::close);
+            // when / then — second call is a no-op (no error, no extra HTTP call)
+            assertDoesNotThrow(session::close);
+        }
     }
-
-    // --- Helper methods ---
 
     private static KsefBatchSession createSession(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
@@ -171,13 +173,13 @@ class KsefBatchSessionTest {
     }
 
     private static void stubCloseAndStatusOk() {
-        stubFor(post(urlEqualTo("/api/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
+        stubFor(post(urlEqualTo(BATCH_BASE + "/" + TEST_BATCH_REF + "/close"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
         stubStatusOk();
     }
 
     private static void stubStatusOk() {
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_BATCH_REF))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_BATCH_REF))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)

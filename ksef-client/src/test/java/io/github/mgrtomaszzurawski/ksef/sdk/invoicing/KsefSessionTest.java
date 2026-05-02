@@ -54,112 +54,121 @@ class KsefSessionTest {
 
     private static final byte[] TEST_UPO_CONTENT = "<UPO>receipt</UPO>".getBytes(StandardCharsets.UTF_8);
     private static final byte[] TEST_INVOICE_XML = "<Invoice>test</Invoice>".getBytes(StandardCharsets.UTF_8);
+    private static final String SESSIONS_BASE = "/api/v2/sessions";
+    private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
+    private static final String SCENARIO_BUSY_THEN_OK = "busy-then-ok";
+    private static final String STATE_STARTED = "Started";
+    private static final String STATE_RETRY = "retry";
+    private static final String OCTET_STREAM = "application/octet-stream";
 
     @Test
     void send_whenSessionOpen_returnsInvoiceResult(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/invoices"))
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SEND_INVOICE_RESPONSE)));
+        stubCloseAndStatusOk();
 
-        KsefSession session = createSession(wmInfo);
+        try (KsefSession session = createSession(wmInfo)) {
+            // when
+            var result = session.send(TEST_INVOICE_XML);
 
-        // when
-        var result = session.send(TEST_INVOICE_XML);
-
-        // then
-        assertNotNull(result);
-        assertEquals(TEST_INVOICE_REF, result.referenceNumber());
+            // then
+            assertNotNull(result);
+            assertEquals(TEST_INVOICE_REF, result.referenceNumber());
+        }
     }
 
     @Test
     void send_whenSessionClosed_throwsIllegalStateException(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        KsefSession session = createSession(wmInfo);
-        session.close();
+        try (KsefSession session = createSession(wmInfo)) {
+            session.close();
 
-        // when / then
-        assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            // when / then
+            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+        }
     }
 
     @Test
     void close_whenSessionBusy415_retriesAndSucceeds(WireMockRuntimeInfo wmInfo) {
         // given — first close returns 415 (busy), second succeeds
-        stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/close"))
-                .inScenario("busy-then-ok")
-                .whenScenarioStateIs("Started")
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/close"))
+                .inScenario(SCENARIO_BUSY_THEN_OK)
+                .whenScenarioStateIs(STATE_STARTED)
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_SESSION_BUSY)
                         .withBody(SESSION_BUSY_BODY))
-                .willSetStateTo("retry"));
+                .willSetStateTo(STATE_RETRY));
 
-        stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/close"))
-                .inScenario("busy-then-ok")
-                .whenScenarioStateIs("retry")
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/close"))
+                .inScenario(SCENARIO_BUSY_THEN_OK)
+                .whenScenarioStateIs(STATE_RETRY)
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
         stubStatusOk();
 
-        KsefSession session = createSession(wmInfo);
+        try (KsefSession session = createSession(wmInfo)) {
+            // when — should not throw despite the first 415
+            session.close();
 
-        // when — should not throw despite the first 415
-        session.close();
-
-        // then — session is closed, send should fail
-        assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            // then — session is closed, send should fail
+            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+        }
     }
 
     @Test
     void close_whenAlreadyClosed_isNoOp(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        KsefSession session = createSession(wmInfo);
-        session.close();
+        try (KsefSession session = createSession(wmInfo)) {
+            session.close();
 
-        // when — second close should be a no-op, no error
-        session.close();
+            // when — second close should be a no-op, no error
+            session.close();
 
-        // then — still closed
-        assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            // then — still closed
+            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+        }
     }
 
     @Test
     void referenceNumber_returnsSessionRef(WireMockRuntimeInfo wmInfo) {
         // given
-        KsefSession session = createSession(wmInfo);
+        stubCloseAndStatusOk();
+        try (KsefSession session = createSession(wmInfo)) {
+            // when
+            String referenceNumber = session.referenceNumber();
 
-        // when
-        String ref = session.referenceNumber();
-
-        // then
-        assertEquals(TEST_SESSION_REF, ref);
+            // then
+            assertEquals(TEST_SESSION_REF, referenceNumber);
+        }
     }
 
     @Test
     void upo_afterClose_returnsUpoBytes(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF
                 + "/invoices/" + TEST_INVOICE_REF + "/upo"))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, "application/octet-stream")
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, OCTET_STREAM)
                         .withBody(TEST_UPO_CONTENT)));
 
-        KsefSession session = createSession(wmInfo);
-        session.close();
+        try (KsefSession session = createSession(wmInfo)) {
+            session.close();
 
-        // when
-        byte[] upo = session.upo(TEST_INVOICE_REF);
+            // when
+            byte[] upoBytes = session.upo(TEST_INVOICE_REF);
 
-        // then
-        assertArrayEquals(TEST_UPO_CONTENT, upo);
+            // then
+            assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
+        }
     }
-
-    // --- Helper methods ---
 
     private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
@@ -175,13 +184,13 @@ class KsefSessionTest {
     }
 
     private static void stubCloseAndStatusOk() {
-        stubFor(post(urlEqualTo("/api/v2/sessions/online/" + TEST_SESSION_REF + "/close"))
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/close"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
         stubStatusOk();
     }
 
     private static void stubStatusOk() {
-        stubFor(get(urlEqualTo("/api/v2/sessions/" + TEST_SESSION_REF))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)

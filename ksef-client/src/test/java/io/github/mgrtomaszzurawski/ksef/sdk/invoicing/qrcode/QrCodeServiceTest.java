@@ -20,6 +20,7 @@ class QrCodeServiceTest {
     private static final String PROD_URL_PREFIX = "https://ksef.mf.gov.pl/web/verify/";
     private static final String TEST_URL_PREFIX = "https://ksef-test.mf.gov.pl/web/verify/";
     private static final int CUSTOM_QR_SIZE = 300;
+    private static final int OVERSIZE_QR_SIZE = 5000;
     private static final int PNG_HEADER_LENGTH = 8;
 
     // PNG magic bytes: 137 80 78 71 13 10 26 10
@@ -29,18 +30,18 @@ class QrCodeServiceTest {
     void getVerificationUrl_production_returnsProdUrl() {
         QrCodeService service = new QrCodeService();
 
-        String url = service.getVerificationUrl(TEST_KSEF_NUMBER);
+        String verificationUrl = service.getVerificationUrl(TEST_KSEF_NUMBER);
 
-        assertEquals(PROD_URL_PREFIX + TEST_KSEF_NUMBER, url);
+        assertEquals(PROD_URL_PREFIX + TEST_KSEF_NUMBER, verificationUrl);
     }
 
     @Test
     void getVerificationUrl_testEnvironment_returnsTestUrl() {
         QrCodeService service = new QrCodeService(true);
 
-        String url = service.getVerificationUrl(TEST_KSEF_NUMBER);
+        String verificationUrl = service.getVerificationUrl(TEST_KSEF_NUMBER);
 
-        assertEquals(TEST_URL_PREFIX + TEST_KSEF_NUMBER, url);
+        assertEquals(TEST_URL_PREFIX + TEST_KSEF_NUMBER, verificationUrl);
     }
 
     @ParameterizedTest
@@ -104,7 +105,7 @@ class QrCodeServiceTest {
         QrCodeService service = new QrCodeService();
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.generateQrCode(TEST_KSEF_NUMBER, 5000));
+                () -> service.generateQrCode(TEST_KSEF_NUMBER, OVERSIZE_QR_SIZE));
     }
 
     @Test
