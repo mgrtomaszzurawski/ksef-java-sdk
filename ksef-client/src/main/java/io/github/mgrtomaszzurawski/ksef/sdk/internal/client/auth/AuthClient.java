@@ -32,6 +32,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 
 /**
@@ -39,6 +41,10 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  * Supports XAdES signature-based and KSeF token-based authentication flows.
  */
 public final class AuthClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthClient.class);
+    private static final String LOG_CALL = "→ {}";
+    private static final String LOG_CALL_REF = "→ {} ref={}";
 
     private static final String PATH_CHALLENGE = ApiPaths.AUTH + "/challenge";
     private static final String PATH_XADES_SIGNATURE = ApiPaths.AUTH + "/xades-signature";
@@ -104,6 +110,7 @@ public final class AuthClient {
      * @return challenge response containing the challenge string and timestamp
      */
     public AuthenticationChallenge requestChallenge() {
+        LOGGER.debug(LOG_CALL, OP_CHALLENGE);
         AuthenticationChallengeResponseRaw raw = http.postNoBody(PATH_CHALLENGE, AuthenticationChallengeResponseRaw.class, OP_CHALLENGE);
         return AuthenticationChallenge.from(raw);
     }
@@ -137,6 +144,7 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithXades(
             String challenge, X509Certificate certificate, PrivateKey privateKey,
             KsefIdentifier identifier) {
+        LOGGER.debug(LOG_CALL, OP_AUTH_XADES);
         String authXml = buildAuthTokenRequestXml(challenge, identifier);
         String signedXml = SigningService.signXml(authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey);
         AuthenticationInitResponseRaw response = http.postXml(
@@ -174,6 +182,7 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithToken(
             AuthenticationChallenge challenge,
             String ksefToken, KsefIdentifier identifier, PublicKey ksefPublicKey) {
+        LOGGER.debug(LOG_CALL, OP_AUTH_TOKEN);
         Instant challengeTimestamp = Instant.ofEpochMilli(challenge.timestampMs());
         byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, challengeTimestamp, ksefPublicKey);
         AllowedIpsRaw allowedIps = new AllowedIpsRaw()
@@ -199,6 +208,7 @@ public final class AuthClient {
      * @return response with access and refresh tokens
      */
     public AuthenticationTokens redeemTokens() {
+        LOGGER.debug(LOG_CALL, OP_REDEEM);
         String operationToken = sessionContext.token();
         AuthenticationTokensResponseRaw response = http.postAuthenticated(
                 PATH_TOKEN_REDEEM, operationToken, AuthenticationTokensResponseRaw.class, OP_REDEEM);
@@ -216,6 +226,7 @@ public final class AuthClient {
      * @return response with the new access token
      */
     public AuthenticationTokenRefresh refreshToken(String refreshToken) {
+        LOGGER.debug(LOG_CALL, OP_REFRESH);
         AuthenticationTokenRefreshResponseRaw response = http.postAuthenticated(
                 PATH_TOKEN_REFRESH, refreshToken, AuthenticationTokenRefreshResponseRaw.class, OP_REFRESH);
         sessionContext.refreshToken(
@@ -231,6 +242,7 @@ public final class AuthClient {
      * @return status response with authentication state details
      */
     public AuthenticationStatus getStatus(String referenceNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         AuthenticationOperationStatusResponseRaw raw = http.getAuthenticated(
@@ -245,6 +257,7 @@ public final class AuthClient {
      * @return list response with session items and continuation token
      */
     public AuthenticationList listSessions() {
+        LOGGER.debug(LOG_CALL, OP_LIST_SESSIONS);
         String token = sessionContext.token();
         AuthenticationListResponseRaw raw = http.getAuthenticated(PATH_SESSIONS, token,
                 AuthenticationListResponseRaw.class, OP_LIST_SESSIONS);
@@ -256,6 +269,7 @@ public final class AuthClient {
      * Clears the session context.
      */
     public void terminateCurrentSession() {
+        LOGGER.debug(LOG_CALL, OP_TERMINATE_CURRENT);
         String token = sessionContext.token();
         http.deleteAuthenticated(PATH_SESSIONS_CURRENT, token, OP_TERMINATE_CURRENT);
         sessionContext.clear();
@@ -267,6 +281,7 @@ public final class AuthClient {
      * @param referenceNumber the reference number of the session to terminate
      */
     public void terminateSession(String referenceNumber) {
+        LOGGER.debug(LOG_CALL_REF, OP_TERMINATE, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         http.deleteAuthenticated(ApiPaths.subPath(PATH_SESSIONS, referenceNumber), token, OP_TERMINATE);

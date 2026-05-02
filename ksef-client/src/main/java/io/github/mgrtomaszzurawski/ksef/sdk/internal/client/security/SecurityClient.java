@@ -11,12 +11,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Client for KSeF security operations (public key certificate retrieval).
  * These operations do not require authentication.
  */
 public final class SecurityClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityClient.class);
+    private static final String LOG_CALL = "→ {}";
 
     private static final String PATH_PUBLIC_KEY_CERTS = ApiPaths.SECURITY + "/public-key-certificates";
     private static final String OP_GET_PUBLIC_KEYS = "getPublicKeyCertificates";
@@ -34,6 +39,7 @@ public final class SecurityClient {
      * @return list of public key certificates with validity periods and usage types
      */
     public List<PublicKeyCertificate> getPublicKeyCertificates() {
+        LOGGER.debug(LOG_CALL, OP_GET_PUBLIC_KEYS);
         List<PublicKeyCertificateRaw> rawList = http.getList(PATH_PUBLIC_KEY_CERTS,
                 new TypeReference<>() {}, OP_GET_PUBLIC_KEYS);
         return rawList.stream().map(PublicKeyCertificate::from).toList();

@@ -26,6 +26,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.time.LocalDate;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Client for KSeF test environment data management — creating/removing test subjects,
@@ -37,6 +39,9 @@ import java.util.Objects;
  */
 @SuppressWarnings("PMD.TestClassWithoutTestCases") // Not a test class — manages KSeF test environment data
 public final class TestDataClientImpl implements TestDataClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestDataClientImpl.class);
+    private static final String LOG_CALL = "→ {}";
 
     private static final String PATH_SUBJECT = ApiPaths.TESTDATA + "/subject";
     private static final String PATH_SUBJECT_REMOVE = ApiPaths.TESTDATA + "/subject/remove";

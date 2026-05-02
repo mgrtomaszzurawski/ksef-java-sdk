@@ -46,6 +46,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 
 /**
@@ -53,6 +55,10 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  * for persons, entities, EU entities, subunits, and authorizations.
  */
 public final class PermissionClientImpl implements PermissionClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PermissionClientImpl.class);
+    private static final String LOG_CALL = "→ {}";
+    private static final String LOG_CALL_REF = "→ {} ref={}";
 
     private static final String PATH_GRANT_PERSON = ApiPaths.PERMISSIONS + "/persons/grants";
     private static final String PATH_GRANT_ENTITY = ApiPaths.PERMISSIONS + "/entities/grants";
