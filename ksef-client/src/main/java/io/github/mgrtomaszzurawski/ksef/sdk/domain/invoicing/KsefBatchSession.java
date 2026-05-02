@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class KsefBatchSession implements AutoCloseable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(KsefBatchSession.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KsefBatchSession.class);
 
     private static final int STATUS_CODE_OK = 200;
     private static final int HTTP_STATUS_LOWER_BOUND_OK = 200;
@@ -61,8 +61,11 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final int CLOSE_POLL_BACKOFF_MULTIPLIER = 2;
     private static final long CLOSE_TIMEOUT_MS = 60000;
     private static final int STATUS_POLL_DELAY_MS = 3000;
-    // 5-minute safety budget. Polling actually exits immediately on any terminal state
-    // (code >= 200), so this is only hit when KSeF is genuinely stalled.
+    /**
+     * 5-minute safety budget (100 × 3000ms). Polling exits immediately on any
+     * terminal state (code &gt;= 200), so this cap only triggers when KSeF is
+     * genuinely stalled.
+     */
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
     private static final String ERR_NO_PARTS = "No parts to upload — session was opened with raw "
@@ -169,9 +172,9 @@ public final class KsefBatchSession implements AutoCloseable {
         String method = upload.method() != null ? upload.method() : METHOD_PUT;
         try {
             builder.method(method, BodyPublishers.ofFile(partFile));
-        } catch (java.io.FileNotFoundException ex) {
+        } catch (java.io.FileNotFoundException missingFile) {
             throw new KsefNetworkException(
-                    String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), ex);
+                    String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), missingFile);
         }
         Map<String, String> headers = upload.headers() != null ? upload.headers() : Map.of();
         for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -185,13 +188,13 @@ public final class KsefBatchSession implements AutoCloseable {
                         String.format(ERR_UPLOAD_FAILED, upload.ordinalNumber(), response.statusCode()),
                         null);
             }
-            LOG.debug("Uploaded batch part {} to {}", upload.ordinalNumber(), upload.url());
-        } catch (IOException ex) {
+            LOGGER.debug("Uploaded batch part {} to {}", upload.ordinalNumber(), upload.url());
+        } catch (IOException ioFailure) {
             throw new KsefNetworkException(
-                    String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), ex);
-        } catch (InterruptedException ex) {
+                    String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), ioFailure);
+        } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new KsefNetworkException(ERR_UPLOAD_INTERRUPTED, ex);
+            throw new KsefNetworkException(ERR_UPLOAD_INTERRUPTED, interrupted);
         }
     }
 
@@ -236,11 +239,11 @@ public final class KsefBatchSession implements AutoCloseable {
         while (elapsed(start) < CLOSE_TIMEOUT_MS) {
             try {
                 sessionClient.closeBatch(referenceNumber);
-                LOG.info("Closed KSeF batch session {}", referenceNumber);
+                LOGGER.debug("Closed KSeF batch session {}", referenceNumber);
                 return;
             } catch (KsefException exception) {
                 if (isSessionBusy(exception)) {
-                    LOG.debug("Batch session {} still busy (415), retrying in {}ms",
+                    LOGGER.debug("Batch session {} still busy (415), retrying in {}ms",
                             referenceNumber, delay);
                     sleep(delay);
                     delay = Math.min(delay * CLOSE_POLL_BACKOFF_MULTIPLIER, CLOSE_POLL_MAX_DELAY_MS);
@@ -252,6 +255,11 @@ public final class KsefBatchSession implements AutoCloseable {
         throw new IllegalStateException(ERR_CLOSE_TIMEOUT);
     }
 
+    /**
+     * Polls batch session status until terminal. Any code &gt;= 200 is terminal:
+     * 200 = success; others = various failures. Codes &lt; 200 (100=open,
+     * 170=closing) are intermediate.
+     */
     private void pollUntilComplete() {
         Integer lastCode = null;
         for (int attempt = 0; attempt < STATUS_POLL_MAX_ATTEMPTS; attempt++) {
@@ -259,20 +267,18 @@ public final class KsefBatchSession implements AutoCloseable {
             SessionStatus sessionStatus = sessionClient.getStatus(referenceNumber);
             Integer code = sessionStatus.status() != null ? sessionStatus.status().code() : null;
             lastCode = logStatusTransition(lastCode, code, attempt);
-            // Any code >= 200 is terminal: 200 = success; others = various failures.
-            // Codes < 200 (100=open, 170=closing) are intermediate.
             if (code != null && code >= STATUS_CODE_OK) {
                 logTerminalState(code, sessionStatus);
                 return;
             }
         }
-        LOG.warn("Batch session {} polling timed out after {} attempts — last status code={} — processing may not be complete yet",
+        LOGGER.warn("Batch session {} polling timed out after {} attempts — last status code={} — processing may not be complete yet",
                 referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {
         if (code != null && !code.equals(lastCode)) {
-            LOG.debug("Batch session {} status code transition: {} -> {} (attempt {})",
+            LOGGER.debug("Batch session {} status code transition: {} -> {} (attempt {})",
                     referenceNumber, lastCode, code, attempt + 1);
             return code;
         }
@@ -281,10 +287,10 @@ public final class KsefBatchSession implements AutoCloseable {
 
     private void logTerminalState(int code, SessionStatus sessionStatus) {
         if (code == STATUS_CODE_OK) {
-            LOG.info("Batch session {} processing complete", referenceNumber);
+            LOGGER.debug("Batch session {} processing complete", referenceNumber);
         } else {
             String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
-            LOG.warn("Batch session {} reached terminal failure state — code={} description={}",
+            LOGGER.warn("Batch session {} reached terminal failure state — code={} description={}",
                     referenceNumber, code, description);
         }
     }
@@ -301,9 +307,9 @@ public final class KsefBatchSession implements AutoCloseable {
     private static void sleep(int millis) {
         try {
             Thread.sleep(millis);
-        } catch (InterruptedException ex) {
+        } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException(ERR_INTERRUPTED, ex);
+            throw new IllegalStateException(ERR_INTERRUPTED, interrupted);
         }
     }
 }

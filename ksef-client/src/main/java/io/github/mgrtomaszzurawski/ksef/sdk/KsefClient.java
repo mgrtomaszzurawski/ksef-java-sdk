@@ -96,7 +96,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class KsefClient implements AutoCloseable, HttpRuntime {
 
-    private static final Logger LOG = LoggerFactory.getLogger(KsefClient.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KsefClient.class);
 
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
@@ -123,7 +123,6 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     private final SessionContext sessionContext;
     private final Duration readTimeout;
 
-    // Internal domain clients
     private final AuthClient authClient;
     private final SecurityClient securityClient;
     private final SessionClient sessionClient;
@@ -163,8 +162,6 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         this.peppolClient = new PeppolClientImpl(this);
     }
 
-    // --- Authentication ---
-
     /**
      * Authenticate with KSeF using the configured credentials.
      *
@@ -189,7 +186,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         }
         doAuthenticate();
         authenticated = true;
-        LOG.info("Authenticated with KSeF as {}", credentials.identifier());
+        LOGGER.debug("Authenticated with KSeF as {}", credentials.identifier());
     }
 
     /**
@@ -225,7 +222,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                         .initializationVector(initVector));
 
         OnlineSession session = sessionClient.openOnline(request);
-        LOG.debug("Opened KSeF session {}, formCode={}", session.referenceNumber(), formCode);
+        LOGGER.debug("Opened KSeF session {}, formCode={}", session.referenceNumber(), formCode);
 
         return new KsefSession(sessionClient, session.referenceNumber(), aesKey, initVector);
     }
@@ -273,7 +270,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .batchFile(toBatchFileInfoRaw(batchFileSpec));
 
         BatchSession session = sessionClient.openBatch(request);
-        LOG.debug("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
+        LOGGER.debug("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), null);
@@ -326,7 +323,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .batchFile(toBatchFileInfoRaw(pkg.spec()));
 
         BatchSession session = sessionClient.openBatch(request);
-        LOG.debug("Opened KSeF batch session {} with {} invoices, formCode={}",
+        LOGGER.debug("Opened KSeF batch session {} with {} invoices, formCode={}",
                 session.referenceNumber(), invoiceXmls.size(), formCode);
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
@@ -343,7 +340,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         authClient.terminateCurrentSession();
         authenticated = false;
         publicKeyCache.clear();
-        LOG.info("Terminated KSeF auth session");
+        LOGGER.debug("Terminated KSeF auth session");
     }
 
     /**
@@ -363,10 +360,8 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         publicKeyCache.clear();
         sessionContext.clear();
         authenticate();
-        LOG.info("Re-authenticated with KSeF after 401 (token refresh)");
+        LOGGER.debug("Re-authenticated with KSeF after 401 (token refresh)");
     }
-
-    // --- Public domain client accessors ---
 
     /**
      * Access invoice query and export operations.
@@ -434,9 +429,10 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         return peppolClient;
     }
 
-    // --- Infrastructure accessors (used by internal clients across packages; ADR-013 HttpRuntime contract) ---
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
+    /**
+     * @apiNote internal — SDK infrastructure for the {@code HttpRuntime} contract
+     *          (ADR-013). Not part of the consumer-facing API.
+     */
     public KsefEnvironment environment() { return environment; }
 
     @Override
@@ -461,8 +457,6 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     public void close() {
         closed = true;
     }
-
-    // --- Builder ---
 
     public static Builder builder(KsefEnvironment environment) {
         if (environment == null) {
@@ -521,8 +515,6 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
             return new KsefClient(this);
         }
     }
-
-    // --- Private helpers ---
 
     private void ensureOpen() {
         if (closed) {
@@ -588,11 +580,11 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     }
 
     private PublicKey fetchPublicKey(PublicKeyCertificateUsage usage) {
-        PublicKeyCertificate cert = securityClient.getPublicKeyCertificates().stream()
-                .filter(c -> c.usage().contains(usage))
+        PublicKeyCertificate certificate = securityClient.getPublicKeyCertificates().stream()
+                .filter(cert -> cert.usage().contains(usage))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_CERT + usage));
-        return extractPublicKey(cert.certificate());
+        return extractPublicKey(certificate.certificate());
     }
 
     private static PublicKey extractPublicKey(byte[] certBytes) {
@@ -601,17 +593,17 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
             X509Certificate x509 = (X509Certificate) factory.generateCertificate(
                     new ByteArrayInputStream(certBytes));
             return x509.getPublicKey();
-        } catch (java.security.cert.CertificateException ex) {
-            throw new IllegalStateException(ERR_KEY_EXTRACT, ex);
+        } catch (java.security.cert.CertificateException cause) {
+            throw new IllegalStateException(ERR_KEY_EXTRACT, cause);
         }
     }
 
     private static void sleep(int millis) {
         try {
             Thread.sleep(millis);
-        } catch (InterruptedException ex) {
+        } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException(ERR_INTERRUPTED, ex);
+            throw new IllegalStateException(ERR_INTERRUPTED, interrupted);
         }
     }
 
