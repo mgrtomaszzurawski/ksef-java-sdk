@@ -5,4 +5,5 @@
 /**
  * Invoice, session, and UPO response models.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;

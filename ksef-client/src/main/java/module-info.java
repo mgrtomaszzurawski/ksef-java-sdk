@@ -65,6 +65,9 @@ module io.github.mgrtomaszzurawski.ksef {
     requires jakarta.xml.bind;
     requires org.slf4j;
 
+    // JSpecify null-safety annotations (ADR-017)
+    requires static org.jspecify;
+
     // Crypto dependencies (BouncyCastle)
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;

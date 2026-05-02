@@ -5,4 +5,5 @@
 /**
  * Peppol response models.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model;

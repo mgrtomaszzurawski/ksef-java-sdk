@@ -5,4 +5,5 @@
 /**
  * Limits and rate-limit response models.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;

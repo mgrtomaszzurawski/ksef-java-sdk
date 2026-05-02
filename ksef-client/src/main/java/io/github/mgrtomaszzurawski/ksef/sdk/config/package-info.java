@@ -5,4 +5,5 @@
 /**
  * Configuration: environments, identifier types, retry policy.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
