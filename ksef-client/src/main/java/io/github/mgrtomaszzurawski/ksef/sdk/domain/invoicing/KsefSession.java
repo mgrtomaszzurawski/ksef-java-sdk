@@ -56,6 +56,16 @@ public final class KsefSession implements AutoCloseable {
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for session to become closeable";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
 
+    private static final String LOG_CLOSED = "Closed KSeF session {}";
+    private static final String LOG_CLOSE_BUSY_RETRY = "Session {} still busy (415), retrying in {}ms";
+    private static final String LOG_POLL_TIMEOUT =
+            "Session {} polling timed out after {} attempts — last status code={} — UPO may not be available yet";
+    private static final String LOG_STATUS_TRANSITION =
+            "Session {} status code transition: {} -> {} (attempt {})";
+    private static final String LOG_PROCESSING_COMPLETE = "Session {} processing complete";
+    private static final String LOG_TERMINAL_FAILURE =
+            "Session {} reached terminal failure state — code={} description={}";
+
     private final SessionClient sessionClient;
     private final String referenceNumber;
     private final byte[] aesKey;
@@ -180,12 +190,11 @@ public final class KsefSession implements AutoCloseable {
         while (elapsed(start) < CLOSE_TIMEOUT_MS) {
             try {
                 sessionClient.closeOnline(referenceNumber);
-                LOGGER.debug("Closed KSeF session {}", referenceNumber);
+                LOGGER.debug(LOG_CLOSED, referenceNumber);
                 return;
             } catch (KsefException exception) {
                 if (isSessionBusy(exception)) {
-                    LOGGER.debug("Session {} still busy (415), retrying in {}ms",
-                            referenceNumber, delay);
+                    LOGGER.debug(LOG_CLOSE_BUSY_RETRY, referenceNumber, delay);
                     sleep(delay);
                     delay = Math.min(delay * CLOSE_POLL_BACKOFF_MULTIPLIER, CLOSE_POLL_MAX_DELAY_MS);
                 } else {
@@ -213,14 +222,12 @@ public final class KsefSession implements AutoCloseable {
                 return;
             }
         }
-        LOGGER.warn("Session {} polling timed out after {} attempts — last status code={} — UPO may not be available yet",
-                referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
+        LOGGER.warn(LOG_POLL_TIMEOUT, referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {
         if (code != null && !code.equals(lastCode)) {
-            LOGGER.debug("Session {} status code transition: {} -> {} (attempt {})",
-                    referenceNumber, lastCode, code, attempt + 1);
+            LOGGER.debug(LOG_STATUS_TRANSITION, referenceNumber, lastCode, code, attempt + 1);
             return code;
         }
         return lastCode;
@@ -228,11 +235,10 @@ public final class KsefSession implements AutoCloseable {
 
     private void logTerminalState(int code, SessionStatus sessionStatus) {
         if (code == STATUS_CODE_OK) {
-            LOGGER.debug("Session {} processing complete", referenceNumber);
+            LOGGER.debug(LOG_PROCESSING_COMPLETE, referenceNumber);
         } else {
             String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
-            LOGGER.warn("Session {} reached terminal failure state — code={} description={}",
-                    referenceNumber, code, description);
+            LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
         }
     }
 

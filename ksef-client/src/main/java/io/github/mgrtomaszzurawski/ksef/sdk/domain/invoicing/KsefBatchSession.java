@@ -79,6 +79,17 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
     private static final String METHOD_PUT = "PUT";
 
+    private static final String LOG_PART_UPLOADED = "Uploaded batch part {} to {}";
+    private static final String LOG_CLOSED = "Closed KSeF batch session {}";
+    private static final String LOG_CLOSE_BUSY_RETRY = "Batch session {} still busy (415), retrying in {}ms";
+    private static final String LOG_POLL_TIMEOUT =
+            "Batch session {} polling timed out after {} attempts — last status code={} — processing may not be complete yet";
+    private static final String LOG_STATUS_TRANSITION =
+            "Batch session {} status code transition: {} -> {} (attempt {})";
+    private static final String LOG_PROCESSING_COMPLETE = "Batch session {} processing complete";
+    private static final String LOG_TERMINAL_FAILURE =
+            "Batch session {} reached terminal failure state — code={} description={}";
+
     private final SessionClient sessionClient;
     private final HttpClient httpClient;
     private final String referenceNumber;
@@ -188,7 +199,7 @@ public final class KsefBatchSession implements AutoCloseable {
                         String.format(ERR_UPLOAD_FAILED, upload.ordinalNumber(), response.statusCode()),
                         null);
             }
-            LOGGER.debug("Uploaded batch part {} to {}", upload.ordinalNumber(), upload.url());
+            LOGGER.debug(LOG_PART_UPLOADED, upload.ordinalNumber(), upload.url());
         } catch (IOException ioFailure) {
             throw new KsefNetworkException(
                     String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), ioFailure);
@@ -239,12 +250,11 @@ public final class KsefBatchSession implements AutoCloseable {
         while (elapsed(start) < CLOSE_TIMEOUT_MS) {
             try {
                 sessionClient.closeBatch(referenceNumber);
-                LOGGER.debug("Closed KSeF batch session {}", referenceNumber);
+                LOGGER.debug(LOG_CLOSED, referenceNumber);
                 return;
             } catch (KsefException exception) {
                 if (isSessionBusy(exception)) {
-                    LOGGER.debug("Batch session {} still busy (415), retrying in {}ms",
-                            referenceNumber, delay);
+                    LOGGER.debug(LOG_CLOSE_BUSY_RETRY, referenceNumber, delay);
                     sleep(delay);
                     delay = Math.min(delay * CLOSE_POLL_BACKOFF_MULTIPLIER, CLOSE_POLL_MAX_DELAY_MS);
                 } else {
@@ -272,14 +282,12 @@ public final class KsefBatchSession implements AutoCloseable {
                 return;
             }
         }
-        LOGGER.warn("Batch session {} polling timed out after {} attempts — last status code={} — processing may not be complete yet",
-                referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
+        LOGGER.warn(LOG_POLL_TIMEOUT, referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {
         if (code != null && !code.equals(lastCode)) {
-            LOGGER.debug("Batch session {} status code transition: {} -> {} (attempt {})",
-                    referenceNumber, lastCode, code, attempt + 1);
+            LOGGER.debug(LOG_STATUS_TRANSITION, referenceNumber, lastCode, code, attempt + 1);
             return code;
         }
         return lastCode;
@@ -287,11 +295,10 @@ public final class KsefBatchSession implements AutoCloseable {
 
     private void logTerminalState(int code, SessionStatus sessionStatus) {
         if (code == STATUS_CODE_OK) {
-            LOGGER.debug("Batch session {} processing complete", referenceNumber);
+            LOGGER.debug(LOG_PROCESSING_COMPLETE, referenceNumber);
         } else {
             String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
-            LOGGER.warn("Batch session {} reached terminal failure state — code={} description={}",
-                    referenceNumber, code, description);
+            LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
         }
     }
 

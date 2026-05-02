@@ -109,6 +109,14 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     private static final String ERR_KEY_EXTRACT = "Failed to extract public key from certificate";
     private static final String ERR_INTERRUPTED = "Interrupted while polling";
     private static final String CERT_TYPE_X509 = "X.509";
+
+    private static final String LOG_AUTHENTICATED = "Authenticated with KSeF as {}";
+    private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
+    private static final String LOG_OPENED_BATCH_SESSION = "Opened KSeF batch session {}, formCode={}";
+    private static final String LOG_OPENED_BATCH_SESSION_WITH_INVOICES =
+            "Opened KSeF batch session {} with {} invoices, formCode={}";
+    private static final String LOG_TERMINATED = "Terminated KSeF auth session";
+    private static final String LOG_REAUTHENTICATED = "Re-authenticated with KSeF after 401 (token refresh)";
     private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(30);
     private static final int AUTH_POLL_DELAY_MS = 2000;
@@ -186,7 +194,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         }
         doAuthenticate();
         authenticated = true;
-        LOGGER.debug("Authenticated with KSeF as {}", credentials.identifier());
+        LOGGER.debug(LOG_AUTHENTICATED, credentials.identifier());
     }
 
     /**
@@ -222,7 +230,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                         .initializationVector(initVector));
 
         OnlineSession session = sessionClient.openOnline(request);
-        LOGGER.debug("Opened KSeF session {}, formCode={}", session.referenceNumber(), formCode);
+        LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
 
         return new KsefSession(sessionClient, session.referenceNumber(), aesKey, initVector);
     }
@@ -270,7 +278,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .batchFile(toBatchFileInfoRaw(batchFileSpec));
 
         BatchSession session = sessionClient.openBatch(request);
-        LOGGER.debug("Opened KSeF batch session {}, formCode={}", session.referenceNumber(), formCode);
+        LOGGER.debug(LOG_OPENED_BATCH_SESSION, session.referenceNumber(), formCode);
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), null);
@@ -323,7 +331,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .batchFile(toBatchFileInfoRaw(pkg.spec()));
 
         BatchSession session = sessionClient.openBatch(request);
-        LOGGER.debug("Opened KSeF batch session {} with {} invoices, formCode={}",
+        LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,
                 session.referenceNumber(), invoiceXmls.size(), formCode);
 
         return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
@@ -340,7 +348,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         authClient.terminateCurrentSession();
         authenticated = false;
         publicKeyCache.clear();
-        LOGGER.debug("Terminated KSeF auth session");
+        LOGGER.debug(LOG_TERMINATED);
     }
 
     /**
@@ -360,7 +368,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         publicKeyCache.clear();
         sessionContext.clear();
         authenticate();
-        LOGGER.debug("Re-authenticated with KSeF after 401 (token refresh)");
+        LOGGER.debug(LOG_REAUTHENTICATED);
     }
 
     /**
@@ -566,7 +574,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     private void pollAuthStatus() {
         String refNumber = sessionContext.referenceNumber();
         for (int attempt = 0; attempt < AUTH_POLL_MAX_ATTEMPTS; attempt++) {
-            sleep(AUTH_POLL_DELAY_MS);
+            sleep();
             AuthenticationStatus status = authClient.getStatus(refNumber);
             if (status.status() != null && status.status().code() == STATUS_CODE_OK) {
                 return;
@@ -598,9 +606,9 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         }
     }
 
-    private static void sleep(int millis) {
+    private static void sleep() {
         try {
-            Thread.sleep(millis);
+            Thread.sleep(AUTH_POLL_DELAY_MS);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(ERR_INTERRUPTED, interrupted);
