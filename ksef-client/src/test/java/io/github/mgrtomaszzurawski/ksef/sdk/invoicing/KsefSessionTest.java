@@ -175,7 +175,7 @@ class KsefSessionTest {
                 .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
 
         SessionClient sessionClient = new SessionClient(ksef);
         byte[] aesKey = CryptoService.generateAesKey();

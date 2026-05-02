@@ -55,6 +55,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageB
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefHttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
 import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
@@ -94,7 +95,7 @@ import org.slf4j.LoggerFactory;
  * }
  * }</pre>
  */
-public final class KsefClient implements AutoCloseable, HttpRuntime {
+public final class KsefClient implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KsefClient.class);
 
@@ -130,6 +131,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     private final RetryHandler retryHandler;
     private final SessionContext sessionContext;
     private final Duration readTimeout;
+    private final HttpRuntime runtime;
 
     private final AuthClient authClient;
     private final SecurityClient securityClient;
@@ -157,6 +159,8 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         this.objectMapper = createObjectMapper();
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
+        this.runtime = new KsefHttpRuntime(environment, httpClient, objectMapper,
+                retryHandler, sessionContext, readTimeout, this::reauthenticate);
         this.authClient = new AuthClient(this);
         this.securityClient = new SecurityClient(this);
         this.sessionClient = new SessionClient(this);
@@ -437,29 +441,18 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         return peppolClient;
     }
 
-    /**
-     * @apiNote internal — SDK infrastructure for the {@code HttpRuntime} contract
-     *          (ADR-013). Not part of the consumer-facing API.
-     */
+    /** Configured KSeF environment for this client. */
     public KsefEnvironment environment() { return environment; }
 
-    @Override
-    public String baseUrl() { return environment.baseUrl(); }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public HttpClient httpClient() { return httpClient; }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public ObjectMapper objectMapper() { return objectMapper; }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public RetryHandler retryHandler() { return retryHandler; }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public SessionContext sessionContext() { return sessionContext; }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public Duration readTimeout() { return readTimeout; }
+    /**
+     * Internal {@link HttpRuntime} adapter — used by SDK domain client
+     * implementations to obtain transport plumbing without {@code KsefClient}
+     * itself implementing the runtime contract. {@code HttpRuntime} lives in
+     * a non-exported package, so this method is invisible to JPMS consumers.
+     *
+     * @apiNote internal SDK infrastructure
+     */
+    public HttpRuntime runtime() { return runtime; }
 
     @Override
     public void close() {

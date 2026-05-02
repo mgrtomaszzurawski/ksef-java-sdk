@@ -161,7 +161,7 @@ class KsefBatchSessionTest {
                 .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(TEST_TOKEN, TEST_BATCH_REF, null);
+        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_BATCH_REF, null);
 
         SessionClient sessionClient = new SessionClient(ksef);
         return new KsefBatchSession(sessionClient, TEST_BATCH_REF, List.of(samplePart()));

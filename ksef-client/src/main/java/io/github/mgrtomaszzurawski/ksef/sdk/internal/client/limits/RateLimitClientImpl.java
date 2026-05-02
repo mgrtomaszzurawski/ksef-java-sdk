@@ -30,8 +30,8 @@ public final class RateLimitClientImpl implements RateLimitClient {
     private final SessionContext sessionContext;
 
     public RateLimitClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef);
-        this.sessionContext = ksef.sessionContext();
+        this.http = new HttpSupport(ksef.runtime());
+        this.sessionContext = ksef.runtime().sessionContext();
     }
 
     @Override

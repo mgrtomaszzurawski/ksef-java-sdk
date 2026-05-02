@@ -45,8 +45,8 @@ public final class PeppolClientImpl implements PeppolClient {
     private final SessionContext sessionContext;
 
     public PeppolClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef);
-        this.sessionContext = ksef.sessionContext();
+        this.http = new HttpSupport(ksef.runtime());
+        this.sessionContext = ksef.runtime().sessionContext();
     }
 
     /**

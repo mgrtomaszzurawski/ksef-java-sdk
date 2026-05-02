@@ -121,7 +121,7 @@ class AuthAutoRefreshTest {
             verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(1, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
             verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-            assertEquals(FRESH_TOKEN, ksef.sessionContext().token());
+            assertEquals(FRESH_TOKEN, ksef.runtime().sessionContext().token());
         }
     }
 
@@ -165,7 +165,7 @@ class AuthAutoRefreshTest {
             verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
             verify(0, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-            assertEquals(INITIAL_TOKEN, ksef.sessionContext().token());
+            assertEquals(INITIAL_TOKEN, ksef.runtime().sessionContext().token());
         }
     }
 
@@ -232,7 +232,7 @@ class AuthAutoRefreshTest {
                 .credentials(new KsefTokenCredentials(TEST_NIP_SHORT, NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(INITIAL_TOKEN, SESSION_REF, null);
+        ksef.runtime().sessionContext().activate(INITIAL_TOKEN, SESSION_REF, null);
         return ksef;
     }
 }

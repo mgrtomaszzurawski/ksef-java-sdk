@@ -29,7 +29,7 @@ public final class SecurityClient {
     private final HttpSupport http;
 
     public SecurityClient(KsefClient ksef) {
-        this.http = new HttpSupport(ksef);
+        this.http = new HttpSupport(ksef.runtime());
     }
 
     /**

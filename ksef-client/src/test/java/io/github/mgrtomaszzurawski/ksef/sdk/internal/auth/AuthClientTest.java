@@ -179,8 +179,8 @@ class AuthClientTest {
             // then
             assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
             assertEquals(TEST_TOKEN, response.authenticationToken().token());
-            assertTrue(ksef.sessionContext().isActive());
-            assertEquals(TEST_TOKEN, ksef.sessionContext().token());
+            assertTrue(ksef.runtime().sessionContext().isActive());
+            assertEquals(TEST_TOKEN, ksef.runtime().sessionContext().token());
         }
     }
 
@@ -205,7 +205,7 @@ class AuthClientTest {
             // then
             assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
             assertEquals(TEST_REFRESH_TOKEN, response.refreshToken().token());
-            assertEquals(TEST_ACCESS_TOKEN, ksef.sessionContext().token());
+            assertEquals(TEST_ACCESS_TOKEN, ksef.runtime().sessionContext().token());
         }
     }
 
@@ -229,7 +229,7 @@ class AuthClientTest {
 
             // then
             assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
-            assertEquals(TEST_ACCESS_TOKEN, ksef.sessionContext().token());
+            assertEquals(TEST_ACCESS_TOKEN, ksef.runtime().sessionContext().token());
         }
     }
 
@@ -284,7 +284,7 @@ class AuthClientTest {
         stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             authenticateClient(ksef);
-            assertTrue(ksef.sessionContext().isActive());
+            assertTrue(ksef.runtime().sessionContext().isActive());
 
             stubFor(delete(urlEqualTo(PATH_SESSIONS_CURRENT))
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
@@ -294,7 +294,7 @@ class AuthClientTest {
             new AuthClient(ksef).terminateCurrentSession();
 
             // then
-            assertFalse(ksef.sessionContext().isActive());
+            assertFalse(ksef.runtime().sessionContext().isActive());
         }
     }
 
