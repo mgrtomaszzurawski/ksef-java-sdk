@@ -38,7 +38,6 @@ import java.util.Objects;
 @SuppressWarnings("PMD.TestClassWithoutTestCases") // Not a test class — manages KSeF test environment data
 public final class TestDataClientImpl implements TestDataClient {
 
-    // --- Unauthenticated paths ---
     private static final String PATH_SUBJECT = ApiPaths.TESTDATA + "/subject";
     private static final String PATH_SUBJECT_REMOVE = ApiPaths.TESTDATA + "/subject/remove";
     private static final String PATH_PERSON = ApiPaths.TESTDATA + "/person";
@@ -50,13 +49,11 @@ public final class TestDataClientImpl implements TestDataClient {
     private static final String PATH_CONTEXT_BLOCK = ApiPaths.TESTDATA + "/context/block";
     private static final String PATH_CONTEXT_UNBLOCK = ApiPaths.TESTDATA + "/context/unblock";
 
-    // --- Authenticated paths ---
     private static final String PATH_SESSION_LIMITS = ApiPaths.TESTDATA + "/limits/context/session";
     private static final String PATH_SUBJECT_LIMITS = ApiPaths.TESTDATA + "/limits/subject/certificate";
     private static final String PATH_RATE_LIMITS = ApiPaths.TESTDATA + "/rate-limits";
     private static final String PATH_RATE_LIMITS_PRODUCTION = ApiPaths.TESTDATA + "/rate-limits/production";
 
-    // --- Operation names ---
     private static final String OP_CREATE_SUBJECT = "createTestSubject";
     private static final String OP_REMOVE_SUBJECT = "removeTestSubject";
     private static final String OP_CREATE_PERSON = "createTestPerson";
@@ -90,8 +87,6 @@ public final class TestDataClientImpl implements TestDataClient {
         this.sessionContext = ksef.sessionContext();
     }
 
-    // --- Subject management (unauthenticated) ---
-
     /**
      * Create a test subject (taxpayer entity) in the test environment.
      *
@@ -115,8 +110,6 @@ public final class TestDataClientImpl implements TestDataClient {
         request.setSubjectNip(subjectNip);
         http.postJsonNoContent(PATH_SUBJECT_REMOVE, request, OP_REMOVE_SUBJECT);
     }
-
-    // --- Person management (unauthenticated) ---
 
     /**
      * Create a test person in the test environment.
@@ -142,8 +135,6 @@ public final class TestDataClientImpl implements TestDataClient {
         http.postJsonNoContent(PATH_PERSON_REMOVE, request, OP_REMOVE_PERSON);
     }
 
-    // --- Permission management (unauthenticated) ---
-
     /**
      * Grant test permissions in the test environment.
      *
@@ -165,8 +156,6 @@ public final class TestDataClientImpl implements TestDataClient {
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         http.postJsonNoContent(PATH_PERMISSIONS_REVOKE, builder.build(), OP_REVOKE_PERMISSIONS);
     }
-
-    // --- Attachment management (unauthenticated) ---
 
     /**
      * Grant attachment permissions in the test environment.
@@ -210,8 +199,6 @@ public final class TestDataClientImpl implements TestDataClient {
         http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, request, OP_REVOKE_ATTACHMENT);
     }
 
-    // --- Context blocking (unauthenticated) ---
-
     /**
      * Block authentication for a context in the test environment.
      *
@@ -248,8 +235,6 @@ public final class TestDataClientImpl implements TestDataClient {
         http.postJsonNoContent(PATH_CONTEXT_UNBLOCK, request, OP_UNBLOCK_CONTEXT);
     }
 
-    // --- Session limits (authenticated) ---
-
     /**
      * Set session limits override in the test environment.
      *
@@ -271,8 +256,6 @@ public final class TestDataClientImpl implements TestDataClient {
         http.deleteAuthenticated(PATH_SESSION_LIMITS, token, OP_RESET_SESSION_LIMITS);
     }
 
-    // --- Subject limits (authenticated) ---
-
     /**
      * Set subject certificate limits override in the test environment.
      *
@@ -293,8 +276,6 @@ public final class TestDataClientImpl implements TestDataClient {
         String token = sessionContext.token();
         http.deleteAuthenticated(PATH_SUBJECT_LIMITS, token, OP_RESET_SUBJECT_LIMITS);
     }
-
-    // --- Rate limits (authenticated) ---
 
     /**
      * Set rate limit overrides in the test environment.

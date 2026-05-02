@@ -54,7 +54,6 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  */
 public final class PermissionClientImpl implements PermissionClient {
 
-    // --- Grant paths ---
     private static final String PATH_GRANT_PERSON = ApiPaths.PERMISSIONS + "/persons/grants";
     private static final String PATH_GRANT_ENTITY = ApiPaths.PERMISSIONS + "/entities/grants";
     private static final String PATH_GRANT_AUTHORIZATION = ApiPaths.PERMISSIONS + "/authorizations/grants";
@@ -63,15 +62,12 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String PATH_GRANT_EU_ENTITY_ADMIN = ApiPaths.PERMISSIONS + "/eu-entities/administration/grants";
     private static final String PATH_GRANT_EU_ENTITY = ApiPaths.PERMISSIONS + "/eu-entities/grants";
 
-    // --- Revoke paths ---
     private static final String PATH_REVOKE_COMMON = ApiPaths.PERMISSIONS + "/common/grants/";
     private static final String PATH_REVOKE_AUTHORIZATION = ApiPaths.PERMISSIONS + "/authorizations/grants/";
 
-    // --- Status paths ---
     private static final String PATH_OPERATION_STATUS = ApiPaths.PERMISSIONS + "/operations/";
     private static final String PATH_ATTACHMENT_STATUS = ApiPaths.PERMISSIONS + "/attachments/status";
 
-    // --- Query paths ---
     private static final String PATH_QUERY_PERSONAL = ApiPaths.PERMISSIONS + "/query/personal/grants";
     private static final String PATH_QUERY_PERSONS = ApiPaths.PERMISSIONS + "/query/persons/grants";
     private static final String PATH_QUERY_SUBUNITS = ApiPaths.PERMISSIONS + "/query/subunits/grants";
@@ -81,7 +77,6 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String PATH_QUERY_AUTHORIZATIONS = ApiPaths.PERMISSIONS + "/query/authorizations/grants";
     private static final String PATH_QUERY_EU_ENTITIES = ApiPaths.PERMISSIONS + "/query/eu-entities/grants";
 
-    // --- Operation names ---
     private static final String OP_GRANT_PERSON = "grantPersonPermissions";
     private static final String OP_GRANT_ENTITY = "grantEntityPermissions";
     private static final String OP_GRANT_AUTHORIZATION = "grantAuthorizationPermissions";
@@ -102,7 +97,6 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String OP_QUERY_AUTHORIZATIONS = "queryAuthorizationPermissions";
     private static final String OP_QUERY_EU_ENTITIES = "queryEuEntityPermissions";
 
-    // --- Null-check error messages ---
     private static final String ERR_BUILDER_NULL = "builder must not be null";
 
     private final HttpSupport http;
@@ -112,8 +106,6 @@ public final class PermissionClientImpl implements PermissionClient {
         this.http = new HttpSupport(ksef);
         this.sessionContext = ksef.sessionContext();
     }
-
-    // --- Grant operations ---
 
     /**
      * Grant permissions to a person (identified by PESEL or NIP).
@@ -220,8 +212,6 @@ public final class PermissionClientImpl implements PermissionClient {
         return PermissionOperationResult.from(raw);
     }
 
-    // --- Revoke operations ---
-
     /**
      * Revoke a common permission by permission ID.
      *
@@ -252,8 +242,6 @@ public final class PermissionClientImpl implements PermissionClient {
         return PermissionOperationResult.from(raw);
     }
 
-    // --- Status operations ---
-
     /**
      * Get the status of a permissions operation.
      *
@@ -281,8 +269,6 @@ public final class PermissionClientImpl implements PermissionClient {
                 CheckAttachmentPermissionStatusResponseRaw.class, OP_GET_ATTACHMENT_STATUS);
         return AttachmentPermissionStatus.from(raw);
     }
-
-    // --- Query operations ---
 
     /**
      * Query personal permissions (permissions granted to the authenticated user).
