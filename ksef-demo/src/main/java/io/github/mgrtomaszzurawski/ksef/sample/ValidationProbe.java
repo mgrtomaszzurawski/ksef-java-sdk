@@ -15,10 +15,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
- * KSeF Sample App - Validation probe for Phase 7.0
- * Tests server-side validation by sending invalid inputs to all endpoints.
- */
 package io.github.mgrtomaszzurawski.ksef.sample;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
@@ -30,18 +26,21 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Validation probe — sends invalid requests to KSeF endpoints and logs
- * server error responses. Output goes to stdout as markdown-formatted
- * validation results.
+ * server error responses. Output goes via SLF4J as markdown-formatted
+ * validation results so the operator can capture
+ * {@code mvn exec:java -pl ksef-demo} stdout into a report file.
  */
 public final class ValidationProbe {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ValidationProbe.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ValidationProbe.class);
+
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
     private static final int DETAILS_MAX_LENGTH = 200;
     private static final int SHORT_SUMMARY_MAX_LENGTH = 100;
@@ -52,6 +51,35 @@ public final class ValidationProbe {
     private static final int TEST_LONG_STRING_LENGTH = 500;
     private static final int TEST_LONG_DESCRIPTION_LENGTH = 300;
     private static final int TEST_LONG_REF_LENGTH = 200;
+
+    private static final String DETAILS_FIELD_PREFIX = "\"details\":[";
+    private static final String EXCEPTION_CODE_FIELD_PREFIX = "\"exceptionCode\":";
+    private static final String ELLIPSIS = "...";
+    private static final String DASH = "-";
+
+    private static final String CREDENTIALS_FILE = "ksef-credentials.properties";
+    private static final String PROP_ENVIRONMENT = "ksef.environment";
+    private static final String PROP_TOKEN = "ksef.token";
+    private static final String PROP_NIP = "ksef.nip";
+
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final String HEADER_CONTENT_TYPE = "Content-Type";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String CONTENT_TYPE_JSON = "application/json";
+
+    private static final String METHOD_GET = "GET";
+    private static final String METHOD_POST = "POST";
+    private static final String METHOD_DELETE = "DELETE";
+
+    private static final String LOG_PROBE_HEADER = "# KSeF Server-Side Validation Probe Results";
+    private static final String LOG_GENERATED_AT = "Generated: {}";
+    private static final String LOG_TABLE_HEADER = "| Input | HTTP | Code | Details |";
+    private static final String LOG_TABLE_DIVIDER = "|-------|------|------|---------|";
+    private static final String LOG_TABLE_ROW = "| {} | {} | {} | {} |";
+    private static final String LOG_TABLE_ERROR_ROW = "| {} | ERR | - | {} |";
+
+    private static final String NON_DIGIT_REGEX = "[^0-9]";
+    private static final String EMPTY = "";
 
     private final String baseUrl;
     private final String bearerToken;
@@ -67,23 +95,23 @@ public final class ValidationProbe {
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
-        try (FileInputStream fis = new FileInputStream("ksef-credentials.properties")) {
-            props.load(fis);
+        try (FileInputStream credentialsFile = new FileInputStream(CREDENTIALS_FILE)) {
+            props.load(credentialsFile);
         }
 
-        String ksefUrl = props.getProperty("ksef.environment");
-        String ksefToken = props.getProperty("ksef.token");
-        String nipIdentifier = props.getProperty("ksef.nip");
+        String ksefUrl = props.getProperty(PROP_ENVIRONMENT);
+        String ksefToken = props.getProperty(PROP_TOKEN);
+        String nipIdentifier = props.getProperty(PROP_NIP);
 
-        LOG.info("=== KSeF Validation Probe ===");
-        LOG.info("Environment: {}", ksefUrl);
-        LOG.debug("NIP: {}", nipIdentifier);
+        LOGGER.info("=== KSeF Validation Probe ===");
+        LOGGER.info("Environment: {}", ksefUrl);
+        LOGGER.debug("NIP: {}", nipIdentifier);
 
         KsefClient client = KsefClient.builder(KsefEnvironment.custom(ksefUrl))
                 .credentials(new KsefTokenCredentials(ksefToken, nipIdentifier))
                 .build();
         client.authenticate();
-        LOG.info("Authenticated successfully");
+        LOGGER.info("Authenticated successfully");
 
         String bearer = client.sessionContext().token();
 
@@ -91,34 +119,31 @@ public final class ValidationProbe {
         probe.runAllProbes();
 
         client.terminateAuth();
-        LOG.info("Session terminated. Probe complete.");
+        LOGGER.info("Session terminated. Probe complete.");
     }
 
     private void runAllProbes() {
-        LOG.info("# KSeF Server-Side Validation Probe Results\n");
-        LOG.info("Generated: " + java.time.OffsetDateTime.now() + "\n");
+        LOGGER.info(LOG_PROBE_HEADER);
+        LOGGER.info(LOG_GENERATED_AT, OffsetDateTime.now());
 
         probeUnauthEndpoints();
         probeAuthEndpoints();
     }
 
     private void probeUnauthEndpoints() {
-        LOG.info("## Unauthenticated Endpoints\n");
+        LOGGER.info("## Unauthenticated Endpoints");
 
-        // GET /security/public-key-certificates — no body, always 200
-        probeEndpoint("GET", "/api/v2/security/public-key-certificates", null, false,
+        probeEndpoint(METHOD_GET, "/api/v2/security/public-key-certificates", null, false,
                 "No body needed, always returns certificates");
 
-        // POST /auth/challenge — no body needed
-        probeEndpoint("POST", "/api/v2/auth/challenge", null, false,
+        probeEndpoint(METHOD_POST, "/api/v2/auth/challenge", null, false,
                 "No body needed");
-        probeEndpoint("POST", "/api/v2/auth/challenge", "{}", false,
+        probeEndpoint(METHOD_POST, "/api/v2/auth/challenge", "{}", false,
                 "Empty body accepted");
-        probeEndpoint("POST", "/api/v2/auth/challenge", "{\"foo\":\"bar\"}", false,
+        probeEndpoint(METHOD_POST, "/api/v2/auth/challenge", "{\"foo\":\"bar\"}", false,
                 "Unknown fields ignored");
 
-        // POST /auth/ksef-token — requires body
-        LOG.info("### POST /api/v2/auth/ksef-token\n");
+        LOGGER.info("### POST /api/v2/auth/ksef-token");
         probeAndLog("/api/v2/auth/ksef-token", false, new String[][]{
             {"{}", "Empty body"},
             {"{\"challenge\":null,\"contextIdentifier\":null,\"encryptedToken\":null}", "Null required fields"},
@@ -132,10 +157,9 @@ public final class ValidationProbe {
     }
 
     private void probeAuthEndpoints() {
-        LOG.info("## Authenticated Endpoints\n");
+        LOGGER.info("## Authenticated Endpoints");
 
-        // POST /invoices/query/metadata
-        LOG.info("### POST /api/v2/invoices/query/metadata\n");
+        LOGGER.info("### POST /api/v2/invoices/query/metadata");
         probeAndLog("/api/v2/invoices/query/metadata", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"subjectType\":null}", "Null subjectType"},
@@ -148,8 +172,7 @@ public final class ValidationProbe {
             {"{\"subjectType\":\"Subject1\",\"dateRange\":{\"dateType\":\"Invoicing\",\"from\":\"2026-01-01T00:00:00+00:00\"},\"pageSize\":999999}", "pageSize=999999"},
         });
 
-        // POST /tokens (generate)
-        LOG.info("### POST /api/v2/tokens\n");
+        LOGGER.info("### POST /api/v2/tokens");
         probeAndLog("/api/v2/tokens", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"description\":null}", "Null description"},
@@ -160,20 +183,16 @@ public final class ValidationProbe {
             {"{\"description\":\"" + "A".repeat(TEST_LONG_DESCRIPTION_LENGTH) + "\",\"requestedPermissions\":[\"InvoiceRead\"]}", "Very long description (300 chars)"},
         });
 
-        // GET /limits/context
-        LOG.info("### GET /api/v2/limits/context\n");
-        probeEndpoint("GET", "/api/v2/limits/context", null, true, "Valid request");
+        LOGGER.info("### GET /api/v2/limits/context");
+        probeEndpoint(METHOD_GET, "/api/v2/limits/context", null, true, "Valid request");
 
-        // GET /limits/subject
-        LOG.info("### GET /api/v2/limits/subject\n");
-        probeEndpoint("GET", "/api/v2/limits/subject", null, true, "Valid request");
+        LOGGER.info("### GET /api/v2/limits/subject");
+        probeEndpoint(METHOD_GET, "/api/v2/limits/subject", null, true, "Valid request");
 
-        // GET /rate-limits
-        LOG.info("### GET /api/v2/rate-limits\n");
-        probeEndpoint("GET", "/api/v2/rate-limits", null, true, "Valid request");
+        LOGGER.info("### GET /api/v2/rate-limits");
+        probeEndpoint(METHOD_GET, "/api/v2/rate-limits", null, true, "Valid request");
 
-        // POST /permissions/persons/grants
-        LOG.info("### POST /api/v2/permissions/persons/grants\n");
+        LOGGER.info("### POST /api/v2/permissions/persons/grants");
         probeAndLog("/api/v2/permissions/persons/grants", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"permission\":null,\"subjectIdentifier\":null}", "Null required fields"},
@@ -182,15 +201,13 @@ public final class ValidationProbe {
             {"{\"permission\":\"InvoiceRead\",\"subjectIdentifier\":{\"type\":\"Pesel\",\"value\":\"\"},\"description\":\"test\"}", "Empty PESEL"},
         });
 
-        // POST /permissions/entities/grants
-        LOG.info("### POST /api/v2/permissions/entities/grants\n");
+        LOGGER.info("### POST /api/v2/permissions/entities/grants");
         probeAndLog("/api/v2/permissions/entities/grants", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"permission\":\"InvoiceRead\",\"subjectIdentifier\":{\"type\":\"Nip\",\"value\":\"123\"},\"description\":\"test\"}", "Invalid NIP format"},
         });
 
-        // POST /certificates/enrollments
-        LOG.info("### POST /api/v2/certificates/enrollments\n");
+        LOGGER.info("### POST /api/v2/certificates/enrollments");
         probeAndLog("/api/v2/certificates/enrollments", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"certificateName\":null,\"certificateType\":null,\"csr\":null}", "Null required fields"},
@@ -199,42 +216,34 @@ public final class ValidationProbe {
             {"{\"certificateName\":\"test\",\"certificateType\":\"INVALID\",\"csr\":\"test\"}", "Invalid certificate type"},
         });
 
-        // POST /invoices/exports
-        LOG.info("### POST /api/v2/invoices/exports\n");
+        LOGGER.info("### POST /api/v2/invoices/exports");
         probeAndLog("/api/v2/invoices/exports", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"encryption\":null,\"filters\":null}", "Null required fields"},
             {"{\"encryption\":{},\"filters\":{}}", "Empty nested objects"},
         });
 
-        // GET /sessions/{ref} with invalid ref
-        LOG.info("### GET /api/v2/sessions/{ref}\n");
-        probeEndpoint("GET", "/api/v2/sessions/invalid-ref-number", null, true, "Invalid reference number");
-        probeEndpoint("GET", "/api/v2/sessions/", null, true, "Empty reference number");
-        probeEndpoint("GET", "/api/v2/sessions/" + "A".repeat(TEST_LONG_REF_LENGTH), null, true, "Very long reference number");
+        LOGGER.info("### GET /api/v2/sessions/{ref}");
+        probeEndpoint(METHOD_GET, "/api/v2/sessions/invalid-ref-number", null, true, "Invalid reference number");
+        probeEndpoint(METHOD_GET, "/api/v2/sessions/", null, true, "Empty reference number");
+        probeEndpoint(METHOD_GET, "/api/v2/sessions/" + "A".repeat(TEST_LONG_REF_LENGTH), null, true, "Very long reference number");
 
-        // GET /auth/{ref} with invalid ref
-        LOG.info("### GET /api/v2/auth/{ref}\n");
-        probeEndpoint("GET", "/api/v2/auth/invalid-ref", null, true, "Invalid reference number");
+        LOGGER.info("### GET /api/v2/auth/{ref}");
+        probeEndpoint(METHOD_GET, "/api/v2/auth/invalid-ref", null, true, "Invalid reference number");
 
-        // GET /tokens/{ref} with invalid ref
-        LOG.info("### GET /api/v2/tokens/{ref}\n");
-        probeEndpoint("GET", "/api/v2/tokens/invalid-ref", null, true, "Invalid reference number");
+        LOGGER.info("### GET /api/v2/tokens/{ref}");
+        probeEndpoint(METHOD_GET, "/api/v2/tokens/invalid-ref", null, true, "Invalid reference number");
 
-        // DELETE /tokens/{ref} with invalid ref
-        LOG.info("### DELETE /api/v2/tokens/{ref}\n");
-        probeEndpoint("DELETE", "/api/v2/tokens/invalid-ref-to-delete", null, true, "Invalid reference number");
+        LOGGER.info("### DELETE /api/v2/tokens/{ref}");
+        probeEndpoint(METHOD_DELETE, "/api/v2/tokens/invalid-ref-to-delete", null, true, "Invalid reference number");
 
-        // GET /certificates/limits
-        LOG.info("### GET /api/v2/certificates/limits\n");
-        probeEndpoint("GET", "/api/v2/certificates/limits", null, true, "Valid request");
+        LOGGER.info("### GET /api/v2/certificates/limits");
+        probeEndpoint(METHOD_GET, "/api/v2/certificates/limits", null, true, "Valid request");
 
-        // GET /certificates/enrollments/data
-        LOG.info("### GET /api/v2/certificates/enrollments/data\n");
-        probeEndpoint("GET", "/api/v2/certificates/enrollments/data", null, true, "Valid request");
+        LOGGER.info("### GET /api/v2/certificates/enrollments/data");
+        probeEndpoint(METHOD_GET, "/api/v2/certificates/enrollments/data", null, true, "Valid request");
 
-        // POST /permissions/query/personal/grants
-        LOG.info("### POST /api/v2/permissions/query/personal/grants\n");
+        LOGGER.info("### POST /api/v2/permissions/query/personal/grants");
         probeAndLog("/api/v2/permissions/query/personal/grants", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"pageSize\":0}", "pageSize=0"},
@@ -242,38 +251,33 @@ public final class ValidationProbe {
             {"{\"pageSize\":999999}", "pageSize too large"},
         });
 
-        // POST /permissions/query/persons/grants
-        LOG.info("### POST /api/v2/permissions/query/persons/grants\n");
+        LOGGER.info("### POST /api/v2/permissions/query/persons/grants");
         probeAndLog("/api/v2/permissions/query/persons/grants", true, new String[][]{
             {"{}", "Empty body"},
         });
 
-        // GET /permissions/attachments/status
-        LOG.info("### GET /api/v2/permissions/attachments/status\n");
-        probeEndpoint("GET", "/api/v2/permissions/attachments/status", null, true, "Valid request");
+        LOGGER.info("### GET /api/v2/permissions/attachments/status");
+        probeEndpoint(METHOD_GET, "/api/v2/permissions/attachments/status", null, true, "Valid request");
 
-        // GET /permissions/operations/{ref}
-        LOG.info("### GET /api/v2/permissions/operations/{ref}\n");
-        probeEndpoint("GET", "/api/v2/permissions/operations/invalid-ref", null, true, "Invalid reference number");
+        LOGGER.info("### GET /api/v2/permissions/operations/{ref}");
+        probeEndpoint(METHOD_GET, "/api/v2/permissions/operations/invalid-ref", null, true, "Invalid reference number");
 
-        // Test with completely wrong Content-Type
-        LOG.info("### Wrong Content-Type test\n");
+        LOGGER.info("### Wrong Content-Type test");
         probeWithContentType("/api/v2/invoices/query/metadata", "text/plain", "{\"subjectType\":\"Subject1\"}", true, "text/plain content type");
         probeWithContentType("/api/v2/invoices/query/metadata", "application/xml", "<xml/>", true, "XML content type");
 
-        // Test without auth on authenticated endpoint
-        LOG.info("### Missing auth test\n");
-        probeEndpoint("GET", "/api/v2/limits/context", null, false, "No auth on authenticated endpoint");
-        probeEndpoint("POST", "/api/v2/invoices/query/metadata", "{\"subjectType\":\"Subject1\"}", false, "No auth on POST endpoint");
+        LOGGER.info("### Missing auth test");
+        probeEndpoint(METHOD_GET, "/api/v2/limits/context", null, false, "No auth on authenticated endpoint");
+        probeEndpoint(METHOD_POST, "/api/v2/invoices/query/metadata", "{\"subjectType\":\"Subject1\"}", false, "No auth on POST endpoint");
     }
 
     private void probeAndLog(String path, boolean auth, String[][] tests) {
-        LOG.info("| Input | HTTP | Code | Details |");
-        LOG.info("|-------|------|------|---------|");
+        LOGGER.info(LOG_TABLE_HEADER);
+        LOGGER.info(LOG_TABLE_DIVIDER);
         for (String[] test : tests) {
-            probeEndpoint("POST", path, test[0], auth, test[1]);
+            probeEndpoint(METHOD_POST, path, test[0], auth, test[1]);
         }
-        LOG.info("");
+        LOGGER.info(EMPTY);
     }
 
     private void probeEndpoint(String method, String path, String body, boolean auth, String description) {
@@ -283,27 +287,23 @@ public final class ValidationProbe {
                     .timeout(TIMEOUT);
 
             if (auth && bearerToken != null) {
-                reqBuilder.header("Authorization", "Bearer " + bearerToken);
+                reqBuilder.header(HEADER_AUTHORIZATION, BEARER_PREFIX + bearerToken);
             }
 
             if (body != null) {
-                reqBuilder.header("Content-Type", "application/json");
+                reqBuilder.header(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON);
                 reqBuilder.method(method, HttpRequest.BodyPublishers.ofString(body));
             } else {
                 reqBuilder.method(method, HttpRequest.BodyPublishers.noBody());
             }
 
-            HttpResponse<String> resp = httpClient.send(reqBuilder.build(),
-                    HttpResponse.BodyHandlers.ofString());
+            sendAndLog(reqBuilder.build(), description);
 
-            LOG.info("| {} | {} | {} | {} |",
-                    truncate(description),
-                    resp.statusCode(),
-                    extractExceptionCode(resp.body()),
-                    extractDetails(resp.body()));
-
-        } catch (Exception ex) {
-            LOG.info("| {} | ERR | - | {} |", description, ex.getMessage());
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            LOGGER.info(LOG_TABLE_ERROR_ROW, description, interrupted.getMessage());
+        } catch (Exception failure) {
+            LOGGER.info(LOG_TABLE_ERROR_ROW, description, failure.getMessage());
         }
     }
 
@@ -312,70 +312,87 @@ public final class ValidationProbe {
             HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + path))
                     .timeout(TIMEOUT)
-                    .header("Content-Type", contentType)
+                    .header(HEADER_CONTENT_TYPE, contentType)
                     .POST(HttpRequest.BodyPublishers.ofString(body));
 
             if (auth && bearerToken != null) {
-                reqBuilder.header("Authorization", "Bearer " + bearerToken);
+                reqBuilder.header(HEADER_AUTHORIZATION, BEARER_PREFIX + bearerToken);
             }
 
-            HttpResponse<String> resp = httpClient.send(reqBuilder.build(),
-                    HttpResponse.BodyHandlers.ofString());
+            sendAndLog(reqBuilder.build(), description);
 
-            LOG.info("| {} | {} | {} | {} |",
-                    truncate(description),
-                    resp.statusCode(),
-                    extractExceptionCode(resp.body()),
-                    extractDetails(resp.body()));
-
-        } catch (Exception ex) {
-            LOG.info("| {} | ERR | - | {} |", description, ex.getMessage());
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            LOGGER.info(LOG_TABLE_ERROR_ROW, description, interrupted.getMessage());
+        } catch (Exception failure) {
+            LOGGER.info(LOG_TABLE_ERROR_ROW, description, failure.getMessage());
         }
+    }
+
+    private void sendAndLog(HttpRequest request, String description) throws java.io.IOException, InterruptedException {
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        LOGGER.info(LOG_TABLE_ROW,
+                truncate(description),
+                response.statusCode(),
+                extractExceptionCode(response.body()),
+                extractDetails(response.body()));
     }
 
     private static String extractExceptionCode(String json) {
         try {
-            int idx = json.indexOf("\"exceptionCode\":");
-            if (idx < 0) return "-";
-            String sub = json.substring(idx + EXCEPTION_CODE_OFFSET,
-                    Math.min(idx + EXCEPTION_CODE_MAX_OFFSET, json.length()));
-            return sub.replaceAll("[^0-9]", "");
-        } catch (Exception ex) {
-            return "-";
+            int prefixIndex = json.indexOf(EXCEPTION_CODE_FIELD_PREFIX);
+            if (prefixIndex < 0) {
+                return DASH;
+            }
+            String numericSlice = json.substring(prefixIndex + EXCEPTION_CODE_OFFSET,
+                    Math.min(prefixIndex + EXCEPTION_CODE_MAX_OFFSET, json.length()));
+            return numericSlice.replaceAll(NON_DIGIT_REGEX, EMPTY);
+        } catch (Exception ignored) {
+            return DASH;
         }
     }
 
     private static String extractDetails(String json) {
         try {
-            int idx = json.indexOf("\"details\":[");
-            if (idx < 0) {
-                if (json.length() > DETAILS_MAX_LENGTH) return json.substring(0, DETAILS_MAX_LENGTH) + "...";
+            int prefixIndex = json.indexOf(DETAILS_FIELD_PREFIX);
+            if (prefixIndex < 0) {
+                if (json.length() > DETAILS_MAX_LENGTH) {
+                    return json.substring(0, DETAILS_MAX_LENGTH) + ELLIPSIS;
+                }
                 return shortSummary(json);
             }
-            int end = json.indexOf("]", idx);
-            if (end < 0) return json.substring(idx, Math.min(idx + DETAILS_MAX_LENGTH, json.length()));
-            String details = json.substring(idx + 11, end);
-            details = details.replace("\\u0027", "'")
-                    .replace("\\u0142", "l")
-                    .replace("\\u0105", "a")
-                    .replace("\\u015B", "s")
-                    .replace("\\u0119", "e");
-            if (details.length() > DETAILS_MAX_LENGTH) details = details.substring(0, DETAILS_MAX_LENGTH) + "...";
+            int closingBracketIndex = json.indexOf("]", prefixIndex);
+            if (closingBracketIndex < 0) {
+                return json.substring(prefixIndex, Math.min(prefixIndex + DETAILS_MAX_LENGTH, json.length()));
+            }
+            String details = json.substring(prefixIndex + DETAILS_FIELD_PREFIX.length(), closingBracketIndex);
+            details = decodePolishEscapes(details);
+            if (details.length() > DETAILS_MAX_LENGTH) {
+                details = details.substring(0, DETAILS_MAX_LENGTH) + ELLIPSIS;
+            }
             return details;
-        } catch (Exception ex) {
+        } catch (Exception ignored) {
             return shortSummary(json);
         }
     }
 
+    private static String decodePolishEscapes(String value) {
+        return value.replace("\\u0027", "'")
+                .replace("\\u0142", "l")
+                .replace("\\u0105", "a")
+                .replace("\\u015B", "s")
+                .replace("\\u0119", "e");
+    }
+
     private static String truncate(String value) {
         return value.length() > DESCRIPTION_MAX_LENGTH
-                ? value.substring(0, DESCRIPTION_MAX_LENGTH - TRUNCATE_ELLIPSIS_RESERVE) + "..."
+                ? value.substring(0, DESCRIPTION_MAX_LENGTH - TRUNCATE_ELLIPSIS_RESERVE) + ELLIPSIS
                 : value;
     }
 
     private static String shortSummary(String json) {
         return json.length() > SHORT_SUMMARY_MAX_LENGTH
-                ? json.substring(0, SHORT_SUMMARY_MAX_LENGTH) + "..."
+                ? json.substring(0, SHORT_SUMMARY_MAX_LENGTH) + ELLIPSIS
                 : json;
     }
 }

@@ -35,7 +35,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  */
 public final class PeppolRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PeppolRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PeppolRunner.class);
     private static final String NAME = "peppol";
     private static final String OP_QUERY_DEFAULT = "queryDefault";
     private static final String OP_QUERY_PAGED = "queryPaged";
@@ -60,7 +60,7 @@ public final class PeppolRunner implements DemoRunner {
         try {
             PeppolProvidersResult response = context.client().peppol().query();
             int count = response.providers() != null ? response.providers().size() : 0;
-            LOG.info("[{}] default query: {} providers, hasMore={}", NAME, count, response.hasMore());
+            LOGGER.info("[{}] default query: {} providers, hasMore={}", NAME, count, response.hasMore());
             results.add(RunResult.ok(NAME, OP_QUERY_DEFAULT, elapsed(start),
                     count + " providers"));
         } catch (Exception exception) {
@@ -75,7 +75,7 @@ public final class PeppolRunner implements DemoRunner {
             PeppolProvidersResult response = context.client().peppol()
                     .query(PAGED_OFFSET, PAGED_SIZE);
             int count = response.providers() != null ? response.providers().size() : 0;
-            LOG.info("[{}] paged query offset={} size={}: {} providers, hasMore={}",
+            LOGGER.info("[{}] paged query offset={} size={}: {} providers, hasMore={}",
                     NAME, PAGED_OFFSET, PAGED_SIZE, count, response.hasMore());
             results.add(RunResult.ok(NAME, OP_QUERY_PAGED, elapsed(start),
                     count + " providers"));

@@ -31,7 +31,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  */
 public final class RateLimitRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RateLimitRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RateLimitRunner.class);
     private static final String NAME = "ratelimit";
     private static final String OP_GET = "getRateLimits";
 
@@ -44,7 +44,7 @@ public final class RateLimitRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             context.client().rateLimits().getRateLimits();
-            LOG.info("[{}] rate limits fetched", NAME);
+            LOGGER.info("[{}] rate limits fetched", NAME);
             results.add(RunResult.ok(NAME, OP_GET, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET, elapsed(start), errorMessage(exception)));

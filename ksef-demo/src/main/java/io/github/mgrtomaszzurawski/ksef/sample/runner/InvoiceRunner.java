@@ -47,7 +47,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityCli
  */
 public final class InvoiceRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(InvoiceRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceRunner.class);
     private static final String NAME = "invoice";
     private static final String OP_QUERY_METADATA = "queryMetadata";
     private static final String OP_EXPORT = "exportInvoices";
@@ -115,7 +115,7 @@ public final class InvoiceRunner implements DemoRunner {
             InvoiceMetadataResult response = context.client().invoices().queryMetadata(query);
             int count = response.invoices() != null ? response.invoices().size() : 0;
             boolean hasMore = response.hasMore();
-            LOG.info("[{}] queryMetadata: {} invoices, hasMore={}", NAME, count, hasMore);
+            LOGGER.info("[{}] queryMetadata: {} invoices, hasMore={}", NAME, count, hasMore);
             results.add(RunResult.ok(NAME, OP_QUERY_METADATA, elapsed(start),
                     count + " invoices, hasMore=" + hasMore));
         } catch (Exception exception) {
@@ -138,7 +138,7 @@ public final class InvoiceRunner implements DemoRunner {
 
             ExportInvoicesResult response = context.client().invoices().exportInvoices(exportBuilder);
             String refNum = response.referenceNumber();
-            LOG.info("[{}] export started, ref={}", NAME, refNum);
+            LOGGER.info("[{}] export started, ref={}", NAME, refNum);
             context.state().setExportReferenceNumber(refNum);
             results.add(RunResult.ok(NAME, OP_EXPORT, elapsed(start), "ref=" + refNum));
             return refNum;
@@ -173,7 +173,7 @@ public final class InvoiceRunner implements DemoRunner {
                 InvoiceExportStatus response = context.client().invoices()
                         .getExportStatus(exportRef);
                 Integer code = response.status() != null ? response.status().code() : null;
-                LOG.info("[{}] export status: code={}", NAME, code);
+                LOGGER.info("[{}] export status: code={}", NAME, code);
                 if (code != null && code == EXPORT_STATUS_OK) {
                     results.add(RunResult.ok(NAME, OP_EXPORT_STATUS, elapsed(start),
                             "ready after " + elapsed(start) + "ms"));
@@ -196,7 +196,7 @@ public final class InvoiceRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             byte[] invoiceBytes = context.client().invoices().getByKsefNumber(ksefNumber);
-            LOG.info("[{}] retrieved invoice by KSeF number, size={} bytes", NAME, invoiceBytes.length);
+            LOGGER.info("[{}] retrieved invoice by KSeF number, size={} bytes", NAME, invoiceBytes.length);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF, elapsed(start),
                     invoiceBytes.length + " bytes"));
         } catch (Exception exception) {

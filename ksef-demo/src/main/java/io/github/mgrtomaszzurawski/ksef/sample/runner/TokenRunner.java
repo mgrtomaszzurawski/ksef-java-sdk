@@ -36,7 +36,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  */
 public final class TokenRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TokenRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TokenRunner.class);
     private static final String NAME = "token";
     private static final String OP_GENERATE = "generate";
     private static final String OP_GET_STATUS = "getStatus";
@@ -51,19 +51,15 @@ public final class TokenRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
 
-        // 1. Generate token
         String tokenRef = runGenerate(context, results);
         if (tokenRef == null) {
             return results;
         }
 
-        // 2. Get status
         runGetStatus(context, tokenRef, results);
 
-        // 3. List tokens
         runList(context, results);
 
-        // 4. Revoke (cleanup)
         runRevoke(context, tokenRef, results);
 
         return results;
@@ -76,7 +72,7 @@ public final class TokenRunner implements DemoRunner {
                     .invoiceRead();
             GenerateTokenResult response = context.client().tokens().generate(tokenBuilder);
             String refNum = response.referenceNumber();
-            LOG.info("[{}] generated token ref={}", NAME, refNum);
+            LOGGER.info("[{}] generated token ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GENERATE, elapsed(start), "ref=" + refNum));
             return refNum;
         } catch (Exception exception) {
@@ -89,7 +85,7 @@ public final class TokenRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             TokenDetail response = context.client().tokens().getStatus(referenceNumber);
-            LOG.info("[{}] token status: ref={}, status={}", NAME, referenceNumber, response.status());
+            LOGGER.info("[{}] token status: ref={}, status={}", NAME, referenceNumber, response.status());
             results.add(RunResult.ok(NAME, OP_GET_STATUS, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_STATUS, elapsed(start), errorMessage(exception)));
@@ -101,7 +97,7 @@ public final class TokenRunner implements DemoRunner {
         try {
             TokenList response = context.client().tokens().list();
             int tokenCount = response.tokens() != null ? response.tokens().size() : 0;
-            LOG.info("[{}] listed {} tokens", NAME, tokenCount);
+            LOGGER.info("[{}] listed {} tokens", NAME, tokenCount);
             results.add(RunResult.ok(NAME, OP_LIST, elapsed(start), tokenCount + " tokens"));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_LIST, elapsed(start), errorMessage(exception)));
@@ -112,7 +108,7 @@ public final class TokenRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             context.client().tokens().revoke(referenceNumber);
-            LOG.info("[{}] revoked token ref={}", NAME, referenceNumber);
+            LOGGER.info("[{}] revoked token ref={}", NAME, referenceNumber);
             results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start), "revoked ref=" + referenceNumber));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_REVOKE, elapsed(start), errorMessage(exception)));

@@ -42,7 +42,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  */
 public final class BatchSessionRunner implements DemoRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BatchSessionRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BatchSessionRunner.class);
     private static final String NAME = "batchSession";
     private static final String OP_OPEN_BATCH = "openBatchSession";
     private static final String OP_UPLOAD_PARTS = "uploadParts";
@@ -77,7 +77,7 @@ public final class BatchSessionRunner implements DemoRunner {
 
         try (KsefBatchSession session = batch) {
             String batchRef = session.referenceNumber();
-            LOG.info("[{}] opened batch session ref={}, invoices={}, parts={}",
+            LOGGER.info("[{}] opened batch session ref={}, invoices={}, parts={}",
                     NAME, batchRef, invoiceXmls.size(), session.partUploadRequests().size());
             results.add(RunResult.ok(NAME, OP_OPEN_BATCH, elapsed(openStart),
                     "ref=" + batchRef + ", " + invoiceXmls.size() + " invoices"));
@@ -102,7 +102,7 @@ public final class BatchSessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             session.uploadParts();
-            LOG.info("[{}] uploaded {} part(s)", NAME, session.partUploadRequests().size());
+            LOGGER.info("[{}] uploaded {} part(s)", NAME, session.partUploadRequests().size());
             results.add(RunResult.ok(NAME, OP_UPLOAD_PARTS, elapsed(start),
                     session.partUploadRequests().size() + " parts"));
         } catch (Exception exception) {
@@ -115,7 +115,7 @@ public final class BatchSessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             SessionStatus response = session.status();
-            LOG.info("[{}] status: code={}", NAME,
+            LOGGER.info("[{}] status: code={}", NAME,
                     response.status() != null ? response.status().code() : "null");
             results.add(RunResult.ok(NAME, OP_GET_STATUS, elapsed(start)));
         } catch (Exception exception) {
@@ -128,7 +128,7 @@ public final class BatchSessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             session.close();
-            LOG.info("[{}] batch session closed (415 retry + polling handled by SDK)", NAME);
+            LOGGER.info("[{}] batch session closed (415 retry + polling handled by SDK)", NAME);
             results.add(RunResult.ok(NAME, OP_CLOSE, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_CLOSE, elapsed(start),
