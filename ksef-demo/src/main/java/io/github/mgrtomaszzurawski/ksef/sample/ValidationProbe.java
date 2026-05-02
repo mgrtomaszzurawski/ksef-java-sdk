@@ -46,6 +46,7 @@ public final class ValidationProbe {
     private static final int DETAILS_MAX_LENGTH = 200;
     private static final int SHORT_SUMMARY_MAX_LENGTH = 100;
     private static final int DESCRIPTION_MAX_LENGTH = 40;
+    private static final int TRUNCATE_ELLIPSIS_RESERVE = 3;
     private static final int EXCEPTION_CODE_OFFSET = 16;
     private static final int EXCEPTION_CODE_MAX_OFFSET = 22;
     private static final int TEST_LONG_STRING_LENGTH = 500;
@@ -94,15 +95,15 @@ public final class ValidationProbe {
     }
 
     private void runAllProbes() {
-        System.out.println("# KSeF Server-Side Validation Probe Results\n");
-        System.out.println("Generated: " + java.time.OffsetDateTime.now() + "\n");
+        LOG.info("# KSeF Server-Side Validation Probe Results\n");
+        LOG.info("Generated: " + java.time.OffsetDateTime.now() + "\n");
 
         probeUnauthEndpoints();
         probeAuthEndpoints();
     }
 
     private void probeUnauthEndpoints() {
-        System.out.println("## Unauthenticated Endpoints\n");
+        LOG.info("## Unauthenticated Endpoints\n");
 
         // GET /security/public-key-certificates — no body, always 200
         probeEndpoint("GET", "/api/v2/security/public-key-certificates", null, false,
@@ -117,7 +118,7 @@ public final class ValidationProbe {
                 "Unknown fields ignored");
 
         // POST /auth/ksef-token — requires body
-        System.out.println("### POST /api/v2/auth/ksef-token\n");
+        LOG.info("### POST /api/v2/auth/ksef-token\n");
         probeAndLog("/api/v2/auth/ksef-token", false, new String[][]{
             {"{}", "Empty body"},
             {"{\"challenge\":null,\"contextIdentifier\":null,\"encryptedToken\":null}", "Null required fields"},
@@ -131,10 +132,10 @@ public final class ValidationProbe {
     }
 
     private void probeAuthEndpoints() {
-        System.out.println("## Authenticated Endpoints\n");
+        LOG.info("## Authenticated Endpoints\n");
 
         // POST /invoices/query/metadata
-        System.out.println("### POST /api/v2/invoices/query/metadata\n");
+        LOG.info("### POST /api/v2/invoices/query/metadata\n");
         probeAndLog("/api/v2/invoices/query/metadata", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"subjectType\":null}", "Null subjectType"},
@@ -148,7 +149,7 @@ public final class ValidationProbe {
         });
 
         // POST /tokens (generate)
-        System.out.println("### POST /api/v2/tokens\n");
+        LOG.info("### POST /api/v2/tokens\n");
         probeAndLog("/api/v2/tokens", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"description\":null}", "Null description"},
@@ -160,19 +161,19 @@ public final class ValidationProbe {
         });
 
         // GET /limits/context
-        System.out.println("### GET /api/v2/limits/context\n");
+        LOG.info("### GET /api/v2/limits/context\n");
         probeEndpoint("GET", "/api/v2/limits/context", null, true, "Valid request");
 
         // GET /limits/subject
-        System.out.println("### GET /api/v2/limits/subject\n");
+        LOG.info("### GET /api/v2/limits/subject\n");
         probeEndpoint("GET", "/api/v2/limits/subject", null, true, "Valid request");
 
         // GET /rate-limits
-        System.out.println("### GET /api/v2/rate-limits\n");
+        LOG.info("### GET /api/v2/rate-limits\n");
         probeEndpoint("GET", "/api/v2/rate-limits", null, true, "Valid request");
 
         // POST /permissions/persons/grants
-        System.out.println("### POST /api/v2/permissions/persons/grants\n");
+        LOG.info("### POST /api/v2/permissions/persons/grants\n");
         probeAndLog("/api/v2/permissions/persons/grants", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"permission\":null,\"subjectIdentifier\":null}", "Null required fields"},
@@ -182,14 +183,14 @@ public final class ValidationProbe {
         });
 
         // POST /permissions/entities/grants
-        System.out.println("### POST /api/v2/permissions/entities/grants\n");
+        LOG.info("### POST /api/v2/permissions/entities/grants\n");
         probeAndLog("/api/v2/permissions/entities/grants", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"permission\":\"InvoiceRead\",\"subjectIdentifier\":{\"type\":\"Nip\",\"value\":\"123\"},\"description\":\"test\"}", "Invalid NIP format"},
         });
 
         // POST /certificates/enrollments
-        System.out.println("### POST /api/v2/certificates/enrollments\n");
+        LOG.info("### POST /api/v2/certificates/enrollments\n");
         probeAndLog("/api/v2/certificates/enrollments", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"certificateName\":null,\"certificateType\":null,\"csr\":null}", "Null required fields"},
@@ -199,7 +200,7 @@ public final class ValidationProbe {
         });
 
         // POST /invoices/exports
-        System.out.println("### POST /api/v2/invoices/exports\n");
+        LOG.info("### POST /api/v2/invoices/exports\n");
         probeAndLog("/api/v2/invoices/exports", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"encryption\":null,\"filters\":null}", "Null required fields"},
@@ -207,33 +208,33 @@ public final class ValidationProbe {
         });
 
         // GET /sessions/{ref} with invalid ref
-        System.out.println("### GET /api/v2/sessions/{ref}\n");
+        LOG.info("### GET /api/v2/sessions/{ref}\n");
         probeEndpoint("GET", "/api/v2/sessions/invalid-ref-number", null, true, "Invalid reference number");
         probeEndpoint("GET", "/api/v2/sessions/", null, true, "Empty reference number");
         probeEndpoint("GET", "/api/v2/sessions/" + "A".repeat(TEST_LONG_REF_LENGTH), null, true, "Very long reference number");
 
         // GET /auth/{ref} with invalid ref
-        System.out.println("### GET /api/v2/auth/{ref}\n");
+        LOG.info("### GET /api/v2/auth/{ref}\n");
         probeEndpoint("GET", "/api/v2/auth/invalid-ref", null, true, "Invalid reference number");
 
         // GET /tokens/{ref} with invalid ref
-        System.out.println("### GET /api/v2/tokens/{ref}\n");
+        LOG.info("### GET /api/v2/tokens/{ref}\n");
         probeEndpoint("GET", "/api/v2/tokens/invalid-ref", null, true, "Invalid reference number");
 
         // DELETE /tokens/{ref} with invalid ref
-        System.out.println("### DELETE /api/v2/tokens/{ref}\n");
+        LOG.info("### DELETE /api/v2/tokens/{ref}\n");
         probeEndpoint("DELETE", "/api/v2/tokens/invalid-ref-to-delete", null, true, "Invalid reference number");
 
         // GET /certificates/limits
-        System.out.println("### GET /api/v2/certificates/limits\n");
+        LOG.info("### GET /api/v2/certificates/limits\n");
         probeEndpoint("GET", "/api/v2/certificates/limits", null, true, "Valid request");
 
         // GET /certificates/enrollments/data
-        System.out.println("### GET /api/v2/certificates/enrollments/data\n");
+        LOG.info("### GET /api/v2/certificates/enrollments/data\n");
         probeEndpoint("GET", "/api/v2/certificates/enrollments/data", null, true, "Valid request");
 
         // POST /permissions/query/personal/grants
-        System.out.println("### POST /api/v2/permissions/query/personal/grants\n");
+        LOG.info("### POST /api/v2/permissions/query/personal/grants\n");
         probeAndLog("/api/v2/permissions/query/personal/grants", true, new String[][]{
             {"{}", "Empty body"},
             {"{\"pageSize\":0}", "pageSize=0"},
@@ -242,37 +243,37 @@ public final class ValidationProbe {
         });
 
         // POST /permissions/query/persons/grants
-        System.out.println("### POST /api/v2/permissions/query/persons/grants\n");
+        LOG.info("### POST /api/v2/permissions/query/persons/grants\n");
         probeAndLog("/api/v2/permissions/query/persons/grants", true, new String[][]{
             {"{}", "Empty body"},
         });
 
         // GET /permissions/attachments/status
-        System.out.println("### GET /api/v2/permissions/attachments/status\n");
+        LOG.info("### GET /api/v2/permissions/attachments/status\n");
         probeEndpoint("GET", "/api/v2/permissions/attachments/status", null, true, "Valid request");
 
         // GET /permissions/operations/{ref}
-        System.out.println("### GET /api/v2/permissions/operations/{ref}\n");
+        LOG.info("### GET /api/v2/permissions/operations/{ref}\n");
         probeEndpoint("GET", "/api/v2/permissions/operations/invalid-ref", null, true, "Invalid reference number");
 
         // Test with completely wrong Content-Type
-        System.out.println("### Wrong Content-Type test\n");
+        LOG.info("### Wrong Content-Type test\n");
         probeWithContentType("/api/v2/invoices/query/metadata", "text/plain", "{\"subjectType\":\"Subject1\"}", true, "text/plain content type");
         probeWithContentType("/api/v2/invoices/query/metadata", "application/xml", "<xml/>", true, "XML content type");
 
         // Test without auth on authenticated endpoint
-        System.out.println("### Missing auth test\n");
+        LOG.info("### Missing auth test\n");
         probeEndpoint("GET", "/api/v2/limits/context", null, false, "No auth on authenticated endpoint");
         probeEndpoint("POST", "/api/v2/invoices/query/metadata", "{\"subjectType\":\"Subject1\"}", false, "No auth on POST endpoint");
     }
 
     private void probeAndLog(String path, boolean auth, String[][] tests) {
-        System.out.println("| Input | HTTP | Code | Details |");
-        System.out.println("|-------|------|------|---------|");
+        LOG.info("| Input | HTTP | Code | Details |");
+        LOG.info("|-------|------|------|---------|");
         for (String[] test : tests) {
             probeEndpoint("POST", path, test[0], auth, test[1]);
         }
-        System.out.println();
+        LOG.info("");
     }
 
     private void probeEndpoint(String method, String path, String body, boolean auth, String description) {
@@ -296,7 +297,7 @@ public final class ValidationProbe {
                     HttpResponse.BodyHandlers.ofString());
 
             System.out.printf("| %s | %d | %s | %s |%n",
-                    truncate(description, DESCRIPTION_MAX_LENGTH),
+                    truncate(description),
                     resp.statusCode(),
                     extractExceptionCode(resp.body()),
                     extractDetails(resp.body()));
@@ -322,7 +323,7 @@ public final class ValidationProbe {
                     HttpResponse.BodyHandlers.ofString());
 
             System.out.printf("| %s | %d | %s | %s |%n",
-                    truncate(description, DESCRIPTION_MAX_LENGTH),
+                    truncate(description),
                     resp.statusCode(),
                     extractExceptionCode(resp.body()),
                     extractDetails(resp.body()));
@@ -349,8 +350,7 @@ public final class ValidationProbe {
             int idx = json.indexOf("\"details\":[");
             if (idx < 0) {
                 if (json.length() > DETAILS_MAX_LENGTH) return json.substring(0, DETAILS_MAX_LENGTH) + "...";
-                return json.length() > SHORT_SUMMARY_MAX_LENGTH
-                        ? json.substring(0, SHORT_SUMMARY_MAX_LENGTH) + "..." : json;
+                return shortSummary(json);
             }
             int end = json.indexOf("]", idx);
             if (end < 0) return json.substring(idx, Math.min(idx + DETAILS_MAX_LENGTH, json.length()));
@@ -363,12 +363,19 @@ public final class ValidationProbe {
             if (details.length() > DETAILS_MAX_LENGTH) details = details.substring(0, DETAILS_MAX_LENGTH) + "...";
             return details;
         } catch (Exception ex) {
-            return json.length() > SHORT_SUMMARY_MAX_LENGTH
-                    ? json.substring(0, SHORT_SUMMARY_MAX_LENGTH) + "..." : json;
+            return shortSummary(json);
         }
     }
 
-    private static String truncate(String str, int maxLen) {
-        return str.length() > maxLen ? str.substring(0, maxLen - 3) + "..." : str;
+    private static String truncate(String value) {
+        return value.length() > DESCRIPTION_MAX_LENGTH
+                ? value.substring(0, DESCRIPTION_MAX_LENGTH - TRUNCATE_ELLIPSIS_RESERVE) + "..."
+                : value;
+    }
+
+    private static String shortSummary(String json) {
+        return json.length() > SHORT_SUMMARY_MAX_LENGTH
+                ? json.substring(0, SHORT_SUMMARY_MAX_LENGTH) + "..."
+                : json;
     }
 }

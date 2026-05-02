@@ -34,8 +34,6 @@ public final class DemoContext {
     private final String nipIdentifier;
     private final KsefIdentifier.Type identifierType;
     private final String environment;
-    private String sessionReferenceNumber;
-    private String invoiceReferenceNumber;
     private String invoiceKsefNumber;
 
     public DemoContext(KsefClient client, DemoMode mode, DemoState state,
@@ -57,12 +55,6 @@ public final class DemoContext {
     public String nipIdentifier() { return nipIdentifier; }
     public KsefIdentifier.Type identifierType() { return identifierType; }
     public String environment() { return environment; }
-
-    public String sessionReferenceNumber() { return sessionReferenceNumber; }
-    public void setSessionReferenceNumber(String ref) { this.sessionReferenceNumber = ref; }
-
-    public String invoiceReferenceNumber() { return invoiceReferenceNumber; }
-    public void setInvoiceReferenceNumber(String ref) { this.invoiceReferenceNumber = ref; }
 
     public String invoiceKsefNumber() { return invoiceKsefNumber; }
     public void setInvoiceKsefNumber(String ksefNumber) { this.invoiceKsefNumber = ksefNumber; }
