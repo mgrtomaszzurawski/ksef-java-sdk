@@ -11,6 +11,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersR
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Client for KSeF Peppol service provider queries.
@@ -19,6 +21,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSuppo
  * {@code dateCreated} descending, then {@code id} ascending. Requires authentication.
  */
 public final class PeppolClientImpl implements PeppolClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PeppolClientImpl.class);
+    private static final String LOG_CALL = "→ {} pageOffset={} pageSize={}";
 
     private static final String PATH_PEPPOL_QUERY = ApiPaths.PEPPOL + "/query";
     private static final String OP_QUERY_PROVIDERS = "queryPeppolProviders";
@@ -64,6 +69,7 @@ public final class PeppolClientImpl implements PeppolClient {
      */
     @Override
     public PeppolProvidersResult query(int pageOffset, int pageSize) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_PROVIDERS, pageOffset, pageSize);
         if (pageOffset < 0) {
             throw new IllegalArgumentException(ERR_PAGE_OFFSET_NEGATIVE);
         }
