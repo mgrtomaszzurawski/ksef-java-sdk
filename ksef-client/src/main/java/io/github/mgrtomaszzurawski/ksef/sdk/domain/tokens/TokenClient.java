@@ -18,6 +18,6 @@ public interface TokenClient {
     GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder);
     TokenList list();
     TokenDetail getStatus(String referenceNumber);
-    public void revoke(String referenceNumber);
+    void revoke(String referenceNumber);
 
 }

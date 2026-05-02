@@ -19,7 +19,7 @@ import java.util.List;
  */
 public interface InvoiceClient {
 
-    public byte[] getByKsefNumber(String ksefNumber);
+    byte[] getByKsefNumber(String ksefNumber);
 
     InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query);
     List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query);

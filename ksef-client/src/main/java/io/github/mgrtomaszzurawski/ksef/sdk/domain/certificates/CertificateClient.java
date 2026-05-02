@@ -27,9 +27,9 @@ public interface CertificateClient {
     EnrollCertificateResult enroll(CertificateEnrollBuilder builder);
     CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber);
     RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers);
-    public void revoke(String certificateSerialNumber);
+    void revoke(String certificateSerialNumber);
 
-    public void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
+    void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
 
     CertificateQueryResult query(CertificateQueryBuilder builder);
 }
