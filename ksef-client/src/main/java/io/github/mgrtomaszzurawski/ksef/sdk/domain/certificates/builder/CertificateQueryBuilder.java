@@ -107,6 +107,8 @@ public final class CertificateQueryBuilder {
      * Build the query request.
      *
      * @return the request ready to pass to {@code CertificateClient.query()}
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public QueryCertificatesRequestRaw build() {
         QueryCertificatesRequestRaw request = new QueryCertificatesRequestRaw();

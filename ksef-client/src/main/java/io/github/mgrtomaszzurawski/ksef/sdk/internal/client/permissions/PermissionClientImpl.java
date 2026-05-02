@@ -109,8 +109,8 @@ public final class PermissionClientImpl implements PermissionClient {
     private final SessionContext sessionContext;
 
     public PermissionClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef);
-        this.sessionContext = ksef.sessionContext();
+        this.http = new HttpSupport(ksef.runtime());
+        this.sessionContext = ksef.runtime().sessionContext();
     }
 
     /**

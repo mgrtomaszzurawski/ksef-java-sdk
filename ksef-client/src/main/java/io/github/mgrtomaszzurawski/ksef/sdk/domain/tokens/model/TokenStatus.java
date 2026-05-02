@@ -17,6 +17,9 @@ public enum TokenStatus {
     REVOKED,
     FAILED;
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static TokenStatus from(AuthenticationTokenStatusRaw raw) {
         if (raw == null) {
             return null;

@@ -20,6 +20,9 @@ public record SubunitPermission(
         String subunitName,
         OffsetDateTime startDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static SubunitPermission from(SubunitPermissionRaw raw) {
         var authzRaw = raw.getAuthorizedIdentifier();
         PermissionIdentifier authzId = new PermissionIdentifier(authzRaw.getType().getValue(), authzRaw.getValue());

@@ -15,6 +15,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataBuyerRaw;
  */
 public record InvoiceBuyer(BuyerIdentifierType identifierType, String identifierValue, String name) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoiceBuyer from(InvoiceMetadataBuyerRaw raw) {
         if (raw == null) {
             return null;

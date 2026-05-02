@@ -68,8 +68,8 @@ public final class CertificateClientImpl implements CertificateClient {
     private final SessionContext sessionContext;
 
     public CertificateClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef);
-        this.sessionContext = ksef.sessionContext();
+        this.http = new HttpSupport(ksef.runtime());
+        this.sessionContext = ksef.runtime().sessionContext();
     }
 
     /**

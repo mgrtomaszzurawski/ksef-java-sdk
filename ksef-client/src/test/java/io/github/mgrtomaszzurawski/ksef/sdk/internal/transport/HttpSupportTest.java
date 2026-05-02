@@ -40,7 +40,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 @WireMockTest
 class HttpSupportTest {
 
-    private static final String TEST_PATH = "/api/v2/test/resource";
+    private static final String TEST_PATH = "/test/resource";
+    private static final String STUB_PATH = "/v2/test/resource";
     private static final String TEST_CHALLENGE = "20260404-CR-AAAAAAAAAA-BBBBBBBBBB-CC";
     private static final String TEST_TOKEN = "test-token";
     private static final String BEARER_TOKEN = "Bearer test-token";
@@ -61,7 +62,7 @@ class HttpSupportTest {
     @Test
     void get_whenOk_returnsDeserializedResponse(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(TEST_PATH))
+        stubFor(get(urlEqualTo(STUB_PATH))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
@@ -80,7 +81,7 @@ class HttpSupportTest {
     @Test
     void get_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(TEST_PATH))
+        stubFor(get(urlEqualTo(STUB_PATH))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody(EMPTY_JSON)));
 
         HttpSupport http = createHttpSupport(wmInfo);
@@ -93,7 +94,7 @@ class HttpSupportTest {
     @Test
     void get_whenNotFound_throwsNotFoundException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(TEST_PATH))
+        stubFor(get(urlEqualTo(STUB_PATH))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NOT_FOUND).withBody(EMPTY_JSON)));
 
         HttpSupport http = createHttpSupport(wmInfo);
@@ -106,7 +107,7 @@ class HttpSupportTest {
     @Test
     void get_whenTooManyRequests_throwsRateLimitException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(TEST_PATH))
+        stubFor(get(urlEqualTo(STUB_PATH))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_TOO_MANY_REQUESTS).withBody(EMPTY_JSON)));
 
         HttpSupport http = createHttpSupport(wmInfo);
@@ -119,7 +120,7 @@ class HttpSupportTest {
     @Test
     void get_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(TEST_PATH))
+        stubFor(get(urlEqualTo(STUB_PATH))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody(EMPTY_JSON)));
 
         HttpSupport http = createHttpSupport(wmInfo);
@@ -132,7 +133,7 @@ class HttpSupportTest {
     @Test
     void getAuthenticated_whenBearerToken_sendsAuthorizationHeader(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(TEST_PATH))
+        stubFor(get(urlEqualTo(STUB_PATH))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(BEARER_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -152,7 +153,7 @@ class HttpSupportTest {
     @Test
     void postJson_whenOk_returnsDeserializedResponse(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo(TEST_PATH))
+        stubFor(post(urlEqualTo(STUB_PATH))
                 .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, containing(TestHttpConstants.APPLICATION_JSON))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -172,7 +173,7 @@ class HttpSupportTest {
     @Test
     void deleteAuthenticated_whenNoContent_sendsDeleteWithAuthHeader(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(delete(urlEqualTo(TEST_PATH))
+        stubFor(delete(urlEqualTo(STUB_PATH))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(BEARER_TOKEN))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
@@ -182,14 +183,14 @@ class HttpSupportTest {
         http.deleteAuthenticated(TEST_PATH, TEST_TOKEN, OPERATION_DELETE);
 
         // then
-        verify(deleteRequestedFor(urlEqualTo(TEST_PATH))
+        verify(deleteRequestedFor(urlEqualTo(STUB_PATH))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(BEARER_TOKEN)));
     }
 
     @Test
     void deleteAuthenticated_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(delete(urlEqualTo(TEST_PATH))
+        stubFor(delete(urlEqualTo(STUB_PATH))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody(EMPTY_JSON)));
 
         HttpSupport http = createHttpSupport(wmInfo);
@@ -200,10 +201,10 @@ class HttpSupportTest {
     }
 
     private static HttpSupport createHttpSupport(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(TEST_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        return new HttpSupport(ksef);
+        return new HttpSupport(ksef.runtime());
     }
 }

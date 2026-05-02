@@ -81,6 +81,8 @@ public final class CertificateEnrollBuilder {
      * Build the enrollment request.
      *
      * @return the request ready to pass to {@code CertificateClient.enroll()}
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public EnrollCertificateRequestRaw build() {
         EnrollCertificateRequestRaw request = new EnrollCertificateRequestRaw();

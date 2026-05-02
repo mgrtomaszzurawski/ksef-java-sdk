@@ -14,6 +14,9 @@ import java.util.List;
  */
 public record UpoInfo(List<UpoPage> pages) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static UpoInfo from(UpoResponseRaw raw) {
         if (raw == null) {
             return null;

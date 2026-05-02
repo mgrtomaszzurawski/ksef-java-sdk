@@ -16,6 +16,9 @@ public record SubordinateEntityRole(
         String description,
         OffsetDateTime startDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static SubordinateEntityRole from(SubordinateEntityRoleRaw raw) {
         var subRaw = raw.getSubordinateEntityIdentifier();
         PermissionIdentifier subId = new PermissionIdentifier(subRaw.getType().getValue(), subRaw.getValue());

@@ -35,6 +35,9 @@ public record CertificateListItem(
         OffsetDateTime lastUseDate,
         OffsetDateTime requestDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static CertificateListItem from(CertificateListItemRaw raw) {
         String subIdType = null;
         String subIdValue = null;

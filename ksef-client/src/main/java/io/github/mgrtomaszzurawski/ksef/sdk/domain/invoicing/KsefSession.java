@@ -11,7 +11,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,10 +238,13 @@ public final class KsefSession implements AutoCloseable {
     private void logTerminalState(int code, SessionStatus sessionStatus) {
         if (code == STATUS_CODE_OK) {
             LOGGER.debug(LOG_PROCESSING_COMPLETE, referenceNumber);
-        } else {
-            String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
-            LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
+            return;
         }
+        String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
+        List<String> details = sessionStatus.status() != null
+                ? sessionStatus.status().details() : List.of();
+        LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
+        throw new KsefSessionTerminalFailureException(referenceNumber, code, description, details);
     }
 
     private static boolean isSessionBusy(KsefException exception) {

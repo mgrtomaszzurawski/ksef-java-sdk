@@ -24,6 +24,9 @@ public enum InvoiceType {
     VAT_RR,
     KOR_VAT_RR;
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoiceType from(InvoiceTypeRaw raw) {
         if (raw == null) {
             return null;

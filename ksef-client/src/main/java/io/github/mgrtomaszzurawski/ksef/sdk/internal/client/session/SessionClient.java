@@ -64,8 +64,8 @@ public final class SessionClient {
     private final SessionContext sessionContext;
 
     public SessionClient(KsefClient ksef) {
-        this.http = new HttpSupport(ksef);
-        this.sessionContext = ksef.sessionContext();
+        this.http = new HttpSupport(ksef.runtime());
+        this.sessionContext = ksef.runtime().sessionContext();
     }
 
     /**

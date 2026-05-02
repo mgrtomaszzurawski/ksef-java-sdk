@@ -158,6 +158,8 @@ public final class TestPermissionsGrantBuilder {
      *
      * @return the request ready to pass to {@code TestDataClient.grantPermissions()}
      * @throws IllegalStateException if validation fails
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public TestDataPermissionsGrantRequestRaw build() {
         if (authorizedType == null || authorizedValue == null) {

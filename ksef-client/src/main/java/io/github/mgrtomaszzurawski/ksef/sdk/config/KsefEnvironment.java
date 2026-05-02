@@ -9,6 +9,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.config;
 public final class KsefEnvironment {
 
     private static final String TEST_URL = "https://api-test.ksef.mf.gov.pl/v2";
+    private static final String DEMO_URL = "https://api-demo.ksef.mf.gov.pl/v2";
     private static final String PREPROD_URL = "https://api-preprod.ksef.mf.gov.pl/v2";
     private static final String PROD_URL = "https://api.ksef.mf.gov.pl/v2";
     private static final String NULL_URL_MESSAGE = "baseUrl must not be null";
@@ -17,6 +18,7 @@ public final class KsefEnvironment {
     private static final String HTTP_SCHEME = "http://";
 
     public static final KsefEnvironment TEST = new KsefEnvironment(TEST_URL);
+    public static final KsefEnvironment DEMO = new KsefEnvironment(DEMO_URL);
     public static final KsefEnvironment PREPROD = new KsefEnvironment(PREPROD_URL);
     public static final KsefEnvironment PROD = new KsefEnvironment(PROD_URL);
 

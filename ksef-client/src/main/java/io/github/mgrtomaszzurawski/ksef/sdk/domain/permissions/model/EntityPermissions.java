@@ -12,6 +12,9 @@ import java.util.List;
  */
 public record EntityPermissions(List<EntityPermission> permissions, boolean hasMore) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static EntityPermissions from(QueryEntityPermissionsResponseRaw raw) {
         List<EntityPermission> mapped = raw.getPermissions().stream().map(EntityPermission::from).toList();
         return new EntityPermissions(mapped, raw.getHasMore());

@@ -5,4 +5,5 @@
 /**
  * KSeF authentication-token management.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens;

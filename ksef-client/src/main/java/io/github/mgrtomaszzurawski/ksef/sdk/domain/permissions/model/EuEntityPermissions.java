@@ -12,6 +12,9 @@ import java.util.List;
  */
 public record EuEntityPermissions(List<EuEntityPermission> permissions, boolean hasMore) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static EuEntityPermissions from(QueryEuEntityPermissionsResponseRaw raw) {
         List<EuEntityPermission> mapped = raw.getPermissions().stream().map(EuEntityPermission::from).toList();
         return new EuEntityPermissions(mapped, raw.getHasMore());

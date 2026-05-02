@@ -97,6 +97,8 @@ public final class TokenGenerateBuilder {
      *
      * @return the request ready to pass to {@code TokenClient.generate()}
      * @throws IllegalStateException if validation fails
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public GenerateTokenRequestRaw build() {
         if (description.length() < DESCRIPTION_MIN_LENGTH || description.length() > DESCRIPTION_MAX_LENGTH) {

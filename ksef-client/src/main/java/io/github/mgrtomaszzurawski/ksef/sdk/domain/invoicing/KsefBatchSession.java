@@ -5,10 +5,11 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Batch session flow (manual variant):
  * <ol>
- *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, BatchFileSpec)}</li>
+ *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, PreparedBatchPackage)}</li>
  *   <li>Upload encrypted ZIP parts to the URLs from {@link #partUploadRequests()}</li>
  *   <li>Call {@link #close()} (or use try-with-resources) to finalize</li>
  * </ol>
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *   <li>Call {@link #close()} to finalize and delete the temp files</li>
  * </ol>
  *
- * @see KsefClient#openBatchSession(FormCode, BatchFileSpec)
+ * @see KsefClient#openBatchSession(FormCode, PreparedBatchPackage)
  * @see KsefClient#openBatchSession(FormCode, java.util.List)
  */
 public final class KsefBatchSession implements AutoCloseable {
@@ -68,8 +69,8 @@ public final class KsefBatchSession implements AutoCloseable {
      */
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
-    private static final String ERR_NO_PARTS = "No parts to upload — session was opened with raw "
-            + "BatchFileSpec, not invoiceXmls";
+    private static final String ERR_NO_PARTS = "No parts to upload — session was opened with a "
+            + "PreparedBatchPackage, not a list of invoice XMLs";
     private static final String ERR_PART_COUNT_MISMATCH = "partUploadRequests count does not match "
             + "part files count";
     private static final String ERR_UPLOAD_FAILED = "Failed to upload batch part %d: HTTP %d";
@@ -99,7 +100,8 @@ public final class KsefBatchSession implements AutoCloseable {
 
     /**
      * Constructor used by tests and by {@link KsefClient} when opening a batch session
-     * from a pre-built {@link BatchFileSpec} (no part files available —
+     * from a pre-built {@link PreparedBatchPackage} (no SDK-managed part files —
+     * the consumer is responsible for uploading via {@link #partUploadRequests()};
      * {@link #uploadParts()} will fail).
      *
      * @apiNote Internal — constructed by {@code KsefClient.openBatchSession(...)}.
@@ -158,8 +160,8 @@ public final class KsefBatchSession implements AutoCloseable {
      *
      * <p>Only available when the session was opened via
      * {@link KsefClient#openBatchSession(FormCode, java.util.List)} — that flow keeps
-     * references to the encrypted part files. When the session was opened from a raw
-     * {@link BatchFileSpec}, this method throws {@link IllegalStateException}.
+     * references to the encrypted part files. When the session was opened from a
+     * {@link PreparedBatchPackage}, this method throws {@link IllegalStateException}.
      *
      * <p>Each part is uploaded with the HTTP method and headers returned by KSeF in the
      * open-session response (typically {@code PUT}). Any non-2xx response aborts the
@@ -296,10 +298,13 @@ public final class KsefBatchSession implements AutoCloseable {
     private void logTerminalState(int code, SessionStatus sessionStatus) {
         if (code == STATUS_CODE_OK) {
             LOGGER.debug(LOG_PROCESSING_COMPLETE, referenceNumber);
-        } else {
-            String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
-            LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
+            return;
         }
+        String description = sessionStatus.status() != null ? sessionStatus.status().description() : null;
+        List<String> details = sessionStatus.status() != null
+                ? sessionStatus.status().details() : List.of();
+        LOGGER.warn(LOG_TERMINAL_FAILURE, referenceNumber, code, description);
+        throw new KsefSessionTerminalFailureException(referenceNumber, code, description, details);
     }
 
     private static boolean isSessionBusy(KsefException exception) {

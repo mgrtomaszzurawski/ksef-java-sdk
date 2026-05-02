@@ -36,6 +36,9 @@ public record ApiRateLimits(
         RateLimitValues invoiceDownload,
         RateLimitValues other) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static ApiRateLimits from(EffectiveApiRateLimitsRaw raw) {
         return new ApiRateLimits(
                 RateLimitValues.from(raw.getOnlineSession()),

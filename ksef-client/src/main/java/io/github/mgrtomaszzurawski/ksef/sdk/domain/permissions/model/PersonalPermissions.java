@@ -15,6 +15,9 @@ import java.util.List;
  */
 public record PersonalPermissions(List<PersonalPermission> permissions, boolean hasMore) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static PersonalPermissions from(QueryPersonalPermissionsResponseRaw raw) {
         List<PersonalPermission> mapped = raw.getPermissions().stream().map(PersonalPermission::from).toList();
         return new PersonalPermissions(mapped, raw.getHasMore());

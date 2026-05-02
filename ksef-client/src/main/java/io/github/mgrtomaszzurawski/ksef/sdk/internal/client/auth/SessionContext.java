@@ -22,19 +22,45 @@ public final class SessionContext {
      * Set session state after successful authentication.
      */
     public void activate(String token, String referenceNumber, OffsetDateTime expiry) {
-        state.set(new SessionState(token, referenceNumber, expiry));
+        state.set(new SessionState(token, referenceNumber, expiry, null));
     }
 
     /**
-     * Update token after refresh (keeps same reference number).
+     * Replace the access token (and its expiry) after a successful refresh,
+     * preserving the current reference number and refresh token.
      */
-    public void refreshToken(String newToken, OffsetDateTime newExpiry) {
+    public void updateAccessToken(String newToken, OffsetDateTime newExpiry) {
         state.updateAndGet(current -> {
             if (current == null) {
                 throw new IllegalStateException(ERR_NO_SESSION);
             }
-            return new SessionState(newToken, current.referenceNumber(), newExpiry);
+            return new SessionState(newToken, current.referenceNumber(),
+                    newExpiry, current.refreshToken());
         });
+    }
+
+    /**
+     * Persist the refresh token obtained via the redeem-tokens flow so future
+     * re-authentications can prefer the {@code /auth/token/refresh} endpoint
+     * over a full challenge-response cycle.
+     */
+    public void storeRefreshToken(String token) {
+        state.updateAndGet(current -> {
+            if (current == null) {
+                throw new IllegalStateException(ERR_NO_SESSION);
+            }
+            return new SessionState(current.token(), current.referenceNumber(),
+                    current.expiry(), token);
+        });
+    }
+
+    /**
+     * Refresh token captured from the last redeem-tokens response, or
+     * {@code null} when no refresh token is available.
+     */
+    public String refreshToken() {
+        SessionState current = state.get();
+        return current == null ? null : current.refreshToken();
     }
 
     /**
@@ -84,6 +110,9 @@ public final class SessionContext {
         return OffsetDateTime.now().isAfter(current.expiry());
     }
 
-    private record SessionState(String token, String referenceNumber, OffsetDateTime expiry) {
+    private record SessionState(String token,
+                                String referenceNumber,
+                                OffsetDateTime expiry,
+                                String refreshToken) {
     }
 }

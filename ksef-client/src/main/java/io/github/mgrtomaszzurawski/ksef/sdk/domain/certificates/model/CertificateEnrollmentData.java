@@ -28,6 +28,9 @@ public record CertificateEnrollmentData(
         String organizationName,
         String organizationIdentifier) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static CertificateEnrollmentData from(CertificateEnrollmentDataResponseRaw raw) {
         return new CertificateEnrollmentData(
                 raw.getCommonName(),

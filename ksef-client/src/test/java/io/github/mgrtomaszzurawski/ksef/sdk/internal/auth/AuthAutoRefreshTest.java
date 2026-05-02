@@ -42,12 +42,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 @WireMockTest
 class AuthAutoRefreshTest {
 
-    private static final String TARGET_PATH = "/api/v2/rate-limits";
-    private static final String PATH_SECURITY = "/api/v2/security/public-key-certificates";
-    private static final String PATH_CHALLENGE = "/api/v2/auth/challenge";
-    private static final String PATH_KSEF_TOKEN = "/api/v2/auth/ksef-token";
-    private static final String PATH_AUTH_STATUS_PATTERN = "/api/v2/auth/[A-Za-z0-9.\\-]+";
-    private static final String PATH_TOKEN_REDEEM = "/api/v2/auth/token/redeem";
+    private static final String TARGET_PATH = "/v2/rate-limits";
+    private static final String PATH_SECURITY = "/v2/security/public-key-certificates";
+    private static final String PATH_CHALLENGE = "/v2/auth/challenge";
+    private static final String PATH_KSEF_TOKEN = "/v2/auth/ksef-token";
+    private static final String PATH_AUTH_STATUS_PATTERN = "/v2/auth/[A-Za-z0-9.\\-]+";
+    private static final String PATH_TOKEN_REDEEM = "/v2/auth/token/redeem";
     private static final String NIP = "1234567890";
     private static final String INITIAL_TOKEN = "stale-jwt-from-prior-session";
     private static final String FRESH_TOKEN = "fresh-jwt-after-reauth";
@@ -55,6 +55,15 @@ class AuthAutoRefreshTest {
     private static final String SESSION_REF = "20260404-AU-1234567890-ABCDEF1234-01";
     private static final String TEST_NIP_SHORT = "test";
     private static final String TOKEN_EXPIRY = "2026-12-31T23:59:59+01:00";
+    private static final String STORED_REFRESH_TOKEN = "previously-stored-refresh-token";
+    private static final String PATH_TOKEN_REFRESH = "/v2/auth/token/refresh";
+    private static final String REFRESHED_ACCESS_TOKEN = "access-token-from-refresh-endpoint";
+
+    private static final String TOKEN_REFRESH_RESPONSE = """
+            {
+              "accessToken": {"token": "%s", "validUntil": "%s"}
+            }
+            """.formatted(REFRESHED_ACCESS_TOKEN, TOKEN_EXPIRY);
 
     private static final String CHALLENGE_RESPONSE = """
             {
@@ -121,7 +130,7 @@ class AuthAutoRefreshTest {
             verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(1, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
             verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-            assertEquals(FRESH_TOKEN, ksef.sessionContext().token());
+            assertEquals(FRESH_TOKEN, ksef.runtime().sessionContext().token());
         }
     }
 
@@ -165,7 +174,41 @@ class AuthAutoRefreshTest {
             verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
             verify(0, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-            assertEquals(INITIAL_TOKEN, ksef.sessionContext().token());
+            assertEquals(INITIAL_TOKEN, ksef.runtime().sessionContext().token());
+        }
+    }
+
+    @Test
+    void request_when401WithStoredRefreshToken_callsRefreshEndpointAndSkipsFullAuth(WireMockRuntimeInfo wmInfo) throws Exception {
+        // given — first call 401, refresh endpoint succeeds, retry uses refreshed token
+        stubFor(get(urlEqualTo(TARGET_PATH))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + INITIAL_TOKEN))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
+        stubFor(get(urlEqualTo(TARGET_PATH))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + REFRESHED_ACCESS_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(RATE_LIMITS_OK_BODY)));
+        stubFor(post(urlEqualTo(PATH_TOKEN_REFRESH))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(TOKEN_REFRESH_RESPONSE)));
+        // Stub challenge too — must NOT be called
+        stubAuthFlowSuccess();
+
+        try (KsefClient ksef = createClientWithStaleSessionAndRefreshToken(wmInfo)) {
+
+            // when
+            ksef.rateLimits().getRateLimits();
+
+            // then — refresh endpoint was used, full challenge flow was NOT
+            verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
+            verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REFRESH)));
+            verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
+            verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
+            assertEquals(REFRESHED_ACCESS_TOKEN, ksef.runtime().sessionContext().token());
         }
     }
 
@@ -228,11 +271,17 @@ class AuthAutoRefreshTest {
      * the SDK re-authenticates and retries with a fresh token.
      */
     private static KsefClient createClientWithStaleSession(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(TEST_NIP_SHORT, NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(INITIAL_TOKEN, SESSION_REF, null);
+        ksef.runtime().sessionContext().activate(INITIAL_TOKEN, SESSION_REF, null);
+        return ksef;
+    }
+
+    private static KsefClient createClientWithStaleSessionAndRefreshToken(WireMockRuntimeInfo wmInfo) {
+        KsefClient ksef = createClientWithStaleSession(wmInfo);
+        ksef.runtime().sessionContext().storeRefreshToken(STORED_REFRESH_TOKEN);
         return ksef;
     }
 }

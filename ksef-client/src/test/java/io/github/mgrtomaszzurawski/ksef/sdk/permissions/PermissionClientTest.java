@@ -103,7 +103,7 @@ class PermissionClientTest {
     @Test
     void grantPerson_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/api/v2/permissions/persons/grants");
+        stubGrantEndpoint("/v2/permissions/persons/grants");
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -121,7 +121,7 @@ class PermissionClientTest {
     @Test
     void grantEntity_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/api/v2/permissions/entities/grants");
+        stubGrantEndpoint("/v2/permissions/entities/grants");
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -139,7 +139,7 @@ class PermissionClientTest {
     @Test
     void grantAuthorization_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/api/v2/permissions/authorizations/grants");
+        stubGrantEndpoint("/v2/permissions/authorizations/grants");
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -157,7 +157,7 @@ class PermissionClientTest {
     @Test
     void grantIndirect_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/api/v2/permissions/indirect/grants");
+        stubGrantEndpoint("/v2/permissions/indirect/grants");
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -175,7 +175,7 @@ class PermissionClientTest {
     @Test
     void grantSubunit_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/api/v2/permissions/subunits/grants");
+        stubGrantEndpoint("/v2/permissions/subunits/grants");
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -193,7 +193,7 @@ class PermissionClientTest {
     @Test
     void grantEuEntityAdmin_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/api/v2/permissions/eu-entities/administration/grants");
+        stubGrantEndpoint("/v2/permissions/eu-entities/administration/grants");
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -213,7 +213,7 @@ class PermissionClientTest {
     @Test
     void grantEuEntity_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/api/v2/permissions/eu-entities/grants");
+        stubGrantEndpoint("/v2/permissions/eu-entities/grants");
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -230,7 +230,7 @@ class PermissionClientTest {
 
     @Test
     void revokeCommon_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
-        stubFor(delete(urlEqualTo("/api/v2/permissions/common/grants/" + TEST_PERMISSION_ID))
+        stubFor(delete(urlEqualTo("/v2/permissions/common/grants/" + TEST_PERMISSION_ID))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -247,7 +247,7 @@ class PermissionClientTest {
 
     @Test
     void revokeAuthorization_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
-        stubFor(delete(urlEqualTo("/api/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID))
+        stubFor(delete(urlEqualTo("/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -265,7 +265,7 @@ class PermissionClientTest {
 
     @Test
     void getOperationStatus_whenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
-        stubFor(get(urlEqualTo("/api/v2/permissions/operations/" + TEST_OPERATION_REF))
+        stubFor(get(urlEqualTo("/v2/permissions/operations/" + TEST_OPERATION_REF))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -283,7 +283,7 @@ class PermissionClientTest {
 
     @Test
     void getAttachmentStatus_whenAuthenticated_returnsStatus(WireMockRuntimeInfo wmInfo) {
-        stubFor(get(urlEqualTo("/api/v2/permissions/attachments/status"))
+        stubFor(get(urlEqualTo("/v2/permissions/attachments/status"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -301,7 +301,7 @@ class PermissionClientTest {
 
     @Test
     void queryPersonal_whenAuthenticated_returnsPermissions(WireMockRuntimeInfo wmInfo) {
-        stubQueryEndpoint("/api/v2/permissions/query/personal/grants", QUERY_PERSONAL_RESPONSE);
+        stubQueryEndpoint("/v2/permissions/query/personal/grants", QUERY_PERSONAL_RESPONSE);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             PersonalPermissions response =
@@ -314,7 +314,7 @@ class PermissionClientTest {
 
     @Test
     void queryPersons_whenAuthenticated_returnsPermissions(WireMockRuntimeInfo wmInfo) {
-        stubQueryEndpoint("/api/v2/permissions/query/persons/grants", QUERY_EMPTY_RESPONSE);
+        stubQueryEndpoint("/v2/permissions/query/persons/grants", QUERY_EMPTY_RESPONSE);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             PersonPermissions response =
@@ -327,7 +327,7 @@ class PermissionClientTest {
 
     @Test
     void querySubunits_whenAuthenticated_returnsPermissions(WireMockRuntimeInfo wmInfo) {
-        stubQueryEndpoint("/api/v2/permissions/query/subunits/grants", QUERY_EMPTY_RESPONSE);
+        stubQueryEndpoint("/v2/permissions/query/subunits/grants", QUERY_EMPTY_RESPONSE);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             SubunitPermissions response =
@@ -340,7 +340,7 @@ class PermissionClientTest {
 
     @Test
     void queryEntities_whenAuthenticated_returnsPermissions(WireMockRuntimeInfo wmInfo) {
-        stubQueryEndpoint("/api/v2/permissions/query/entities/grants", QUERY_EMPTY_RESPONSE);
+        stubQueryEndpoint("/v2/permissions/query/entities/grants", QUERY_EMPTY_RESPONSE);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             EntityPermissions response =
@@ -353,7 +353,7 @@ class PermissionClientTest {
 
     @Test
     void queryEntityRoles_whenAuthenticated_returnsRoles(WireMockRuntimeInfo wmInfo) {
-        stubFor(get(urlEqualTo("/api/v2/permissions/query/entities/roles"))
+        stubFor(get(urlEqualTo("/v2/permissions/query/entities/roles"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -371,7 +371,7 @@ class PermissionClientTest {
 
     @Test
     void querySubordinateRoles_whenAuthenticated_returnsRoles(WireMockRuntimeInfo wmInfo) {
-        stubQueryEndpoint("/api/v2/permissions/query/subordinate-entities/roles", QUERY_ROLES_RESPONSE);
+        stubQueryEndpoint("/v2/permissions/query/subordinate-entities/roles", QUERY_ROLES_RESPONSE);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             SubordinateEntityRoles response =
@@ -384,7 +384,7 @@ class PermissionClientTest {
 
     @Test
     void queryAuthorizations_whenAuthenticated_returnsPermissions(WireMockRuntimeInfo wmInfo) {
-        stubQueryEndpoint("/api/v2/permissions/query/authorizations/grants", QUERY_EMPTY_RESPONSE);
+        stubQueryEndpoint("/v2/permissions/query/authorizations/grants", QUERY_EMPTY_RESPONSE);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             EntityAuthorizationPermissions response =
@@ -397,7 +397,7 @@ class PermissionClientTest {
 
     @Test
     void queryEuEntities_whenAuthenticated_returnsPermissions(WireMockRuntimeInfo wmInfo) {
-        stubQueryEndpoint("/api/v2/permissions/query/eu-entities/grants", QUERY_EMPTY_RESPONSE);
+        stubQueryEndpoint("/v2/permissions/query/eu-entities/grants", QUERY_EMPTY_RESPONSE);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             EuEntityPermissions response =
@@ -412,9 +412,9 @@ class PermissionClientTest {
     void grantPerson_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
         // given — both the target endpoint and the reauth security endpoint return 401,
         // so after the SDK retries once on 401 the auth exception propagates.
-        stubFor(post(urlEqualTo("/api/v2/permissions/persons/grants"))
+        stubFor(post(urlEqualTo("/v2/permissions/persons/grants"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
-        stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
+        stubFor(get(urlEqualTo("/v2/security/public-key-certificates"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
@@ -467,11 +467,11 @@ class PermissionClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

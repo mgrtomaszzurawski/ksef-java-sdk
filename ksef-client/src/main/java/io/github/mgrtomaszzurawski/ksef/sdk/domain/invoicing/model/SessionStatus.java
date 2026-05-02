@@ -30,6 +30,9 @@ public record SessionStatus(
         Integer successfulInvoiceCount,
         Integer failedInvoiceCount) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static SessionStatus from(SessionStatusResponseRaw raw) {
         return new SessionStatus(
                 StatusInfo.from(raw.getStatus()),

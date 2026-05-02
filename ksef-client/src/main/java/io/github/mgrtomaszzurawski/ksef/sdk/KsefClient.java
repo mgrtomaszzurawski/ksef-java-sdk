@@ -29,6 +29,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
@@ -51,10 +52,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityCli
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.TestDataClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.TokenClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.IdentifierMasking;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefHttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
 import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
@@ -94,14 +97,14 @@ import org.slf4j.LoggerFactory;
  * }
  * }</pre>
  */
-public final class KsefClient implements AutoCloseable, HttpRuntime {
+public final class KsefClient implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KsefClient.class);
 
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
     private static final String ERR_FORM_CODE_NULL = "formCode must not be null";
-    private static final String ERR_BATCH_FILE_SPEC_NULL = "batchFileSpec must not be null";
+    private static final String ERR_BATCH_PACKAGE_NULL = "preparedPackage must not be null";
     private static final String ERR_INVOICES_NULL = "invoices must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
@@ -110,13 +113,16 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     private static final String ERR_INTERRUPTED = "Interrupted while polling";
     private static final String CERT_TYPE_X509 = "X.509";
 
-    private static final String LOG_AUTHENTICATED = "Authenticated with KSeF as {}";
+    private static final String LOG_AUTHENTICATED = "Authenticated with KSeF as {} {}";
     private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
     private static final String LOG_OPENED_BATCH_SESSION = "Opened KSeF batch session {}, formCode={}";
     private static final String LOG_OPENED_BATCH_SESSION_WITH_INVOICES =
             "Opened KSeF batch session {} with {} invoices, formCode={}";
     private static final String LOG_TERMINATED = "Terminated KSeF auth session";
-    private static final String LOG_REAUTHENTICATED = "Re-authenticated with KSeF after 401 (token refresh)";
+    private static final String LOG_REAUTHENTICATED = "Re-authenticated with KSeF after 401 (full auth flow)";
+    private static final String LOG_REFRESHED = "Refreshed KSeF access token via /auth/token/refresh";
+    private static final String LOG_REFRESH_FAILED =
+            "Refresh-token endpoint failed ({}); falling back to full re-auth";
     private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(30);
     private static final int AUTH_POLL_DELAY_MS = 2000;
@@ -130,6 +136,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     private final RetryHandler retryHandler;
     private final SessionContext sessionContext;
     private final Duration readTimeout;
+    private final HttpRuntime runtime;
 
     private final AuthClient authClient;
     private final SecurityClient securityClient;
@@ -157,6 +164,8 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         this.objectMapper = createObjectMapper();
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
+        this.runtime = new KsefHttpRuntime(environment, httpClient, objectMapper,
+                retryHandler, sessionContext, readTimeout, this::reauthenticate);
         this.authClient = new AuthClient(this);
         this.securityClient = new SecurityClient(this);
         this.sessionClient = new SessionClient(this);
@@ -194,7 +203,9 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         }
         doAuthenticate();
         authenticated = true;
-        LOGGER.debug(LOG_AUTHENTICATED, credentials.identifier());
+        KsefIdentifier identifier = credentials.identifier();
+        LOGGER.debug(LOG_AUTHENTICATED, identifier.type(),
+                IdentifierMasking.maskTail(identifier.value()));
     }
 
     /**
@@ -236,35 +247,34 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     }
 
     /**
-     * Open a batch KSeF session for bulk invoice submission via ZIP package.
+     * Open a batch KSeF session from a caller-prepared, already-encrypted package.
      *
-     * <p>Authenticates lazily if not already authenticated. Generates AES encryption key,
-     * encrypts it with the KSeF public key, and opens the batch session. The returned
-     * {@link KsefBatchSession} contains upload URLs for each ZIP part.
+     * <p>Manual entry point for advanced flows where the consumer streams or
+     * externally encrypts the batch parts. The {@link PreparedBatchPackage}
+     * <strong>must</strong> contain the AES key and IV that were used to
+     * encrypt {@code partBytes} — the SDK uses them verbatim to register the
+     * encryption material with KSeF (RSA-wrapped against the KSeF
+     * SymmetricKeyEncryption certificate). Mismatched key/IV results in a
+     * KSeF-side decryption failure.
      *
-     * <p>Batch session flow:
-     * <ol>
-     *   <li>Open session with this method</li>
-     *   <li>Upload encrypted ZIP parts to the URLs from
-     *       {@link KsefBatchSession#partUploadRequests()}</li>
-     *   <li>Close the session via {@link KsefBatchSession#close()}</li>
-     * </ol>
+     * <p>For the common case where the SDK should build and encrypt the
+     * package itself, prefer {@link #openBatchSession(FormCode, List)}.
      *
      * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
-     * @param batchFileSpec metadata describing the encrypted ZIP file and its parts
+     * @param preparedPackage caller-prepared spec + key/IV + encrypted part bytes
      * @return an open batch session — use with try-with-resources
      */
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefBatchSession openBatchSession(FormCode formCode,
-                                                          BatchFileSpec batchFileSpec) {
+                                                          PreparedBatchPackage preparedPackage) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
-        Objects.requireNonNull(batchFileSpec, ERR_BATCH_FILE_SPEC_NULL);
+        Objects.requireNonNull(preparedPackage, ERR_BATCH_PACKAGE_NULL);
         ensureOpen();
         ensureAuthenticated();
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
-        byte[] aesKey = CryptoService.generateAesKey();
-        byte[] initVector = CryptoService.generateIv();
+        byte[] aesKey = preparedPackage.aesKey();
+        byte[] initVector = preparedPackage.initVector();
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
 
         OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
@@ -275,7 +285,7 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
                 .encryption(new EncryptionInfoRaw()
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(batchFileSpec));
+                .batchFile(toBatchFileInfoRaw(preparedPackage.spec()));
 
         BatchSession session = sessionClient.openBatch(request);
         LOGGER.debug(LOG_OPENED_BATCH_SESSION, session.referenceNumber(), formCode);
@@ -352,23 +362,44 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
     }
 
     /**
-     * Force re-authentication: clear the current JWT and obtain a fresh access token.
+     * Force re-authentication: obtain a fresh access token.
      *
      * <p>Used by the SDK internally when an authenticated request returns HTTP 401
-     * (token expired). Resets the authenticated flag and the public key cache (the
-     * KSeF certificate may have rotated), clears the session JWT, and re-runs the
-     * full auth flow.
+     * (token expired). When a refresh token captured from the previous redeem
+     * response is still available, the client prefers a single
+     * {@code POST /auth/token/refresh} call over the full challenge-response
+     * cycle. Any failure on the refresh endpoint falls back to a full
+     * re-authentication.
      *
      * <p>Thread-safe: serialized on this {@link KsefClient} so concurrent 401s only
      * trigger one re-auth.
      */
     public synchronized void reauthenticate() {
         ensureOpen();
+        if (tryRefreshToken()) {
+            return;
+        }
         authenticated = false;
         publicKeyCache.clear();
         sessionContext.clear();
         authenticate();
         LOGGER.debug(LOG_REAUTHENTICATED);
+    }
+
+    private boolean tryRefreshToken() {
+        String refreshToken = sessionContext.refreshToken();
+        if (refreshToken == null) {
+            return false;
+        }
+        try {
+            authClient.refreshToken(refreshToken);
+            authenticated = true;
+            LOGGER.debug(LOG_REFRESHED);
+            return true;
+        } catch (RuntimeException refreshFailure) {
+            LOGGER.debug(LOG_REFRESH_FAILED, refreshFailure.getClass().getSimpleName());
+            return false;
+        }
     }
 
     /**
@@ -437,29 +468,18 @@ public final class KsefClient implements AutoCloseable, HttpRuntime {
         return peppolClient;
     }
 
-    /**
-     * @apiNote internal — SDK infrastructure for the {@code HttpRuntime} contract
-     *          (ADR-013). Not part of the consumer-facing API.
-     */
+    /** Configured KSeF environment for this client. */
     public KsefEnvironment environment() { return environment; }
 
-    @Override
-    public String baseUrl() { return environment.baseUrl(); }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public HttpClient httpClient() { return httpClient; }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public ObjectMapper objectMapper() { return objectMapper; }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public RetryHandler retryHandler() { return retryHandler; }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public SessionContext sessionContext() { return sessionContext; }
-
-    /** SDK infrastructure — not part of the consumer-facing API. */
-    public Duration readTimeout() { return readTimeout; }
+    /**
+     * Internal {@link HttpRuntime} adapter — used by SDK domain client
+     * implementations to obtain transport plumbing without {@code KsefClient}
+     * itself implementing the runtime contract. {@code HttpRuntime} lives in
+     * a non-exported package, so this method is invisible to JPMS consumers.
+     *
+     * @apiNote internal SDK infrastructure
+     */
+    public HttpRuntime runtime() { return runtime; }
 
     @Override
     public void close() {

@@ -35,8 +35,8 @@ class PeppolClientTest {
     private static final String BEARER_TOKEN = TestHttpConstants.BEARER_PREFIX + TEST_TOKEN;
     private static final String CONTENT_TYPE_HEADER = TestHttpConstants.CONTENT_TYPE_HEADER;
     private static final String APPLICATION_JSON = TestHttpConstants.APPLICATION_JSON;
-    private static final String DEFAULT_QUERY_URL = "/api/v2/peppol/query?pageOffset=0&pageSize=10";
-    private static final String PAGED_QUERY_URL = "/api/v2/peppol/query?pageOffset=2&pageSize=5";
+    private static final String DEFAULT_QUERY_URL = "/v2/peppol/query?pageOffset=0&pageSize=10";
+    private static final String PAGED_QUERY_URL = "/v2/peppol/query?pageOffset=2&pageSize=5";
 
     private static final int CUSTOM_PAGE_OFFSET = 2;
     private static final int CUSTOM_PAGE_SIZE = 5;
@@ -167,11 +167,11 @@ class PeppolClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

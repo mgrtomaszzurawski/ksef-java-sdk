@@ -15,6 +15,9 @@ import java.util.List;
  */
 public record TokenList(String continuationToken, List<TokenListItem> tokens) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static TokenList from(QueryTokensResponseRaw raw) {
         List<TokenListItem> mapped = raw.getTokens().stream().map(TokenListItem::from).toList();
         return new TokenList(raw.getContinuationToken(), mapped);

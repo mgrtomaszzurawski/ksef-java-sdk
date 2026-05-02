@@ -57,6 +57,9 @@ public record InvoiceMetadata(
         byte[] hashOfCorrectedInvoice,
         List<InvoiceThirdSubject> thirdSubjects) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoiceMetadata from(InvoiceMetadataRaw raw) {
         List<InvoiceThirdSubject> subjects = raw.getThirdSubjects() != null
                 ? raw.getThirdSubjects().stream().map(InvoiceThirdSubject::from).toList()

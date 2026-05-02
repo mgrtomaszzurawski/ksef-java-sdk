@@ -5,4 +5,5 @@
 /**
  * Entry point: {@link io.github.mgrtomaszzurawski.ksef.sdk.KsefClient}.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk;

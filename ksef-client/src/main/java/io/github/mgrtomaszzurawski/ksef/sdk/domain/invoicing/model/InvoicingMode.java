@@ -14,6 +14,9 @@ public enum InvoicingMode {
     ONLINE,
     OFFLINE;
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoicingMode from(InvoicingModeRaw raw) {
         if (raw == null) {
             return null;

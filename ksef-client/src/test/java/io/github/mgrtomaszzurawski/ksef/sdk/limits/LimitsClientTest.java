@@ -44,7 +44,7 @@ class LimitsClientTest {
     @Test
     void getContextLimits_whenAuthenticated_returnsLimits(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/limits/context"))
+        stubFor(get(urlEqualTo("/v2/limits/context"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -65,7 +65,7 @@ class LimitsClientTest {
     @Test
     void getSubjectLimits_whenAuthenticated_returnsLimits(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/limits/subject"))
+        stubFor(get(urlEqualTo("/v2/limits/subject"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -79,7 +79,7 @@ class LimitsClientTest {
 
             // then
             assertNotNull(response);
-            verify(getRequestedFor(urlEqualTo("/api/v2/limits/subject"))
+            verify(getRequestedFor(urlEqualTo("/v2/limits/subject"))
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN)));
         }
     }
@@ -87,7 +87,7 @@ class LimitsClientTest {
     @Test
     void getContextLimits_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/limits/context"))
+        stubFor(get(urlEqualTo("/v2/limits/context"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
@@ -100,11 +100,11 @@ class LimitsClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

@@ -43,7 +43,7 @@ class InvoiceClientTest {
     private static final String TEST_EXPORT_REF = "20260404-EX-1234567890-ABCDEF1234-05";
     private static final int KSEF_STATUS_OK = 200;
     private static final byte[] TEST_INVOICE_XML = "<Faktura>test invoice</Faktura>".getBytes(StandardCharsets.UTF_8);
-    private static final String INVOICES_BASE = "/api/v2/invoices";
+    private static final String INVOICES_BASE = "/v2/invoices";
     private static final String PATH_EXPORTS = INVOICES_BASE + "/exports";
     private static final String EMPTY_JSON = "{}";
 
@@ -196,11 +196,11 @@ class InvoiceClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

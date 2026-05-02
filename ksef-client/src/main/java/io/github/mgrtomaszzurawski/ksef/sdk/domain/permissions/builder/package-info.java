@@ -5,4 +5,5 @@
 /**
  * Builders for granting and querying permissions (person, entity, EU, etc.).
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;

@@ -43,7 +43,7 @@ class RateLimitClientTest {
     @Test
     void getRateLimits_whenAuthenticated_returnsLimits(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo("/api/v2/rate-limits"))
+        stubFor(get(urlEqualTo("/v2/rate-limits"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -67,9 +67,9 @@ class RateLimitClientTest {
     void getRateLimits_whenUnauthorized_throwsAuthException(WireMockRuntimeInfo wmInfo) {
         // given — both the target endpoint and the reauth security endpoint return 401,
         // so after the SDK retries once on 401 the auth exception propagates.
-        stubFor(get(urlEqualTo("/api/v2/rate-limits"))
+        stubFor(get(urlEqualTo("/v2/rate-limits"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
-        stubFor(get(urlEqualTo("/api/v2/security/public-key-certificates"))
+        stubFor(get(urlEqualTo("/v2/security/public-key-certificates"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{}")));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
@@ -82,11 +82,11 @@ class RateLimitClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl()))
+        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

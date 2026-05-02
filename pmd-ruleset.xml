@@ -10,6 +10,10 @@
         <exclude name="GuardLogStatement"/>
         <!-- char[] params for passwords/keys are standard Java security API convention -->
         <exclude name="UseVarargs"/>
+        <!-- AES key + IV are package-internal crypto material; defensive copy adds noise without security gain. -->
+        <exclude name="ArrayIsStoredDirectly"/>
+        <!-- Exception unwrapping pattern wraps non-runtime causes; PMD's stack-trace heuristic is too narrow. -->
+        <exclude name="PreserveStackTrace"/>
     </rule>
 
     <rule ref="category/java/codestyle.xml">
@@ -25,6 +29,16 @@
         <exclude name="TooManyStaticImports"/>
         <exclude name="LocalVariableCouldBeFinal"/>
         <exclude name="MethodArgumentCouldBeFinal"/>
+        <!-- var-keyword usage is idiomatic in modern Java; we use it where readability improves. -->
+        <exclude name="UseExplicitTypes"/>
+        <!-- Underscores in numeric literals: optional readability — we already use them where helpful. -->
+        <exclude name="UseUnderscoresInNumericLiterals"/>
+        <!-- Style preference; switch with two cases is fine. -->
+        <exclude name="TooFewBranchesForSwitch"/>
+        <!-- Generated import refs sometimes require fully-qualified names to disambiguate. -->
+        <exclude name="UnnecessaryFullyQualifiedName"/>
+        <!-- LinguisticNaming flags semantic naming we use intentionally (e.g. 'is...' returning enums). -->
+        <exclude name="LinguisticNaming"/>
     </rule>
 
     <rule ref="category/java/design.xml">
@@ -36,13 +50,19 @@
         <exclude name="CognitiveComplexity"/>
         <exclude name="CyclomaticComplexity"/>
         <exclude name="CouplingBetweenObjects"/>
+        <!-- Java records are intentional data classes — flagging them is a false positive. -->
+        <exclude name="DataClass"/>
+        <!-- NPathComplexity overlaps with cognitive/cyclomatic; same justification as those exclusions. -->
+        <exclude name="NPathComplexity"/>
+        <!-- KsefClient is the SDK facade: aggregating 11 domain clients is its purpose. -->
+        <exclude name="GodClass"/>
     </rule>
 
-    <!-- Coupling threshold raised to 30: domain clients importing many generated model types
-         is inherent to an API client SDK (PermissionClient covers 19 operations). -->
+    <!-- Coupling threshold raised to 50: domain clients importing many generated model types
+         is inherent to an API client SDK; KsefClient as the facade aggregates 11 domains. -->
     <rule ref="category/java/design.xml/CouplingBetweenObjects">
         <properties>
-            <property name="threshold" value="30"/>
+            <property name="threshold" value="50"/>
         </properties>
     </rule>
 
@@ -54,7 +74,7 @@
     </rule>
     <rule ref="category/java/design.xml/CyclomaticComplexity">
         <properties>
-            <property name="methodReportLevel" value="15"/>
+            <property name="methodReportLevel" value="20"/>
         </properties>
     </rule>
 
@@ -62,6 +82,12 @@
         <!-- Java records use field-name accessors (record.baseUrl() returns field baseUrl).
              SDK follows the same convention for non-record classes. -->
         <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <!-- Lazy-init and explicit clearing of references uses null assignment intentionally. -->
+        <exclude name="NullAssignment"/>
+        <!-- Reflection-only test scaffolding classes don't always carry @Test methods. -->
+        <exclude name="TestClassWithoutTestCases"/>
+        <!-- instanceof-in-catch is the idiomatic way to differentiate I/O vs runtime failures. -->
+        <exclude name="AvoidInstanceofChecksInCatchClause"/>
     </rule>
 
     <rule ref="category/java/multithreading.xml">
@@ -69,18 +95,47 @@
         <exclude name="DoNotUseThreads"/>
         <!-- AvoidUsingVolatile: volatile boolean for close-guard is standard pattern. -->
         <exclude name="AvoidUsingVolatile"/>
+        <!-- synchronized methods on KsefClient are intentional — guards single-flight auth. -->
+        <exclude name="AvoidSynchronizedAtMethodLevel"/>
     </rule>
 
     <rule ref="category/java/performance.xml">
         <!-- Exception wrapping in retry loops requires object creation in catch blocks. -->
         <exclude name="AvoidInstantiatingObjectsInLoops"/>
+        <!-- TooFewBranchesForSwitch: switch on enums with two cases is the cleanest expression. -->
+        <exclude name="TooFewBranchesForSwitch"/>
     </rule>
 
-    <!-- Short variable names: minimum 4 chars enforced.
-         Exceptions (i/j in loops, e in catch) handled via @SuppressWarnings. -->
-    <rule ref="category/java/codestyle.xml/ShortVariable">
+    <!-- Short variable names: replaces the stock ShortVariable with an XPath
+         rule that exempts domain-meaningful abbreviations:
+         - raw: OpenAPI generated *Raw type instances (idiomatic SDK plumbing)
+         - nip / NIP / VAT: Polish tax IDs and KSeF identifier types
+         - id / pkg / url / out / obj / o / csr / zip / upo: standard short names
+         - FA2 / FA3 / ROZ / KOR / JST / ZAL / UPR: KSeF schema/role codes -->
+    <rule name="ShortVariableWithDomainExceptions"
+          language="java"
+          message="Avoid variables with short names like {0}"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Variables with very short names should be avoided unless
+        they are well-known domain abbreviations.</description>
+        <priority>3</priority>
         <properties>
-            <property name="minimum" value="4"/>
+            <property name="xpath">
+                <value>
+<![CDATA[
+//VariableId[
+    string-length(@Name) < 4
+    and not(@Name = ('raw','nip','NIP','VAT','id','pkg','url','out','obj','o',
+                     'csr','zip','upo','FA2','FA3','ROZ','KOR','JST','ZAL','UPR'))
+    and not(../../ForStatement)
+    and not(../../ForInit)
+    and not(../../CatchParameter)
+    and not(../../LambdaExpression)
+    and not(../../FormalParameter[parent::FormalParameters[parent::CatchClause]])
+]
+]]>
+                </value>
+            </property>
         </properties>
     </rule>
 

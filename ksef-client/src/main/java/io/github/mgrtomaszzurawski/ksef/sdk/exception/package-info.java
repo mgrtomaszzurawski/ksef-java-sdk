@@ -5,4 +5,5 @@
 /**
  * Exception hierarchy mapping HTTP status codes and KSeF error envelopes.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;

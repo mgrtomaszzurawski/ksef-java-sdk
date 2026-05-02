@@ -5,4 +5,5 @@
 /**
  * QR code generation for issued invoices.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;

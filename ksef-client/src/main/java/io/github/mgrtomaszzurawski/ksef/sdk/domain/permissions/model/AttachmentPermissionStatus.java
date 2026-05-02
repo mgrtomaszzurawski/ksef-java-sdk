@@ -15,6 +15,9 @@ import java.time.OffsetDateTime;
  */
 public record AttachmentPermissionStatus(Boolean attachmentAllowed, OffsetDateTime revokedDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static AttachmentPermissionStatus from(CheckAttachmentPermissionStatusResponseRaw raw) {
         return new AttachmentPermissionStatus(
                 raw.getIsAttachmentAllowed(),

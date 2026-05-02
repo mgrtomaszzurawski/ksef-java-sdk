@@ -24,6 +24,9 @@ public record PublicKeyCertificate(
         OffsetDateTime validTo,
         List<PublicKeyCertificateUsage> usage) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static PublicKeyCertificate from(PublicKeyCertificateRaw raw) {
         List<PublicKeyCertificateUsage> mappedUsage = raw.getUsage().stream().map(PublicKeyCertificateUsage::from).toList();
         return new PublicKeyCertificate(

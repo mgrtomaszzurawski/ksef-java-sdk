@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.mgrtomaszzurawski</groupId>
         <artifactId>ksef-java-sdk</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
     </parent>
 
     <artifactId>ksef-client</artifactId>
@@ -28,6 +28,7 @@
         <jakarta.xml.bind.version>4.0.2</jakarta.xml.bind.version>
         <jaxb.runtime.version>4.0.5</jaxb.runtime.version>
         <slf4j.version>2.0.16</slf4j.version>
+        <jspecify.version>1.0.0</jspecify.version>
         <bouncycastle.version>1.80</bouncycastle.version>
         <dss.version>6.3</dss.version>
         <zxing.version>3.5.3</zxing.version>
@@ -149,6 +150,13 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- Null-safety annotations (JSpecify, ADR-017) -->
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>${jspecify.version}</version>
         </dependency>
 
         <!-- Test -->
@@ -312,8 +320,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler.plugin.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
@@ -334,6 +341,13 @@
                     <onlyAnalyze>io.github.mgrtomaszzurawski.ksef.sdk.-</onlyAnalyze>
                     <excludeFilterFile>${project.basedir}/../spotbugs-exclude.xml</excludeFilterFile>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>spotbugs-verify</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- PMD (exclude generated code) -->
@@ -353,6 +367,13 @@
                         <excludeRoot>${project.build.directory}/generated-sources/xjc-auth</excludeRoot>
                     </excludeRoots>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>pmd-verify</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Checkstyle (SDK code + tests only) -->
@@ -370,6 +391,13 @@
                     </testSourceDirectories>
                     <excludes>module-info.java</excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle-verify</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Source jar -->
@@ -462,6 +490,38 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                    <!--
+                        Coverage gate for the SDK overlay. Generated *Raw and JAXB
+                        XML model classes are excluded — only hand-written sdk.*
+                        code is gated. Threshold INSTRUCTION 0.65 reflects current
+                        baseline; the 0.2.0 plan raises it to 1.00 method coverage
+                        after the missing-builder-test backlog is closed.
+                    -->
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>io/github/mgrtomaszzurawski/ksef/client/**</exclude>
+                                <exclude>io/github/mgrtomaszzurawski/ksef/xml/**</exclude>
+                            </excludes>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.65</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

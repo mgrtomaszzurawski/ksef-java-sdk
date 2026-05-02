@@ -19,6 +19,9 @@ public record EntityAuthorizationGrant(
         String description,
         OffsetDateTime startDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static EntityAuthorizationGrant from(EntityAuthorizationGrantRaw raw) {
         var authorRaw = raw.getAuthorIdentifier();
         PermissionIdentifier authorId = authorRaw != null

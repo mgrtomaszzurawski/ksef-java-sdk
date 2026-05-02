@@ -14,6 +14,9 @@ public enum PublicKeyCertificateUsage {
     KSEF_TOKEN_ENCRYPTION,
     SYMMETRIC_KEY_ENCRYPTION;
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static PublicKeyCertificateUsage from(PublicKeyCertificateUsageRaw raw) {
         if (raw == null) {
             return null;

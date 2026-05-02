@@ -18,6 +18,9 @@ import java.util.Map;
  */
 public record InvoiceStatusInfo(int code, String description, List<String> details, Map<String, String> extensions) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static InvoiceStatusInfo from(InvoiceStatusInfoRaw raw) {
         if (raw == null) {
             return null;

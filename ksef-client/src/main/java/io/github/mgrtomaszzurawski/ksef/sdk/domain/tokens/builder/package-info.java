@@ -5,4 +5,5 @@
 /**
  * Builders for token generation.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder;

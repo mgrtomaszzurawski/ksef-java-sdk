@@ -143,6 +143,8 @@ public final class PersonPermissionGrantBuilder {
      *
      * @return the request ready to pass to {@code PermissionClient.grantPerson()}
      * @throws IllegalStateException if required fields are missing or invalid
+     *
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
     public PersonPermissionsGrantRequestRaw build() {
         Objects.requireNonNull(description, ERR_DESCRIPTION_REQUIRED);

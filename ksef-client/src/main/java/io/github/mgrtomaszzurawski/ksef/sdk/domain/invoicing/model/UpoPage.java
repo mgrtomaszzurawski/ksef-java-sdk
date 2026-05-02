@@ -17,6 +17,9 @@ import java.time.OffsetDateTime;
  */
 public record UpoPage(String referenceNumber, URI downloadUrl, OffsetDateTime downloadUrlExpirationDate) {
 
+    /**
+     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
+     */
     public static UpoPage from(UpoPageResponseRaw raw) {
         return new UpoPage(
                 raw.getReferenceNumber(),

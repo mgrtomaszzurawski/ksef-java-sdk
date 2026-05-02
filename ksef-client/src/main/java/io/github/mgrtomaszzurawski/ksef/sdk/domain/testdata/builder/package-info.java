@@ -5,4 +5,5 @@
 /**
  * Builders for test-data setup.
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
