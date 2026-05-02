@@ -21,7 +21,6 @@ import io.github.mgrtomaszzurawski.ksef.sample.util.CertificateCsrUtil;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
@@ -36,7 +35,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
 
 /**
  * Standalone probe to verify two RCAs:
@@ -66,7 +64,8 @@ public final class CertProbe {
     private static final int POLL_INITIAL_DELAY_MS = 1000;
     private static final int POLL_MAX_DELAY_MS = 10000;
     private static final int AUTH_POLL_TIMEOUT_MS = 60000;
-    private static final int ENROLL_POLL_TIMEOUT_MS = 300000; // 5 minutes
+    /** 5 minutes — enrollment can take a while in the test environment. */
+    private static final int ENROLL_POLL_TIMEOUT_MS = 300000;
     private static final int POLL_BACKOFF_MULTIPLIER = 2;
     private static final int EXIT_FAILURE = 1;
     private static final String SEPARATOR = "================================================================";
@@ -87,26 +86,22 @@ public final class CertProbe {
 
         try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(properties.environment()))
                 .credentials(credentials).build()) {
-            // CertProbe uses cert-based XAdES auth (handled internally by authenticate())
             client.authenticate();
-            run(client, properties.nipIdentifier());
+            run(client);
         } catch (Exception exception) {
             LOGGER.error("Probe failed", exception);
             System.exit(EXIT_FAILURE);
         }
     }
 
-    private static void run(KsefClient client, String nipIdentifier) throws Exception {
-        // STEP 1: Already authenticated via client.authenticate() in main
+    private static void run(KsefClient client) throws Exception {
         section("STEP 1: XAdES authentication (handled by SDK)");
         LOGGER.info("XAdES session active (authenticated via KsefClient.authenticate())");
 
-        // STEP 2: Limits BEFORE
         section("STEP 2: certificates/limits BEFORE");
         CertificateLimits limitsBefore = client.certificates().getLimits();
         printLimits("BEFORE", limitsBefore);
 
-        // STEP 3: Query active certs
         section("STEP 3: query active certificates");
         CertificateQueryResult queryResult = client.certificates().query(CertificateQueryBuilder.create());
         List<CertificateListItem> certs = queryResult.certificates();
@@ -123,7 +118,6 @@ public final class CertProbe {
         if (active.isEmpty()) {
             LOGGER.warn("No active certs to revoke. Skipping revoke step.");
         } else {
-            // STEP 4: Revoke youngest
             section("STEP 4: revoke youngest active cert");
             CertificateListItem youngest = active.stream()
                     .max(Comparator.comparing(CertProbe::certSortKey,
@@ -138,13 +132,11 @@ public final class CertProbe {
                 LOGGER.error("REVOKE FAILED", exception);
             }
 
-            // STEP 5: Limits AFTER revoke
             section("STEP 5: certificates/limits AFTER revoke");
             CertificateLimits limitsAfterRevoke = client.certificates().getLimits();
             printLimits("AFTER_REVOKE", limitsAfterRevoke);
         }
 
-        // STEP 6: Enroll new
         section("STEP 6: enroll new cert");
         CertificateEnrollmentData enrollData = client.certificates().getEnrollmentData();
         LOGGER.info("Enrollment data: cn={}", enrollData.commonName());
@@ -163,15 +155,12 @@ public final class CertProbe {
             return;
         }
 
-        // STEP 7: Poll for serial
         section("STEP 7: poll enrollment status for serial number");
         String enrolledSerial = pollEnrollmentSerial(client, enrollResult.referenceNumber());
 
-        // STEP 8: Limits AFTER enroll
         section("STEP 8: certificates/limits AFTER enroll");
         printLimits("AFTER_ENROLL", client.certificates().getLimits());
 
-        // STEP 9: Cleanup new cert
         if (enrolledSerial != null) {
             section("STEP 9: cleanup — revoke newly enrolled cert");
             try {
@@ -214,20 +203,6 @@ public final class CertProbe {
         }
         LOGGER.warn("TIMEOUT after {}ms — serial never appeared", ENROLL_POLL_TIMEOUT_MS);
         return null;
-    }
-
-    private static void pollAuth(KsefClient client, String authRef) throws InterruptedException {
-        int delay = POLL_INITIAL_DELAY_MS;
-        long deadline = System.currentTimeMillis() + AUTH_POLL_TIMEOUT_MS;
-        while (System.currentTimeMillis() < deadline) {
-            AuthenticationStatus authStatus = new AuthClient(client).getStatus(authRef);
-            if (authStatus.status() != null && authStatus.status().code() == AUTH_STATUS_OK) {
-                return;
-            }
-            Thread.sleep(delay);
-            delay = Math.min(delay * POLL_BACKOFF_MULTIPLIER, POLL_MAX_DELAY_MS);
-        }
-        throw new IllegalStateException("Auth timeout for " + authRef);
     }
 
     private static java.time.OffsetDateTime certSortKey(CertificateListItem cert) {
