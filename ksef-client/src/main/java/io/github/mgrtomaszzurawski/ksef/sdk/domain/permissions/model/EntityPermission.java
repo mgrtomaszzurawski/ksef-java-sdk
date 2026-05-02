@@ -20,11 +20,7 @@ public record EntityPermission(
 
     public static EntityPermission from(EntityPermissionItemRaw raw) {
         var ctxRaw = raw.getContextIdentifier();
-        PermissionIdentifier ctxId = null;
-        if (ctxRaw != null) {
-            String type = ctxRaw.getType() != null ? ctxRaw.getType().getValue() : null;
-            ctxId = new PermissionIdentifier(type, ctxRaw.getValue());
-        }
+        PermissionIdentifier ctxId = new PermissionIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue());
         String scope = raw.getPermissionScope().getValue();
         return new EntityPermission(raw.getId(), ctxId, scope, raw.getDescription(),
                 raw.getStartDate(), raw.getCanDelegate());

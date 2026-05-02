@@ -37,23 +37,17 @@ public record PersonalPermission(
 
     public static PersonalPermission from(PersonalPermissionRaw raw) {
         var ctxRaw = raw.getContextIdentifier();
-        PermissionIdentifier ctxId = null;
-        if (ctxRaw != null) {
-            String type = ctxRaw.getType() != null ? ctxRaw.getType().getValue() : null;
-            ctxId = new PermissionIdentifier(type, ctxRaw.getValue());
-        }
+        PermissionIdentifier ctxId = ctxRaw != null
+                ? new PermissionIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue())
+                : null;
         var authzRaw = raw.getAuthorizedIdentifier();
-        PermissionIdentifier authzId = null;
-        if (authzRaw != null) {
-            String type = authzRaw.getType() != null ? authzRaw.getType().getValue() : null;
-            authzId = new PermissionIdentifier(type, authzRaw.getValue());
-        }
+        PermissionIdentifier authzId = authzRaw != null
+                ? new PermissionIdentifier(authzRaw.getType().getValue(), authzRaw.getValue())
+                : null;
         var targetRaw = raw.getTargetIdentifier();
-        PermissionIdentifier targetId = null;
-        if (targetRaw != null) {
-            String type = targetRaw.getType() != null ? targetRaw.getType().getValue() : null;
-            targetId = new PermissionIdentifier(type, targetRaw.getValue());
-        }
+        PermissionIdentifier targetId = targetRaw != null
+                ? new PermissionIdentifier(targetRaw.getType().getValue(), targetRaw.getValue())
+                : null;
         PermissionSubjectDetails personDetails = raw.getSubjectPersonDetails() != null
                 ? new PermissionSubjectDetails(
                         raw.getSubjectPersonDetails().getFirstName(),

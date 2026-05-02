@@ -22,11 +22,7 @@ public record EuEntityPermission(
 
     public static EuEntityPermission from(EuEntityPermissionRaw raw) {
         var authorRaw = raw.getAuthorIdentifier();
-        PermissionIdentifier authorId = null;
-        if (authorRaw != null) {
-            String type = authorRaw.getType() != null ? authorRaw.getType().getValue() : null;
-            authorId = new PermissionIdentifier(type, authorRaw.getValue());
-        }
+        PermissionIdentifier authorId = new PermissionIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
         String scope = raw.getPermissionScope().getValue();
         return new EuEntityPermission(raw.getId(), authorId, raw.getVatUeIdentifier(),
                 raw.getEuEntityName(), raw.getAuthorizedFingerprintIdentifier(),

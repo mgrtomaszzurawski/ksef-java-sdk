@@ -18,11 +18,7 @@ public record SubordinateEntityRole(
 
     public static SubordinateEntityRole from(SubordinateEntityRoleRaw raw) {
         var subRaw = raw.getSubordinateEntityIdentifier();
-        PermissionIdentifier subId = null;
-        if (subRaw != null) {
-            String type = subRaw.getType() != null ? subRaw.getType().getValue() : null;
-            subId = new PermissionIdentifier(type, subRaw.getValue());
-        }
+        PermissionIdentifier subId = new PermissionIdentifier(subRaw.getType().getValue(), subRaw.getValue());
         String role = raw.getRole().getValue();
         return new SubordinateEntityRole(subId, role, raw.getDescription(), raw.getStartDate());
     }

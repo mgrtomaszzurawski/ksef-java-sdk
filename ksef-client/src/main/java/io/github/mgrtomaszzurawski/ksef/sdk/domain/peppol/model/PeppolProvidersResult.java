@@ -17,7 +17,6 @@ public record PeppolProvidersResult(List<PeppolProvider> providers, boolean hasM
 
     public static PeppolProvidersResult from(QueryPeppolProvidersResponseRaw raw) {
         List<PeppolProvider> mapped = raw.getPeppolProviders().stream().map(PeppolProvider::from).toList();
-        boolean more = raw.getHasMore() != null && raw.getHasMore();
-        return new PeppolProvidersResult(mapped, more);
+        return new PeppolProvidersResult(mapped, raw.getHasMore());
     }
 }
