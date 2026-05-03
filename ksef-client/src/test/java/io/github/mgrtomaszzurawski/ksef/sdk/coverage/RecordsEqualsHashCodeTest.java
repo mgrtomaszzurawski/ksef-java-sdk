@@ -52,6 +52,7 @@ class RecordsEqualsHashCodeTest {
     private static final String SESSION_REF = "ref-1";
     private static final String FAILURE_DESCRIPTION = "Schema validation rejected";
     private static final String FAILURE_DETAIL = "field 'X' is invalid";
+    private static final String EXPECTED_OFFLINE_MODE_FRAGMENT = "offlineMode=false";
 
     @Test
     void certificateEnrollRequest_equalsAndHashCode_treatStructurallyEqualBytesAsEqual() {
@@ -106,7 +107,7 @@ class RecordsEqualsHashCodeTest {
         String rendered = new SendInvoiceRequest(FAKE_BYTES_ONE, FAKE_INVOICE_SIZE,
                 FAKE_BYTES_TWO, FAKE_ENCRYPTED_SIZE, FAKE_BYTES_THREE, false).toString();
         assertTrue(rendered.contains(String.valueOf(FAKE_INVOICE_SIZE)));
-        assertTrue(rendered.contains("offlineMode=false"));
+        assertTrue(rendered.contains(EXPECTED_OFFLINE_MODE_FRAGMENT));
     }
 
     @Test
@@ -121,7 +122,16 @@ class RecordsEqualsHashCodeTest {
         assertEquals(left.hashCode(), right.hashCode());
         assertNotEquals(left, null);
         assertNotEquals(left, "not-a-record");
-        assertNotNull(left.toString());
+    }
+
+    @Test
+    void onlineSessionOpenRequest_toString_includesFormCodeValue() {
+        FormCodeInfo formCode = new FormCodeInfo(SYSTEM_CODE, SCHEMA_VERSION, FORM_CODE_VALUE);
+        OnlineSessionOpenRequest request = new OnlineSessionOpenRequest(formCode,
+                FAKE_BYTES_ONE, FAKE_BYTES_TWO, FAKE_BYTES_THREE);
+        String rendered = request.toString();
+        assertTrue(rendered.contains(SYSTEM_CODE));
+        assertTrue(rendered.contains(SCHEMA_VERSION));
     }
 
     @Test

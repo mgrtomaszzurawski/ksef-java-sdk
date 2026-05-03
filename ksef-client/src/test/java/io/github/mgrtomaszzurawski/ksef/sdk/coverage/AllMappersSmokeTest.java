@@ -53,6 +53,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIde
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenPermissionType;
+import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQuerySubjectTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.mapping.CertificatesMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingRequestMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.mapping.PermissionEnumConverters;
@@ -117,24 +118,36 @@ class AllMappersSmokeTest {
         var rawRequest = TokensMappers.toGenerateTokenRequestRaw(sdkRequest);
         assertEquals(DESCRIPTION, rawRequest.getDescription());
         assertEquals(TOKEN_PERMISSION_COUNT, rawRequest.getPermissions().size());
+    }
+
+    @Test
+    void tokensMappers_toTokenPermissionTypeRaw_eachSdkEnumMapsToSameNameRaw() {
         for (TokenPermissionType type : TokenPermissionType.values()) {
-            assertNotNull(TokensMappers.toTokenPermissionTypeRaw(type));
+            assertEquals(type.name(), TokensMappers.toTokenPermissionTypeRaw(type).name());
         }
     }
 
     @Test
-    void certificatesMappers_toEnrollAndQueryRequestRaw_preserveFields() {
+    void certificatesMappers_toEnrollCertificateRequestRaw_preservesCertificateName() {
         var enrollSdk = CertificateEnrollBuilder
                 .create(CERTIFICATE_NAME, KsefCertificateType.AUTHENTICATION, FAKE_CSR)
                 .validFrom(OffsetDateTime.now()).build();
         var enrollRaw = CertificatesMappers.toEnrollCertificateRequestRaw(enrollSdk);
         assertEquals(CERTIFICATE_NAME, enrollRaw.getCertificateName());
+    }
+
+    @Test
+    void certificatesMappers_toQueryCertificatesRequestRaw_preservesSerialNumber() {
         var querySdk = CertificateQueryBuilder.create()
                 .serialNumber(QUERY_SERIAL).name(QUERY_NAME)
                 .type(KsefCertificateType.OFFLINE).status(CertificateStatus.ACTIVE)
                 .expiresAfter(OffsetDateTime.now()).build();
         var queryRaw = CertificatesMappers.toQueryCertificatesRequestRaw(querySdk);
         assertEquals(QUERY_SERIAL, queryRaw.getCertificateSerialNumber());
+    }
+
+    @Test
+    void certificatesMappers_enumConvertersExposeRawWithSameName() {
         for (KsefCertificateType type : KsefCertificateType.values()) {
             assertEquals(type.name(), CertificatesMappers.toKsefCertificateTypeRaw(type).name());
         }
@@ -147,7 +160,7 @@ class AllMappersSmokeTest {
     }
 
     @Test
-    void invoicingRequestMappers_toInvoiceQueryFiltersRaw_handlesAllSubjectTypes() {
+    void invoicingRequestMappers_toInvoiceQueryFiltersRaw_whenSeller_preservesSellerNip() {
         var sellerQuery = InvoiceQueryBuilder.seller()
                 .invoicingDateFrom(OffsetDateTime.now())
                 .dateTo(OffsetDateTime.now().plusDays(1))
@@ -155,12 +168,32 @@ class AllMappersSmokeTest {
                 .onlineOnly().selfInvoicing(true).hasAttachment(true).build();
         var sellerRaw = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(sellerQuery);
         assertEquals(NIP, sellerRaw.getSellerNip());
-        assertNotNull(InvoicingRequestMappers.toInvoiceQueryFiltersRaw(
-                InvoiceQueryBuilder.buyer().permanentStorageDateFrom(OffsetDateTime.now()).offlineOnly().build()));
-        assertNotNull(InvoicingRequestMappers.toInvoiceQueryFiltersRaw(
-                InvoiceQueryBuilder.thirdParty().issueDateFrom(OffsetDateTime.now()).build()));
-        assertNotNull(InvoicingRequestMappers.toInvoiceQueryFiltersRaw(
-                InvoiceQueryBuilder.authorized().invoicingDateFrom(OffsetDateTime.now()).build()));
+        assertEquals(InvoiceQuerySubjectTypeRaw.SUBJECT1, sellerRaw.getSubjectType());
+    }
+
+    @Test
+    void invoicingRequestMappers_toInvoiceQueryFiltersRaw_whenBuyer_setsSubjectType2() {
+        var buyerRaw = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(
+                InvoiceQueryBuilder.buyer().permanentStorageDateFrom(OffsetDateTime.now()).offlineOnly().build());
+        assertEquals(InvoiceQuerySubjectTypeRaw.SUBJECT2, buyerRaw.getSubjectType());
+    }
+
+    @Test
+    void invoicingRequestMappers_toInvoiceQueryFiltersRaw_whenThirdParty_setsSubjectType3() {
+        var thirdPartyRaw = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(
+                InvoiceQueryBuilder.thirdParty().issueDateFrom(OffsetDateTime.now()).build());
+        assertEquals(InvoiceQuerySubjectTypeRaw.SUBJECT3, thirdPartyRaw.getSubjectType());
+    }
+
+    @Test
+    void invoicingRequestMappers_toInvoiceQueryFiltersRaw_whenAuthorized_setsSubjectAuthorized() {
+        var authorizedRaw = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(
+                InvoiceQueryBuilder.authorized().invoicingDateFrom(OffsetDateTime.now()).build());
+        assertEquals(InvoiceQuerySubjectTypeRaw.SUBJECT_AUTHORIZED, authorizedRaw.getSubjectType());
+    }
+
+    @Test
+    void invoicingRequestMappers_toInvoicingModeRaw_eachSdkEnumMapsToSameNameRaw() {
         assertEquals(InvoicingMode.ONLINE.name(),
                 InvoicingRequestMappers.toInvoicingModeRaw(InvoicingMode.ONLINE).name());
         assertEquals(InvoicingMode.OFFLINE.name(),
@@ -350,29 +383,61 @@ class AllMappersSmokeTest {
     }
 
     @Test
-    void permissionsQueryRequestMappers_toQueryRequestRawForEachBuilder_succeeds() {
+    void permissionsQueryRequestMappers_toEntityAuthorizationGranted_preservesAuthorizingIdentifier() {
         var authQuery = PermissionsQueryRequestMappers.toEntityAuthorizationPermissionsQueryRequestRaw(
                 EntityAuthorizationPermissionsQueryBuilder.granted()
                         .authorizingByNip(NIP).authorizedByNip(OTHER_NIP).selfInvoicing().build());
         assertEquals(NIP, authQuery.getAuthorizingIdentifier().getValue());
-        assertNotNull(PermissionsQueryRequestMappers.toEntityAuthorizationPermissionsQueryRequestRaw(
-                EntityAuthorizationPermissionsQueryBuilder.received().authorizedByPeppolId(PEPPOL_ID_FIXTURE).build()));
+    }
+
+    @Test
+    void permissionsQueryRequestMappers_toEntityAuthorizationReceived_preservesAuthorizedPeppolId() {
+        var authQuery = PermissionsQueryRequestMappers.toEntityAuthorizationPermissionsQueryRequestRaw(
+                EntityAuthorizationPermissionsQueryBuilder.received().authorizedByPeppolId(PEPPOL_ID_FIXTURE).build());
+        assertEquals(PEPPOL_ID_FIXTURE, authQuery.getAuthorizedIdentifier().getValue());
+    }
+
+    @Test
+    void permissionsQueryRequestMappers_toPersonPermissionsInCurrentContext_preservesAuthorIdentifier() {
         var personQuery = PermissionsQueryRequestMappers.toPersonPermissionsQueryRequestRaw(
                 PersonPermissionsQueryBuilder.permissionsInCurrentContext()
                         .authorByNip(NIP).authorizedByPesel(PESEL).contextNip(NIP).targetNip(OTHER_NIP)
                         .invoiceRead().activeOnly().build());
         assertEquals(NIP, personQuery.getAuthorIdentifier().getValue());
-        assertNotNull(PermissionsQueryRequestMappers.toPersonPermissionsQueryRequestRaw(
-                PersonPermissionsQueryBuilder.permissionsGrantedInCurrentContext().authorSystem().build()));
+    }
+
+    @Test
+    void permissionsQueryRequestMappers_toPersonPermissionsGrantedInCurrentContext_preservesAuthorSystem() {
+        var personQuery = PermissionsQueryRequestMappers.toPersonPermissionsQueryRequestRaw(
+                PersonPermissionsQueryBuilder.permissionsGrantedInCurrentContext().authorSystem().build());
+        assertEquals(PersonAuthorIdentifierType.SYSTEM.name(), personQuery.getAuthorIdentifier().getType().name());
+    }
+
+    @Test
+    void permissionsQueryRequestMappers_toPersonalPermissionsForContextNip_preservesContextIdentifier() {
         var personalQuery = PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(
                 PersonalPermissionsQueryBuilder.create()
                         .contextNip(NIP).targetNip(OTHER_NIP).invoiceRead().vatUeManage().activeOnly().build());
         assertEquals(NIP, personalQuery.getContextIdentifier().getValue());
-        assertNotNull(PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(
+    }
+
+    @Test
+    void permissionsQueryRequestMappers_toPersonalPermissionsForContextInternalId_preservesContextIdentifier() {
+        var personalQuery = PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(
                 PersonalPermissionsQueryBuilder.create().contextInternalId(INTERNAL_ID)
-                        .targetAllPartners().inactiveOnly().build()));
-        assertNotNull(PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(
-                PersonalPermissionsQueryBuilder.create().targetInternalId(INTERNAL_ID).build()));
+                        .targetAllPartners().inactiveOnly().build());
+        assertEquals(INTERNAL_ID, personalQuery.getContextIdentifier().getValue());
+    }
+
+    @Test
+    void permissionsQueryRequestMappers_toPersonalPermissionsForTargetInternalId_preservesTargetIdentifier() {
+        var personalQuery = PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(
+                PersonalPermissionsQueryBuilder.create().targetInternalId(INTERNAL_ID).build());
+        assertEquals(INTERNAL_ID, personalQuery.getTargetIdentifier().getValue());
+    }
+
+    @Test
+    void permissionsQueryRequestMappers_toEuEntityPermissionsQueryRequestRaw_preservesVatUeIdentifier() {
         var euQuery = PermissionsQueryRequestMappers.toEuEntityPermissionsQueryRequestRaw(
                 EuEntityPermissionsQueryBuilder.create()
                         .vatUeIdentifier(NIP_VAT_UE).authorizedFingerprintIdentifier(FINGERPRINT)
