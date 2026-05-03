@@ -19,14 +19,12 @@ public final class PeppolMappers {
     private PeppolMappers() { }
 
     public static PeppolProvider toPeppolProvider(PeppolProviderRaw raw) {
-            return new PeppolProvider(raw.getId(), raw.getName(), raw.getDateCreated());
-
+        return new PeppolProvider(raw.getId(), raw.getName(), raw.getDateCreated());
     }
 
     public static PeppolProvidersResult toPeppolProvidersResult(QueryPeppolProvidersResponseRaw raw) {
-            List<PeppolProvider> mapped = raw.getPeppolProviders().stream().map(PeppolMappers::toPeppolProvider).toList();
-            return new PeppolProvidersResult(mapped, raw.getHasMore());
-
+        List<PeppolProvider> mapped = raw.getPeppolProviders().stream().map(PeppolMappers::toPeppolProvider).toList();
+        return new PeppolProvidersResult(mapped, raw.getHasMore());
     }
 
 }

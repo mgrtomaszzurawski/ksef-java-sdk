@@ -25,44 +25,40 @@ public final class LimitsMappers {
     private LimitsMappers() { }
 
     public static ApiRateLimits toApiRateLimits(EffectiveApiRateLimitsRaw raw) {
-            return new ApiRateLimits(
-                    LimitsMappers.toRateLimitValues(raw.getOnlineSession()),
-                    LimitsMappers.toRateLimitValues(raw.getBatchSession()),
-                    LimitsMappers.toRateLimitValues(raw.getInvoiceSend()),
-                    LimitsMappers.toRateLimitValues(raw.getInvoiceStatus()),
-                    LimitsMappers.toRateLimitValues(raw.getSessionList()),
-                    LimitsMappers.toRateLimitValues(raw.getSessionInvoiceList()),
-                    LimitsMappers.toRateLimitValues(raw.getSessionMisc()),
-                    LimitsMappers.toRateLimitValues(raw.getInvoiceMetadata()),
-                    LimitsMappers.toRateLimitValues(raw.getInvoiceExport()),
-                    LimitsMappers.toRateLimitValues(raw.getInvoiceExportStatus()),
-                    LimitsMappers.toRateLimitValues(raw.getInvoiceDownload()),
-                    LimitsMappers.toRateLimitValues(raw.getOther()));
-
+        return new ApiRateLimits(
+                LimitsMappers.toRateLimitValues(raw.getOnlineSession()),
+                LimitsMappers.toRateLimitValues(raw.getBatchSession()),
+                LimitsMappers.toRateLimitValues(raw.getInvoiceSend()),
+                LimitsMappers.toRateLimitValues(raw.getInvoiceStatus()),
+                LimitsMappers.toRateLimitValues(raw.getSessionList()),
+                LimitsMappers.toRateLimitValues(raw.getSessionInvoiceList()),
+                LimitsMappers.toRateLimitValues(raw.getSessionMisc()),
+                LimitsMappers.toRateLimitValues(raw.getInvoiceMetadata()),
+                LimitsMappers.toRateLimitValues(raw.getInvoiceExport()),
+                LimitsMappers.toRateLimitValues(raw.getInvoiceExportStatus()),
+                LimitsMappers.toRateLimitValues(raw.getInvoiceDownload()),
+                LimitsMappers.toRateLimitValues(raw.getOther()));
     }
 
     public static ContextLimits toContextLimits(EffectiveContextLimitsRaw raw) {
-            return new ContextLimits(
-                    InvoicingMappers.toOnlineSessionLimits(raw.getOnlineSession()),
-                    InvoicingMappers.toBatchSessionLimits(raw.getBatchSession()));
-
+        return new ContextLimits(
+                InvoicingMappers.toOnlineSessionLimits(raw.getOnlineSession()),
+                InvoicingMappers.toBatchSessionLimits(raw.getBatchSession()));
     }
 
     public static RateLimitValues toRateLimitValues(EffectiveApiRateLimitValuesRaw raw) {
-            if (raw == null) {
-                return null;
-            }
-            return new RateLimitValues(raw.getPerSecond(), raw.getPerMinute(), raw.getPerHour());
-
+        if (raw == null) {
+            return null;
+        }
+        return new RateLimitValues(raw.getPerSecond(), raw.getPerMinute(), raw.getPerHour());
     }
 
     public static SubjectLimits toSubjectLimits(EffectiveSubjectLimitsRaw raw) {
-            EnrollmentEffectiveSubjectLimitsRaw enrollment = raw.getEnrollment();
-            CertificateEffectiveSubjectLimitsRaw certificate = raw.getCertificate();
-            return new SubjectLimits(
-                    enrollment != null ? enrollment.getMaxEnrollments() : null,
-                    certificate != null ? certificate.getMaxCertificates() : null);
-
+        EnrollmentEffectiveSubjectLimitsRaw enrollment = raw.getEnrollment();
+        CertificateEffectiveSubjectLimitsRaw certificate = raw.getCertificate();
+        return new SubjectLimits(
+                enrollment != null ? enrollment.getMaxEnrollments() : null,
+                certificate != null ? certificate.getMaxCertificates() : null);
     }
 
 }

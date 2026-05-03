@@ -22,6 +22,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPer
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionGrantRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityAdminPermissionGrantRequest;
@@ -78,6 +79,7 @@ class AllBuildersSmokeTest {
     private static final String CERTIFICATE_SERIAL = "00112233";
     private static final String SUBUNIT_DESCRIPTION = "subunit-desc";
     private static final String EXTRA_PERMISSION_DESCRIPTION = "extra-perm";
+    private static final String PEPPOL_ID_FIXTURE = "PL:0007:1234567890";
     private static final byte[] FAKE_CSR = new byte[]{1, 2, 3, 4};
     private static final int RATE_PER_SECOND = 1;
     private static final int RATE_PER_MINUTE = 2;
@@ -253,13 +255,16 @@ class AllBuildersSmokeTest {
         EntityAuthorizationPermissionGrantRequest selfInv = EntityAuthorizationPermissionGrantBuilder
                 .forNip(NIP).description(DESCRIPTION).entityDetails(FULL_NAME)
                 .selfInvoicing().toBuilder().build();
-        assertEquals("SELF_INVOICING", selfInv.permission().name());
-        assertEquals("RR_INVOICING", EntityAuthorizationPermissionGrantBuilder.forPeppolId("PEPPOL")
-                .description(DESCRIPTION).entityDetails(FULL_NAME).rrInvoicing().build().permission().name());
-        assertEquals("TAX_REPRESENTATIVE", EntityAuthorizationPermissionGrantBuilder.forNip(NIP)
-                .description(DESCRIPTION).entityDetails(FULL_NAME).taxRepresentative().build().permission().name());
-        assertEquals("PEF_INVOICING", EntityAuthorizationPermissionGrantBuilder.forNip(NIP)
-                .description(DESCRIPTION).entityDetails(FULL_NAME).pefInvoicing().build().permission().name());
+        assertEquals(EntityAuthorizationPermissionType.SELF_INVOICING, selfInv.permission());
+        assertEquals(EntityAuthorizationPermissionType.RR_INVOICING,
+                EntityAuthorizationPermissionGrantBuilder.forPeppolId(PEPPOL_ID_FIXTURE)
+                        .description(DESCRIPTION).entityDetails(FULL_NAME).rrInvoicing().build().permission());
+        assertEquals(EntityAuthorizationPermissionType.TAX_REPRESENTATIVE,
+                EntityAuthorizationPermissionGrantBuilder.forNip(NIP)
+                        .description(DESCRIPTION).entityDetails(FULL_NAME).taxRepresentative().build().permission());
+        assertEquals(EntityAuthorizationPermissionType.PEF_INVOICING,
+                EntityAuthorizationPermissionGrantBuilder.forNip(NIP)
+                        .description(DESCRIPTION).entityDetails(FULL_NAME).pefInvoicing().build().permission());
     }
 
     @Test
@@ -361,8 +366,8 @@ class AllBuildersSmokeTest {
                 .selfInvoicing().rrInvoicing().taxRepresentative().pefInvoicing()
                 .toBuilder().build();
         assertEquals(ENTITY_PERMISSION_COUNT, granted.permissionTypes().size());
-        assertEquals("PEPPOL", EntityAuthorizationPermissionsQueryBuilder.received()
-                .authorizedByPeppolId("PEPPOL").build().authorizedValue());
+        assertEquals(PEPPOL_ID_FIXTURE, EntityAuthorizationPermissionsQueryBuilder.received()
+                .authorizedByPeppolId(PEPPOL_ID_FIXTURE).build().authorizedValue());
         assertTrue(granted.authorizingNip() != null);
     }
 }

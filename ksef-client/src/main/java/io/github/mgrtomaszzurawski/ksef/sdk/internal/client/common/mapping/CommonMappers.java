@@ -23,43 +23,39 @@ public final class CommonMappers {
     private CommonMappers() { }
 
     public static PublicKeyCertificate toPublicKeyCertificate(PublicKeyCertificateRaw raw) {
-            List<PublicKeyCertificateUsage> mappedUsage = raw.getUsage().stream().map(CommonMappers::toPublicKeyCertificateUsage).toList();
-            return new PublicKeyCertificate(
-                    raw.getCertificate(),
-                    raw.getValidFrom(),
-                    raw.getValidTo(),
-                    mappedUsage);
-
+        List<PublicKeyCertificateUsage> mappedUsage = raw.getUsage().stream().map(CommonMappers::toPublicKeyCertificateUsage).toList();
+        return new PublicKeyCertificate(
+                raw.getCertificate(),
+                raw.getValidFrom(),
+                raw.getValidTo(),
+                mappedUsage);
     }
 
     public static PublicKeyCertificateUsage toPublicKeyCertificateUsage(PublicKeyCertificateUsageRaw raw) {
-            if (raw == null) {
-                return null;
-            }
-            return switch (raw) {
-                case KSEF_TOKEN_ENCRYPTION -> PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION;
-                case SYMMETRIC_KEY_ENCRYPTION -> PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION;
-            };
-
+        if (raw == null) {
+            return null;
+        }
+        return switch (raw) {
+            case KSEF_TOKEN_ENCRYPTION -> PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION;
+            case SYMMETRIC_KEY_ENCRYPTION -> PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION;
+        };
     }
 
     public static StatusInfo toStatusInfo(StatusInfoRaw raw) {
-            if (raw == null) {
-                return null;
-            }
-            return new StatusInfo(
-                    raw.getCode(),
-                    raw.getDescription(),
-                    raw.getDetails() != null ? List.copyOf(raw.getDetails()) : List.of());
-
+        if (raw == null) {
+            return null;
+        }
+        return new StatusInfo(
+                raw.getCode(),
+                raw.getDescription(),
+                raw.getDetails() != null ? List.copyOf(raw.getDetails()) : List.of());
     }
 
     public static TokenInfo toTokenInfo(TokenInfoRaw raw) {
-            if (raw == null) {
-                return null;
-            }
-            return new TokenInfo(raw.getToken(), raw.getValidUntil());
-
+        if (raw == null) {
+            return null;
+        }
+        return new TokenInfo(raw.getToken(), raw.getValidUntil());
     }
 
 }

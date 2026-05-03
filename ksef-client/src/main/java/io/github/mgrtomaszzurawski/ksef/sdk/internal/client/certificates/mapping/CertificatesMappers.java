@@ -75,116 +75,104 @@ public final class CertificatesMappers {
     }
 
     public static CertificateEnrollmentData toCertificateEnrollmentData(CertificateEnrollmentDataResponseRaw raw) {
-            return new CertificateEnrollmentData(
-                    raw.getCommonName(),
-                    raw.getCountryName(),
-                    raw.getGivenName(),
-                    raw.getSurname(),
-                    raw.getSerialNumber(),
-                    raw.getUniqueIdentifier(),
-                    raw.getOrganizationName(),
-                    raw.getOrganizationIdentifier());
-
+        return new CertificateEnrollmentData(
+                raw.getCommonName(),
+                raw.getCountryName(),
+                raw.getGivenName(),
+                raw.getSurname(),
+                raw.getSerialNumber(),
+                raw.getUniqueIdentifier(),
+                raw.getOrganizationName(),
+                raw.getOrganizationIdentifier());
     }
 
     public static CertificateEnrollmentStatus toCertificateEnrollmentStatus(CertificateEnrollmentStatusResponseRaw raw) {
-            return new CertificateEnrollmentStatus(
-                    raw.getRequestDate(),
-                    CommonMappers.toStatusInfo(raw.getStatus()),
-                    raw.getCertificateSerialNumber());
-
+        return new CertificateEnrollmentStatus(
+                raw.getRequestDate(),
+                CommonMappers.toStatusInfo(raw.getStatus()),
+                raw.getCertificateSerialNumber());
     }
 
     public static CertificateLimit toCertificateLimit(CertificateLimitRaw raw) {
-            if (raw == null) {
-                return null;
-            }
-            return new CertificateLimit(raw.getRemaining(), raw.getLimit());
-
+        if (raw == null) {
+            return null;
+        }
+        return new CertificateLimit(raw.getRemaining(), raw.getLimit());
     }
 
     public static CertificateLimits toCertificateLimits(CertificateLimitsResponseRaw raw) {
-            return new CertificateLimits(
-                    raw.getCanRequest(),
-                    CertificatesMappers.toCertificateLimit(raw.getEnrollment()),
-                    CertificatesMappers.toCertificateLimit(raw.getCertificate()));
-
+        return new CertificateLimits(
+                raw.getCanRequest(),
+                CertificatesMappers.toCertificateLimit(raw.getEnrollment()),
+                CertificatesMappers.toCertificateLimit(raw.getCertificate()));
     }
 
     public static CertificateListItem toCertificateListItem(CertificateListItemRaw raw) {
-            String subIdType = null;
-            String subIdValue = null;
-            if (raw.getSubjectIdentifier() != null) {
-                subIdType = raw.getSubjectIdentifier().getType() != null
-                        ? raw.getSubjectIdentifier().getType().getValue() : null;
-                subIdValue = raw.getSubjectIdentifier().getValue();
-            }
-            return new CertificateListItem(
-                    raw.getCertificateSerialNumber(),
-                    raw.getName(),
-                    raw.getType().getValue(),
-                    raw.getCommonName(),
-                    raw.getStatus().getValue(),
-                    subIdType,
-                    subIdValue,
-                    raw.getValidFrom(),
-                    raw.getValidTo(),
-                    raw.getLastUseDate(),
-                    raw.getRequestDate());
-
+        String subIdType = null;
+        String subIdValue = null;
+        if (raw.getSubjectIdentifier() != null) {
+            subIdType = raw.getSubjectIdentifier().getType() != null
+                    ? raw.getSubjectIdentifier().getType().getValue() : null;
+            subIdValue = raw.getSubjectIdentifier().getValue();
+        }
+        return new CertificateListItem(
+                raw.getCertificateSerialNumber(),
+                raw.getName(),
+                raw.getType().getValue(),
+                raw.getCommonName(),
+                raw.getStatus().getValue(),
+                subIdType,
+                subIdValue,
+                raw.getValidFrom(),
+                raw.getValidTo(),
+                raw.getLastUseDate(),
+                raw.getRequestDate());
     }
 
     public static CertificateQueryResult toCertificateQueryResult(QueryCertificatesResponseRaw raw) {
-            List<CertificateListItem> mapped = raw.getCertificates().stream().map(CertificatesMappers::toCertificateListItem).toList();
-            return new CertificateQueryResult(mapped, raw.getHasMore());
-
+        List<CertificateListItem> mapped = raw.getCertificates().stream().map(CertificatesMappers::toCertificateListItem).toList();
+        return new CertificateQueryResult(mapped, raw.getHasMore());
     }
 
     public static EnrollCertificateResult toEnrollCertificateResult(EnrollCertificateResponseRaw raw) {
-            return new EnrollCertificateResult(raw.getReferenceNumber(), raw.getTimestamp());
-
+        return new EnrollCertificateResult(raw.getReferenceNumber(), raw.getTimestamp());
     }
 
     public static RetrieveCertificatesResult toRetrieveCertificatesResult(RetrieveCertificatesResponseRaw raw) {
-            List<RetrievedCertificate> mapped = raw.getCertificates().stream().map(CertificatesMappers::toRetrievedCertificate).toList();
-            return new RetrieveCertificatesResult(mapped);
-
+        List<RetrievedCertificate> mapped = raw.getCertificates().stream().map(CertificatesMappers::toRetrievedCertificate).toList();
+        return new RetrieveCertificatesResult(mapped);
     }
 
     public static RetrievedCertificate toRetrievedCertificate(RetrieveCertificatesListItemRaw raw) {
-            return new RetrievedCertificate(
-                    raw.getCertificate(),
-                    raw.getCertificateName(),
-                    raw.getCertificateSerialNumber(),
-                    raw.getCertificateType().getValue());
-
+        return new RetrievedCertificate(
+                raw.getCertificate(),
+                raw.getCertificateName(),
+                raw.getCertificateSerialNumber(),
+                raw.getCertificateType().getValue());
     }
 
     public static CertificateRevocationReasonRaw toCertificateRevocationReasonRaw(CertificateRevocationReason value) {
-            return switch (value) {
-                case UNSPECIFIED -> CertificateRevocationReasonRaw.UNSPECIFIED;
-                case SUPERSEDED -> CertificateRevocationReasonRaw.SUPERSEDED;
-                case KEY_COMPROMISE -> CertificateRevocationReasonRaw.KEY_COMPROMISE;
-            };
-
+        return switch (value) {
+            case UNSPECIFIED -> CertificateRevocationReasonRaw.UNSPECIFIED;
+            case SUPERSEDED -> CertificateRevocationReasonRaw.SUPERSEDED;
+            case KEY_COMPROMISE -> CertificateRevocationReasonRaw.KEY_COMPROMISE;
+        };
     }
 
     public static CertificateListItemStatusRaw toCertificateListItemStatusRaw(CertificateStatus value) {
-            return switch (value) {
-                case ACTIVE -> CertificateListItemStatusRaw.ACTIVE;
-                case BLOCKED -> CertificateListItemStatusRaw.BLOCKED;
-                case REVOKED -> CertificateListItemStatusRaw.REVOKED;
-                case EXPIRED -> CertificateListItemStatusRaw.EXPIRED;
-            };
-
+        return switch (value) {
+            case ACTIVE -> CertificateListItemStatusRaw.ACTIVE;
+            case BLOCKED -> CertificateListItemStatusRaw.BLOCKED;
+            case REVOKED -> CertificateListItemStatusRaw.REVOKED;
+            case EXPIRED -> CertificateListItemStatusRaw.EXPIRED;
+        };
     }
 
     public static KsefCertificateTypeRaw toKsefCertificateTypeRaw(KsefCertificateType value) {
-            return switch (value) {
-                case AUTHENTICATION -> KsefCertificateTypeRaw.AUTHENTICATION;
-                case OFFLINE -> KsefCertificateTypeRaw.OFFLINE;
-            };
-
+        return switch (value) {
+            case AUTHENTICATION -> KsefCertificateTypeRaw.AUTHENTICATION;
+            case OFFLINE -> KsefCertificateTypeRaw.OFFLINE;
+        };
     }
 
 }
