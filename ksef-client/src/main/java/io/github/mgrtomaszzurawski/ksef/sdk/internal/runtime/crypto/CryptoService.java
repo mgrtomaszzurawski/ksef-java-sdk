@@ -223,6 +223,24 @@ public final class CryptoService {
     }
 
     /**
+     * Create a configured AES-256-CBC Cipher in decrypt mode for streaming
+     * usage (e.g. with {@link javax.crypto.CipherInputStream}).
+     */
+    @SuppressWarnings("java:S5542") // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011).
+    public static Cipher newAesDecryptCipher(byte[] aesKey, byte[] initVector) {
+        validateKeyAndIv(aesKey, initVector);
+        try {
+            Cipher cipher = Cipher.getInstance(AES_CBC_PKCS5);
+            cipher.init(Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(aesKey, AES_ALGORITHM),
+                    new IvParameterSpec(initVector));
+            return cipher;
+        } catch (GeneralSecurityException exception) {
+            throw new KsefCryptoException(ERR_DECRYPT_AES, exception);
+        }
+    }
+
+    /**
      * Decrypt content with AES-256-CBC.
      *
      * @param ciphertext the data to decrypt
