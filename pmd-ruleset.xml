@@ -14,6 +14,8 @@
         <exclude name="ArrayIsStoredDirectly"/>
         <!-- Exception unwrapping pattern wraps non-runtime causes; PMD's stack-trace heuristic is too narrow. -->
         <exclude name="PreserveStackTrace"/>
+        <!-- Compact constructor parameter reassignment is the canonical record validation pattern. -->
+        <exclude name="UnusedAssignment"/>
     </rule>
 
     <rule ref="category/java/codestyle.xml">
@@ -56,13 +58,17 @@
         <exclude name="NPathComplexity"/>
         <!-- KsefClient is the SDK facade: aggregating 11 domain clients is its purpose. -->
         <exclude name="GodClass"/>
+        <!-- Exception translation (catch + wrap in domain exception type) is the
+             recommended pattern; PMD's heuristic mistakes it for flow control. -->
+        <exclude name="ExceptionAsFlowControl"/>
     </rule>
 
-    <!-- Coupling threshold raised to 50: domain clients importing many generated model types
-         is inherent to an API client SDK; KsefClient as the facade aggregates 11 domains. -->
+    <!-- Coupling threshold raised to 80: domain clients importing many generated model types
+         is inherent to an API client SDK; KsefClient as the facade aggregates 11 domains and
+         the InvoicingMappers class collects all invoicing record + builder mappings. -->
     <rule ref="category/java/design.xml/CouplingBetweenObjects">
         <properties>
-            <property name="threshold" value="50"/>
+            <property name="threshold" value="80"/>
         </properties>
     </rule>
 

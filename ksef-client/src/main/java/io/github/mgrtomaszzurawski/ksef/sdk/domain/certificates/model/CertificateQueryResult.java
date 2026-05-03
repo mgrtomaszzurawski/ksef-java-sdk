@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRaw;
 import java.util.List;
 
 /**
@@ -15,11 +14,4 @@ import java.util.List;
  */
 public record CertificateQueryResult(List<CertificateListItem> certificates, boolean hasMore) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static CertificateQueryResult from(QueryCertificatesResponseRaw raw) {
-        List<CertificateListItem> mapped = raw.getCertificates().stream().map(CertificateListItem::from).toList();
-        return new CertificateQueryResult(mapped, raw.getHasMore());
-    }
 }

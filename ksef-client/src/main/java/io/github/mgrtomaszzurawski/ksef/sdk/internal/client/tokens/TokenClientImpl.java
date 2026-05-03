@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.mapping.TokensMappers;
 
 /**
  * Client for KSeF API token management — generate, list, query status, and revoke tokens.
@@ -58,9 +59,10 @@ public final class TokenClientImpl implements TokenClient {
         LOGGER.debug(LOG_CALL, OP_GENERATE);
         Objects.requireNonNull(tokenBuilder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        GenerateTokenResponseRaw raw = http.postJsonAuthenticated(PATH_TOKENS,
-                tokenBuilder.build(), token, GenerateTokenResponseRaw.class, OP_GENERATE);
-        return GenerateTokenResult.from(raw);
+        GenerateTokenResponseRaw rawValue = http.postJsonAuthenticated(PATH_TOKENS,
+                TokensMappers.toGenerateTokenRequestRaw(tokenBuilder.build()), token,
+                GenerateTokenResponseRaw.class, OP_GENERATE);
+        return TokensMappers.toGenerateTokenResult(rawValue);
     }
 
     /**
@@ -72,9 +74,9 @@ public final class TokenClientImpl implements TokenClient {
     public TokenList list() {
         LOGGER.debug(LOG_CALL, OP_LIST);
         String token = sessionContext.token();
-        QueryTokensResponseRaw raw = http.getAuthenticated(PATH_TOKENS, token,
+        QueryTokensResponseRaw rawValue = http.getAuthenticated(PATH_TOKENS, token,
                 QueryTokensResponseRaw.class, OP_LIST);
-        return TokenList.from(raw);
+        return TokensMappers.toTokenList(rawValue);
     }
 
     /**
@@ -88,9 +90,9 @@ public final class TokenClientImpl implements TokenClient {
         LOGGER.debug(LOG_CALL_REF, OP_GET_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        TokenStatusResponseRaw raw = http.getAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token,
+        TokenStatusResponseRaw rawValue = http.getAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token,
                 TokenStatusResponseRaw.class, OP_GET_STATUS);
-        return TokenDetail.from(raw);
+        return TokensMappers.toTokenDetail(rawValue);
     }
 
     /**

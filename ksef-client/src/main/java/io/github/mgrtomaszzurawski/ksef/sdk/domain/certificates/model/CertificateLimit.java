@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitRaw;
-
 /**
  * Certificate limit counters.
  *
@@ -14,13 +12,4 @@ import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitRaw;
  */
 public record CertificateLimit(Integer remaining, Integer limit) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static CertificateLimit from(CertificateLimitRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return new CertificateLimit(raw.getRemaining(), raw.getLimit());
-    }
 }

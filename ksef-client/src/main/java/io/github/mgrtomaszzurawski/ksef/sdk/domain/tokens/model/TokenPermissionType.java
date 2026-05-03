@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.TokenPermissionTypeRaw;
-
 /**
  * Permission type that can be granted to a KSeF API token.
  */
@@ -19,21 +17,4 @@ public enum TokenPermissionType {
     ENFORCEMENT_OPERATIONS,
     INTROSPECTION;
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static TokenPermissionType from(TokenPermissionTypeRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return switch (raw) {
-            case INVOICE_READ -> INVOICE_READ;
-            case INVOICE_WRITE -> INVOICE_WRITE;
-            case CREDENTIALS_READ -> CREDENTIALS_READ;
-            case CREDENTIALS_MANAGE -> CREDENTIALS_MANAGE;
-            case SUBUNIT_MANAGE -> SUBUNIT_MANAGE;
-            case ENFORCEMENT_OPERATIONS -> ENFORCEMENT_OPERATIONS;
-            case INTROSPECTION -> INTROSPECTION;
-        };
-    }
 }

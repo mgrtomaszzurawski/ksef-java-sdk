@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionGrantRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AttachmentPermissionRevokeRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.BlockContextAuthenticationRequestRaw;
@@ -13,6 +12,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsRevokeBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPersonCreateBuilder;
@@ -22,7 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectC
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -101,7 +102,8 @@ public final class TestDataClientImpl implements TestDataClient {
     public void createSubject(TestSubjectCreateBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_CREATE_SUBJECT);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        http.postJsonNoContent(PATH_SUBJECT, builder.build(), OP_CREATE_SUBJECT);
+        http.postJsonNoContent(PATH_SUBJECT,
+                TestdataMappers.toSubjectCreateRequestRaw(builder.build()), OP_CREATE_SUBJECT);
     }
 
     /**
@@ -127,7 +129,8 @@ public final class TestDataClientImpl implements TestDataClient {
     public void createPerson(TestPersonCreateBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_CREATE_PERSON);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        http.postJsonNoContent(PATH_PERSON, builder.build(), OP_CREATE_PERSON);
+        http.postJsonNoContent(PATH_PERSON,
+                TestdataMappers.toPersonCreateRequestRaw(builder.build()), OP_CREATE_PERSON);
     }
 
     /**
@@ -153,7 +156,8 @@ public final class TestDataClientImpl implements TestDataClient {
     public void grantPermissions(TestPermissionsGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_PERMISSIONS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        http.postJsonNoContent(PATH_PERMISSIONS, builder.build(), OP_GRANT_PERMISSIONS);
+        http.postJsonNoContent(PATH_PERMISSIONS,
+                TestdataMappers.toTestDataPermissionsGrantRequestRaw(builder.build()), OP_GRANT_PERMISSIONS);
     }
 
     /**
@@ -165,7 +169,8 @@ public final class TestDataClientImpl implements TestDataClient {
     public void revokePermissions(TestPermissionsRevokeBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_REVOKE_PERMISSIONS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        http.postJsonNoContent(PATH_PERMISSIONS_REVOKE, builder.build(), OP_REVOKE_PERMISSIONS);
+        http.postJsonNoContent(PATH_PERMISSIONS_REVOKE,
+                TestdataMappers.toTestDataPermissionsRevokeRequestRaw(builder.build()), OP_REVOKE_PERMISSIONS);
     }
 
     /**
@@ -225,7 +230,7 @@ public final class TestDataClientImpl implements TestDataClient {
         Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
         Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
-        identifier.setType(identifierType.toRaw());
+        identifier.setType(TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(identifierType));
         identifier.setValue(identifierValue);
         BlockContextAuthenticationRequestRaw request = new BlockContextAuthenticationRequestRaw();
         request.setContextIdentifier(identifier);
@@ -244,7 +249,7 @@ public final class TestDataClientImpl implements TestDataClient {
         Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
         Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
         TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
-        identifier.setType(identifierType.toRaw());
+        identifier.setType(TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(identifierType));
         identifier.setValue(identifierValue);
         UnblockContextAuthenticationRequestRaw request = new UnblockContextAuthenticationRequestRaw();
         request.setContextIdentifier(identifier);
@@ -261,7 +266,8 @@ public final class TestDataClientImpl implements TestDataClient {
         LOGGER.debug(LOG_CALL, OP_SET_SESSION_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS, builder.build(), token, OP_SET_SESSION_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS,
+                TestdataMappers.toSetSessionLimitsRequestRaw(builder.build()), token, OP_SET_SESSION_LIMITS);
     }
 
     /**
@@ -284,7 +290,8 @@ public final class TestDataClientImpl implements TestDataClient {
         LOGGER.debug(LOG_CALL, OP_SET_SUBJECT_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS, builder.build(), token, OP_SET_SUBJECT_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS,
+                TestdataMappers.toSetSubjectLimitsRequestRaw(builder.build()), token, OP_SET_SUBJECT_LIMITS);
     }
 
     /**
@@ -307,7 +314,8 @@ public final class TestDataClientImpl implements TestDataClient {
         LOGGER.debug(LOG_CALL, OP_SET_RATE_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS, builder.build(), token, OP_SET_RATE_LIMITS);
+        http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS,
+                TestdataMappers.toSetRateLimitsRequestRaw(builder.build()), token, OP_SET_RATE_LIMITS);
     }
 
     /**

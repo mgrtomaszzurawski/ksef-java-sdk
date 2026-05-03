@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoicingModeRaw;
-
 /**
  * Mode of invoice submission.
  */
@@ -14,16 +12,4 @@ public enum InvoicingMode {
     ONLINE,
     OFFLINE;
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static InvoicingMode from(InvoicingModeRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return switch (raw) {
-            case ONLINE -> ONLINE;
-            case OFFLINE -> OFFLINE;
-        };
-    }
 }

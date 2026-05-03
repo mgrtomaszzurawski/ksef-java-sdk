@@ -27,6 +27,8 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingRequestMappers;
 
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
@@ -84,7 +86,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
-        return doQueryMetadata(query.build());
+        return doQueryMetadata(InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build()));
     }
 
     /**
@@ -113,7 +115,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults) {
         LOGGER.debug(LOG_CALL_MAX, OP_QUERY_METADATA, maxResults);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
-        InvoiceQueryFiltersRaw filters = query.build();
+        InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build());
         List<InvoiceMetadata> allInvoices = new ArrayList<>();
 
         while (true) {
@@ -153,11 +155,11 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder) {
         LOGGER.debug(LOG_CALL, OP_EXPORT);
         Objects.requireNonNull(exportBuilder, ERR_NULL_EXPORT);
-        InvoiceExportRequestRaw request = exportBuilder.build();
+        InvoiceExportRequestRaw request = InvoicingRequestMappers.toInvoiceExportRequestRaw(exportBuilder.build());
         String token = sessionContext.token();
-        ExportInvoicesResponseRaw raw = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
+        ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
                 ExportInvoicesResponseRaw.class, OP_EXPORT);
-        return ExportInvoicesResult.from(raw);
+        return InvoicingMappers.toExportInvoicesResult(rawValue);
     }
 
     /**
@@ -171,15 +173,15 @@ public final class InvoiceClientImpl implements InvoiceClient {
         LOGGER.debug(LOG_CALL_REF, OP_EXPORT_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        InvoiceExportStatusResponseRaw raw = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
+        InvoiceExportStatusResponseRaw rawValue = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
                 InvoiceExportStatusResponseRaw.class, OP_EXPORT_STATUS);
-        return InvoiceExportStatus.from(raw);
+        return InvoicingMappers.toInvoiceExportStatus(rawValue);
     }
 
     private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters) {
         String token = sessionContext.token();
-        QueryInvoicesMetadataResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
+        QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
-        return InvoiceMetadataResult.from(raw);
+        return InvoicingMappers.toInvoiceMetadataResult(rawValue);
     }
 }

@@ -4,10 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEffectiveSubjectLimitsRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EnrollmentEffectiveSubjectLimitsRaw;
-
 /**
  * Effective subject limits for enrollment and certificates.
  *
@@ -16,14 +12,4 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EnrollmentEffectiveSubjectL
  */
 public record SubjectLimits(Integer maxEnrollments, Integer maxCertificates) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static SubjectLimits from(EffectiveSubjectLimitsRaw raw) {
-        EnrollmentEffectiveSubjectLimitsRaw enrollment = raw.getEnrollment();
-        CertificateEffectiveSubjectLimitsRaw certificate = raw.getCertificate();
-        return new SubjectLimits(
-                enrollment != null ? enrollment.getMaxEnrollments() : null,
-                certificate != null ? certificate.getMaxCertificates() : null);
-    }
 }

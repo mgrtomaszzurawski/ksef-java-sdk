@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -35,35 +34,4 @@ public record PersonalPermission(
         OffsetDateTime startDate,
         Boolean canDelegate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static PersonalPermission from(PersonalPermissionRaw raw) {
-        var ctxRaw = raw.getContextIdentifier();
-        PermissionIdentifier ctxId = ctxRaw != null
-                ? new PermissionIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue())
-                : null;
-        var authzRaw = raw.getAuthorizedIdentifier();
-        PermissionIdentifier authzId = authzRaw != null
-                ? new PermissionIdentifier(authzRaw.getType().getValue(), authzRaw.getValue())
-                : null;
-        var targetRaw = raw.getTargetIdentifier();
-        PermissionIdentifier targetId = targetRaw != null
-                ? new PermissionIdentifier(targetRaw.getType().getValue(), targetRaw.getValue())
-                : null;
-        PermissionSubjectDetails personDetails = raw.getSubjectPersonDetails() != null
-                ? new PermissionSubjectDetails(
-                        raw.getSubjectPersonDetails().getFirstName(),
-                        raw.getSubjectPersonDetails().getLastName(), null)
-                : null;
-        PermissionSubjectDetails entityDetails = raw.getSubjectEntityDetails() != null
-                ? new PermissionSubjectDetails(null, null,
-                        raw.getSubjectEntityDetails().getFullName())
-                : null;
-        String scope = raw.getPermissionScope().getValue();
-        String state = raw.getPermissionState().getValue();
-        return new PersonalPermission(raw.getId(), ctxId, authzId, targetId, scope,
-                raw.getDescription(), personDetails, entityDetails, state,
-                raw.getStartDate(), raw.getCanDelegate());
-    }
 }

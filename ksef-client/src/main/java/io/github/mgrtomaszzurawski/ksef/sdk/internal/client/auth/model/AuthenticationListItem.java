@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationListItemRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
 
 /**
  * An authentication session in the session list.
@@ -30,15 +31,15 @@ public record AuthenticationListItem(
         OffsetDateTime refreshTokenValidUntil,
         Boolean current) {
 
-    public static AuthenticationListItem from(AuthenticationListItemRaw raw) {
+    public static AuthenticationListItem from(AuthenticationListItemRaw rawValue) {
         return new AuthenticationListItem(
-                raw.getReferenceNumber(),
-                raw.getStartDate(),
-                AuthenticationMethodInfo.from(raw.getAuthenticationMethodInfo()),
-                StatusInfo.from(raw.getStatus()),
-                raw.getIsTokenRedeemed(),
-                raw.getLastTokenRefreshDate(),
-                raw.getRefreshTokenValidUntil(),
-                raw.getIsCurrent());
+                rawValue.getReferenceNumber(),
+                rawValue.getStartDate(),
+                AuthenticationMethodInfo.from(rawValue.getAuthenticationMethodInfo()),
+                CommonMappers.toStatusInfo(rawValue.getStatus()),
+                rawValue.getIsTokenRedeemed(),
+                rawValue.getLastTokenRefreshDate(),
+                rawValue.getRefreshTokenValidUntil(),
+                rawValue.getIsCurrent());
     }
 }

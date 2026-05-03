@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
-
 /**
  * Certificate enrollment and certificate limits for the current subject.
  *
@@ -15,13 +13,4 @@ import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRa
  */
 public record CertificateLimits(boolean canRequest, CertificateLimit enrollment, CertificateLimit certificate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static CertificateLimits from(CertificateLimitsResponseRaw raw) {
-        return new CertificateLimits(
-                raw.getCanRequest(),
-                CertificateLimit.from(raw.getEnrollment()),
-                CertificateLimit.from(raw.getCertificate()));
-    }
 }

@@ -4,8 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TokenPermissionTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenGenerateRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenPermissionType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -17,7 +17,7 @@ import java.util.Objects;
  * <p>
  * Usage:
  * <pre>{@code
- * GenerateTokenRequestRaw request = TokenGenerateBuilder.create("Invoice reader token")
+ * TokenGenerateRequest request = TokenGenerateBuilder.create("Invoice reader token")
  *     .invoiceRead()
  *     .credentialsRead()
  *     .build();
@@ -32,7 +32,7 @@ public final class TokenGenerateBuilder {
     private static final String ERR_NULL_DESCRIPTION = "description is required";
 
     private final String description;
-    private final List<TokenPermissionTypeRaw> permissions = new ArrayList<>();
+    private final List<TokenPermissionType> permissions = new ArrayList<>();
 
     private TokenGenerateBuilder(String description) {
         this.description = Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
@@ -48,37 +48,37 @@ public final class TokenGenerateBuilder {
     }
 
     public TokenGenerateBuilder invoiceRead() {
-        permissions.add(TokenPermissionTypeRaw.INVOICE_READ);
+        permissions.add(TokenPermissionType.INVOICE_READ);
         return this;
     }
 
     public TokenGenerateBuilder invoiceWrite() {
-        permissions.add(TokenPermissionTypeRaw.INVOICE_WRITE);
+        permissions.add(TokenPermissionType.INVOICE_WRITE);
         return this;
     }
 
     public TokenGenerateBuilder credentialsRead() {
-        permissions.add(TokenPermissionTypeRaw.CREDENTIALS_READ);
+        permissions.add(TokenPermissionType.CREDENTIALS_READ);
         return this;
     }
 
     public TokenGenerateBuilder credentialsManage() {
-        permissions.add(TokenPermissionTypeRaw.CREDENTIALS_MANAGE);
+        permissions.add(TokenPermissionType.CREDENTIALS_MANAGE);
         return this;
     }
 
     public TokenGenerateBuilder subunitManage() {
-        permissions.add(TokenPermissionTypeRaw.SUBUNIT_MANAGE);
+        permissions.add(TokenPermissionType.SUBUNIT_MANAGE);
         return this;
     }
 
     public TokenGenerateBuilder enforcementOperations() {
-        permissions.add(TokenPermissionTypeRaw.ENFORCEMENT_OPERATIONS);
+        permissions.add(TokenPermissionType.ENFORCEMENT_OPERATIONS);
         return this;
     }
 
     public TokenGenerateBuilder introspection() {
-        permissions.add(TokenPermissionTypeRaw.INTROSPECTION);
+        permissions.add(TokenPermissionType.INTROSPECTION);
         return this;
     }
 
@@ -97,20 +97,14 @@ public final class TokenGenerateBuilder {
      *
      * @return the request ready to pass to {@code TokenClient.generate()}
      * @throws IllegalStateException if validation fails
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
-    public GenerateTokenRequestRaw build() {
+    public TokenGenerateRequest build() {
         if (description.length() < DESCRIPTION_MIN_LENGTH || description.length() > DESCRIPTION_MAX_LENGTH) {
             throw new IllegalStateException(ERR_DESCRIPTION_LENGTH);
         }
         if (permissions.isEmpty()) {
             throw new IllegalStateException(ERR_PERMISSIONS_EMPTY);
         }
-
-        GenerateTokenRequestRaw request = new GenerateTokenRequestRaw();
-        request.setDescription(description);
-        request.setPermissions(new ArrayList<>(permissions));
-        return request;
+        return new TokenGenerateRequest(description, permissions);
     }
 }

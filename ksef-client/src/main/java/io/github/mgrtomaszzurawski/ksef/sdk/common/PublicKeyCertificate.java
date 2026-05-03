@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.common;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -23,18 +22,6 @@ public record PublicKeyCertificate(
         OffsetDateTime validFrom,
         OffsetDateTime validTo,
         List<PublicKeyCertificateUsage> usage) {
-
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static PublicKeyCertificate from(PublicKeyCertificateRaw raw) {
-        List<PublicKeyCertificateUsage> mappedUsage = raw.getUsage().stream().map(PublicKeyCertificateUsage::from).toList();
-        return new PublicKeyCertificate(
-                raw.getCertificate(),
-                raw.getValidFrom(),
-                raw.getValidTo(),
-                mappedUsage);
-    }
 
     @Override
     public boolean equals(Object o) {

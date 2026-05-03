@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryPersonPermissionsResponseRaw;
 import java.util.List;
 
 /**
@@ -15,11 +14,4 @@ import java.util.List;
  */
 public record PersonPermissions(List<PersonPermission> permissions, boolean hasMore) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static PersonPermissions from(QueryPersonPermissionsResponseRaw raw) {
-        List<PersonPermission> mapped = raw.getPermissions().stream().map(PersonPermission::from).toList();
-        return new PersonPermissions(mapped, raw.getHasMore());
-    }
 }

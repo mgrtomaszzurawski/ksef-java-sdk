@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.UpoPageResponseRaw;
 import java.net.URI;
 import java.time.OffsetDateTime;
 
@@ -17,13 +16,4 @@ import java.time.OffsetDateTime;
  */
 public record UpoPage(String referenceNumber, URI downloadUrl, OffsetDateTime downloadUrlExpirationDate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static UpoPage from(UpoPageResponseRaw raw) {
-        return new UpoPage(
-                raw.getReferenceNumber(),
-                raw.getDownloadUrl(),
-                raw.getDownloadUrlExpirationDate());
-    }
 }

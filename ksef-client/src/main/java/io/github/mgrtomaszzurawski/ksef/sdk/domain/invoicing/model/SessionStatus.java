@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
 
@@ -30,18 +29,4 @@ public record SessionStatus(
         Integer successfulInvoiceCount,
         Integer failedInvoiceCount) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static SessionStatus from(SessionStatusResponseRaw raw) {
-        return new SessionStatus(
-                StatusInfo.from(raw.getStatus()),
-                raw.getDateCreated(),
-                raw.getDateUpdated(),
-                raw.getValidUntil(),
-                UpoInfo.from(raw.getUpo()),
-                raw.getInvoiceCount(),
-                raw.getSuccessfulInvoiceCount(),
-                raw.getFailedInvoiceCount());
-    }
 }

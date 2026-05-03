@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
 
@@ -22,14 +21,4 @@ public record InvoiceExportStatus(
         OffsetDateTime packageExpirationDate,
         InvoicePackage invoicePackage) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static InvoiceExportStatus from(InvoiceExportStatusResponseRaw raw) {
-        return new InvoiceExportStatus(
-                StatusInfo.from(raw.getStatus()),
-                raw.getCompletedDate(),
-                raw.getPackageExpirationDate(),
-                InvoicePackage.from(raw.getPackage()));
-    }
 }

@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.SubjectIdentifierTypeRaw;
-
 /**
  * Type of subject identifier for test data limits in KSeF.
  */
@@ -15,11 +13,4 @@ public enum TestSubjectIdentifierType {
     PESEL,
     FINGERPRINT;
 
-    public SubjectIdentifierTypeRaw toRaw() {
-        return switch (this) {
-            case NIP -> SubjectIdentifierTypeRaw.NIP;
-            case PESEL -> SubjectIdentifierTypeRaw.PESEL;
-            case FINGERPRINT -> SubjectIdentifierTypeRaw.FINGERPRINT;
-        };
-    }
 }

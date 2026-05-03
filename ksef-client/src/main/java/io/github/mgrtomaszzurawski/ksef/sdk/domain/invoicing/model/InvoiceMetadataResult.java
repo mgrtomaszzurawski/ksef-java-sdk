@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -22,15 +21,4 @@ public record InvoiceMetadataResult(
         OffsetDateTime permanentStorageHwmDate,
         List<InvoiceMetadata> invoices) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static InvoiceMetadataResult from(QueryInvoicesMetadataResponseRaw raw) {
-        List<InvoiceMetadata> mapped = raw.getInvoices().stream().map(InvoiceMetadata::from).toList();
-        return new InvoiceMetadataResult(
-                raw.getHasMore(),
-                raw.getIsTruncated(),
-                raw.getPermanentStorageHwmDate(),
-                mapped);
-    }
 }

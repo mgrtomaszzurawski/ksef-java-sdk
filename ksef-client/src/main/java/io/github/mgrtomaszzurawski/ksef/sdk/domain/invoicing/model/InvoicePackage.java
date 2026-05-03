@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoicePackageRaw;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -31,22 +30,4 @@ public record InvoicePackage(
         OffsetDateTime lastPermanentStorageDate,
         OffsetDateTime permanentStorageHwmDate) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static InvoicePackage from(InvoicePackageRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        List<InvoicePackagePart> mappedParts = raw.getParts().stream().map(InvoicePackagePart::from).toList();
-        return new InvoicePackage(
-                raw.getInvoiceCount(),
-                raw.getSize(),
-                mappedParts,
-                raw.getIsTruncated(),
-                raw.getLastIssueDate(),
-                raw.getLastInvoicingDate(),
-                raw.getLastPermanentStorageDate(),
-                raw.getPermanentStorageHwmDate());
-    }
 }

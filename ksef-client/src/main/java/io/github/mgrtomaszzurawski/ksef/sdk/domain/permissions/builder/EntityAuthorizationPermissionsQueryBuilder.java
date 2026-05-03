@@ -4,152 +4,88 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationsAuthorizedEntityIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationsAuthorizedEntityIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationsAuthorizingEntityIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationsAuthorizingEntityIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoicePermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.QueryTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.AuthorizationQueryType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionsQueryRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Builder for entity authorization permissions query requests.
- * <p>
- * Required: query type (granted or received). All other fields are optional.
- * <p>
- * Usage:
- * <pre>{@code
- * var builder = EntityAuthorizationPermissionsQueryBuilder
- *     .granted()
- *     .authorizedByNip("1234567890")
- *     .selfInvoicing();
- * }</pre>
+ * <p>Required: query direction (granted or received). All other fields are optional.
  */
 public final class EntityAuthorizationPermissionsQueryBuilder {
 
     private static final String ERR_QUERY_TYPE_REQUIRED = "queryType is required — use .granted() or .received()";
 
-    private final QueryTypeRaw queryType;
-    private EntityAuthorizationsAuthorizingEntityIdentifierTypeRaw authorizingType;
-    private String authorizingValue;
-    private EntityAuthorizationsAuthorizedEntityIdentifierTypeRaw authorizedType;
+    private final AuthorizationQueryType queryType;
+    private String authorizingNip;
+    private EntityAuthorizationIdentifierType authorizedType;
     private String authorizedValue;
-    private final List<InvoicePermissionTypeRaw> permissionTypes = new ArrayList<>();
+    private final List<EntityAuthorizationPermissionType> permissionTypes = new ArrayList<>();
 
-    private EntityAuthorizationPermissionsQueryBuilder(QueryTypeRaw queryType) {
+    private EntityAuthorizationPermissionsQueryBuilder(AuthorizationQueryType queryType) {
         this.queryType = Objects.requireNonNull(queryType, ERR_QUERY_TYPE_REQUIRED);
     }
 
-    /**
-     * Query granted authorization permissions.
-     */
     public static EntityAuthorizationPermissionsQueryBuilder granted() {
-        return new EntityAuthorizationPermissionsQueryBuilder(QueryTypeRaw.GRANTED);
+        return new EntityAuthorizationPermissionsQueryBuilder(AuthorizationQueryType.GRANTED);
     }
 
-    /**
-     * Query received authorization permissions.
-     */
     public static EntityAuthorizationPermissionsQueryBuilder received() {
-        return new EntityAuthorizationPermissionsQueryBuilder(QueryTypeRaw.RECEIVED);
+        return new EntityAuthorizationPermissionsQueryBuilder(AuthorizationQueryType.RECEIVED);
     }
 
-    /**
-     * Filter by authorizing entity NIP.
-     */
     public EntityAuthorizationPermissionsQueryBuilder authorizingByNip(String nip) {
-        this.authorizingType = EntityAuthorizationsAuthorizingEntityIdentifierTypeRaw.NIP;
-        this.authorizingValue = nip;
+        this.authorizingNip = nip;
         return this;
     }
 
-    /**
-     * Filter by authorized entity NIP.
-     */
     public EntityAuthorizationPermissionsQueryBuilder authorizedByNip(String nip) {
-        this.authorizedType = EntityAuthorizationsAuthorizedEntityIdentifierTypeRaw.NIP;
+        this.authorizedType = EntityAuthorizationIdentifierType.NIP;
         this.authorizedValue = nip;
         return this;
     }
 
-    /**
-     * Filter by authorized entity Peppol ID.
-     */
     public EntityAuthorizationPermissionsQueryBuilder authorizedByPeppolId(String peppolId) {
-        this.authorizedType = EntityAuthorizationsAuthorizedEntityIdentifierTypeRaw.PEPPOL_ID;
+        this.authorizedType = EntityAuthorizationIdentifierType.PEPPOL_ID;
         this.authorizedValue = peppolId;
         return this;
     }
 
     public EntityAuthorizationPermissionsQueryBuilder selfInvoicing() {
-        permissionTypes.add(InvoicePermissionTypeRaw.SELF_INVOICING);
+        permissionTypes.add(EntityAuthorizationPermissionType.SELF_INVOICING);
         return this;
     }
 
     public EntityAuthorizationPermissionsQueryBuilder rrInvoicing() {
-        permissionTypes.add(InvoicePermissionTypeRaw.RR_INVOICING);
+        permissionTypes.add(EntityAuthorizationPermissionType.RR_INVOICING);
         return this;
     }
 
     public EntityAuthorizationPermissionsQueryBuilder taxRepresentative() {
-        permissionTypes.add(InvoicePermissionTypeRaw.TAX_REPRESENTATIVE);
+        permissionTypes.add(EntityAuthorizationPermissionType.TAX_REPRESENTATIVE);
         return this;
     }
 
     public EntityAuthorizationPermissionsQueryBuilder pefInvoicing() {
-        permissionTypes.add(InvoicePermissionTypeRaw.PEF_INVOICING);
+        permissionTypes.add(EntityAuthorizationPermissionType.PEF_INVOICING);
         return this;
     }
 
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     */
     public EntityAuthorizationPermissionsQueryBuilder toBuilder() {
-        EntityAuthorizationPermissionsQueryBuilder copy =
-                new EntityAuthorizationPermissionsQueryBuilder(this.queryType);
-        copy.authorizingType = this.authorizingType;
-        copy.authorizingValue = this.authorizingValue;
+        EntityAuthorizationPermissionsQueryBuilder copy = new EntityAuthorizationPermissionsQueryBuilder(this.queryType);
+        copy.authorizingNip = this.authorizingNip;
         copy.authorizedType = this.authorizedType;
         copy.authorizedValue = this.authorizedValue;
         copy.permissionTypes.addAll(this.permissionTypes);
         return copy;
     }
 
-    /**
-     * Build the entity authorization permissions query request.
-     *
-     * @return the request ready to pass to {@code PermissionClient.queryAuthorizations()}
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public EntityAuthorizationPermissionsQueryRequestRaw build() {
-        EntityAuthorizationPermissionsQueryRequestRaw request =
-                new EntityAuthorizationPermissionsQueryRequestRaw();
-        request.setQueryType(queryType);
-
-        if (authorizingType != null) {
-            EntityAuthorizationsAuthorizingEntityIdentifierRaw authorizingId =
-                    new EntityAuthorizationsAuthorizingEntityIdentifierRaw()
-                            .type(authorizingType)
-                            .value(authorizingValue);
-            request.setAuthorizingIdentifier(authorizingId);
-        }
-
-        if (authorizedType != null) {
-            EntityAuthorizationsAuthorizedEntityIdentifierRaw authorizedId =
-                    new EntityAuthorizationsAuthorizedEntityIdentifierRaw()
-                            .type(authorizedType)
-                            .value(authorizedValue);
-            request.setAuthorizedIdentifier(authorizedId);
-        }
-
-        if (!permissionTypes.isEmpty()) {
-            request.setPermissionTypes(new ArrayList<>(permissionTypes));
-        }
-
-        return request;
+    public EntityAuthorizationPermissionsQueryRequest build() {
+        return new EntityAuthorizationPermissionsQueryRequest(queryType, authorizingNip,
+                authorizedType, authorizedValue, permissionTypes);
     }
 }

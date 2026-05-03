@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationOperationStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
 
 /**
  * Status of an authentication operation.
@@ -26,13 +27,13 @@ public record AuthenticationStatus(
         OffsetDateTime lastTokenRefreshDate,
         OffsetDateTime refreshTokenValidUntil) {
 
-    public static AuthenticationStatus from(AuthenticationOperationStatusResponseRaw raw) {
+    public static AuthenticationStatus from(AuthenticationOperationStatusResponseRaw rawValue) {
         return new AuthenticationStatus(
-                raw.getStartDate(),
-                AuthenticationMethodInfo.from(raw.getAuthenticationMethodInfo()),
-                StatusInfo.from(raw.getStatus()),
-                raw.getIsTokenRedeemed(),
-                raw.getLastTokenRefreshDate(),
-                raw.getRefreshTokenValidUntil());
+                rawValue.getStartDate(),
+                AuthenticationMethodInfo.from(rawValue.getAuthenticationMethodInfo()),
+                CommonMappers.toStatusInfo(rawValue.getStatus()),
+                rawValue.getIsTokenRedeemed(),
+                rawValue.getLastTokenRefreshDate(),
+                rawValue.getRefreshTokenValidUntil());
     }
 }

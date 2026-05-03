@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSuppo
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
 
 /**
  * Client for KSeF security operations (public key certificate retrieval).
@@ -42,6 +43,6 @@ public final class SecurityClient {
         LOGGER.debug(LOG_CALL, OP_GET_PUBLIC_KEYS);
         List<PublicKeyCertificateRaw> rawList = http.getList(PATH_PUBLIC_KEY_CERTS,
                 new TypeReference<>() {}, OP_GET_PUBLIC_KEYS);
-        return rawList.stream().map(PublicKeyCertificate::from).toList();
+        return rawList.stream().map(CommonMappers::toPublicKeyCertificate).toList();
     }
 }

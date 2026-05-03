@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceTypeRaw;
-
 /**
  * Type of invoice in KSeF.
  */
@@ -24,26 +22,4 @@ public enum InvoiceType {
     VAT_RR,
     KOR_VAT_RR;
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static InvoiceType from(InvoiceTypeRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return switch (raw) {
-            case VAT -> VAT;
-            case ZAL -> ZAL;
-            case KOR -> KOR;
-            case ROZ -> ROZ;
-            case UPR -> UPR;
-            case KOR_ZAL -> KOR_ZAL;
-            case KOR_ROZ -> KOR_ROZ;
-            case VAT_PEF -> VAT_PEF;
-            case VAT_PEF_SP -> VAT_PEF_SP;
-            case KOR_PEF -> KOR_PEF;
-            case VAT_RR -> VAT_RR;
-            case KOR_VAT_RR -> KOR_VAT_RR;
-        };
-    }
 }

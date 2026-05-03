@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
 
 /**
  * Result of initiating authentication (XAdES or token flow).
@@ -15,9 +16,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
  */
 public record AuthenticationInit(String referenceNumber, TokenInfo authenticationToken) {
 
-    public static AuthenticationInit from(AuthenticationInitResponseRaw raw) {
+    public static AuthenticationInit from(AuthenticationInitResponseRaw rawValue) {
         return new AuthenticationInit(
-                raw.getReferenceNumber(),
-                TokenInfo.from(raw.getAuthenticationToken()));
+                rawValue.getReferenceNumber(),
+                CommonMappers.toTokenInfo(rawValue.getAuthenticationToken()));
     }
 }

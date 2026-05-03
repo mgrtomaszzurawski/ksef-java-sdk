@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.common;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.StatusInfoRaw;
 import java.util.List;
 
 /**
@@ -16,16 +15,4 @@ import java.util.List;
  */
 public record StatusInfo(int code, String description, List<String> details) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static StatusInfo from(StatusInfoRaw raw) {
-        if (raw == null) {
-            return null;
-        }
-        return new StatusInfo(
-                raw.getCode(),
-                raw.getDescription(),
-                raw.getDetails() != null ? List.copyOf(raw.getDetails()) : List.of());
-    }
 }

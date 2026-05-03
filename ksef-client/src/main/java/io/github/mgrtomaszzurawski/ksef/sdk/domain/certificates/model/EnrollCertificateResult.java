@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EnrollCertificateResponseRaw;
 import java.time.OffsetDateTime;
 
 /**
@@ -15,10 +14,4 @@ import java.time.OffsetDateTime;
  */
 public record EnrollCertificateResult(String referenceNumber, OffsetDateTime timestamp) {
 
-    /**
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public static EnrollCertificateResult from(EnrollCertificateResponseRaw raw) {
-        return new EnrollCertificateResult(raw.getReferenceNumber(), raw.getTimestamp());
-    }
 }

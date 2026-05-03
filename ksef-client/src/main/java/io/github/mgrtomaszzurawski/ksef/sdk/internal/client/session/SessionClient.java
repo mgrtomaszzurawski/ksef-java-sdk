@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionResponseRaw
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
@@ -26,6 +27,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSuppo
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingRequestMappers;
 
 /**
  * Client for KSeF session operations — online and batch session lifecycle,
@@ -77,9 +80,9 @@ public final class SessionClient {
     public OnlineSession openOnline(OpenOnlineSessionRequestRaw request) {
         LOGGER.debug(LOG_CALL, OP_OPEN_ONLINE);
         String token = sessionContext.token();
-        OpenOnlineSessionResponseRaw raw = http.postJsonAuthenticated(PATH_ONLINE, request, token,
+        OpenOnlineSessionResponseRaw rawValue = http.postJsonAuthenticated(PATH_ONLINE, request, token,
                 OpenOnlineSessionResponseRaw.class, OP_OPEN_ONLINE);
-        return OnlineSession.from(raw);
+        return InvoicingMappers.toOnlineSession(rawValue);
     }
 
     /**
@@ -89,14 +92,15 @@ public final class SessionClient {
      * @param request the invoice payload (encrypted content, hashes, sizes)
      * @return response with the invoice reference number
      */
-    public SendInvoiceResult sendInvoice(String referenceNumber, SendInvoiceRequestRaw request) {
+    public SendInvoiceResult sendInvoice(String referenceNumber, SendInvoiceRequest request) {
         LOGGER.debug(LOG_CALL_REF, OP_SEND_INVOICE, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = ApiPaths.subPath(PATH_ONLINE, referenceNumber) + SEGMENT_INVOICES;
-        SendInvoiceResponseRaw raw = http.postJsonAuthenticated(path, request, token,
+        SendInvoiceRequestRaw rawValue = InvoicingRequestMappers.toSendInvoiceRequestRaw(request);
+        SendInvoiceResponseRaw responseRaw = http.postJsonAuthenticated(path, rawValue, token,
                 SendInvoiceResponseRaw.class, OP_SEND_INVOICE);
-        return SendInvoiceResult.from(raw);
+        return InvoicingMappers.toSendInvoiceResult(responseRaw);
     }
 
     /**
@@ -121,9 +125,9 @@ public final class SessionClient {
     public BatchSession openBatch(OpenBatchSessionRequestRaw request) {
         LOGGER.debug(LOG_CALL, OP_OPEN_BATCH);
         String token = sessionContext.token();
-        OpenBatchSessionResponseRaw raw = http.postJsonAuthenticated(PATH_BATCH, request, token,
+        OpenBatchSessionResponseRaw rawValue = http.postJsonAuthenticated(PATH_BATCH, request, token,
                 OpenBatchSessionResponseRaw.class, OP_OPEN_BATCH);
-        return BatchSession.from(raw);
+        return InvoicingMappers.toBatchSession(rawValue);
     }
 
     /**
@@ -149,9 +153,9 @@ public final class SessionClient {
         LOGGER.debug(LOG_CALL_REF, OP_GET_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        SessionStatusResponseRaw raw = http.getAuthenticated(ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber), token,
+        SessionStatusResponseRaw rawValue = http.getAuthenticated(ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber), token,
                 SessionStatusResponseRaw.class, OP_GET_STATUS);
-        return SessionStatus.from(raw);
+        return InvoicingMappers.toSessionStatus(rawValue);
     }
 
     /**
@@ -165,8 +169,8 @@ public final class SessionClient {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_INVOICES;
-        SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES);
-        return SessionInvoices.from(raw);
+        SessionInvoicesResponseRaw rawValue = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES);
+        return InvoicingMappers.toSessionInvoices(rawValue);
     }
 
     /**
@@ -183,8 +187,8 @@ public final class SessionClient {
         String token = sessionContext.token();
         String sessionPath = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_INVOICES;
         String path = ApiPaths.subPath(sessionPath, invoiceReferenceNumber);
-        SessionInvoiceStatusResponseRaw raw = http.getAuthenticated(path, token, SessionInvoiceStatusResponseRaw.class, OP_GET_INVOICE_STATUS);
-        return SessionInvoiceStatus.from(raw);
+        SessionInvoiceStatusResponseRaw rawValue = http.getAuthenticated(path, token, SessionInvoiceStatusResponseRaw.class, OP_GET_INVOICE_STATUS);
+        return InvoicingMappers.toSessionInvoiceStatus(rawValue);
     }
 
     /**
@@ -198,8 +202,8 @@ public final class SessionClient {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_FAILED;
-        SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
-        return SessionInvoices.from(raw);
+        SessionInvoicesResponseRaw rawValue = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
+        return InvoicingMappers.toSessionInvoices(rawValue);
     }
 
     /**

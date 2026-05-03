@@ -4,24 +4,15 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSessionOpenRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.security.PublicKey;
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * Builder for opening an online session.
- * <p>
- * Required: form code, KSeF public key for encryption.
- * <p>
- * Usage:
- * <pre>{@code
- * var request = OnlineSessionBuilder.fa2(encryptionPublicKey).build();
- * var request = OnlineSessionBuilder.fa3(encryptionPublicKey).build();
- * }</pre>
+ * <p>Required: form code, KSeF public key for encryption.
  */
 public final class OnlineSessionBuilder {
 
@@ -44,100 +35,28 @@ public final class OnlineSessionBuilder {
         this.ksefPublicKey = Objects.requireNonNull(ksefPublicKey, ERR_NULL_KSEF_PUBLIC_KEY);
     }
 
-    /**
-     * Create a builder for FA(2) invoice schema (most common).
-     *
-     * @param ksefPublicKey the KSeF public key (SymmetricKeyEncryption usage) from SecurityClient
-     */
     public static OnlineSessionBuilder fa2(PublicKey ksefPublicKey) {
         return new OnlineSessionBuilder(SYSTEM_CODE_FA, SCHEMA_VERSION_2, FORM_CODE_FA2, ksefPublicKey);
     }
 
-    /**
-     * Create a builder for FA(3) invoice schema.
-     *
-     * @param ksefPublicKey the KSeF public key (SymmetricKeyEncryption usage) from SecurityClient
-     */
     public static OnlineSessionBuilder fa3(PublicKey ksefPublicKey) {
         return new OnlineSessionBuilder(SYSTEM_CODE_FA, SCHEMA_VERSION_3, FORM_CODE_FA3, ksefPublicKey);
     }
 
-    /**
-     * Create a builder for a custom form code.
-     *
-     * @param systemCode e.g. "FA"
-     * @param schemaVersion e.g. "2"
-     * @param formCodeValue e.g. "FA (2)"
-     * @param ksefPublicKey the KSeF public key
-     */
     public static OnlineSessionBuilder custom(String systemCode, String schemaVersion, String formCodeValue, PublicKey ksefPublicKey) {
         return new OnlineSessionBuilder(systemCode, schemaVersion, formCodeValue, ksefPublicKey);
     }
 
-    /**
-     * Result of building a session request, containing the request and the
-     * AES key/IV needed for encrypting invoices within the session.
-     */
-    public record SessionOpenResult(
-            OpenOnlineSessionRequestRaw request,
-            byte[] aesKey,
-            byte[] initVector) {
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof SessionOpenResult other)) {
-                return false;
-            }
-            return Objects.equals(request, other.request)
-                    && Arrays.equals(aesKey, other.aesKey)
-                    && Arrays.equals(initVector, other.initVector);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(request, Arrays.hashCode(aesKey), Arrays.hashCode(initVector));
-        }
-
-        @Override
-        public String toString() {
-            return "SessionOpenResult[request=" + request
-                    + ", aesKey=<redacted>"
-                    + ", initVector=<redacted>]";
-        }
-    }
-
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     * Note: each call to {@link #build()} produces fresh AES key + IV.
-     */
     public OnlineSessionBuilder toBuilder() {
         return new OnlineSessionBuilder(this.systemCode, this.schemaVersion, this.formCodeValue, this.ksefPublicKey);
     }
 
-    /**
-     * Build the session opening request. Generates AES key and encrypts it
-     * with the KSeF public key automatically. Returns both the request and
-     * the AES key/IV needed for encrypting invoices within this session.
-     *
-     * @return result containing the request and session encryption keys
-     */
-    public SessionOpenResult build() {
+    public OnlineSessionOpenRequest build() {
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, ksefPublicKey);
-
-        OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw()
-                .formCode(new FormCodeRaw()
-                        .systemCode(systemCode)
-                        .schemaVersion(schemaVersion)
-                        .value(formCodeValue))
-                .encryption(new EncryptionInfoRaw()
-                        .encryptedSymmetricKey(encryptedKey)
-                        .initializationVector(initVector));
-
-        return new SessionOpenResult(request, aesKey, initVector);
+        return new OnlineSessionOpenRequest(
+                new FormCodeInfo(systemCode, schemaVersion, formCodeValue),
+                encryptedKey, initVector, aesKey);
     }
 }

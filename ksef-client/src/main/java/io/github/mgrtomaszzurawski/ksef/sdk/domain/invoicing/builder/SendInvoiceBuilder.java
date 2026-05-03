@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -77,20 +77,17 @@ public final class SendInvoiceBuilder {
      *
      * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */
-    public SendInvoiceRequestRaw build() {
+    public SendInvoiceRequest build() {
         byte[] encryptedContent = CryptoService.encryptAes(invoiceContent, aesKey, initVector);
-
         byte[] invoiceHash = computeSha256(invoiceContent);
         byte[] encryptedHash = computeSha256(encryptedContent);
-
-        SendInvoiceRequestRaw request = new SendInvoiceRequestRaw();
-        request.setInvoiceHash(invoiceHash);
-        request.setInvoiceSize((long) invoiceContent.length);
-        request.setEncryptedInvoiceHash(encryptedHash);
-        request.setEncryptedInvoiceSize((long) encryptedContent.length);
-        request.setEncryptedInvoiceContent(encryptedContent);
-        request.setOfflineMode(offlineMode);
-        return request;
+        return new SendInvoiceRequest(
+                invoiceHash,
+                (long) invoiceContent.length,
+                encryptedHash,
+                (long) encryptedContent.length,
+                encryptedContent,
+                offlineMode);
     }
 
     private static byte[] computeSha256(byte[] data) {
