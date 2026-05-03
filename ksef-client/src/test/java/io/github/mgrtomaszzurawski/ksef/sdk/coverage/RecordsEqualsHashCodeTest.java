@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Coverage of auto-generated record equals/hashCode/toString plus the
@@ -78,8 +79,10 @@ class RecordsEqualsHashCodeTest {
 
     @Test
     void tokenGenerateRequest_toString_includesPermissionsList() {
-        assertNotNull(new TokenGenerateRequest(TOKEN_DESCRIPTION,
-                List.of(TokenPermissionType.INVOICE_READ)).toString());
+        String rendered = new TokenGenerateRequest(TOKEN_DESCRIPTION,
+                List.of(TokenPermissionType.INVOICE_READ)).toString();
+        assertTrue(rendered.contains(TokenPermissionType.INVOICE_READ.name()));
+        assertTrue(rendered.contains(TOKEN_DESCRIPTION));
     }
 
     @Test
