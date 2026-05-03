@@ -31,6 +31,7 @@ public final class KsefVerificationLinks {
     private static final DateTimeFormatter DATE_DD_MM_YYYY = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final String INVOICE_PATH = "/invoice/%s/%s/%s";
     private static final String CERTIFICATE_PATH = "/certificate/%s/%s/%s/%s/%s/%s";
+    private static final String CERTIFICATE_SIGNING_PAYLOAD = "/certificate/%s/%s/%s/%s/%s";
 
     private static final String ERR_NULL_ENVIRONMENT = "environment must not be null";
     private static final String ERR_NULL_SELLER_NIP = "sellerNip must not be null";
@@ -137,6 +138,65 @@ public final class KsefVerificationLinks {
                         encodePathSegment(params.certificateSerial()),
                         base64UrlNoPadding(params.invoiceSha256()),
                         base64UrlNoPadding(params.signature()));
+    }
+
+    /**
+     * Return the canonical signing payload that the offline KSeF certificate
+     * private key must sign in order to produce the {@code signature} segment
+     * of the KOD II URL.
+     *
+     * <p>The payload is the certificate path WITHOUT the trailing signature
+     * segment, encoded as UTF-8 bytes:
+     * {@code /certificate/{contextType}/{contextValue}/{sellerNip}/{certificateSerial}/{base64UrlSha256}}.
+     *
+     * <p>Callers sign these bytes with their offline KSeF certificate private
+     * key (typically RSA-SHA256 PKCS#1 v1.5 per KSeF spec), pass the resulting
+     * signature into {@link CertificateVerificationParams}, and call
+     * {@link #buildCertificateVerificationUrl(QrEnvironment, CertificateVerificationParams)}.
+     *
+     * @param contextType authorising context identifier type
+     * @param contextValue authorising context identifier value
+     * @param sellerNip 10-digit NIP of the seller
+     * @param certificateSerial KSeF Offline certificate serial number
+     * @param invoiceSha256 32-byte SHA-256 hash of the invoice XML
+     * @return canonical signing payload bytes (UTF-8 encoded path)
+     */
+    /**
+     * Subset of {@link CertificateVerificationParams} that omits the
+     * signature, used as input to {@link #canonicalCertificateSigningPayload}
+     * before the signature is computed.
+     */
+    public record CertificateSigningInput(
+            String contextType,
+            String contextValue,
+            String sellerNip,
+            String certificateSerial,
+            byte[] invoiceSha256) {
+
+        public CertificateSigningInput {
+            Objects.requireNonNull(contextType, ERR_NULL_CONTEXT_TYPE);
+            Objects.requireNonNull(contextValue, ERR_NULL_CONTEXT_VALUE);
+            Objects.requireNonNull(sellerNip, ERR_NULL_SELLER_NIP);
+            Objects.requireNonNull(certificateSerial, ERR_NULL_CERTIFICATE_SERIAL);
+            Objects.requireNonNull(invoiceSha256, ERR_NULL_INVOICE_HASH);
+            invoiceSha256 = invoiceSha256.clone();
+        }
+
+        @Override
+        public byte[] invoiceSha256() {
+            return invoiceSha256.clone();
+        }
+    }
+
+    public static byte[] canonicalCertificateSigningPayload(CertificateSigningInput input) {
+        Objects.requireNonNull(input, ERR_NULL_PARAMS);
+        String payloadPath = String.format(CERTIFICATE_SIGNING_PAYLOAD,
+                encodePathSegment(input.contextType()),
+                encodePathSegment(input.contextValue()),
+                encodePathSegment(input.sellerNip()),
+                encodePathSegment(input.certificateSerial()),
+                base64UrlNoPadding(input.invoiceSha256()));
+        return payloadPath.getBytes(StandardCharsets.UTF_8);
     }
 
     private static String base64UrlNoPadding(byte[] bytes) {

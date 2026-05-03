@@ -107,6 +107,40 @@ class KsefVerificationLinksTest {
     }
 
     @Test
+    void canonicalCertificateSigningPayload_combinesAllFieldsIntoPathBytes() throws NoSuchAlgorithmException {
+        byte[] hash = sha256(SAMPLE_INVOICE_XML);
+        var input = new KsefVerificationLinks.CertificateSigningInput(
+                CONTEXT_TYPE, CONTEXT_VALUE, SELLER_NIP, CERTIFICATE_SERIAL, hash);
+
+        byte[] payload = KsefVerificationLinks.canonicalCertificateSigningPayload(input);
+        String payloadString = new String(payload, java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(payloadString.startsWith("/certificate/" + CONTEXT_TYPE
+                        + "/" + CONTEXT_VALUE + "/" + SELLER_NIP + "/" + CERTIFICATE_SERIAL + "/"),
+                "expected /certificate/ payload with positional params, got: " + payloadString);
+        assertFalse(payloadString.contains("="),
+                "base64url segment must not contain padding, got: " + payloadString);
+    }
+
+    @Test
+    void canonicalCertificateSigningPayload_excludesSignatureSegment() throws NoSuchAlgorithmException {
+        byte[] hash = sha256(SAMPLE_INVOICE_XML);
+        var input = new KsefVerificationLinks.CertificateSigningInput(
+                CONTEXT_TYPE, CONTEXT_VALUE, SELLER_NIP, CERTIFICATE_SERIAL, hash);
+
+        byte[] payload = KsefVerificationLinks.canonicalCertificateSigningPayload(input);
+        var params = new KsefVerificationLinks.CertificateVerificationParams(
+                CONTEXT_TYPE, CONTEXT_VALUE, SELLER_NIP, CERTIFICATE_SERIAL, hash, SIGNATURE);
+        String fullUrl = KsefVerificationLinks.buildCertificateVerificationUrl(QrEnvironment.TEST, params);
+
+        // Full URL = environment baseUrl + signing payload + "/" + base64UrlSignature.
+        String expectedUrlPrefix = QrEnvironment.TEST.baseUrl() + new String(payload,
+                java.nio.charset.StandardCharsets.UTF_8) + "/";
+        assertTrue(fullUrl.startsWith(expectedUrlPrefix),
+                "full URL must equal environment + signing payload + '/' + signature; got: " + fullUrl);
+    }
+
+    @Test
     void qrEnvironment_eachValue_baseUrlStartsWithHttps() {
         for (QrEnvironment env : QrEnvironment.values()) {
             assertTrue(env.baseUrl().startsWith("https://"),

@@ -471,7 +471,7 @@ class PermissionClientTest {
                 .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

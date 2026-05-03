@@ -349,6 +349,39 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
+     * Seed the session context directly with an existing access token,
+     * reference number, and (optional) refresh token, bypassing the full
+     * challenge/redeem flow.
+     *
+     * <p>This is the supported test-only seam for unit tests that mock the
+     * KSeF API surface but still need a {@link KsefClient} that thinks it is
+     * authenticated. It is also useful for advanced consumers who already
+     * possess a valid bearer token from an out-of-band flow (e.g. token
+     * persisted from a previous session).
+     *
+     * <p>Marks the client as authenticated; subsequent calls to
+     * {@link #authenticate()} are no-ops until {@link #terminateAuth()} or a
+     * 401 reauth is triggered.
+     *
+     * @apiNote SDK-internal / advanced. Most consumers should call
+     *     {@link #authenticate()} instead.
+     * @param accessToken the bearer access token
+     * @param referenceNumber the auth-session reference number returned by
+     *     {@code /auth/token/redeem}
+     * @param refreshToken the refresh token, or {@code null} when none
+     */
+    public synchronized void activateSessionForTests(String accessToken,
+                                                     String referenceNumber,
+                                                     String refreshToken) {
+        ensureOpen();
+        sessionContext.activate(accessToken, referenceNumber, null);
+        if (refreshToken != null) {
+            sessionContext.storeRefreshToken(refreshToken);
+        }
+        authenticated = true;
+    }
+
+    /**
      * Terminate the current authentication session.
      * Clears all session state. After calling this, {@link #authenticate()} must be
      * called again (explicitly or lazily) before any further operations.

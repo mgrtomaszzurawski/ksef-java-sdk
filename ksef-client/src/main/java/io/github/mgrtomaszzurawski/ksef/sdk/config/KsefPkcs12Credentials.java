@@ -42,6 +42,16 @@ public record KsefPkcs12Credentials(Path keystorePath, char[] password, KsefIden
     }
 
     /**
+     * Zeroise the stored password char array. Idempotent. Call once authentication
+     * has completed to remove the password from heap before garbage collection.
+     * After {@code clearPassword()} subsequent calls to {@link #password()} return
+     * an array of zeroes.
+     */
+    public void clearPassword() {
+        Arrays.fill(password, '\0');
+    }
+
+    /**
      * Backwards-compatible constructor — accepts a plain NIP string.
      *
      * @param keystorePath path to PKCS#12 keystore

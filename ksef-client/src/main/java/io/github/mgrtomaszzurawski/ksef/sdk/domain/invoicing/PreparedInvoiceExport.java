@@ -20,6 +20,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Locale;
@@ -49,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * end-to-end flow described in the official KSeF
  * <a href="https://github.com/CIRFMF/ksef-docs/blob/main/pobieranie-faktur/przyrostowe-pobieranie-faktur.md">incremental retrieval docs</a>.
  */
-public final class PreparedInvoiceExport {
+public final class PreparedInvoiceExport implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PreparedInvoiceExport.class);
 
@@ -78,14 +79,23 @@ public final class PreparedInvoiceExport {
     private static final String ERR_SHA256_UNAVAILABLE = SHA_256 + " unavailable on this JVM";
     private static final String ERR_INTERRUPTED_POLLING = "Interrupted while polling export status";
     private static final String ERR_INSECURE_PART_URL = "Refusing to download package part over non-HTTPS URL: ";
+    private static final String ERR_DISPOSED = "PreparedInvoiceExport already disposed; AES key/IV have been zeroised";
+    private static final String ERR_ENTRY_LIMIT = "ZIP archive exceeds entry-count cap (%d entries, max %d)";
+    private static final String ERR_ENTRY_SIZE = "ZIP entry exceeds per-entry size cap (entry %s: %d bytes, max %d)";
+    private static final String ERR_TOTAL_SIZE = "ZIP archive exceeds total uncompressed size cap (%d bytes, max %d)";
     private static final String SCHEME_HTTPS = "https";
-    private static final java.time.Duration DOWNLOAD_TIMEOUT = java.time.Duration.ofMinutes(5);
+    private static final Duration DOWNLOAD_TIMEOUT = Duration.ofMinutes(5);
+    /** Conservative caps to defend against malformed/zip-bomb export packages. */
+    private static final int MAX_ZIP_ENTRIES = 100_000;
+    private static final long MAX_ZIP_TOTAL_BYTES = 4L * 1024 * 1024 * 1024; // 4 GiB
+    private static final long MAX_ZIP_ENTRY_BYTES = 256L * 1024 * 1024;      // 256 MiB
 
     private final InvoiceClient invoices;
     private final HttpClient httpClient;
     private final String referenceNumber;
     private final byte[] aesKey;
     private final byte[] initVector;
+    private volatile boolean disposed;
 
     /**
      * @apiNote Internal — constructed by {@code InvoiceClientImpl.prepareExport(...)}.
@@ -109,6 +119,27 @@ public final class PreparedInvoiceExport {
     /** Server-assigned reference number for this export job. */
     public String referenceNumber() {
         return referenceNumber;
+    }
+
+    /**
+     * Zeroise the retained AES key + IV. Idempotent. After {@code close()} the
+     * handle cannot be used to decrypt further package parts. Use this in a
+     * try-with-resources or call explicitly once the export package has been
+     * consumed.
+     */
+    @Override
+    public void close() {
+        if (!disposed) {
+            java.util.Arrays.fill(aesKey, (byte) 0);
+            java.util.Arrays.fill(initVector, (byte) 0);
+            disposed = true;
+        }
+    }
+
+    private void requireNotDisposed() {
+        if (disposed) {
+            throw new IllegalStateException(ERR_DISPOSED);
+        }
     }
 
     /**
@@ -148,6 +179,7 @@ public final class PreparedInvoiceExport {
      * @return decrypted, unzipped invoice package
      */
     public ExportedInvoicePackage downloadAndDecrypt(InvoiceExportStatus status) {
+        requireNotDisposed();
         Objects.requireNonNull(status, ERR_NULL_STATUS);
         Objects.requireNonNull(status.invoicePackage(), ERR_NULL_PARTS);
         Objects.requireNonNull(status.invoicePackage().parts(), ERR_NULL_PARTS);
@@ -226,11 +258,23 @@ public final class PreparedInvoiceExport {
     private static ExportedInvoicePackage unzipPackage(byte[] zipBytes) {
         Map<String, byte[]> invoiceXmls = new HashMap<>();
         byte[] metadataJson = null;
+        long totalBytes = 0L;
+        int entryCount = 0;
         try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry entry = zip.getNextEntry();
             while (entry != null) {
                 if (!entry.isDirectory()) {
-                    byte[] entryBytes = readEntryBytes(zip);
+                    entryCount++;
+                    if (entryCount > MAX_ZIP_ENTRIES) {
+                        throw new KsefException(
+                                String.format(Locale.ROOT, ERR_ENTRY_LIMIT, entryCount, MAX_ZIP_ENTRIES), null);
+                    }
+                    byte[] entryBytes = readEntryBytes(zip, entry.getName());
+                    totalBytes += entryBytes.length;
+                    if (totalBytes > MAX_ZIP_TOTAL_BYTES) {
+                        throw new KsefException(
+                                String.format(Locale.ROOT, ERR_TOTAL_SIZE, totalBytes, MAX_ZIP_TOTAL_BYTES), null);
+                    }
                     if (METADATA_FILE.equals(entry.getName())) {
                         metadataJson = entryBytes;
                     } else {
@@ -245,11 +289,18 @@ public final class PreparedInvoiceExport {
         return new ExportedInvoicePackage(metadataJson, invoiceXmls);
     }
 
-    private static byte[] readEntryBytes(ZipInputStream zip) throws IOException {
+    private static byte[] readEntryBytes(ZipInputStream zip, String entryName) throws IOException {
         ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
         byte[] buffer = new byte[ZIP_BUFFER_BYTES];
+        long entrySize = 0L;
         int read = zip.read(buffer);
         while (read > 0) {
+            entrySize += read;
+            if (entrySize > MAX_ZIP_ENTRY_BYTES) {
+                throw new KsefException(
+                        String.format(Locale.ROOT, ERR_ENTRY_SIZE, entryName, entrySize, MAX_ZIP_ENTRY_BYTES),
+                        null);
+            }
             entryBuffer.write(buffer, 0, read);
             read = zip.read(buffer);
         }

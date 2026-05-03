@@ -275,7 +275,7 @@ class AuthAutoRefreshTest {
                 .credentials(new KsefTokenCredentials(TEST_NIP_SHORT, NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.runtime().sessionContext().activate(INITIAL_TOKEN, SESSION_REF, null);
+        ksef.activateSessionForTests(INITIAL_TOKEN, SESSION_REF, null);
         return ksef;
     }
 

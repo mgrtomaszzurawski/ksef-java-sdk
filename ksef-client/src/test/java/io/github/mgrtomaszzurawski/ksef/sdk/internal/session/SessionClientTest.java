@@ -296,7 +296,7 @@ class SessionClientTest {
                 .credentials(new KsefTokenCredentials(CREDENTIALS_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

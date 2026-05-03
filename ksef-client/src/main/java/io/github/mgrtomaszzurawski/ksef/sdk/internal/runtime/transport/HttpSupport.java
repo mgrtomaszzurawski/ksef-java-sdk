@@ -39,6 +39,13 @@ public final class HttpSupport {
     private static final String X_ERROR_FORMAT_HEADER = "X-Error-Format";
     private static final String X_ERROR_FORMAT_PROBLEM_DETAILS = "problem-details";
     private static final String RETRY_AFTER_HEADER = "Retry-After";
+
+    /** RFC 7231 §7.1.1.1 permits three date formats for HTTP-date values. */
+    private static final java.time.format.DateTimeFormatter[] HTTP_DATE_FORMATS = {
+            java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME,
+            java.time.format.DateTimeFormatter.ofPattern("EEEE, dd-MMM-yy HH:mm:ss zzz", java.util.Locale.ROOT),
+            java.time.format.DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy", java.util.Locale.ROOT),
+    };
     private static final int HTTP_OK = 200;
     private static final int HTTP_CREATED = 201;
     private static final int HTTP_ACCEPTED = 202;
@@ -364,10 +371,37 @@ public final class HttpSupport {
     }
 
     private static java.util.Optional<Long> parseRetryAfterValue(String value) {
+        String trimmed = value.trim();
         try {
-            long seconds = Long.parseLong(value.trim());
+            long seconds = Long.parseLong(trimmed);
             return seconds < 0 ? java.util.Optional.empty() : java.util.Optional.of(seconds);
         } catch (NumberFormatException notDeltaSeconds) {
+            return parseRetryAfterHttpDate(trimmed);
+        }
+    }
+
+    /**
+     * Parse RFC 7231 Section 7.1.1.1 HTTP-date and return the delta-seconds
+     * between now and the parsed instant. Negative deltas (past dates) collapse
+     * to zero. Returns empty when the value is not a valid HTTP-date in any of
+     * the three RFC-permitted formats.
+     */
+    private static java.util.Optional<Long> parseRetryAfterHttpDate(String value) {
+        for (java.time.format.DateTimeFormatter formatter : HTTP_DATE_FORMATS) {
+            java.util.Optional<Long> parsed = tryParseHttpDate(value, formatter);
+            if (parsed.isPresent()) {
+                return parsed;
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
+    private static java.util.Optional<Long> tryParseHttpDate(String value, java.time.format.DateTimeFormatter formatter) {
+        try {
+            java.time.ZonedDateTime parsed = java.time.ZonedDateTime.parse(value, formatter);
+            long deltaSeconds = java.time.Duration.between(java.time.Instant.now(), parsed.toInstant()).toSeconds();
+            return java.util.Optional.of(Math.max(0L, deltaSeconds));
+        } catch (java.time.format.DateTimeParseException notThisFormat) {
             return java.util.Optional.empty();
         }
     }
