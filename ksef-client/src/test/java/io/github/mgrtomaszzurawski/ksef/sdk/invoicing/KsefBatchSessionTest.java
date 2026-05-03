@@ -7,7 +7,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -158,13 +157,15 @@ class KsefBatchSessionTest {
     }
 
     private static KsefBatchSession createSession(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
-                .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
-                .retryPolicy(RetryPolicy.builder().enabled(false).build())
-                .build();
-        ksef.activateSessionForTests(TEST_TOKEN, TEST_BATCH_REF, null);
-
-        SessionClient sessionClient = new SessionClient(KsefClientInternals.runtime(ksef));
+        // Direct internal-runtime construction for the unit test of the
+        // batch session's part-upload flow. The session reference is
+        // pre-fed; no auth round-trip is needed because the batch-session
+        // class does not call /auth/* itself — KsefClient orchestrates
+        // auth before constructing the session in production.
+        io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime runtime =
+                io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
+        runtime.sessionContext().activate(TEST_TOKEN, TEST_BATCH_REF, java.time.OffsetDateTime.now().plusHours(1));
+        SessionClient sessionClient = new SessionClient(runtime);
         return new KsefBatchSession(sessionClient, TEST_BATCH_REF, List.of(samplePart()));
     }
 

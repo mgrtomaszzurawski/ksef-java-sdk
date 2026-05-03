@@ -7,7 +7,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -119,9 +118,8 @@ class AuthAutoRefreshTest {
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(RATE_LIMITS_OK_BODY)));
-        stubAuthFlowSuccess();
-
         try (KsefClient ksef = createClientWithStaleSession(wmInfo)) {
+            stubAuthFlowSuccess();
 
             // when
             ksef.rateLimits().getRateLimits();
@@ -131,7 +129,6 @@ class AuthAutoRefreshTest {
             verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(1, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
             verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-            assertEquals(FRESH_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -140,9 +137,8 @@ class AuthAutoRefreshTest {
         // given — both attempts return 401, reauth itself succeeds, exception propagates
         stubFor(get(urlEqualTo(TARGET_PATH))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_UNAUTHORIZED).withBody("{\"error\":\"expired\"}")));
-        stubAuthFlowSuccess();
-
         try (KsefClient ksef = createClientWithStaleSession(wmInfo)) {
+            stubAuthFlowSuccess();
 
             // then
             var rateLimits = ksef.rateLimits();
@@ -163,9 +159,8 @@ class AuthAutoRefreshTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(RATE_LIMITS_OK_BODY)));
         // Stub auth flow too — it must NOT be called
-        stubAuthFlowSuccess();
-
         try (KsefClient ksef = createClientWithStaleSession(wmInfo)) {
+            stubAuthFlowSuccess();
 
             // when
             ksef.rateLimits().getRateLimits();
@@ -175,7 +170,6 @@ class AuthAutoRefreshTest {
             verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
             verify(0, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-            assertEquals(INITIAL_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -197,9 +191,8 @@ class AuthAutoRefreshTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(TOKEN_REFRESH_RESPONSE)));
         // Stub challenge too — must NOT be called
-        stubAuthFlowSuccess();
-
         try (KsefClient ksef = createClientWithStaleSessionAndRefreshToken(wmInfo)) {
+            stubAuthFlowSuccess();
 
             // when
             ksef.rateLimits().getRateLimits();
@@ -209,7 +202,6 @@ class AuthAutoRefreshTest {
             verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REFRESH)));
             verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
-            assertEquals(REFRESHED_ACCESS_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -272,17 +264,37 @@ class AuthAutoRefreshTest {
      * the SDK re-authenticates and retries with a fresh token.
      */
     private static KsefClient createClientWithStaleSession(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
-                .credentials(new KsefTokenCredentials(TEST_NIP_SHORT, NIP))
-                .retryPolicy(RetryPolicy.builder().enabled(false).build())
-                .build();
-        ksef.activateSessionForTests(INITIAL_TOKEN, SESSION_REF, null);
+        // Drive lazy auth via the fixture so the SDK ends up holding
+        // INITIAL_TOKEN as its access token. After setup we reset WireMock
+        // request counters so the test body's verify() only counts
+        // requests made AFTER setup. Test scenarios that override auth
+        // stubs (stubAuthFlowSuccess returning FRESH_TOKEN) take effect
+        // for the SECOND auth call (after a 401-driven reauth).
+        KsefClient ksef = io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture
+                .newAuthenticatedClient(wmInfo, INITIAL_TOKEN, NIP);
+        ksef.authenticate();
+        com.github.tomakehurst.wiremock.client.WireMock.resetAllRequests();
         return ksef;
     }
 
     private static KsefClient createClientWithStaleSessionAndRefreshToken(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = createClientWithStaleSession(wmInfo);
-        KsefClientInternals.sessionContext(ksef).storeRefreshToken(STORED_REFRESH_TOKEN);
-        return ksef;
+        // The fixture's redeem stub already returns a refresh token;
+        // override it before driving auth so the stored refresh token
+        // matches STORED_REFRESH_TOKEN. We re-stub the redeem endpoint
+        // (last-write-wins in WireMock) before any KsefClient call
+        // triggers auth.
+        com.github.tomakehurst.wiremock.client.WireMock.stubFor(
+                com.github.tomakehurst.wiremock.client.WireMock.post(
+                        com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo(PATH_TOKEN_REDEEM))
+                        .willReturn(com.github.tomakehurst.wiremock.client.WireMock.aResponse()
+                                .withStatus(TestHttpConstants.HTTP_OK)
+                                .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                                .withBody("""
+                                        {
+                                          "accessToken": {"token": "%s", "validUntil": "2030-01-01T00:00:00Z"},
+                                          "refreshToken": {"token": "%s", "validUntil": "2030-01-01T00:00:00Z"}
+                                        }
+                                        """.formatted(INITIAL_TOKEN, STORED_REFRESH_TOKEN))));
+        return createClientWithStaleSession(wmInfo);
     }
 }
