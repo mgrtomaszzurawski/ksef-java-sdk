@@ -453,6 +453,17 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
+     * Access incremental invoice sync orchestrator. Implements the
+     * documented HWM-based pagination algorithm from
+     * {@code ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md}.
+     * Tier 1 workflow API per ADR-021.
+     */
+    public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient invoiceSync() {
+        ensureOpen();
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient(invoiceClient);
+    }
+
+    /**
      * Access token management operations (generate, list, get status, revoke).
      */
     public TokenClient tokens() {

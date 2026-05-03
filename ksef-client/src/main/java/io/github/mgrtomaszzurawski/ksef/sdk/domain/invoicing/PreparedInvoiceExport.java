@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoiceDirectory;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoicePackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackagePart;
@@ -19,6 +20,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.security.NoSuchAlgorithmException;
@@ -207,6 +210,58 @@ public final class PreparedInvoiceExport implements AutoCloseable {
         return unzipPackage(archiveBuffer.toByteArray());
     }
 
+    /**
+     * File-backed variant of
+     * {@link #downloadAndDecrypt(InvoiceExportStatus)} for export packages
+     * too large to hold in heap.
+     *
+     * <p>Downloads each part, verifies SHA-256, decrypts, then unzips
+     * each entry directly to {@code outputDirectory}. The metadata file
+     * (if present) is written to {@code outputDirectory/_metadata.json};
+     * each invoice XML to {@code outputDirectory/<entryName>}.
+     *
+     * <p>The directory is created if it does not exist.
+     *
+     * <p>Spec citation: Step 5 of
+     * {@code context/IMPLEMENTATION-PLAN-1.0.0-2026-05-03-1712.md}.
+     *
+     * @param status the terminal status returned by {@link #awaitReady()}
+     * @param outputDirectory directory where the package contents are written
+     * @return file-backed handle with on-disk paths
+     */
+    public ExportedInvoiceDirectory downloadAndDecryptTo(InvoiceExportStatus status, Path outputDirectory) {
+        requireNotDisposed();
+        Objects.requireNonNull(status, ERR_NULL_STATUS);
+        Objects.requireNonNull(status.invoicePackage(), ERR_NULL_PARTS);
+        Objects.requireNonNull(status.invoicePackage().parts(), ERR_NULL_PARTS);
+        Objects.requireNonNull(outputDirectory, "outputDirectory must not be null");
+        LOGGER.debug(LOG_DOWNLOAD, referenceNumber, status.invoicePackage().parts().size());
+
+        try {
+            Files.createDirectories(outputDirectory);
+        } catch (IOException ex) {
+            throw new KsefException(ERR_ZIP_FAILED, ex);
+        }
+
+        // Per-part download/decrypt mirrors downloadAndDecrypt() above:
+        // verify each part's hashes (encrypted + plaintext) before
+        // appending to the archive stream. Memory bound is one part at a
+        // time, not the whole package.
+        ByteArrayOutputStream archiveBuffer = new ByteArrayOutputStream();
+        for (InvoicePackagePart part : status.invoicePackage().parts()) {
+            byte[] encryptedBytes = downloadPart(part);
+            verifyEncryptedPartHash(part, encryptedBytes);
+            byte[] decryptedBytes = CryptoService.decryptAes(encryptedBytes, aesKey, initVector);
+            verifyPlaintextPartHash(part, decryptedBytes);
+            try {
+                archiveBuffer.write(decryptedBytes);
+            } catch (IOException unreachable) {
+                throw new KsefException(ERR_ZIP_FAILED, unreachable);
+            }
+        }
+        return unzipPackageToDirectory(archiveBuffer.toByteArray(), outputDirectory);
+    }
+
     private byte[] downloadPart(InvoicePackagePart part) {
         URI url = part.url();
         if (url.getScheme() == null || !SCHEME_HTTPS.equalsIgnoreCase(url.getScheme())) {
@@ -278,6 +333,52 @@ public final class PreparedInvoiceExport implements AutoCloseable {
         } catch (NoSuchAlgorithmException missingAlgorithm) {
             throw new KsefException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
         }
+    }
+
+    private static ExportedInvoiceDirectory unzipPackageToDirectory(byte[] zipBytes, Path outputDir) {
+        Map<String, Path> invoiceXmls = new HashMap<>();
+        Path metadataPath = null;
+        long totalBytes = 0L;
+        int entryCount = 0;
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+            ZipEntry entry = zip.getNextEntry();
+            while (entry != null) {
+                if (!entry.isDirectory()) {
+                    entryCount++;
+                    if (entryCount > MAX_ZIP_ENTRIES) {
+                        throw new KsefException(
+                                String.format(Locale.ROOT, ERR_ENTRY_LIMIT, entryCount, MAX_ZIP_ENTRIES), null);
+                    }
+                    String entryName = entry.getName();
+                    Path target = outputDir.resolve(entryName).normalize();
+                    if (!target.startsWith(outputDir.normalize())) {
+                        throw new KsefException("ZIP entry escapes output directory: " + entryName, null);
+                    }
+                    Files.createDirectories(target.getParent() == null ? outputDir : target.getParent());
+                    long entrySize = Files.copy(zip, target,
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    if (entrySize > MAX_ZIP_ENTRY_BYTES) {
+                        throw new KsefException(
+                                String.format(Locale.ROOT, ERR_ENTRY_SIZE, entryName, entrySize, MAX_ZIP_ENTRY_BYTES),
+                                null);
+                    }
+                    totalBytes += entrySize;
+                    if (totalBytes > MAX_ZIP_TOTAL_BYTES) {
+                        throw new KsefException(
+                                String.format(Locale.ROOT, ERR_TOTAL_SIZE, totalBytes, MAX_ZIP_TOTAL_BYTES), null);
+                    }
+                    if (METADATA_FILE.equals(entryName)) {
+                        metadataPath = target;
+                    } else {
+                        invoiceXmls.put(entryName, target);
+                    }
+                }
+                entry = zip.getNextEntry();
+            }
+        } catch (IOException zipFailure) {
+            throw new KsefException(ERR_ZIP_FAILED, zipFailure);
+        }
+        return new ExportedInvoiceDirectory(outputDir, metadataPath, invoiceXmls);
     }
 
     private static ExportedInvoicePackage unzipPackage(byte[] zipBytes) {
