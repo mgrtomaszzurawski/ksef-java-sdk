@@ -23,6 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalP
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityAdminPermissionGrantRequest;
@@ -51,9 +52,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectTyp
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenGenerateRequest;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Each test exercises every fluent setter on one builder family and asserts
@@ -90,6 +94,12 @@ class AllBuildersSmokeTest {
     private static final int RATE_LIMIT_CATEGORY_COUNT = 12;
     private static final int TOKEN_PERMISSION_COUNT = 7;
     private static final int ENTITY_PERMISSION_COUNT = 4;
+    private static final int PERSONAL_PERMISSIONS_QUERY_COUNT = 8;
+    private static final int TEST_PERMISSIONS_GRANT_COUNT = 8;
+    private static final int SINGLE_SUBUNIT_COUNT = 1;
+    private static final long DELEGATABLE_PERMISSIONS_COUNT_LONG = 2L;
+    private static final int INDIRECT_PERMISSIONS_COUNT = 2;
+    private static final int EU_ENTITY_PERMISSIONS_COUNT = 2;
     private static final int MAX_ENROLLMENTS = 10;
     private static final int MAX_CERTIFICATES = 5;
 
@@ -163,17 +173,17 @@ class AllBuildersSmokeTest {
                 .invoiceDownload(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR)
                 .other(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR)
                 .toBuilder().build();
-        long set = countSet(request);
-        assertEquals(RATE_LIMIT_CATEGORY_COUNT, set);
+        long setCategoriesCount = countSet(request);
+        assertEquals(RATE_LIMIT_CATEGORY_COUNT, setCategoriesCount);
     }
 
     private static long countSet(TestRateLimitsRequest request) {
-        return java.util.stream.Stream.of(
+        return Stream.of(
                 request.onlineSession(), request.batchSession(), request.invoiceSend(),
                 request.invoiceStatus(), request.sessionList(), request.sessionInvoiceList(),
                 request.sessionMisc(), request.invoiceMetadata(), request.invoiceExport(),
                 request.invoiceExportStatus(), request.invoiceDownload(), request.other()
-        ).filter(java.util.Objects::nonNull).count();
+        ).filter(Objects::nonNull).count();
     }
 
     @Test
@@ -192,7 +202,7 @@ class AllBuildersSmokeTest {
                 .create(NIP, TestSubjectType.JST, DESCRIPTION)
                 .addSubunit(OTHER_NIP, SUBUNIT_DESCRIPTION).createdDate(OffsetDateTime.now())
                 .toBuilder().build();
-        assertEquals(1, request.subunits().size());
+        assertEquals(SINGLE_SUBUNIT_COUNT, request.subunits().size());
         assertEquals(OTHER_NIP, request.subunits().get(0).subjectNip());
     }
 
@@ -206,7 +216,7 @@ class AllBuildersSmokeTest {
                 .permission(TestDataPermissionType.INVOICE_READ, EXTRA_PERMISSION_DESCRIPTION)
                 .toBuilder().build();
         assertEquals(NIP, request.contextNip());
-        assertEquals(8, request.permissions().size());
+        assertEquals(TEST_PERMISSIONS_GRANT_COUNT, request.permissions().size());
     }
 
     @Test
@@ -245,8 +255,8 @@ class AllBuildersSmokeTest {
                 .toBuilder().build();
         assertEquals(ENTITY_PERMISSION_COUNT, request.permissions().size());
         long delegatableCount = request.permissions().stream()
-                .filter(entry -> entry.canDelegate()).count();
-        assertEquals(2L, delegatableCount);
+                .filter(EntityPermissionEntry::canDelegate).count();
+        assertEquals(DELEGATABLE_PERMISSIONS_COUNT_LONG, delegatableCount);
         assertEquals(EntityPermissionType.INVOICE_READ, request.permissions().get(0).type());
     }
 
@@ -287,8 +297,8 @@ class AllBuildersSmokeTest {
                 .invoiceRead().invoiceWrite().targetNip(OTHER_NIP)
                 .toBuilder().build();
         assertEquals(OTHER_NIP, withTargetNip.targetValue());
-        assertEquals(2, withTargetNip.permissions().size());
-        assertEquals(null, IndirectPermissionGrantBuilder.forPesel(PESEL)
+        assertEquals(INDIRECT_PERMISSIONS_COUNT, withTargetNip.permissions().size());
+        assertNull(IndirectPermissionGrantBuilder.forPesel(PESEL)
                 .description(DESCRIPTION).personDetails(FIRST_NAME, LAST_NAME)
                 .invoiceRead().targetAllPartners().build().targetValue());
         assertEquals(INTERNAL_ID, IndirectPermissionGrantBuilder.forFingerprint(FINGERPRINT)
@@ -304,7 +314,7 @@ class AllBuildersSmokeTest {
                 .invoiceRead().invoiceWrite()
                 .toBuilder().build();
         assertEquals(FULL_NAME, request.subjectFullName());
-        assertEquals(2, request.permissions().size());
+        assertEquals(EU_ENTITY_PERMISSIONS_COUNT, request.permissions().size());
     }
 
     @Test
@@ -327,7 +337,7 @@ class AllBuildersSmokeTest {
                 .invoiceRead().invoiceWrite().credentialsRead().credentialsManage()
                 .subunitManage().enforcementOperations().introspection().vatUeManage()
                 .activeOnly().toBuilder().build();
-        assertEquals(8, activeQuery.permissionTypes().size());
+        assertEquals(PERSONAL_PERMISSIONS_QUERY_COUNT, activeQuery.permissionTypes().size());
         assertEquals(PermissionState.ACTIVE, activeQuery.permissionState());
         assertEquals(PermissionState.INACTIVE,
                 PersonalPermissionsQueryBuilder.create().inactiveOnly().build().permissionState());
@@ -368,6 +378,6 @@ class AllBuildersSmokeTest {
         assertEquals(ENTITY_PERMISSION_COUNT, granted.permissionTypes().size());
         assertEquals(PEPPOL_ID_FIXTURE, EntityAuthorizationPermissionsQueryBuilder.received()
                 .authorizedByPeppolId(PEPPOL_ID_FIXTURE).build().authorizedValue());
-        assertTrue(granted.authorizingNip() != null);
+        assertNotNull(granted.authorizingNip());
     }
 }
