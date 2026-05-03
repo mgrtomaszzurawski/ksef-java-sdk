@@ -32,6 +32,7 @@ public final class KsefVerificationLinks {
     private static final String INVOICE_PATH = "/invoice/%s/%s/%s";
     private static final String CERTIFICATE_PATH = "/certificate/%s/%s/%s/%s/%s/%s";
     private static final String CERTIFICATE_SIGNING_PAYLOAD = "/certificate/%s/%s/%s/%s/%s";
+    private static final String HTTPS_PREFIX = "https://";
 
     private static final String ERR_NULL_ENVIRONMENT = "environment must not be null";
     private static final String ERR_NULL_SELLER_NIP = "sellerNip must not be null";
@@ -141,27 +142,6 @@ public final class KsefVerificationLinks {
     }
 
     /**
-     * Return the canonical signing payload that the offline KSeF certificate
-     * private key must sign in order to produce the {@code signature} segment
-     * of the KOD II URL.
-     *
-     * <p>The payload is the certificate path WITHOUT the trailing signature
-     * segment, encoded as UTF-8 bytes:
-     * {@code /certificate/{contextType}/{contextValue}/{sellerNip}/{certificateSerial}/{base64UrlSha256}}.
-     *
-     * <p>Callers sign these bytes with their offline KSeF certificate private
-     * key (typically RSA-SHA256 PKCS#1 v1.5 per KSeF spec), pass the resulting
-     * signature into {@link CertificateVerificationParams}, and call
-     * {@link #buildCertificateVerificationUrl(QrEnvironment, CertificateVerificationParams)}.
-     *
-     * @param contextType authorising context identifier type
-     * @param contextValue authorising context identifier value
-     * @param sellerNip 10-digit NIP of the seller
-     * @param certificateSerial KSeF Offline certificate serial number
-     * @param invoiceSha256 32-byte SHA-256 hash of the invoice XML
-     * @return canonical signing payload bytes (UTF-8 encoded path)
-     */
-    /**
      * Subset of {@link CertificateVerificationParams} that omits the
      * signature, used as input to {@link #canonicalCertificateSigningPayload}
      * before the signature is computed.
@@ -188,15 +168,44 @@ public final class KsefVerificationLinks {
         }
     }
 
-    public static byte[] canonicalCertificateSigningPayload(CertificateSigningInput input) {
+    /**
+     * Return the canonical signing payload that the offline KSeF certificate
+     * private key must sign in order to produce the {@code signature} segment
+     * of the KOD II URL.
+     *
+     * <p>Per the official KSeF QR documentation
+     * (<a href="https://github.com/CIRFMF/ksef-docs/blob/main/kody-qr.md">kody-qr.md</a>)
+     * the signed fragment is the QR host + path WITHOUT the {@code https://}
+     * prefix and WITHOUT the trailing signature segment, encoded as UTF-8 bytes:
+     * {@code qr-{env}.ksef.mf.gov.pl/certificate/{contextType}/{contextValue}/{sellerNip}/{certificateSerial}/{base64UrlSha256}}.
+     *
+     * <p>Callers sign these bytes with their offline KSeF certificate private
+     * key. Per {@code kody-qr.md} accepted algorithms are
+     * <b>RSASSA-PSS with SHA-256, MGF1-SHA-256, salt length 32</b> or
+     * <b>ECDSA on P-256 with SHA-256</b>. Pass the resulting signature into
+     * {@link CertificateVerificationParams} and call
+     * {@link #buildCertificateVerificationUrl(QrEnvironment, CertificateVerificationParams)}.
+     *
+     * @param environment QR environment whose host is included in the signed bytes
+     * @param input certificate-verification parameters (no signature)
+     * @return canonical signing payload bytes (UTF-8 encoded host+path)
+     */
+    public static byte[] canonicalCertificateSigningPayload(QrEnvironment environment,
+                                                            CertificateSigningInput input) {
+        Objects.requireNonNull(environment, ERR_NULL_ENVIRONMENT);
         Objects.requireNonNull(input, ERR_NULL_PARAMS);
+        String hostWithoutScheme = stripHttpsPrefix(environment.baseUrl());
         String payloadPath = String.format(CERTIFICATE_SIGNING_PAYLOAD,
                 encodePathSegment(input.contextType()),
                 encodePathSegment(input.contextValue()),
                 encodePathSegment(input.sellerNip()),
                 encodePathSegment(input.certificateSerial()),
                 base64UrlNoPadding(input.invoiceSha256()));
-        return payloadPath.getBytes(StandardCharsets.UTF_8);
+        return (hostWithoutScheme + payloadPath).getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static String stripHttpsPrefix(String url) {
+        return url.startsWith(HTTPS_PREFIX) ? url.substring(HTTPS_PREFIX.length()) : url;
     }
 
     private static String base64UrlNoPadding(byte[] bytes) {

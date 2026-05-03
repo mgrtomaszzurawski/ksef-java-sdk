@@ -107,37 +107,64 @@ class KsefVerificationLinksTest {
     }
 
     @Test
-    void canonicalCertificateSigningPayload_combinesAllFieldsIntoPathBytes() throws NoSuchAlgorithmException {
+    void canonicalCertificateSigningPayload_includesQrHostWithoutHttpsPrefix() throws NoSuchAlgorithmException {
         byte[] hash = sha256(SAMPLE_INVOICE_XML);
         var input = new KsefVerificationLinks.CertificateSigningInput(
                 CONTEXT_TYPE, CONTEXT_VALUE, SELLER_NIP, CERTIFICATE_SERIAL, hash);
 
-        byte[] payload = KsefVerificationLinks.canonicalCertificateSigningPayload(input);
+        byte[] payload = KsefVerificationLinks.canonicalCertificateSigningPayload(QrEnvironment.TEST, input);
         String payloadString = new String(payload, java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(payloadString.startsWith("/certificate/" + CONTEXT_TYPE
+        // Per kody-qr.md the signed fragment is host + path with https:// stripped:
+        // qr-test.ksef.mf.gov.pl/certificate/{contextType}/{contextValue}/{sellerNip}/{certificateSerial}/{hash}
+        assertTrue(payloadString.startsWith("qr-test.ksef.mf.gov.pl/certificate/" + CONTEXT_TYPE
                         + "/" + CONTEXT_VALUE + "/" + SELLER_NIP + "/" + CERTIFICATE_SERIAL + "/"),
-                "expected /certificate/ payload with positional params, got: " + payloadString);
+                "expected host+path payload, got: " + payloadString);
+        assertFalse(payloadString.startsWith("https://"),
+                "payload must omit https:// prefix, got: " + payloadString);
         assertFalse(payloadString.contains("="),
                 "base64url segment must not contain padding, got: " + payloadString);
     }
 
     @Test
-    void canonicalCertificateSigningPayload_excludesSignatureSegment() throws NoSuchAlgorithmException {
+    void canonicalCertificateSigningPayload_excludesSignatureSegmentAndMatchesUrlPrefix()
+            throws NoSuchAlgorithmException {
         byte[] hash = sha256(SAMPLE_INVOICE_XML);
         var input = new KsefVerificationLinks.CertificateSigningInput(
                 CONTEXT_TYPE, CONTEXT_VALUE, SELLER_NIP, CERTIFICATE_SERIAL, hash);
 
-        byte[] payload = KsefVerificationLinks.canonicalCertificateSigningPayload(input);
+        byte[] payload = KsefVerificationLinks.canonicalCertificateSigningPayload(QrEnvironment.TEST, input);
         var params = new KsefVerificationLinks.CertificateVerificationParams(
                 CONTEXT_TYPE, CONTEXT_VALUE, SELLER_NIP, CERTIFICATE_SERIAL, hash, SIGNATURE);
         String fullUrl = KsefVerificationLinks.buildCertificateVerificationUrl(QrEnvironment.TEST, params);
 
-        // Full URL = environment baseUrl + signing payload + "/" + base64UrlSignature.
-        String expectedUrlPrefix = QrEnvironment.TEST.baseUrl() + new String(payload,
+        // Full URL = "https://" + signing payload + "/" + base64UrlSignature.
+        String expectedUrlPrefix = "https://" + new String(payload,
                 java.nio.charset.StandardCharsets.UTF_8) + "/";
         assertTrue(fullUrl.startsWith(expectedUrlPrefix),
-                "full URL must equal environment + signing payload + '/' + signature; got: " + fullUrl);
+                "full URL must equal https:// + signing payload + '/' + signature; got: " + fullUrl);
+    }
+
+    @Test
+    void canonicalCertificateSigningPayload_perEnvironment_picksCorrectQrHost()
+            throws NoSuchAlgorithmException {
+        byte[] hash = sha256(SAMPLE_INVOICE_XML);
+        var input = new KsefVerificationLinks.CertificateSigningInput(
+                CONTEXT_TYPE, CONTEXT_VALUE, SELLER_NIP, CERTIFICATE_SERIAL, hash);
+
+        String testPayload = new String(
+                KsefVerificationLinks.canonicalCertificateSigningPayload(QrEnvironment.TEST, input),
+                java.nio.charset.StandardCharsets.UTF_8);
+        String demoPayload = new String(
+                KsefVerificationLinks.canonicalCertificateSigningPayload(QrEnvironment.DEMO, input),
+                java.nio.charset.StandardCharsets.UTF_8);
+        String prodPayload = new String(
+                KsefVerificationLinks.canonicalCertificateSigningPayload(QrEnvironment.PROD, input),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(testPayload.startsWith("qr-test.ksef.mf.gov.pl/"));
+        assertTrue(demoPayload.startsWith("qr-demo.ksef.mf.gov.pl/"));
+        assertTrue(prodPayload.startsWith("qr.ksef.mf.gov.pl/"));
     }
 
     @Test

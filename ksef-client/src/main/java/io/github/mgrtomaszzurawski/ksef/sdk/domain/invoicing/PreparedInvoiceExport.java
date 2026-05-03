@@ -151,6 +151,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
      * @return the terminal {@link InvoiceExportStatus}
      */
     public InvoiceExportStatus awaitReady() {
+        requireNotDisposed();
         LOGGER.debug(LOG_AWAIT, referenceNumber);
         Integer lastCode = null;
         for (int attempt = 0; attempt < STATUS_POLL_MAX_ATTEMPTS; attempt++) {

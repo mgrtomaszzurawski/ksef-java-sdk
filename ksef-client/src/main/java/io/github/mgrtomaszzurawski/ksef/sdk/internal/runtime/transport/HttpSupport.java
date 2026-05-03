@@ -40,11 +40,18 @@ public final class HttpSupport {
     private static final String X_ERROR_FORMAT_PROBLEM_DETAILS = "problem-details";
     private static final String RETRY_AFTER_HEADER = "Retry-After";
 
-    /** RFC 7231 §7.1.1.1 permits three date formats for HTTP-date values. */
+    /**
+     * RFC 7231 §7.1.1.1 permits three date formats for HTTP-date values.
+     * The first two carry an explicit zone; asctime has none and is interpreted
+     * as GMT per the spec, which is why its formatter applies a default zone.
+     */
     private static final java.time.format.DateTimeFormatter[] HTTP_DATE_FORMATS = {
             java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME,
             java.time.format.DateTimeFormatter.ofPattern("EEEE, dd-MMM-yy HH:mm:ss zzz", java.util.Locale.ROOT),
-            java.time.format.DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy", java.util.Locale.ROOT),
+            new java.time.format.DateTimeFormatterBuilder()
+                    .appendPattern("EEE MMM d HH:mm:ss yyyy")
+                    .toFormatter(java.util.Locale.ROOT)
+                    .withZone(java.time.ZoneOffset.UTC),
     };
     private static final int HTTP_OK = 200;
     private static final int HTTP_CREATED = 201;
@@ -398,8 +405,12 @@ public final class HttpSupport {
 
     private static java.util.Optional<Long> tryParseHttpDate(String value, java.time.format.DateTimeFormatter formatter) {
         try {
-            java.time.ZonedDateTime parsed = java.time.ZonedDateTime.parse(value, formatter);
-            long deltaSeconds = java.time.Duration.between(java.time.Instant.now(), parsed.toInstant()).toSeconds();
+            java.time.temporal.TemporalAccessor parsed = formatter.parseBest(value,
+                    java.time.ZonedDateTime::from, java.time.LocalDateTime::from);
+            java.time.Instant instant = (parsed instanceof java.time.ZonedDateTime zoned)
+                    ? zoned.toInstant()
+                    : ((java.time.LocalDateTime) parsed).atZone(java.time.ZoneOffset.UTC).toInstant();
+            long deltaSeconds = java.time.Duration.between(java.time.Instant.now(), instant).toSeconds();
             return java.util.Optional.of(Math.max(0L, deltaSeconds));
         } catch (java.time.format.DateTimeParseException notThisFormat) {
             return java.util.Optional.empty();
