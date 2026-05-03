@@ -3,7 +3,7 @@
 
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: AGPL-3.0-only
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Example: enroll a new certificate from a CSR, poll until the serial appears,
  * then revoke. Burns one cert quota slot per run (max 12/month, max 6 active).

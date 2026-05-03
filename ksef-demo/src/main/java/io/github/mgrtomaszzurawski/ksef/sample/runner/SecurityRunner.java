@@ -19,6 +19,7 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,7 @@ public final class SecurityRunner implements DemoRunner {
         List<RunResult> results = new ArrayList<>();
         long start = System.currentTimeMillis();
         try {
-            List<PublicKeyCertificate> certs = new SecurityClient(context.client())
+            List<PublicKeyCertificate> certs = new SecurityClient(KsefClientInternals.runtime(context.client()))
                     .getPublicKeyCertificates();
             LOGGER.info("[{}] fetched {} certificates", NAME, certs.size());
 

@@ -20,6 +20,7 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
@@ -160,7 +161,7 @@ public final class AuthRunner implements DemoRunner {
     private void runListSessions(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            AuthenticationList list = new AuthClient(context.client()).listSessions();
+            AuthenticationList list = new AuthClient(KsefClientInternals.runtime(context.client())).listSessions();
             int count = list.items().size();
             LOGGER.info(LOG_ACTIVE_SESSIONS, NAME, count);
             results.add(RunResult.ok(NAME, OP_LIST_SESSIONS, elapsed(start),
@@ -189,7 +190,7 @@ public final class AuthRunner implements DemoRunner {
                 throw new IllegalStateException(ERR_NO_REFRESH_TOKEN);
             }
 
-            AuthenticationTokenRefresh refreshed = new AuthClient(client).refreshToken(
+            AuthenticationTokenRefresh refreshed = new AuthClient(KsefClientInternals.runtime(client)).refreshToken(
                     tokens.refreshToken().token());
             OffsetDateTime validUntil = refreshed.accessToken() != null
                     ? refreshed.accessToken().validUntil() : null;
@@ -197,7 +198,7 @@ public final class AuthRunner implements DemoRunner {
             results.add(RunResult.ok(NAME, OP_REFRESH_TOKEN, elapsed(start),
                     VALID_UNTIL_PREFIX + validUntil));
 
-            new AuthClient(client).terminateCurrentSession();
+            new AuthClient(KsefClientInternals.runtime(client)).terminateCurrentSession();
             client.authenticate();
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_REFRESH_TOKEN, elapsed(start),
@@ -216,9 +217,9 @@ public final class AuthRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         KsefClient client = context.client();
         try {
-            SessionContext sessionContext = client.runtime().sessionContext();
+            SessionContext sessionContext = KsefClientInternals.runtime(client).sessionContext();
             OffsetDateTime fakeExpiry = OffsetDateTime.now().plusHours(FUTURE_EXPIRY_HOURS);
-            sessionContext.refreshToken(INVALID_JWT, fakeExpiry);
+            sessionContext.updateAccessToken(INVALID_JWT, fakeExpiry);
 
             ContextLimits limits = client.limits().getContextLimits();
             boolean recovered = limits != null;
@@ -245,9 +246,9 @@ public final class AuthRunner implements DemoRunner {
         KsefClient client = context.client();
         String currentRef;
         try {
-            AuthenticationList list = new AuthClient(client).listSessions();
+            AuthenticationList list = new AuthClient(KsefClientInternals.runtime(client)).listSessions();
             currentRef = findCurrentSessionRef(list);
-            new AuthClient(client).terminateSession(currentRef);
+            new AuthClient(KsefClientInternals.runtime(client)).terminateSession(currentRef);
             LOGGER.info(LOG_TERMINATED_BY_REF, NAME, currentRef);
             results.add(RunResult.ok(NAME, OP_TERMINATE_BY_REF, elapsed(start),
                     REF_PREFIX + currentRef));
@@ -280,18 +281,18 @@ public final class AuthRunner implements DemoRunner {
 
     private static AuthenticationTokens manualAuthenticate(DemoContext context) {
         KsefClient client = context.client();
-        AuthClient authClient = new AuthClient(client);
+        AuthClient authClient = new AuthClient(KsefClientInternals.runtime(client));
 
         PublicKey tokenKey = fetchTokenEncryptionKey(client);
         AuthenticationChallenge challenge = authClient.requestChallenge();
         authClient.authenticateWithToken(challenge, context.ksefToken(),
                 context.nipIdentifier(), tokenKey);
-        pollAuthStatus(authClient, client.runtime().sessionContext().referenceNumber());
+        pollAuthStatus(authClient, KsefClientInternals.runtime(client).sessionContext().referenceNumber());
         return authClient.redeemTokens();
     }
 
     private static PublicKey fetchTokenEncryptionKey(KsefClient client) {
-        PublicKeyCertificate certificate = new SecurityClient(client).getPublicKeyCertificates().stream()
+        PublicKeyCertificate certificate = new SecurityClient(KsefClientInternals.runtime(client)).getPublicKeyCertificates().stream()
                 .filter(cert -> cert.usage().contains(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_PUBLIC_KEY));

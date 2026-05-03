@@ -21,6 +21,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
@@ -351,7 +352,7 @@ public final class SessionRunner implements DemoRunner {
         context.setInvoiceKsefNumber(ksefNumber);
 
         try {
-            byte[] upoByKsef = new SessionClient(context.client()).getUpoByKsefNumber(
+            byte[] upoByKsef = new SessionClient(KsefClientInternals.runtime(context.client())).getUpoByKsefNumber(
                     session.referenceNumber(), ksefNumber);
             LOGGER.info(LOG_UPO_BY_KSEF_RETRIEVED, NAME, upoByKsef.length);
 

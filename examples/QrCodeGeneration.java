@@ -3,7 +3,7 @@
 
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: AGPL-3.0-only
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Example: build a KSeF KOD I (online invoice) verification QR code.
  *

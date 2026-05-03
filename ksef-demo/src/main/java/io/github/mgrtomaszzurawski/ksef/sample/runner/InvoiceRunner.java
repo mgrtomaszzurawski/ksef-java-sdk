@@ -19,6 +19,7 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
@@ -149,7 +150,7 @@ public final class InvoiceRunner implements DemoRunner {
     }
 
     private static java.security.PublicKey extractEncryptionKey(DemoContext context) {
-        PublicKeyCertificate certificate = new SecurityClient(context.client()).getPublicKeyCertificates().stream()
+        PublicKeyCertificate certificate = new SecurityClient(KsefClientInternals.runtime(context.client())).getPublicKeyCertificates().stream()
                 .filter(cert -> cert.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_ENCRYPTION_CERT));

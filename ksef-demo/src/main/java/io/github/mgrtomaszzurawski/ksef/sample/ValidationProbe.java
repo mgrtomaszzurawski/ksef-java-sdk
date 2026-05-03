@@ -123,7 +123,8 @@ public final class ValidationProbe {
             client.authenticate();
             LOGGER.info("Authenticated successfully");
 
-            String bearer = client.runtime().sessionContext().token();
+            String bearer = io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals
+                    .runtime(client).sessionContext().token();
 
             ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
             probe.runAllProbes();

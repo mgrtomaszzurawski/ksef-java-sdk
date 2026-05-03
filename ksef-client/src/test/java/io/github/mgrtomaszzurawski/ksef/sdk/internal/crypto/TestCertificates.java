@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: AGPL-3.0-only
+ * SPDX-License-Identifier: Apache-2.0
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto;
 
