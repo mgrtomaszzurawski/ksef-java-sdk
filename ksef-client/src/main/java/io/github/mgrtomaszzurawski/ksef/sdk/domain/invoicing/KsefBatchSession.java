@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
@@ -69,6 +69,15 @@ public final class KsefBatchSession implements AutoCloseable {
      * genuinely stalled.
      */
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
+    /**
+     * REQ-SESS-13 — KSeF allows 20 minutes per part for the cumulative
+     * upload budget. The SDK fails fast if this budget is exceeded
+     * mid-upload rather than letting the server reject the request.
+     * Spec: {@code ksef-docs/sesja-wsadowa.md:288-293}.
+     */
+    private static final long UPLOAD_BUDGET_MINUTES_PER_PART = 20L;
+    private static final long UPLOAD_BUDGET_NANOS_PER_PART =
+            UPLOAD_BUDGET_MINUTES_PER_PART * 60L * 1_000_000_000L;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
     private static final String ERR_NO_PARTS = "No parts to upload — session was opened with a "
             + "PreparedBatchPackage, not a list of invoice XMLs";
@@ -181,7 +190,21 @@ public final class KsefBatchSession implements AutoCloseable {
             throw new IllegalStateException(ERR_NO_PARTS);
         }
         List<Path> partFiles = batchPackage.partFiles();
+        // REQ-SESS-13: KSeF gives 20 minutes per part (cumulative across parts)
+        // for the entire upload. Track elapsed time and fail-fast if the
+        // budget is about to be exceeded; this surfaces a clean SDK error
+        // instead of a server timeout/rejection mid-upload.
+        long startNanos = System.nanoTime();
+        long budgetNanos = (long) partUploadRequests.size() * UPLOAD_BUDGET_NANOS_PER_PART;
         for (int index = 0; index < partUploadRequests.size(); index++) {
+            long elapsedNanos = System.nanoTime() - startNanos;
+            if (elapsedNanos > budgetNanos) {
+                throw new KsefNetworkException(
+                        String.format("Batch upload deadline exceeded after %d parts; "
+                                        + "spec budget is %d minutes per part (REQ-SESS-13)",
+                                index, UPLOAD_BUDGET_MINUTES_PER_PART),
+                        null);
+            }
             uploadSinglePart(partUploadRequests.get(index), partFiles.get(index));
         }
     }

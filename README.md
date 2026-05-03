@@ -1,6 +1,6 @@
 # KSeF Java SDK
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)]()
 
 OpenAPI-first Java SDK for the Polish National e-Invoicing System ([KSeF](https://www.podatki.gov.pl/ksef/)) REST API v2.
@@ -192,7 +192,7 @@ See:
 
 ## License
 
-[Apache-2.0](LICENSE.txt) — permissive open-source license. Suitable for any use including commercial. Switched from AGPL-3.0-only at the 1.0.0 release per ADR-007.
+[AGPL-3.0-only](LICENSE.txt) — strong-copyleft license. Suitable for SaaS / internal-tool use; commercial closed-source integration requires a separate agreement. Solo-maintained SDK, tested against the KSeF demo environment; provided without warranty (see LICENSE).
 
 ## Status
 

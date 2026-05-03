@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth;
 
@@ -158,9 +158,23 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithXades(
             String challenge, X509Certificate certificate, PrivateKey privateKey,
             KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier) {
+        return authenticateWithXades(challenge, certificate, privateKey, identifier, subjectIdentifier,
+                io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults());
+    }
+
+    /**
+     * Authenticate with explicit {@link io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions}.
+     * Closes REQ-AUTH-039/040 to the extent of the documented narrow scope
+     * (BASELINE-B + SHA-256). Other combinations throw.
+     */
+    public AuthenticationInit authenticateWithXades(
+            String challenge, X509Certificate certificate, PrivateKey privateKey,
+            KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier,
+            io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
         LOGGER.debug(LOG_CALL, OP_AUTH_XADES);
         String authXml = buildAuthTokenRequestXml(challenge, identifier, subjectIdentifier);
-        String signedXml = SigningService.signXml(authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey);
+        String signedXml = SigningService.signXml(
+                authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey, signingOptions);
         AuthenticationInitResponseRaw response = http.postXml(
                 PATH_XADES_SIGNATURE, signedXml, AuthenticationInitResponseRaw.class, OP_AUTH_XADES);
         activateSession(response);

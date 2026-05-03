@@ -3,7 +3,7 @@
 
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  *
  * Example: paginate through every invoice metadata entry in a date range.
  *

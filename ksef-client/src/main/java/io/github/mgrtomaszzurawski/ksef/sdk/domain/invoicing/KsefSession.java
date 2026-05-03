@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
@@ -70,11 +70,16 @@ public final class KsefSession implements AutoCloseable {
     private static final String LOG_TERMINAL_FAILURE =
             "Session {} reached terminal failure state — code={} description={}";
 
+    /** REQ-SESS-41 — KSeF caps a single session at 10,000 invoices. */
+    private static final int MAX_INVOICES_PER_SESSION = 10_000;
+
     private final SessionClient sessionClient;
     private final String referenceNumber;
     private final byte[] aesKey;
     private final byte[] initVector;
     private volatile boolean closed;
+    private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
+            new java.util.concurrent.atomic.AtomicInteger();
 
     /**
      * @apiNote Internal — constructed by {@code KsefClient.openSession(FormCode)}.
@@ -120,6 +125,17 @@ public final class KsefSession implements AutoCloseable {
     public SendInvoiceResult send(SendInvoiceCommand command) {
         ensureOpen();
         Objects.requireNonNull(command, "command must not be null");
+        // REQ-SESS-41 — KSeF caps a single session at 10,000 invoices. Reject
+        // the (10001)st send before crafting the request so the caller gets a
+        // clean SDK error instead of a server rejection.
+        int attempted = sentInvoiceCount.incrementAndGet();
+        if (attempted > MAX_INVOICES_PER_SESSION) {
+            sentInvoiceCount.decrementAndGet();
+            throw new IllegalStateException(
+                    "KSeF caps a single session at " + MAX_INVOICES_PER_SESSION
+                            + " invoices (REQ-SESS-41); already sent "
+                            + (attempted - 1) + " in this session — open a new session to send more");
+        }
         SendInvoiceBuilder builder = SendInvoiceBuilder.create(command.invoiceXml(), aesKey, initVector);
         if (command instanceof SendInvoiceCommand.TechnicalCorrection correction) {
             builder = builder.technicalCorrection(correction.hashOfCorrectedInvoice());

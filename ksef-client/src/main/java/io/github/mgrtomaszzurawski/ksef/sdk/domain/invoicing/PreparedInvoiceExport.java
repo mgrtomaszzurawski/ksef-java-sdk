@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
@@ -97,6 +97,8 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final int MAX_ZIP_ENTRIES = 100_000;
     private static final long MAX_ZIP_TOTAL_BYTES = 4L * 1024 * 1024 * 1024; // 4 GiB
     private static final long MAX_ZIP_ENTRY_BYTES = 256L * 1024 * 1024;      // 256 MiB
+    /** Subdirectory name (under outputDirectory) for staging decrypted parts during streaming unzip. */
+    private static final String PARTS_TEMP_SUBDIR = ".parts";
 
     private final InvoiceClient invoices;
     private final HttpClient httpClient;
@@ -243,23 +245,110 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             throw new KsefException(ERR_ZIP_FAILED, ex);
         }
 
-        // Per-part download/decrypt mirrors downloadAndDecrypt() above:
-        // verify each part's hashes (encrypted + plaintext) before
-        // appending to the archive stream. Memory bound is one part at a
-        // time, not the whole package.
-        ByteArrayOutputStream archiveBuffer = new ByteArrayOutputStream();
-        for (InvoicePackagePart part : status.invoicePackage().parts()) {
-            byte[] encryptedBytes = downloadPart(part);
-            verifyEncryptedPartHash(part, encryptedBytes);
-            byte[] decryptedBytes = CryptoService.decryptAes(encryptedBytes, aesKey, initVector);
-            verifyPlaintextPartHash(part, decryptedBytes);
-            try {
-                archiveBuffer.write(decryptedBytes);
-            } catch (IOException unreachable) {
-                throw new KsefException(ERR_ZIP_FAILED, unreachable);
+        // True streaming pipeline:
+        //   1. per-part: download bytes (bounded by spec ≤256 MiB), verify
+        //      encrypted hash, decrypt, verify plaintext hash, write
+        //      decrypted plaintext to a temp file in outputDir/.parts/
+        //   2. concatenate the temp files via SequenceInputStream and feed
+        //      to ZipInputStream which writes each entry to outputDir
+        //   3. delete temp files (best-effort cleanup)
+        //
+        // Memory bound: at most one part's plaintext at a time
+        // (≤256 MiB), never the whole archive (which can reach 4 GiB
+        // before the cap kicks in). Closes F3.
+        Path partsDir;
+        try {
+            partsDir = Files.createDirectories(outputDirectory.resolve(PARTS_TEMP_SUBDIR));
+        } catch (IOException ex) {
+            throw new KsefException(ERR_ZIP_FAILED, ex);
+        }
+        java.util.List<Path> partFiles = new java.util.ArrayList<>();
+        try {
+            for (InvoicePackagePart part : status.invoicePackage().parts()) {
+                byte[] encryptedBytes = downloadPart(part);
+                verifyEncryptedPartHash(part, encryptedBytes);
+                byte[] decryptedBytes = CryptoService.decryptAes(encryptedBytes, aesKey, initVector);
+                verifyPlaintextPartHash(part, decryptedBytes);
+                Path partFile = partsDir.resolve("part-" + part.ordinalNumber() + ".bin");
+                try {
+                    Files.write(partFile, decryptedBytes);
+                } catch (IOException ex) {
+                    throw new KsefException(ERR_ZIP_FAILED, ex);
+                }
+                partFiles.add(partFile);
+                // Allow the part bytes to be GC'd before downloading next.
+                encryptedBytes = null;
+                decryptedBytes = null;
+            }
+            return unzipPackageStreamToDirectory(partFiles, outputDirectory);
+        } finally {
+            for (Path p : partFiles) {
+                try { Files.deleteIfExists(p); } catch (IOException ignore) { /* best-effort */ }
+            }
+            try { Files.deleteIfExists(partsDir); } catch (IOException ignore) { /* best-effort */ }
+        }
+    }
+
+    private static ExportedInvoiceDirectory unzipPackageStreamToDirectory(
+            java.util.List<Path> partFiles, Path outputDir) {
+        Map<String, Path> invoiceXmls = new HashMap<>();
+        Path metadataPath = null;
+        long totalBytes = 0L;
+        int entryCount = 0;
+        // Build SequenceInputStream over per-part FileInputStream — feeds the
+        // ZipInputStream a continuous stream without ever loading the full
+        // archive into heap.
+        java.util.List<java.io.InputStream> partStreams = new java.util.ArrayList<>();
+        try {
+            for (Path p : partFiles) {
+                partStreams.add(Files.newInputStream(p));
+            }
+            try (java.io.SequenceInputStream concat =
+                         new java.io.SequenceInputStream(java.util.Collections.enumeration(partStreams));
+                 ZipInputStream zip = new ZipInputStream(concat)) {
+                ZipEntry entry = zip.getNextEntry();
+                while (entry != null) {
+                    if (!entry.isDirectory()) {
+                        entryCount++;
+                        if (entryCount > MAX_ZIP_ENTRIES) {
+                            throw new KsefException(
+                                    String.format(Locale.ROOT, ERR_ENTRY_LIMIT, entryCount, MAX_ZIP_ENTRIES), null);
+                        }
+                        String entryName = entry.getName();
+                        Path target = outputDir.resolve(entryName).normalize();
+                        if (!target.startsWith(outputDir.normalize())) {
+                            throw new KsefException("ZIP entry escapes output directory: " + entryName, null);
+                        }
+                        Files.createDirectories(target.getParent() == null ? outputDir : target.getParent());
+                        long entrySize = Files.copy(zip, target,
+                                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        if (entrySize > MAX_ZIP_ENTRY_BYTES) {
+                            throw new KsefException(
+                                    String.format(Locale.ROOT, ERR_ENTRY_SIZE, entryName, entrySize, MAX_ZIP_ENTRY_BYTES),
+                                    null);
+                        }
+                        totalBytes += entrySize;
+                        if (totalBytes > MAX_ZIP_TOTAL_BYTES) {
+                            throw new KsefException(
+                                    String.format(Locale.ROOT, ERR_TOTAL_SIZE, totalBytes, MAX_ZIP_TOTAL_BYTES), null);
+                        }
+                        if (METADATA_FILE.equals(entryName)) {
+                            metadataPath = target;
+                        } else {
+                            invoiceXmls.put(entryName, target);
+                        }
+                    }
+                    entry = zip.getNextEntry();
+                }
+            }
+        } catch (IOException zipFailure) {
+            throw new KsefException(ERR_ZIP_FAILED, zipFailure);
+        } finally {
+            for (java.io.InputStream s : partStreams) {
+                try { s.close(); } catch (IOException ignore) { /* best-effort */ }
             }
         }
-        return unzipPackageToDirectory(archiveBuffer.toByteArray(), outputDirectory);
+        return new ExportedInvoiceDirectory(outputDir, metadataPath, invoiceXmls);
     }
 
     private byte[] downloadPart(InvoicePackagePart part) {

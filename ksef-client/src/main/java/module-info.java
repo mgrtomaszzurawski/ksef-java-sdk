@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 module io.github.mgrtomaszzurawski.ksef {
@@ -11,15 +11,19 @@ module io.github.mgrtomaszzurawski.ksef {
     // Configuration: environments, identifiers, retry policy
     exports io.github.mgrtomaszzurawski.ksef.sdk.config;
 
-    // Common shared types (StatusInfo, TokenInfo, public-key models)
+    // Common shared types (StatusInfo, TokenInfo, KsefNumber, public-key models)
     exports io.github.mgrtomaszzurawski.ksef.sdk.common;
 
-    // Invoicing functionality (online + batch sessions, invoice ops, QR, batch helper)
+    // Public crypto facade (REQ-CRYPTO-001..004)
+    exports io.github.mgrtomaszzurawski.ksef.sdk.crypto;
+
+    // Invoicing functionality (online + batch sessions, invoice ops, QR, batch helper, sync orchestrator)
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 
     // Permissions functionality
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions;

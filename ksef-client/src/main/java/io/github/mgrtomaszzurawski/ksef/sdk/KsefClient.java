@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk;
 
@@ -460,7 +460,8 @@ public final class KsefClient implements AutoCloseable {
      */
     public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient invoiceSync() {
         ensureOpen();
-        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient(invoiceClient);
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient(
+                invoiceClient, objectMapper);
     }
 
     /**
@@ -626,7 +627,7 @@ public final class KsefClient implements AutoCloseable {
             authenticateWithToken(token);
         } else if (credentials instanceof KsefCertificateCredentials cert) {
             authenticateWithCertificate(cert.certificate(), cert.privateKey(), cert.identifier(),
-                    cert.subjectIdentifier());
+                    cert.subjectIdentifier(), cert.signingOptions());
         } else if (credentials instanceof KsefPkcs12Credentials pkcs12) {
             authenticateWithPkcs12(pkcs12);
         }
@@ -643,10 +644,11 @@ public final class KsefClient implements AutoCloseable {
 
     private void authenticateWithCertificate(X509Certificate certificate, PrivateKey privateKey,
                                              KsefIdentifier identifier,
-                                             CertificateSubjectIdentifier subjectIdentifier) {
+                                             CertificateSubjectIdentifier subjectIdentifier,
+                                             io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
         authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier,
-                subjectIdentifier);
+                subjectIdentifier, signingOptions);
         pollAuthStatus();
         authClient.redeemTokens();
     }
@@ -657,7 +659,8 @@ public final class KsefClient implements AutoCloseable {
         PrivateKey privateKey = CertificateLoader.getPrivateKey(keyStore, alias, credentials.password());
         X509Certificate certificate = CertificateLoader.getCertificate(keyStore, alias);
         authenticateWithCertificate(certificate, privateKey, credentials.identifier(),
-                credentials.subjectIdentifier());
+                credentials.subjectIdentifier(),
+                io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults());
     }
 
     private void pollAuthStatus() {

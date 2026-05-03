@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.crypto;
 
@@ -45,10 +45,14 @@ public final class KsefCryptoService {
     private static final String RSA_KEY_ALGORITHM = "RSA";
     private static final String EC_KEY_ALGORITHM = "EC";
     private static final int RSA_DEFAULT_KEY_SIZE = 2048;
+    /** KSeF spec mandates RSA key sizes &gt;= 2048 bits per {@code ksef-docs/auth/podpis-xades.md:48}. */
+    private static final int RSA_MIN_KEY_SIZE = 2048;
     private static final String EC_DEFAULT_CURVE = "secp256r1";
     private static final int STREAM_BUFFER_BYTES = 8 * 1024;
     private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 algorithm not available";
     private static final String ERR_KEY_GEN_UNAVAILABLE = "Key generation algorithm not available";
+    private static final String ERR_RSA_KEY_SIZE_TOO_SMALL =
+            "RSA key size must be >= " + RSA_MIN_KEY_SIZE + " bits per KSeF spec";
 
     /**
      * Generate a fresh AES-256 key + 16-byte IV pair via secure random.
@@ -112,8 +116,14 @@ public final class KsefCryptoService {
         Objects.requireNonNull(out, "out must not be null");
         Objects.requireNonNull(material, "material must not be null");
         Cipher cipher = CryptoService.newAesDecryptCipher(material.aesKey(), material.initVector());
-        try (CipherInputStream cipherIn = new CipherInputStream(in, cipher)) {
+        // CipherInputStream.close() would close the wrapped caller-provided
+        // input stream. Wrapping with NonClosingInputStream preserves the
+        // documented contract ("Closes neither stream") for both directions.
+        CipherInputStream cipherIn = new CipherInputStream(new NonClosingInputStream(in), cipher);
+        try {
             transfer(cipherIn, out);
+        } finally {
+            cipherIn.close();
         }
     }
 
@@ -164,6 +174,9 @@ public final class KsefCryptoService {
      * KSeF spec {@code ksef-docs/auth/podpis-xades.md:48}).
      */
     public KeyPair generateRsaKeyPair(int keySize) {
+        if (keySize < RSA_MIN_KEY_SIZE) {
+            throw new IllegalArgumentException(ERR_RSA_KEY_SIZE_TOO_SMALL + ", got " + keySize);
+        }
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance(RSA_KEY_ALGORITHM);
             generator.initialize(keySize);
@@ -243,6 +256,39 @@ public final class KsefCryptoService {
         @Override
         public void flush() throws IOException {
             delegate.flush();
+        }
+
+        @Override
+        public void close() {
+            // intentionally do not close the delegate
+        }
+    }
+
+    /**
+     * Input stream that ignores {@code close()} so callers can supply
+     * their own stream and have it survive a {@code CipherInputStream}
+     * close. Mirror of {@link NonClosingOutputStream} on the input side.
+     */
+    private static final class NonClosingInputStream extends InputStream {
+        private final InputStream delegate;
+
+        NonClosingInputStream(InputStream delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public int read() throws IOException {
+            return delegate.read();
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            return delegate.read(b, off, len);
+        }
+
+        @Override
+        public int available() throws IOException {
+            return delegate.available();
         }
 
         @Override

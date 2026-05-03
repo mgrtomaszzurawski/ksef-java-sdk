@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First public Maven Central release.
 
-### License switch (per ADR-007)
+### License decision
 
-- License changed from AGPL-3.0-only (used during 0.1.x development) to
-  **Apache-2.0** at the 1.0.0 release. SPDX headers across all source files
-  updated; `LICENSE.txt` replaced.
+- **AGPL-3.0-only retained** at 1.0.0 (per revised ADR-007). The original
+  ADR-007 had scheduled a switch to Apache 2.0 at this boundary; that
+  decision was reconsidered and deprecated. Free-rider protection is the
+  primary driver. A README disclaimer covers solo-maintenance and warranty
+  scope independently of the license choice.
 
 ### Step 1 — Process foundation (this release)
 

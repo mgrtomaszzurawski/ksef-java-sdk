@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
@@ -38,6 +38,10 @@ public final class HttpSupport {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String X_ERROR_FORMAT_HEADER = "X-Error-Format";
     private static final String X_ERROR_FORMAT_PROBLEM_DETAILS = "problem-details";
+    private static final String X_KSEF_FEATURE_HEADER = "X-KSeF-Feature";
+    private static final String UPO_V4_3_FEATURE = "upo-v4-3";
+    /** Substring matched against request path to detect UPO-related calls (REQ-MISC; FeaturePolicy). */
+    private static final String UPO_PATH_FRAGMENT = "/upo";
     private static final String RETRY_AFTER_HEADER = "Retry-After";
 
     /**
@@ -297,19 +301,62 @@ public final class HttpSupport {
     }
 
     private HttpRequest.Builder newGetBuilder(String path) {
-        return HttpRequest.newBuilder()
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(uri(path))
                 .timeout(runtime.readTimeout())
-                .header(ACCEPT, APPLICATION_JSON)
-                .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS)
-                .GET();
+                .header(ACCEPT, APPLICATION_JSON);
+        applyFeatureHeaders(builder, path);
+        return builder.GET();
     }
 
     private HttpRequest.Builder newPostBuilder(String path) {
-        return HttpRequest.newBuilder()
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(uri(path))
-                .timeout(runtime.readTimeout())
-                .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS);
+                .timeout(runtime.readTimeout());
+        applyFeatureHeaders(builder, path);
+        return builder;
+    }
+
+    /**
+     * Apply headers driven by {@link io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy}.
+     *
+     * <ul>
+     *   <li>{@code X-Error-Format: problem-details} — only when
+     *       {@link io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy#problemDetails()}
+     *       is {@code true}. Default policy enables it.</li>
+     *   <li>{@code X-KSeF-Feature: upo-v4-3} — only on UPO-related calls
+     *       when {@link io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion#V4_3} is
+     *       selected. Detected from path containing {@code /upo}.</li>
+     * </ul>
+     */
+    private void applyFeatureHeaders(HttpRequest.Builder builder, String path) {
+        io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy policy = runtime.featurePolicy();
+        if (policy == null) {
+            // Defensive — pre-1.0.0 runtimes may have null. Apply legacy behavior.
+            builder.header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS);
+            return;
+        }
+        if (policy.problemDetails()) {
+            builder.header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS);
+        }
+        String featureValue = featureHeaderValue(policy, path);
+        if (featureValue != null) {
+            builder.header(X_KSEF_FEATURE_HEADER, featureValue);
+        }
+    }
+
+    private static String featureHeaderValue(
+            io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy policy,
+            String path) {
+        if (policy.upoVersion() == io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion.V4_3
+                && isUpoPath(path)) {
+            return UPO_V4_3_FEATURE;
+        }
+        return null;
+    }
+
+    private static boolean isUpoPath(String path) {
+        return path != null && path.contains(UPO_PATH_FRAGMENT);
     }
 
     /**

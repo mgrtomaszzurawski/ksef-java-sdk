@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Tomasz Zurawski
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch;
 
@@ -65,6 +65,8 @@ public final class BatchPackageBuilder {
     private static final String INVOICE_ENTRY_SUFFIX = ".xml";
     /** Default max chunk size <em>before encryption</em>: 100 MB (per KSeF spec). */
     private static final long DEFAULT_MAX_PART_SIZE = 100L * 1024L * 1024L;
+    /** REQ-SESS-41 — KSeF caps a single session at 10,000 invoices (online or batch). */
+    private static final int MAX_INVOICES_PER_SESSION = 10_000;
     private static final int MAX_PARTS = 50;
     private static final long MAX_FILE_SIZE = 5_000_000_000L;
     private static final int STREAM_BUFFER_BYTES = 64 * 1024;
@@ -104,6 +106,15 @@ public final class BatchPackageBuilder {
         Objects.requireNonNull(invoices, ERR_NULL_INVOICES);
         if (invoices.isEmpty()) {
             throw new IllegalArgumentException(ERR_EMPTY_INVOICES);
+        }
+        // REQ-SESS-41 — KSeF enforces a 10,000-invoice-per-session cap per
+        // ksef-docs/faktury/weryfikacja-faktury.md:50. Fail-fast in the SDK
+        // so the caller doesn't waste an upload that the server would
+        // reject anyway.
+        if (invoices.size() > MAX_INVOICES_PER_SESSION) {
+            throw new IllegalArgumentException(
+                    "Batch contains " + invoices.size() + " invoices but KSeF caps a single session at "
+                            + MAX_INVOICES_PER_SESSION + " (REQ-SESS-41)");
         }
         Path zipFile = null;
         List<Path> partFiles = new ArrayList<>();
