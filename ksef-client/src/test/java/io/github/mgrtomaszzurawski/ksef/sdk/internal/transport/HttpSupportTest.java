@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -205,6 +206,6 @@ class HttpSupportTest {
                 .credentials(new KsefTokenCredentials(TEST_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        return new HttpSupport(ksef.runtime());
+        return new HttpSupport(KsefClientInternals.runtime(ksef));
     }
 }

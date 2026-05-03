@@ -510,22 +510,13 @@ public final class KsefClient implements AutoCloseable {
     public KsefEnvironment environment() { return environment; }
 
     /**
-     * Internal {@link HttpRuntime} adapter — used by SDK domain client
-     * implementations to obtain transport plumbing without {@code KsefClient}
-     * itself implementing the runtime contract. {@code HttpRuntime} lives in
-     * a non-exported package, so this method is invisible to JPMS consumers.
-     *
-     * <p>This accessor is part of the package-internal SDK plumbing and is not
-     * intended for consumer code. It is retained as {@code public} only because
-     * domain client implementations live in different packages within the same
-     * module. A future release will move this behind a package-private bridge.
-     *
-     * @apiNote internal SDK infrastructure — do not call from consumer code.
-     * @deprecated For SDK-internal use only. Will be hidden in a future release;
-     *     consumers must not depend on this accessor.
+     * Package-private accessor for the internal {@link HttpRuntime} adapter.
+     * Used by {@link KsefClientInternals} (in the same package) to expose the
+     * runtime to SDK-internal unit tests. Domain client implementations
+     * receive {@link HttpRuntime} directly via their constructors and never
+     * call this method.
      */
-    @Deprecated(since = "0.1.0")
-    public HttpRuntime runtime() { return runtime; }
+    HttpRuntime internalRuntime() { return runtime; }
 
     @Override
     public void close() {

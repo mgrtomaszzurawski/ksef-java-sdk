@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -133,7 +134,7 @@ class AuthClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            AuthenticationChallenge response = new AuthClient(ksef.runtime()).requestChallenge();
+            AuthenticationChallenge response = new AuthClient(KsefClientInternals.runtime(ksef)).requestChallenge();
 
             // then
             assertEquals(TEST_CHALLENGE, response.challenge());
@@ -153,7 +154,7 @@ class AuthClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // then
-            var auth = new AuthClient(ksef.runtime());
+            var auth = new AuthClient(KsefClientInternals.runtime(ksef));
 
             assertThrows(KsefRateLimitException.class, () -> auth.requestChallenge());
         }
@@ -173,14 +174,14 @@ class AuthClientTest {
             TestCertificates testCerts = TestCertificates.generateRsa();
 
             // when
-            AuthenticationInit response = new AuthClient(ksef.runtime()).authenticateWithXades(
+            AuthenticationInit response = new AuthClient(KsefClientInternals.runtime(ksef)).authenticateWithXades(
                     TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
             // then
             assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
             assertEquals(TEST_TOKEN, response.authenticationToken().token());
-            assertTrue(ksef.runtime().sessionContext().isActive());
-            assertEquals(TEST_TOKEN, ksef.runtime().sessionContext().token());
+            assertTrue(KsefClientInternals.sessionContext(ksef).isActive());
+            assertEquals(TEST_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -190,7 +191,7 @@ class AuthClientTest {
         stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
-            new AuthClient(ksef.runtime()).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+            new AuthClient(KsefClientInternals.runtime(ksef)).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
             stubFor(post(urlEqualTo(PATH_TOKEN_REDEEM))
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
@@ -200,12 +201,12 @@ class AuthClientTest {
                             .withBody(TOKENS_RESPONSE)));
 
             // when
-            AuthenticationTokens response = new AuthClient(ksef.runtime()).redeemTokens();
+            AuthenticationTokens response = new AuthClient(KsefClientInternals.runtime(ksef)).redeemTokens();
 
             // then
             assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
             assertEquals(TEST_REFRESH_TOKEN, response.refreshToken().token());
-            assertEquals(TEST_ACCESS_TOKEN, ksef.runtime().sessionContext().token());
+            assertEquals(TEST_ACCESS_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -215,7 +216,7 @@ class AuthClientTest {
         stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
-            new AuthClient(ksef.runtime()).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+            new AuthClient(KsefClientInternals.runtime(ksef)).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
             stubFor(post(urlEqualTo(PATH_TOKEN_REFRESH))
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_REFRESH_TOKEN))
@@ -225,11 +226,11 @@ class AuthClientTest {
                             .withBody(REFRESH_RESPONSE)));
 
             // when
-            AuthenticationTokenRefresh response = new AuthClient(ksef.runtime()).refreshToken(TEST_REFRESH_TOKEN);
+            AuthenticationTokenRefresh response = new AuthClient(KsefClientInternals.runtime(ksef)).refreshToken(TEST_REFRESH_TOKEN);
 
             // then
             assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
-            assertEquals(TEST_ACCESS_TOKEN, ksef.runtime().sessionContext().token());
+            assertEquals(TEST_ACCESS_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -248,7 +249,7 @@ class AuthClientTest {
                             .withBody(STATUS_RESPONSE)));
 
             // when
-            AuthenticationStatus response = new AuthClient(ksef.runtime()).getStatus(TEST_REFERENCE_NUMBER);
+            AuthenticationStatus response = new AuthClient(KsefClientInternals.runtime(ksef)).getStatus(TEST_REFERENCE_NUMBER);
 
             // then
             assertNotNull(response.status());
@@ -270,7 +271,7 @@ class AuthClientTest {
                             .withBody(SESSIONS_LIST_RESPONSE)));
 
             // when
-            AuthenticationList response = new AuthClient(ksef.runtime()).listSessions();
+            AuthenticationList response = new AuthClient(KsefClientInternals.runtime(ksef)).listSessions();
 
             // then
             assertNotNull(response.items());
@@ -284,17 +285,17 @@ class AuthClientTest {
         stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             authenticateClient(ksef);
-            assertTrue(ksef.runtime().sessionContext().isActive());
+            assertTrue(KsefClientInternals.sessionContext(ksef).isActive());
 
             stubFor(delete(urlEqualTo(PATH_SESSIONS_CURRENT))
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                     .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
             // when
-            new AuthClient(ksef.runtime()).terminateCurrentSession();
+            new AuthClient(KsefClientInternals.runtime(ksef)).terminateCurrentSession();
 
             // then
-            assertFalse(ksef.runtime().sessionContext().isActive());
+            assertFalse(KsefClientInternals.sessionContext(ksef).isActive());
         }
     }
 
@@ -308,7 +309,7 @@ class AuthClientTest {
 
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
-            var auth = new AuthClient(ksef.runtime());
+            var auth = new AuthClient(KsefClientInternals.runtime(ksef));
             var cert = testCerts.certificate();
             var privateKey = testCerts.privateKey();
 
@@ -328,7 +329,7 @@ class AuthClientTest {
 
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
-            var auth = new AuthClient(ksef.runtime());
+            var auth = new AuthClient(KsefClientInternals.runtime(ksef));
             var cert = testCerts.certificate();
             var privateKey = testCerts.privateKey();
 
@@ -355,6 +356,6 @@ class AuthClientTest {
 
     private static void authenticateClient(KsefClient ksef) throws Exception {
         TestCertificates testCerts = TestCertificates.generateRsa();
-        new AuthClient(ksef.runtime()).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+        new AuthClient(KsefClientInternals.runtime(ksef)).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
     }
 }

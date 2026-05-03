@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.security;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
@@ -49,7 +50,7 @@ class SecurityClientTest {
                         .withBody(PUBLIC_KEY_CERTS_RESPONSE)));
 
         try (KsefClient ksef = createClient(wmInfo)) {
-            SecurityClient securityClient = new SecurityClient(ksef.runtime());
+            SecurityClient securityClient = new SecurityClient(KsefClientInternals.runtime(ksef));
 
             // when
             List<PublicKeyCertificate> certs = securityClient.getPublicKeyCertificates();
@@ -69,7 +70,7 @@ class SecurityClientTest {
                         .withBody("{\"error\":\"Internal Server Error\"}")));
 
         try (KsefClient ksef = createClient(wmInfo)) {
-            SecurityClient securityClient = new SecurityClient(ksef.runtime());
+            SecurityClient securityClient = new SecurityClient(KsefClientInternals.runtime(ksef));
 
             // then
             assertThrows(KsefServerException.class, securityClient::getPublicKeyCertificates);
