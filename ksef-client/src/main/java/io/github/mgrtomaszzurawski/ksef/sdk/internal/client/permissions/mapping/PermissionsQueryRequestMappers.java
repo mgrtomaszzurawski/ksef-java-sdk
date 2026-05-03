@@ -41,11 +41,10 @@ public final class PermissionsQueryRequestMappers {
     }
 
 
-    
 
-    
 
-    
+
+
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw toPersonPermissionsQueryRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionsQueryRequest request) {
@@ -128,15 +127,14 @@ public final class PermissionsQueryRequestMappers {
     }
 
 
-    
 
-    
 
-    
 
-    
 
-    
+
+
+
+
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw toPersonalPermissionsQueryRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissionsQueryRequest request) {
@@ -169,13 +167,12 @@ public final class PermissionsQueryRequestMappers {
     }
 
 
-    
 
-    
 
-    
 
-    
+
+
+
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryRequestRaw toEuEntityPermissionsQueryRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissionsQueryRequest request) {
@@ -197,6 +194,5 @@ public final class PermissionsQueryRequestMappers {
     }
 
 
-    
 
 }

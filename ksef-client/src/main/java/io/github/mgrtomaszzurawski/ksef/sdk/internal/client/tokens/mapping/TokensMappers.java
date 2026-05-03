@@ -54,7 +54,7 @@ public final class TokensMappers {
 
     public static GenerateTokenResult toGenerateTokenResult(GenerateTokenResponseRaw raw) {
             return new GenerateTokenResult(raw.getReferenceNumber(), raw.getToken());
-        
+
     }
 
     public static TokenDetail toTokenDetail(TokenStatusResponseRaw raw) {
@@ -73,13 +73,13 @@ public final class TokensMappers {
                     raw.getLastUseDate(),
                     TokensMappers.toTokenStatus(raw.getStatus()),
                     raw.getStatusDetails() != null ? List.copyOf(raw.getStatusDetails()) : List.of());
-        
+
     }
 
     public static TokenList toTokenList(QueryTokensResponseRaw raw) {
             List<TokenListItem> mapped = raw.getTokens().stream().map(TokensMappers::toTokenListItem).toList();
             return new TokenList(raw.getContinuationToken(), mapped);
-        
+
     }
 
     public static TokenListItem toTokenListItem(QueryTokensResponseItemRaw raw) {
@@ -98,7 +98,7 @@ public final class TokensMappers {
                     raw.getLastUseDate(),
                     TokensMappers.toTokenStatus(raw.getStatus()),
                     raw.getStatusDetails() != null ? List.copyOf(raw.getStatusDetails()) : List.of());
-        
+
     }
 
     public static TokenPermissionType toTokenPermissionType(TokenPermissionTypeRaw raw) {
@@ -114,7 +114,7 @@ public final class TokensMappers {
                 case ENFORCEMENT_OPERATIONS -> TokenPermissionType.ENFORCEMENT_OPERATIONS;
                 case INTROSPECTION -> TokenPermissionType.INTROSPECTION;
             };
-        
+
     }
 
     public static TokenStatus toTokenStatus(AuthenticationTokenStatusRaw raw) {
@@ -128,7 +128,7 @@ public final class TokensMappers {
                 case REVOKED -> TokenStatus.REVOKED;
                 case FAILED -> TokenStatus.FAILED;
             };
-        
+
     }
 
 }

@@ -29,7 +29,7 @@ public final class CommonMappers {
                     raw.getValidFrom(),
                     raw.getValidTo(),
                     mappedUsage);
-        
+
     }
 
     public static PublicKeyCertificateUsage toPublicKeyCertificateUsage(PublicKeyCertificateUsageRaw raw) {
@@ -40,7 +40,7 @@ public final class CommonMappers {
                 case KSEF_TOKEN_ENCRYPTION -> PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION;
                 case SYMMETRIC_KEY_ENCRYPTION -> PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION;
             };
-        
+
     }
 
     public static StatusInfo toStatusInfo(StatusInfoRaw raw) {
@@ -51,7 +51,7 @@ public final class CommonMappers {
                     raw.getCode(),
                     raw.getDescription(),
                     raw.getDetails() != null ? List.copyOf(raw.getDetails()) : List.of());
-        
+
     }
 
     public static TokenInfo toTokenInfo(TokenInfoRaw raw) {
@@ -59,7 +59,7 @@ public final class CommonMappers {
                 return null;
             }
             return new TokenInfo(raw.getToken(), raw.getValidUntil());
-        
+
     }
 
 }

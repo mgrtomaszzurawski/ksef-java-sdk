@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
@@ -16,58 +17,115 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenGenerateRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenPermissionType;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/**
+ * Coverage of auto-generated record equals/hashCode/toString plus the
+ * KsefSessionTerminalFailureException accessors. Each method exercises one
+ * record's contract independently.
+ */
 class RecordsEqualsHashCodeTest {
 
+    private static final int TERMINAL_STATUS_CODE = 415;
+    private static final String CERT_NAME_LEFT = "left-cert";
+    private static final String CERT_NAME_RIGHT = "right-cert";
+    private static final String QUERY_SERIAL = "serial-1";
+    private static final String QUERY_NAME = "name-1";
+    private static final String TOKEN_DESCRIPTION = "token-desc";
+    private static final String SYSTEM_CODE = "FA";
+    private static final String SCHEMA_VERSION = "2";
+    private static final String FORM_CODE_VALUE = "FA (2)";
+    private static final byte[] FAKE_CSR = new byte[]{1, 2};
+    private static final byte[] FAKE_CSR_OTHER = new byte[]{3};
+    private static final byte[] FAKE_BYTES_ONE = new byte[]{1};
+    private static final byte[] FAKE_BYTES_TWO = new byte[]{2};
+    private static final byte[] FAKE_BYTES_THREE = new byte[]{3};
+    private static final long FAKE_INVOICE_SIZE = 1L;
+    private static final long FAKE_ENCRYPTED_SIZE = 2L;
+    private static final String SESSION_REF = "ref-1";
+    private static final String FAILURE_DESCRIPTION = "Schema validation rejected";
+    private static final String FAILURE_DETAIL = "field 'X' is invalid";
+
     @Test
-    void certificateEnrollRequest_equalsHashCodeToString() {
-        var a = new CertificateEnrollRequest("c", KsefCertificateType.AUTHENTICATION, new byte[]{1, 2}, null);
-        var b = new CertificateEnrollRequest("c", KsefCertificateType.AUTHENTICATION, new byte[]{1, 2}, null);
-        var c = new CertificateEnrollRequest("d", KsefCertificateType.OFFLINE, new byte[]{3}, null);
-        assertEquals(a, b);
-        assertEquals(a.hashCode(), b.hashCode());
-        assertNotEquals(a, c);
-        assertNotEquals(a, null);
-        assertNotEquals(a, "string");
-        assertEquals(a, a);
+    void certificateEnrollRequest_equalsAndHashCode_treatStructurallyEqualBytesAsEqual() {
+        CertificateEnrollRequest left = new CertificateEnrollRequest(
+                CERT_NAME_LEFT, KsefCertificateType.AUTHENTICATION, FAKE_CSR, null);
+        CertificateEnrollRequest leftCopy = new CertificateEnrollRequest(
+                CERT_NAME_LEFT, KsefCertificateType.AUTHENTICATION, FAKE_CSR, null);
+        CertificateEnrollRequest right = new CertificateEnrollRequest(
+                CERT_NAME_RIGHT, KsefCertificateType.OFFLINE, FAKE_CSR_OTHER, null);
+        assertEquals(left, leftCopy);
+        assertEquals(left.hashCode(), leftCopy.hashCode());
+        assertNotEquals(left, right);
+        assertNotEquals(left, null);
+        assertNotEquals(left, "not-a-record");
+        assertEquals(left, left);
     }
 
     @Test
-    void recordsToStringNonNull() {
+    void certificateQueryRequest_toString_handlesNullsAndAllFields() {
         assertNotNull(new CertificateQueryRequest(null, null, null, null, null).toString());
-        assertNotNull(new CertificateQueryRequest("s", "n", KsefCertificateType.AUTHENTICATION,
-                CertificateStatus.ACTIVE, java.time.OffsetDateTime.now()).toString());
-        assertNotNull(new TokenGenerateRequest("d", List.of(TokenPermissionType.INVOICE_READ)).toString());
-        assertNotNull(new InvoiceQueryFilters(InvoiceQuerySubjectType.SUBJECT1, InvoiceQueryDateType.INVOICING,
-                java.time.OffsetDateTime.now(), null, null, null, null, InvoicingMode.ONLINE, null, null).toString());
-        assertNotNull(new SendInvoiceRequest(new byte[]{1}, 1L, new byte[]{2}, 2L, new byte[]{3}, false).toString());
-        var session = new OnlineSessionOpenRequest(new FormCodeInfo("FA", "2", "FA (2)"),
-                new byte[]{1}, new byte[]{2}, new byte[]{3});
-        assertNotNull(session.toString());
-        assertEquals(session, session);
-        var session2 = new OnlineSessionOpenRequest(new FormCodeInfo("FA", "2", "FA (2)"),
-                new byte[]{1}, new byte[]{2}, new byte[]{3});
-        assertEquals(session, session2);
-        assertNotEquals(session, null);
-        assertNotEquals(session, "x");
-        assertEquals(session.hashCode(), session2.hashCode());
+        assertNotNull(new CertificateQueryRequest(QUERY_SERIAL, QUERY_NAME,
+                KsefCertificateType.AUTHENTICATION, CertificateStatus.ACTIVE,
+                OffsetDateTime.now()).toString());
     }
 
     @Test
-    void terminalFailureException_accessors() {
-        var e = new KsefSessionTerminalFailureException("ref", 415, "desc", List.of("d1"));
-        assertEquals("ref", e.referenceNumber());
-        assertEquals(415, e.code());
-        assertEquals("desc", e.description());
-        assertEquals(List.of("d1"), e.details());
-        assertNotNull(e.getMessage());
-        assertNotNull(new KsefSessionTerminalFailureException("ref", 415, null, null).details());
+    void tokenGenerateRequest_toString_includesPermissionsList() {
+        assertNotNull(new TokenGenerateRequest(TOKEN_DESCRIPTION,
+                List.of(TokenPermissionType.INVOICE_READ)).toString());
+    }
+
+    @Test
+    void invoiceQueryFilters_toString_handlesAllFieldsSet() {
+        assertNotNull(new InvoiceQueryFilters(
+                InvoiceQuerySubjectType.SUBJECT1, InvoiceQueryDateType.INVOICING,
+                OffsetDateTime.now(), null, null, null, null,
+                InvoicingMode.ONLINE, null, null).toString());
+    }
+
+    @Test
+    void sendInvoiceRequest_toString_returnsNonNull() {
+        assertNotNull(new SendInvoiceRequest(FAKE_BYTES_ONE, FAKE_INVOICE_SIZE,
+                FAKE_BYTES_TWO, FAKE_ENCRYPTED_SIZE, FAKE_BYTES_THREE, false).toString());
+    }
+
+    @Test
+    void onlineSessionOpenRequest_equalsAndHashCode_byteFieldsAreStructurallyCompared() {
+        FormCodeInfo formCode = new FormCodeInfo(SYSTEM_CODE, SCHEMA_VERSION, FORM_CODE_VALUE);
+        OnlineSessionOpenRequest left = new OnlineSessionOpenRequest(formCode,
+                FAKE_BYTES_ONE, FAKE_BYTES_TWO, FAKE_BYTES_THREE);
+        OnlineSessionOpenRequest right = new OnlineSessionOpenRequest(formCode,
+                FAKE_BYTES_ONE, FAKE_BYTES_TWO, FAKE_BYTES_THREE);
+        assertEquals(left, left);
+        assertEquals(left, right);
+        assertEquals(left.hashCode(), right.hashCode());
+        assertNotEquals(left, null);
+        assertNotEquals(left, "not-a-record");
+        assertNotNull(left.toString());
+    }
+
+    @Test
+    void terminalFailureException_accessors_returnConstructorValues() {
+        KsefSessionTerminalFailureException failure = new KsefSessionTerminalFailureException(
+                SESSION_REF, TERMINAL_STATUS_CODE, FAILURE_DESCRIPTION, List.of(FAILURE_DETAIL));
+        assertEquals(SESSION_REF, failure.referenceNumber());
+        assertEquals(TERMINAL_STATUS_CODE, failure.code());
+        assertEquals(FAILURE_DESCRIPTION, failure.description());
+        assertEquals(List.of(FAILURE_DETAIL), failure.details());
+        assertNotNull(failure.getMessage());
+    }
+
+    @Test
+    void terminalFailureException_whenDetailsNull_returnsEmptyList() {
+        KsefSessionTerminalFailureException failure = new KsefSessionTerminalFailureException(
+                SESSION_REF, TERMINAL_STATUS_CODE, null, null);
+        assertEquals(List.of(), failure.details());
     }
 }

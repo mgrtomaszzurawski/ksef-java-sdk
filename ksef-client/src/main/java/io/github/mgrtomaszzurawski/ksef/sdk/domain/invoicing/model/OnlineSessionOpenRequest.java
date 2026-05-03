@@ -25,7 +25,19 @@ public record OnlineSessionOpenRequest(
         Objects.requireNonNull(encryptedSymmetricKey, "encryptedSymmetricKey");
         Objects.requireNonNull(initVector, "initVector");
         Objects.requireNonNull(aesKey, "aesKey");
+        encryptedSymmetricKey = encryptedSymmetricKey.clone();
+        initVector = initVector.clone();
+        aesKey = aesKey.clone();
     }
+
+    @Override
+    public byte[] encryptedSymmetricKey() { return encryptedSymmetricKey.clone(); }
+
+    @Override
+    public byte[] initVector() { return initVector.clone(); }
+
+    @Override
+    public byte[] aesKey() { return aesKey.clone(); }
 
     @Override
     public boolean equals(Object o) {
@@ -52,8 +64,8 @@ public record OnlineSessionOpenRequest(
     @Override
     public String toString() {
         return "OnlineSessionOpenRequest[formCode=" + formCode
-                + ", encryptedSymmetricKey=byte[" + encryptedSymmetricKey.length + "]"
-                + ", initVector=byte[" + initVector.length + "]"
+                + ", encryptedSymmetricKey=<redacted>"
+                + ", initVector=<redacted>"
                 + ", aesKey=<redacted>]";
     }
 }

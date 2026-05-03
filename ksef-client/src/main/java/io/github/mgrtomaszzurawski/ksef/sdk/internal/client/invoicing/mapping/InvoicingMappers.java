@@ -71,7 +71,7 @@ public final class InvoicingMappers {
     public static BatchSession toBatchSession(OpenBatchSessionResponseRaw raw) {
             List<PartUploadRequest> parts = raw.getPartUploadRequests().stream().map(InvoicingMappers::toPartUploadRequest).toList();
             return new BatchSession(raw.getReferenceNumber(), parts);
-        
+
     }
 
     public static BatchSessionLimits toBatchSessionLimits(BatchSessionEffectiveContextLimitsRaw raw) {
@@ -82,7 +82,7 @@ public final class InvoicingMappers {
                     raw.getMaxInvoiceSizeInMB(),
                     raw.getMaxInvoiceWithAttachmentSizeInMB(),
                     raw.getMaxInvoices());
-        
+
     }
 
     public static BuyerIdentifierType toBuyerIdentifierType(BuyerIdentifierTypeRaw raw) {
@@ -95,12 +95,12 @@ public final class InvoicingMappers {
                 case OTHER -> BuyerIdentifierType.OTHER;
                 case NONE -> BuyerIdentifierType.NONE;
             };
-        
+
     }
 
     public static ExportInvoicesResult toExportInvoicesResult(ExportInvoicesResponseRaw raw) {
             return new ExportInvoicesResult(raw.getReferenceNumber());
-        
+
     }
 
     public static FormCodeInfo toFormCodeInfo(FormCodeRaw raw) {
@@ -108,7 +108,7 @@ public final class InvoicingMappers {
                 return null;
             }
             return new FormCodeInfo(raw.getSystemCode(), raw.getSchemaVersion(), raw.getValue());
-        
+
     }
 
     public static InvoiceBuyer toInvoiceBuyer(InvoiceMetadataBuyerRaw raw) {
@@ -122,7 +122,7 @@ public final class InvoicingMappers {
                 idValue = raw.getIdentifier().getValue();
             }
             return new InvoiceBuyer(idType, idValue, raw.getName());
-        
+
     }
 
     public static InvoiceExportStatus toInvoiceExportStatus(InvoiceExportStatusResponseRaw raw) {
@@ -131,7 +131,7 @@ public final class InvoicingMappers {
                     raw.getCompletedDate(),
                     raw.getPackageExpirationDate(),
                     InvoicingMappers.toInvoicePackage(raw.getPackage()));
-        
+
     }
 
     public static InvoiceMetadata toInvoiceMetadata(InvoiceMetadataRaw raw) {
@@ -159,7 +159,7 @@ public final class InvoicingMappers {
                     raw.getInvoiceHash(),
                     raw.getHashOfCorrectedInvoice(),
                     subjects);
-        
+
     }
 
     public static InvoiceMetadataResult toInvoiceMetadataResult(QueryInvoicesMetadataResponseRaw raw) {
@@ -169,7 +169,7 @@ public final class InvoicingMappers {
                     raw.getIsTruncated(),
                     raw.getPermanentStorageHwmDate(),
                     mapped);
-        
+
     }
 
     public static InvoicePackage toInvoicePackage(InvoicePackageRaw raw) {
@@ -186,7 +186,7 @@ public final class InvoicingMappers {
                     raw.getLastInvoicingDate(),
                     raw.getLastPermanentStorageDate(),
                     raw.getPermanentStorageHwmDate());
-        
+
     }
 
     public static InvoicePackagePart toInvoicePackagePart(InvoicePackagePartRaw raw) {
@@ -200,7 +200,7 @@ public final class InvoicingMappers {
                     raw.getEncryptedPartSize(),
                     raw.getEncryptedPartHash(),
                     raw.getExpirationDate());
-        
+
     }
 
     public static InvoiceSeller toInvoiceSeller(InvoiceMetadataSellerRaw raw) {
@@ -208,7 +208,7 @@ public final class InvoicingMappers {
                 return null;
             }
             return new InvoiceSeller(raw.getNip(), raw.getName());
-        
+
     }
 
     public static InvoiceStatusInfo toInvoiceStatusInfo(InvoiceStatusInfoRaw raw) {
@@ -220,7 +220,7 @@ public final class InvoicingMappers {
                     raw.getDescription(),
                     raw.getDetails() != null ? List.copyOf(raw.getDetails()) : List.of(),
                     raw.getExtensions() != null ? Map.copyOf(raw.getExtensions()) : Map.of());
-        
+
     }
 
     public static InvoiceThirdSubject toInvoiceThirdSubject(InvoiceMetadataThirdSubjectRaw raw) {
@@ -231,7 +231,7 @@ public final class InvoicingMappers {
                 idValue = raw.getIdentifier().getValue();
             }
             return new InvoiceThirdSubject(idType, idValue, raw.getName(), raw.getRole());
-        
+
     }
 
     public static InvoiceType toInvoiceType(InvoiceTypeRaw raw) {
@@ -252,7 +252,7 @@ public final class InvoicingMappers {
                 case VAT_RR -> InvoiceType.VAT_RR;
                 case KOR_VAT_RR -> InvoiceType.KOR_VAT_RR;
             };
-        
+
     }
 
     public static InvoicingMode toInvoicingMode(InvoicingModeRaw raw) {
@@ -263,12 +263,12 @@ public final class InvoicingMappers {
                 case ONLINE -> InvoicingMode.ONLINE;
                 case OFFLINE -> InvoicingMode.OFFLINE;
             };
-        
+
     }
 
     public static OnlineSession toOnlineSession(OpenOnlineSessionResponseRaw raw) {
             return new OnlineSession(raw.getReferenceNumber(), raw.getValidUntil());
-        
+
     }
 
     public static OnlineSessionLimits toOnlineSessionLimits(OnlineSessionEffectiveContextLimitsRaw raw) {
@@ -279,7 +279,7 @@ public final class InvoicingMappers {
                     raw.getMaxInvoiceSizeInMB(),
                     raw.getMaxInvoiceWithAttachmentSizeInMB(),
                     raw.getMaxInvoices());
-        
+
     }
 
     public static PartUploadRequest toPartUploadRequest(PartUploadRequestRaw raw) {
@@ -288,18 +288,18 @@ public final class InvoicingMappers {
                     raw.getMethod(),
                     raw.getUrl(),
                     Map.copyOf(raw.getHeaders()));
-        
+
     }
 
     public static SendInvoiceResult toSendInvoiceResult(SendInvoiceResponseRaw raw) {
             return new SendInvoiceResult(raw.getReferenceNumber());
-        
+
     }
 
     public static SessionInvoices toSessionInvoices(SessionInvoicesResponseRaw raw) {
             List<SessionInvoiceStatus> mapped = raw.getInvoices().stream().map(InvoicingMappers::toSessionInvoiceStatus).toList();
             return new SessionInvoices(raw.getContinuationToken(), mapped);
-        
+
     }
 
     public static SessionInvoiceStatus toSessionInvoiceStatus(SessionInvoiceStatusResponseRaw raw) {
@@ -317,7 +317,7 @@ public final class InvoicingMappers {
                     raw.getUpoDownloadUrlExpirationDate(),
                     InvoicingMappers.toInvoicingMode(raw.getInvoicingMode()),
                     InvoicingMappers.toInvoiceStatusInfo(raw.getStatus()));
-        
+
     }
 
     public static SessionStatus toSessionStatus(SessionStatusResponseRaw raw) {
@@ -330,7 +330,7 @@ public final class InvoicingMappers {
                     raw.getInvoiceCount(),
                     raw.getSuccessfulInvoiceCount(),
                     raw.getFailedInvoiceCount());
-        
+
     }
 
     public static ThirdSubjectIdentifierType toThirdSubjectIdentifierType(ThirdSubjectIdentifierTypeRaw raw) {
@@ -344,7 +344,7 @@ public final class InvoicingMappers {
                 case OTHER -> ThirdSubjectIdentifierType.OTHER;
                 case NONE -> ThirdSubjectIdentifierType.NONE;
             };
-        
+
     }
 
     public static UpoInfo toUpoInfo(UpoResponseRaw raw) {
@@ -353,7 +353,7 @@ public final class InvoicingMappers {
             }
             List<UpoPage> mappedPages = raw.getPages().stream().map(InvoicingMappers::toUpoPage).toList();
             return new UpoInfo(mappedPages);
-        
+
     }
 
     public static UpoPage toUpoPage(UpoPageResponseRaw raw) {
@@ -361,7 +361,7 @@ public final class InvoicingMappers {
                     raw.getReferenceNumber(),
                     raw.getDownloadUrl(),
                     raw.getDownloadUrlExpirationDate());
-        
+
     }
 
 }

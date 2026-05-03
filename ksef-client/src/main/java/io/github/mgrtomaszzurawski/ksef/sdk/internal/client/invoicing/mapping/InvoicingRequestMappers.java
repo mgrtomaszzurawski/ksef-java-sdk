@@ -61,6 +61,7 @@ public final class InvoicingRequestMappers {
             case SUBJECT1 -> InvoiceQuerySubjectTypeRaw.SUBJECT1;
             case SUBJECT2 -> InvoiceQuerySubjectTypeRaw.SUBJECT2;
             case SUBJECT3 -> InvoiceQuerySubjectTypeRaw.SUBJECT3;
+            case SUBJECT_AUTHORIZED -> InvoiceQuerySubjectTypeRaw.SUBJECT_AUTHORIZED;
         };
     }
 

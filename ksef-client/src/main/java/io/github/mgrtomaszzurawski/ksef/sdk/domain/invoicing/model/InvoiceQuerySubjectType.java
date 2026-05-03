@@ -8,5 +8,5 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * Role of the authenticated subject in the queried invoices.
  */
 public enum InvoiceQuerySubjectType {
-    SUBJECT1, SUBJECT2, SUBJECT3
+    SUBJECT1, SUBJECT2, SUBJECT3, SUBJECT_AUTHORIZED
 }

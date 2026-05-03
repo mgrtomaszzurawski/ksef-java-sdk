@@ -59,7 +59,7 @@ public final class PermissionsMappers {
             return new AttachmentPermissionStatus(
                     raw.getIsAttachmentAllowed(),
                     raw.getRevokedDate());
-        
+
     }
 
     public static EntityAuthorizationGrant toEntityAuthorizationGrant(EntityAuthorizationGrantRaw raw) {
@@ -74,13 +74,13 @@ public final class PermissionsMappers {
             String authScope = raw.getAuthorizationScope().getValue();
             return new EntityAuthorizationGrant(raw.getId(), authorId, authzEntityId, authingEntityId,
                     authScope, raw.getDescription(), raw.getStartDate());
-        
+
     }
 
     public static EntityAuthorizationPermissions toEntityAuthorizationPermissions(QueryEntityAuthorizationPermissionsResponseRaw raw) {
             List<EntityAuthorizationGrant> mapped = raw.getAuthorizationGrants().stream().map(PermissionsMappers::toEntityAuthorizationGrant).toList();
             return new EntityAuthorizationPermissions(mapped, raw.getHasMore());
-        
+
     }
 
     public static EntityPermission toEntityPermission(EntityPermissionItemRaw raw) {
@@ -89,13 +89,13 @@ public final class PermissionsMappers {
             String scope = raw.getPermissionScope().getValue();
             return new EntityPermission(raw.getId(), ctxId, scope, raw.getDescription(),
                     raw.getStartDate(), raw.getCanDelegate());
-        
+
     }
 
     public static EntityPermissions toEntityPermissions(QueryEntityPermissionsResponseRaw raw) {
             List<EntityPermission> mapped = raw.getPermissions().stream().map(PermissionsMappers::toEntityPermission).toList();
             return new EntityPermissions(mapped, raw.getHasMore());
-        
+
     }
 
     public static EntityRole toEntityRole(EntityRoleRaw raw) {
@@ -105,13 +105,13 @@ public final class PermissionsMappers {
                     : null;
             String role = raw.getRole().getValue();
             return new EntityRole(parentId, role, raw.getDescription(), raw.getStartDate());
-        
+
     }
 
     public static EntityRoles toEntityRoles(QueryEntityRolesResponseRaw raw) {
             List<EntityRole> mapped = raw.getRoles().stream().map(PermissionsMappers::toEntityRole).toList();
             return new EntityRoles(mapped, raw.getHasMore());
-        
+
     }
 
     public static EuEntityPermission toEuEntityPermission(EuEntityPermissionRaw raw) {
@@ -121,23 +121,23 @@ public final class PermissionsMappers {
             return new EuEntityPermission(raw.getId(), authorId, raw.getVatUeIdentifier(),
                     raw.getEuEntityName(), raw.getAuthorizedFingerprintIdentifier(),
                     scope, raw.getDescription(), raw.getStartDate());
-        
+
     }
 
     public static EuEntityPermissions toEuEntityPermissions(QueryEuEntityPermissionsResponseRaw raw) {
             List<EuEntityPermission> mapped = raw.getPermissions().stream().map(PermissionsMappers::toEuEntityPermission).toList();
             return new EuEntityPermissions(mapped, raw.getHasMore());
-        
+
     }
 
     public static PermissionOperationResult toPermissionOperationResult(PermissionsOperationResponseRaw raw) {
             return new PermissionOperationResult(raw.getReferenceNumber());
-        
+
     }
 
     public static PermissionOperationStatus toPermissionOperationStatus(PermissionsOperationStatusResponseRaw raw) {
             return new PermissionOperationStatus(CommonMappers.toStatusInfo(raw.getStatus()));
-        
+
     }
 
     public static PersonalPermission toPersonalPermission(PersonalPermissionRaw raw) {
@@ -167,13 +167,13 @@ public final class PermissionsMappers {
             return new PersonalPermission(raw.getId(), ctxId, authzId, targetId, scope,
                     raw.getDescription(), personDetails, entityDetails, state,
                     raw.getStartDate(), raw.getCanDelegate());
-        
+
     }
 
     public static PersonalPermissions toPersonalPermissions(QueryPersonalPermissionsResponseRaw raw) {
             List<PersonalPermission> mapped = raw.getPermissions().stream().map(PermissionsMappers::toPersonalPermission).toList();
             return new PersonalPermissions(mapped, raw.getHasMore());
-        
+
     }
 
     public static PersonPermission toPersonPermission(PersonPermissionRaw raw) {
@@ -193,13 +193,13 @@ public final class PermissionsMappers {
             String state = raw.getPermissionState().getValue();
             return new PersonPermission(raw.getId(), authzId, ctxId, targetId, authorId,
                     scope, raw.getDescription(), state, raw.getStartDate(), raw.getCanDelegate());
-        
+
     }
 
     public static PersonPermissions toPersonPermissions(QueryPersonPermissionsResponseRaw raw) {
             List<PersonPermission> mapped = raw.getPermissions().stream().map(PermissionsMappers::toPersonPermission).toList();
             return new PersonPermissions(mapped, raw.getHasMore());
-        
+
     }
 
     public static SubordinateEntityRole toSubordinateEntityRole(SubordinateEntityRoleRaw raw) {
@@ -207,13 +207,13 @@ public final class PermissionsMappers {
             PermissionIdentifier subId = new PermissionIdentifier(subRaw.getType().getValue(), subRaw.getValue());
             String role = raw.getRole().getValue();
             return new SubordinateEntityRole(subId, role, raw.getDescription(), raw.getStartDate());
-        
+
     }
 
     public static SubordinateEntityRoles toSubordinateEntityRoles(QuerySubordinateEntityRolesResponseRaw raw) {
             List<SubordinateEntityRole> mapped = raw.getRoles().stream().map(PermissionsMappers::toSubordinateEntityRole).toList();
             return new SubordinateEntityRoles(mapped, raw.getHasMore());
-        
+
     }
 
     public static SubunitPermission toSubunitPermission(SubunitPermissionRaw raw) {
@@ -226,13 +226,13 @@ public final class PermissionsMappers {
             String scope = raw.getPermissionScope().getValue();
             return new SubunitPermission(raw.getId(), authzId, subunitId, authorId,
                     scope, raw.getDescription(), raw.getSubunitName(), raw.getStartDate());
-        
+
     }
 
     public static SubunitPermissions toSubunitPermissions(QuerySubunitPermissionsResponseRaw raw) {
             List<SubunitPermission> mapped = raw.getPermissions().stream().map(PermissionsMappers::toSubunitPermission).toList();
             return new SubunitPermissions(mapped, raw.getHasMore());
-        
+
     }
 
 }

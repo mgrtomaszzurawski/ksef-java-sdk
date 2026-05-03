@@ -38,14 +38,14 @@ public final class LimitsMappers {
                     LimitsMappers.toRateLimitValues(raw.getInvoiceExportStatus()),
                     LimitsMappers.toRateLimitValues(raw.getInvoiceDownload()),
                     LimitsMappers.toRateLimitValues(raw.getOther()));
-        
+
     }
 
     public static ContextLimits toContextLimits(EffectiveContextLimitsRaw raw) {
             return new ContextLimits(
                     InvoicingMappers.toOnlineSessionLimits(raw.getOnlineSession()),
                     InvoicingMappers.toBatchSessionLimits(raw.getBatchSession()));
-        
+
     }
 
     public static RateLimitValues toRateLimitValues(EffectiveApiRateLimitValuesRaw raw) {
@@ -53,7 +53,7 @@ public final class LimitsMappers {
                 return null;
             }
             return new RateLimitValues(raw.getPerSecond(), raw.getPerMinute(), raw.getPerHour());
-        
+
     }
 
     public static SubjectLimits toSubjectLimits(EffectiveSubjectLimitsRaw raw) {
@@ -62,7 +62,7 @@ public final class LimitsMappers {
             return new SubjectLimits(
                     enrollment != null ? enrollment.getMaxEnrollments() : null,
                     certificate != null ? certificate.getMaxCertificates() : null);
-        
+
     }
 
 }

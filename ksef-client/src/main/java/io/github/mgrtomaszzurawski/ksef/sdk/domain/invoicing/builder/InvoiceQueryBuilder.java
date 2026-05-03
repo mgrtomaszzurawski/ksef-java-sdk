@@ -48,6 +48,14 @@ public final class InvoiceQueryBuilder {
         return new InvoiceQueryBuilder(InvoiceQuerySubjectType.SUBJECT3);
     }
 
+    /**
+     * Query invoices where the authenticated subject acts on behalf of an
+     * authorized partner (KSeF {@code SUBJECT_AUTHORIZED} mode).
+     */
+    public static InvoiceQueryBuilder authorized() {
+        return new InvoiceQueryBuilder(InvoiceQuerySubjectType.SUBJECT_AUTHORIZED);
+    }
+
     public InvoiceQueryBuilder invoicingDateFrom(OffsetDateTime from) {
         this.dateType = InvoiceQueryDateType.INVOICING;
         this.dateFrom = from;

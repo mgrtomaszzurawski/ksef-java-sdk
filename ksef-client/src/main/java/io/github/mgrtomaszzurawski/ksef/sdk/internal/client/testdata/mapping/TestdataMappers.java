@@ -174,7 +174,7 @@ public final class TestdataMappers {
                 case NIP_VAT_UE -> TestDataAuthenticationContextIdentifierTypeRaw.NIP_VAT_UE;
                 case PEPPOL_ID -> TestDataAuthenticationContextIdentifierTypeRaw.PEPPOL_ID;
             };
-        
+
     }
 
     public static TestDataPermissionTypeRaw toTestDataPermissionTypeRaw(TestDataPermissionType value) {
@@ -187,7 +187,7 @@ public final class TestdataMappers {
                 case ENFORCEMENT_OPERATIONS -> TestDataPermissionTypeRaw.ENFORCEMENT_OPERATIONS;
                 case SUBUNIT_MANAGE -> TestDataPermissionTypeRaw.SUBUNIT_MANAGE;
             };
-        
+
     }
 
     public static SubjectIdentifierTypeRaw toSubjectIdentifierTypeRaw(TestSubjectIdentifierType value) {
@@ -196,7 +196,7 @@ public final class TestdataMappers {
                 case PESEL -> SubjectIdentifierTypeRaw.PESEL;
                 case FINGERPRINT -> SubjectIdentifierTypeRaw.FINGERPRINT;
             };
-        
+
     }
 
     public static SubjectTypeRaw toSubjectTypeRaw(TestSubjectType value) {
@@ -205,7 +205,7 @@ public final class TestdataMappers {
                 case VAT_GROUP -> SubjectTypeRaw.VAT_GROUP;
                 case JST -> SubjectTypeRaw.JST;
             };
-        
+
     }
 
 }
