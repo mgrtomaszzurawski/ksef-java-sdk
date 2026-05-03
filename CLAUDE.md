@@ -85,20 +85,22 @@ Both modules independently configure SpotBugs, PMD, and Checkstyle (shared confi
 ```
 ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/
 ├── sdk/
-│   ├── KsefClient.java                  # ONLY entry point at sdk/ root
+│   ├── KsefClient.java                  # entry point at sdk/ root
+│   ├── KsefClientInternals.java         # @Deprecated test seam (moves to ksef-client-testkit in 0.2.x)
 │   ├── package-info.java
 │   ├── config/                          # KsefEnvironment, KsefIdentifier, RetryPolicy
 │   ├── common/                          # StatusInfo, TokenInfo, PublicKeyCertificate(Usage)
-│   ├── exception/                       # 8 typed exceptions (KsefException + subclasses)
+│   ├── exception/                       # 10 typed exceptions (KsefException + subclasses)
 │   │
 │   ├── domain/                          # PUBLIC functionality buckets (8)
 │   │   ├── authentication/  # KsefCredentials + 3 impls (Token, Pkcs12, Certificate)
 │   │   │   └── model/       # 10 auth-flow records
-│   │   ├── invoicing/       # FormCode, KsefSession, KsefBatchSession, InvoiceClient
+│   │   ├── invoicing/       # FormCode, KsefSession, KsefBatchSession, InvoiceClient,
+│   │   │   │                  PreparedInvoiceExport, ExportedInvoicePackage
 │   │   │   ├── builder/     # 5 builders (online/batch session, send invoice, query, export)
 │   │   │   ├── model/       # 27 records
-│   │   │   ├── batch/       # BatchFileSpec
-│   │   │   └── qrcode/      # QrCodeService
+│   │   │   ├── batch/       # BatchFileSpec, PreparedBatchPackage
+│   │   │   └── qrcode/      # QrCodeService, KsefVerificationLinks, QrEnvironment, QrContextType
 │   │   ├── permissions/     # PermissionClient
 │   │   │   ├── builder/     # 12 builders
 │   │   │   └── model/       # 22 records
@@ -176,7 +178,7 @@ is invisible to consumers (ADR-005, ADR-012):
 - `sdk` — `KsefClient` (entry point)
 - `sdk.config` — `KsefEnvironment`, `KsefIdentifier`, `RetryPolicy`
 - `sdk.common` — `StatusInfo`, `TokenInfo`, public-key types
-- `sdk.exception` — typed exception hierarchy (8 types)
+- `sdk.exception` — typed exception hierarchy (10 types)
 - `sdk.domain.<feature>` + `.builder` + `.model` — one set per
   functionality bucket (authentication, invoicing, permissions,
   tokens, certificates, peppol, limits, testdata)
@@ -194,7 +196,9 @@ NOT exported:
 ### Domain client pattern
 
 Every domain client:
-1. Takes `KsefClient` in constructor, extracts `HttpSupport` and `SessionContext`
+1. Takes `HttpRuntime` in constructor (the narrow transport interface from
+   ADR-013), wraps it in a `new HttpSupport(runtime)`. `KsefClient` no longer
+   leaks itself into impl ctors — see commit `f958189`.
 2. Defines `private static final String` path constants built from
    `ApiPaths.<DOMAIN>` (ADR-014); never hardcode `/api/v2` literals
 3. For dynamic segments use `ApiPaths.subPath(base, segments...)` —
@@ -243,7 +247,7 @@ Server (.NET backend) returns structured validation errors:
 - **WireMock** for all domain client HTTP tests (mock responses, verify requests)
 - **Naming convention:** `methodUnderTest_whenScenario_expectedResult`
 - **Structure:** given/when/then with `// given`, `// when`, `// then` markers
-- **264 tests** total across 29 test classes (surefire count, includes parameterized expansions)
+- **391 tests** total across 33 test classes (surefire count, includes parameterized expansions)
 - No live KSeF calls in tests — all mocked
 - `TestCertificates.java` provides test X.509 certs/keys for crypto tests
 
