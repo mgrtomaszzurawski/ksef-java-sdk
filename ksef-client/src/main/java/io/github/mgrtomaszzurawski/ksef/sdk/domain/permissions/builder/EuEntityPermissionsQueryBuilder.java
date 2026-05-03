@@ -4,78 +4,56 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryPermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissionsQueryRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityQueryPermissionType;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builder for EU entity permissions query requests.
- * <p>
- * All fields are optional.
- * <p>
- * Usage:
- * <pre>{@code
- * var builder = EuEntityPermissionsQueryBuilder.create()
- *     .vatUeIdentifier("PL1234567890")
- *     .invoiceRead();
- * }</pre>
+ * Builder for EU entity permissions query requests. All fields are optional.
  */
 public final class EuEntityPermissionsQueryBuilder {
 
     private String vatUeIdentifier;
     private String authorizedFingerprintIdentifier;
-    private final List<EuEntityPermissionsQueryPermissionTypeRaw> permissionTypes = new ArrayList<>();
+    private final List<EuEntityQueryPermissionType> permissionTypes = new ArrayList<>();
 
-    private EuEntityPermissionsQueryBuilder() {
-    }
+    private EuEntityPermissionsQueryBuilder() { }
 
-    /**
-     * Create a new query builder with all optional fields.
-     */
     public static EuEntityPermissionsQueryBuilder create() {
         return new EuEntityPermissionsQueryBuilder();
     }
 
-    /**
-     * Filter by VAT-UE identifier.
-     */
     public EuEntityPermissionsQueryBuilder vatUeIdentifier(String vatUeIdentifier) {
         this.vatUeIdentifier = vatUeIdentifier;
         return this;
     }
 
-    /**
-     * Filter by authorized fingerprint identifier.
-     */
     public EuEntityPermissionsQueryBuilder authorizedFingerprintIdentifier(String fingerprint) {
         this.authorizedFingerprintIdentifier = fingerprint;
         return this;
     }
 
     public EuEntityPermissionsQueryBuilder vatUeManage() {
-        permissionTypes.add(EuEntityPermissionsQueryPermissionTypeRaw.VAT_UE_MANAGE);
+        permissionTypes.add(EuEntityQueryPermissionType.VAT_UE_MANAGE);
         return this;
     }
 
     public EuEntityPermissionsQueryBuilder invoiceRead() {
-        permissionTypes.add(EuEntityPermissionsQueryPermissionTypeRaw.INVOICE_READ);
+        permissionTypes.add(EuEntityQueryPermissionType.INVOICE_READ);
         return this;
     }
 
     public EuEntityPermissionsQueryBuilder invoiceWrite() {
-        permissionTypes.add(EuEntityPermissionsQueryPermissionTypeRaw.INVOICE_WRITE);
+        permissionTypes.add(EuEntityQueryPermissionType.INVOICE_WRITE);
         return this;
     }
 
     public EuEntityPermissionsQueryBuilder introspection() {
-        permissionTypes.add(EuEntityPermissionsQueryPermissionTypeRaw.INTROSPECTION);
+        permissionTypes.add(EuEntityQueryPermissionType.INTROSPECTION);
         return this;
     }
 
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     */
     public EuEntityPermissionsQueryBuilder toBuilder() {
         EuEntityPermissionsQueryBuilder copy = new EuEntityPermissionsQueryBuilder();
         copy.vatUeIdentifier = this.vatUeIdentifier;
@@ -84,28 +62,7 @@ public final class EuEntityPermissionsQueryBuilder {
         return copy;
     }
 
-    /**
-     * Build the EU entity permissions query request.
-     *
-     * @return the request ready to pass to {@code PermissionClient.queryEuEntities()}
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public EuEntityPermissionsQueryRequestRaw build() {
-        EuEntityPermissionsQueryRequestRaw request = new EuEntityPermissionsQueryRequestRaw();
-
-        if (vatUeIdentifier != null) {
-            request.setVatUeIdentifier(vatUeIdentifier);
-        }
-
-        if (authorizedFingerprintIdentifier != null) {
-            request.setAuthorizedFingerprintIdentifier(authorizedFingerprintIdentifier);
-        }
-
-        if (!permissionTypes.isEmpty()) {
-            request.setPermissionTypes(new ArrayList<>(permissionTypes));
-        }
-
-        return request;
+    public EuEntityPermissionsQueryRequest build() {
+        return new EuEntityPermissionsQueryRequest(vatUeIdentifier, authorizedFingerprintIdentifier, permissionTypes);
     }
 }

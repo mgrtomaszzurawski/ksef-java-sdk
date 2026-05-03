@@ -4,153 +4,81 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
 
-import io.github.mgrtomaszzurawski.ksef.client.model.PermissionStateRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsContextIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsContextIdentifierTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsTargetIdentifierRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsTargetIdentifierTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionState;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalContextIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissionType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissionsQueryRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalTargetIdentifierType;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builder for personal permissions query requests (permissions granted to the authenticated user).
- * <p>
- * All fields are optional.
- * <p>
- * Usage:
- * <pre>{@code
- * var builder = PersonalPermissionsQueryBuilder.create()
- *     .contextNip("1234567890")
- *     .activeOnly()
- *     .invoiceRead()
- *     .invoiceWrite();
- * }</pre>
+ * Builder for personal permissions query requests. All fields are optional.
  */
 public final class PersonalPermissionsQueryBuilder {
 
-    private PersonalPermissionsContextIdentifierTypeRaw contextType;
+    private PersonalContextIdentifierType contextType;
     private String contextValue;
-    private PersonalPermissionsTargetIdentifierTypeRaw targetType;
+    private PersonalTargetIdentifierType targetType;
     private String targetValue;
-    private final List<PersonalPermissionTypeRaw> permissionTypes = new ArrayList<>();
-    private PermissionStateRaw permissionState;
+    private final List<PersonalPermissionType> permissionTypes = new ArrayList<>();
+    private PermissionState permissionState;
 
-    private PersonalPermissionsQueryBuilder() {
-    }
+    private PersonalPermissionsQueryBuilder() { }
 
-    /**
-     * Create a new query builder with all optional fields.
-     */
     public static PersonalPermissionsQueryBuilder create() {
         return new PersonalPermissionsQueryBuilder();
     }
 
-    /**
-     * Filter by context NIP.
-     */
     public PersonalPermissionsQueryBuilder contextNip(String nip) {
-        this.contextType = PersonalPermissionsContextIdentifierTypeRaw.NIP;
+        this.contextType = PersonalContextIdentifierType.NIP;
         this.contextValue = nip;
         return this;
     }
 
-    /**
-     * Filter by context internal ID.
-     */
     public PersonalPermissionsQueryBuilder contextInternalId(String internalId) {
-        this.contextType = PersonalPermissionsContextIdentifierTypeRaw.INTERNAL_ID;
+        this.contextType = PersonalContextIdentifierType.INTERNAL_ID;
         this.contextValue = internalId;
         return this;
     }
 
-    /**
-     * Filter by target NIP.
-     */
     public PersonalPermissionsQueryBuilder targetNip(String nip) {
-        this.targetType = PersonalPermissionsTargetIdentifierTypeRaw.NIP;
+        this.targetType = PersonalTargetIdentifierType.NIP;
         this.targetValue = nip;
         return this;
     }
 
-    /**
-     * Filter by target to all partners.
-     */
     public PersonalPermissionsQueryBuilder targetAllPartners() {
-        this.targetType = PersonalPermissionsTargetIdentifierTypeRaw.ALL_PARTNERS;
+        this.targetType = PersonalTargetIdentifierType.ALL_PARTNERS;
         this.targetValue = null;
         return this;
     }
 
-    /**
-     * Filter by target internal ID.
-     */
     public PersonalPermissionsQueryBuilder targetInternalId(String internalId) {
-        this.targetType = PersonalPermissionsTargetIdentifierTypeRaw.INTERNAL_ID;
+        this.targetType = PersonalTargetIdentifierType.INTERNAL_ID;
         this.targetValue = internalId;
         return this;
     }
 
-    public PersonalPermissionsQueryBuilder invoiceRead() {
-        permissionTypes.add(PersonalPermissionTypeRaw.INVOICE_READ);
-        return this;
-    }
+    public PersonalPermissionsQueryBuilder invoiceRead() { permissionTypes.add(PersonalPermissionType.INVOICE_READ); return this; }
+    public PersonalPermissionsQueryBuilder invoiceWrite() { permissionTypes.add(PersonalPermissionType.INVOICE_WRITE); return this; }
+    public PersonalPermissionsQueryBuilder credentialsRead() { permissionTypes.add(PersonalPermissionType.CREDENTIALS_READ); return this; }
+    public PersonalPermissionsQueryBuilder credentialsManage() { permissionTypes.add(PersonalPermissionType.CREDENTIALS_MANAGE); return this; }
+    public PersonalPermissionsQueryBuilder subunitManage() { permissionTypes.add(PersonalPermissionType.SUBUNIT_MANAGE); return this; }
+    public PersonalPermissionsQueryBuilder enforcementOperations() { permissionTypes.add(PersonalPermissionType.ENFORCEMENT_OPERATIONS); return this; }
+    public PersonalPermissionsQueryBuilder introspection() { permissionTypes.add(PersonalPermissionType.INTROSPECTION); return this; }
+    public PersonalPermissionsQueryBuilder vatUeManage() { permissionTypes.add(PersonalPermissionType.VAT_UE_MANAGE); return this; }
 
-    public PersonalPermissionsQueryBuilder invoiceWrite() {
-        permissionTypes.add(PersonalPermissionTypeRaw.INVOICE_WRITE);
-        return this;
-    }
-
-    public PersonalPermissionsQueryBuilder credentialsRead() {
-        permissionTypes.add(PersonalPermissionTypeRaw.CREDENTIALS_READ);
-        return this;
-    }
-
-    public PersonalPermissionsQueryBuilder credentialsManage() {
-        permissionTypes.add(PersonalPermissionTypeRaw.CREDENTIALS_MANAGE);
-        return this;
-    }
-
-    public PersonalPermissionsQueryBuilder subunitManage() {
-        permissionTypes.add(PersonalPermissionTypeRaw.SUBUNIT_MANAGE);
-        return this;
-    }
-
-    public PersonalPermissionsQueryBuilder enforcementOperations() {
-        permissionTypes.add(PersonalPermissionTypeRaw.ENFORCEMENT_OPERATIONS);
-        return this;
-    }
-
-    public PersonalPermissionsQueryBuilder introspection() {
-        permissionTypes.add(PersonalPermissionTypeRaw.INTROSPECTION);
-        return this;
-    }
-
-    public PersonalPermissionsQueryBuilder vatUeManage() {
-        permissionTypes.add(PersonalPermissionTypeRaw.VAT_UE_MANAGE);
-        return this;
-    }
-
-    /**
-     * Filter by active permissions only.
-     */
     public PersonalPermissionsQueryBuilder activeOnly() {
-        this.permissionState = PermissionStateRaw.ACTIVE;
+        this.permissionState = PermissionState.ACTIVE;
         return this;
     }
 
-    /**
-     * Filter by inactive permissions only.
-     */
     public PersonalPermissionsQueryBuilder inactiveOnly() {
-        this.permissionState = PermissionStateRaw.INACTIVE;
+        this.permissionState = PermissionState.INACTIVE;
         return this;
     }
 
-    /**
-     * Return a fresh builder pre-populated with this builder's current field values.
-     */
     public PersonalPermissionsQueryBuilder toBuilder() {
         PersonalPermissionsQueryBuilder copy = new PersonalPermissionsQueryBuilder();
         copy.contextType = this.contextType;
@@ -162,42 +90,8 @@ public final class PersonalPermissionsQueryBuilder {
         return copy;
     }
 
-    /**
-     * Build the personal permissions query request.
-     *
-     * @return the request ready to pass to {@code PermissionClient.queryPersonal()}
-     *
-     * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
-     */
-    public PersonalPermissionsQueryRequestRaw build() {
-        PersonalPermissionsQueryRequestRaw request = new PersonalPermissionsQueryRequestRaw();
-
-        if (contextType != null) {
-            PersonalPermissionsContextIdentifierRaw contextId =
-                    new PersonalPermissionsContextIdentifierRaw()
-                            .type(contextType)
-                            .value(contextValue);
-            request.setContextIdentifier(contextId);
-        }
-
-        if (targetType != null) {
-            PersonalPermissionsTargetIdentifierRaw targetId =
-                    new PersonalPermissionsTargetIdentifierRaw()
-                            .type(targetType);
-            if (targetValue != null) {
-                targetId.value(targetValue);
-            }
-            request.setTargetIdentifier(targetId);
-        }
-
-        if (!permissionTypes.isEmpty()) {
-            request.setPermissionTypes(new ArrayList<>(permissionTypes));
-        }
-
-        if (permissionState != null) {
-            request.setPermissionState(permissionState);
-        }
-
-        return request;
+    public PersonalPermissionsQueryRequest build() {
+        return new PersonalPermissionsQueryRequest(contextType, contextValue, targetType, targetValue,
+                permissionTypes, permissionState);
     }
 }
