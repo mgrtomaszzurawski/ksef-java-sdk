@@ -16,6 +16,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -165,7 +167,8 @@ public final class KsefClient implements AutoCloseable {
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
         this.runtime = new KsefHttpRuntime(environment, httpClient, objectMapper,
-                retryHandler, sessionContext, readTimeout, this::reauthenticate, this::ensureAuthenticated);
+                retryHandler, sessionContext, readTimeout, this::reauthenticate, this::ensureAuthenticated,
+                builder.featurePolicy);
         this.authClient = new AuthClient(this.runtime);
         this.securityClient = new SecurityClient(this.runtime);
         this.sessionClient = new SessionClient(this.runtime);
@@ -537,6 +540,7 @@ public final class KsefClient implements AutoCloseable {
         private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
         private Duration readTimeout = DEFAULT_READ_TIMEOUT;
         private RetryPolicy retryPolicy = RetryPolicy.builder().build();
+        private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
 
         private Builder(KsefEnvironment environment) {
             this.environment = environment;
@@ -575,6 +579,19 @@ public final class KsefClient implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Set the KSeF feature policy (UPO version, problem-details opt-in).
+         * Defaults to {@link FeaturePolicy#defaults()} which preserves
+         * pre-1.0 behavior.
+         *
+         * @param featurePolicy the policy
+         * @return this builder
+         */
+        public Builder features(FeaturePolicy featurePolicy) {
+            this.featurePolicy = Objects.requireNonNull(featurePolicy, "featurePolicy must not be null");
+            return this;
+        }
+
         public KsefClient build() {
             Objects.requireNonNull(credentials, ERR_CREDENTIALS_NULL);
             return new KsefClient(this);
@@ -597,7 +614,8 @@ public final class KsefClient implements AutoCloseable {
         if (credentials instanceof KsefTokenCredentials token) {
             authenticateWithToken(token);
         } else if (credentials instanceof KsefCertificateCredentials cert) {
-            authenticateWithCertificate(cert.certificate(), cert.privateKey(), cert.identifier());
+            authenticateWithCertificate(cert.certificate(), cert.privateKey(), cert.identifier(),
+                    cert.subjectIdentifier());
         } else if (credentials instanceof KsefPkcs12Credentials pkcs12) {
             authenticateWithPkcs12(pkcs12);
         }
@@ -613,9 +631,11 @@ public final class KsefClient implements AutoCloseable {
     }
 
     private void authenticateWithCertificate(X509Certificate certificate, PrivateKey privateKey,
-                                             KsefIdentifier identifier) {
+                                             KsefIdentifier identifier,
+                                             CertificateSubjectIdentifier subjectIdentifier) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
-        authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier);
+        authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier,
+                subjectIdentifier);
         pollAuthStatus();
         authClient.redeemTokens();
     }
@@ -625,7 +645,8 @@ public final class KsefClient implements AutoCloseable {
         String alias = CertificateLoader.getFirstAlias(keyStore);
         PrivateKey privateKey = CertificateLoader.getPrivateKey(keyStore, alias, credentials.password());
         X509Certificate certificate = CertificateLoader.getCertificate(keyStore, alias);
-        authenticateWithCertificate(certificate, privateKey, credentials.identifier());
+        authenticateWithCertificate(certificate, privateKey, credentials.identifier(),
+                credentials.subjectIdentifier());
     }
 
     private void pollAuthStatus() {

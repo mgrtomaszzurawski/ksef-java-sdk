@@ -44,7 +44,7 @@ class SessionClientTest {
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
     private static final String TEST_INVOICE_REF = "20260404-IN-1234567890-ABCDEF1234-02";
     private static final String TEST_UPO_REF = "20260404-UP-1234567890-ABCDEF1234-03";
-    private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
+    private static final String TEST_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final int KSEF_STATUS_OK = 200;
     private static final String OPEN_ONLINE_RESPONSE = """
             {

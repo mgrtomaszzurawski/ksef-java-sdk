@@ -53,6 +53,9 @@ public final class InvoicingRequestMappers {
         rawValue.setEncryptedInvoiceSize(request.encryptedInvoiceSize());
         rawValue.setEncryptedInvoiceContent(request.encryptedInvoiceContent());
         rawValue.setOfflineMode(request.offlineMode());
+        if (request.hashOfCorrectedInvoice() != null) {
+            rawValue.setHashOfCorrectedInvoice(request.hashOfCorrectedInvoice());
+        }
         return rawValue;
     }
 

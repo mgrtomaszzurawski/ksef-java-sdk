@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
@@ -82,15 +83,18 @@ public final class InvoiceClientImpl implements InvoiceClient {
     /**
      * Retrieve an invoice by its KSeF number. Returns raw invoice XML bytes.
      *
-     * @param ksefNumber the unique KSeF invoice number
+     * @param ksefNumber the unique KSeF invoice number — pre-validated by
+     *     {@link KsefNumber} (length, format, CRC-8) so this method never
+     *     issues a request with a malformed identifier
      * @return raw invoice XML bytes
      */
     @Override
-    public byte[] getByKsefNumber(String ksefNumber) {
-        LOGGER.debug(LOG_CALL_REF, OP_GET_BY_KSEF, ksefNumber);
-        requireSafePathSegment(ksefNumber);
+    public byte[] getByKsefNumber(KsefNumber ksefNumber) {
+        String value = ksefNumber.value();
+        LOGGER.debug(LOG_CALL_REF, OP_GET_BY_KSEF, value);
+        requireSafePathSegment(value);
         String token = http.requireToken();
-        return http.getAuthenticatedBytes(PATH_INVOICES_KSEF + ksefNumber, token, OP_GET_BY_KSEF);
+        return http.getAuthenticatedBytes(PATH_INVOICES_KSEF + value, token, OP_GET_BY_KSEF);
     }
 
     /**

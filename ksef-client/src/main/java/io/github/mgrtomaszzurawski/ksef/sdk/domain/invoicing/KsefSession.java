@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutE
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,9 +104,37 @@ public final class KsefSession implements AutoCloseable {
      * @throws IllegalStateException if the session is already closed
      */
     public SendInvoiceResult send(byte[] invoiceXml) {
+        return send(SendInvoiceCommand.normal(invoiceXml));
+    }
+
+    /**
+     * Send an invoice within this session using the supplied command shape
+     * (normal vs technical correction). REQ-OFFLINE-003.
+     *
+     * <p>Encrypts with the session's AES key, computes hashes, and posts
+     * the encrypted payload. For
+     * {@link SendInvoiceCommand.TechnicalCorrection} the
+     * {@code hashOfCorrectedInvoice} field is forwarded and offline mode
+     * is implied at the wire level.
+     */
+    public SendInvoiceResult send(SendInvoiceCommand command) {
         ensureOpen();
-        var request = SendInvoiceBuilder.create(invoiceXml, aesKey, initVector).build();
-        return sessionClient.sendInvoice(referenceNumber, request);
+        Objects.requireNonNull(command, "command must not be null");
+        SendInvoiceBuilder builder = SendInvoiceBuilder.create(command.invoiceXml(), aesKey, initVector);
+        if (command instanceof SendInvoiceCommand.TechnicalCorrection correction) {
+            builder = builder.technicalCorrection(correction.hashOfCorrectedInvoice());
+        }
+        return sessionClient.sendInvoice(referenceNumber, builder.build());
+    }
+
+    /**
+     * Convenience for sending a technical correction (korekta techniczna).
+     * Equivalent to
+     * {@code send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected))}.
+     * REQ-OFFLINE-003.
+     */
+    public SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
+        return send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected));
     }
 
     /**

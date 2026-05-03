@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import java.net.http.HttpClient;
@@ -29,6 +30,7 @@ public final class KsefHttpRuntime implements HttpRuntime {
     private final Duration readTimeout;
     private final Runnable reauthHook;
     private final Runnable proactiveAuthHook;
+    private final FeaturePolicy featurePolicy;
 
     public KsefHttpRuntime(KsefEnvironment environment,
                            HttpClient httpClient,
@@ -37,7 +39,8 @@ public final class KsefHttpRuntime implements HttpRuntime {
                            SessionContext sessionContext,
                            Duration readTimeout,
                            Runnable reauthHook,
-                           Runnable proactiveAuthHook) {
+                           Runnable proactiveAuthHook,
+                           FeaturePolicy featurePolicy) {
         this.environment = environment;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
@@ -46,6 +49,7 @@ public final class KsefHttpRuntime implements HttpRuntime {
         this.readTimeout = readTimeout;
         this.reauthHook = reauthHook;
         this.proactiveAuthHook = proactiveAuthHook;
+        this.featurePolicy = featurePolicy;
     }
 
     @Override
@@ -76,4 +80,7 @@ public final class KsefHttpRuntime implements HttpRuntime {
         }
         return sessionContext.token();
     }
+
+    @Override
+    public FeaturePolicy featurePolicy() { return featurePolicy; }
 }
