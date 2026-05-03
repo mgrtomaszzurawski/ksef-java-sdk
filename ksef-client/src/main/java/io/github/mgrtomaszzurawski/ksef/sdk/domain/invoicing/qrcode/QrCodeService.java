@@ -15,81 +15,50 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.Objects;
 import javax.imageio.ImageIO;
 
 /**
- * Service for generating KSeF invoice verification QR codes.
+ * Render an arbitrary verification URL into a QR-code PNG.
  *
- * <p>KSeF assigns a unique number to each invoice. This service generates a verification
- * URL and QR code image that can be printed on the invoice to allow recipients to
- * verify the invoice in the KSeF system.</p>
+ * <p>Verification-URL construction is a separate responsibility — see
+ * {@link KsefVerificationLinks} for KOD I (online) and KOD II (offline-certificate)
+ * URL builders. This service only renders any string into a QR PNG; it does not
+ * know about KSeF URL structure.
  */
 public final class QrCodeService {
 
-    private static final String VERIFICATION_URL_PREFIX = "https://ksef.mf.gov.pl/web/verify/";
-    private static final String TEST_VERIFICATION_URL_PREFIX = "https://ksef-test.mf.gov.pl/web/verify/";
     private static final String IMAGE_FORMAT_PNG = "PNG";
     private static final int DEFAULT_QR_SIZE = 250;
     private static final int MAX_QR_SIZE = 4096;
     private static final int QR_MARGIN = 1;
-    private static final Pattern KSEF_NUMBER_PATTERN = Pattern.compile("^[A-Za-z0-9\\-]+$");
-    private static final String ERR_KSEF_NUMBER_EMPTY = "ksefNumber must not be null or empty";
-    private static final String ERR_KSEF_NUMBER_INVALID = "ksefNumber contains invalid characters: ";
+    private static final String ERR_PAYLOAD_NULL = "payloadUrl must not be null or empty";
     private static final String ERR_SIZE_POSITIVE = "size must be positive";
     private static final String ERR_SIZE_TOO_LARGE = "size must not exceed " + MAX_QR_SIZE;
     private static final String ERR_QR_GENERATION = "Failed to generate QR code";
 
-    private final boolean testEnvironment;
-
     /**
-     * Create a QR code service for the production environment.
-     */
-    public QrCodeService() {
-        this(false);
-    }
-
-    /**
-     * Create a QR code service for the specified environment.
+     * Render a payload URL into a 250x250 QR-code PNG.
      *
-     * @param testEnvironment true for test environment URLs, false for production
-     */
-    public QrCodeService(boolean testEnvironment) {
-        this.testEnvironment = testEnvironment;
-    }
-
-    /**
-     * Generate the KSeF verification URL for an invoice.
-     *
-     * @param ksefNumber the unique KSeF invoice number
-     * @return the verification URL
-     */
-    public String getVerificationUrl(String ksefNumber) {
-        requireValidKsefNumber(ksefNumber);
-        String prefix = testEnvironment ? TEST_VERIFICATION_URL_PREFIX : VERIFICATION_URL_PREFIX;
-        return prefix + ksefNumber;
-    }
-
-    /**
-     * Generate a QR code image as PNG bytes for the KSeF verification URL.
-     * Uses the default size of 250x250 pixels.
-     *
-     * @param ksefNumber the unique KSeF invoice number
+     * @param payloadUrl URL to encode (typically built via {@link KsefVerificationLinks})
      * @return PNG image bytes
      */
-    public byte[] generateQrCode(String ksefNumber) {
-        return generateQrCode(ksefNumber, DEFAULT_QR_SIZE);
+    public byte[] generateQrCode(String payloadUrl) {
+        return generateQrCode(payloadUrl, DEFAULT_QR_SIZE);
     }
 
     /**
-     * Generate a QR code image as PNG bytes for the KSeF verification URL.
+     * Render a payload URL into a QR-code PNG of the requested size.
      *
-     * @param ksefNumber the unique KSeF invoice number
-     * @param size the width and height of the QR code in pixels
+     * @param payloadUrl URL to encode (typically built via {@link KsefVerificationLinks})
+     * @param size width and height of the QR code in pixels (positive, &le; {@value #MAX_QR_SIZE})
      * @return PNG image bytes
      */
-    public byte[] generateQrCode(String ksefNumber, int size) {
-        requireValidKsefNumber(ksefNumber);
+    public byte[] generateQrCode(String payloadUrl, int size) {
+        Objects.requireNonNull(payloadUrl, ERR_PAYLOAD_NULL);
+        if (payloadUrl.isEmpty()) {
+            throw new IllegalArgumentException(ERR_PAYLOAD_NULL);
+        }
         if (size <= 0) {
             throw new IllegalArgumentException(ERR_SIZE_POSITIVE);
         }
@@ -97,14 +66,13 @@ public final class QrCodeService {
             throw new IllegalArgumentException(ERR_SIZE_TOO_LARGE);
         }
 
-        String verificationUrl = getVerificationUrl(ksefNumber);
         try {
             QRCodeWriter writer = new QRCodeWriter();
             Map<EncodeHintType, Object> hints = Map.of(
                     EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M,
                     EncodeHintType.MARGIN, QR_MARGIN
             );
-            BitMatrix bitMatrix = writer.encode(verificationUrl, BarcodeFormat.QR_CODE, size, size, hints);
+            BitMatrix bitMatrix = writer.encode(payloadUrl, BarcodeFormat.QR_CODE, size, size, hints);
             BufferedImage image = MatrixToImageWriter.toBufferedImage(bitMatrix);
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -112,15 +80,6 @@ public final class QrCodeService {
             return outputStream.toByteArray();
         } catch (WriterException | IOException exception) {
             throw new IllegalStateException(ERR_QR_GENERATION, exception);
-        }
-    }
-
-    private static void requireValidKsefNumber(String ksefNumber) {
-        if (ksefNumber == null || ksefNumber.isEmpty()) {
-            throw new IllegalArgumentException(ERR_KSEF_NUMBER_EMPTY);
-        }
-        if (!KSEF_NUMBER_PATTERN.matcher(ksefNumber).matches()) {
-            throw new IllegalArgumentException(ERR_KSEF_NUMBER_INVALID + ksefNumber);
         }
     }
 }

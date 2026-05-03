@@ -165,7 +165,7 @@ public final class KsefClient implements AutoCloseable {
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
         this.runtime = new KsefHttpRuntime(environment, httpClient, objectMapper,
-                retryHandler, sessionContext, readTimeout, this::reauthenticate);
+                retryHandler, sessionContext, readTimeout, this::reauthenticate, this::ensureAuthenticated);
         this.authClient = new AuthClient(this);
         this.securityClient = new SecurityClient(this);
         this.sessionClient = new SessionClient(this);
@@ -477,8 +477,16 @@ public final class KsefClient implements AutoCloseable {
      * itself implementing the runtime contract. {@code HttpRuntime} lives in
      * a non-exported package, so this method is invisible to JPMS consumers.
      *
-     * @apiNote internal SDK infrastructure
+     * <p>This accessor is part of the package-internal SDK plumbing and is not
+     * intended for consumer code. It is retained as {@code public} only because
+     * domain client implementations live in different packages within the same
+     * module. A future release will move this behind a package-private bridge.
+     *
+     * @apiNote internal SDK infrastructure — do not call from consumer code.
+     * @deprecated For SDK-internal use only. Will be hidden in a future release;
+     *     consumers must not depend on this accessor.
      */
+    @Deprecated(since = "0.1.0")
     public HttpRuntime runtime() { return runtime; }
 
     @Override

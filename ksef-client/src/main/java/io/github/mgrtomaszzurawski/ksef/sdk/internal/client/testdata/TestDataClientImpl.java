@@ -22,7 +22,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionL
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.time.LocalDate;
@@ -86,11 +85,9 @@ public final class TestDataClientImpl implements TestDataClient {
     private static final String ERR_NULL_EXPECTED_END_DATE = "expectedEndDate is required";
 
     private final HttpSupport http;
-    private final SessionContext sessionContext;
 
     public TestDataClientImpl(KsefClient ksef) {
         this.http = new HttpSupport(ksef.runtime());
-        this.sessionContext = ksef.runtime().sessionContext();
     }
 
     /**
@@ -265,7 +262,7 @@ public final class TestDataClientImpl implements TestDataClient {
     public void setSessionLimits(TestSessionLimitsBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_SET_SESSION_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS,
                 TestdataMappers.toSetSessionLimitsRequestRaw(builder.build()), token, OP_SET_SESSION_LIMITS);
     }
@@ -276,7 +273,7 @@ public final class TestDataClientImpl implements TestDataClient {
     @Override
     public void resetSessionLimits() {
         LOGGER.debug(LOG_CALL, OP_RESET_SESSION_LIMITS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         http.deleteAuthenticated(PATH_SESSION_LIMITS, token, OP_RESET_SESSION_LIMITS);
     }
 
@@ -289,7 +286,7 @@ public final class TestDataClientImpl implements TestDataClient {
     public void setSubjectLimits(TestSubjectLimitsBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_SET_SUBJECT_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS,
                 TestdataMappers.toSetSubjectLimitsRequestRaw(builder.build()), token, OP_SET_SUBJECT_LIMITS);
     }
@@ -300,7 +297,7 @@ public final class TestDataClientImpl implements TestDataClient {
     @Override
     public void resetSubjectLimits() {
         LOGGER.debug(LOG_CALL, OP_RESET_SUBJECT_LIMITS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         http.deleteAuthenticated(PATH_SUBJECT_LIMITS, token, OP_RESET_SUBJECT_LIMITS);
     }
 
@@ -313,7 +310,7 @@ public final class TestDataClientImpl implements TestDataClient {
     public void setRateLimits(TestRateLimitsBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_SET_RATE_LIMITS);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS,
                 TestdataMappers.toSetRateLimitsRequestRaw(builder.build()), token, OP_SET_RATE_LIMITS);
     }
@@ -324,7 +321,7 @@ public final class TestDataClientImpl implements TestDataClient {
     @Override
     public void resetRateLimits() {
         LOGGER.debug(LOG_CALL, OP_RESET_RATE_LIMITS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         http.deleteAuthenticated(PATH_RATE_LIMITS, token, OP_RESET_RATE_LIMITS);
     }
 
@@ -334,7 +331,7 @@ public final class TestDataClientImpl implements TestDataClient {
     @Override
     public void setProductionRateLimits() {
         LOGGER.debug(LOG_CALL, OP_SET_PRODUCTION_RATE_LIMITS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         http.postNoBodyAuthenticated(PATH_RATE_LIMITS_PRODUCTION, token, OP_SET_PRODUCTION_RATE_LIMITS);
     }
 }

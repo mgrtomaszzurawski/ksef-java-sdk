@@ -11,7 +11,55 @@ This is the first public release. The SDK has been developed iteratively against
 the live KSeF demo environment; ADRs in `ADR/` document each architectural
 decision in chronological order.
 
-### Changed
+### Added (Codex follow-up — F1, F3, F6, F7)
+
+- `PreparedInvoiceExport` — public handle returned from
+  `client.invoices().prepareExport(...)` that retains the AES key + IV used
+  during export init, polls the export status, downloads each
+  `InvoicePackagePart`, verifies SHA-256 hashes, decrypts with the retained
+  AES/IV, concatenates the parts back into a ZIP archive, unzips, and exposes
+  `_metadata.json` + per-invoice XML bytes via `ExportedInvoicePackage`.
+- `KsefVerificationLinks` — KSeF 2.0 KOD I (online invoice) and KOD II
+  (offline-certificate) verification URL builders. KOD I:
+  `qr-{env}.ksef.mf.gov.pl/invoice/{nip}/{DD-MM-YYYY}/{base64UrlSha256}`.
+  KOD II: `qr-{env}.ksef.mf.gov.pl/certificate/{contextType}/{contextValue}/{nip}/{certSerial}/{hash}/{signature}`.
+- `QrEnvironment` — `TEST` / `DEMO` / `PROD` enum exposing the official
+  `qr-test.ksef.mf.gov.pl`, `qr-demo.ksef.mf.gov.pl`, `qr.ksef.mf.gov.pl` hosts.
+- `KsefSessionPollingTimeoutException` — thrown by `KsefSession.close()` and
+  `KsefBatchSession.close()` when polling never reaches a terminal status
+  within the polling budget. Try-with-resources no longer exits silently on
+  indeterminate state.
+- `X-Error-Format: problem-details` header on every authenticated request, so
+  KSeF returns structured RFC 7807 problem details on 4xx/5xx responses.
+- `Retry-After` honored on HTTP 429 retries, clamped to
+  `RetryPolicy.maxRetryAfterSeconds`.
+
+### Changed (Codex follow-up — F2, F4, F5, F8, F9)
+
+- `InvoiceClient.queryAllMetadata` no longer drops caller-supplied filters
+  (`ksefNumber`, `invoiceNumber`, `sellerNip`, `invoicingMode`,
+  `isSelfInvoicing`, `hasAttachment`, `amount`, `currencyCodes`,
+  `buyerIdentifier`) between pages. Cursor advances by mutating
+  `dateRange.from` only, preserving every other filter.
+- Domain clients now obtain their access token via `HttpRuntime.requireToken()`,
+  which authenticates proactively when no session exists. The first protected
+  domain call no longer leaves with `Authorization: Bearer null`.
+- `RetryHandler.runPost(...)` (and `runDelete` semantics) honors
+  `RetryPolicy.retryPost(false)` for no-content POST/DELETE operations
+  (session close, token revoke, certificate revoke, testdata mutators). Previously
+  these used the GET-like retry path and ignored the policy.
+- `QrCodeService` — rewritten as a generic URL → PNG renderer. Verification-URL
+  construction moved to `KsefVerificationLinks`. Old `getVerificationUrl(...)`,
+  `QrCodeService(boolean testEnvironment)` API removed; binary breaking change
+  (no released consumers exist yet).
+- `InvoiceMetadata`, `InvoicePackagePart`, `PublicKeyCertificate`,
+  `KsefPkcs12Credentials` records now defensively clone `byte[]`/`char[]`
+  fields in their compact constructors and accessor overrides, with
+  `Arrays.equals`/`Arrays.hashCode` for structural equality.
+- `KsefClient.runtime()`, `KsefSession(...)` constructors, and
+  `KsefBatchSession(...)` constructors marked `@Deprecated(since = "0.1.0")` —
+  they remain accessible to in-module test seams but signal to consumers that
+  the SDK-internal types they expose will move behind a package-private bridge.
 
 - Targets KSeF API 2.4.0 (was 2.2.1). Upstream changes are additive: token-on-self
   permission operations, retention/410 Gone responses, optional Problem Details

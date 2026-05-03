@@ -33,6 +33,21 @@ public record InvoicePackagePart(
         byte[] encryptedPartHash,
         OffsetDateTime expirationDate) {
 
+    public InvoicePackagePart {
+        partHash = partHash == null ? null : partHash.clone();
+        encryptedPartHash = encryptedPartHash == null ? null : encryptedPartHash.clone();
+    }
+
+    @Override
+    public byte[] partHash() {
+        return partHash == null ? null : partHash.clone();
+    }
+
+    @Override
+    public byte[] encryptedPartHash() {
+        return encryptedPartHash == null ? null : encryptedPartHash.clone();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

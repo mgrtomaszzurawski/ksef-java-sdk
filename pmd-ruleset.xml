@@ -103,6 +103,10 @@
         <exclude name="AvoidUsingVolatile"/>
         <!-- synchronized methods on KsefClient are intentional — guards single-flight auth. -->
         <exclude name="AvoidSynchronizedAtMethodLevel"/>
+        <!-- UseConcurrentHashMap is overly aggressive: it flags every HashMap usage,
+             including single-threaded local maps. SDK records use HashMap for short-lived
+             local state; concurrent variants would be a cargo-cult anti-pattern here. -->
+        <exclude name="UseConcurrentHashMap"/>
     </rule>
 
     <rule ref="category/java/performance.xml">

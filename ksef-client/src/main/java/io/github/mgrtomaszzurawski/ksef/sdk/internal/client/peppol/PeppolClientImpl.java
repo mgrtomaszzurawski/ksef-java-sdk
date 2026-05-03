@@ -8,7 +8,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import org.slf4j.Logger;
@@ -43,11 +42,9 @@ public final class PeppolClientImpl implements PeppolClient {
     private static final String ERR_PAGE_SIZE_NOT_POSITIVE = "pageSize must be > 0";
 
     private final HttpSupport http;
-    private final SessionContext sessionContext;
 
     public PeppolClientImpl(KsefClient ksef) {
         this.http = new HttpSupport(ksef.runtime());
-        this.sessionContext = ksef.runtime().sessionContext();
     }
 
     /**
@@ -80,7 +77,7 @@ public final class PeppolClientImpl implements PeppolClient {
         String path = PATH_PEPPOL_QUERY
                 + QUERY_STRING_PREFIX + QUERY_PARAM_PAGE_OFFSET + QUERY_PARAM_ASSIGN + pageOffset
                 + QUERY_PARAM_SEPARATOR + QUERY_PARAM_PAGE_SIZE + QUERY_PARAM_ASSIGN + pageSize;
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryPeppolProvidersResponseRaw rawValue = http.getAuthenticated(path, token,
                 QueryPeppolProvidersResponseRaw.class, OP_QUERY_PROVIDERS);
         return PeppolMappers.toPeppolProvidersResult(rawValue);

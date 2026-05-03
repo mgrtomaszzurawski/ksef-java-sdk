@@ -22,14 +22,17 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.findAll;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 @WireMockTest
@@ -131,6 +134,71 @@ class InvoiceClientTest {
     }
 
     @Test
+    void queryAllMetadata_whenSecondPageRequested_preservesAllFiltersBetweenPages(WireMockRuntimeInfo wmInfo) {
+        // given — page 1 carries hasMore=true + permanentStorageHwmDate cursor; page 2 closes the loop.
+        String hwmCursor = "2026-04-15T10:00:00.000Z";
+        String pageOneBody = """
+                {
+                  "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat"}],
+                  "hasMore": true,
+                  "isTruncated": false,
+                  "permanentStorageHwmDate": "%s"
+                }
+                """.formatted(TEST_KSEF_NUMBER, hwmCursor);
+        String pageTwoBody = """
+                {
+                  "invoices": [],
+                  "hasMore": false,
+                  "isTruncated": false
+                }
+                """;
+        stubFor(post(urlEqualTo(INVOICES_BASE + "/query/metadata"))
+                .inScenario("paginate")
+                .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(pageOneBody))
+                .willSetStateTo("page2"));
+        stubFor(post(urlEqualTo(INVOICES_BASE + "/query/metadata"))
+                .inScenario("paginate")
+                .whenScenarioStateIs("page2")
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(pageTwoBody)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            // when
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"))
+                    .ksefNumber(TEST_KSEF_NUMBER)
+                    .sellerNip(TEST_NIP)
+                    .onlineOnly()
+                    .selfInvoicing(true)
+                    .hasAttachment(true);
+            ksef.invoices().queryAllMetadata(query);
+
+            // then — both POSTs hit, page 2 body carries the same caller filters.
+            var requests = findAll(postRequestedFor(urlEqualTo(INVOICES_BASE + "/query/metadata")));
+            assertEquals(2, requests.size());
+            String pageTwoRequestBody = requests.get(1).getBodyAsString();
+            assertTrue(pageTwoRequestBody.contains(TEST_KSEF_NUMBER),
+                    "page 2 must preserve ksefNumber filter, was: " + pageTwoRequestBody);
+            assertTrue(pageTwoRequestBody.contains(TEST_NIP),
+                    "page 2 must preserve sellerNip filter, was: " + pageTwoRequestBody);
+            assertTrue(pageTwoRequestBody.contains("\"invoicingMode\":\"Online\""),
+                    "page 2 must preserve invoicingMode filter, was: " + pageTwoRequestBody);
+            assertTrue(pageTwoRequestBody.contains("\"isSelfInvoicing\":true"),
+                    "page 2 must preserve isSelfInvoicing filter, was: " + pageTwoRequestBody);
+            assertTrue(pageTwoRequestBody.contains("\"hasAttachment\":true"),
+                    "page 2 must preserve hasAttachment filter, was: " + pageTwoRequestBody);
+            assertTrue(pageTwoRequestBody.contains(hwmCursor.substring(0, 10)),
+                    "page 2 must advance dateRange.from to HWM cursor, was: " + pageTwoRequestBody);
+        }
+    }
+
+    @Test
     void exportInvoices_whenRequested_returnsExportReference(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubFor(post(urlEqualTo(PATH_EXPORTS))
@@ -192,6 +260,42 @@ class InvoiceClientTest {
             var invoices = ksef.invoices();
 
             assertThrows(KsefServerException.class, () -> invoices.exportInvoices(exportBuilder));
+        }
+    }
+
+    @Test
+    void firstDomainCall_withoutPriorAuthenticate_proactivelyTriggersAuthFlow(WireMockRuntimeInfo wmInfo) {
+        // given — no session.activate(). Domain endpoint returns 200 (so the OLD bug,
+        // which sends Bearer null on the first call, would silently succeed with this stub).
+        // Security/public-key endpoint returns 500 so proactive auth fails fast.
+        stubFor(get(urlEqualTo(INVOICES_BASE + "/ksef/" + TEST_KSEF_NUMBER))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_XML)
+                        .withBody(TEST_INVOICE_XML)));
+        stubFor(get(urlEqualTo("/v2/security/public-key-certificates"))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody(EMPTY_JSON)));
+
+        try (KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
+                .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
+                .retryPolicy(RetryPolicy.builder().enabled(false).build())
+                .build()) {
+
+            // when — first protected domain call must trigger auth via requireToken()
+            // BEFORE any HTTP request to the protected endpoint.
+            var invoices = ksef.invoices();
+            assertThrows(RuntimeException.class, () -> invoices.getByKsefNumber(TEST_KSEF_NUMBER));
+
+            // then — proactive auth attempt observed at /security/public-key-certificates,
+            // and the protected domain endpoint was NEVER called (old behavior would have
+            // made exactly one call with Bearer null and silently received the 200 stub).
+            var securityRequests = findAll(com.github.tomakehurst.wiremock.client.WireMock
+                    .getRequestedFor(urlEqualTo("/v2/security/public-key-certificates")));
+            assertTrue(!securityRequests.isEmpty(),
+                    "expected proactive auth to fetch public keys, got: " + securityRequests.size());
+            var domainRequests = findAll(com.github.tomakehurst.wiremock.client.WireMock
+                    .getRequestedFor(urlEqualTo(INVOICES_BASE + "/ksef/" + TEST_KSEF_NUMBER)));
+            assertEquals(0, domainRequests.size(),
+                    "no protected domain request must escape before auth completes, got: " + domainRequests.size());
         }
     }
 

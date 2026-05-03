@@ -33,6 +33,12 @@ public record KsefPkcs12Credentials(Path keystorePath, char[] password, KsefIden
         Objects.requireNonNull(keystorePath, ERR_NULL_PATH);
         Objects.requireNonNull(password, ERR_NULL_PASSWORD);
         Objects.requireNonNull(identifier, ERR_NULL_IDENTIFIER);
+        password = password.clone();
+    }
+
+    @Override
+    public char[] password() {
+        return password.clone();
     }
 
     /**

@@ -56,6 +56,22 @@ public record InvoiceMetadata(
         byte[] hashOfCorrectedInvoice,
         List<InvoiceThirdSubject> thirdSubjects) {
 
+    public InvoiceMetadata {
+        invoiceHash = invoiceHash == null ? null : invoiceHash.clone();
+        hashOfCorrectedInvoice = hashOfCorrectedInvoice == null ? null : hashOfCorrectedInvoice.clone();
+        thirdSubjects = thirdSubjects == null ? List.of() : List.copyOf(thirdSubjects);
+    }
+
+    @Override
+    public byte[] invoiceHash() {
+        return invoiceHash == null ? null : invoiceHash.clone();
+    }
+
+    @Override
+    public byte[] hashOfCorrectedInvoice() {
+        return hashOfCorrectedInvoice == null ? null : hashOfCorrectedInvoice.clone();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

@@ -55,6 +55,15 @@ public class KsefException extends RuntimeException {
      * Factory method that maps HTTP status codes to typed exception subclasses.
      */
     public static KsefException of(String message, Throwable cause, int statusCode, String responseBody) {
+        return of(message, cause, statusCode, responseBody, null);
+    }
+
+    /**
+     * Factory method that maps HTTP status codes to typed exception subclasses,
+     * preserving the server-supplied {@code Retry-After} hint on 429 responses.
+     */
+    public static KsefException of(String message, Throwable cause, int statusCode,
+                                   String responseBody, Long retryAfterSeconds) {
         if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
             return new KsefAuthException(message, cause, statusCode, responseBody);
         }
@@ -62,7 +71,7 @@ public class KsefException extends RuntimeException {
             return new KsefNotFoundException(message, cause, statusCode, responseBody);
         }
         if (statusCode == HTTP_TOO_MANY_REQUESTS) {
-            return new KsefRateLimitException(message, cause, statusCode, responseBody);
+            return new KsefRateLimitException(message, cause, statusCode, responseBody, retryAfterSeconds);
         }
         if (statusCode >= HTTP_SERVER_ERROR_MIN) {
             return new KsefServerException(message, cause, statusCode, responseBody);

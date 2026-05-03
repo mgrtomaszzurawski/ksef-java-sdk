@@ -7,7 +7,7 @@ OpenAPI-first Java SDK for the Polish National e-Invoicing System ([KSeF](https:
 
 Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-docs) OpenAPI specification, with a hand-written ergonomic overlay that hides the protocol details (challenge-response auth, AES-256-CBC session encryption, XAdES-BASELINE-B signing, retry-with-backoff, batch upload + polling).
 
-> **Pre-release:** The SDK is at `0.1.0-SNAPSHOT` and not yet published to Maven Central. Install locally with `mvn install` to use today.
+> **Pre-release:** The SDK is at `0.1.0` and not yet published to Maven Central. Install locally with `mvn install` to use today.
 
 ## Quick start
 
@@ -17,7 +17,7 @@ Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-do
 <dependency>
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-client</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -47,12 +47,13 @@ try (KsefClient client = KsefClient.builder(KsefEnvironment.TEST)
 ### Batch invoice upload
 
 ```java
-try (KsefBatchSession batch = client.openBatchSession(
-        FormCode.FA2,
-        BatchFileSpec.create(packageBytes, packageHash, packageSize, partCount, partSize))) {
-    batch.upload(packageParts);
-    batch.close();
-    BatchSessionStatus status = batch.pollUntilTerminal();
+List<byte[]> invoiceXmls = List.of(invoice1Xml, invoice2Xml, invoice3Xml);
+try (KsefBatchSession batch = client.openBatchSession(FormCode.FA2, invoiceXmls)) {
+    batch.uploadParts();
+    // close() returns when the server reaches a terminal state (UPO ready,
+    // schema rejection, etc.); throws KsefSessionTerminalFailureException on
+    // non-200 terminal states or KsefSessionPollingTimeoutException if the
+    // session never reaches a terminal state within the polling budget.
 }
 ```
 

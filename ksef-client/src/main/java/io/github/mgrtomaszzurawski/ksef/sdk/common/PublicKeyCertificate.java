@@ -23,6 +23,17 @@ public record PublicKeyCertificate(
         OffsetDateTime validTo,
         List<PublicKeyCertificateUsage> usage) {
 
+    public PublicKeyCertificate {
+        Objects.requireNonNull(certificate, "certificate");
+        certificate = certificate.clone();
+        usage = usage == null ? List.of() : List.copyOf(usage);
+    }
+
+    @Override
+    public byte[] certificate() {
+        return certificate.clone();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

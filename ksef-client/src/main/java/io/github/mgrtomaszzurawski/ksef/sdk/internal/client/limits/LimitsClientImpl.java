@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import org.slf4j.Logger;
@@ -32,11 +31,9 @@ public final class LimitsClientImpl implements LimitsClient {
     private static final String OP_GET_SUBJECT_LIMITS = "getSubjectLimits";
 
     private final HttpSupport http;
-    private final SessionContext sessionContext;
 
     public LimitsClientImpl(KsefClient ksef) {
         this.http = new HttpSupport(ksef.runtime());
-        this.sessionContext = ksef.runtime().sessionContext();
     }
 
     /**
@@ -47,7 +44,7 @@ public final class LimitsClientImpl implements LimitsClient {
     @Override
     public ContextLimits getContextLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_CONTEXT_LIMITS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         EffectiveContextLimitsRaw rawValue = http.getAuthenticated(PATH_CONTEXT_LIMITS, token,
                 EffectiveContextLimitsRaw.class, OP_GET_CONTEXT_LIMITS);
         return LimitsMappers.toContextLimits(rawValue);
@@ -61,7 +58,7 @@ public final class LimitsClientImpl implements LimitsClient {
     @Override
     public SubjectLimits getSubjectLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_SUBJECT_LIMITS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         EffectiveSubjectLimitsRaw rawValue = http.getAuthenticated(PATH_SUBJECT_LIMITS, token,
                 EffectiveSubjectLimitsRaw.class, OP_GET_SUBJECT_LIMITS);
         return LimitsMappers.toSubjectLimits(rawValue);

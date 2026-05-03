@@ -36,6 +36,9 @@ public final class HttpSupport {
     private static final String APPLICATION_XML = "application/xml";
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String X_ERROR_FORMAT_HEADER = "X-Error-Format";
+    private static final String X_ERROR_FORMAT_PROBLEM_DETAILS = "problem-details";
+    private static final String RETRY_AFTER_HEADER = "Retry-After";
     private static final int HTTP_OK = 200;
     private static final int HTTP_CREATED = 201;
     private static final int HTTP_ACCEPTED = 202;
@@ -48,6 +51,16 @@ public final class HttpSupport {
 
     public HttpSupport(HttpRuntime runtime) {
         this.runtime = runtime;
+    }
+
+    /**
+     * Return the current access token, authenticating proactively if no token
+     * has been issued yet. Domain clients call this before every protected
+     * request so the first call after {@code KsefClient} construction does not
+     * leave with {@code Authorization: Bearer null}.
+     */
+    public String requireToken() {
+        return runtime.requireToken();
     }
 
     /**
@@ -180,7 +193,7 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public void postJsonAuthenticatedNoContent(String path, Object body, String token, String operationName) {
-        runtime.retryHandler().run(() -> {
+        runtime.retryHandler().runPost(() -> {
             String jsonBody = runtime.objectMapper().writeValueAsString(body);
             sendAuthenticatedNoContent(
                     bearer -> newPostBuilder(path)
@@ -196,7 +209,7 @@ public final class HttpSupport {
      * Send a POST with JSON body and expect no content (204). No authentication.
      */
     public void postJsonNoContent(String path, Object body, String operationName) {
-        runtime.retryHandler().run(() -> {
+        runtime.retryHandler().runPost(() -> {
             String jsonBody = runtime.objectMapper().writeValueAsString(body);
             HttpRequest request = newPostBuilder(path)
                     .header(CONTENT_TYPE, APPLICATION_JSON)
@@ -211,7 +224,7 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public void postNoBodyAuthenticated(String path, String token, String operationName) {
-        runtime.retryHandler().run(() -> sendAuthenticatedNoContent(
+        runtime.retryHandler().runPost(() -> sendAuthenticatedNoContent(
                 bearer -> newPostBuilder(path)
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .POST(HttpRequest.BodyPublishers.noBody())
@@ -256,7 +269,7 @@ public final class HttpSupport {
      * Retries once on HTTP 401 after re-authentication.
      */
     public void deleteAuthenticated(String path, String token, String operationName) {
-        runtime.retryHandler().run(() -> sendAuthenticatedNoContent(
+        runtime.retryHandler().runPost(() -> sendAuthenticatedNoContent(
                 bearer -> HttpRequest.newBuilder()
                         .uri(uri(path))
                         .timeout(runtime.readTimeout())
@@ -271,13 +284,15 @@ public final class HttpSupport {
                 .uri(uri(path))
                 .timeout(runtime.readTimeout())
                 .header(ACCEPT, APPLICATION_JSON)
+                .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS)
                 .GET();
     }
 
     private HttpRequest.Builder newPostBuilder(String path) {
         return HttpRequest.newBuilder()
                 .uri(uri(path))
-                .timeout(runtime.readTimeout());
+                .timeout(runtime.readTimeout())
+                .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS);
     }
 
     /**
@@ -328,9 +343,30 @@ public final class HttpSupport {
         int status = response.statusCode();
         if (status != HTTP_OK) {
             throw KsefException.of(request.method() + " " + request.uri(), null, status,
-                    new String(response.body(), java.nio.charset.StandardCharsets.UTF_8));
+                    new String(response.body(), java.nio.charset.StandardCharsets.UTF_8),
+                    parseRetryAfterSeconds(response));
         }
         return response.body();
+    }
+
+    /**
+     * Parse {@code Retry-After} from a response. KSeF uses delta-seconds, but
+     * this helper also tolerates an HTTP-date by returning {@code null} when
+     * the value cannot be read as a non-negative integer.
+     */
+    private static Long parseRetryAfterSeconds(HttpResponse<?> response) {
+        return response.headers().firstValue(RETRY_AFTER_HEADER)
+                .flatMap(HttpSupport::parseRetryAfterValue)
+                .orElse(null);
+    }
+
+    private static java.util.Optional<Long> parseRetryAfterValue(String value) {
+        try {
+            long seconds = Long.parseLong(value.trim());
+            return seconds < 0 ? java.util.Optional.empty() : java.util.Optional.of(seconds);
+        } catch (NumberFormatException notDeltaSeconds) {
+            return java.util.Optional.empty();
+        }
     }
 
     /**
@@ -356,7 +392,8 @@ public final class HttpSupport {
                                      Class<T> responseType) throws IOException {
         int status = response.statusCode();
         if (status != HTTP_OK && status != HTTP_CREATED && status != HTTP_ACCEPTED) {
-            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body());
+            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body(),
+                    parseRetryAfterSeconds(response));
         }
         return deserialize(response.body(), responseType);
     }
@@ -365,7 +402,8 @@ public final class HttpSupport {
         HttpResponse<String> response = send(request);
         int status = response.statusCode();
         if (status != HTTP_OK) {
-            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body());
+            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body(),
+                    parseRetryAfterSeconds(response));
         }
         return runtime.objectMapper().readValue(response.body(), typeRef);
     }
@@ -378,7 +416,8 @@ public final class HttpSupport {
     private void handleNoContentResponse(HttpRequest request, HttpResponse<String> response) {
         int status = response.statusCode();
         if (status != HTTP_NO_CONTENT && status != HTTP_OK) {
-            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body());
+            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body(),
+                    parseRetryAfterSeconds(response));
         }
     }
 

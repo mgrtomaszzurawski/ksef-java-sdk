@@ -39,4 +39,15 @@ public interface HttpRuntime {
 
     /** Trigger lazy re-authentication on HTTP 401. */
     void reauthenticate();
+
+    /**
+     * Return the current access token, authenticating proactively if no token
+     * has been issued yet. Domain clients call this before every protected
+     * request so the first call after {@code KsefClient} construction does not
+     * leave with {@code Authorization: Bearer null}.
+     *
+     * <p>Once a token exists the call is cheap (no I/O). Stale-token recovery
+     * remains driven by {@link #reauthenticate()} on HTTP 401.
+     */
+    String requireToken();
 }

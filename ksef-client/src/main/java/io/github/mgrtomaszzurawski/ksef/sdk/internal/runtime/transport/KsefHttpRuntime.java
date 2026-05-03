@@ -28,6 +28,7 @@ public final class KsefHttpRuntime implements HttpRuntime {
     private final SessionContext sessionContext;
     private final Duration readTimeout;
     private final Runnable reauthHook;
+    private final Runnable proactiveAuthHook;
 
     public KsefHttpRuntime(KsefEnvironment environment,
                            HttpClient httpClient,
@@ -35,7 +36,8 @@ public final class KsefHttpRuntime implements HttpRuntime {
                            RetryHandler retryHandler,
                            SessionContext sessionContext,
                            Duration readTimeout,
-                           Runnable reauthHook) {
+                           Runnable reauthHook,
+                           Runnable proactiveAuthHook) {
         this.environment = environment;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
@@ -43,6 +45,7 @@ public final class KsefHttpRuntime implements HttpRuntime {
         this.sessionContext = sessionContext;
         this.readTimeout = readTimeout;
         this.reauthHook = reauthHook;
+        this.proactiveAuthHook = proactiveAuthHook;
     }
 
     @Override
@@ -65,4 +68,12 @@ public final class KsefHttpRuntime implements HttpRuntime {
 
     @Override
     public void reauthenticate() { reauthHook.run(); }
+
+    @Override
+    public String requireToken() {
+        if (!sessionContext.isActive()) {
+            proactiveAuthHook.run();
+        }
+        return sessionContext.token();
+    }
 }
