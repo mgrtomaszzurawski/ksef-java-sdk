@@ -21,12 +21,17 @@ public record ExportedInvoicePackage(byte[] metadataJson, Map<String, byte[]> in
 
     public ExportedInvoicePackage {
         metadataJson = metadataJson == null ? null : metadataJson.clone();
-        invoiceXmls = invoiceXmls == null ? Map.of() : Map.copyOf(invoiceXmls);
+        invoiceXmls = invoiceXmls == null ? Map.of() : deepCopyByteMap(invoiceXmls);
     }
 
     @Override
     public byte[] metadataJson() {
         return metadataJson == null ? null : metadataJson.clone();
+    }
+
+    @Override
+    public Map<String, byte[]> invoiceXmls() {
+        return deepCopyByteMap(invoiceXmls);
     }
 
     /**
@@ -36,6 +41,14 @@ public record ExportedInvoicePackage(byte[] metadataJson, Map<String, byte[]> in
     public byte[] invoiceXml(String fileName) {
         byte[] bytes = invoiceXmls.get(fileName);
         return bytes == null ? null : bytes.clone();
+    }
+
+    private static Map<String, byte[]> deepCopyByteMap(Map<String, byte[]> source) {
+        Map<String, byte[]> copy = new java.util.HashMap<>(source.size());
+        for (Map.Entry<String, byte[]> entry : source.entrySet()) {
+            copy.put(entry.getKey(), entry.getValue().clone());
+        }
+        return Map.copyOf(copy);
     }
 
     /**

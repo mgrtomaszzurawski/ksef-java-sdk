@@ -264,7 +264,7 @@ class InvoiceClientTest {
     }
 
     @Test
-    void firstDomainCall_withoutPriorAuthenticate_proactivelyTriggersAuthFlow(WireMockRuntimeInfo wmInfo) {
+    void getByKsefNumber_whenNoPriorAuthenticate_proactivelyTriggersAuthFlow(WireMockRuntimeInfo wmInfo) {
         // given — no session.activate(). Domain endpoint returns 200 (so the OLD bug,
         // which sends Bearer null on the first call, would silently succeed with this stub).
         // Security/public-key endpoint returns 500 so proactive auth fails fast.

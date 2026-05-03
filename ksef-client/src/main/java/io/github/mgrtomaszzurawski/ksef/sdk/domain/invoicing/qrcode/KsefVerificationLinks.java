@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -38,6 +40,7 @@ public final class KsefVerificationLinks {
     private static final String ERR_NULL_CONTEXT_VALUE = "contextValue must not be null";
     private static final String ERR_NULL_CERTIFICATE_SERIAL = "certificateSerial must not be null";
     private static final String ERR_NULL_SIGNATURE = "signature must not be null";
+    private static final String ERR_NULL_PARAMS = "params must not be null";
 
     private KsefVerificationLinks() {
         // Utility class.
@@ -63,7 +66,10 @@ public final class KsefVerificationLinks {
         Objects.requireNonNull(invoiceSha256, ERR_NULL_INVOICE_HASH);
         String hashFragment = base64UrlNoPadding(invoiceSha256);
         return environment.baseUrl()
-                + String.format(INVOICE_PATH, sellerNip, DATE_DD_MM_YYYY.format(issueDate), hashFragment);
+                + String.format(INVOICE_PATH,
+                        encodePathSegment(sellerNip),
+                        DATE_DD_MM_YYYY.format(issueDate),
+                        hashFragment);
     }
 
     /**
@@ -122,18 +128,23 @@ public final class KsefVerificationLinks {
     public static String buildCertificateVerificationUrl(QrEnvironment environment,
                                                          CertificateVerificationParams params) {
         Objects.requireNonNull(environment, ERR_NULL_ENVIRONMENT);
-        Objects.requireNonNull(params, "params must not be null");
+        Objects.requireNonNull(params, ERR_NULL_PARAMS);
         return environment.baseUrl()
                 + String.format(CERTIFICATE_PATH,
-                        params.contextType(),
-                        params.contextValue(),
-                        params.sellerNip(),
-                        params.certificateSerial(),
+                        encodePathSegment(params.contextType()),
+                        encodePathSegment(params.contextValue()),
+                        encodePathSegment(params.sellerNip()),
+                        encodePathSegment(params.certificateSerial()),
                         base64UrlNoPadding(params.invoiceSha256()),
                         base64UrlNoPadding(params.signature()));
     }
 
     private static String base64UrlNoPadding(byte[] bytes) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private static String encodePathSegment(String segment) {
+        // URLEncoder is form-encoding; convert '+' back to '%20' for path-segment use.
+        return URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }

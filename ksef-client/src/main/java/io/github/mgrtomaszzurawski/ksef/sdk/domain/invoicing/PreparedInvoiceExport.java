@@ -73,6 +73,8 @@ public final class PreparedInvoiceExport {
     private static final String ERR_HASH_MISMATCH = "Package part SHA-256 mismatch for ordinal %d";
     private static final String ERR_DOWNLOAD_FAILED = "Failed to download package part";
     private static final String ERR_ZIP_FAILED = "Failed to read decrypted ZIP archive";
+    private static final String ERR_SHA256_UNAVAILABLE = SHA_256 + " unavailable on this JVM";
+    private static final String ERR_INTERRUPTED_POLLING = "Interrupted while polling export status";
 
     private final InvoiceClient invoices;
     private final HttpClient httpClient;
@@ -145,8 +147,9 @@ public final class PreparedInvoiceExport {
         ByteArrayOutputStream archiveBuffer = new ByteArrayOutputStream();
         for (InvoicePackagePart part : status.invoicePackage().parts()) {
             byte[] encryptedBytes = downloadPart(part);
-            verifyHash(part, encryptedBytes);
+            verifyEncryptedPartHash(part, encryptedBytes);
             byte[] decryptedBytes = CryptoService.decryptAes(encryptedBytes, aesKey, initVector);
+            verifyPlaintextPartHash(part, decryptedBytes);
             try {
                 archiveBuffer.write(decryptedBytes);
             } catch (IOException unreachable) {
@@ -174,9 +177,11 @@ public final class PreparedInvoiceExport {
         }
     }
 
-    private void verifyHash(InvoicePackagePart part, byte[] encryptedBytes) {
-        byte[] expectedHash = part.encryptedPartHash() != null ? part.encryptedPartHash() : part.partHash();
+    private void verifyEncryptedPartHash(InvoicePackagePart part, byte[] encryptedBytes) {
+        byte[] expectedHash = part.encryptedPartHash();
         if (expectedHash == null) {
+            // KSeF guarantees encryptedPartHash on encrypted exports; nothing to verify on the
+            // ciphertext when only the plaintext partHash is present (handled in verifyPlaintextHash).
             return;
         }
         try {
@@ -186,7 +191,23 @@ public final class PreparedInvoiceExport {
             }
             LOGGER.debug(LOG_VERIFY, referenceNumber, part.ordinalNumber());
         } catch (NoSuchAlgorithmException missingAlgorithm) {
-            throw new KsefException(SHA_256 + " unavailable on this JVM", missingAlgorithm);
+            throw new KsefException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
+        }
+    }
+
+    private void verifyPlaintextPartHash(InvoicePackagePart part, byte[] decryptedBytes) {
+        byte[] expectedHash = part.partHash();
+        if (expectedHash == null) {
+            return;
+        }
+        try {
+            byte[] actualHash = MessageDigest.getInstance(SHA_256).digest(decryptedBytes);
+            if (!java.util.Arrays.equals(expectedHash, actualHash)) {
+                throw new KsefException(String.format(Locale.ROOT, ERR_HASH_MISMATCH, part.ordinalNumber()), null);
+            }
+            LOGGER.debug(LOG_VERIFY, referenceNumber, part.ordinalNumber());
+        } catch (NoSuchAlgorithmException missingAlgorithm) {
+            throw new KsefException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
         }
     }
 
@@ -228,7 +249,7 @@ public final class PreparedInvoiceExport {
             Thread.sleep(millis);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new KsefNetworkException("Interrupted while polling export status", interrupted);
+            throw new KsefNetworkException(ERR_INTERRUPTED_POLLING, interrupted);
         }
     }
 }
