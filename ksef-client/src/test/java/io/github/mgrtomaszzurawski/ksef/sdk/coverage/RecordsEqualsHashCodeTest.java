@@ -70,11 +70,17 @@ class RecordsEqualsHashCodeTest {
     }
 
     @Test
-    void certificateQueryRequest_toString_handlesNullsAndAllFields() {
+    void certificateQueryRequest_toString_doesNotThrowOnNullFields() {
         assertNotNull(new CertificateQueryRequest(null, null, null, null, null).toString());
-        assertNotNull(new CertificateQueryRequest(QUERY_SERIAL, QUERY_NAME,
+    }
+
+    @Test
+    void certificateQueryRequest_toString_includesSerialAndName() {
+        String rendered = new CertificateQueryRequest(QUERY_SERIAL, QUERY_NAME,
                 KsefCertificateType.AUTHENTICATION, CertificateStatus.ACTIVE,
-                OffsetDateTime.now()).toString());
+                OffsetDateTime.now()).toString();
+        assertTrue(rendered.contains(QUERY_SERIAL));
+        assertTrue(rendered.contains(QUERY_NAME));
     }
 
     @Test
@@ -86,17 +92,21 @@ class RecordsEqualsHashCodeTest {
     }
 
     @Test
-    void invoiceQueryFilters_toString_handlesAllFieldsSet() {
-        assertNotNull(new InvoiceQueryFilters(
+    void invoiceQueryFilters_toString_includesSubjectTypeAndInvoicingMode() {
+        String rendered = new InvoiceQueryFilters(
                 InvoiceQuerySubjectType.SUBJECT1, InvoiceQueryDateType.INVOICING,
                 OffsetDateTime.now(), null, null, null, null,
-                InvoicingMode.ONLINE, null, null).toString());
+                InvoicingMode.ONLINE, null, null).toString();
+        assertTrue(rendered.contains(InvoiceQuerySubjectType.SUBJECT1.name()));
+        assertTrue(rendered.contains(InvoicingMode.ONLINE.name()));
     }
 
     @Test
-    void sendInvoiceRequest_toString_returnsNonNull() {
-        assertNotNull(new SendInvoiceRequest(FAKE_BYTES_ONE, FAKE_INVOICE_SIZE,
-                FAKE_BYTES_TWO, FAKE_ENCRYPTED_SIZE, FAKE_BYTES_THREE, false).toString());
+    void sendInvoiceRequest_toString_includesInvoiceSizeAndOfflineMode() {
+        String rendered = new SendInvoiceRequest(FAKE_BYTES_ONE, FAKE_INVOICE_SIZE,
+                FAKE_BYTES_TWO, FAKE_ENCRYPTED_SIZE, FAKE_BYTES_THREE, false).toString();
+        assertTrue(rendered.contains(String.valueOf(FAKE_INVOICE_SIZE)));
+        assertTrue(rendered.contains("offlineMode=false"));
     }
 
     @Test

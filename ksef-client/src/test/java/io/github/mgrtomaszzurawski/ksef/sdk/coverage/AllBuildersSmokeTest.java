@@ -88,9 +88,9 @@ class AllBuildersSmokeTest {
     private static final int RATE_PER_SECOND = 1;
     private static final int RATE_PER_MINUTE = 2;
     private static final int RATE_PER_HOUR = 3;
-    private static final int LIMIT_VALUE_LARGER = 4;
-    private static final int LIMIT_VALUE_LARGER_TWO = 5;
-    private static final int LIMIT_VALUE_LARGER_THREE = 6;
+    private static final int BATCH_MAX_INVOICE_SIZE_MB = 4;
+    private static final int BATCH_MAX_REQUEST_SIZE_MB = 5;
+    private static final int BATCH_MAX_INVOICES_PER_BATCH = 6;
     private static final int RATE_LIMIT_CATEGORY_COUNT = 12;
     private static final int TOKEN_PERMISSION_COUNT = 7;
     private static final int ENTITY_PERMISSION_COUNT = 4;
@@ -151,10 +151,10 @@ class AllBuildersSmokeTest {
     void testSessionLimitsBuilder_whenBothSessionsSet_buildsCompleteRequest() {
         TestSessionLimitsRequest request = TestSessionLimitsBuilder.create()
                 .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR)
-                .batchSession(LIMIT_VALUE_LARGER, LIMIT_VALUE_LARGER_TWO, LIMIT_VALUE_LARGER_THREE)
+                .batchSession(BATCH_MAX_INVOICE_SIZE_MB, BATCH_MAX_REQUEST_SIZE_MB, BATCH_MAX_INVOICES_PER_BATCH)
                 .toBuilder().build();
         assertEquals(RATE_PER_SECOND, request.onlineSession().maxInvoiceSizeMb());
-        assertEquals(LIMIT_VALUE_LARGER, request.batchSession().maxInvoiceSizeMb());
+        assertEquals(BATCH_MAX_INVOICE_SIZE_MB, request.batchSession().maxInvoiceSizeMb());
     }
 
     @Test
@@ -220,17 +220,25 @@ class AllBuildersSmokeTest {
     }
 
     @Test
-    void testPermissionsRevokeBuilder_whenAuthorizedByEachIdentifierType_buildsThreeVariants() {
+    void testPermissionsRevokeBuilder_whenAuthorizedByNip_setsAuthorizedValueToNip() {
         assertEquals(OTHER_NIP, TestPermissionsRevokeBuilder.create(NIP).authorizedNip(OTHER_NIP)
                 .toBuilder().build().authorizedValue());
+    }
+
+    @Test
+    void testPermissionsRevokeBuilder_whenAuthorizedByPesel_setsAuthorizedValueToPesel() {
         assertEquals(PESEL, TestPermissionsRevokeBuilder.create(NIP).authorizedPesel(PESEL)
                 .toBuilder().build().authorizedValue());
+    }
+
+    @Test
+    void testPermissionsRevokeBuilder_whenAuthorizedByFingerprint_setsAuthorizedValueToFingerprint() {
         assertEquals(FINGERPRINT, TestPermissionsRevokeBuilder.create(NIP).authorizedFingerprint(FINGERPRINT)
                 .toBuilder().build().authorizedValue());
     }
 
     @Test
-    void personPermissionGrantBuilder_whenAllPermissionsAndIdentifiersSet_buildsRequest() {
+    void personPermissionGrantBuilder_whenForPeselWithAllPermissions_buildsRequestWithSeven() {
         PersonPermissionGrantRequest pesel = PersonPermissionGrantBuilder.forPesel(PESEL)
                 .description(DESCRIPTION).personDetails(FIRST_NAME, LAST_NAME)
                 .invoiceRead().invoiceWrite()
@@ -239,9 +247,17 @@ class AllBuildersSmokeTest {
                 .toBuilder().build();
         assertEquals(TOKEN_PERMISSION_COUNT, pesel.permissions().size());
         assertEquals(PESEL, pesel.identifierValue());
+    }
+
+    @Test
+    void personPermissionGrantBuilder_whenForNip_setsIdentifierValueToNip() {
         assertEquals(NIP, PersonPermissionGrantBuilder.forNip(NIP)
                 .description(DESCRIPTION).personDetails(FIRST_NAME, LAST_NAME)
                 .invoiceRead().build().identifierValue());
+    }
+
+    @Test
+    void personPermissionGrantBuilder_whenForFingerprint_setsIdentifierValueToFingerprint() {
         assertEquals(FINGERPRINT, PersonPermissionGrantBuilder.forFingerprint(FINGERPRINT)
                 .description(DESCRIPTION).personDetails(FIRST_NAME, LAST_NAME)
                 .invoiceRead().build().identifierValue());
@@ -261,17 +277,29 @@ class AllBuildersSmokeTest {
     }
 
     @Test
-    void entityAuthorizationGrantBuilder_whenEachPermissionSet_returnsExpectedPermission() {
+    void entityAuthorizationGrantBuilder_whenSelfInvoicing_setsSelfInvoicingPermission() {
         EntityAuthorizationPermissionGrantRequest selfInv = EntityAuthorizationPermissionGrantBuilder
                 .forNip(NIP).description(DESCRIPTION).entityDetails(FULL_NAME)
                 .selfInvoicing().toBuilder().build();
         assertEquals(EntityAuthorizationPermissionType.SELF_INVOICING, selfInv.permission());
+    }
+
+    @Test
+    void entityAuthorizationGrantBuilder_whenRrInvoicingWithPeppolId_setsRrInvoicingPermission() {
         assertEquals(EntityAuthorizationPermissionType.RR_INVOICING,
                 EntityAuthorizationPermissionGrantBuilder.forPeppolId(PEPPOL_ID_FIXTURE)
                         .description(DESCRIPTION).entityDetails(FULL_NAME).rrInvoicing().build().permission());
+    }
+
+    @Test
+    void entityAuthorizationGrantBuilder_whenTaxRepresentative_setsTaxRepresentativePermission() {
         assertEquals(EntityAuthorizationPermissionType.TAX_REPRESENTATIVE,
                 EntityAuthorizationPermissionGrantBuilder.forNip(NIP)
                         .description(DESCRIPTION).entityDetails(FULL_NAME).taxRepresentative().build().permission());
+    }
+
+    @Test
+    void entityAuthorizationGrantBuilder_whenPefInvoicing_setsPefInvoicingPermission() {
         assertEquals(EntityAuthorizationPermissionType.PEF_INVOICING,
                 EntityAuthorizationPermissionGrantBuilder.forNip(NIP)
                         .description(DESCRIPTION).entityDetails(FULL_NAME).pefInvoicing().build().permission());
@@ -285,22 +313,34 @@ class AllBuildersSmokeTest {
                 .toBuilder().build();
         assertEquals(SUBUNIT_NAME, request.subunitName());
         assertEquals(OTHER_NIP, request.contextValue());
+    }
+
+    @Test
+    void subunitPermissionGrantBuilder_whenContextInternalId_setsContextValueToInternalId() {
         assertEquals(INTERNAL_ID, SubunitPermissionGrantBuilder.forPesel(PESEL)
                 .contextInternalId(INTERNAL_ID).description(DESCRIPTION)
                 .personDetails(FIRST_NAME, LAST_NAME).build().contextValue());
     }
 
     @Test
-    void indirectPermissionGrantBuilder_whenAllTargetTypesUsed_buildsThreeVariantRequests() {
+    void indirectPermissionGrantBuilder_whenTargetNip_setsTargetValueToNipAndKeepsTwoPermissions() {
         IndirectPermissionGrantRequest withTargetNip = IndirectPermissionGrantBuilder.forNip(NIP)
                 .description(DESCRIPTION).personDetails(FIRST_NAME, LAST_NAME)
                 .invoiceRead().invoiceWrite().targetNip(OTHER_NIP)
                 .toBuilder().build();
         assertEquals(OTHER_NIP, withTargetNip.targetValue());
         assertEquals(INDIRECT_PERMISSIONS_COUNT, withTargetNip.permissions().size());
+    }
+
+    @Test
+    void indirectPermissionGrantBuilder_whenTargetAllPartners_clearsTargetValue() {
         assertNull(IndirectPermissionGrantBuilder.forPesel(PESEL)
                 .description(DESCRIPTION).personDetails(FIRST_NAME, LAST_NAME)
                 .invoiceRead().targetAllPartners().build().targetValue());
+    }
+
+    @Test
+    void indirectPermissionGrantBuilder_whenTargetInternalId_setsTargetValueToInternalId() {
         assertEquals(INTERNAL_ID, IndirectPermissionGrantBuilder.forFingerprint(FINGERPRINT)
                 .description(DESCRIPTION).personDetails(FIRST_NAME, LAST_NAME)
                 .invoiceRead().targetInternalId(INTERNAL_ID).build().targetValue());
@@ -330,7 +370,7 @@ class AllBuildersSmokeTest {
     }
 
     @Test
-    void personalPermissionsQueryBuilder_whenAllFiltersSet_buildsQueryWithEightPermissions() {
+    void personalPermissionsQueryBuilder_whenAllFiltersAndActiveOnly_buildsQueryWithEightPermissions() {
         PersonalPermissionsQueryRequest activeQuery = PersonalPermissionsQueryBuilder.create()
                 .contextNip(NIP).contextInternalId(INTERNAL_ID)
                 .targetNip(OTHER_NIP).targetAllPartners().targetInternalId(INTERNAL_ID)
@@ -339,6 +379,10 @@ class AllBuildersSmokeTest {
                 .activeOnly().toBuilder().build();
         assertEquals(PERSONAL_PERMISSIONS_QUERY_COUNT, activeQuery.permissionTypes().size());
         assertEquals(PermissionState.ACTIVE, activeQuery.permissionState());
+    }
+
+    @Test
+    void personalPermissionsQueryBuilder_whenInactiveOnly_setsPermissionStateToInactive() {
         assertEquals(PermissionState.INACTIVE,
                 PersonalPermissionsQueryBuilder.create().inactiveOnly().build().permissionState());
     }
@@ -354,6 +398,10 @@ class AllBuildersSmokeTest {
                 .subunitManage().enforcementOperations().introspection()
                 .activeOnly().toBuilder().build();
         assertEquals(TOKEN_PERMISSION_COUNT, request.permissionTypes().size());
+    }
+
+    @Test
+    void personPermissionsQueryBuilder_whenGrantedInCurrentContextInactiveOnly_setsPermissionStateToInactive() {
         assertEquals(PermissionState.INACTIVE,
                 PersonPermissionsQueryBuilder.permissionsGrantedInCurrentContext()
                         .inactiveOnly().build().permissionState());
@@ -370,14 +418,18 @@ class AllBuildersSmokeTest {
     }
 
     @Test
-    void entityAuthorizationPermissionsQueryBuilder_whenGrantedWithAllPermissions_buildsRequest() {
+    void entityAuthorizationPermissionsQueryBuilder_whenGrantedWithAllPermissions_buildsRequestWithFour() {
         var granted = EntityAuthorizationPermissionsQueryBuilder.granted()
                 .authorizingByNip(NIP).authorizedByNip(OTHER_NIP)
                 .selfInvoicing().rrInvoicing().taxRepresentative().pefInvoicing()
                 .toBuilder().build();
         assertEquals(ENTITY_PERMISSION_COUNT, granted.permissionTypes().size());
+        assertEquals(NIP, granted.authorizingNip());
+    }
+
+    @Test
+    void entityAuthorizationPermissionsQueryBuilder_whenReceivedWithPeppolId_setsAuthorizedValueToPeppolId() {
         assertEquals(PEPPOL_ID_FIXTURE, EntityAuthorizationPermissionsQueryBuilder.received()
                 .authorizedByPeppolId(PEPPOL_ID_FIXTURE).build().authorizedValue());
-        assertNotNull(granted.authorizingNip());
     }
 }

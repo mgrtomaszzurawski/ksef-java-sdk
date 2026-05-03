@@ -96,16 +96,17 @@ class AllMappersSmokeTest {
     private static final int RATE_PER_SECOND = 1;
     private static final int RATE_PER_MINUTE = 2;
     private static final int RATE_PER_HOUR = 3;
-    private static final int MAX_ENROLLMENTS = 1;
-    private static final int MAX_CERTIFICATES = 2;
+    private static final int MAX_ENROLLMENTS = 10;
+    private static final int MAX_CERTIFICATES = 5;
     private static final String QUERY_SERIAL = "test-serial";
     private static final String QUERY_NAME = "test-name";
     private static final String QUERY_KSEF_NUMBER = "test-ksef-1";
     private static final String QUERY_INVOICE_NUMBER = "test-invoice-1";
     private static final String SUBUNIT_DESC = "subunit-desc";
     private static final String PEPPOL_ID_FIXTURE = "PL:0007:1234567890";
-    private static final int TOKEN_PERMISSION_COUNT_FOR_SDK = 7;
+    private static final int TOKEN_PERMISSION_COUNT = 7;
     private static final int ENTITY_AUTHORIZATION_PERMISSION_COUNT = 4;
+    private static final int SINGLE_SUBUNIT_COUNT = 1;
 
     @Test
     void tokensMappers_toGenerateTokenRequestRaw_preservesDescriptionAndPermissionCount() {
@@ -115,7 +116,7 @@ class AllMappersSmokeTest {
                 .build();
         var rawRequest = TokensMappers.toGenerateTokenRequestRaw(sdkRequest);
         assertEquals(DESCRIPTION, rawRequest.getDescription());
-        assertEquals(TOKEN_PERMISSION_COUNT_FOR_SDK, rawRequest.getPermissions().size());
+        assertEquals(TOKEN_PERMISSION_COUNT, rawRequest.getPermissions().size());
         for (TokenPermissionType type : TokenPermissionType.values()) {
             assertNotNull(TokensMappers.toTokenPermissionTypeRaw(type));
         }
@@ -176,31 +177,71 @@ class AllMappersSmokeTest {
     }
 
     @Test
-    void testdataMappers_toRawForEveryBuilder_succeeds() {
-        assertNotNull(TestdataMappers.toSetSubjectLimitsRequestRaw(
+    void testdataMappers_toSetSubjectLimitsRequestRaw_preservesEnrollmentAndCertificateLimits() {
+        var rawRequest = TestdataMappers.toSetSubjectLimitsRequestRaw(
                 TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP)
-                        .maxEnrollments(MAX_ENROLLMENTS).maxCertificates(MAX_CERTIFICATES).build()));
-        assertNotNull(TestdataMappers.toSetSessionLimitsRequestRaw(
+                        .maxEnrollments(MAX_ENROLLMENTS).maxCertificates(MAX_CERTIFICATES).build());
+        assertEquals(MAX_ENROLLMENTS, rawRequest.getEnrollment().getMaxEnrollments());
+        assertEquals(MAX_CERTIFICATES, rawRequest.getCertificate().getMaxCertificates());
+    }
+
+    @Test
+    void testdataMappers_toSetSessionLimitsRequestRaw_preservesBothSessionTypes() {
+        var rawRequest = TestdataMappers.toSetSessionLimitsRequestRaw(
                 TestSessionLimitsBuilder.create()
                         .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR)
-                        .batchSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR).build()));
-        assertNotNull(TestdataMappers.toSetRateLimitsRequestRaw(
+                        .batchSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR).build());
+        assertNotNull(rawRequest.getOnlineSession());
+        assertNotNull(rawRequest.getBatchSession());
+    }
+
+    @Test
+    void testdataMappers_toSetRateLimitsRequestRaw_preservesOnlineSessionRates() {
+        var rawRequest = TestdataMappers.toSetRateLimitsRequestRaw(
                 TestRateLimitsBuilder.create()
-                        .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR).build()));
-        assertNotNull(TestdataMappers.toPersonCreateRequestRaw(
+                        .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR).build());
+        assertNotNull(rawRequest.getRateLimits().getOnlineSession());
+    }
+
+    @Test
+    void testdataMappers_toPersonCreateRequestRaw_preservesNipAndPesel() {
+        var rawRequest = TestdataMappers.toPersonCreateRequestRaw(
                 TestPersonCreateBuilder.create(NIP, PESEL, true, DESCRIPTION)
-                        .isDeceased(true).createdDate(OffsetDateTime.now()).build()));
-        assertNotNull(TestdataMappers.toSubjectCreateRequestRaw(
+                        .isDeceased(true).createdDate(OffsetDateTime.now()).build());
+        assertEquals(NIP, rawRequest.getNip());
+        assertEquals(PESEL, rawRequest.getPesel());
+        assertEquals(DESCRIPTION, rawRequest.getDescription());
+    }
+
+    @Test
+    void testdataMappers_toSubjectCreateRequestRaw_preservesNipAndSubunits() {
+        var rawRequest = TestdataMappers.toSubjectCreateRequestRaw(
                 TestSubjectCreateBuilder.create(NIP, TestSubjectType.JST, DESCRIPTION)
-                        .addSubunit(OTHER_NIP, SUBUNIT_DESC).createdDate(OffsetDateTime.now()).build()));
+                        .addSubunit(OTHER_NIP, SUBUNIT_DESC).createdDate(OffsetDateTime.now()).build());
+        assertEquals(NIP, rawRequest.getSubjectNip());
+        assertEquals(SINGLE_SUBUNIT_COUNT, rawRequest.getSubunits().size());
+    }
+
+    @Test
+    void testdataMappers_toTestDataPermissionsGrantRequestRaw_preservesPermissionCount() {
         var grantRaw = TestdataMappers.toTestDataPermissionsGrantRequestRaw(
                 TestPermissionsGrantBuilder.create(NIP)
                         .authorizedNip(OTHER_NIP).invoiceRead().invoiceWrite()
                         .credentialsRead().credentialsManage().subunitManage()
                         .enforcementOperations().introspection().build());
-        assertEquals(TOKEN_PERMISSION_COUNT_FOR_SDK, grantRaw.getPermissions().size());
-        assertNotNull(TestdataMappers.toTestDataPermissionsRevokeRequestRaw(
-                TestPermissionsRevokeBuilder.create(NIP).authorizedPesel(PESEL).build()));
+        assertEquals(TOKEN_PERMISSION_COUNT, grantRaw.getPermissions().size());
+        assertEquals(NIP, grantRaw.getContextIdentifier().getValue());
+    }
+
+    @Test
+    void testdataMappers_toTestDataPermissionsRevokeRequestRaw_preservesAuthorizedPesel() {
+        var rawRequest = TestdataMappers.toTestDataPermissionsRevokeRequestRaw(
+                TestPermissionsRevokeBuilder.create(NIP).authorizedPesel(PESEL).build());
+        assertEquals(PESEL, rawRequest.getAuthorizedIdentifier().getValue());
+    }
+
+    @Test
+    void testdataMappers_enumConvertersExposeRawWithSameName() {
         for (TestSubjectIdentifierType type : TestSubjectIdentifierType.values()) {
             assertEquals(type.name(), TestdataMappers.toSubjectIdentifierTypeRaw(type).name());
         }
@@ -217,31 +258,63 @@ class AllMappersSmokeTest {
     }
 
     @Test
-    void permissionsRequestMappers_toGrantRequestRawForEachBuilder_succeeds() {
-        assertNotNull(PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(
+    void permissionsRequestMappers_toPersonPermissionsGrantRequestRaw_preservesDescription() {
+        var rawRequest = PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(
                 PersonPermissionGrantBuilder.forNip(NIP).description(DESCRIPTION)
-                        .personDetails(FIRST_NAME, LAST_NAME).invoiceRead().build()));
+                        .personDetails(FIRST_NAME, LAST_NAME).invoiceRead().build());
+        assertEquals(DESCRIPTION, rawRequest.getDescription());
+        assertEquals(NIP, rawRequest.getSubjectIdentifier().getValue());
+    }
+
+    @Test
+    void permissionsRequestMappers_toEntityPermissionsGrantRequestRaw_preservesPermissionCount() {
         var entityRaw = PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(
                 EntityPermissionGrantBuilder.forNip(NIP).description(DESCRIPTION).entityDetails(FULL_NAME)
                         .invoiceRead().invoiceReadDelegatable().invoiceWrite().invoiceWriteDelegatable().build());
         assertEquals(ENTITY_AUTHORIZATION_PERMISSION_COUNT, entityRaw.getPermissions().size());
-        assertNotNull(PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(
+        assertEquals(DESCRIPTION, entityRaw.getDescription());
+    }
+
+    @Test
+    void permissionsRequestMappers_toEntityAuthorizationPermissionsGrantRequestRaw_preservesDescription() {
+        var rawRequest = PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(
                 EntityAuthorizationPermissionGrantBuilder.forNip(NIP).description(DESCRIPTION)
-                        .entityDetails(FULL_NAME).selfInvoicing().build()));
-        assertNotNull(PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(
+                        .entityDetails(FULL_NAME).selfInvoicing().build());
+        assertEquals(DESCRIPTION, rawRequest.getDescription());
+    }
+
+    @Test
+    void permissionsRequestMappers_toIndirectPermissionsGrantRequestRaw_preservesTargetNip() {
+        var rawRequest = PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(
                 IndirectPermissionGrantBuilder.forNip(NIP).description(DESCRIPTION)
-                        .personDetails(FIRST_NAME, LAST_NAME).invoiceRead().targetNip(OTHER_NIP).build()));
-        assertNotNull(PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(
+                        .personDetails(FIRST_NAME, LAST_NAME).invoiceRead().targetNip(OTHER_NIP).build());
+        assertEquals(OTHER_NIP, rawRequest.getTargetIdentifier().getValue());
+    }
+
+    @Test
+    void permissionsRequestMappers_toSubunitPermissionsGrantRequestRaw_preservesContextNip() {
+        var rawRequest = PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(
                 SubunitPermissionGrantBuilder.forNip(NIP).contextNip(OTHER_NIP).description(DESCRIPTION)
-                        .personDetails(FIRST_NAME, LAST_NAME).build()));
-        assertNotNull(PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(
+                        .personDetails(FIRST_NAME, LAST_NAME).build());
+        assertEquals(OTHER_NIP, rawRequest.getContextIdentifier().getValue());
+    }
+
+    @Test
+    void permissionsRequestMappers_toEuEntityPermissionsGrantRequestRaw_preservesDescription() {
+        var rawRequest = PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(
                 EuEntityPermissionGrantBuilder.forFingerprint(FINGERPRINT).description(DESCRIPTION)
-                        .subjectEntityByFingerprint(FULL_NAME, ADDRESS).invoiceRead().build()));
-        assertNotNull(PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(
+                        .subjectEntityByFingerprint(FULL_NAME, ADDRESS).invoiceRead().build());
+        assertEquals(DESCRIPTION, rawRequest.getDescription());
+    }
+
+    @Test
+    void permissionsRequestMappers_toEuEntityAdministrationPermissionsGrantRequestRaw_preservesContextVatUe() {
+        var rawRequest = PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(
                 EuEntityAdminPermissionGrantBuilder.forFingerprint(FINGERPRINT)
                         .contextNipVatUe(NIP_VAT_UE).description(DESCRIPTION).euEntityName(EU_ENTITY_NAME)
                         .subjectEntityByFingerprint(FULL_NAME, ADDRESS)
-                        .euEntityDetails(EU_ENTITY_NAME, ADDRESS).build()));
+                        .euEntityDetails(EU_ENTITY_NAME, ADDRESS).build());
+        assertEquals(NIP_VAT_UE, rawRequest.getContextIdentifier().getValue());
     }
 
     @Test
