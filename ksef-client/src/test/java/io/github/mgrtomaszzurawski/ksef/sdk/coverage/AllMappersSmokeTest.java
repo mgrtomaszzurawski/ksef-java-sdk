@@ -64,6 +64,7 @@ import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Each test exercises one mapper class's public methods via builder→Raw
@@ -112,9 +113,9 @@ class AllMappersSmokeTest {
                 .invoiceRead().invoiceWrite().credentialsRead().credentialsManage()
                 .subunitManage().enforcementOperations().introspection()
                 .build();
-        var raw = TokensMappers.toGenerateTokenRequestRaw(sdkRequest);
-        assertEquals(DESCRIPTION, raw.getDescription());
-        assertEquals(TOKEN_PERMISSION_COUNT_FOR_SDK, raw.getPermissions().size());
+        var rawRequest = TokensMappers.toGenerateTokenRequestRaw(sdkRequest);
+        assertEquals(DESCRIPTION, rawRequest.getDescription());
+        assertEquals(TOKEN_PERMISSION_COUNT_FOR_SDK, rawRequest.getPermissions().size());
         for (TokenPermissionType type : TokenPermissionType.values()) {
             assertNotNull(TokensMappers.toTokenPermissionTypeRaw(type));
         }
@@ -170,7 +171,7 @@ class AllMappersSmokeTest {
         var sendSdk = SendInvoiceBuilder.create(FAKE_INVOICE_BYTES, FAKE_AES_KEY, FAKE_INIT_VECTOR)
                 .offline().build();
         var sendRaw = InvoicingRequestMappers.toSendInvoiceRequestRaw(sendSdk);
-        assertEquals(true, sendRaw.getOfflineMode());
+        assertTrue(sendRaw.getOfflineMode());
         assertEquals((long) FAKE_INVOICE_BYTES.length, sendRaw.getInvoiceSize());
     }
 
