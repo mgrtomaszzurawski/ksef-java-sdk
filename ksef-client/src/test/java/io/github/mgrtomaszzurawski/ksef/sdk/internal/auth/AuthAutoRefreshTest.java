@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -130,7 +131,7 @@ class AuthAutoRefreshTest {
             verify(1, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(1, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
             verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-            assertEquals(FRESH_TOKEN, ksef.runtime().sessionContext().token());
+            assertEquals(FRESH_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -174,7 +175,7 @@ class AuthAutoRefreshTest {
             verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
             verify(0, postRequestedFor(urlEqualTo(PATH_TOKEN_REDEEM)));
-            assertEquals(INITIAL_TOKEN, ksef.runtime().sessionContext().token());
+            assertEquals(INITIAL_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -208,7 +209,7 @@ class AuthAutoRefreshTest {
             verify(1, postRequestedFor(urlEqualTo(PATH_TOKEN_REFRESH)));
             verify(0, postRequestedFor(urlEqualTo(PATH_CHALLENGE)));
             verify(0, postRequestedFor(urlEqualTo(PATH_KSEF_TOKEN)));
-            assertEquals(REFRESHED_ACCESS_TOKEN, ksef.runtime().sessionContext().token());
+            assertEquals(REFRESHED_ACCESS_TOKEN, KsefClientInternals.sessionContext(ksef).token());
         }
     }
 
@@ -275,13 +276,13 @@ class AuthAutoRefreshTest {
                 .credentials(new KsefTokenCredentials(TEST_NIP_SHORT, NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.runtime().sessionContext().activate(INITIAL_TOKEN, SESSION_REF, null);
+        ksef.activateSessionForTests(INITIAL_TOKEN, SESSION_REF, null);
         return ksef;
     }
 
     private static KsefClient createClientWithStaleSessionAndRefreshToken(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createClientWithStaleSession(wmInfo);
-        ksef.runtime().sessionContext().storeRefreshToken(STORED_REFRESH_TOKEN);
+        KsefClientInternals.sessionContext(ksef).storeRefreshToken(STORED_REFRESH_TOKEN);
         return ksef;
     }
 }

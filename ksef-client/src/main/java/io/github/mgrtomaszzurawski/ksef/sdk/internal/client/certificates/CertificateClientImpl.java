@@ -14,7 +14,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRa
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
@@ -24,8 +23,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.List;
 import java.util.Objects;
@@ -66,11 +65,9 @@ public final class CertificateClientImpl implements CertificateClient {
     private static final String ERR_NULL_REVOCATION_REASON = "revocationReason is required";
 
     private final HttpSupport http;
-    private final SessionContext sessionContext;
 
-    public CertificateClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
-        this.sessionContext = ksef.runtime().sessionContext();
+    public CertificateClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**
@@ -81,7 +78,7 @@ public final class CertificateClientImpl implements CertificateClient {
     @Override
     public CertificateLimits getLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_LIMITS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         CertificateLimitsResponseRaw rawValue = http.getAuthenticated(PATH_LIMITS, token,
                 CertificateLimitsResponseRaw.class, OP_GET_LIMITS);
         return CertificatesMappers.toCertificateLimits(rawValue);
@@ -95,7 +92,7 @@ public final class CertificateClientImpl implements CertificateClient {
     @Override
     public CertificateEnrollmentData getEnrollmentData() {
         LOGGER.debug(LOG_CALL, OP_GET_ENROLLMENT_DATA);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         CertificateEnrollmentDataResponseRaw rawValue = http.getAuthenticated(PATH_ENROLLMENT_DATA, token,
                 CertificateEnrollmentDataResponseRaw.class, OP_GET_ENROLLMENT_DATA);
         return CertificatesMappers.toCertificateEnrollmentData(rawValue);
@@ -112,7 +109,7 @@ public final class CertificateClientImpl implements CertificateClient {
         LOGGER.debug(LOG_CALL, OP_ENROLL);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         EnrollCertificateRequestRaw request = CertificatesMappers.toEnrollCertificateRequestRaw(builder.build());
-        String token = sessionContext.token();
+        String token = http.requireToken();
         EnrollCertificateResponseRaw rawValue = http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
                 EnrollCertificateResponseRaw.class, OP_ENROLL);
         return CertificatesMappers.toEnrollCertificateResult(rawValue);
@@ -128,7 +125,7 @@ public final class CertificateClientImpl implements CertificateClient {
     public CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber) {
         LOGGER.debug(LOG_CALL_REF, OP_GET_ENROLLMENT_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         CertificateEnrollmentStatusResponseRaw rawValue = http.getAuthenticated(ApiPaths.subPath(PATH_ENROLLMENTS, referenceNumber), token,
                 CertificateEnrollmentStatusResponseRaw.class, OP_GET_ENROLLMENT_STATUS);
         return CertificatesMappers.toCertificateEnrollmentStatus(rawValue);
@@ -146,7 +143,7 @@ public final class CertificateClientImpl implements CertificateClient {
         Objects.requireNonNull(certificateSerialNumbers, ERR_NULL_CERTIFICATE_SERIAL_NUMBERS);
         RetrieveCertificatesRequestRaw request = new RetrieveCertificatesRequestRaw();
         request.setCertificateSerialNumbers(certificateSerialNumbers);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         RetrieveCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_RETRIEVE, request, token,
                 RetrieveCertificatesResponseRaw.class, OP_RETRIEVE);
         return CertificatesMappers.toRetrieveCertificatesResult(rawValue);
@@ -162,7 +159,7 @@ public final class CertificateClientImpl implements CertificateClient {
         LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber);
         requireSafePathSegment(certificateSerialNumber);
         RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
-        String token = sessionContext.token();
+        String token = http.requireToken();
         String path = ApiPaths.subPath(PATH_CERTIFICATES, certificateSerialNumber) + SEGMENT_REVOKE;
         http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
     }
@@ -180,7 +177,7 @@ public final class CertificateClientImpl implements CertificateClient {
         Objects.requireNonNull(revocationReason, ERR_NULL_REVOCATION_REASON);
         RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
         request.setRevocationReason(CertificatesMappers.toCertificateRevocationReasonRaw(revocationReason));
-        String token = sessionContext.token();
+        String token = http.requireToken();
         String path = ApiPaths.subPath(PATH_CERTIFICATES, certificateSerialNumber) + SEGMENT_REVOKE;
         http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
     }
@@ -195,7 +192,7 @@ public final class CertificateClientImpl implements CertificateClient {
     public CertificateQueryResult query(CertificateQueryBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_QUERY);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY, CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()), token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);
         return CertificatesMappers.toCertificateQueryResult(rawValue);

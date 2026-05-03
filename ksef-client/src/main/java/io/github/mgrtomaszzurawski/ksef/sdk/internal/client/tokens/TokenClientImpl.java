@@ -8,13 +8,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -41,11 +40,9 @@ public final class TokenClientImpl implements TokenClient {
     private static final String ERR_NULL_BUILDER = "tokenBuilder must not be null";
 
     private final HttpSupport http;
-    private final SessionContext sessionContext;
 
-    public TokenClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
-        this.sessionContext = ksef.runtime().sessionContext();
+    public TokenClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**
@@ -58,7 +55,7 @@ public final class TokenClientImpl implements TokenClient {
     public GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder) {
         LOGGER.debug(LOG_CALL, OP_GENERATE);
         Objects.requireNonNull(tokenBuilder, ERR_NULL_BUILDER);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         GenerateTokenResponseRaw rawValue = http.postJsonAuthenticated(PATH_TOKENS,
                 TokensMappers.toGenerateTokenRequestRaw(tokenBuilder.build()), token,
                 GenerateTokenResponseRaw.class, OP_GENERATE);
@@ -73,7 +70,7 @@ public final class TokenClientImpl implements TokenClient {
     @Override
     public TokenList list() {
         LOGGER.debug(LOG_CALL, OP_LIST);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryTokensResponseRaw rawValue = http.getAuthenticated(PATH_TOKENS, token,
                 QueryTokensResponseRaw.class, OP_LIST);
         return TokensMappers.toTokenList(rawValue);
@@ -89,7 +86,7 @@ public final class TokenClientImpl implements TokenClient {
     public TokenDetail getStatus(String referenceNumber) {
         LOGGER.debug(LOG_CALL_REF, OP_GET_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         TokenStatusResponseRaw rawValue = http.getAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token,
                 TokenStatusResponseRaw.class, OP_GET_STATUS);
         return TokensMappers.toTokenDetail(rawValue);
@@ -104,7 +101,7 @@ public final class TokenClientImpl implements TokenClient {
     public void revoke(String referenceNumber) {
         LOGGER.debug(LOG_CALL_REF, OP_REVOKE, referenceNumber);
         requireSafePathSegment(referenceNumber);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         http.deleteAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token, OP_REVOKE);
     }
 }

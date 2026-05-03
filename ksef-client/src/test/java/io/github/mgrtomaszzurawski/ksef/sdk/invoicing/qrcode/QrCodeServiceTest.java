@@ -7,18 +7,15 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.qrcode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class QrCodeServiceTest {
 
-    private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
-    private static final String PROD_URL_PREFIX = "https://ksef.mf.gov.pl/web/verify/";
-    private static final String TEST_URL_PREFIX = "https://ksef-test.mf.gov.pl/web/verify/";
+    private static final String SAMPLE_PAYLOAD_URL = "https://qr-test.ksef.mf.gov.pl/invoice/1234567890/04-04-2026/abc";
     private static final int CUSTOM_QR_SIZE = 300;
     private static final int OVERSIZE_QR_SIZE = 5000;
     private static final int PNG_HEADER_LENGTH = 8;
@@ -27,36 +24,10 @@ class QrCodeServiceTest {
     private static final byte[] PNG_MAGIC = {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
 
     @Test
-    void getVerificationUrl_production_returnsProdUrl() {
+    void generateQrCode_whenDefaultSize_returnsPngBytes() {
         QrCodeService service = new QrCodeService();
 
-        String verificationUrl = service.getVerificationUrl(TEST_KSEF_NUMBER);
-
-        assertEquals(PROD_URL_PREFIX + TEST_KSEF_NUMBER, verificationUrl);
-    }
-
-    @Test
-    void getVerificationUrl_testEnvironment_returnsTestUrl() {
-        QrCodeService service = new QrCodeService(true);
-
-        String verificationUrl = service.getVerificationUrl(TEST_KSEF_NUMBER);
-
-        assertEquals(TEST_URL_PREFIX + TEST_KSEF_NUMBER, verificationUrl);
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    void getVerificationUrl_whenNullOrEmpty_throwsIllegalArgument(String input) {
-        QrCodeService service = new QrCodeService();
-
-        assertThrows(IllegalArgumentException.class, () -> service.getVerificationUrl(input));
-    }
-
-    @Test
-    void generateQrCode_defaultSize_returnsPngBytes() {
-        QrCodeService service = new QrCodeService();
-
-        byte[] pngBytes = service.generateQrCode(TEST_KSEF_NUMBER);
+        byte[] pngBytes = service.generateQrCode(SAMPLE_PAYLOAD_URL);
 
         assertNotNull(pngBytes);
         assertTrue(pngBytes.length > PNG_HEADER_LENGTH);
@@ -64,10 +35,10 @@ class QrCodeServiceTest {
     }
 
     @Test
-    void generateQrCode_customSize_returnsPngBytes() {
+    void generateQrCode_whenCustomSize_returnsPngBytes() {
         QrCodeService service = new QrCodeService();
 
-        byte[] pngBytes = service.generateQrCode(TEST_KSEF_NUMBER, CUSTOM_QR_SIZE);
+        byte[] pngBytes = service.generateQrCode(SAMPLE_PAYLOAD_URL, CUSTOM_QR_SIZE);
 
         assertNotNull(pngBytes);
         assertTrue(pngBytes.length > PNG_HEADER_LENGTH);
@@ -75,29 +46,26 @@ class QrCodeServiceTest {
     }
 
     @Test
-    void generateQrCode_testEnvironment_returnsPngBytes() {
-        QrCodeService service = new QrCodeService(true);
+    void generateQrCode_whenPayloadNull_throwsNullPointer() {
+        QrCodeService service = new QrCodeService();
 
-        byte[] pngBytes = service.generateQrCode(TEST_KSEF_NUMBER);
-
-        assertNotNull(pngBytes);
-        assertPngMagicBytes(pngBytes);
+        assertThrows(NullPointerException.class, () -> service.generateQrCode(null));
     }
 
     @Test
-    void generateQrCode_whenNullKsefNumber_throwsIllegalArgument() {
+    void generateQrCode_whenPayloadEmpty_throwsIllegalArgument() {
         QrCodeService service = new QrCodeService();
 
-        assertThrows(IllegalArgumentException.class, () -> service.generateQrCode(null));
+        assertThrows(IllegalArgumentException.class, () -> service.generateQrCode(""));
     }
 
     @ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(ints = {0, -1, -100})
+    @ValueSource(ints = {0, -1, -100})
     void generateQrCode_whenInvalidSize_throwsIllegalArgument(int size) {
         QrCodeService service = new QrCodeService();
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.generateQrCode(TEST_KSEF_NUMBER, size));
+                () -> service.generateQrCode(SAMPLE_PAYLOAD_URL, size));
     }
 
     @Test
@@ -105,23 +73,39 @@ class QrCodeServiceTest {
         QrCodeService service = new QrCodeService();
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.generateQrCode(TEST_KSEF_NUMBER, OVERSIZE_QR_SIZE));
+                () -> service.generateQrCode(SAMPLE_PAYLOAD_URL, OVERSIZE_QR_SIZE));
     }
 
     @Test
-    void getVerificationUrl_whenInvalidCharacters_throwsIllegalArgument() {
+    void addLabelToQrCode_whenLabelOffline_returnsTallerPngWithMagicHeader() {
         QrCodeService service = new QrCodeService();
+        byte[] base = service.generateQrCode(SAMPLE_PAYLOAD_URL);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.getVerificationUrl("../../../etc/passwd"));
+        byte[] labelled = service.addLabelToQrCode(base, QrCodeService.LABEL_OFFLINE);
+
+        assertNotNull(labelled);
+        assertPngMagicBytes(labelled);
+        assertTrue(labelled.length > base.length,
+                "labelled PNG must be larger than the source QR; got base=" + base.length
+                        + " labelled=" + labelled.length);
     }
 
     @Test
-    void getVerificationUrl_whenQueryString_throwsIllegalArgument() {
+    void generateLabeledQrCode_whenLabelCertificate_combinesGenerateAndLabel() {
         QrCodeService service = new QrCodeService();
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.getVerificationUrl("valid-number?evil=param"));
+        byte[] labelled = service.generateLabeledQrCode(SAMPLE_PAYLOAD_URL, QrCodeService.LABEL_CERTIFICATE);
+
+        assertNotNull(labelled);
+        assertPngMagicBytes(labelled);
+    }
+
+    @Test
+    void addLabelToQrCode_whenLabelEmpty_throwsIllegalArgument() {
+        QrCodeService service = new QrCodeService();
+        byte[] base = service.generateQrCode(SAMPLE_PAYLOAD_URL);
+
+        assertThrows(IllegalArgumentException.class, () -> service.addLabelToQrCode(base, ""));
     }
 
     private static void assertPngMagicBytes(byte[] pngBytes) {

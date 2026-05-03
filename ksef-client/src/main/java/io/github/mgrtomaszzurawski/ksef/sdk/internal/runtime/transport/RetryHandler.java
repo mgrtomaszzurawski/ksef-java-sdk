@@ -51,13 +51,29 @@ public final class RetryHandler {
     }
 
     /**
-     * Execute a void operation with retry logic.
+     * Execute a void operation with retry logic. Treated as GET-like
+     * (idempotent) for retry classification — POST/DELETE no-content
+     * operations must use {@link #runPost(ApiRunnable, String)} so
+     * {@link RetryPolicy#retryPost()} is honored.
      */
     public void run(ApiRunnable call, String operationName) {
         doExecute(() -> {
             call.run();
             return null;
         }, operationName, false);
+    }
+
+    /**
+     * Execute a void POST/DELETE operation with retry logic. Honors
+     * {@link RetryPolicy#retryPost()} so mutating operations (session close,
+     * token revoke, certificate revoke, testdata mutators) are not silently
+     * retried when the consumer explicitly disables POST retry.
+     */
+    public void runPost(ApiRunnable call, String operationName) {
+        doExecute(() -> {
+            call.run();
+            return null;
+        }, operationName, true);
     }
 
     private <T> T doExecute(ApiCall<T> call, String operationName, boolean isPost) {
@@ -75,7 +91,7 @@ public final class RetryHandler {
             if (result.terminal()) {
                 break;
             }
-            sleepBeforeRetry(attempt, operationName);
+            sleepBeforeRetry(attempt, operationName, lastException);
         }
 
         LOGGER.error(LOG_EXHAUSTED, policy.maxAttempts(), operationName);
@@ -122,10 +138,8 @@ public final class RetryHandler {
         }
     }
 
-    private void sleepBeforeRetry(int attempt, String operationName) {
-        long baseMillis = calculateBackoff(attempt);
-        long jitteredMillis = ThreadLocalRandom.current()
-                .nextLong(baseMillis / JITTER_DIVISOR, baseMillis + 1);
+    private void sleepBeforeRetry(int attempt, String operationName, KsefException lastException) {
+        long jitteredMillis = computeBackoffMillis(attempt, lastException);
         LOGGER.warn(LOG_RETRY, attempt, policy.maxAttempts(), jitteredMillis, operationName);
         try {
             Thread.sleep(jitteredMillis);
@@ -133,6 +147,23 @@ public final class RetryHandler {
             Thread.currentThread().interrupt();
             throw new KsefNetworkException(operationName, interrupted);
         }
+    }
+
+    private long computeBackoffMillis(int attempt, KsefException lastException) {
+        Long serverHint = retryAfterSeconds(lastException);
+        if (serverHint != null) {
+            long capped = Math.min(serverHint, policy.maxRetryAfterSeconds());
+            return capped * MILLIS_PER_SECOND;
+        }
+        long baseMillis = calculateBackoff(attempt);
+        return ThreadLocalRandom.current().nextLong(baseMillis / JITTER_DIVISOR, baseMillis + 1);
+    }
+
+    private static Long retryAfterSeconds(KsefException exception) {
+        if (exception instanceof KsefRateLimitException rateLimit) {
+            return rateLimit.retryAfterSeconds();
+        }
+        return null;
     }
 
     /**

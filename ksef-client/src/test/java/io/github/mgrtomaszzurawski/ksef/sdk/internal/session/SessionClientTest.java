@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -106,7 +107,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            OnlineSession response = new SessionClient(ksef).openOnline(new OpenOnlineSessionRequestRaw());
+            OnlineSession response = new SessionClient(KsefClientInternals.runtime(ksef)).openOnline(new OpenOnlineSessionRequestRaw());
 
             // then
             assertEquals(TEST_SESSION_REF, response.referenceNumber());
@@ -127,7 +128,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SendInvoiceResult response = new SessionClient(ksef).sendInvoice(
+            SendInvoiceResult response = new SessionClient(KsefClientInternals.runtime(ksef)).sendInvoice(
                     TEST_SESSION_REF, new SendInvoiceRequest(new byte[]{}, 0L, new byte[]{}, 0L, new byte[]{}, false));
 
             // then
@@ -146,7 +147,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            new SessionClient(ksef).closeOnline(TEST_SESSION_REF);
+            new SessionClient(KsefClientInternals.runtime(ksef)).closeOnline(TEST_SESSION_REF);
 
             // then
             verify(postRequestedFor(urlEqualTo(closePath))
@@ -167,7 +168,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionStatus response = new SessionClient(ksef).getStatus(TEST_SESSION_REF);
+            SessionStatus response = new SessionClient(KsefClientInternals.runtime(ksef)).getStatus(TEST_SESSION_REF);
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
@@ -188,7 +189,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionInvoices response = new SessionClient(ksef).getInvoices(TEST_SESSION_REF);
+            SessionInvoices response = new SessionClient(KsefClientInternals.runtime(ksef)).getInvoices(TEST_SESSION_REF);
 
             // then
             assertEquals(1, response.invoices().size());
@@ -209,7 +210,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionInvoiceStatus response = new SessionClient(ksef)
+            SessionInvoiceStatus response = new SessionClient(KsefClientInternals.runtime(ksef))
                     .getInvoiceStatus(TEST_SESSION_REF, TEST_INVOICE_REF);
 
             // then
@@ -230,7 +231,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] upoBytes = new SessionClient(ksef).getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
+            byte[] upoBytes = new SessionClient(KsefClientInternals.runtime(ksef)).getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
 
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
@@ -250,7 +251,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] upoBytes = new SessionClient(ksef).getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
+            byte[] upoBytes = new SessionClient(KsefClientInternals.runtime(ksef)).getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
 
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
@@ -269,7 +270,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // then
-            var sessions = new SessionClient(ksef);
+            var sessions = new SessionClient(KsefClientInternals.runtime(ksef));
             OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw();
             assertThrows(KsefAuthException.class, () -> sessions.openOnline(request));
         }
@@ -284,7 +285,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // then
-            var sessions = new SessionClient(ksef);
+            var sessions = new SessionClient(KsefClientInternals.runtime(ksef));
             SendInvoiceRequest request = new SendInvoiceRequest(new byte[]{}, 0L, new byte[]{}, 0L, new byte[]{}, false);
             assertThrows(KsefServerException.class,
                     () -> sessions.sendInvoice(TEST_SESSION_REF, request));
@@ -296,7 +297,7 @@ class SessionClientTest {
                 .credentials(new KsefTokenCredentials(CREDENTIALS_TOKEN, CREDENTIALS_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
-        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

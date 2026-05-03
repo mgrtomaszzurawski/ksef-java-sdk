@@ -19,7 +19,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubordinateEntityRoles
 import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubunitPermissionsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionGrantBuilder;
@@ -42,8 +41,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -109,11 +108,9 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String ERR_BUILDER_NULL = "builder must not be null";
 
     private final HttpSupport http;
-    private final SessionContext sessionContext;
 
-    public PermissionClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
-        this.sessionContext = ksef.runtime().sessionContext();
+    public PermissionClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**
@@ -126,7 +123,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult grantPerson(PersonPermissionGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_PERSON);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_PERSON,
                 PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_PERSON);
@@ -143,7 +140,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult grantEntity(EntityPermissionGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_ENTITY);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_ENTITY,
                 PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_ENTITY);
@@ -160,7 +157,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_AUTHORIZATION);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION,
                 PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_AUTHORIZATION);
@@ -177,7 +174,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult grantIndirect(IndirectPermissionGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_INDIRECT);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_INDIRECT,
                 PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_INDIRECT);
@@ -194,7 +191,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult grantSubunit(SubunitPermissionGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_SUBUNIT);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_SUBUNIT,
                 PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_SUBUNIT);
@@ -211,7 +208,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY_ADMIN);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY_ADMIN,
                 PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY_ADMIN);
@@ -228,7 +225,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult grantEuEntity(EuEntityPermissionGrantBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY,
                 PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(builder.build()), token,
                 PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY);
@@ -245,7 +242,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult revokeCommon(String permissionId) {
         LOGGER.debug(LOG_CALL_REF, OP_REVOKE_COMMON, permissionId);
         requireSafePathSegment(permissionId);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.deleteAuthenticatedWithResponse(PATH_REVOKE_COMMON + permissionId, token,
                 PermissionsOperationResponseRaw.class, OP_REVOKE_COMMON);
         return PermissionsMappers.toPermissionOperationResult(rawValue);
@@ -261,7 +258,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationResult revokeAuthorization(String permissionId) {
         LOGGER.debug(LOG_CALL_REF, OP_REVOKE_AUTHORIZATION, permissionId);
         requireSafePathSegment(permissionId);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.deleteAuthenticatedWithResponse(PATH_REVOKE_AUTHORIZATION + permissionId, token,
                 PermissionsOperationResponseRaw.class, OP_REVOKE_AUTHORIZATION);
         return PermissionsMappers.toPermissionOperationResult(rawValue);
@@ -277,7 +274,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PermissionOperationStatus getOperationStatus(String referenceNumber) {
         LOGGER.debug(LOG_CALL_REF, OP_GET_OPERATION_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         PermissionsOperationStatusResponseRaw rawValue = http.getAuthenticated(PATH_OPERATION_STATUS + referenceNumber, token,
                 PermissionsOperationStatusResponseRaw.class, OP_GET_OPERATION_STATUS);
         return PermissionsMappers.toPermissionOperationStatus(rawValue);
@@ -291,7 +288,7 @@ public final class PermissionClientImpl implements PermissionClient {
     @Override
     public AttachmentPermissionStatus getAttachmentStatus() {
         LOGGER.debug(LOG_CALL, OP_GET_ATTACHMENT_STATUS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         CheckAttachmentPermissionStatusResponseRaw rawValue = http.getAuthenticated(PATH_ATTACHMENT_STATUS, token,
                 CheckAttachmentPermissionStatusResponseRaw.class, OP_GET_ATTACHMENT_STATUS);
         return PermissionsMappers.toAttachmentPermissionStatus(rawValue);
@@ -307,7 +304,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PersonalPermissions queryPersonal(PersonalPermissionsQueryBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_QUERY_PERSONAL);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryPersonalPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_PERSONAL,
                 PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(builder.build()), token,
                 QueryPersonalPermissionsResponseRaw.class, OP_QUERY_PERSONAL);
@@ -324,7 +321,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public PersonPermissions queryPersons(PersonPermissionsQueryBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_QUERY_PERSONS);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryPersonPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_PERSONS,
                 PermissionsQueryRequestMappers.toPersonPermissionsQueryRequestRaw(builder.build()), token,
                 QueryPersonPermissionsResponseRaw.class, OP_QUERY_PERSONS);
@@ -339,7 +336,7 @@ public final class PermissionClientImpl implements PermissionClient {
     @Override
     public SubunitPermissions querySubunits() {
         LOGGER.debug(LOG_CALL, OP_QUERY_SUBUNITS);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QuerySubunitPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_SUBUNITS,
                 new SubunitPermissionsQueryRequestRaw(), token,
                 QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
@@ -354,7 +351,7 @@ public final class PermissionClientImpl implements PermissionClient {
     @Override
     public EntityPermissions queryEntities() {
         LOGGER.debug(LOG_CALL, OP_QUERY_ENTITIES);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_ENTITIES,
                 new EntityPermissionsQueryRequestRaw(), token,
                 QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
@@ -369,7 +366,7 @@ public final class PermissionClientImpl implements PermissionClient {
     @Override
     public EntityRoles queryEntityRoles() {
         LOGGER.debug(LOG_CALL, OP_QUERY_ENTITY_ROLES);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryEntityRolesResponseRaw rawValue = http.getAuthenticated(PATH_QUERY_ENTITY_ROLES, token,
                 QueryEntityRolesResponseRaw.class, OP_QUERY_ENTITY_ROLES);
         return PermissionsMappers.toEntityRoles(rawValue);
@@ -383,7 +380,7 @@ public final class PermissionClientImpl implements PermissionClient {
     @Override
     public SubordinateEntityRoles querySubordinateRoles() {
         LOGGER.debug(LOG_CALL, OP_QUERY_SUBORDINATE);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QuerySubordinateEntityRolesResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_SUBORDINATE,
                 new SubordinateEntityRolesQueryRequestRaw(), token,
                 QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
@@ -400,7 +397,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_QUERY_AUTHORIZATIONS);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryEntityAuthorizationPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_AUTHORIZATIONS,
                 PermissionsQueryRequestMappers.toEntityAuthorizationPermissionsQueryRequestRaw(builder.build()), token,
                 QueryEntityAuthorizationPermissionsResponseRaw.class, OP_QUERY_AUTHORIZATIONS);
@@ -417,7 +414,7 @@ public final class PermissionClientImpl implements PermissionClient {
     public EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_QUERY_EU_ENTITIES);
         Objects.requireNonNull(builder, ERR_BUILDER_NULL);
-        String token = sessionContext.token();
+        String token = http.requireToken();
         QueryEuEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_EU_ENTITIES,
                 PermissionsQueryRequestMappers.toEuEntityPermissionsQueryRequestRaw(builder.build()), token,
                 QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);

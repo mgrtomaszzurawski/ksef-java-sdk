@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatch
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
@@ -107,7 +108,10 @@ public final class KsefBatchSession implements AutoCloseable {
      * @apiNote Internal — constructed by {@code KsefClient.openBatchSession(...)}.
      * The {@link SessionClient} parameter type lives in a non-exported package, so
      * this constructor is not callable from consumer code despite being public.
+     * @deprecated For SDK-internal construction only. Consumers must obtain a
+     *     batch session via {@code KsefClient.openBatchSession(...)}.
      */
+    @Deprecated(since = "0.1.0")
     public KsefBatchSession(SessionClient sessionClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests) {
         this(sessionClient, null, referenceNumber, partUploadRequests, null);
@@ -119,7 +123,9 @@ public final class KsefBatchSession implements AutoCloseable {
      * for upload + cleanup.
      *
      * @apiNote Internal — see the alternative-overload note above.
+     * @deprecated For SDK-internal construction only.
      */
+    @Deprecated(since = "0.1.0")
     public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage) {
@@ -285,6 +291,7 @@ public final class KsefBatchSession implements AutoCloseable {
             }
         }
         LOGGER.warn(LOG_POLL_TIMEOUT, referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
+        throw new KsefSessionPollingTimeoutException(referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {

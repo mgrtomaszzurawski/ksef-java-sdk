@@ -370,7 +370,7 @@ class TestDataClientTest {
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
         KsefClient ksef = createClient(wmInfo);
-        ksef.runtime().sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, null);
+        ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
         return ksef;
     }
 }

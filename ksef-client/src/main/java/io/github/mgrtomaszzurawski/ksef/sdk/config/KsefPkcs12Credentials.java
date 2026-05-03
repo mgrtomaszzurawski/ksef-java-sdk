@@ -33,6 +33,22 @@ public record KsefPkcs12Credentials(Path keystorePath, char[] password, KsefIden
         Objects.requireNonNull(keystorePath, ERR_NULL_PATH);
         Objects.requireNonNull(password, ERR_NULL_PASSWORD);
         Objects.requireNonNull(identifier, ERR_NULL_IDENTIFIER);
+        password = password.clone();
+    }
+
+    @Override
+    public char[] password() {
+        return password.clone();
+    }
+
+    /**
+     * Zeroise the stored password char array. Idempotent. Call once authentication
+     * has completed to remove the password from heap before garbage collection.
+     * After {@code clearPassword()} subsequent calls to {@link #password()} return
+     * an array of zeroes.
+     */
+    public void clearPassword() {
+        Arrays.fill(password, '\0');
     }
 
     /**

@@ -165,18 +165,18 @@ public final class KsefClient implements AutoCloseable {
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
         this.runtime = new KsefHttpRuntime(environment, httpClient, objectMapper,
-                retryHandler, sessionContext, readTimeout, this::reauthenticate);
-        this.authClient = new AuthClient(this);
-        this.securityClient = new SecurityClient(this);
-        this.sessionClient = new SessionClient(this);
-        this.invoiceClient = new InvoiceClientImpl(this);
-        this.tokenClient = new TokenClientImpl(this);
-        this.permissionClient = new PermissionClientImpl(this);
-        this.certificateClient = new CertificateClientImpl(this);
-        this.limitsClient = new LimitsClientImpl(this);
-        this.rateLimitClient = new RateLimitClientImpl(this);
-        this.testDataClient = new TestDataClientImpl(this);
-        this.peppolClient = new PeppolClientImpl(this);
+                retryHandler, sessionContext, readTimeout, this::reauthenticate, this::ensureAuthenticated);
+        this.authClient = new AuthClient(this.runtime);
+        this.securityClient = new SecurityClient(this.runtime);
+        this.sessionClient = new SessionClient(this.runtime);
+        this.invoiceClient = new InvoiceClientImpl(this.runtime);
+        this.tokenClient = new TokenClientImpl(this.runtime);
+        this.permissionClient = new PermissionClientImpl(this.runtime);
+        this.certificateClient = new CertificateClientImpl(this.runtime);
+        this.limitsClient = new LimitsClientImpl(this.runtime);
+        this.rateLimitClient = new RateLimitClientImpl(this.runtime);
+        this.testDataClient = new TestDataClientImpl(this.runtime);
+        this.peppolClient = new PeppolClientImpl(this.runtime);
     }
 
     /**
@@ -349,6 +349,44 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
+     * Seed the session context directly with an existing access token,
+     * reference number, and (optional) refresh token, bypassing the full
+     * challenge/redeem flow.
+     *
+     * <p>This is the supported test-only seam for unit tests that mock the
+     * KSeF API surface but still need a {@link KsefClient} that thinks it is
+     * authenticated. It is also useful for advanced consumers who already
+     * possess a valid bearer token from an out-of-band flow (e.g. token
+     * persisted from a previous session).
+     *
+     * <p>Marks the client as authenticated; subsequent calls to
+     * {@link #authenticate()} are no-ops until {@link #terminateAuth()} or a
+     * 401 reauth is triggered.
+     *
+     * @apiNote SDK-internal / advanced. Most consumers should call
+     *     {@link #authenticate()} instead.
+     * @param accessToken the bearer access token
+     * @param referenceNumber the auth-session reference number returned by
+     *     {@code /auth/token/redeem}
+     * @param refreshToken the refresh token, or {@code null} when none
+     * @deprecated Test/advanced seam — to be moved into a separate
+     *     {@code ksef-client-testkit} artifact in 0.2.x. Will be removed
+     *     from the main module before stable 1.0; do not depend on this
+     *     in consumer code.
+     */
+    @Deprecated(since = "0.1.0", forRemoval = true)
+    public synchronized void activateSessionForTests(String accessToken,
+                                                     String referenceNumber,
+                                                     String refreshToken) {
+        ensureOpen();
+        sessionContext.activate(accessToken, referenceNumber, null);
+        if (refreshToken != null) {
+            sessionContext.storeRefreshToken(refreshToken);
+        }
+        authenticated = true;
+    }
+
+    /**
      * Terminate the current authentication session.
      * Clears all session state. After calling this, {@link #authenticate()} must be
      * called again (explicitly or lazily) before any further operations.
@@ -472,14 +510,13 @@ public final class KsefClient implements AutoCloseable {
     public KsefEnvironment environment() { return environment; }
 
     /**
-     * Internal {@link HttpRuntime} adapter — used by SDK domain client
-     * implementations to obtain transport plumbing without {@code KsefClient}
-     * itself implementing the runtime contract. {@code HttpRuntime} lives in
-     * a non-exported package, so this method is invisible to JPMS consumers.
-     *
-     * @apiNote internal SDK infrastructure
+     * Package-private accessor for the internal {@link HttpRuntime} adapter.
+     * Used by {@link KsefClientInternals} (in the same package) to expose the
+     * runtime to SDK-internal unit tests. Domain client implementations
+     * receive {@link HttpRuntime} directly via their constructors and never
+     * call this method.
      */
-    public HttpRuntime runtime() { return runtime; }
+    HttpRuntime internalRuntime() { return runtime; }
 
     @Override
     public void close() {

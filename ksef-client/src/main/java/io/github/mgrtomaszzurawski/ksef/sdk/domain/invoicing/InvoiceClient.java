@@ -24,6 +24,36 @@ public interface InvoiceClient {
     InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query);
     List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query);
     List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults);
+
+    /**
+     * Low-level "start export" entry point. Caller must already hold the KSeF
+     * symmetric-key public key, generate AES key + IV, and retain them
+     * outside the SDK in order to decrypt the returned package later.
+     *
+     * @deprecated For most consumers, prefer
+     *     {@link #prepareExport(InvoiceQueryBuilder, boolean)} which retains
+     *     the AES key + IV inside the returned {@link PreparedInvoiceExport}
+     *     handle and exposes a polling/download/decrypt workflow.
+     */
+    @Deprecated(since = "0.1.0")
     ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder);
+
     InvoiceExportStatus getExportStatus(String referenceNumber);
+
+    /**
+     * Start an invoice export and return a {@link PreparedInvoiceExport} handle
+     * that retains the AES key + IV needed to decrypt the returned package.
+     *
+     * <p>The SDK fetches the KSeF symmetric-key public key, generates the AES
+     * key + IV, encrypts the AES key with the KSeF public key, sends the export
+     * request, and retains the plaintext AES/IV inside the returned handle so
+     * the resulting package can be downloaded and decrypted via
+     * {@link PreparedInvoiceExport#downloadAndDecrypt(InvoiceExportStatus)}.
+     *
+     * @param query filters identifying invoices to export
+     * @param fullContent {@code true} for full-content export; {@code false} for
+     *     metadata-only
+     * @return prepared-export handle
+     */
+    PreparedInvoiceExport prepareExport(InvoiceQueryBuilder query, boolean fullContent);
 }

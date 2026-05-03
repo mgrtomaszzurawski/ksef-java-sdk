@@ -19,7 +19,13 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -34,9 +40,12 @@ public final class QrCodeRunner implements DemoRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QrCodeRunner.class);
     private static final String NAME = "qrcode";
-    private static final String OP_URL = "getVerificationUrl";
+    private static final String OP_URL = "buildInvoiceVerificationUrl";
     private static final String OP_QR = "generateQrCode";
-    private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
+    private static final String SAMPLE_SELLER_NIP = "1234567890";
+    private static final String SAMPLE_INVOICE_XML = "<Faktura>fixture</Faktura>";
+    private static final String SHA_256 = "SHA-256";
+    private static final LocalDate SAMPLE_ISSUE_DATE = LocalDate.of(2026, 4, 4);
     private static final String ENV_DEMO = "demo";
     private static final String ENV_TEST = "test";
 
@@ -47,24 +56,31 @@ public final class QrCodeRunner implements DemoRunner {
     public List<RunResult> run(DemoContext context) {
         List<RunResult> results = new ArrayList<>();
         boolean isTestEnv = context.environment().contains(ENV_DEMO) || context.environment().contains(ENV_TEST);
-        QrCodeService service = new QrCodeService(isTestEnv);
+        QrEnvironment qrEnv = isTestEnv ? QrEnvironment.TEST : QrEnvironment.PROD;
+        QrCodeService service = new QrCodeService();
 
         long start = System.currentTimeMillis();
+        String verificationUrl = null;
         try {
-            String verificationUrl = service.getVerificationUrl(TEST_KSEF_NUMBER);
+            byte[] hash = MessageDigest.getInstance(SHA_256)
+                    .digest(SAMPLE_INVOICE_XML.getBytes(StandardCharsets.UTF_8));
+            verificationUrl = KsefVerificationLinks.buildInvoiceVerificationUrl(
+                    qrEnv, SAMPLE_SELLER_NIP, SAMPLE_ISSUE_DATE, hash);
             LOGGER.info("[{}] verification URL: {}", NAME, verificationUrl);
             results.add(RunResult.ok(NAME, OP_URL, elapsed(start), verificationUrl));
-        } catch (Exception exception) {
+        } catch (NoSuchAlgorithmException | RuntimeException exception) {
             results.add(RunResult.fail(NAME, OP_URL, elapsed(start), errorMessage(exception)));
         }
 
-        start = System.currentTimeMillis();
-        try {
-            byte[] pngBytes = service.generateQrCode(TEST_KSEF_NUMBER);
-            LOGGER.info("[{}] QR code generated: {} bytes PNG", NAME, pngBytes.length);
-            results.add(RunResult.ok(NAME, OP_QR, elapsed(start), pngBytes.length + " bytes"));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_QR, elapsed(start), errorMessage(exception)));
+        if (verificationUrl != null) {
+            start = System.currentTimeMillis();
+            try {
+                byte[] pngBytes = service.generateQrCode(verificationUrl);
+                LOGGER.info("[{}] QR code generated: {} bytes PNG", NAME, pngBytes.length);
+                results.add(RunResult.ok(NAME, OP_QR, elapsed(start), pngBytes.length + " bytes"));
+            } catch (RuntimeException exception) {
+                results.add(RunResult.fail(NAME, OP_QR, elapsed(start), errorMessage(exception)));
+            }
         }
 
         return results;
