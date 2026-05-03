@@ -76,9 +76,10 @@ new KsefCertificateCredentials(x509Cert, privateKey, nip);
 
 | Environment | URL |
 |-------------|-----|
-| `KsefEnvironment.TEST` | `https://api-test.ksef.mf.gov.pl` |
-| `KsefEnvironment.PREPROD` | `https://api-preprod.ksef.mf.gov.pl` |
-| `KsefEnvironment.PROD` | `https://api.ksef.mf.gov.pl` |
+| `KsefEnvironment.TEST` | `https://api-test.ksef.mf.gov.pl/v2` |
+| `KsefEnvironment.DEMO` | `https://api-demo.ksef.mf.gov.pl/v2` |
+| `KsefEnvironment.PREPROD` | `https://api-preprod.ksef.mf.gov.pl/v2` |
+| `KsefEnvironment.PROD` | `https://api.ksef.mf.gov.pl/v2` |
 | `KsefEnvironment.custom(url)` | Self-hosted / staging |
 
 Builder options:
@@ -196,7 +197,7 @@ See:
 ## Status
 
 - ✅ All 11 KSeF API domains covered (60+ live ops verified against demo env)
-- ✅ 264 unit + integration tests (WireMock-mocked HTTP, full transport coverage)
+- ✅ 391 unit + integration tests (WireMock-mocked HTTP, full transport coverage)
 - ✅ JaCoCo coverage report generated (`mvn verify` → `target/site/jacoco/`)
 - 🚧 Per-builder method coverage gate (PLAN A.9 — gradual ratcheting in progress)
 - 🚧 JSpecify null-safety annotations (PLAN A.8)

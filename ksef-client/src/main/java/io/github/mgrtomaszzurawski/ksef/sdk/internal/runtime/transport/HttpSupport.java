@@ -241,6 +241,7 @@ public final class HttpSupport {
                 bearer -> HttpRequest.newBuilder()
                         .uri(uri(path))
                         .timeout(runtime.readTimeout())
+                        .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS)
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .GET()
                         .build(),
@@ -258,6 +259,7 @@ public final class HttpSupport {
                         .uri(uri(path))
                         .timeout(runtime.readTimeout())
                         .header(ACCEPT, APPLICATION_JSON)
+                        .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS)
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .DELETE()
                         .build(),
@@ -273,6 +275,7 @@ public final class HttpSupport {
                 bearer -> HttpRequest.newBuilder()
                         .uri(uri(path))
                         .timeout(runtime.readTimeout())
+                        .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS)
                         .header(AUTHORIZATION, BEARER_PREFIX + bearer)
                         .DELETE()
                         .build(),

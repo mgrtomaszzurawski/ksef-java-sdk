@@ -121,7 +121,7 @@ decision in chronological order.
   `Logger`; `HttpSupport` logs every wire-level request/response at `DEBUG`
   with method, URI, status, elapsed time. Default consumer level: `WARN` (see
   README "Logging" section).
-- 264 unit + integration tests across 29 test classes (WireMock-mocked HTTP).
+- 391 unit + integration tests across 33 test classes (WireMock-mocked HTTP).
 - Demo / live-validation harness: `ksef-demo` module with per-domain runners and
   named modes (`AUTH_SAFE`, `READ_ONLY`, `FULL`, `CERTIFICATES`).
 - Maven Central release profile (`mvn deploy -Prelease`) — GPG signing +

@@ -67,12 +67,36 @@ public record ExportedInvoicePackage(byte[] metadataJson, Map<String, byte[]> in
             return false;
         }
         return java.util.Arrays.equals(metadataJson, other.metadataJson)
-                && Objects.equals(invoiceXmls, other.invoiceXmls);
+                && byteMapsEqual(invoiceXmls, other.invoiceXmls);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(invoiceXmls, java.util.Arrays.hashCode(metadataJson));
+        return Objects.hash(java.util.Arrays.hashCode(metadataJson), byteMapHashCode(invoiceXmls));
+    }
+
+    private static boolean byteMapsEqual(Map<String, byte[]> left, Map<String, byte[]> right) {
+        if (left.size() != right.size()) {
+            return false;
+        }
+        for (Map.Entry<String, byte[]> entry : left.entrySet()) {
+            byte[] otherValue = right.get(entry.getKey());
+            if (otherValue == null && !right.containsKey(entry.getKey())) {
+                return false;
+            }
+            if (!java.util.Arrays.equals(entry.getValue(), otherValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int byteMapHashCode(Map<String, byte[]> source) {
+        int result = 0;
+        for (Map.Entry<String, byte[]> entry : source.entrySet()) {
+            result += entry.getKey().hashCode() ^ java.util.Arrays.hashCode(entry.getValue());
+        }
+        return result;
     }
 
     @Override

@@ -161,7 +161,9 @@ public final class InvoiceClientImpl implements InvoiceClient {
      *
      * @param exportBuilder the export builder with date range and filters
      * @return response with the export reference number for status polling
+     * @deprecated prefer {@link #prepareExport(InvoiceQueryBuilder, boolean)}
      */
+    @Deprecated(since = "0.1.0")
     @Override
     public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder) {
         LOGGER.debug(LOG_CALL, OP_EXPORT);

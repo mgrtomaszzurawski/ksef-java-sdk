@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackag
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -60,6 +61,7 @@ public final class PreparedInvoiceExport {
     private static final int STATUS_POLL_DELAY_MS = 1500;
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     private static final int STATUS_TERMINAL_FLOOR = 200;
+    private static final int STATUS_CODE_OK = 200;
     private static final int HTTP_OK = 200;
     private static final int ZIP_BUFFER_BYTES = 8 * 1024;
 
@@ -125,7 +127,11 @@ public final class PreparedInvoiceExport {
             InvoiceExportStatus status = invoices.getExportStatus(referenceNumber);
             Integer code = status.status() != null ? status.status().code() : null;
             if (code != null && code >= STATUS_TERMINAL_FLOOR) {
-                return status;
+                if (code == STATUS_CODE_OK) {
+                    return status;
+                }
+                String description = status.status() != null ? status.status().description() : null;
+                throw new KsefSessionTerminalFailureException(referenceNumber, code, description, null);
             }
             lastCode = code;
         }
