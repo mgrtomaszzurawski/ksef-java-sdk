@@ -146,15 +146,25 @@ public final class QrCodeService {
         measure.setFont(font);
         FontMetrics metrics = measure.getFontMetrics();
         int labelHeight = metrics.getHeight() + LABEL_PADDING_PX * 2;
+        int measuredLabelWidth = metrics.stringWidth(label);
         measure.dispose();
 
-        BufferedImage canvas = new BufferedImage(qrImage.getWidth(), qrImage.getHeight() + labelHeight,
+        // Canvas width must accommodate the wider of (a) the QR image or
+        // (b) the rendered label text + horizontal padding. Without this,
+        // labels longer than the QR width (e.g. a 35-character KSeF
+        // number at 14pt bold sans-serif on a 250 px QR) get clipped at
+        // the canvas edge. Codex round-7 F2.
+        int canvasWidth = Math.max(qrImage.getWidth(), measuredLabelWidth + LABEL_PADDING_PX * 2);
+
+        BufferedImage canvas = new BufferedImage(canvasWidth, qrImage.getHeight() + labelHeight,
                 BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = canvas.createGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         graphics.setColor(Color.WHITE);
         graphics.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        graphics.drawImage(qrImage, 0, 0, null);
+        // Center the QR horizontally on the (potentially wider) canvas.
+        int qrX = (canvasWidth - qrImage.getWidth()) / 2;
+        graphics.drawImage(qrImage, qrX, 0, null);
         graphics.setColor(Color.BLACK);
         graphics.setFont(font);
         FontMetrics finalMetrics = graphics.getFontMetrics();

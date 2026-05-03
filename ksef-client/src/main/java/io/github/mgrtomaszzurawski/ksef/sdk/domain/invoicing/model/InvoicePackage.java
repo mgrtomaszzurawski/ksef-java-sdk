@@ -30,4 +30,26 @@ public record InvoicePackage(
         OffsetDateTime lastPermanentStorageDate,
         OffsetDateTime permanentStorageHwmDate) {
 
+    /**
+     * Continuation point for incremental sync. Per spec
+     * ({@code ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md:258-264}):
+     *
+     * <ul>
+     *   <li>truncated package ({@code isTruncated == true}) — return
+     *       {@link #lastPermanentStorageDate};</li>
+     *   <li>untruncated package — return
+     *       {@link #permanentStorageHwmDate}.</li>
+     * </ul>
+     *
+     * @return next-window cursor, or {@code null} if no continuation is
+     *     possible (both candidate fields are null)
+     *
+     * Spec citation: REQ-HWM-002, REQ-HWM-003.
+     */
+    public OffsetDateTime continuationCursor() {
+        if (Boolean.TRUE.equals(isTruncated) && lastPermanentStorageDate != null) {
+            return lastPermanentStorageDate;
+        }
+        return permanentStorageHwmDate;
+    }
 }

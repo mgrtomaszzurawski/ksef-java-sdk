@@ -138,6 +138,29 @@ public final class KsefSession implements AutoCloseable {
     }
 
     /**
+     * Returns {@code true} when KSeF would auto-classify an invoice as
+     * offline based on its issue date vs. the current invoicing date.
+     *
+     * <p>Per spec ({@code ksef-docs/offline/automatyczne-okreslanie-trybu-offline.md:6-14}):
+     * an invoice is automatically considered offline when the calendar
+     * day of {@code issueDate} is earlier than the calendar day of
+     * {@code invoicingDate}. The comparison is by date only, ignoring
+     * time-of-day.
+     *
+     * <p>Use this helper to decide between {@link SendInvoiceCommand#normal}
+     * and an offline-mode send before posting to KSeF, so a server-side
+     * mode mismatch does not cause a round-trip failure.
+     *
+     * <p>Spec citation: REQ-OFFLINE-002.
+     */
+    public static boolean shouldUseOfflineMode(java.time.LocalDate issueDate,
+                                                java.time.LocalDate invoicingDate) {
+        Objects.requireNonNull(issueDate, "issueDate must not be null");
+        Objects.requireNonNull(invoicingDate, "invoicingDate must not be null");
+        return issueDate.isBefore(invoicingDate);
+    }
+
+    /**
      * Get the current session status.
      * Works on both open and closed sessions.
      *
