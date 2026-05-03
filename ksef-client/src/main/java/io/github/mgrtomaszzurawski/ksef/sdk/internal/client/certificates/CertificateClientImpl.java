@@ -14,7 +14,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRa
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
@@ -25,6 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.List;
 import java.util.Objects;
@@ -66,8 +66,8 @@ public final class CertificateClientImpl implements CertificateClient {
 
     private final HttpSupport http;
 
-    public CertificateClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
+    public CertificateClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**

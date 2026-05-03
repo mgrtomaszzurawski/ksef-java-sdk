@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
@@ -29,6 +28,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetada
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.net.http.HttpClient;
 import java.security.PublicKey;
@@ -73,10 +73,10 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private final SecurityClient securityClient;
     private final HttpClient httpClient;
 
-    public InvoiceClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
-        this.securityClient = new SecurityClient(ksef);
-        this.httpClient = ksef.runtime().httpClient();
+    public InvoiceClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
+        this.securityClient = new SecurityClient(runtime);
+        this.httpClient = runtime.httpClient();
     }
 
     /**

@@ -7,10 +7,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +32,8 @@ public final class LimitsClientImpl implements LimitsClient {
 
     private final HttpSupport http;
 
-    public LimitsClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
+    public LimitsClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**

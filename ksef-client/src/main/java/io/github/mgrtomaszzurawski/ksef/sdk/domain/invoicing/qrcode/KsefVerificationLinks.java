@@ -85,7 +85,7 @@ public final class KsefVerificationLinks {
      * @param signature signature bytes over the path components
      */
     public record CertificateVerificationParams(
-            String contextType,
+            QrContextType contextType,
             String contextValue,
             String sellerNip,
             String certificateSerial,
@@ -133,7 +133,7 @@ public final class KsefVerificationLinks {
         Objects.requireNonNull(params, ERR_NULL_PARAMS);
         return environment.baseUrl()
                 + String.format(CERTIFICATE_PATH,
-                        encodePathSegment(params.contextType()),
+                        encodePathSegment(params.contextType().wireValue()),
                         encodePathSegment(params.contextValue()),
                         encodePathSegment(params.sellerNip()),
                         encodePathSegment(params.certificateSerial()),
@@ -147,7 +147,7 @@ public final class KsefVerificationLinks {
      * before the signature is computed.
      */
     public record CertificateSigningInput(
-            String contextType,
+            QrContextType contextType,
             String contextValue,
             String sellerNip,
             String certificateSerial,
@@ -196,7 +196,7 @@ public final class KsefVerificationLinks {
         Objects.requireNonNull(input, ERR_NULL_PARAMS);
         String hostWithoutScheme = stripHttpsPrefix(environment.baseUrl());
         String payloadPath = String.format(CERTIFICATE_SIGNING_PAYLOAD,
-                encodePathSegment(input.contextType()),
+                encodePathSegment(input.contextType().wireValue()),
                 encodePathSegment(input.contextValue()),
                 encodePathSegment(input.sellerNip()),
                 encodePathSegment(input.certificateSerial()),

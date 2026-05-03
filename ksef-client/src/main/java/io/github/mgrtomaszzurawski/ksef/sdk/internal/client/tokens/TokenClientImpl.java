@@ -8,12 +8,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -41,8 +41,8 @@ public final class TokenClientImpl implements TokenClient {
 
     private final HttpSupport http;
 
-    public TokenClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
+    public TokenClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**

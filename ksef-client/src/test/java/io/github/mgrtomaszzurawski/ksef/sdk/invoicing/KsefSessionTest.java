@@ -208,7 +208,7 @@ class KsefSessionTest {
                 .build();
         ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
 
-        SessionClient sessionClient = new SessionClient(ksef);
+        SessionClient sessionClient = new SessionClient(ksef.runtime());
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
         return new KsefSession(sessionClient, TEST_SESSION_REF, aesKey, initVector);

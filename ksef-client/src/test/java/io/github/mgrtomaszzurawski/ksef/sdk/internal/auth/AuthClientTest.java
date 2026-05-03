@@ -133,7 +133,7 @@ class AuthClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            AuthenticationChallenge response = new AuthClient(ksef).requestChallenge();
+            AuthenticationChallenge response = new AuthClient(ksef.runtime()).requestChallenge();
 
             // then
             assertEquals(TEST_CHALLENGE, response.challenge());
@@ -153,7 +153,7 @@ class AuthClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // then
-            var auth = new AuthClient(ksef);
+            var auth = new AuthClient(ksef.runtime());
 
             assertThrows(KsefRateLimitException.class, () -> auth.requestChallenge());
         }
@@ -173,7 +173,7 @@ class AuthClientTest {
             TestCertificates testCerts = TestCertificates.generateRsa();
 
             // when
-            AuthenticationInit response = new AuthClient(ksef).authenticateWithXades(
+            AuthenticationInit response = new AuthClient(ksef.runtime()).authenticateWithXades(
                     TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
             // then
@@ -190,7 +190,7 @@ class AuthClientTest {
         stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
-            new AuthClient(ksef).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+            new AuthClient(ksef.runtime()).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
             stubFor(post(urlEqualTo(PATH_TOKEN_REDEEM))
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
@@ -200,7 +200,7 @@ class AuthClientTest {
                             .withBody(TOKENS_RESPONSE)));
 
             // when
-            AuthenticationTokens response = new AuthClient(ksef).redeemTokens();
+            AuthenticationTokens response = new AuthClient(ksef.runtime()).redeemTokens();
 
             // then
             assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
@@ -215,7 +215,7 @@ class AuthClientTest {
         stubXadesAuth();
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
-            new AuthClient(ksef).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+            new AuthClient(ksef.runtime()).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
 
             stubFor(post(urlEqualTo(PATH_TOKEN_REFRESH))
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_REFRESH_TOKEN))
@@ -225,7 +225,7 @@ class AuthClientTest {
                             .withBody(REFRESH_RESPONSE)));
 
             // when
-            AuthenticationTokenRefresh response = new AuthClient(ksef).refreshToken(TEST_REFRESH_TOKEN);
+            AuthenticationTokenRefresh response = new AuthClient(ksef.runtime()).refreshToken(TEST_REFRESH_TOKEN);
 
             // then
             assertEquals(TEST_ACCESS_TOKEN, response.accessToken().token());
@@ -248,7 +248,7 @@ class AuthClientTest {
                             .withBody(STATUS_RESPONSE)));
 
             // when
-            AuthenticationStatus response = new AuthClient(ksef).getStatus(TEST_REFERENCE_NUMBER);
+            AuthenticationStatus response = new AuthClient(ksef.runtime()).getStatus(TEST_REFERENCE_NUMBER);
 
             // then
             assertNotNull(response.status());
@@ -270,7 +270,7 @@ class AuthClientTest {
                             .withBody(SESSIONS_LIST_RESPONSE)));
 
             // when
-            AuthenticationList response = new AuthClient(ksef).listSessions();
+            AuthenticationList response = new AuthClient(ksef.runtime()).listSessions();
 
             // then
             assertNotNull(response.items());
@@ -291,7 +291,7 @@ class AuthClientTest {
                     .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
             // when
-            new AuthClient(ksef).terminateCurrentSession();
+            new AuthClient(ksef.runtime()).terminateCurrentSession();
 
             // then
             assertFalse(ksef.runtime().sessionContext().isActive());
@@ -308,7 +308,7 @@ class AuthClientTest {
 
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
-            var auth = new AuthClient(ksef);
+            var auth = new AuthClient(ksef.runtime());
             var cert = testCerts.certificate();
             var privateKey = testCerts.privateKey();
 
@@ -328,7 +328,7 @@ class AuthClientTest {
 
         try (KsefClient ksef = createClient(wmInfo)) {
             TestCertificates testCerts = TestCertificates.generateRsa();
-            var auth = new AuthClient(ksef);
+            var auth = new AuthClient(ksef.runtime());
             var cert = testCerts.certificate();
             var privateKey = testCerts.privateKey();
 
@@ -355,6 +355,6 @@ class AuthClientTest {
 
     private static void authenticateClient(KsefClient ksef) throws Exception {
         TestCertificates testCerts = TestCertificates.generateRsa();
-        new AuthClient(ksef).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
+        new AuthClient(ksef.runtime()).authenticateWithXades(TEST_CHALLENGE, testCerts.certificate(), testCerts.privateKey(), TEST_NIP);
     }
 }

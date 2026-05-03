@@ -166,17 +166,17 @@ public final class KsefClient implements AutoCloseable {
         this.sessionContext = new SessionContext();
         this.runtime = new KsefHttpRuntime(environment, httpClient, objectMapper,
                 retryHandler, sessionContext, readTimeout, this::reauthenticate, this::ensureAuthenticated);
-        this.authClient = new AuthClient(this);
-        this.securityClient = new SecurityClient(this);
-        this.sessionClient = new SessionClient(this);
-        this.invoiceClient = new InvoiceClientImpl(this);
-        this.tokenClient = new TokenClientImpl(this);
-        this.permissionClient = new PermissionClientImpl(this);
-        this.certificateClient = new CertificateClientImpl(this);
-        this.limitsClient = new LimitsClientImpl(this);
-        this.rateLimitClient = new RateLimitClientImpl(this);
-        this.testDataClient = new TestDataClientImpl(this);
-        this.peppolClient = new PeppolClientImpl(this);
+        this.authClient = new AuthClient(this.runtime);
+        this.securityClient = new SecurityClient(this.runtime);
+        this.sessionClient = new SessionClient(this.runtime);
+        this.invoiceClient = new InvoiceClientImpl(this.runtime);
+        this.tokenClient = new TokenClientImpl(this.runtime);
+        this.permissionClient = new PermissionClientImpl(this.runtime);
+        this.certificateClient = new CertificateClientImpl(this.runtime);
+        this.limitsClient = new LimitsClientImpl(this.runtime);
+        this.rateLimitClient = new RateLimitClientImpl(this.runtime);
+        this.testDataClient = new TestDataClientImpl(this.runtime);
+        this.peppolClient = new PeppolClientImpl(this.runtime);
     }
 
     /**
@@ -369,7 +369,12 @@ public final class KsefClient implements AutoCloseable {
      * @param referenceNumber the auth-session reference number returned by
      *     {@code /auth/token/redeem}
      * @param refreshToken the refresh token, or {@code null} when none
+     * @deprecated Test/advanced seam — to be moved into a separate
+     *     {@code ksef-client-testkit} artifact in 0.2.x. Will be removed
+     *     from the main module before stable 1.0; do not depend on this
+     *     in consumer code.
      */
+    @Deprecated(since = "0.1.0", forRemoval = true)
     public synchronized void activateSessionForTests(String accessToken,
                                                      String referenceNumber,
                                                      String refreshToken) {

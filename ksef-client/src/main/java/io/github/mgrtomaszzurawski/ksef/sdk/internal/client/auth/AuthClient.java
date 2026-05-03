@@ -15,7 +15,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenRefreshR
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthorizationPolicyRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InitTokenAuthenticationRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationInit;
@@ -26,6 +25,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.Authentic
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.signing.SigningService;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
@@ -96,9 +96,9 @@ public final class AuthClient {
     private final HttpSupport http;
     private final SessionContext sessionContext;
 
-    public AuthClient(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
-        this.sessionContext = ksef.runtime().sessionContext();
+    public AuthClient(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
+        this.sessionContext = runtime.sessionContext();
     }
 
     /**

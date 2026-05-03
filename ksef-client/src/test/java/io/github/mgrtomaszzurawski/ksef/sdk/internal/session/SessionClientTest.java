@@ -106,7 +106,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            OnlineSession response = new SessionClient(ksef).openOnline(new OpenOnlineSessionRequestRaw());
+            OnlineSession response = new SessionClient(ksef.runtime()).openOnline(new OpenOnlineSessionRequestRaw());
 
             // then
             assertEquals(TEST_SESSION_REF, response.referenceNumber());
@@ -127,7 +127,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SendInvoiceResult response = new SessionClient(ksef).sendInvoice(
+            SendInvoiceResult response = new SessionClient(ksef.runtime()).sendInvoice(
                     TEST_SESSION_REF, new SendInvoiceRequest(new byte[]{}, 0L, new byte[]{}, 0L, new byte[]{}, false));
 
             // then
@@ -146,7 +146,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            new SessionClient(ksef).closeOnline(TEST_SESSION_REF);
+            new SessionClient(ksef.runtime()).closeOnline(TEST_SESSION_REF);
 
             // then
             verify(postRequestedFor(urlEqualTo(closePath))
@@ -167,7 +167,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionStatus response = new SessionClient(ksef).getStatus(TEST_SESSION_REF);
+            SessionStatus response = new SessionClient(ksef.runtime()).getStatus(TEST_SESSION_REF);
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
@@ -188,7 +188,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionInvoices response = new SessionClient(ksef).getInvoices(TEST_SESSION_REF);
+            SessionInvoices response = new SessionClient(ksef.runtime()).getInvoices(TEST_SESSION_REF);
 
             // then
             assertEquals(1, response.invoices().size());
@@ -209,7 +209,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            SessionInvoiceStatus response = new SessionClient(ksef)
+            SessionInvoiceStatus response = new SessionClient(ksef.runtime())
                     .getInvoiceStatus(TEST_SESSION_REF, TEST_INVOICE_REF);
 
             // then
@@ -230,7 +230,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] upoBytes = new SessionClient(ksef).getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
+            byte[] upoBytes = new SessionClient(ksef.runtime()).getUpoByReference(TEST_SESSION_REF, TEST_UPO_REF);
 
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
@@ -250,7 +250,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] upoBytes = new SessionClient(ksef).getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
+            byte[] upoBytes = new SessionClient(ksef.runtime()).getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
 
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
@@ -269,7 +269,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // then
-            var sessions = new SessionClient(ksef);
+            var sessions = new SessionClient(ksef.runtime());
             OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw();
             assertThrows(KsefAuthException.class, () -> sessions.openOnline(request));
         }
@@ -284,7 +284,7 @@ class SessionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // then
-            var sessions = new SessionClient(ksef);
+            var sessions = new SessionClient(ksef.runtime());
             SendInvoiceRequest request = new SendInvoiceRequest(new byte[]{}, 0L, new byte[]{}, 0L, new byte[]{}, false);
             assertThrows(KsefServerException.class,
                     () -> sessions.sendInvoice(TEST_SESSION_REF, request));

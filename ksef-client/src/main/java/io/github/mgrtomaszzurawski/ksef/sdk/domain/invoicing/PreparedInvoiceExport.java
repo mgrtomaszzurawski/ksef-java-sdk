@@ -79,6 +79,8 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final String ERR_SHA256_UNAVAILABLE = SHA_256 + " unavailable on this JVM";
     private static final String ERR_INTERRUPTED_POLLING = "Interrupted while polling export status";
     private static final String ERR_INSECURE_PART_URL = "Refusing to download package part over non-HTTPS URL: ";
+    private static final String ERR_UNSUPPORTED_METHOD = "Unsupported package-part download method (only GET is supported): ";
+    private static final String HTTP_GET = "GET";
     private static final String ERR_DISPOSED = "PreparedInvoiceExport already disposed; AES key/IV have been zeroised";
     private static final String ERR_ENTRY_LIMIT = "ZIP archive exceeds entry-count cap (%d entries, max %d)";
     private static final String ERR_ENTRY_SIZE = "ZIP entry exceeds per-entry size cap (entry %s: %d bytes, max %d)";
@@ -206,6 +208,9 @@ public final class PreparedInvoiceExport implements AutoCloseable {
         URI url = part.url();
         if (url.getScheme() == null || !SCHEME_HTTPS.equalsIgnoreCase(url.getScheme())) {
             throw new KsefException(ERR_INSECURE_PART_URL + url, null);
+        }
+        if (part.method() != null && !HTTP_GET.equalsIgnoreCase(part.method())) {
+            throw new KsefException(ERR_UNSUPPORTED_METHOD + part.method(), null);
         }
         HttpRequest request = HttpRequest.newBuilder(url).GET().timeout(DOWNLOAD_TIMEOUT).build();
         try {

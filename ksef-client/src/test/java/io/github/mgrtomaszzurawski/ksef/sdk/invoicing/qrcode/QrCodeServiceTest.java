@@ -76,6 +76,38 @@ class QrCodeServiceTest {
                 () -> service.generateQrCode(SAMPLE_PAYLOAD_URL, OVERSIZE_QR_SIZE));
     }
 
+    @Test
+    void addLabelToQrCode_whenLabelOffline_returnsTallerPngWithMagicHeader() {
+        QrCodeService service = new QrCodeService();
+        byte[] base = service.generateQrCode(SAMPLE_PAYLOAD_URL);
+
+        byte[] labelled = service.addLabelToQrCode(base, QrCodeService.LABEL_OFFLINE);
+
+        assertNotNull(labelled);
+        assertPngMagicBytes(labelled);
+        assertTrue(labelled.length > base.length,
+                "labelled PNG must be larger than the source QR; got base=" + base.length
+                        + " labelled=" + labelled.length);
+    }
+
+    @Test
+    void generateLabeledQrCode_whenLabelCertificate_combinesGenerateAndLabel() {
+        QrCodeService service = new QrCodeService();
+
+        byte[] labelled = service.generateLabeledQrCode(SAMPLE_PAYLOAD_URL, QrCodeService.LABEL_CERTIFICATE);
+
+        assertNotNull(labelled);
+        assertPngMagicBytes(labelled);
+    }
+
+    @Test
+    void addLabelToQrCode_whenLabelEmpty_throwsIllegalArgument() {
+        QrCodeService service = new QrCodeService();
+        byte[] base = service.generateQrCode(SAMPLE_PAYLOAD_URL);
+
+        assertThrows(IllegalArgumentException.class, () -> service.addLabelToQrCode(base, ""));
+    }
+
     private static void assertPngMagicBytes(byte[] pngBytes) {
         byte[] header = new byte[PNG_HEADER_LENGTH];
         System.arraycopy(pngBytes, 0, header, 0, PNG_HEADER_LENGTH);

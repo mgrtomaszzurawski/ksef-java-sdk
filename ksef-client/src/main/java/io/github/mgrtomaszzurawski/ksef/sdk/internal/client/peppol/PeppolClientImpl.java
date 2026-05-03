@@ -6,9 +6,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +43,8 @@ public final class PeppolClientImpl implements PeppolClient {
 
     private final HttpSupport http;
 
-    public PeppolClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
+    public PeppolClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**

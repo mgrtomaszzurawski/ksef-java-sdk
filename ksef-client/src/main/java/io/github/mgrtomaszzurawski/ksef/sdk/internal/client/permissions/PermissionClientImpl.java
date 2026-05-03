@@ -19,7 +19,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubordinateEntityRoles
 import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubunitPermissionsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionGrantBuilder;
@@ -43,6 +42,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPer
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -109,8 +109,8 @@ public final class PermissionClientImpl implements PermissionClient {
 
     private final HttpSupport http;
 
-    public PermissionClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
+    public PermissionClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**

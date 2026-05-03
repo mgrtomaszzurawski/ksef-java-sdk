@@ -163,7 +163,7 @@ class KsefBatchSessionTest {
                 .build();
         ksef.activateSessionForTests(TEST_TOKEN, TEST_BATCH_REF, null);
 
-        SessionClient sessionClient = new SessionClient(ksef);
+        SessionClient sessionClient = new SessionClient(ksef.runtime());
         return new KsefBatchSession(sessionClient, TEST_BATCH_REF, List.of(samplePart()));
     }
 

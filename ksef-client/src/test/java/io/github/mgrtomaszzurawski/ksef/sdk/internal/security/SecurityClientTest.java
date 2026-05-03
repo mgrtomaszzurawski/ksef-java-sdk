@@ -49,7 +49,7 @@ class SecurityClientTest {
                         .withBody(PUBLIC_KEY_CERTS_RESPONSE)));
 
         try (KsefClient ksef = createClient(wmInfo)) {
-            SecurityClient securityClient = new SecurityClient(ksef);
+            SecurityClient securityClient = new SecurityClient(ksef.runtime());
 
             // when
             List<PublicKeyCertificate> certs = securityClient.getPublicKeyCertificates();
@@ -69,7 +69,7 @@ class SecurityClientTest {
                         .withBody("{\"error\":\"Internal Server Error\"}")));
 
         try (KsefClient ksef = createClient(wmInfo)) {
-            SecurityClient securityClient = new SecurityClient(ksef);
+            SecurityClient securityClient = new SecurityClient(ksef.runtime());
 
             // then
             assertThrows(KsefServerException.class, securityClient::getPublicKeyCertificates);

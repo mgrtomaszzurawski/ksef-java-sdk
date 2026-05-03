@@ -14,7 +14,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
@@ -22,6 +21,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,8 +64,8 @@ public final class SessionClient {
 
     private final HttpSupport http;
 
-    public SessionClient(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
+    public SessionClient(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     /**

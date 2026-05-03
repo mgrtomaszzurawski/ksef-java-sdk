@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.qrcode;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -18,7 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class KsefVerificationLinksTest {
 
     private static final String SELLER_NIP = "1234567890";
-    private static final String CONTEXT_TYPE = "nip";
+    private static final QrContextType CONTEXT_TYPE = QrContextType.NIP;
+    private static final String CONTEXT_TYPE_WIRE = QrContextType.NIP.wireValue();
     private static final String CONTEXT_VALUE = "0987654321";
     private static final String CERTIFICATE_SERIAL = "00112233";
     private static final byte[] SIGNATURE = new byte[]{1, 2, 3, 4, 5, 6, 7, 8};
@@ -86,7 +88,7 @@ class KsefVerificationLinksTest {
 
         String url = KsefVerificationLinks.buildCertificateVerificationUrl(QrEnvironment.TEST, params);
 
-        assertTrue(url.startsWith("https://qr-test.ksef.mf.gov.pl/certificate/" + CONTEXT_TYPE
+        assertTrue(url.startsWith("https://qr-test.ksef.mf.gov.pl/certificate/" + CONTEXT_TYPE_WIRE
                         + "/" + CONTEXT_VALUE + "/" + SELLER_NIP + "/" + CERTIFICATE_SERIAL + "/"),
                 "expected /certificate/ path with positional params, got: " + url);
     }
@@ -117,7 +119,7 @@ class KsefVerificationLinksTest {
 
         // Per kody-qr.md the signed fragment is host + path with https:// stripped:
         // qr-test.ksef.mf.gov.pl/certificate/{contextType}/{contextValue}/{sellerNip}/{certificateSerial}/{hash}
-        assertTrue(payloadString.startsWith("qr-test.ksef.mf.gov.pl/certificate/" + CONTEXT_TYPE
+        assertTrue(payloadString.startsWith("qr-test.ksef.mf.gov.pl/certificate/" + CONTEXT_TYPE_WIRE
                         + "/" + CONTEXT_VALUE + "/" + SELLER_NIP + "/" + CERTIFICATE_SERIAL + "/"),
                 "expected host+path payload, got: " + payloadString);
         assertFalse(payloadString.startsWith("https://"),

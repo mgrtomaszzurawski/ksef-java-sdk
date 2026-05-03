@@ -5,10 +5,10 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitsRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.RateLimitClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ApiRateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +28,8 @@ public final class RateLimitClientImpl implements RateLimitClient {
 
     private final HttpSupport http;
 
-    public RateLimitClientImpl(KsefClient ksef) {
-        this.http = new HttpSupport(ksef.runtime());
+    public RateLimitClientImpl(HttpRuntime runtime) {
+        this.http = new HttpSupport(runtime);
     }
 
     @Override
