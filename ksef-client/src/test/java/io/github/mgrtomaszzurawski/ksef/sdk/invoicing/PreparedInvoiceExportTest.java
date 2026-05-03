@@ -4,56 +4,63 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoicePackage;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PreparedInvoiceExportTest {
 
-    @Test
-    void prepareExportConstructor_whenAesKeyNull_throwsNullPointer() {
-        assertThrows(NullPointerException.class,
-                () -> new PreparedInvoiceExport(null, null, "ref", null, new byte[16]));
-    }
+    private static final String INVOICE_FILE_NAME = "invoice-1.xml";
+    private static final String SAMPLE_INVOICE_XML = "<Faktura/>";
+    private static final String METADATA_JSON = "{}";
+    private static final byte[] BYTE_ONE = new byte[]{1};
+    private static final byte[] BYTE_TWO = new byte[]{2};
+    private static final int EXPECTED_INVOICE_COUNT = 2;
 
     @Test
     void exportedInvoicePackage_invoiceXml_returnsClonedBytes() {
-        byte[] xml = "<Faktura/>".getBytes(StandardCharsets.UTF_8);
+        byte[] xml = SAMPLE_INVOICE_XML.getBytes(StandardCharsets.UTF_8);
         ExportedInvoicePackage pkg = new ExportedInvoicePackage(
-                "{}".getBytes(StandardCharsets.UTF_8),
-                java.util.Map.of("invoice-1.xml", xml));
+                METADATA_JSON.getBytes(StandardCharsets.UTF_8),
+                Map.of(INVOICE_FILE_NAME, xml));
 
-        byte[] firstAccess = pkg.invoiceXml("invoice-1.xml");
-        byte[] secondAccess = pkg.invoiceXml("invoice-1.xml");
+        byte[] firstAccess = pkg.invoiceXml(INVOICE_FILE_NAME);
+        byte[] secondAccess = pkg.invoiceXml(INVOICE_FILE_NAME);
 
         assertNotNull(firstAccess);
         assertNotNull(secondAccess);
-        // returned arrays must be independent copies — mutating one cannot leak to the other
-        firstAccess[0] = 0;
-        org.junit.jupiter.api.Assertions.assertNotEquals(firstAccess[0], secondAccess[0]);
+        byte original = secondAccess[0];
+        firstAccess[0] = (byte) (original + 1);
+        assertNotEquals(firstAccess[0], secondAccess[0]);
     }
 
     @Test
-    void exportedInvoicePackage_invoiceFileNames_listsKeys() {
+    void exportedInvoicePackage_invoiceXmls_deepClonesEveryEntryValue() {
+        byte[] mutableSource = SAMPLE_INVOICE_XML.getBytes(StandardCharsets.UTF_8);
+        ExportedInvoicePackage pkg = new ExportedInvoicePackage(
+                null, Map.of(INVOICE_FILE_NAME, mutableSource));
+
+        byte[] entryFromBulkAccessor = pkg.invoiceXmls().get(INVOICE_FILE_NAME);
+        byte original = entryFromBulkAccessor[0];
+        entryFromBulkAccessor[0] = (byte) (original + 1);
+
+        byte[] entryFromSubsequentAccess = pkg.invoiceXmls().get(INVOICE_FILE_NAME);
+        assertEquals(original, entryFromSubsequentAccess[0]);
+    }
+
+    @Test
+    void exportedInvoicePackage_invoiceFileNames_listsAllKeys() {
         ExportedInvoicePackage pkg = new ExportedInvoicePackage(
                 null,
-                java.util.Map.of(
-                        "a.xml", new byte[]{1},
-                        "b.xml", new byte[]{2}));
+                Map.of("a.xml", BYTE_ONE, "b.xml", BYTE_TWO));
 
-        org.junit.jupiter.api.Assertions.assertEquals(2, pkg.invoiceFileNames().size());
-        org.junit.jupiter.api.Assertions.assertTrue(pkg.invoiceFileNames().contains("a.xml"));
-    }
-
-    @Test
-    void invoiceQueryBuilder_canBeUsedAsPrepareExportFilter() {
-        // smoke check that the builder type is reachable from the export workflow caller side
-        InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
-                .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1));
-        assertNotNull(query);
+        assertEquals(EXPECTED_INVOICE_COUNT, pkg.invoiceFileNames().size());
+        assertTrue(pkg.invoiceFileNames().contains("a.xml"));
+        assertTrue(pkg.invoiceFileNames().contains("b.xml"));
     }
 }

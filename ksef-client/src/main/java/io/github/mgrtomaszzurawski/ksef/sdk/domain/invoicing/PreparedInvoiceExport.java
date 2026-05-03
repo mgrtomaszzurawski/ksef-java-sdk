@@ -75,6 +75,9 @@ public final class PreparedInvoiceExport {
     private static final String ERR_ZIP_FAILED = "Failed to read decrypted ZIP archive";
     private static final String ERR_SHA256_UNAVAILABLE = SHA_256 + " unavailable on this JVM";
     private static final String ERR_INTERRUPTED_POLLING = "Interrupted while polling export status";
+    private static final String ERR_INSECURE_PART_URL = "Refusing to download package part over non-HTTPS URL: ";
+    private static final String SCHEME_HTTPS = "https";
+    private static final java.time.Duration DOWNLOAD_TIMEOUT = java.time.Duration.ofMinutes(5);
 
     private final InvoiceClient invoices;
     private final HttpClient httpClient;
@@ -162,9 +165,12 @@ public final class PreparedInvoiceExport {
 
     private byte[] downloadPart(InvoicePackagePart part) {
         URI url = part.url();
+        if (url.getScheme() == null || !SCHEME_HTTPS.equalsIgnoreCase(url.getScheme())) {
+            throw new KsefException(ERR_INSECURE_PART_URL + url, null);
+        }
+        HttpRequest request = HttpRequest.newBuilder(url).GET().timeout(DOWNLOAD_TIMEOUT).build();
         try {
-            HttpResponse<byte[]> response = httpClient.send(HttpRequest.newBuilder(url).GET().build(),
-                    HttpResponse.BodyHandlers.ofByteArray());
+            HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() != HTTP_OK) {
                 throw new KsefException(ERR_DOWNLOAD_FAILED + " " + url + " status=" + response.statusCode(), null);
             }

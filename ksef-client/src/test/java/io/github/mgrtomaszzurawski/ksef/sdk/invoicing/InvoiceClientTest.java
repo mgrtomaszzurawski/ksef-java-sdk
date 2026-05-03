@@ -290,7 +290,7 @@ class InvoiceClientTest {
             // made exactly one call with Bearer null and silently received the 200 stub).
             var securityRequests = findAll(com.github.tomakehurst.wiremock.client.WireMock
                     .getRequestedFor(urlEqualTo("/v2/security/public-key-certificates")));
-            assertTrue(!securityRequests.isEmpty(),
+            assertFalse(securityRequests.isEmpty(),
                     "expected proactive auth to fetch public keys, got: " + securityRequests.size());
             var domainRequests = findAll(com.github.tomakehurst.wiremock.client.WireMock
                     .getRequestedFor(urlEqualTo(INVOICES_BASE + "/ksef/" + TEST_KSEF_NUMBER)));

@@ -13,6 +13,11 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataRespon
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import java.io.ByteArrayInputStream;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
@@ -60,6 +65,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String ERR_NULL_QUERY = "query must not be null";
     private static final String ERR_NULL_EXPORT = "exportBuilder must not be null";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
+    private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
+    private static final String CERT_TYPE_X509 = "X.509";
     private static final int DEFAULT_MAX_RESULTS = 10000;
 
     private final HttpSupport http;
@@ -209,14 +216,12 @@ public final class InvoiceClientImpl implements InvoiceClient {
 
     private static PublicKey parsePublicKey(PublicKeyCertificate certificate) {
         try {
-            java.security.cert.CertificateFactory factory =
-                    java.security.cert.CertificateFactory.getInstance("X.509");
-            java.security.cert.X509Certificate x509 = (java.security.cert.X509Certificate)
-                    factory.generateCertificate(new java.io.ByteArrayInputStream(certificate.certificate()));
+            CertificateFactory factory = CertificateFactory.getInstance(CERT_TYPE_X509);
+            X509Certificate x509 = (X509Certificate)
+                    factory.generateCertificate(new ByteArrayInputStream(certificate.certificate()));
             return x509.getPublicKey();
-        } catch (java.security.cert.CertificateException certificateFailure) {
-            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException(
-                    "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate", certificateFailure);
+        } catch (CertificateException certificateFailure) {
+            throw new KsefException(ERR_PARSE_SYMMETRIC_CERT, certificateFailure);
         }
     }
 

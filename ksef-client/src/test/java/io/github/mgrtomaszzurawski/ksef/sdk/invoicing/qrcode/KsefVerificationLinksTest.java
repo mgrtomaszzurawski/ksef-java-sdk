@@ -11,7 +11,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -73,7 +73,7 @@ class KsefVerificationLinksTest {
         String hashSegment = url.substring(url.lastIndexOf('/') + 1);
         assertTrue(hashSegment.matches("[A-Za-z0-9_-]+"),
                 "hash segment must use base64url alphabet, got: " + hashSegment);
-        assertTrue(!hashSegment.contains("="),
+        assertFalse(hashSegment.contains("="),
                 "hash segment must not contain padding, got: " + hashSegment);
     }
 
@@ -107,9 +107,9 @@ class KsefVerificationLinksTest {
     }
 
     @Test
-    void qrEnvironment_eachValue_exposesNonEmptyBaseUrl() {
+    void qrEnvironment_eachValue_baseUrlStartsWithHttps() {
         for (QrEnvironment env : QrEnvironment.values()) {
-            assertEquals(true, env.baseUrl().startsWith("https://"),
+            assertTrue(env.baseUrl().startsWith("https://"),
                     "QR env " + env + " must use https, got: " + env.baseUrl());
         }
     }
