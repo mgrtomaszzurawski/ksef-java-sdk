@@ -86,9 +86,11 @@ class AllMappersSmokeTest {
     private static final String NIP_VAT_UE = "PL1234567890";
     private static final String EU_ENTITY_NAME = "EU Partner GmbH";
     private static final String CERTIFICATE_NAME = "auth-cert";
+    private static final int AES_256_KEY_SIZE_BYTES = 32;
+    private static final int AES_CBC_IV_SIZE_BYTES = 16;
     private static final byte[] FAKE_CSR = new byte[]{1};
-    private static final byte[] FAKE_AES_KEY = new byte[32];
-    private static final byte[] FAKE_INIT_VECTOR = new byte[16];
+    private static final byte[] FAKE_AES_KEY = new byte[AES_256_KEY_SIZE_BYTES];
+    private static final byte[] FAKE_INIT_VECTOR = new byte[AES_CBC_IV_SIZE_BYTES];
     private static final byte[] FAKE_INVOICE_BYTES = new byte[]{1};
     private static final int RATE_PER_SECOND = 1;
     private static final int RATE_PER_MINUTE = 2;

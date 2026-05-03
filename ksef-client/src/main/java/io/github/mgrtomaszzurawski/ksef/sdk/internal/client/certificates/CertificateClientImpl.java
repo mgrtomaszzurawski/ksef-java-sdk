@@ -82,9 +82,9 @@ public final class CertificateClientImpl implements CertificateClient {
     public CertificateLimits getLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_LIMITS);
         String token = sessionContext.token();
-        CertificateLimitsResponseRaw raw = http.getAuthenticated(PATH_LIMITS, token,
+        CertificateLimitsResponseRaw rawValue = http.getAuthenticated(PATH_LIMITS, token,
                 CertificateLimitsResponseRaw.class, OP_GET_LIMITS);
-        return CertificatesMappers.toCertificateLimits(raw);
+        return CertificatesMappers.toCertificateLimits(rawValue);
     }
 
     /**
@@ -96,9 +96,9 @@ public final class CertificateClientImpl implements CertificateClient {
     public CertificateEnrollmentData getEnrollmentData() {
         LOGGER.debug(LOG_CALL, OP_GET_ENROLLMENT_DATA);
         String token = sessionContext.token();
-        CertificateEnrollmentDataResponseRaw raw = http.getAuthenticated(PATH_ENROLLMENT_DATA, token,
+        CertificateEnrollmentDataResponseRaw rawValue = http.getAuthenticated(PATH_ENROLLMENT_DATA, token,
                 CertificateEnrollmentDataResponseRaw.class, OP_GET_ENROLLMENT_DATA);
-        return CertificatesMappers.toCertificateEnrollmentData(raw);
+        return CertificatesMappers.toCertificateEnrollmentData(rawValue);
     }
 
     /**
@@ -113,9 +113,9 @@ public final class CertificateClientImpl implements CertificateClient {
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         EnrollCertificateRequestRaw request = CertificatesMappers.toEnrollCertificateRequestRaw(builder.build());
         String token = sessionContext.token();
-        EnrollCertificateResponseRaw raw = http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
+        EnrollCertificateResponseRaw rawValue = http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
                 EnrollCertificateResponseRaw.class, OP_ENROLL);
-        return CertificatesMappers.toEnrollCertificateResult(raw);
+        return CertificatesMappers.toEnrollCertificateResult(rawValue);
     }
 
     /**
@@ -129,9 +129,9 @@ public final class CertificateClientImpl implements CertificateClient {
         LOGGER.debug(LOG_CALL_REF, OP_GET_ENROLLMENT_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        CertificateEnrollmentStatusResponseRaw raw = http.getAuthenticated(ApiPaths.subPath(PATH_ENROLLMENTS, referenceNumber), token,
+        CertificateEnrollmentStatusResponseRaw rawValue = http.getAuthenticated(ApiPaths.subPath(PATH_ENROLLMENTS, referenceNumber), token,
                 CertificateEnrollmentStatusResponseRaw.class, OP_GET_ENROLLMENT_STATUS);
-        return CertificatesMappers.toCertificateEnrollmentStatus(raw);
+        return CertificatesMappers.toCertificateEnrollmentStatus(rawValue);
     }
 
     /**
@@ -147,9 +147,9 @@ public final class CertificateClientImpl implements CertificateClient {
         RetrieveCertificatesRequestRaw request = new RetrieveCertificatesRequestRaw();
         request.setCertificateSerialNumbers(certificateSerialNumbers);
         String token = sessionContext.token();
-        RetrieveCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_RETRIEVE, request, token,
+        RetrieveCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_RETRIEVE, request, token,
                 RetrieveCertificatesResponseRaw.class, OP_RETRIEVE);
-        return CertificatesMappers.toRetrieveCertificatesResult(raw);
+        return CertificatesMappers.toRetrieveCertificatesResult(rawValue);
     }
 
     /**
@@ -196,8 +196,8 @@ public final class CertificateClientImpl implements CertificateClient {
         LOGGER.debug(LOG_CALL, OP_QUERY);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY, CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()), token,
+        QueryCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY, CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()), token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);
-        return CertificatesMappers.toCertificateQueryResult(raw);
+        return CertificatesMappers.toCertificateQueryResult(rawValue);
     }
 }

@@ -16,9 +16,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
  */
 public record AuthenticationInit(String referenceNumber, TokenInfo authenticationToken) {
 
-    public static AuthenticationInit from(AuthenticationInitResponseRaw raw) {
+    public static AuthenticationInit from(AuthenticationInitResponseRaw rawValue) {
         return new AuthenticationInit(
-                raw.getReferenceNumber(),
-                CommonMappers.toTokenInfo(raw.getAuthenticationToken()));
+                rawValue.getReferenceNumber(),
+                CommonMappers.toTokenInfo(rawValue.getAuthenticationToken()));
     }
 }

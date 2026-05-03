@@ -25,7 +25,7 @@ public final class PermissionsRequestMappers {
 
     private PermissionsRequestMappers() { }
 
-                                                                        public static io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw toIndirectPermissionsGrantRequestRaw(
+    public static io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw toIndirectPermissionsGrantRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionGrantRequest request) {
         var subjectId = new io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierRaw()
                 .type(toIndirectSubjectIdentifierTypeRaw(request.identifierType()))
@@ -40,20 +40,20 @@ public final class PermissionsRequestMappers {
         for (var type : request.permissions()) {
             perms.add(toIndirectPermissionTypeRaw(type));
         }
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw();
-        raw.setSubjectIdentifier(subjectId);
-        raw.setPermissions(perms);
-        raw.setDescription(request.description());
-        raw.setSubjectDetails(subjectDetails);
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsGrantRequestRaw();
+        rawValue.setSubjectIdentifier(subjectId);
+        rawValue.setPermissions(perms);
+        rawValue.setDescription(request.description());
+        rawValue.setSubjectDetails(subjectDetails);
         if (request.targetType() != null) {
             var targetId = new io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsTargetIdentifierRaw()
                     .type(toIndirectTargetIdentifierTypeRaw(request.targetType()));
             if (request.targetValue() != null) {
                 targetId.value(request.targetValue());
             }
-            raw.setTargetIdentifier(targetId);
+            rawValue.setTargetIdentifier(targetId);
         }
-        return raw;
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw toIndirectSubjectIdentifierTypeRaw(
@@ -99,14 +99,14 @@ public final class PermissionsRequestMappers {
         var euDetails = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityDetailsRaw()
                 .fullName(request.euEntityFullName())
                 .address(request.euEntityAddress());
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsGrantRequestRaw();
-        raw.setSubjectIdentifier(subjectId);
-        raw.setContextIdentifier(contextId);
-        raw.setDescription(request.description());
-        raw.setEuEntityName(request.euEntityName());
-        raw.setSubjectDetails(subjectDetails);
-        raw.setEuEntityDetails(euDetails);
-        return raw;
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityAdministrationPermissionsGrantRequestRaw();
+        rawValue.setSubjectIdentifier(subjectId);
+        rawValue.setContextIdentifier(contextId);
+        rawValue.setDescription(request.description());
+        rawValue.setEuEntityName(request.euEntityName());
+        rawValue.setSubjectDetails(subjectDetails);
+        rawValue.setEuEntityDetails(euDetails);
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw toSubunitPermissionsGrantRequestRaw(
@@ -123,15 +123,15 @@ public final class PermissionsRequestMappers {
         var subjectDetails = new io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsRaw()
                 .subjectDetailsType(io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
                 .personById(personDetails);
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw();
-        raw.setSubjectIdentifier(subjectId);
-        raw.setContextIdentifier(contextId);
-        raw.setDescription(request.description());
-        raw.setSubjectDetails(subjectDetails);
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw();
+        rawValue.setSubjectIdentifier(subjectId);
+        rawValue.setContextIdentifier(contextId);
+        rawValue.setDescription(request.description());
+        rawValue.setSubjectDetails(subjectDetails);
         if (request.subunitName() != null) {
-            raw.setSubunitName(request.subunitName());
+            rawValue.setSubunitName(request.subunitName());
         }
-        return raw;
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsSubjectIdentifierTypeRaw toSubunitSubjectIdentifierTypeRaw(
@@ -157,12 +157,12 @@ public final class PermissionsRequestMappers {
                 .type(toEntityAuthorizationIdentifierTypeRaw(request.identifierType()))
                 .value(request.identifierValue());
         var entityDetails = new io.github.mgrtomaszzurawski.ksef.client.model.EntityDetailsRaw().fullName(request.fullName());
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsGrantRequestRaw();
-        raw.setSubjectIdentifier(subjectId);
-        raw.setPermission(toEntityAuthorizationPermissionTypeRaw(request.permission()));
-        raw.setDescription(request.description());
-        raw.setSubjectDetails(entityDetails);
-        return raw;
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsGrantRequestRaw();
+        rawValue.setSubjectIdentifier(subjectId);
+        rawValue.setPermission(toEntityAuthorizationPermissionTypeRaw(request.permission()));
+        rawValue.setDescription(request.description());
+        rawValue.setSubjectDetails(entityDetails);
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsSubjectIdentifierTypeRaw toEntityAuthorizationIdentifierTypeRaw(
@@ -198,12 +198,12 @@ public final class PermissionsRequestMappers {
         for (var type : request.permissions()) {
             perms.add(toEuEntityPermissionTypeRaw(type));
         }
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsGrantRequestRaw();
-        raw.setSubjectIdentifier(subjectId);
-        raw.setPermissions(perms);
-        raw.setDescription(request.description());
-        raw.setSubjectDetails(subjectDetails);
-        return raw;
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsGrantRequestRaw();
+        rawValue.setSubjectIdentifier(subjectId);
+        rawValue.setPermissions(perms);
+        rawValue.setDescription(request.description());
+        rawValue.setSubjectDetails(subjectDetails);
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionTypeRaw toEuEntityPermissionTypeRaw(
@@ -229,12 +229,12 @@ public final class PermissionsRequestMappers {
             }
             perms.add(permRaw);
         }
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsGrantRequestRaw();
-        raw.setSubjectIdentifier(subjectId);
-        raw.setPermissions(perms);
-        raw.setDescription(request.description());
-        raw.setSubjectDetails(entityDetails);
-        return raw;
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsGrantRequestRaw();
+        rawValue.setSubjectIdentifier(subjectId);
+        rawValue.setPermissions(perms);
+        rawValue.setDescription(request.description());
+        rawValue.setSubjectDetails(entityDetails);
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionTypeRaw toEntityPermissionTypeRaw(
@@ -259,12 +259,12 @@ public final class PermissionsRequestMappers {
         for (PersonPermissionType type : request.permissions()) {
             permTypes.add(toPersonPermissionTypeRaw(type));
         }
-        PersonPermissionsGrantRequestRaw raw = new PersonPermissionsGrantRequestRaw();
-        raw.setSubjectIdentifier(subjectId);
-        raw.setPermissions(permTypes);
-        raw.setDescription(request.description());
-        raw.setSubjectDetails(subjectDetails);
-        return raw;
+        PersonPermissionsGrantRequestRaw rawValue = new PersonPermissionsGrantRequestRaw();
+        rawValue.setSubjectIdentifier(subjectId);
+        rawValue.setPermissions(permTypes);
+        rawValue.setDescription(request.description());
+        rawValue.setSubjectDetails(subjectDetails);
+        return rawValue;
     }
 
     public static PersonPermissionsSubjectIdentifierTypeRaw toPersonSubjectIdentifierTypeRaw(PersonSubjectIdentifierType value) {

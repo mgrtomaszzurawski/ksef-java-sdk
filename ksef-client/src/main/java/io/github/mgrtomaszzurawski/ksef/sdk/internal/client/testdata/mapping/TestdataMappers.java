@@ -22,30 +22,30 @@ public final class TestdataMappers {
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsRevokeRequestRaw toTestDataPermissionsRevokeRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsRevokeRequestRaw();
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsRevokeRequestRaw();
         var context = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierRaw();
         context.setType(io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierTypeRaw.NIP);
         context.setValue(request.contextNip());
-        raw.setContextIdentifier(context);
+        rawValue.setContextIdentifier(context);
         var authorized = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifierRaw();
         authorized.setType(toTestDataAuthorizedIdentifierTypeRaw(request.authorizedType()));
         authorized.setValue(request.authorizedValue());
-        raw.setAuthorizedIdentifier(authorized);
-        return raw;
+        rawValue.setAuthorizedIdentifier(authorized);
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw toTestDataPermissionsGrantRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw();
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionsGrantRequestRaw();
         var context = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierRaw();
         context.setType(io.github.mgrtomaszzurawski.ksef.client.model.TestDataContextIdentifierTypeRaw.NIP);
         context.setValue(request.contextNip());
-        raw.setContextIdentifier(context);
+        rawValue.setContextIdentifier(context);
 
         var authorized = new io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifierRaw();
         authorized.setType(toTestDataAuthorizedIdentifierTypeRaw(request.authorizedType()));
         authorized.setValue(request.authorizedValue());
-        raw.setAuthorizedIdentifier(authorized);
+        rawValue.setAuthorizedIdentifier(authorized);
 
         var perms = new java.util.ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionRaw>(request.permissions().size());
         for (var perm : request.permissions()) {
@@ -54,8 +54,8 @@ public final class TestdataMappers {
             permRaw.setDescription(perm.description());
             perms.add(permRaw);
         }
-        raw.setPermissions(perms);
-        return raw;
+        rawValue.setPermissions(perms);
+        return rawValue;
     }
 
     private static io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthorizedIdentifierTypeRaw toTestDataAuthorizedIdentifierTypeRaw(
@@ -69,10 +69,10 @@ public final class TestdataMappers {
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.SubjectCreateRequestRaw toSubjectCreateRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectCreateRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.SubjectCreateRequestRaw();
-        raw.setSubjectNip(request.subjectNip());
-        raw.setSubjectType(toSubjectTypeRaw(request.subjectType()));
-        raw.setDescription(request.description());
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.SubjectCreateRequestRaw();
+        rawValue.setSubjectNip(request.subjectNip());
+        rawValue.setSubjectType(toSubjectTypeRaw(request.subjectType()));
+        rawValue.setDescription(request.description());
         if (!request.subunits().isEmpty()) {
             var subunits = new java.util.ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.SubunitRaw>(request.subunits().size());
             for (var subunit : request.subunits()) {
@@ -81,17 +81,17 @@ public final class TestdataMappers {
                 subRaw.setDescription(subunit.description());
                 subunits.add(subRaw);
             }
-            raw.setSubunits(subunits);
+            rawValue.setSubunits(subunits);
         }
         if (request.createdDate() != null) {
-            raw.setCreatedDate(request.createdDate());
+            rawValue.setCreatedDate(request.createdDate());
         }
-        return raw;
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.SetRateLimitsRequestRaw toSetRateLimitsRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestRateLimitsRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.SetRateLimitsRequestRaw();
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.SetRateLimitsRequestRaw();
         var rateLimits = new io.github.mgrtomaszzurawski.ksef.client.model.ApiRateLimitsOverrideRaw();
         if (request.onlineSession() != null) { rateLimits.setOnlineSession(toApiRateLimitValuesOverrideRaw(request.onlineSession())); }
         if (request.batchSession() != null) { rateLimits.setBatchSession(toApiRateLimitValuesOverrideRaw(request.batchSession())); }
@@ -105,66 +105,66 @@ public final class TestdataMappers {
         if (request.invoiceExportStatus() != null) { rateLimits.setInvoiceExportStatus(toApiRateLimitValuesOverrideRaw(request.invoiceExportStatus())); }
         if (request.invoiceDownload() != null) { rateLimits.setInvoiceDownload(toApiRateLimitValuesOverrideRaw(request.invoiceDownload())); }
         if (request.other() != null) { rateLimits.setOther(toApiRateLimitValuesOverrideRaw(request.other())); }
-        raw.setRateLimits(rateLimits);
-        return raw;
+        rawValue.setRateLimits(rateLimits);
+        return rawValue;
     }
 
     private static io.github.mgrtomaszzurawski.ksef.client.model.ApiRateLimitValuesOverrideRaw toApiRateLimitValuesOverrideRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestRateLimitValues values) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.ApiRateLimitValuesOverrideRaw();
-        raw.setPerSecond(values.perSecond());
-        raw.setPerMinute(values.perMinute());
-        raw.setPerHour(values.perHour());
-        return raw;
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.ApiRateLimitValuesOverrideRaw();
+        rawValue.setPerSecond(values.perSecond());
+        rawValue.setPerMinute(values.perMinute());
+        rawValue.setPerHour(values.perHour());
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.PersonCreateRequestRaw toPersonCreateRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.PersonCreateRequestRaw();
-        raw.setNip(request.nip());
-        raw.setPesel(request.pesel());
-        raw.setIsBailiff(request.isBailiff());
-        raw.setDescription(request.description());
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.PersonCreateRequestRaw();
+        rawValue.setNip(request.nip());
+        rawValue.setPesel(request.pesel());
+        rawValue.setIsBailiff(request.isBailiff());
+        rawValue.setDescription(request.description());
         if (request.isDeceased() != null) {
-            raw.setIsDeceased(request.isDeceased());
+            rawValue.setIsDeceased(request.isDeceased());
         }
         if (request.createdDate() != null) {
-            raw.setCreatedDate(request.createdDate());
+            rawValue.setCreatedDate(request.createdDate());
         }
-        return raw;
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.SetSessionLimitsRequestRaw toSetSessionLimitsRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLimitsRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.SetSessionLimitsRequestRaw();
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.SetSessionLimitsRequestRaw();
         var online = new io.github.mgrtomaszzurawski.ksef.client.model.OnlineSessionContextLimitsOverrideRaw();
         online.setMaxInvoiceSizeInMB(request.onlineSession().maxInvoiceSizeMb());
         online.setMaxInvoiceWithAttachmentSizeInMB(request.onlineSession().maxInvoiceWithAttachmentSizeMb());
         online.setMaxInvoices(request.onlineSession().maxInvoices());
-        raw.setOnlineSession(online);
+        rawValue.setOnlineSession(online);
         var batch = new io.github.mgrtomaszzurawski.ksef.client.model.BatchSessionContextLimitsOverrideRaw();
         batch.setMaxInvoiceSizeInMB(request.batchSession().maxInvoiceSizeMb());
         batch.setMaxInvoiceWithAttachmentSizeInMB(request.batchSession().maxInvoiceWithAttachmentSizeMb());
         batch.setMaxInvoices(request.batchSession().maxInvoices());
-        raw.setBatchSession(batch);
-        return raw;
+        rawValue.setBatchSession(batch);
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.SetSubjectLimitsRequestRaw toSetSubjectLimitsRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectLimitsRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.SetSubjectLimitsRequestRaw();
-        raw.setSubjectIdentifierType(toSubjectIdentifierTypeRaw(request.subjectIdentifierType()));
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.SetSubjectLimitsRequestRaw();
+        rawValue.setSubjectIdentifierType(toSubjectIdentifierTypeRaw(request.subjectIdentifierType()));
         if (request.maxEnrollments() != null) {
             var enrollment = new io.github.mgrtomaszzurawski.ksef.client.model.EnrollmentSubjectLimitsOverrideRaw();
             enrollment.setMaxEnrollments(request.maxEnrollments());
-            raw.setEnrollment(enrollment);
+            rawValue.setEnrollment(enrollment);
         }
         if (request.maxCertificates() != null) {
             var certificate = new io.github.mgrtomaszzurawski.ksef.client.model.CertificateSubjectLimitsOverrideRaw();
             certificate.setMaxCertificates(request.maxCertificates());
-            raw.setCertificate(certificate);
+            rawValue.setCertificate(certificate);
         }
-        return raw;
+        return rawValue;
     }
 
     public static TestDataAuthenticationContextIdentifierTypeRaw toTestDataAuthenticationContextIdentifierTypeRaw(TestDataIdentifierType value) {

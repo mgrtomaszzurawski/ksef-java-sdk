@@ -30,14 +30,14 @@ public final class TokensMappers {
     private TokensMappers() { }
 
     public static GenerateTokenRequestRaw toGenerateTokenRequestRaw(TokenGenerateRequest request) {
-        GenerateTokenRequestRaw raw = new GenerateTokenRequestRaw();
-        raw.setDescription(request.description());
+        GenerateTokenRequestRaw rawValue = new GenerateTokenRequestRaw();
+        rawValue.setDescription(request.description());
         java.util.List<TokenPermissionTypeRaw> permissions = new java.util.ArrayList<>(request.permissions().size());
         for (TokenPermissionType type : request.permissions()) {
             permissions.add(toTokenPermissionTypeRaw(type));
         }
-        raw.setPermissions(permissions);
-        return raw;
+        rawValue.setPermissions(permissions);
+        return rawValue;
     }
 
     public static TokenPermissionTypeRaw toTokenPermissionTypeRaw(TokenPermissionType value) {
@@ -52,56 +52,56 @@ public final class TokensMappers {
         };
     }
 
-    public static GenerateTokenResult toGenerateTokenResult(GenerateTokenResponseRaw raw) {
-        return new GenerateTokenResult(raw.getReferenceNumber(), raw.getToken());
+    public static GenerateTokenResult toGenerateTokenResult(GenerateTokenResponseRaw rawValue) {
+        return new GenerateTokenResult(rawValue.getReferenceNumber(), rawValue.getToken());
     }
 
-    public static TokenDetail toTokenDetail(TokenStatusResponseRaw raw) {
-        var authorRaw = raw.getAuthorIdentifier();
+    public static TokenDetail toTokenDetail(TokenStatusResponseRaw rawValue) {
+        var authorRaw = rawValue.getAuthorIdentifier();
         TokenIdentifier author = new TokenIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
-        var ctxRaw = raw.getContextIdentifier();
+        var ctxRaw = rawValue.getContextIdentifier();
         TokenIdentifier context = new TokenIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue());
-        List<TokenPermissionType> perms = raw.getRequestedPermissions().stream().map(TokensMappers::toTokenPermissionType).toList();
+        List<TokenPermissionType> perms = rawValue.getRequestedPermissions().stream().map(TokensMappers::toTokenPermissionType).toList();
         return new TokenDetail(
-                raw.getReferenceNumber(),
+                rawValue.getReferenceNumber(),
                 author,
                 context,
-                raw.getDescription(),
+                rawValue.getDescription(),
                 perms,
-                raw.getDateCreated(),
-                raw.getLastUseDate(),
-                TokensMappers.toTokenStatus(raw.getStatus()),
-                raw.getStatusDetails() != null ? List.copyOf(raw.getStatusDetails()) : List.of());
+                rawValue.getDateCreated(),
+                rawValue.getLastUseDate(),
+                TokensMappers.toTokenStatus(rawValue.getStatus()),
+                rawValue.getStatusDetails() != null ? List.copyOf(rawValue.getStatusDetails()) : List.of());
     }
 
-    public static TokenList toTokenList(QueryTokensResponseRaw raw) {
-        List<TokenListItem> mapped = raw.getTokens().stream().map(TokensMappers::toTokenListItem).toList();
-        return new TokenList(raw.getContinuationToken(), mapped);
+    public static TokenList toTokenList(QueryTokensResponseRaw rawValue) {
+        List<TokenListItem> mapped = rawValue.getTokens().stream().map(TokensMappers::toTokenListItem).toList();
+        return new TokenList(rawValue.getContinuationToken(), mapped);
     }
 
-    public static TokenListItem toTokenListItem(QueryTokensResponseItemRaw raw) {
-        var authorRaw = raw.getAuthorIdentifier();
+    public static TokenListItem toTokenListItem(QueryTokensResponseItemRaw rawValue) {
+        var authorRaw = rawValue.getAuthorIdentifier();
         TokenIdentifier author = new TokenIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
-        var ctxRaw = raw.getContextIdentifier();
+        var ctxRaw = rawValue.getContextIdentifier();
         TokenIdentifier context = new TokenIdentifier(ctxRaw.getType().getValue(), ctxRaw.getValue());
-        List<TokenPermissionType> perms = raw.getRequestedPermissions().stream().map(TokensMappers::toTokenPermissionType).toList();
+        List<TokenPermissionType> perms = rawValue.getRequestedPermissions().stream().map(TokensMappers::toTokenPermissionType).toList();
         return new TokenListItem(
-                raw.getReferenceNumber(),
+                rawValue.getReferenceNumber(),
                 author,
                 context,
-                raw.getDescription(),
+                rawValue.getDescription(),
                 perms,
-                raw.getDateCreated(),
-                raw.getLastUseDate(),
-                TokensMappers.toTokenStatus(raw.getStatus()),
-                raw.getStatusDetails() != null ? List.copyOf(raw.getStatusDetails()) : List.of());
+                rawValue.getDateCreated(),
+                rawValue.getLastUseDate(),
+                TokensMappers.toTokenStatus(rawValue.getStatus()),
+                rawValue.getStatusDetails() != null ? List.copyOf(rawValue.getStatusDetails()) : List.of());
     }
 
-    public static TokenPermissionType toTokenPermissionType(TokenPermissionTypeRaw raw) {
-        if (raw == null) {
+    public static TokenPermissionType toTokenPermissionType(TokenPermissionTypeRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return switch (raw) {
+        return switch (rawValue) {
             case INVOICE_READ -> TokenPermissionType.INVOICE_READ;
             case INVOICE_WRITE -> TokenPermissionType.INVOICE_WRITE;
             case CREDENTIALS_READ -> TokenPermissionType.CREDENTIALS_READ;
@@ -112,11 +112,11 @@ public final class TokensMappers {
         };
     }
 
-    public static TokenStatus toTokenStatus(AuthenticationTokenStatusRaw raw) {
-        if (raw == null) {
+    public static TokenStatus toTokenStatus(AuthenticationTokenStatusRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return switch (raw) {
+        return switch (rawValue) {
             case PENDING -> TokenStatus.PENDING;
             case ACTIVE -> TokenStatus.ACTIVE;
             case REVOKING -> TokenStatus.REVOKING;

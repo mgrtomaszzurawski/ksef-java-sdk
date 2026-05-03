@@ -16,47 +16,47 @@ public final class PermissionsQueryRequestMappers {
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsQueryRequestRaw toEntityAuthorizationPermissionsQueryRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionsQueryRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsQueryRequestRaw();
-        raw.setQueryType(PermissionEnumConverters.toAuthorizationQueryTypeRaw(request.queryType()));
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationPermissionsQueryRequestRaw();
+        rawValue.setQueryType(PermissionEnumConverters.toAuthorizationQueryTypeRaw(request.queryType()));
         if (request.authorizingNip() != null) {
             var authorizingId = new io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationsAuthorizingEntityIdentifierRaw()
                     .type(io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationsAuthorizingEntityIdentifierTypeRaw.NIP)
                     .value(request.authorizingNip());
-            raw.setAuthorizingIdentifier(authorizingId);
+            rawValue.setAuthorizingIdentifier(authorizingId);
         }
         if (request.authorizedType() != null) {
             var authorizedId = new io.github.mgrtomaszzurawski.ksef.client.model.EntityAuthorizationsAuthorizedEntityIdentifierRaw()
                     .type(PermissionEnumConverters.toAuthorizedEntityIdentifierTypeRaw(request.authorizedType()))
                     .value(request.authorizedValue());
-            raw.setAuthorizedIdentifier(authorizedId);
+            rawValue.setAuthorizedIdentifier(authorizedId);
         }
         if (!request.permissionTypes().isEmpty()) {
             var perms = new ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.InvoicePermissionTypeRaw>(request.permissionTypes().size());
             for (var type : request.permissionTypes()) {
                 perms.add(PermissionEnumConverters.toInvoicePermissionTypeRaw(type));
             }
-            raw.setPermissionTypes(perms);
+            rawValue.setPermissionTypes(perms);
         }
-        return raw;
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw toPersonPermissionsQueryRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionsQueryRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw();
-        raw.setQueryType(PermissionEnumConverters.toPersonPermissionsQueryTypeRaw(request.queryType()));
-        applyPersonQueryAuthor(raw, request);
-        applyPersonQueryAuthorized(raw, request);
-        applyPersonQueryContext(raw, request);
-        applyPersonQueryTarget(raw, request);
-        applyPersonQueryPermissions(raw, request);
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw();
+        rawValue.setQueryType(PermissionEnumConverters.toPersonPermissionsQueryTypeRaw(request.queryType()));
+        applyPersonQueryAuthor(rawValue, request);
+        applyPersonQueryAuthorized(rawValue, request);
+        applyPersonQueryContext(rawValue, request);
+        applyPersonQueryTarget(rawValue, request);
+        applyPersonQueryPermissions(rawValue, request);
         if (request.permissionState() != null) {
-            raw.setPermissionState(PermissionEnumConverters.toPermissionStateRaw(request.permissionState()));
+            rawValue.setPermissionState(PermissionEnumConverters.toPermissionStateRaw(request.permissionState()));
         }
-        return raw;
+        return rawValue;
     }
 
     private static void applyPersonQueryAuthor(
-            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw raw,
+            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw rawValue,
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionsQueryRequest request) {
         if (request.authorType() == null) {
             return;
@@ -66,11 +66,11 @@ public final class PermissionsQueryRequestMappers {
         if (request.authorValue() != null) {
             authorId.value(request.authorValue());
         }
-        raw.setAuthorIdentifier(authorId);
+        rawValue.setAuthorIdentifier(authorId);
     }
 
     private static void applyPersonQueryAuthorized(
-            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw raw,
+            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw rawValue,
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionsQueryRequest request) {
         if (request.authorizedType() == null) {
             return;
@@ -78,11 +78,11 @@ public final class PermissionsQueryRequestMappers {
         var authorizedId = new io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsAuthorizedIdentifierRaw()
                 .type(PermissionEnumConverters.toPersonAuthorizedIdentifierTypeRaw(request.authorizedType()))
                 .value(request.authorizedValue());
-        raw.setAuthorizedIdentifier(authorizedId);
+        rawValue.setAuthorizedIdentifier(authorizedId);
     }
 
     private static void applyPersonQueryContext(
-            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw raw,
+            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw rawValue,
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionsQueryRequest request) {
         if (request.contextType() == null) {
             return;
@@ -90,11 +90,11 @@ public final class PermissionsQueryRequestMappers {
         var contextId = new io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsContextIdentifierRaw()
                 .type(PermissionEnumConverters.toPersonPermissionsContextIdentifierTypeRaw(request.contextType()))
                 .value(request.contextValue());
-        raw.setContextIdentifier(contextId);
+        rawValue.setContextIdentifier(contextId);
     }
 
     private static void applyPersonQueryTarget(
-            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw raw,
+            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw rawValue,
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionsQueryRequest request) {
         if (request.targetType() == null) {
             return;
@@ -104,11 +104,11 @@ public final class PermissionsQueryRequestMappers {
         if (request.targetValue() != null) {
             targetId.value(request.targetValue());
         }
-        raw.setTargetIdentifier(targetId);
+        rawValue.setTargetIdentifier(targetId);
     }
 
     private static void applyPersonQueryPermissions(
-            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw raw,
+            io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionsQueryRequestRaw rawValue,
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionsQueryRequest request) {
         if (request.permissionTypes().isEmpty()) {
             return;
@@ -117,17 +117,17 @@ public final class PermissionsQueryRequestMappers {
         for (var type : request.permissionTypes()) {
             perms.add(PermissionsRequestMappers.toPersonPermissionTypeRaw(type));
         }
-        raw.setPermissionTypes(perms);
+        rawValue.setPermissionTypes(perms);
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw toPersonalPermissionsQueryRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissionsQueryRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw();
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsQueryRequestRaw();
         if (request.contextType() != null) {
             var contextId = new io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsContextIdentifierRaw()
                     .type(PermissionEnumConverters.toPersonalContextIdentifierTypeRaw(request.contextType()))
                     .value(request.contextValue());
-            raw.setContextIdentifier(contextId);
+            rawValue.setContextIdentifier(contextId);
         }
         if (request.targetType() != null) {
             var targetId = new io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionsTargetIdentifierRaw()
@@ -135,38 +135,38 @@ public final class PermissionsQueryRequestMappers {
             if (request.targetValue() != null) {
                 targetId.value(request.targetValue());
             }
-            raw.setTargetIdentifier(targetId);
+            rawValue.setTargetIdentifier(targetId);
         }
         if (!request.permissionTypes().isEmpty()) {
             var perms = new ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.PersonalPermissionTypeRaw>(request.permissionTypes().size());
             for (var type : request.permissionTypes()) {
                 perms.add(PermissionEnumConverters.toPersonalPermissionTypeRaw(type));
             }
-            raw.setPermissionTypes(perms);
+            rawValue.setPermissionTypes(perms);
         }
         if (request.permissionState() != null) {
-            raw.setPermissionState(PermissionEnumConverters.toPermissionStateRaw(request.permissionState()));
+            rawValue.setPermissionState(PermissionEnumConverters.toPermissionStateRaw(request.permissionState()));
         }
-        return raw;
+        return rawValue;
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryRequestRaw toEuEntityPermissionsQueryRequestRaw(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissionsQueryRequest request) {
-        var raw = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryRequestRaw();
+        var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryRequestRaw();
         if (request.vatUeIdentifier() != null) {
-            raw.setVatUeIdentifier(request.vatUeIdentifier());
+            rawValue.setVatUeIdentifier(request.vatUeIdentifier());
         }
         if (request.authorizedFingerprintIdentifier() != null) {
-            raw.setAuthorizedFingerprintIdentifier(request.authorizedFingerprintIdentifier());
+            rawValue.setAuthorizedFingerprintIdentifier(request.authorizedFingerprintIdentifier());
         }
         if (!request.permissionTypes().isEmpty()) {
             var perms = new ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.EuEntityPermissionsQueryPermissionTypeRaw>(request.permissionTypes().size());
             for (var type : request.permissionTypes()) {
                 perms.add(PermissionEnumConverters.toEuEntityQueryPermissionTypeRaw(type));
             }
-            raw.setPermissionTypes(perms);
+            rawValue.setPermissionTypes(perms);
         }
-        return raw;
+        return rawValue;
     }
 
 }

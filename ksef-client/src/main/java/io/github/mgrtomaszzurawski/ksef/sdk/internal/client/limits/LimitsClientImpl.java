@@ -48,9 +48,9 @@ public final class LimitsClientImpl implements LimitsClient {
     public ContextLimits getContextLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_CONTEXT_LIMITS);
         String token = sessionContext.token();
-        EffectiveContextLimitsRaw raw = http.getAuthenticated(PATH_CONTEXT_LIMITS, token,
+        EffectiveContextLimitsRaw rawValue = http.getAuthenticated(PATH_CONTEXT_LIMITS, token,
                 EffectiveContextLimitsRaw.class, OP_GET_CONTEXT_LIMITS);
-        return LimitsMappers.toContextLimits(raw);
+        return LimitsMappers.toContextLimits(rawValue);
     }
 
     /**
@@ -62,8 +62,8 @@ public final class LimitsClientImpl implements LimitsClient {
     public SubjectLimits getSubjectLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_SUBJECT_LIMITS);
         String token = sessionContext.token();
-        EffectiveSubjectLimitsRaw raw = http.getAuthenticated(PATH_SUBJECT_LIMITS, token,
+        EffectiveSubjectLimitsRaw rawValue = http.getAuthenticated(PATH_SUBJECT_LIMITS, token,
                 EffectiveSubjectLimitsRaw.class, OP_GET_SUBJECT_LIMITS);
-        return LimitsMappers.toSubjectLimits(raw);
+        return LimitsMappers.toSubjectLimits(rawValue);
     }
 }

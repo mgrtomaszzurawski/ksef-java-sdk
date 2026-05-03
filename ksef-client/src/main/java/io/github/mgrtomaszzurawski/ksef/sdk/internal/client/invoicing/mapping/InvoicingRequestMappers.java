@@ -37,23 +37,23 @@ public final class InvoicingRequestMappers {
     }
 
     public static InvoiceQueryFiltersRaw toInvoiceQueryFiltersRaw(InvoiceQueryFilters filters) {
-        InvoiceQueryFiltersRaw raw = new InvoiceQueryFiltersRaw()
+        InvoiceQueryFiltersRaw rawValue = new InvoiceQueryFiltersRaw()
                 .subjectType(toInvoiceQuerySubjectTypeRaw(filters.subjectType()))
                 .dateRange(buildDateRange(filters));
-        applyIdentifierFilters(raw, filters);
-        applyMetadataFilters(raw, filters);
-        return raw;
+        applyIdentifierFilters(rawValue, filters);
+        applyMetadataFilters(rawValue, filters);
+        return rawValue;
     }
 
     public static SendInvoiceRequestRaw toSendInvoiceRequestRaw(SendInvoiceRequest request) {
-        SendInvoiceRequestRaw raw = new SendInvoiceRequestRaw();
-        raw.setInvoiceHash(request.invoiceHash());
-        raw.setInvoiceSize(request.invoiceSize());
-        raw.setEncryptedInvoiceHash(request.encryptedInvoiceHash());
-        raw.setEncryptedInvoiceSize(request.encryptedInvoiceSize());
-        raw.setEncryptedInvoiceContent(request.encryptedInvoiceContent());
-        raw.setOfflineMode(request.offlineMode());
-        return raw;
+        SendInvoiceRequestRaw rawValue = new SendInvoiceRequestRaw();
+        rawValue.setInvoiceHash(request.invoiceHash());
+        rawValue.setInvoiceSize(request.invoiceSize());
+        rawValue.setEncryptedInvoiceHash(request.encryptedInvoiceHash());
+        rawValue.setEncryptedInvoiceSize(request.encryptedInvoiceSize());
+        rawValue.setEncryptedInvoiceContent(request.encryptedInvoiceContent());
+        rawValue.setOfflineMode(request.offlineMode());
+        return rawValue;
     }
 
     public static InvoiceQuerySubjectTypeRaw toInvoiceQuerySubjectTypeRaw(InvoiceQuerySubjectType value) {
@@ -90,27 +90,27 @@ public final class InvoicingRequestMappers {
         return dateRange;
     }
 
-    private static void applyIdentifierFilters(InvoiceQueryFiltersRaw raw, InvoiceQueryFilters filters) {
+    private static void applyIdentifierFilters(InvoiceQueryFiltersRaw rawValue, InvoiceQueryFilters filters) {
         if (filters.ksefNumber() != null) {
-            raw.ksefNumber(filters.ksefNumber());
+            rawValue.ksefNumber(filters.ksefNumber());
         }
         if (filters.invoiceNumber() != null) {
-            raw.invoiceNumber(filters.invoiceNumber());
+            rawValue.invoiceNumber(filters.invoiceNumber());
         }
         if (filters.sellerNip() != null) {
-            raw.sellerNip(filters.sellerNip());
+            rawValue.sellerNip(filters.sellerNip());
         }
     }
 
-    private static void applyMetadataFilters(InvoiceQueryFiltersRaw raw, InvoiceQueryFilters filters) {
+    private static void applyMetadataFilters(InvoiceQueryFiltersRaw rawValue, InvoiceQueryFilters filters) {
         if (filters.invoicingMode() != null) {
-            raw.invoicingMode(toInvoicingModeRaw(filters.invoicingMode()));
+            rawValue.invoicingMode(toInvoicingModeRaw(filters.invoicingMode()));
         }
         if (filters.selfInvoicing() != null) {
-            raw.isSelfInvoicing(filters.selfInvoicing());
+            rawValue.isSelfInvoicing(filters.selfInvoicing());
         }
         if (filters.hasAttachment() != null) {
-            raw.hasAttachment(filters.hasAttachment());
+            rawValue.hasAttachment(filters.hasAttachment());
         }
     }
 }

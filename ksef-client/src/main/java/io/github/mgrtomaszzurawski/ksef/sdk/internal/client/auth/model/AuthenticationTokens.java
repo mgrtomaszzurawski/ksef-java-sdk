@@ -16,9 +16,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
  */
 public record AuthenticationTokens(TokenInfo accessToken, TokenInfo refreshToken) {
 
-    public static AuthenticationTokens from(AuthenticationTokensResponseRaw raw) {
+    public static AuthenticationTokens from(AuthenticationTokensResponseRaw rawValue) {
         return new AuthenticationTokens(
-                CommonMappers.toTokenInfo(raw.getAccessToken()),
-                CommonMappers.toTokenInfo(raw.getRefreshToken()));
+                CommonMappers.toTokenInfo(rawValue.getAccessToken()),
+                CommonMappers.toTokenInfo(rawValue.getRefreshToken()));
     }
 }

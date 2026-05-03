@@ -27,13 +27,13 @@ public record AuthenticationStatus(
         OffsetDateTime lastTokenRefreshDate,
         OffsetDateTime refreshTokenValidUntil) {
 
-    public static AuthenticationStatus from(AuthenticationOperationStatusResponseRaw raw) {
+    public static AuthenticationStatus from(AuthenticationOperationStatusResponseRaw rawValue) {
         return new AuthenticationStatus(
-                raw.getStartDate(),
-                AuthenticationMethodInfo.from(raw.getAuthenticationMethodInfo()),
-                CommonMappers.toStatusInfo(raw.getStatus()),
-                raw.getIsTokenRedeemed(),
-                raw.getLastTokenRefreshDate(),
-                raw.getRefreshTokenValidUntil());
+                rawValue.getStartDate(),
+                AuthenticationMethodInfo.from(rawValue.getAuthenticationMethodInfo()),
+                CommonMappers.toStatusInfo(rawValue.getStatus()),
+                rawValue.getIsTokenRedeemed(),
+                rawValue.getLastTokenRefreshDate(),
+                rawValue.getRefreshTokenValidUntil());
     }
 }

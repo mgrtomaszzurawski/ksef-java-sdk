@@ -44,111 +44,111 @@ public final class CertificatesMappers {
     private CertificatesMappers() { }
 
     public static EnrollCertificateRequestRaw toEnrollCertificateRequestRaw(CertificateEnrollRequest request) {
-        EnrollCertificateRequestRaw raw = new EnrollCertificateRequestRaw();
-        raw.setCertificateName(request.certificateName());
-        raw.setCertificateType(toKsefCertificateTypeRaw(request.certificateType()));
-        raw.setCsr(request.csr());
+        EnrollCertificateRequestRaw rawValue = new EnrollCertificateRequestRaw();
+        rawValue.setCertificateName(request.certificateName());
+        rawValue.setCertificateType(toKsefCertificateTypeRaw(request.certificateType()));
+        rawValue.setCsr(request.csr());
         if (request.validFrom() != null) {
-            raw.setValidFrom(request.validFrom());
+            rawValue.setValidFrom(request.validFrom());
         }
-        return raw;
+        return rawValue;
     }
 
     public static QueryCertificatesRequestRaw toQueryCertificatesRequestRaw(CertificateQueryRequest request) {
-        QueryCertificatesRequestRaw raw = new QueryCertificatesRequestRaw();
+        QueryCertificatesRequestRaw rawValue = new QueryCertificatesRequestRaw();
         if (request.serialNumber() != null) {
-            raw.setCertificateSerialNumber(request.serialNumber());
+            rawValue.setCertificateSerialNumber(request.serialNumber());
         }
         if (request.name() != null) {
-            raw.setName(request.name());
+            rawValue.setName(request.name());
         }
         if (request.type() != null) {
-            raw.setType(toKsefCertificateTypeRaw(request.type()));
+            rawValue.setType(toKsefCertificateTypeRaw(request.type()));
         }
         if (request.status() != null) {
-            raw.setStatus(toCertificateListItemStatusRaw(request.status()));
+            rawValue.setStatus(toCertificateListItemStatusRaw(request.status()));
         }
         if (request.expiresAfter() != null) {
-            raw.setExpiresAfter(request.expiresAfter());
+            rawValue.setExpiresAfter(request.expiresAfter());
         }
-        return raw;
+        return rawValue;
     }
 
-    public static CertificateEnrollmentData toCertificateEnrollmentData(CertificateEnrollmentDataResponseRaw raw) {
+    public static CertificateEnrollmentData toCertificateEnrollmentData(CertificateEnrollmentDataResponseRaw rawValue) {
         return new CertificateEnrollmentData(
-                raw.getCommonName(),
-                raw.getCountryName(),
-                raw.getGivenName(),
-                raw.getSurname(),
-                raw.getSerialNumber(),
-                raw.getUniqueIdentifier(),
-                raw.getOrganizationName(),
-                raw.getOrganizationIdentifier());
+                rawValue.getCommonName(),
+                rawValue.getCountryName(),
+                rawValue.getGivenName(),
+                rawValue.getSurname(),
+                rawValue.getSerialNumber(),
+                rawValue.getUniqueIdentifier(),
+                rawValue.getOrganizationName(),
+                rawValue.getOrganizationIdentifier());
     }
 
-    public static CertificateEnrollmentStatus toCertificateEnrollmentStatus(CertificateEnrollmentStatusResponseRaw raw) {
+    public static CertificateEnrollmentStatus toCertificateEnrollmentStatus(CertificateEnrollmentStatusResponseRaw rawValue) {
         return new CertificateEnrollmentStatus(
-                raw.getRequestDate(),
-                CommonMappers.toStatusInfo(raw.getStatus()),
-                raw.getCertificateSerialNumber());
+                rawValue.getRequestDate(),
+                CommonMappers.toStatusInfo(rawValue.getStatus()),
+                rawValue.getCertificateSerialNumber());
     }
 
-    public static CertificateLimit toCertificateLimit(CertificateLimitRaw raw) {
-        if (raw == null) {
+    public static CertificateLimit toCertificateLimit(CertificateLimitRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return new CertificateLimit(raw.getRemaining(), raw.getLimit());
+        return new CertificateLimit(rawValue.getRemaining(), rawValue.getLimit());
     }
 
-    public static CertificateLimits toCertificateLimits(CertificateLimitsResponseRaw raw) {
+    public static CertificateLimits toCertificateLimits(CertificateLimitsResponseRaw rawValue) {
         return new CertificateLimits(
-                raw.getCanRequest(),
-                CertificatesMappers.toCertificateLimit(raw.getEnrollment()),
-                CertificatesMappers.toCertificateLimit(raw.getCertificate()));
+                rawValue.getCanRequest(),
+                CertificatesMappers.toCertificateLimit(rawValue.getEnrollment()),
+                CertificatesMappers.toCertificateLimit(rawValue.getCertificate()));
     }
 
-    public static CertificateListItem toCertificateListItem(CertificateListItemRaw raw) {
+    public static CertificateListItem toCertificateListItem(CertificateListItemRaw rawValue) {
         String subIdType = null;
         String subIdValue = null;
-        if (raw.getSubjectIdentifier() != null) {
-            subIdType = raw.getSubjectIdentifier().getType() != null
-                    ? raw.getSubjectIdentifier().getType().getValue() : null;
-            subIdValue = raw.getSubjectIdentifier().getValue();
+        if (rawValue.getSubjectIdentifier() != null) {
+            subIdType = rawValue.getSubjectIdentifier().getType() != null
+                    ? rawValue.getSubjectIdentifier().getType().getValue() : null;
+            subIdValue = rawValue.getSubjectIdentifier().getValue();
         }
         return new CertificateListItem(
-                raw.getCertificateSerialNumber(),
-                raw.getName(),
-                raw.getType().getValue(),
-                raw.getCommonName(),
-                raw.getStatus().getValue(),
+                rawValue.getCertificateSerialNumber(),
+                rawValue.getName(),
+                rawValue.getType().getValue(),
+                rawValue.getCommonName(),
+                rawValue.getStatus().getValue(),
                 subIdType,
                 subIdValue,
-                raw.getValidFrom(),
-                raw.getValidTo(),
-                raw.getLastUseDate(),
-                raw.getRequestDate());
+                rawValue.getValidFrom(),
+                rawValue.getValidTo(),
+                rawValue.getLastUseDate(),
+                rawValue.getRequestDate());
     }
 
-    public static CertificateQueryResult toCertificateQueryResult(QueryCertificatesResponseRaw raw) {
-        List<CertificateListItem> mapped = raw.getCertificates().stream().map(CertificatesMappers::toCertificateListItem).toList();
-        return new CertificateQueryResult(mapped, raw.getHasMore());
+    public static CertificateQueryResult toCertificateQueryResult(QueryCertificatesResponseRaw rawValue) {
+        List<CertificateListItem> mapped = rawValue.getCertificates().stream().map(CertificatesMappers::toCertificateListItem).toList();
+        return new CertificateQueryResult(mapped, rawValue.getHasMore());
     }
 
-    public static EnrollCertificateResult toEnrollCertificateResult(EnrollCertificateResponseRaw raw) {
-        return new EnrollCertificateResult(raw.getReferenceNumber(), raw.getTimestamp());
+    public static EnrollCertificateResult toEnrollCertificateResult(EnrollCertificateResponseRaw rawValue) {
+        return new EnrollCertificateResult(rawValue.getReferenceNumber(), rawValue.getTimestamp());
     }
 
-    public static RetrieveCertificatesResult toRetrieveCertificatesResult(RetrieveCertificatesResponseRaw raw) {
-        List<RetrievedCertificate> mapped = raw.getCertificates().stream().map(CertificatesMappers::toRetrievedCertificate).toList();
+    public static RetrieveCertificatesResult toRetrieveCertificatesResult(RetrieveCertificatesResponseRaw rawValue) {
+        List<RetrievedCertificate> mapped = rawValue.getCertificates().stream().map(CertificatesMappers::toRetrievedCertificate).toList();
         return new RetrieveCertificatesResult(mapped);
     }
 
-    public static RetrievedCertificate toRetrievedCertificate(RetrieveCertificatesListItemRaw raw) {
+    public static RetrievedCertificate toRetrievedCertificate(RetrieveCertificatesListItemRaw rawValue) {
         return new RetrievedCertificate(
-                raw.getCertificate(),
-                raw.getCertificateName(),
-                raw.getCertificateSerialNumber(),
-                raw.getCertificateType().getValue());
+                rawValue.getCertificate(),
+                rawValue.getCertificateName(),
+                rawValue.getCertificateSerialNumber(),
+                rawValue.getCertificateType().getValue());
     }
 
     public static CertificateRevocationReasonRaw toCertificateRevocationReasonRaw(CertificateRevocationReason value) {

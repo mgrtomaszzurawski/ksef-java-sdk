@@ -80,9 +80,9 @@ public final class SessionClient {
     public OnlineSession openOnline(OpenOnlineSessionRequestRaw request) {
         LOGGER.debug(LOG_CALL, OP_OPEN_ONLINE);
         String token = sessionContext.token();
-        OpenOnlineSessionResponseRaw raw = http.postJsonAuthenticated(PATH_ONLINE, request, token,
+        OpenOnlineSessionResponseRaw rawValue = http.postJsonAuthenticated(PATH_ONLINE, request, token,
                 OpenOnlineSessionResponseRaw.class, OP_OPEN_ONLINE);
-        return InvoicingMappers.toOnlineSession(raw);
+        return InvoicingMappers.toOnlineSession(rawValue);
     }
 
     /**
@@ -97,10 +97,10 @@ public final class SessionClient {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = ApiPaths.subPath(PATH_ONLINE, referenceNumber) + SEGMENT_INVOICES;
-        SendInvoiceRequestRaw raw = InvoicingRequestMappers.toSendInvoiceRequestRaw(request);
-        SendInvoiceResponseRaw raw2 = http.postJsonAuthenticated(path, raw, token,
+        SendInvoiceRequestRaw rawValue = InvoicingRequestMappers.toSendInvoiceRequestRaw(request);
+        SendInvoiceResponseRaw responseRaw = http.postJsonAuthenticated(path, rawValue, token,
                 SendInvoiceResponseRaw.class, OP_SEND_INVOICE);
-        return InvoicingMappers.toSendInvoiceResult(raw2);
+        return InvoicingMappers.toSendInvoiceResult(responseRaw);
     }
 
     /**
@@ -125,9 +125,9 @@ public final class SessionClient {
     public BatchSession openBatch(OpenBatchSessionRequestRaw request) {
         LOGGER.debug(LOG_CALL, OP_OPEN_BATCH);
         String token = sessionContext.token();
-        OpenBatchSessionResponseRaw raw = http.postJsonAuthenticated(PATH_BATCH, request, token,
+        OpenBatchSessionResponseRaw rawValue = http.postJsonAuthenticated(PATH_BATCH, request, token,
                 OpenBatchSessionResponseRaw.class, OP_OPEN_BATCH);
-        return InvoicingMappers.toBatchSession(raw);
+        return InvoicingMappers.toBatchSession(rawValue);
     }
 
     /**
@@ -153,9 +153,9 @@ public final class SessionClient {
         LOGGER.debug(LOG_CALL_REF, OP_GET_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        SessionStatusResponseRaw raw = http.getAuthenticated(ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber), token,
+        SessionStatusResponseRaw rawValue = http.getAuthenticated(ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber), token,
                 SessionStatusResponseRaw.class, OP_GET_STATUS);
-        return InvoicingMappers.toSessionStatus(raw);
+        return InvoicingMappers.toSessionStatus(rawValue);
     }
 
     /**
@@ -169,8 +169,8 @@ public final class SessionClient {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_INVOICES;
-        SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES);
-        return InvoicingMappers.toSessionInvoices(raw);
+        SessionInvoicesResponseRaw rawValue = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES);
+        return InvoicingMappers.toSessionInvoices(rawValue);
     }
 
     /**
@@ -187,8 +187,8 @@ public final class SessionClient {
         String token = sessionContext.token();
         String sessionPath = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_INVOICES;
         String path = ApiPaths.subPath(sessionPath, invoiceReferenceNumber);
-        SessionInvoiceStatusResponseRaw raw = http.getAuthenticated(path, token, SessionInvoiceStatusResponseRaw.class, OP_GET_INVOICE_STATUS);
-        return InvoicingMappers.toSessionInvoiceStatus(raw);
+        SessionInvoiceStatusResponseRaw rawValue = http.getAuthenticated(path, token, SessionInvoiceStatusResponseRaw.class, OP_GET_INVOICE_STATUS);
+        return InvoicingMappers.toSessionInvoiceStatus(rawValue);
     }
 
     /**
@@ -202,8 +202,8 @@ public final class SessionClient {
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
         String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_FAILED;
-        SessionInvoicesResponseRaw raw = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
-        return InvoicingMappers.toSessionInvoices(raw);
+        SessionInvoicesResponseRaw rawValue = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
+        return InvoicingMappers.toSessionInvoices(rawValue);
     }
 
     /**

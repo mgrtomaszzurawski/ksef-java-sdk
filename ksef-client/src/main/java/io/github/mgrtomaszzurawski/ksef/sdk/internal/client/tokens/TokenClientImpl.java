@@ -59,10 +59,10 @@ public final class TokenClientImpl implements TokenClient {
         LOGGER.debug(LOG_CALL, OP_GENERATE);
         Objects.requireNonNull(tokenBuilder, ERR_NULL_BUILDER);
         String token = sessionContext.token();
-        GenerateTokenResponseRaw raw = http.postJsonAuthenticated(PATH_TOKENS,
+        GenerateTokenResponseRaw rawValue = http.postJsonAuthenticated(PATH_TOKENS,
                 TokensMappers.toGenerateTokenRequestRaw(tokenBuilder.build()), token,
                 GenerateTokenResponseRaw.class, OP_GENERATE);
-        return TokensMappers.toGenerateTokenResult(raw);
+        return TokensMappers.toGenerateTokenResult(rawValue);
     }
 
     /**
@@ -74,9 +74,9 @@ public final class TokenClientImpl implements TokenClient {
     public TokenList list() {
         LOGGER.debug(LOG_CALL, OP_LIST);
         String token = sessionContext.token();
-        QueryTokensResponseRaw raw = http.getAuthenticated(PATH_TOKENS, token,
+        QueryTokensResponseRaw rawValue = http.getAuthenticated(PATH_TOKENS, token,
                 QueryTokensResponseRaw.class, OP_LIST);
-        return TokensMappers.toTokenList(raw);
+        return TokensMappers.toTokenList(rawValue);
     }
 
     /**
@@ -90,9 +90,9 @@ public final class TokenClientImpl implements TokenClient {
         LOGGER.debug(LOG_CALL_REF, OP_GET_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        TokenStatusResponseRaw raw = http.getAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token,
+        TokenStatusResponseRaw rawValue = http.getAuthenticated(PATH_TOKENS + PATH_SEPARATOR + referenceNumber, token,
                 TokenStatusResponseRaw.class, OP_GET_STATUS);
-        return TokensMappers.toTokenDetail(raw);
+        return TokensMappers.toTokenDetail(rawValue);
     }
 
     /**

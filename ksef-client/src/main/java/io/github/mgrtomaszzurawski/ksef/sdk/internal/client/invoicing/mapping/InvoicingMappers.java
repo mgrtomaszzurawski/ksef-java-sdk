@@ -68,26 +68,26 @@ public final class InvoicingMappers {
 
     private InvoicingMappers() { }
 
-    public static BatchSession toBatchSession(OpenBatchSessionResponseRaw raw) {
-        List<PartUploadRequest> parts = raw.getPartUploadRequests().stream().map(InvoicingMappers::toPartUploadRequest).toList();
-        return new BatchSession(raw.getReferenceNumber(), parts);
+    public static BatchSession toBatchSession(OpenBatchSessionResponseRaw rawValue) {
+        List<PartUploadRequest> parts = rawValue.getPartUploadRequests().stream().map(InvoicingMappers::toPartUploadRequest).toList();
+        return new BatchSession(rawValue.getReferenceNumber(), parts);
     }
 
-    public static BatchSessionLimits toBatchSessionLimits(BatchSessionEffectiveContextLimitsRaw raw) {
-        if (raw == null) {
+    public static BatchSessionLimits toBatchSessionLimits(BatchSessionEffectiveContextLimitsRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
         return new BatchSessionLimits(
-                raw.getMaxInvoiceSizeInMB(),
-                raw.getMaxInvoiceWithAttachmentSizeInMB(),
-                raw.getMaxInvoices());
+                rawValue.getMaxInvoiceSizeInMB(),
+                rawValue.getMaxInvoiceWithAttachmentSizeInMB(),
+                rawValue.getMaxInvoices());
     }
 
-    public static BuyerIdentifierType toBuyerIdentifierType(BuyerIdentifierTypeRaw raw) {
-        if (raw == null) {
+    public static BuyerIdentifierType toBuyerIdentifierType(BuyerIdentifierTypeRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return switch (raw) {
+        return switch (rawValue) {
             case NIP -> BuyerIdentifierType.NIP;
             case VAT_UE -> BuyerIdentifierType.VAT_UE;
             case OTHER -> BuyerIdentifierType.OTHER;
@@ -95,136 +95,136 @@ public final class InvoicingMappers {
         };
     }
 
-    public static ExportInvoicesResult toExportInvoicesResult(ExportInvoicesResponseRaw raw) {
-        return new ExportInvoicesResult(raw.getReferenceNumber());
+    public static ExportInvoicesResult toExportInvoicesResult(ExportInvoicesResponseRaw rawValue) {
+        return new ExportInvoicesResult(rawValue.getReferenceNumber());
     }
 
-    public static FormCodeInfo toFormCodeInfo(FormCodeRaw raw) {
-        if (raw == null) {
+    public static FormCodeInfo toFormCodeInfo(FormCodeRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return new FormCodeInfo(raw.getSystemCode(), raw.getSchemaVersion(), raw.getValue());
+        return new FormCodeInfo(rawValue.getSystemCode(), rawValue.getSchemaVersion(), rawValue.getValue());
     }
 
-    public static InvoiceBuyer toInvoiceBuyer(InvoiceMetadataBuyerRaw raw) {
-        if (raw == null) {
+    public static InvoiceBuyer toInvoiceBuyer(InvoiceMetadataBuyerRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
         BuyerIdentifierType idType = null;
         String idValue = null;
-        if (raw.getIdentifier() != null) {
-            idType = InvoicingMappers.toBuyerIdentifierType(raw.getIdentifier().getType());
-            idValue = raw.getIdentifier().getValue();
+        if (rawValue.getIdentifier() != null) {
+            idType = InvoicingMappers.toBuyerIdentifierType(rawValue.getIdentifier().getType());
+            idValue = rawValue.getIdentifier().getValue();
         }
-        return new InvoiceBuyer(idType, idValue, raw.getName());
+        return new InvoiceBuyer(idType, idValue, rawValue.getName());
     }
 
-    public static InvoiceExportStatus toInvoiceExportStatus(InvoiceExportStatusResponseRaw raw) {
+    public static InvoiceExportStatus toInvoiceExportStatus(InvoiceExportStatusResponseRaw rawValue) {
         return new InvoiceExportStatus(
-                CommonMappers.toStatusInfo(raw.getStatus()),
-                raw.getCompletedDate(),
-                raw.getPackageExpirationDate(),
-                InvoicingMappers.toInvoicePackage(raw.getPackage()));
+                CommonMappers.toStatusInfo(rawValue.getStatus()),
+                rawValue.getCompletedDate(),
+                rawValue.getPackageExpirationDate(),
+                InvoicingMappers.toInvoicePackage(rawValue.getPackage()));
     }
 
-    public static InvoiceMetadata toInvoiceMetadata(InvoiceMetadataRaw raw) {
-        List<InvoiceThirdSubject> subjects = raw.getThirdSubjects() != null
-                ? raw.getThirdSubjects().stream().map(InvoicingMappers::toInvoiceThirdSubject).toList()
+    public static InvoiceMetadata toInvoiceMetadata(InvoiceMetadataRaw rawValue) {
+        List<InvoiceThirdSubject> subjects = rawValue.getThirdSubjects() != null
+                ? rawValue.getThirdSubjects().stream().map(InvoicingMappers::toInvoiceThirdSubject).toList()
                 : List.of();
         return new InvoiceMetadata(
-                raw.getKsefNumber(),
-                raw.getInvoiceNumber(),
-                raw.getIssueDate(),
-                raw.getInvoicingDate(),
-                raw.getAcquisitionDate(),
-                raw.getPermanentStorageDate(),
-                InvoicingMappers.toInvoiceSeller(raw.getSeller()),
-                InvoicingMappers.toInvoiceBuyer(raw.getBuyer()),
-                raw.getNetAmount(),
-                raw.getGrossAmount(),
-                raw.getVatAmount(),
-                raw.getCurrency(),
-                InvoicingMappers.toInvoicingMode(raw.getInvoicingMode()),
-                InvoicingMappers.toInvoiceType(raw.getInvoiceType()),
-                InvoicingMappers.toFormCodeInfo(raw.getFormCode()),
-                raw.getIsSelfInvoicing(),
-                raw.getHasAttachment(),
-                raw.getInvoiceHash(),
-                raw.getHashOfCorrectedInvoice(),
+                rawValue.getKsefNumber(),
+                rawValue.getInvoiceNumber(),
+                rawValue.getIssueDate(),
+                rawValue.getInvoicingDate(),
+                rawValue.getAcquisitionDate(),
+                rawValue.getPermanentStorageDate(),
+                InvoicingMappers.toInvoiceSeller(rawValue.getSeller()),
+                InvoicingMappers.toInvoiceBuyer(rawValue.getBuyer()),
+                rawValue.getNetAmount(),
+                rawValue.getGrossAmount(),
+                rawValue.getVatAmount(),
+                rawValue.getCurrency(),
+                InvoicingMappers.toInvoicingMode(rawValue.getInvoicingMode()),
+                InvoicingMappers.toInvoiceType(rawValue.getInvoiceType()),
+                InvoicingMappers.toFormCodeInfo(rawValue.getFormCode()),
+                rawValue.getIsSelfInvoicing(),
+                rawValue.getHasAttachment(),
+                rawValue.getInvoiceHash(),
+                rawValue.getHashOfCorrectedInvoice(),
                 subjects);
     }
 
-    public static InvoiceMetadataResult toInvoiceMetadataResult(QueryInvoicesMetadataResponseRaw raw) {
-        List<InvoiceMetadata> mapped = raw.getInvoices().stream().map(InvoicingMappers::toInvoiceMetadata).toList();
+    public static InvoiceMetadataResult toInvoiceMetadataResult(QueryInvoicesMetadataResponseRaw rawValue) {
+        List<InvoiceMetadata> mapped = rawValue.getInvoices().stream().map(InvoicingMappers::toInvoiceMetadata).toList();
         return new InvoiceMetadataResult(
-                raw.getHasMore(),
-                raw.getIsTruncated(),
-                raw.getPermanentStorageHwmDate(),
+                rawValue.getHasMore(),
+                rawValue.getIsTruncated(),
+                rawValue.getPermanentStorageHwmDate(),
                 mapped);
     }
 
-    public static InvoicePackage toInvoicePackage(InvoicePackageRaw raw) {
-        if (raw == null) {
+    public static InvoicePackage toInvoicePackage(InvoicePackageRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        List<InvoicePackagePart> mappedParts = raw.getParts().stream().map(InvoicingMappers::toInvoicePackagePart).toList();
+        List<InvoicePackagePart> mappedParts = rawValue.getParts().stream().map(InvoicingMappers::toInvoicePackagePart).toList();
         return new InvoicePackage(
-                raw.getInvoiceCount(),
-                raw.getSize(),
+                rawValue.getInvoiceCount(),
+                rawValue.getSize(),
                 mappedParts,
-                raw.getIsTruncated(),
-                raw.getLastIssueDate(),
-                raw.getLastInvoicingDate(),
-                raw.getLastPermanentStorageDate(),
-                raw.getPermanentStorageHwmDate());
+                rawValue.getIsTruncated(),
+                rawValue.getLastIssueDate(),
+                rawValue.getLastInvoicingDate(),
+                rawValue.getLastPermanentStorageDate(),
+                rawValue.getPermanentStorageHwmDate());
     }
 
-    public static InvoicePackagePart toInvoicePackagePart(InvoicePackagePartRaw raw) {
+    public static InvoicePackagePart toInvoicePackagePart(InvoicePackagePartRaw rawValue) {
         return new InvoicePackagePart(
-                raw.getOrdinalNumber(),
-                raw.getPartName(),
-                raw.getMethod(),
-                raw.getUrl(),
-                raw.getPartSize(),
-                raw.getPartHash(),
-                raw.getEncryptedPartSize(),
-                raw.getEncryptedPartHash(),
-                raw.getExpirationDate());
+                rawValue.getOrdinalNumber(),
+                rawValue.getPartName(),
+                rawValue.getMethod(),
+                rawValue.getUrl(),
+                rawValue.getPartSize(),
+                rawValue.getPartHash(),
+                rawValue.getEncryptedPartSize(),
+                rawValue.getEncryptedPartHash(),
+                rawValue.getExpirationDate());
     }
 
-    public static InvoiceSeller toInvoiceSeller(InvoiceMetadataSellerRaw raw) {
-        if (raw == null) {
+    public static InvoiceSeller toInvoiceSeller(InvoiceMetadataSellerRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return new InvoiceSeller(raw.getNip(), raw.getName());
+        return new InvoiceSeller(rawValue.getNip(), rawValue.getName());
     }
 
-    public static InvoiceStatusInfo toInvoiceStatusInfo(InvoiceStatusInfoRaw raw) {
-        if (raw == null) {
+    public static InvoiceStatusInfo toInvoiceStatusInfo(InvoiceStatusInfoRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
         return new InvoiceStatusInfo(
-                raw.getCode(),
-                raw.getDescription(),
-                raw.getDetails() != null ? List.copyOf(raw.getDetails()) : List.of(),
-                raw.getExtensions() != null ? Map.copyOf(raw.getExtensions()) : Map.of());
+                rawValue.getCode(),
+                rawValue.getDescription(),
+                rawValue.getDetails() != null ? List.copyOf(rawValue.getDetails()) : List.of(),
+                rawValue.getExtensions() != null ? Map.copyOf(rawValue.getExtensions()) : Map.of());
     }
 
-    public static InvoiceThirdSubject toInvoiceThirdSubject(InvoiceMetadataThirdSubjectRaw raw) {
+    public static InvoiceThirdSubject toInvoiceThirdSubject(InvoiceMetadataThirdSubjectRaw rawValue) {
         ThirdSubjectIdentifierType idType = null;
         String idValue = null;
-        if (raw.getIdentifier() != null) {
-            idType = InvoicingMappers.toThirdSubjectIdentifierType(raw.getIdentifier().getType());
-            idValue = raw.getIdentifier().getValue();
+        if (rawValue.getIdentifier() != null) {
+            idType = InvoicingMappers.toThirdSubjectIdentifierType(rawValue.getIdentifier().getType());
+            idValue = rawValue.getIdentifier().getValue();
         }
-        return new InvoiceThirdSubject(idType, idValue, raw.getName(), raw.getRole());
+        return new InvoiceThirdSubject(idType, idValue, rawValue.getName(), rawValue.getRole());
     }
 
-    public static InvoiceType toInvoiceType(InvoiceTypeRaw raw) {
-        if (raw == null) {
+    public static InvoiceType toInvoiceType(InvoiceTypeRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return switch (raw) {
+        return switch (rawValue) {
             case VAT -> InvoiceType.VAT;
             case ZAL -> InvoiceType.ZAL;
             case KOR -> InvoiceType.KOR;
@@ -240,81 +240,81 @@ public final class InvoicingMappers {
         };
     }
 
-    public static InvoicingMode toInvoicingMode(InvoicingModeRaw raw) {
-        if (raw == null) {
+    public static InvoicingMode toInvoicingMode(InvoicingModeRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return switch (raw) {
+        return switch (rawValue) {
             case ONLINE -> InvoicingMode.ONLINE;
             case OFFLINE -> InvoicingMode.OFFLINE;
         };
     }
 
-    public static OnlineSession toOnlineSession(OpenOnlineSessionResponseRaw raw) {
-        return new OnlineSession(raw.getReferenceNumber(), raw.getValidUntil());
+    public static OnlineSession toOnlineSession(OpenOnlineSessionResponseRaw rawValue) {
+        return new OnlineSession(rawValue.getReferenceNumber(), rawValue.getValidUntil());
     }
 
-    public static OnlineSessionLimits toOnlineSessionLimits(OnlineSessionEffectiveContextLimitsRaw raw) {
-        if (raw == null) {
+    public static OnlineSessionLimits toOnlineSessionLimits(OnlineSessionEffectiveContextLimitsRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
         return new OnlineSessionLimits(
-                raw.getMaxInvoiceSizeInMB(),
-                raw.getMaxInvoiceWithAttachmentSizeInMB(),
-                raw.getMaxInvoices());
+                rawValue.getMaxInvoiceSizeInMB(),
+                rawValue.getMaxInvoiceWithAttachmentSizeInMB(),
+                rawValue.getMaxInvoices());
     }
 
-    public static PartUploadRequest toPartUploadRequest(PartUploadRequestRaw raw) {
+    public static PartUploadRequest toPartUploadRequest(PartUploadRequestRaw rawValue) {
         return new PartUploadRequest(
-                raw.getOrdinalNumber(),
-                raw.getMethod(),
-                raw.getUrl(),
-                Map.copyOf(raw.getHeaders()));
+                rawValue.getOrdinalNumber(),
+                rawValue.getMethod(),
+                rawValue.getUrl(),
+                Map.copyOf(rawValue.getHeaders()));
     }
 
-    public static SendInvoiceResult toSendInvoiceResult(SendInvoiceResponseRaw raw) {
-        return new SendInvoiceResult(raw.getReferenceNumber());
+    public static SendInvoiceResult toSendInvoiceResult(SendInvoiceResponseRaw rawValue) {
+        return new SendInvoiceResult(rawValue.getReferenceNumber());
     }
 
-    public static SessionInvoices toSessionInvoices(SessionInvoicesResponseRaw raw) {
-        List<SessionInvoiceStatus> mapped = raw.getInvoices().stream().map(InvoicingMappers::toSessionInvoiceStatus).toList();
-        return new SessionInvoices(raw.getContinuationToken(), mapped);
+    public static SessionInvoices toSessionInvoices(SessionInvoicesResponseRaw rawValue) {
+        List<SessionInvoiceStatus> mapped = rawValue.getInvoices().stream().map(InvoicingMappers::toSessionInvoiceStatus).toList();
+        return new SessionInvoices(rawValue.getContinuationToken(), mapped);
     }
 
-    public static SessionInvoiceStatus toSessionInvoiceStatus(SessionInvoiceStatusResponseRaw raw) {
+    public static SessionInvoiceStatus toSessionInvoiceStatus(SessionInvoiceStatusResponseRaw rawValue) {
         return new SessionInvoiceStatus(
-                raw.getOrdinalNumber(),
-                raw.getInvoiceNumber(),
-                raw.getKsefNumber(),
-                raw.getReferenceNumber(),
-                raw.getInvoiceHash(),
-                raw.getInvoiceFileName(),
-                raw.getAcquisitionDate(),
-                raw.getInvoicingDate(),
-                raw.getPermanentStorageDate(),
-                raw.getUpoDownloadUrl(),
-                raw.getUpoDownloadUrlExpirationDate(),
-                InvoicingMappers.toInvoicingMode(raw.getInvoicingMode()),
-                InvoicingMappers.toInvoiceStatusInfo(raw.getStatus()));
+                rawValue.getOrdinalNumber(),
+                rawValue.getInvoiceNumber(),
+                rawValue.getKsefNumber(),
+                rawValue.getReferenceNumber(),
+                rawValue.getInvoiceHash(),
+                rawValue.getInvoiceFileName(),
+                rawValue.getAcquisitionDate(),
+                rawValue.getInvoicingDate(),
+                rawValue.getPermanentStorageDate(),
+                rawValue.getUpoDownloadUrl(),
+                rawValue.getUpoDownloadUrlExpirationDate(),
+                InvoicingMappers.toInvoicingMode(rawValue.getInvoicingMode()),
+                InvoicingMappers.toInvoiceStatusInfo(rawValue.getStatus()));
     }
 
-    public static SessionStatus toSessionStatus(SessionStatusResponseRaw raw) {
+    public static SessionStatus toSessionStatus(SessionStatusResponseRaw rawValue) {
         return new SessionStatus(
-                CommonMappers.toStatusInfo(raw.getStatus()),
-                raw.getDateCreated(),
-                raw.getDateUpdated(),
-                raw.getValidUntil(),
-                InvoicingMappers.toUpoInfo(raw.getUpo()),
-                raw.getInvoiceCount(),
-                raw.getSuccessfulInvoiceCount(),
-                raw.getFailedInvoiceCount());
+                CommonMappers.toStatusInfo(rawValue.getStatus()),
+                rawValue.getDateCreated(),
+                rawValue.getDateUpdated(),
+                rawValue.getValidUntil(),
+                InvoicingMappers.toUpoInfo(rawValue.getUpo()),
+                rawValue.getInvoiceCount(),
+                rawValue.getSuccessfulInvoiceCount(),
+                rawValue.getFailedInvoiceCount());
     }
 
-    public static ThirdSubjectIdentifierType toThirdSubjectIdentifierType(ThirdSubjectIdentifierTypeRaw raw) {
-        if (raw == null) {
+    public static ThirdSubjectIdentifierType toThirdSubjectIdentifierType(ThirdSubjectIdentifierTypeRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        return switch (raw) {
+        return switch (rawValue) {
             case NIP -> ThirdSubjectIdentifierType.NIP;
             case INTERNAL_ID -> ThirdSubjectIdentifierType.INTERNAL_ID;
             case VAT_UE -> ThirdSubjectIdentifierType.VAT_UE;
@@ -323,19 +323,19 @@ public final class InvoicingMappers {
         };
     }
 
-    public static UpoInfo toUpoInfo(UpoResponseRaw raw) {
-        if (raw == null) {
+    public static UpoInfo toUpoInfo(UpoResponseRaw rawValue) {
+        if (rawValue == null) {
             return null;
         }
-        List<UpoPage> mappedPages = raw.getPages().stream().map(InvoicingMappers::toUpoPage).toList();
+        List<UpoPage> mappedPages = rawValue.getPages().stream().map(InvoicingMappers::toUpoPage).toList();
         return new UpoInfo(mappedPages);
     }
 
-    public static UpoPage toUpoPage(UpoPageResponseRaw raw) {
+    public static UpoPage toUpoPage(UpoPageResponseRaw rawValue) {
         return new UpoPage(
-                raw.getReferenceNumber(),
-                raw.getDownloadUrl(),
-                raw.getDownloadUrlExpirationDate());
+                rawValue.getReferenceNumber(),
+                rawValue.getDownloadUrl(),
+                rawValue.getDownloadUrlExpirationDate());
     }
 
 }

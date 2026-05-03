@@ -81,8 +81,8 @@ public final class PeppolClientImpl implements PeppolClient {
                 + QUERY_STRING_PREFIX + QUERY_PARAM_PAGE_OFFSET + QUERY_PARAM_ASSIGN + pageOffset
                 + QUERY_PARAM_SEPARATOR + QUERY_PARAM_PAGE_SIZE + QUERY_PARAM_ASSIGN + pageSize;
         String token = sessionContext.token();
-        QueryPeppolProvidersResponseRaw raw = http.getAuthenticated(path, token,
+        QueryPeppolProvidersResponseRaw rawValue = http.getAuthenticated(path, token,
                 QueryPeppolProvidersResponseRaw.class, OP_QUERY_PROVIDERS);
-        return PeppolMappers.toPeppolProvidersResult(raw);
+        return PeppolMappers.toPeppolProvidersResult(rawValue);
     }
 }

@@ -31,15 +31,15 @@ public record AuthenticationListItem(
         OffsetDateTime refreshTokenValidUntil,
         Boolean current) {
 
-    public static AuthenticationListItem from(AuthenticationListItemRaw raw) {
+    public static AuthenticationListItem from(AuthenticationListItemRaw rawValue) {
         return new AuthenticationListItem(
-                raw.getReferenceNumber(),
-                raw.getStartDate(),
-                AuthenticationMethodInfo.from(raw.getAuthenticationMethodInfo()),
-                CommonMappers.toStatusInfo(raw.getStatus()),
-                raw.getIsTokenRedeemed(),
-                raw.getLastTokenRefreshDate(),
-                raw.getRefreshTokenValidUntil(),
-                raw.getIsCurrent());
+                rawValue.getReferenceNumber(),
+                rawValue.getStartDate(),
+                AuthenticationMethodInfo.from(rawValue.getAuthenticationMethodInfo()),
+                CommonMappers.toStatusInfo(rawValue.getStatus()),
+                rawValue.getIsTokenRedeemed(),
+                rawValue.getLastTokenRefreshDate(),
+                rawValue.getRefreshTokenValidUntil(),
+                rawValue.getIsCurrent());
     }
 }

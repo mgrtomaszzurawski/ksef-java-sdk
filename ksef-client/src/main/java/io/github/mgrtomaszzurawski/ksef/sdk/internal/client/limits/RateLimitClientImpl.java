@@ -39,8 +39,8 @@ public final class RateLimitClientImpl implements RateLimitClient {
     public ApiRateLimits getRateLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_RATE_LIMITS);
         String token = sessionContext.token();
-        EffectiveApiRateLimitsRaw raw = http.getAuthenticated(PATH_RATE_LIMITS, token,
+        EffectiveApiRateLimitsRaw rawValue = http.getAuthenticated(PATH_RATE_LIMITS, token,
                 EffectiveApiRateLimitsRaw.class, OP_GET_RATE_LIMITS);
-        return LimitsMappers.toApiRateLimits(raw);
+        return LimitsMappers.toApiRateLimits(rawValue);
     }
 }

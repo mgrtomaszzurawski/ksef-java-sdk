@@ -63,10 +63,10 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     /**
-     * Retrieve an invoice by its KSeF number. Returns raw invoice XML bytes.
+     * Retrieve an invoice by its KSeF number. Returns rawValue invoice XML bytes.
      *
      * @param ksefNumber the unique KSeF invoice number
-     * @return raw invoice XML bytes
+     * @return rawValue invoice XML bytes
      */
     @Override
     public byte[] getByKsefNumber(String ksefNumber) {
@@ -157,9 +157,9 @@ public final class InvoiceClientImpl implements InvoiceClient {
         Objects.requireNonNull(exportBuilder, ERR_NULL_EXPORT);
         InvoiceExportRequestRaw request = InvoicingRequestMappers.toInvoiceExportRequestRaw(exportBuilder.build());
         String token = sessionContext.token();
-        ExportInvoicesResponseRaw raw = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
+        ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
                 ExportInvoicesResponseRaw.class, OP_EXPORT);
-        return InvoicingMappers.toExportInvoicesResult(raw);
+        return InvoicingMappers.toExportInvoicesResult(rawValue);
     }
 
     /**
@@ -173,15 +173,15 @@ public final class InvoiceClientImpl implements InvoiceClient {
         LOGGER.debug(LOG_CALL_REF, OP_EXPORT_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = sessionContext.token();
-        InvoiceExportStatusResponseRaw raw = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
+        InvoiceExportStatusResponseRaw rawValue = http.getAuthenticated(PATH_EXPORT_STATUS + referenceNumber, token,
                 InvoiceExportStatusResponseRaw.class, OP_EXPORT_STATUS);
-        return InvoicingMappers.toInvoiceExportStatus(raw);
+        return InvoicingMappers.toInvoiceExportStatus(rawValue);
     }
 
     private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters) {
         String token = sessionContext.token();
-        QueryInvoicesMetadataResponseRaw raw = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
+        QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
-        return InvoicingMappers.toInvoiceMetadataResult(raw);
+        return InvoicingMappers.toInvoiceMetadataResult(rawValue);
     }
 }
