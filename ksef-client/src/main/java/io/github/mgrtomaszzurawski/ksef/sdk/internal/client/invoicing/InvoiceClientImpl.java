@@ -63,10 +63,10 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     /**
-     * Retrieve an invoice by its KSeF number. Returns rawValue invoice XML bytes.
+     * Retrieve an invoice by its KSeF number. Returns raw invoice XML bytes.
      *
      * @param ksefNumber the unique KSeF invoice number
-     * @return rawValue invoice XML bytes
+     * @return raw invoice XML bytes
      */
     @Override
     public byte[] getByKsefNumber(String ksefNumber) {
