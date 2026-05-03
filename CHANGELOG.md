@@ -11,7 +11,7 @@ This is the first public release. The SDK has been developed iteratively against
 the live KSeF demo environment; ADRs in `ADR/` document each architectural
 decision in chronological order.
 
-### Added (Codex follow-up — F1, F3, F6, F7)
+### Added (Codex follow-up)
 
 - `PreparedInvoiceExport` — public handle returned from
   `client.invoices().prepareExport(...)` that retains the AES key + IV used
@@ -19,22 +19,52 @@ decision in chronological order.
   `InvoicePackagePart`, verifies SHA-256 hashes, decrypts with the retained
   AES/IV, concatenates the parts back into a ZIP archive, unzips, and exposes
   `_metadata.json` + per-invoice XML bytes via `ExportedInvoicePackage`.
+  Implements `AutoCloseable`; `close()` zeroises the retained AES key and IV
+  (idempotent). `awaitReady()` and `downloadAndDecrypt(...)` reject post-close
+  use.
+- `KsefSessionTerminalFailureException` — thrown by
+  `PreparedInvoiceExport.awaitReady()` (and the session pollers) when the
+  server reports a terminal-but-non-200 status. Try-with-resources no longer
+  collapses terminal failures into ambiguous "package missing" errors.
 - `KsefVerificationLinks` — KSeF 2.0 KOD I (online invoice) and KOD II
   (offline-certificate) verification URL builders. KOD I:
   `qr-{env}.ksef.mf.gov.pl/invoice/{nip}/{DD-MM-YYYY}/{base64UrlSha256}`.
   KOD II: `qr-{env}.ksef.mf.gov.pl/certificate/{contextType}/{contextValue}/{nip}/{certSerial}/{hash}/{signature}`.
+- `KsefVerificationLinks.canonicalCertificateSigningPayload(CertificateSigningInput)` —
+  returns the UTF-8 bytes a KSeF offline certificate must sign for KOD II QR
+  codes. The signed payload includes the QR host (without `https://` prefix)
+  per `kody-qr.md`. New `CertificateSigningInput` record bundles the five
+  no-signature parameters; SDK stays PKI-neutral (caller signs externally).
 - `QrEnvironment` — `TEST` / `DEMO` / `PROD` enum exposing the official
   `qr-test.ksef.mf.gov.pl`, `qr-demo.ksef.mf.gov.pl`, `qr.ksef.mf.gov.pl` hosts.
+- `QrContextType` enum (`NIP` / `INTERNAL_ID` / `NIP_VAT_UE` / `PEPPOL_ID`)
+  replacing the previous raw `String contextType` parameter on
+  `CertificateVerificationParams` and `CertificateSigningInput`. Each value
+  carries its KSeF wire spelling (`Nip`, `InternalId`, `NipVatUe`, `PeppolId`)
+  via `wireValue()`.
+- `QrCodeService.addLabelToQrCode(byte[] qrPng, String label)` and
+  `generateLabeledQrCode(payloadUrl, label)` — render the
+  invoice-visualization labels (`LABEL_OFFLINE = "OFFLINE"`,
+  `LABEL_CERTIFICATE = "CERTYFIKAT"`) below the QR per the official KSeF
+  invoice-rendering spec.
+- `KsefPkcs12Credentials.clearPassword()` zeroises the cloned password
+  char-array; callers may invoke after authentication completes.
 - `KsefSessionPollingTimeoutException` — thrown by `KsefSession.close()` and
   `KsefBatchSession.close()` when polling never reaches a terminal status
   within the polling budget. Try-with-resources no longer exits silently on
   indeterminate state.
+- `KsefClientInternals` — deprecated public static seam exposing
+  `runtime(KsefClient)` / `sessionContext(KsefClient)` for SDK-internal unit
+  tests. Scheduled to move into a separate `ksef-client-testkit` artifact in
+  0.2.x.
 - `X-Error-Format: problem-details` header on every authenticated request, so
   KSeF returns structured RFC 7807 problem details on 4xx/5xx responses.
 - `Retry-After` honored on HTTP 429 retries, clamped to
-  `RetryPolicy.maxRetryAfterSeconds`.
+  `RetryPolicy.maxRetryAfterSeconds`. Now accepts RFC 7231 HTTP-date in all
+  three permitted formats (RFC 1123, RFC 850, asctime); past dates collapse
+  to immediate retry.
 
-### Changed (Codex follow-up — F2, F4, F5, F8, F9)
+### Changed (Codex follow-up)
 
 - `InvoiceClient.queryAllMetadata` no longer drops caller-supplied filters
   (`ksefNumber`, `invoiceNumber`, `sellerNip`, `invoicingMode`,
@@ -56,14 +86,49 @@ decision in chronological order.
   `KsefPkcs12Credentials` records now defensively clone `byte[]`/`char[]`
   fields in their compact constructors and accessor overrides, with
   `Arrays.equals`/`Arrays.hashCode` for structural equality.
-- `KsefClient.runtime()`, `KsefSession(...)` constructors, and
-  `KsefBatchSession(...)` constructors marked `@Deprecated(since = "0.1.0")` —
-  they remain accessible to in-module test seams but signal to consumers that
-  the SDK-internal types they expose will move behind a package-private bridge.
-
+- `ExportedInvoicePackage.equals/hashCode` made byte-array aware via custom
+  helpers; two packages with identical XML bytes but different `byte[]`
+  instances now compare equal.
+- `PreparedInvoiceExport.downloadPart` rejects any non-GET HTTP method on
+  `InvoicePackagePart` with a `KsefException` carrying the offending method
+  name; `null` accepted as default-GET to match KSeF's typical responses.
+- ZIP extraction in export enforces zip-bomb caps:
+  `MAX_ZIP_ENTRIES = 100_000`, `MAX_ZIP_TOTAL_BYTES = 4 GiB`,
+  `MAX_ZIP_ENTRY_BYTES = 256 MiB`. Exceeding any cap throws
+  `KsefException` with the offending counter.
+- Error messages embedding KSeF presigned package-part URLs now redact the
+  query string before inclusion (avoids leaking signed query parameters in
+  stack traces / logs).
 - Targets KSeF API 2.4.0 (was 2.2.1). Upstream changes are additive: token-on-self
   permission operations, retention/410 Gone responses, optional Problem Details
   format, increased rate limits.
+
+### Removed (Codex follow-up)
+
+- `KsefClient.runtime()` removed from the public API (binary-breaking; no
+  released consumers exist yet). Replaced by package-private
+  `internalRuntime()`. Test code accesses the runtime through the new
+  `KsefClientInternals.runtime(KsefClient)` static seam.
+- Eleven internal client-impl ctors changed from `(KsefClient ksef)` to
+  `(HttpRuntime runtime)` (`AuthClient`, `CertificateClientImpl`,
+  `InvoiceClientImpl`, `LimitsClientImpl`, `RateLimitClientImpl`,
+  `PeppolClientImpl`, `PermissionClientImpl`, `SecurityClient`,
+  `SessionClient`, `TestDataClientImpl`, `TokenClientImpl`). These types
+  live in `sdk.internal.client.*` (not exported via JPMS), so no public
+  binary contract changes; documented for completeness.
+
+### Deprecated (Codex follow-up)
+
+- `KsefClient.activateSessionForTests(...)` annotated
+  `@Deprecated(since = "0.1.0", forRemoval = true)`. The method stays
+  reachable so the existing test fixtures keep compiling; planned to move
+  into a dedicated `ksef-client-testkit` artifact in 0.2.x.
+- `KsefClientInternals` annotated `@Deprecated(since = "0.1.0", forRemoval = true)`.
+  Same migration target as `activateSessionForTests`.
+- `InvoiceClient.exportInvoices(InvoiceExportBuilder)` annotated
+  `@Deprecated(since = "0.1.0")` with javadoc redirecting to
+  `prepareExport(query, fullContent)`. Legacy entry remains reachable for
+  low-level use; IDE warnings surface the recommendation.
 
 ### Known limitations
 
