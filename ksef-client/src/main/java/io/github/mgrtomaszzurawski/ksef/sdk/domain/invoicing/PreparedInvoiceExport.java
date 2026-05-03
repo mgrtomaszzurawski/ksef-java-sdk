@@ -61,8 +61,11 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final String LOG_VERIFY = "[export {}] part {} hash verified";
     private static final int STATUS_POLL_DELAY_MS = 1500;
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
+    /** Lower bound (inclusive) for terminal export-status codes — anything {@code >= 200} is final. */
     private static final int STATUS_TERMINAL_FLOOR = 200;
+    /** Export-status code reported by KSeF for a successful export. Other terminal codes are failures. */
     private static final int STATUS_CODE_OK = 200;
+    /** HTTP status code expected on a successful package-part download. */
     private static final int HTTP_OK = 200;
     private static final int ZIP_BUFFER_BYTES = 8 * 1024;
 
@@ -216,15 +219,31 @@ public final class PreparedInvoiceExport implements AutoCloseable {
         try {
             HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() != HTTP_OK) {
-                throw new KsefException(ERR_DOWNLOAD_FAILED + " " + url + " status=" + response.statusCode(), null);
+                throw new KsefException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url)
+                        + " status=" + response.statusCode(), null);
             }
             return response.body();
         } catch (IOException ioFailure) {
-            throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + url, ioFailure);
+            throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), ioFailure);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + url, interrupted);
+            throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), interrupted);
         }
+    }
+
+    /**
+     * Strip the query string from {@code url} for inclusion in error messages.
+     * KSeF presigned download URLs carry signed query parameters that should
+     * not appear in logs or thrown exceptions.
+     */
+    private static String redactQuery(URI url) {
+        if (url.getRawQuery() == null) {
+            return url.toString();
+        }
+        String scheme = url.getScheme();
+        String authority = url.getRawAuthority();
+        String path = url.getRawPath();
+        return scheme + "://" + authority + (path == null ? "" : path) + "?<redacted>";
     }
 
     private void verifyEncryptedPartHash(InvoicePackagePart part, byte[] encryptedBytes) {
