@@ -102,6 +102,14 @@
         <exclude name="TestClassWithoutTestCases"/>
         <!-- instanceof-in-catch is the idiomatic way to differentiate I/O vs runtime failures. -->
         <exclude name="AvoidInstanceofChecksInCatchClause"/>
+        <!-- @SuppressWarnings("java:S2629") repeats are not duplicated business literals. -->
+        <exclude name="AvoidDuplicateLiterals"/>
+    </rule>
+
+    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
+        <properties>
+            <property name="skipAnnotations" value="true"/>
+        </properties>
     </rule>
 
     <rule ref="category/java/multithreading.xml">
@@ -148,7 +156,7 @@
     string-length(@Name) < 4
     and not(@Name = ('raw','nip','NIP','VAT','id','pkg','url','in','out','obj','o',
                      'csr','zip','upo','der','seq','key','crc',
-                     'FA2','FA3','ROZ','KOR','JST','ZAL','UPR',
+                     'FA','FA2','FA3','PEF','RR','ROZ','KOR','JST','ZAL','UPR',
                      'i','j','k','x','y','b','r','s','ch','cp','to','off','len',
                      'dir','all','rsa','ec','qrX','p','e','ex'))
     and not(ancestor::ForStatement)

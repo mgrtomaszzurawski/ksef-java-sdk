@@ -148,11 +148,12 @@ public final class InvoicingRequestMappers {
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryAmount amount) {
         io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryAmountRaw raw =
                 new io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryAmountRaw();
-        raw.setType(switch (amount.type()) {
+        io.github.mgrtomaszzurawski.ksef.client.model.AmountTypeRaw amountType = switch (amount.type()) {
             case BRUTTO -> io.github.mgrtomaszzurawski.ksef.client.model.AmountTypeRaw.BRUTTO;
             case NETTO -> io.github.mgrtomaszzurawski.ksef.client.model.AmountTypeRaw.NETTO;
             case VAT -> io.github.mgrtomaszzurawski.ksef.client.model.AmountTypeRaw.VAT;
-        });
+        };
+        raw.setType(amountType);
         raw.setFrom(amount.from().doubleValue());
         raw.setTo(amount.to().doubleValue());
         return raw;
@@ -162,12 +163,13 @@ public final class InvoicingRequestMappers {
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryBuyerIdentifier buyer) {
         io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryBuyerIdentifierRaw raw =
                 new io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryBuyerIdentifierRaw();
-        raw.setType(switch (buyer.type()) {
+        io.github.mgrtomaszzurawski.ksef.client.model.BuyerIdentifierTypeRaw buyerType = switch (buyer.type()) {
             case NIP -> io.github.mgrtomaszzurawski.ksef.client.model.BuyerIdentifierTypeRaw.NIP;
             case VAT_UE -> io.github.mgrtomaszzurawski.ksef.client.model.BuyerIdentifierTypeRaw.VAT_UE;
             case OTHER -> io.github.mgrtomaszzurawski.ksef.client.model.BuyerIdentifierTypeRaw.OTHER;
             case NONE -> io.github.mgrtomaszzurawski.ksef.client.model.BuyerIdentifierTypeRaw.NONE;
-        });
+        };
+        raw.setType(buyerType);
         if (buyer.value() != null) {
             raw.setValue(buyer.value());
         }

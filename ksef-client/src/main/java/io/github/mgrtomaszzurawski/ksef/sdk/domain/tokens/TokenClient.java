@@ -27,8 +27,16 @@ public interface TokenClient {
      * List every token, following the {@code x-continuation-token} cursor
      * internally. Codex round-9 manual-validation A.4.1 — typed SDKs should
      * not force consumers to compose their own pagination loops.
+     *
+     * <p>Default fallback returns the first page's items only (the
+     * single-page {@link #list()} accepts no continuation token, so
+     * looping would refetch the same page forever). The real impl in
+     * {@code TokenClientImpl} overrides with cursor iteration. Default
+     * exists for source compatibility with external test doubles.
      */
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> listAll();
+    default java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> listAll() {
+        return java.util.List.copyOf(list().tokens());
+    }
 
     TokenDetail getStatus(String referenceNumber);
     void revoke(String referenceNumber);

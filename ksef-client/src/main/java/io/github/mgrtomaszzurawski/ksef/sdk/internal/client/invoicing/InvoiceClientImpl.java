@@ -169,13 +169,18 @@ public final class InvoiceClientImpl implements InvoiceClient {
             }
 
             if (page.isTruncated()) {
-                // Truncation case: server told us this dateRange has more than
-                // it can return in one window. Narrow the window by HWM and
-                // restart paging from offset 0.
-                if (page.permanentStorageHwmDate() == null) {
+                // Truncation case: per spec
+                // (POST /invoices/query/metadata description in open-api.json),
+                // narrow dateRange.from to the LAST RETURNED RECORD's date for
+                // the chosen dateType axis, then reset pageOffset to 0.
+                // permanentStorageHwmDate is a per-query constant, not a
+                // per-page cursor — using it would produce stale data or
+                // infinite loops on busy taxpayers.
+                java.time.OffsetDateTime cursor = lastRecordCursor(page, query.build().dateType());
+                if (cursor == null) {
                     break;
                 }
-                filters.getDateRange().from(page.permanentStorageHwmDate());
+                filters.getDateRange().from(cursor);
                 pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
             } else {
                 // hasMore && !isTruncated: stay on the same dateRange, advance
@@ -257,6 +262,27 @@ public final class InvoiceClientImpl implements InvoiceClient {
         } catch (CertificateException certificateFailure) {
             throw new KsefException(ERR_PARSE_SYMMETRIC_CERT, certificateFailure);
         }
+    }
+
+    /**
+     * Pull the cursor value for the truncation-restart case from the last
+     * record on the page, picking the date axis matching the filter's
+     * {@code dateType}. Returns {@code null} when the page contained no
+     * records (defensive — should not happen on a truncated page in
+     * practice).
+     */
+    private static java.time.OffsetDateTime lastRecordCursor(InvoiceMetadataResult page,
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType) {
+        if (page.invoices() == null || page.invoices().isEmpty()) {
+            return null;
+        }
+        InvoiceMetadata last = page.invoices().get(page.invoices().size() - 1);
+        return switch (dateType) {
+            case PERMANENT_STORAGE -> last.permanentStorageDate();
+            case INVOICING -> last.invoicingDate();
+            case ISSUE -> last.issueDate() == null ? null
+                    : last.issueDate().atStartOfDay(java.time.ZoneOffset.UTC).toOffsetDateTime();
+        };
     }
 
     private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters) {

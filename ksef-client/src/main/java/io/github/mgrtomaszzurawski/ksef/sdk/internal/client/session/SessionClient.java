@@ -52,8 +52,26 @@ public final class SessionClient {
     /** Spec-defined max page size for {@code GET /sessions/{ref}/invoices}. */
     private static final int SESSION_INVOICES_PAGE_SIZE = 250;
     /** Custom request header for paginated session-invoices endpoint. */
-    private static final String HEADER_CONTINUATION_TOKEN = "x-continuation-token";
+    public static final String HEADER_CONTINUATION_TOKEN = "x-continuation-token";
     private static final String QUERY_PAGE_SIZE = "?pageSize=";
+
+    // Codex review CRITICAL — magic strings → constants for the
+    // GET /sessions listing query-string assembly.
+    private static final String QUERY_PARAM_SEPARATOR = "&";
+    private static final String QUERY_PARAM_EQUALS = "=";
+    private static final String PARAM_SESSION_TYPE = "sessionType";
+    private static final String PARAM_REFERENCE_NUMBER = "referenceNumber";
+    private static final String PARAM_DATE_CREATED_FROM = "dateCreatedFrom";
+    private static final String PARAM_DATE_CREATED_TO = "dateCreatedTo";
+    private static final String PARAM_DATE_CLOSED_FROM = "dateClosedFrom";
+    private static final String PARAM_DATE_CLOSED_TO = "dateClosedTo";
+    private static final String PARAM_DATE_MODIFIED_FROM = "dateModifiedFrom";
+    private static final String PARAM_DATE_MODIFIED_TO = "dateModifiedTo";
+    private static final String PARAM_STATUSES = "statuses";
+    /** Spec wire value for {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType#ONLINE}. */
+    private static final String SESSION_TYPE_ONLINE = "Online";
+    /** Spec wire value for {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType#BATCH}. */
+    private static final String SESSION_TYPE_BATCH = "Batch";
 
     private static final String OP_OPEN_ONLINE = "openOnlineSession";
     private static final String OP_SEND_INVOICE = "sendInvoice";
@@ -100,27 +118,31 @@ public final class SessionClient {
         }
     }
 
+    @SuppressWarnings("PMD.ConsecutiveAppendsShouldReuse")
     private io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw querySessionsPage(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter,
             String continuationToken) {
         LOGGER.debug(LOG_CALL, OP_QUERY_SESSIONS);
         String token = http.requireToken();
-        StringBuilder path = new StringBuilder(ApiPaths.SESSIONS).append("?pageSize=").append(SESSION_INVOICES_PAGE_SIZE);
-        if (filter.sessionType() != null) {
-            path.append("&sessionType=").append(filter.sessionType() == io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType.ONLINE ? "Online" : "Batch");
-        }
+        StringBuilder path = new StringBuilder(ApiPaths.SESSIONS).append(QUERY_PAGE_SIZE).append(SESSION_INVOICES_PAGE_SIZE);
+        // sessionType is required per OpenAPI; SessionsQueryFilter compact
+        // constructor enforces non-null so we never need a presence check here.
+        path.append(QUERY_PARAM_SEPARATOR).append(PARAM_SESSION_TYPE).append(QUERY_PARAM_EQUALS)
+                .append(filter.sessionType() == io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType.ONLINE
+                        ? SESSION_TYPE_ONLINE : SESSION_TYPE_BATCH);
         if (filter.referenceNumber() != null) {
-            path.append("&referenceNumber=").append(java.net.URLEncoder.encode(filter.referenceNumber(), java.nio.charset.StandardCharsets.UTF_8));
+            path.append(QUERY_PARAM_SEPARATOR).append(PARAM_REFERENCE_NUMBER).append(QUERY_PARAM_EQUALS)
+                    .append(java.net.URLEncoder.encode(filter.referenceNumber(), java.nio.charset.StandardCharsets.UTF_8));
         }
-        appendDateParam(path, "dateCreatedFrom", filter.dateCreatedFrom());
-        appendDateParam(path, "dateCreatedTo", filter.dateCreatedTo());
-        appendDateParam(path, "dateClosedFrom", filter.dateClosedFrom());
-        appendDateParam(path, "dateClosedTo", filter.dateClosedTo());
-        appendDateParam(path, "dateModifiedFrom", filter.dateModifiedFrom());
-        appendDateParam(path, "dateModifiedTo", filter.dateModifiedTo());
+        appendDateParam(path, PARAM_DATE_CREATED_FROM, filter.dateCreatedFrom());
+        appendDateParam(path, PARAM_DATE_CREATED_TO, filter.dateCreatedTo());
+        appendDateParam(path, PARAM_DATE_CLOSED_FROM, filter.dateClosedFrom());
+        appendDateParam(path, PARAM_DATE_CLOSED_TO, filter.dateClosedTo());
+        appendDateParam(path, PARAM_DATE_MODIFIED_FROM, filter.dateModifiedFrom());
+        appendDateParam(path, PARAM_DATE_MODIFIED_TO, filter.dateModifiedTo());
         if (filter.statuses() != null) {
             for (Integer code : filter.statuses()) {
-                path.append("&statuses=").append(code);
+                path.append(QUERY_PARAM_SEPARATOR).append(PARAM_STATUSES).append(QUERY_PARAM_EQUALS).append(code);
             }
         }
         return continuationToken == null
@@ -133,7 +155,7 @@ public final class SessionClient {
 
     private static void appendDateParam(StringBuilder path, String name, java.time.OffsetDateTime value) {
         if (value != null) {
-            path.append("&").append(name).append("=")
+            path.append(QUERY_PARAM_SEPARATOR).append(name).append(QUERY_PARAM_EQUALS)
                     .append(java.net.URLEncoder.encode(value.toString(), java.nio.charset.StandardCharsets.UTF_8));
         }
     }

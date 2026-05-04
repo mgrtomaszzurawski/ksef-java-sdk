@@ -91,7 +91,8 @@ public final class TokenClientImpl implements TokenClient {
             QueryTokensResponseRaw rawValue = continuationToken == null
                     ? http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST)
                     : http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST,
-                            "x-continuation-token", continuationToken);
+                            io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
+                            continuationToken);
             TokenList page = TokensMappers.toTokenList(rawValue);
             all.addAll(page.tokens());
             String next = page.continuationToken();

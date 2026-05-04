@@ -107,6 +107,11 @@ public final class PermissionClientImpl implements PermissionClient {
 
     private static final String ERR_BUILDER_NULL = "builder must not be null";
 
+    /** Spec-defined max page size for permission query endpoints. */
+    private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 250;
+    private static final String PERMISSION_QUERY_PAGE_PARAMS = "?pageOffset=";
+    private static final String PERMISSION_QUERY_PAGE_SIZE_PARAM = "&pageSize=" + PERMISSION_QUERY_MAX_PAGE_SIZE;
+
     private final HttpSupport http;
 
     public PermissionClientImpl(HttpRuntime runtime) {
@@ -424,11 +429,6 @@ public final class PermissionClientImpl implements PermissionClient {
     // ======================== queryAll variants (Codex A.4.1) ========================
     // Each iterates pageOffset internally using spec-max page size; consumers
     // get one flat list and never see continuation/pagination details.
-
-    /** Spec-defined max page size for permission query endpoints. */
-    private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 250;
-    private static final String PERMISSION_QUERY_PAGE_PARAMS = "?pageOffset=";
-    private static final String PERMISSION_QUERY_PAGE_SIZE_PARAM = "&pageSize=" + PERMISSION_QUERY_MAX_PAGE_SIZE;
 
     private static String pagedPath(String basePath, int pageOffset) {
         return basePath + PERMISSION_QUERY_PAGE_PARAMS + pageOffset + PERMISSION_QUERY_PAGE_SIZE_PARAM;

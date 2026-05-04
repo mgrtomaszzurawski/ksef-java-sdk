@@ -131,6 +131,7 @@ public final class HttpSupport {
      * endpoints that pass {@code x-continuation-token} on subsequent pages
      * (Codex round-9 manual-validation A.2.3 follow-up).
      */
+    @SuppressWarnings("PMD.UseObjectForClearerAPI")
     public <T> T getAuthenticated(String path, String token, Class<T> responseType,
                                     String operationName,
                                     String extraHeaderName, String extraHeaderValue) {

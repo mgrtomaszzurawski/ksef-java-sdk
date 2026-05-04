@@ -208,17 +208,19 @@ class InvoiceClientTest {
     @Test
     void queryAllMetadata_whenIsTruncated_resetsPageOffsetAndAdvancesDateRange(WireMockRuntimeInfo wmInfo) {
         // given — A.1.2 spec algorithm:
-        //   hasMore=true && isTruncated=true → narrow dateRange.from to HWM
-        //                                     cursor + reset pageOffset to 0.
-        String hwmCursor = "2026-04-15T10:00:00.000Z";
+        //   hasMore=true && isTruncated=true → narrow dateRange.from to the
+        //                                     LAST RETURNED RECORD's date for
+        //                                     the chosen dateType axis +
+        //                                     reset pageOffset to 0.
+        String lastRecordDate = "2026-04-15T10:00:00Z";
         String pageOneBody = """
                 {
-                  "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat"}],
+                  "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat", "invoicingDate": "%s"}],
                   "hasMore": true,
                   "isTruncated": true,
-                  "permanentStorageHwmDate": "%s"
+                  "permanentStorageHwmDate": "2026-04-30T00:00:00Z"
                 }
-                """.formatted(TEST_KSEF_NUMBER, hwmCursor);
+                """.formatted(TEST_KSEF_NUMBER, lastRecordDate);
         String pageTwoBody = """
                 {
                   "invoices": [],
@@ -252,8 +254,8 @@ class InvoiceClientTest {
             assertTrue(requests.get(1).getUrl().contains("pageOffset=0"),
                     "page 2 must reset pageOffset to 0 on truncation, was URL: " + requests.get(1).getUrl());
             String pageTwoBodyOut = requests.get(1).getBodyAsString();
-            assertTrue(pageTwoBodyOut.contains(hwmCursor.substring(0, 10)),
-                    "page 2 must advance dateRange.from to HWM cursor on truncation, was: " + pageTwoBodyOut);
+            assertTrue(pageTwoBodyOut.contains(lastRecordDate.substring(0, 10)),
+                    "page 2 must advance dateRange.from to last-record date on truncation, was: " + pageTwoBodyOut);
         }
     }
 

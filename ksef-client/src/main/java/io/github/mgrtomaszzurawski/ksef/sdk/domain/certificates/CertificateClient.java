@@ -37,7 +37,15 @@ public interface CertificateClient {
      * Query all certificates matching the filter, walking pageOffset
      * internally with spec-max page size. Codex round-9 manual-validation
      * A.4.1 — saves consumers from composing pagination loops.
+     *
+     * <p>Default fallback returns first-page items only (no pageOffset
+     * parameter on the single-page {@link #query(CertificateQueryBuilder)}).
+     * The real impl in {@code CertificateClientImpl} overrides with URL-level
+     * pagination. Default exists for source compatibility with external
+     * test doubles.
      */
-    List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
-            queryAll(CertificateQueryBuilder builder);
+    default List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
+            queryAll(CertificateQueryBuilder builder) {
+        return List.copyOf(query(builder).certificates());
+    }
 }

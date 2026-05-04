@@ -252,20 +252,6 @@ class OpenApiPathCoverageTest {
     }
 
     /**
-     * Returns operation tuples in the form {@code "METHOD /path"} (e.g.
-     * {@code "POST /tokens"}, {@code "GET /tokens/{referenceNumber}"}).
-     */
-    private static List<String> loadSpecOperations() throws IOException {
-        List<String> result = new ArrayList<>();
-        for (var entry : loadMethodsByPath().entrySet()) {
-            for (String method : entry.getValue()) {
-                result.add(method + " " + entry.getKey());
-            }
-        }
-        return result;
-    }
-
-    /**
      * Returns a map from {@code /path} → sorted-uppercase method list (e.g.
      * {@code [DELETE, GET, POST]}). Used by the multi-method-vs-single-method
      * coverage gates.

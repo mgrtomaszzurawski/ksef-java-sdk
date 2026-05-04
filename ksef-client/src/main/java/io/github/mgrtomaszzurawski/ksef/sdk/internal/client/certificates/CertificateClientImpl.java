@@ -49,6 +49,8 @@ public final class CertificateClientImpl implements CertificateClient {
     private static final String PATH_ENROLLMENTS = ApiPaths.CERTIFICATES + "/enrollments";
     private static final String PATH_RETRIEVE = ApiPaths.CERTIFICATES + "/retrieve";
     private static final String PATH_QUERY = ApiPaths.CERTIFICATES + "/query";
+    /** Spec-defined max page size for certificate query endpoint. */
+    private static final int CERTIFICATE_QUERY_MAX_PAGE_SIZE = 250;
 
     private static final String SEGMENT_REVOKE = "/revoke";
 
@@ -220,7 +222,4 @@ public final class CertificateClientImpl implements CertificateClient {
             pageOffset++;
         }
     }
-
-    /** Spec-defined max page size for certificate query endpoint. */
-    private static final int CERTIFICATE_QUERY_MAX_PAGE_SIZE = 250;
 }

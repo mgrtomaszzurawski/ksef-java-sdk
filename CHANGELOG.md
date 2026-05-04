@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First public Maven Central release.
 
+### Source-incompatible record changes (1.0.0 stabilisation)
+
+- **`InvoiceQueryFilters`** — record component count grew from 10 to 16
+  (added: `restrictToPermanentStorageHwm`, `amount`, `buyerIdentifier`,
+  `currencyCodes`, `formType`, `invoiceTypes`). Source-incompatible only
+  for callers that constructed the record positionally; the canonical
+  path is `InvoiceQueryBuilder.build()`, which is updated.
+- **`IncrementalSyncPlan`** — `dateType` record component REMOVED
+  (HWM sync only works with `PERMANENT_STORAGE` per spec; an
+  arbitrary-axis setter was unsafe and is gone). The `dateType()`
+  accessor method survives as a constant-returning shim so existing
+  read-side callers still compile; positional constructor invocations
+  of the record will break.
+
 ### License decision
 
 - **AGPL-3.0-only retained** at 1.0.0 (per revised ADR-007). The original

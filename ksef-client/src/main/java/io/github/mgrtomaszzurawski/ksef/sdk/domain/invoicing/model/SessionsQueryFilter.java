@@ -11,10 +11,13 @@ import org.jspecify.annotations.Nullable;
 /**
  * Filter for {@code GET /sessions} (Codex round-9 manual-validation A.2.4).
  *
- * <p>All fields are optional; {@code null} means "no filter on this axis".
- * Use {@link #builder()} for a fluent construction.
+ * <p>{@code sessionType} is REQUIRED per OpenAPI ({@code GET /sessions}
+ * declares it {@code required: true}). All other fields are optional;
+ * {@code null} means "no filter on this axis". Use {@link #forOnline()},
+ * {@link #forBatch()}, or {@link #builder(KsefSessionType)} for fluent
+ * construction.
  *
- * @param sessionType narrow to ONLINE or BATCH
+ * @param sessionType narrow to ONLINE or BATCH (required)
  * @param referenceNumber narrow to one specific session reference
  * @param dateCreatedFrom inclusive lower bound on session creation time
  * @param dateCreatedTo inclusive upper bound
@@ -26,7 +29,7 @@ import org.jspecify.annotations.Nullable;
  *     {@code [100, 200]} for in-flight + success)
  */
 public record SessionsQueryFilter(
-        @Nullable KsefSessionType sessionType,
+        KsefSessionType sessionType,
         @Nullable String referenceNumber,
         @Nullable OffsetDateTime dateCreatedFrom,
         @Nullable OffsetDateTime dateCreatedTo,
@@ -36,16 +39,30 @@ public record SessionsQueryFilter(
         @Nullable OffsetDateTime dateModifiedTo,
         @Nullable List<Integer> statuses) {
 
+    private static final String ERR_SESSION_TYPE_NULL =
+            "sessionType is required by GET /sessions (OpenAPI required:true)";
+
     public SessionsQueryFilter {
+        java.util.Objects.requireNonNull(sessionType, ERR_SESSION_TYPE_NULL);
         statuses = statuses == null ? null : List.copyOf(statuses);
     }
 
-    public static Builder builder() {
-        return new Builder();
+    /** Convenience: filter restricted to {@link KsefSessionType#ONLINE}. */
+    public static Builder forOnline() {
+        return new Builder(KsefSessionType.ONLINE);
+    }
+
+    /** Convenience: filter restricted to {@link KsefSessionType#BATCH}. */
+    public static Builder forBatch() {
+        return new Builder(KsefSessionType.BATCH);
+    }
+
+    public static Builder builder(KsefSessionType sessionType) {
+        return new Builder(sessionType);
     }
 
     public static final class Builder {
-        private KsefSessionType sessionType;
+        private final KsefSessionType sessionType;
         private String referenceNumber;
         private OffsetDateTime dateCreatedFrom;
         private OffsetDateTime dateCreatedTo;
@@ -55,16 +72,17 @@ public record SessionsQueryFilter(
         private OffsetDateTime dateModifiedTo;
         private List<Integer> statuses;
 
-        private Builder() { }
+        private Builder(KsefSessionType sessionType) {
+            this.sessionType = java.util.Objects.requireNonNull(sessionType, ERR_SESSION_TYPE_NULL);
+        }
 
-        public Builder sessionType(KsefSessionType type) { this.sessionType = type; return this; }
-        public Builder referenceNumber(String ref) { this.referenceNumber = ref; return this; }
-        public Builder dateCreatedFrom(OffsetDateTime from) { this.dateCreatedFrom = from; return this; }
-        public Builder dateCreatedTo(OffsetDateTime to) { this.dateCreatedTo = to; return this; }
-        public Builder dateClosedFrom(OffsetDateTime from) { this.dateClosedFrom = from; return this; }
-        public Builder dateClosedTo(OffsetDateTime to) { this.dateClosedTo = to; return this; }
-        public Builder dateModifiedFrom(OffsetDateTime from) { this.dateModifiedFrom = from; return this; }
-        public Builder dateModifiedTo(OffsetDateTime to) { this.dateModifiedTo = to; return this; }
+        public Builder referenceNumber(String referenceNumber) { this.referenceNumber = referenceNumber; return this; }
+        public Builder dateCreatedFrom(OffsetDateTime dateCreatedFrom) { this.dateCreatedFrom = dateCreatedFrom; return this; }
+        public Builder dateCreatedTo(OffsetDateTime dateCreatedTo) { this.dateCreatedTo = dateCreatedTo; return this; }
+        public Builder dateClosedFrom(OffsetDateTime dateClosedFrom) { this.dateClosedFrom = dateClosedFrom; return this; }
+        public Builder dateClosedTo(OffsetDateTime dateClosedTo) { this.dateClosedTo = dateClosedTo; return this; }
+        public Builder dateModifiedFrom(OffsetDateTime dateModifiedFrom) { this.dateModifiedFrom = dateModifiedFrom; return this; }
+        public Builder dateModifiedTo(OffsetDateTime dateModifiedTo) { this.dateModifiedTo = dateModifiedTo; return this; }
         public Builder statuses(Integer... codes) { this.statuses = List.of(codes); return this; }
 
         public SessionsQueryFilter build() {
