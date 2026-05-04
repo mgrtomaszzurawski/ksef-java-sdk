@@ -16,7 +16,20 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 public interface TokenClient {
 
     GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder);
+
+    /**
+     * Single-page list — keeps the original signature including the
+     * {@code continuationToken} accessor.
+     */
     TokenList list();
+
+    /**
+     * List every token, following the {@code x-continuation-token} cursor
+     * internally. Codex round-9 manual-validation A.4.1 — typed SDKs should
+     * not force consumers to compose their own pagination loops.
+     */
+    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> listAll();
+
     TokenDetail getStatus(String referenceNumber);
     void revoke(String referenceNumber);
 

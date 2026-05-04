@@ -5,12 +5,20 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
  * SDK request payload for invoice metadata queries (returned by
  * {@code InvoiceQueryBuilder.build()}).
+ *
+ * @param restrictToPermanentStorageHwm when {@code true}, the server caps
+ *     the export's {@code dateRange.to} at the current PermanentStorage HWM;
+ *     mandated by the incremental-retrieval spec
+ *     ({@code pobieranie-faktur/przyrostowe-pobieranie-faktur.md}). Set by
+ *     {@code InvoiceSyncClient} on every export it opens; consumers do not
+ *     normally need to set this directly. Default {@code false}.
  */
 public record InvoiceQueryFilters(
         InvoiceQuerySubjectType subjectType,
@@ -22,11 +30,19 @@ public record InvoiceQueryFilters(
         @Nullable String sellerNip,
         @Nullable InvoicingMode invoicingMode,
         @Nullable Boolean selfInvoicing,
-        @Nullable Boolean hasAttachment) {
+        @Nullable Boolean hasAttachment,
+        boolean restrictToPermanentStorageHwm,
+        @Nullable InvoiceQueryAmount amount,
+        @Nullable InvoiceQueryBuyerIdentifier buyerIdentifier,
+        @Nullable List<String> currencyCodes,
+        @Nullable InvoiceFormType formType,
+        @Nullable List<InvoiceType> invoiceTypes) {
 
     public InvoiceQueryFilters {
         Objects.requireNonNull(subjectType, "subjectType");
         Objects.requireNonNull(dateType, "dateType");
         Objects.requireNonNull(dateFrom, "dateFrom");
+        currencyCodes = currencyCodes == null ? null : List.copyOf(currencyCodes);
+        invoiceTypes = invoiceTypes == null ? null : List.copyOf(invoiceTypes);
     }
 }

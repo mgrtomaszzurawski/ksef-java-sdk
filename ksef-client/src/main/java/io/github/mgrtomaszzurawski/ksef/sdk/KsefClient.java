@@ -358,6 +358,53 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
+     * File-streaming variant of {@link #openBatchSession(FormCode, List)}.
+     * Each invoice is read straight from disk into the batch ZIP rather than
+     * materialised as a {@code byte[]} in heap (Codex round-9
+     * manual-validation A.4.2). Use this for large batches — e.g. the spec
+     * cap of 10 000 invoices (REQ-SESS-41) — so peak heap stays bounded by
+     * the chunk-encryption buffer.
+     *
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * @param invoiceFiles non-empty list of paths to invoice XML files
+     * @return an open batch session pre-loaded with the encrypted part bytes
+     */
+    @SuppressWarnings("java:S2629")
+    public synchronized KsefBatchSession openBatchSessionFromFiles(FormCode formCode,
+                                                                     List<java.nio.file.Path> invoiceFiles) {
+        Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
+        Objects.requireNonNull(invoiceFiles, ERR_INVOICES_NULL);
+        ensureOpen();
+        ensureAuthenticated();
+
+        PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
+        byte[] aesKey = CryptoService.generateAesKey();
+        byte[] initVector = CryptoService.generateIv();
+        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
+
+        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.buildFromFiles(
+                invoiceFiles, aesKey, initVector);
+
+        OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
+                .formCode(new FormCodeRaw()
+                        .systemCode(formCode.systemCode())
+                        .schemaVersion(formCode.schemaVersion())
+                        .value(formCode.value()))
+                .encryption(new EncryptionInfoRaw()
+                        .encryptedSymmetricKey(encryptedKey)
+                        .initializationVector(initVector))
+                .batchFile(toBatchFileInfoRaw(pkg.spec()));
+
+        BatchSession session = sessionClient.openBatch(request);
+        LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,
+                session.referenceNumber(), invoiceFiles.size(), formCode);
+
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(
+                sessionClient, httpClient, session.referenceNumber(),
+                session.partUploadRequests(), pkg);
+    }
+
+    /**
      * Terminate the current authentication session.
      * Clears all session state. After calling this, {@link #authenticate()} must be
      * called again (explicitly or lazily) before any further operations.
@@ -512,6 +559,23 @@ public final class KsefClient implements AutoCloseable {
         ensureOpen();
         return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient(
                 invoiceClient, objectMapper);
+    }
+
+    /**
+     * List sessions (online + batch) matching the filter, with internal
+     * cursor iteration. Codex round-9 manual-validation A.2.4 — exposes
+     * {@code GET /sessions} which previously had no public typed entry
+     * point. Authenticates lazily.
+     *
+     * @param filter optional filter (type, status, date ranges, exact ref)
+     * @return all matching session summary items
+     */
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
+            querySessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
+        Objects.requireNonNull(filter, "filter must not be null");
+        ensureOpen();
+        ensureAuthenticated();
+        return sessionClient.queryAllSessions(filter);
     }
 
     /**

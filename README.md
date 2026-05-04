@@ -155,7 +155,10 @@ Available modes (defined in `DemoMode`):
 - `READ_ONLY` — auth + listing operations (no writes)
 - `AUTH_SAFE` — auth + safe-write operations (no permission changes)
 - `FULL` — full lifecycle including session open/send/close
-- `CERTIFICATES` — certificate enrollment (consumes monthly cert quota)
+- `CLEANUP` — terminate any leftover sessions/permissions from prior runs
+
+Certificate enrollment runs are gated separately via `CertificateRunner` to
+avoid burning the monthly KSeF certificate quota on every demo execution.
 
 ## Build and test
 

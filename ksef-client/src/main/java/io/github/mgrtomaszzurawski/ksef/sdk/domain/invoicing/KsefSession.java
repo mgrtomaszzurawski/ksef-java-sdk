@@ -193,7 +193,10 @@ public final class KsefSession implements AutoCloseable {
      * @return submitted invoice metadata
      */
     public SessionInvoices invoices() {
-        return sessionClient.getInvoices(referenceNumber);
+        // Codex round-9 manual-validation A.2.3 — single-page getInvoices()
+        // dropped invoices for sessions with > pageSize entries. Iterate the
+        // x-continuation-token cursor internally and return one combined page.
+        return new SessionInvoices(null, sessionClient.getAllInvoices(referenceNumber));
     }
 
     /**
@@ -212,7 +215,7 @@ public final class KsefSession implements AutoCloseable {
      * @return failed invoice metadata
      */
     public SessionInvoices failedInvoices() {
-        return sessionClient.getFailedInvoices(referenceNumber);
+        return new SessionInvoices(null, sessionClient.getAllFailedInvoices(referenceNumber));
     }
 
     /**
@@ -248,6 +251,35 @@ public final class KsefSession implements AutoCloseable {
      */
     public byte[] upoByKsefNumber(String ksefNumber) {
         return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
+    }
+
+    /**
+     * Download every bulk-session UPO referenced in
+     * {@link SessionStatus#upo()}. The KSeF spec
+     * ({@code faktury/sesje/sesja-sprawdzenie-stanu-i-pobranie-upo.md}) returns
+     * one or more {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoPage}
+     * references after a session reaches terminal status; each page can carry
+     * up to ~10 000 invoices. This method fetches the current
+     * {@link SessionStatus} and downloads every page in order.
+     *
+     * <p>Codex round-9 manual-validation A.2.1 — previously the
+     * {@code SessionClient.getUpoByReference(...)} endpoint was reachable but
+     * unreachable through {@code KsefSession}/{@code KsefBatchSession}; the
+     * consumer had to plumb {@code upo.pages[]} themselves.
+     *
+     * @return one byte[] per bulk UPO XML page, in spec order; empty list
+     *     if the session has no bulk UPO yet (typical before terminal close).
+     */
+    public java.util.List<byte[]> bulkUpos() {
+        SessionStatus current = sessionClient.getStatus(referenceNumber);
+        if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
+            return java.util.List.of();
+        }
+        java.util.List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
+        for (var page : current.upo().pages()) {
+            pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
+        }
+        return java.util.List.copyOf(pages);
     }
 
     /**

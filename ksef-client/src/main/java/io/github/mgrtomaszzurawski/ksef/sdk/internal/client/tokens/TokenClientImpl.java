@@ -77,6 +77,32 @@ public final class TokenClientImpl implements TokenClient {
     }
 
     /**
+     * Codex round-9 manual-validation A.4.1 — list all tokens, following
+     * {@code x-continuation-token} internally.
+     */
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> listAll() {
+        LOGGER.debug(LOG_CALL, OP_LIST);
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> all =
+                new java.util.ArrayList<>();
+        String continuationToken = null;
+        while (true) {
+            String accessToken = http.requireToken();
+            QueryTokensResponseRaw rawValue = continuationToken == null
+                    ? http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST)
+                    : http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST,
+                            "x-continuation-token", continuationToken);
+            TokenList page = TokensMappers.toTokenList(rawValue);
+            all.addAll(page.tokens());
+            String next = page.continuationToken();
+            if (next == null || next.isEmpty()) {
+                return java.util.List.copyOf(all);
+            }
+            continuationToken = next;
+        }
+    }
+
+    /**
      * Get the status of a specific token by reference number.
      *
      * @param referenceNumber the token reference number

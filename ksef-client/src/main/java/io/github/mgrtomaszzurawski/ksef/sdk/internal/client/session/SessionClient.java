@@ -49,6 +49,11 @@ public final class SessionClient {
     private static final String SEGMENT_UPO = "/upo/";
     private static final String SEGMENT_INVOICE_UPO = "/upo";
     private static final String SEGMENT_KSEF_UPO = "/invoices/ksef/";
+    /** Spec-defined max page size for {@code GET /sessions/{ref}/invoices}. */
+    private static final int SESSION_INVOICES_PAGE_SIZE = 250;
+    /** Custom request header for paginated session-invoices endpoint. */
+    private static final String HEADER_CONTINUATION_TOKEN = "x-continuation-token";
+    private static final String QUERY_PAGE_SIZE = "?pageSize=";
 
     private static final String OP_OPEN_ONLINE = "openOnlineSession";
     private static final String OP_SEND_INVOICE = "sendInvoice";
@@ -62,11 +67,88 @@ public final class SessionClient {
     private static final String OP_GET_UPO_BY_REF = "getUpoByReference";
     private static final String OP_GET_UPO_BY_INVOICE = "getUpoByInvoiceReference";
     private static final String OP_GET_UPO_BY_KSEF = "getUpoByKsefNumber";
+    private static final String OP_QUERY_SESSIONS = "querySessions";
 
     private final HttpSupport http;
 
     public SessionClient(HttpRuntime runtime) {
         this.http = new HttpSupport(runtime);
+    }
+
+    /**
+     * List sessions matching the given filter, with internal cursor iteration.
+     * Codex round-9 manual-validation A.2.4 — previously the
+     * {@code GET /sessions} listing was reachable in OpenAPI but not in code.
+     */
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
+            queryAllSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem> all =
+                new java.util.ArrayList<>();
+        String continuationToken = null;
+        while (true) {
+            io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw raw = querySessionsPage(filter, continuationToken);
+            if (raw.getSessions() != null) {
+                for (io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseItemRaw item : raw.getSessions()) {
+                    all.add(toSessionListItem(item));
+                }
+            }
+            String next = raw.getContinuationToken();
+            if (next == null || next.isEmpty()) {
+                return java.util.List.copyOf(all);
+            }
+            continuationToken = next;
+        }
+    }
+
+    private io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw querySessionsPage(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter,
+            String continuationToken) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_SESSIONS);
+        String token = http.requireToken();
+        StringBuilder path = new StringBuilder(ApiPaths.SESSIONS).append("?pageSize=").append(SESSION_INVOICES_PAGE_SIZE);
+        if (filter.sessionType() != null) {
+            path.append("&sessionType=").append(filter.sessionType() == io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType.ONLINE ? "Online" : "Batch");
+        }
+        if (filter.referenceNumber() != null) {
+            path.append("&referenceNumber=").append(java.net.URLEncoder.encode(filter.referenceNumber(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        appendDateParam(path, "dateCreatedFrom", filter.dateCreatedFrom());
+        appendDateParam(path, "dateCreatedTo", filter.dateCreatedTo());
+        appendDateParam(path, "dateClosedFrom", filter.dateClosedFrom());
+        appendDateParam(path, "dateClosedTo", filter.dateClosedTo());
+        appendDateParam(path, "dateModifiedFrom", filter.dateModifiedFrom());
+        appendDateParam(path, "dateModifiedTo", filter.dateModifiedTo());
+        if (filter.statuses() != null) {
+            for (Integer code : filter.statuses()) {
+                path.append("&statuses=").append(code);
+            }
+        }
+        return continuationToken == null
+                ? http.getAuthenticated(path.toString(), token,
+                        io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw.class, OP_QUERY_SESSIONS)
+                : http.getAuthenticated(path.toString(), token,
+                        io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw.class, OP_QUERY_SESSIONS,
+                        HEADER_CONTINUATION_TOKEN, continuationToken);
+    }
+
+    private static void appendDateParam(StringBuilder path, String name, java.time.OffsetDateTime value) {
+        if (value != null) {
+            path.append("&").append(name).append("=")
+                    .append(java.net.URLEncoder.encode(value.toString(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+    }
+
+    private static io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem toSessionListItem(
+            io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseItemRaw raw) {
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem(
+                raw.getReferenceNumber(),
+                io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers.toStatusInfo(raw.getStatus()),
+                raw.getDateCreated(),
+                raw.getDateUpdated(),
+                raw.getValidUntil(),
+                raw.getTotalInvoiceCount(),
+                raw.getSuccessfulInvoiceCount(),
+                raw.getFailedInvoiceCount());
     }
 
     /**
@@ -163,12 +245,56 @@ public final class SessionClient {
      * @return list of invoice metadata
      */
     public SessionInvoices getInvoices(String referenceNumber) {
+        return getInvoicesPage(referenceNumber, null);
+    }
+
+    /**
+     * Get a single page of invoices, with optional continuation token from the
+     * previous page (Codex round-9 manual-validation A.2.3). The token is
+     * forwarded in the {@code x-continuation-token} request header per spec.
+     */
+    public SessionInvoices getInvoicesPage(String referenceNumber, String continuationToken) {
         LOGGER.debug(LOG_CALL_REF, OP_GET_INVOICES, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = http.requireToken();
-        String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_INVOICES;
-        SessionInvoicesResponseRaw rawValue = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES);
+        String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_INVOICES
+                + QUERY_PAGE_SIZE + SESSION_INVOICES_PAGE_SIZE;
+        SessionInvoicesResponseRaw rawValue = continuationToken == null
+                ? http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES)
+                : http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_INVOICES,
+                        HEADER_CONTINUATION_TOKEN, continuationToken);
         return InvoicingMappers.toSessionInvoices(rawValue);
+    }
+
+    /**
+     * Iterate every page of invoices for the session, following
+     * {@code x-continuation-token} internally. Use this from
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession#invoices()}
+     * — sessions with more than 10 (default) or {@value #SESSION_INVOICES_PAGE_SIZE}
+     * (max) invoices were silently truncated by {@link #getInvoices(String)}.
+     */
+    public java.util.List<SessionInvoiceStatus> getAllInvoices(String referenceNumber) {
+        return collectAllPages(referenceNumber, false);
+    }
+
+    public java.util.List<SessionInvoiceStatus> getAllFailedInvoices(String referenceNumber) {
+        return collectAllPages(referenceNumber, true);
+    }
+
+    private java.util.List<SessionInvoiceStatus> collectAllPages(String referenceNumber, boolean failedOnly) {
+        java.util.List<SessionInvoiceStatus> all = new java.util.ArrayList<>();
+        String continuationToken = null;
+        while (true) {
+            SessionInvoices page = failedOnly
+                    ? getFailedInvoicesPage(referenceNumber, continuationToken)
+                    : getInvoicesPage(referenceNumber, continuationToken);
+            all.addAll(page.invoices());
+            String next = page.continuationToken();
+            if (next == null || next.isEmpty()) {
+                return java.util.List.copyOf(all);
+            }
+            continuationToken = next;
+        }
     }
 
     /**
@@ -196,11 +322,19 @@ public final class SessionClient {
      * @return list of failed invoice metadata
      */
     public SessionInvoices getFailedInvoices(String referenceNumber) {
+        return getFailedInvoicesPage(referenceNumber, null);
+    }
+
+    public SessionInvoices getFailedInvoicesPage(String referenceNumber, String continuationToken) {
         LOGGER.debug(LOG_CALL_REF, OP_GET_FAILED, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = http.requireToken();
-        String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_FAILED;
-        SessionInvoicesResponseRaw rawValue = http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED);
+        String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_FAILED
+                + QUERY_PAGE_SIZE + SESSION_INVOICES_PAGE_SIZE;
+        SessionInvoicesResponseRaw rawValue = continuationToken == null
+                ? http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED)
+                : http.getAuthenticated(path, token, SessionInvoicesResponseRaw.class, OP_GET_FAILED,
+                        HEADER_CONTINUATION_TOKEN, continuationToken);
         return InvoicingMappers.toSessionInvoices(rawValue);
     }
 

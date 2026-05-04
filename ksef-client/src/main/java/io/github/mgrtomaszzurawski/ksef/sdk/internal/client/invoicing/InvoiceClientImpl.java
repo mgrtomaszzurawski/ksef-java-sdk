@@ -69,6 +69,12 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
     private static final String CERT_TYPE_X509 = "X.509";
     private static final int DEFAULT_MAX_RESULTS = 10000;
+    /** Spec-defined maximum page size for {@code POST /invoices/query/metadata}. */
+    private static final int QUERY_METADATA_MAX_PAGE_SIZE = 250;
+    /** First page is offset 0 per OpenAPI. */
+    private static final int QUERY_METADATA_FIRST_PAGE_OFFSET = 0;
+    private static final String QUERY_PAGE_OFFSET_PARAM = "pageOffset";
+    private static final String QUERY_PAGE_SIZE_PARAM = "pageSize";
 
     private final HttpSupport http;
     private final SecurityClient securityClient;
@@ -139,22 +145,43 @@ public final class InvoiceClientImpl implements InvoiceClient {
         InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build());
         List<InvoiceMetadata> allInvoices = new ArrayList<>();
 
+        // Codex round-9 manual-validation A.1.2 — spec algorithm
+        // (pobieranie-faktur/pobieranie-faktur.md):
+        //   hasMore=false                                 → stop
+        //   hasMore=true  && isTruncated=false            → pageOffset++ (same dateRange)
+        //   hasMore=true  && isTruncated=true             → narrow dateRange.from
+        //                                                   + reset pageOffset to 0
+        // The previous helper always advanced dateRange.from by HWM and never
+        // touched pageOffset, which dropped invoices that arrived between the
+        // first page and HWM advancement.
+        int pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
         while (true) {
-            InvoiceMetadataResult page = doQueryMetadata(filters);
+            InvoiceMetadataResult page = doQueryMetadata(filters,
+                    pageOffset, QUERY_METADATA_MAX_PAGE_SIZE);
             allInvoices.addAll(page.invoices());
 
             if (allInvoices.size() >= maxResults) {
                 return List.copyOf(allInvoices.subList(0, maxResults));
             }
 
-            if (!page.hasMore() || page.permanentStorageHwmDate() == null) {
+            if (!page.hasMore()) {
                 break;
             }
 
-            // Advance cursor only — keep all caller-provided filters (ksefNumber,
-            // invoiceNumber, sellerNip, invoicingMode, isSelfInvoicing, hasAttachment,
-            // amount, currencyCodes, buyerIdentifier) intact between pages.
-            filters.getDateRange().from(page.permanentStorageHwmDate());
+            if (page.isTruncated()) {
+                // Truncation case: server told us this dateRange has more than
+                // it can return in one window. Narrow the window by HWM and
+                // restart paging from offset 0.
+                if (page.permanentStorageHwmDate() == null) {
+                    break;
+                }
+                filters.getDateRange().from(page.permanentStorageHwmDate());
+                pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
+            } else {
+                // hasMore && !isTruncated: stay on the same dateRange, advance
+                // pageOffset to fetch the next page.
+                pageOffset++;
+            }
         }
 
         return List.copyOf(allInvoices);
@@ -233,8 +260,17 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters) {
+        return doQueryMetadata(filters, QUERY_METADATA_FIRST_PAGE_OFFSET, QUERY_METADATA_MAX_PAGE_SIZE);
+    }
+
+    private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters,
+                                                    int pageOffset,
+                                                    int pageSize) {
         String token = http.requireToken();
-        QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
+        String path = PATH_QUERY_METADATA
+                + "?" + QUERY_PAGE_OFFSET_PARAM + "=" + pageOffset
+                + "&" + QUERY_PAGE_SIZE_PARAM + "=" + pageSize;
+        QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(path, filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
         return InvoicingMappers.toInvoiceMetadataResult(rawValue);
     }

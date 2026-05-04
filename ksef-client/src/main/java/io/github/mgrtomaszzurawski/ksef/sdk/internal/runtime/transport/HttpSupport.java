@@ -126,6 +126,23 @@ public final class HttpSupport {
     }
 
     /**
+     * Variant of {@link #getAuthenticated(String, String, Class, String)} that
+     * forwards a single additional request header — used by paginated
+     * endpoints that pass {@code x-continuation-token} on subsequent pages
+     * (Codex round-9 manual-validation A.2.3 follow-up).
+     */
+    public <T> T getAuthenticated(String path, String token, Class<T> responseType,
+                                    String operationName,
+                                    String extraHeaderName, String extraHeaderValue) {
+        return runtime.retryHandler().execute(() -> sendAuthenticatedJson(
+                bearer -> newGetBuilder(path)
+                        .header(AUTHORIZATION, BEARER_PREFIX + bearer)
+                        .header(extraHeaderName, extraHeaderValue)
+                        .build(),
+                token, responseType), operationName);
+    }
+
+    /**
      * Send a GET request and deserialize a JSON array response.
      */
     public <T> List<T> getList(String path, TypeReference<List<T>> typeRef, String operationName) {

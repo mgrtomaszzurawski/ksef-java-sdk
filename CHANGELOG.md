@@ -116,19 +116,21 @@ First public Maven Central release.
 ### Step 7 — Test seam policy
 
 - `KsefClient.activateSessionForTests(...)` and `KsefClientInternals`
-  remain in 1.0.0 with `@Deprecated(forRemoval = true)`. They are
-  documented for removal in 1.1.0 once the migration playbook
-  (`context/TESTKIT-MIGRATION-PLAYBOOK-2026-05-03-1850.md`) is
-  executed. The `PublicApiSurfaceTest` allow-list contains
-  `KsefClientInternals` as the only documented seam exception.
+  were removed during 1.0 stabilisation (commit `0d1c264`). Tests now
+  drive auth via the public `KsefAuthFlowFixture` WireMock harness;
+  no public test seam remains in the 1.0.0 surface.
 
 ### Step 8 — Release boundary
 
 - **`PublicApiSurfaceTest`** (Step 8 quality gate) asserts no
   `*Raw` types and no `sdk.internal.*` types leak through public
-  method signatures, constructors, or fields. Allow-list contains
-  only `KsefClientInternals` (test seam, scheduled for 1.1.0
-  removal).
+  method signatures, constructors, or fields. The previous
+  `KsefClientInternals` allow-list entry is gone — that class was
+  removed during 1.0 stabilisation, and the third Codex review
+  fresh-pass tightened the gate so no public constructor is allowed
+  to reference internal-package types either (construction now goes
+  through the non-exported
+  `sdk.internal.client.session.SessionHandleConstructor`).
 - Version bumped from `0.1.0` to `1.0.0` across root, ksef-client,
   ksef-demo, ksef-examples poms.
 - License remains AGPL-3.0-only (per revised ADR-007 — the original

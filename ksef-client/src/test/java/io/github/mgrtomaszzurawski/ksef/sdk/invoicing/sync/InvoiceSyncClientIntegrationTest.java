@@ -144,7 +144,6 @@ class InvoiceSyncClientIntegrationTest {
         IncrementalSyncPlan plan = IncrementalSyncPlan.builder()
                 .from(START_CURSOR)
                 .subjectTypes(InvoiceQuerySubjectType.SUBJECT1)
-                .dateType(InvoiceQueryDateType.PERMANENT_STORAGE)
                 .outputDirectory(tempDir.resolve("output"))
                 .fullContent(false)
                 .build();

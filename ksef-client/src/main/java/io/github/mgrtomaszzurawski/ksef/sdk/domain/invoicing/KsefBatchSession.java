@@ -257,6 +257,72 @@ public final class KsefBatchSession implements AutoCloseable {
     }
 
     /**
+     * All invoices submitted within this batch session, with the
+     * {@code x-continuation-token} cursor followed internally
+     * (Codex round-9 manual-validation A.2.2 — mirrors {@code KsefSession.invoices()}).
+     */
+    public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices invoices() {
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices(
+                null, sessionClient.getAllInvoices(referenceNumber));
+    }
+
+    /**
+     * Status of a specific invoice within this batch session.
+     */
+    public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus invoiceStatus(
+            String invoiceReferenceNumber) {
+        return sessionClient.getInvoiceStatus(referenceNumber, invoiceReferenceNumber);
+    }
+
+    /**
+     * Failed invoices within this batch session, cursor followed internally.
+     */
+    public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices failedInvoices() {
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices(
+                null, sessionClient.getAllFailedInvoices(referenceNumber));
+    }
+
+    /**
+     * Download UPO XML for a specific invoice in this batch session
+     * (post-terminal-close).
+     */
+    public byte[] upo(String invoiceReferenceNumber) {
+        return sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
+    }
+
+    /**
+     * Download UPO XML for a specific invoice by KSeF number.
+     */
+    public byte[] upoByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber ksefNumber) {
+        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
+    }
+
+    /**
+     * Convenience overload that parses the raw KSeF number string.
+     */
+    public byte[] upoByKsefNumber(String ksefNumber) {
+        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
+    }
+
+    /**
+     * Download every bulk-session UPO XML page referenced in
+     * {@link SessionStatus#upo()}. Same shape as
+     * {@code KsefSession.bulkUpos()} — see Javadoc there for spec context
+     * (Codex round-9 manual-validation A.2.1).
+     */
+    public java.util.List<byte[]> bulkUpos() {
+        SessionStatus current = sessionClient.getStatus(referenceNumber);
+        if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
+            return java.util.List.of();
+        }
+        java.util.List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
+        for (var page : current.upo().pages()) {
+            pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
+        }
+        return java.util.List.copyOf(pages);
+    }
+
+    /**
      * Close this batch session. Sends close request to KSeF, retrying on 415 (session busy),
      * polls until session processing is complete (status 200), then deletes any
      * temp part files held by this session.

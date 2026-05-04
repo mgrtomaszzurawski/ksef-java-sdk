@@ -93,6 +93,13 @@ public final class BatchPackageBuilder {
     }
 
     /**
+     * File-streaming variant — Codex round-9 manual-validation A.4.2.
+     */
+    public static BatchPackage buildFromFiles(List<Path> invoiceFiles, byte[] aesKey, byte[] initVector) {
+        return buildFromFiles(invoiceFiles, aesKey, initVector, DEFAULT_MAX_PART_SIZE);
+    }
+
+    /**
      * Build the encrypted batch package with a custom max chunk size (used by tests).
      *
      * @param invoices invoice XML byte arrays (one per ZIP entry)
@@ -132,6 +139,65 @@ public final class BatchPackageBuilder {
                 deleteQuietly(zipFile);
             }
         }
+    }
+
+    /**
+     * File-streaming overload — Codex round-9 manual-validation A.4.2.
+     * Each invoice is streamed straight from disk into the ZIP, avoiding
+     * an in-heap {@code byte[]} per file. Use this for large batches
+     * (up to 10 000 invoices per session, REQ-SESS-41) so peak heap stays
+     * bounded by the chunk-encryption buffer rather than scaling with the
+     * total payload size.
+     */
+    public static BatchPackage buildFromFiles(List<Path> invoiceFiles, byte[] aesKey, byte[] initVector,
+                                                long maxPartSize) {
+        Objects.requireNonNull(invoiceFiles, ERR_NULL_INVOICES);
+        if (invoiceFiles.isEmpty()) {
+            throw new IllegalArgumentException(ERR_EMPTY_INVOICES);
+        }
+        if (invoiceFiles.size() > MAX_INVOICES_PER_SESSION) {
+            throw new IllegalArgumentException(
+                    "Batch contains " + invoiceFiles.size() + " invoices but KSeF caps a single session at "
+                            + MAX_INVOICES_PER_SESSION + " (REQ-SESS-41)");
+        }
+        Path zipFile = null;
+        List<Path> partFiles = new ArrayList<>();
+        try {
+            zipFile = writeZipFromFilesToTempFile(invoiceFiles);
+            BatchFileSpec spec = splitAndEncrypt(zipFile, aesKey, initVector, maxPartSize, partFiles);
+            return new BatchPackage(spec, List.copyOf(partFiles));
+        } catch (RuntimeException | IOException buildFailure) {
+            cleanupQuietly(partFiles);
+            throw (buildFailure instanceof RuntimeException runtimeFailure)
+                    ? runtimeFailure
+                    : new IllegalStateException(ERR_BUILD, buildFailure);
+        } finally {
+            if (zipFile != null) {
+                deleteQuietly(zipFile);
+            }
+        }
+    }
+
+    private static Path writeZipFromFilesToTempFile(List<Path> invoiceFiles) throws IOException {
+        Path zipFile = Files.createTempFile(TEMP_PREFIX_ZIP, TEMP_SUFFIX);
+        zipFile.toFile().deleteOnExit();
+        try (OutputStream out = Files.newOutputStream(zipFile);
+             ZipOutputStream zip = new ZipOutputStream(out)) {
+            int ordinal = 1;
+            for (Path invoiceFile : invoiceFiles) {
+                Objects.requireNonNull(invoiceFile, ERR_NULL_INVOICE);
+                long size = Files.size(invoiceFile);
+                if (size == 0) {
+                    throw new IllegalArgumentException(ERR_EMPTY_INVOICE);
+                }
+                ZipEntry entry = new ZipEntry(INVOICE_ENTRY_PREFIX + ordinal + INVOICE_ENTRY_SUFFIX);
+                zip.putNextEntry(entry);
+                Files.copy(invoiceFile, zip);
+                zip.closeEntry();
+                ordinal++;
+            }
+        }
+        return zipFile;
     }
 
     private static Path writeZipToTempFile(List<byte[]> invoices) throws IOException {

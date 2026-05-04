@@ -43,7 +43,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2026-04-03T00:00:00Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-05-04T00:00:00Z</project.build.outputTimestamp>
         <gpg.plugin.version>3.2.7</gpg.plugin.version>
         <central.publishing.plugin.version>0.7.0</central.publishing.plugin.version>
     </properties>

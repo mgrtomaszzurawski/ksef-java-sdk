@@ -337,10 +337,16 @@ public final class InvoiceSyncClient {
         };
         // The builder implicitly assigns dateType from which "From" setter
         // we call (PERMANENT_STORAGE / INVOICING / ISSUE).
-        return switch (dateType) {
+        InvoiceQueryBuilder withDate = switch (dateType) {
             case PERMANENT_STORAGE -> builder.permanentStorageDateFrom(cursor);
             case INVOICING -> builder.invoicingDateFrom(cursor);
             case ISSUE -> builder.issueDateFrom(cursor);
         };
+        // Codex round-9 manual-validation A.1.1 — incremental-sync workflow
+        // mandates restrictToPermanentStorageHwmDate=true on every export
+        // (przyrostowe-pobieranie-faktur.md "Kluczowe znaczenie daty
+        // PermanentStorage"). The flag caps dateRange.to at the server-side
+        // HWM so consecutive windows never cross an unstable edge.
+        return withDate.restrictToPermanentStorageHwm();
     }
 }
