@@ -197,4 +197,30 @@ public final class CertificateClientImpl implements CertificateClient {
                 QueryCertificatesResponseRaw.class, OP_QUERY);
         return CertificatesMappers.toCertificateQueryResult(rawValue);
     }
+
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
+            queryAll(CertificateQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem> all =
+                new java.util.ArrayList<>();
+        int pageOffset = 0;
+        while (true) {
+            String token = http.requireToken();
+            String pagedPath = PATH_QUERY + "?pageOffset=" + pageOffset
+                    + "&pageSize=" + CERTIFICATE_QUERY_MAX_PAGE_SIZE;
+            QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(pagedPath,
+                    CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()),
+                    token, QueryCertificatesResponseRaw.class, OP_QUERY);
+            CertificateQueryResult page = CertificatesMappers.toCertificateQueryResult(raw);
+            all.addAll(page.certificates());
+            if (!page.hasMore()) {
+                return java.util.List.copyOf(all);
+            }
+            pageOffset++;
+        }
+    }
+
+    /** Spec-defined max page size for certificate query endpoint. */
+    private static final int CERTIFICATE_QUERY_MAX_PAGE_SIZE = 250;
 }

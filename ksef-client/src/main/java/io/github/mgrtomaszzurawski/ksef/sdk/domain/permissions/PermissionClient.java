@@ -53,4 +53,22 @@ public interface PermissionClient {
     SubordinateEntityRoles querySubordinateRoles();
     EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
     EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder);
+
+    // Codex round-9 manual-validation A.4.1 — queryAll variants. Each
+    // walks pageOffset internally with spec-max page size and returns one
+    // flat list. Saves consumers from composing pagination loops.
+    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission>
+            queryAllPersonal(PersonalPermissionsQueryBuilder builder);
+    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission>
+            queryAllPersons(PersonPermissionsQueryBuilder builder);
+    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermission>
+            queryAllSubunits();
+    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission>
+            queryAllEntities();
+    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole>
+            queryAllSubordinateRoles();
+    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationGrant>
+            queryAllAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
+    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission>
+            queryAllEuEntities(EuEntityPermissionsQueryBuilder builder);
 }

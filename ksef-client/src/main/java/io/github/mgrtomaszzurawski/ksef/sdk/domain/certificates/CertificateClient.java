@@ -32,4 +32,12 @@ public interface CertificateClient {
     void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
 
     CertificateQueryResult query(CertificateQueryBuilder builder);
+
+    /**
+     * Query all certificates matching the filter, walking pageOffset
+     * internally with spec-max page size. Codex round-9 manual-validation
+     * A.4.1 — saves consumers from composing pagination loops.
+     */
+    List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
+            queryAll(CertificateQueryBuilder builder);
 }

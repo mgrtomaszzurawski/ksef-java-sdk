@@ -420,4 +420,168 @@ public final class PermissionClientImpl implements PermissionClient {
                 QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
         return PermissionsMappers.toEuEntityPermissions(rawValue);
     }
+
+    // ======================== queryAll variants (Codex A.4.1) ========================
+    // Each iterates pageOffset internally using spec-max page size; consumers
+    // get one flat list and never see continuation/pagination details.
+
+    /** Spec-defined max page size for permission query endpoints. */
+    private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 250;
+    private static final String PERMISSION_QUERY_PAGE_PARAMS = "?pageOffset=";
+    private static final String PERMISSION_QUERY_PAGE_SIZE_PARAM = "&pageSize=" + PERMISSION_QUERY_MAX_PAGE_SIZE;
+
+    private static String pagedPath(String basePath, int pageOffset) {
+        return basePath + PERMISSION_QUERY_PAGE_PARAMS + pageOffset + PERMISSION_QUERY_PAGE_SIZE_PARAM;
+    }
+
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission>
+            queryAllPersonal(PersonalPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission> all =
+                new java.util.ArrayList<>();
+        int pageOffset = 0;
+        while (true) {
+            String token = http.requireToken();
+            QueryPersonalPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_PERSONAL, pageOffset),
+                    PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(builder.build()),
+                    token, QueryPersonalPermissionsResponseRaw.class, OP_QUERY_PERSONAL);
+            PersonalPermissions page = PermissionsMappers.toPersonalPermissions(raw);
+            all.addAll(page.permissions());
+            if (!page.hasMore()) {
+                return java.util.List.copyOf(all);
+            }
+            pageOffset++;
+        }
+    }
+
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission>
+            queryAllPersons(PersonPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission> all =
+                new java.util.ArrayList<>();
+        int pageOffset = 0;
+        while (true) {
+            String token = http.requireToken();
+            QueryPersonPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_PERSONS, pageOffset),
+                    PermissionsQueryRequestMappers.toPersonPermissionsQueryRequestRaw(builder.build()),
+                    token, QueryPersonPermissionsResponseRaw.class, OP_QUERY_PERSONS);
+            PersonPermissions page = PermissionsMappers.toPersonPermissions(raw);
+            all.addAll(page.permissions());
+            if (!page.hasMore()) {
+                return java.util.List.copyOf(all);
+            }
+            pageOffset++;
+        }
+    }
+
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermission>
+            queryAllSubunits() {
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermission> all =
+                new java.util.ArrayList<>();
+        int pageOffset = 0;
+        while (true) {
+            String token = http.requireToken();
+            QuerySubunitPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_SUBUNITS, pageOffset),
+                    new SubunitPermissionsQueryRequestRaw(), token,
+                    QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
+            SubunitPermissions page = PermissionsMappers.toSubunitPermissions(raw);
+            all.addAll(page.permissions());
+            if (!page.hasMore()) {
+                return java.util.List.copyOf(all);
+            }
+            pageOffset++;
+        }
+    }
+
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission>
+            queryAllEntities() {
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission> all =
+                new java.util.ArrayList<>();
+        int pageOffset = 0;
+        while (true) {
+            String token = http.requireToken();
+            QueryEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_ENTITIES, pageOffset),
+                    new EntityPermissionsQueryRequestRaw(), token,
+                    QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
+            EntityPermissions page = PermissionsMappers.toEntityPermissions(raw);
+            all.addAll(page.permissions());
+            if (!page.hasMore()) {
+                return java.util.List.copyOf(all);
+            }
+            pageOffset++;
+        }
+    }
+
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole>
+            queryAllSubordinateRoles() {
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole> all =
+                new java.util.ArrayList<>();
+        int pageOffset = 0;
+        while (true) {
+            String token = http.requireToken();
+            QuerySubordinateEntityRolesResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_SUBORDINATE, pageOffset),
+                    new SubordinateEntityRolesQueryRequestRaw(), token,
+                    QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
+            SubordinateEntityRoles page = PermissionsMappers.toSubordinateEntityRoles(raw);
+            all.addAll(page.roles());
+            if (!page.hasMore()) {
+                return java.util.List.copyOf(all);
+            }
+            pageOffset++;
+        }
+    }
+
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationGrant>
+            queryAllAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationGrant> all =
+                new java.util.ArrayList<>();
+        int pageOffset = 0;
+        while (true) {
+            String token = http.requireToken();
+            QueryEntityAuthorizationPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_AUTHORIZATIONS, pageOffset),
+                    PermissionsQueryRequestMappers.toEntityAuthorizationPermissionsQueryRequestRaw(builder.build()),
+                    token, QueryEntityAuthorizationPermissionsResponseRaw.class, OP_QUERY_AUTHORIZATIONS);
+            EntityAuthorizationPermissions page = PermissionsMappers.toEntityAuthorizationPermissions(raw);
+            all.addAll(page.authorizationGrants());
+            if (!page.hasMore()) {
+                return java.util.List.copyOf(all);
+            }
+            pageOffset++;
+        }
+    }
+
+    @Override
+    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission>
+            queryAllEuEntities(EuEntityPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
+        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission> all =
+                new java.util.ArrayList<>();
+        int pageOffset = 0;
+        while (true) {
+            String token = http.requireToken();
+            QueryEuEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_EU_ENTITIES, pageOffset),
+                    PermissionsQueryRequestMappers.toEuEntityPermissionsQueryRequestRaw(builder.build()),
+                    token, QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
+            EuEntityPermissions page = PermissionsMappers.toEuEntityPermissions(raw);
+            all.addAll(page.permissions());
+            if (!page.hasMore()) {
+                return java.util.List.copyOf(all);
+            }
+            pageOffset++;
+        }
+    }
 }
