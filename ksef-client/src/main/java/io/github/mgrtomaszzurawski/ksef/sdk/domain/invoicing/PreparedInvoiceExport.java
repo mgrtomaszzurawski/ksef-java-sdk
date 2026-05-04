@@ -100,6 +100,12 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final long MAX_ZIP_ENTRY_BYTES = 256L * 1024 * 1024;      // 256 MiB
     /** Subdirectory name (under outputDirectory) for staging decrypted parts during streaming unzip. */
     private static final String PARTS_TEMP_SUBDIR = ".parts";
+    /** Filename prefix for plaintext part temp files written under {@link #PARTS_TEMP_SUBDIR}. */
+    private static final String PART_FILE_PREFIX = "part-";
+    /** Filename prefix for encrypted-download temp files (consumed during streaming decrypt). */
+    private static final String ENCRYPTED_TEMP_PREFIX = "enc-";
+    /** Extension for binary part temp files (both encrypted-download and plaintext). */
+    private static final String PART_FILE_SUFFIX = ".bin";
 
     private final InvoiceClient invoices;
     private final HttpClient httpClient;
@@ -244,17 +250,21 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             throw new KsefException(ERR_ZIP_FAILED, ex);
         }
 
-        // True streaming pipeline:
-        //   1. per-part: download bytes (bounded by spec ≤256 MiB), verify
-        //      encrypted hash, decrypt, verify plaintext hash, write
-        //      decrypted plaintext to a temp file in outputDir/.parts/
-        //   2. concatenate the temp files via SequenceInputStream and feed
-        //      to ZipInputStream which writes each entry to outputDir
-        //   3. delete temp files (best-effort cleanup)
+        // True streaming pipeline (Codex round-9 F5):
+        //   1. per-part: download to a temporary encrypted file using
+        //      BodyHandlers.ofFile (no byte[] in heap),
+        //   2. stream the encrypted file through DigestInputStream(SHA-256)
+        //      → CipherInputStream(AES-CBC decrypt) → DigestInputStream(SHA-256)
+        //      → output plaintext file. Hashes are computed during the same
+        //      single pass; no buffer holds the full part.
+        //   3. delete encrypted file as soon as plaintext file is written.
+        //   4. concatenate the plaintext files via SequenceInputStream and
+        //      feed to ZipInputStream which writes each entry to outputDir.
+        //   5. delete plaintext files (best-effort cleanup).
         //
-        // Memory bound: at most one part's plaintext at a time
-        // (≤256 MiB), never the whole archive (which can reach 4 GiB
-        // before the cap kicks in). Closes F3.
+        // Memory bound: a fixed 8 KiB transfer buffer per part, regardless of
+        // part size (256 MiB cap or otherwise). The earlier implementation
+        // held two full-part byte[] arrays simultaneously.
         Path partsDir;
         try {
             partsDir = Files.createDirectories(outputDirectory.resolve(PARTS_TEMP_SUBDIR));
@@ -264,20 +274,9 @@ public final class PreparedInvoiceExport implements AutoCloseable {
         java.util.List<Path> partFiles = new java.util.ArrayList<>();
         try {
             for (InvoicePackagePart part : status.invoicePackage().parts()) {
-                byte[] encryptedBytes = downloadPart(part);
-                verifyEncryptedPartHash(part, encryptedBytes);
-                byte[] decryptedBytes = CryptoService.decryptAes(encryptedBytes, aesKey, initVector);
-                verifyPlaintextPartHash(part, decryptedBytes);
-                Path partFile = partsDir.resolve("part-" + part.ordinalNumber() + ".bin");
-                try {
-                    Files.write(partFile, decryptedBytes);
-                } catch (IOException ex) {
-                    throw new KsefException(ERR_ZIP_FAILED, ex);
-                }
+                Path partFile = partsDir.resolve(PART_FILE_PREFIX + part.ordinalNumber() + PART_FILE_SUFFIX);
+                streamDownloadDecryptVerify(part, partFile);
                 partFiles.add(partFile);
-                // Allow the part bytes to be GC'd before downloading next.
-                encryptedBytes = null;
-                decryptedBytes = null;
             }
             return unzipPackageStreamToDirectory(partFiles, outputDirectory);
         } finally {
@@ -293,6 +292,103 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             } catch (IOException cleanupFailure) {
                 LOGGER.debug(LOG_TEMP_CLEANUP_FAILED, referenceNumber, partsDir, cleanupFailure.getMessage());
             }
+        }
+    }
+
+    /**
+     * Stream-download {@code part} to a temporary encrypted file, then stream
+     * that file through SHA-256 (encrypted hash) → AES-CBC decrypt → SHA-256
+     * (plaintext hash) → {@code partFile}. Verifies both hashes once the
+     * stream is exhausted, then deletes the encrypted temp file.
+     *
+     * <p>This is the F5 fix: prior implementation called
+     * {@code BodyHandlers.ofByteArray()} which held the full encrypted part
+     * (up to 256 MiB) in heap, and {@code decryptAes} doubled the heap
+     * footprint. The streaming variant uses a single 8 KiB buffer per part.
+     */
+    private void streamDownloadDecryptVerify(InvoicePackagePart part, Path partFile) {
+        URI url = part.url();
+        if (url.getScheme() == null || !SCHEME_HTTPS.equalsIgnoreCase(url.getScheme())) {
+            throw new KsefException(ERR_INSECURE_PART_URL + url, null);
+        }
+        if (part.method() != null && !HTTP_GET.equalsIgnoreCase(part.method())) {
+            throw new KsefException(ERR_UNSUPPORTED_METHOD + part.method(), null);
+        }
+        Path tempDir = partFile.getParent();
+        if (tempDir == null) {
+            throw new KsefException("Part file has no parent directory: " + partFile, null);
+        }
+        Path encryptedTemp;
+        try {
+            encryptedTemp = Files.createTempFile(tempDir, ENCRYPTED_TEMP_PREFIX, PART_FILE_SUFFIX);
+        } catch (IOException ex) {
+            throw new KsefException(ERR_ZIP_FAILED, ex);
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder(url).GET().timeout(DOWNLOAD_TIMEOUT).build();
+            HttpResponse<Path> response;
+            try {
+                response = httpClient.send(request,
+                        HttpResponse.BodyHandlers.ofFile(encryptedTemp));
+            } catch (IOException ioFailure) {
+                throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), ioFailure);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), interrupted);
+            }
+            if (response.statusCode() != HTTP_OK) {
+                throw new KsefException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url)
+                        + " status=" + response.statusCode(), null);
+            }
+            decryptAndVerifyToFile(part, encryptedTemp, partFile);
+        } finally {
+            try {
+                Files.deleteIfExists(encryptedTemp);
+            } catch (IOException cleanupFailure) {
+                LOGGER.debug(LOG_TEMP_CLEANUP_FAILED, referenceNumber,
+                        encryptedTemp, cleanupFailure.getMessage());
+            }
+        }
+    }
+
+    private void decryptAndVerifyToFile(InvoicePackagePart part, Path encryptedTemp, Path partFile) {
+        try {
+            java.security.MessageDigest encryptedDigest = java.security.MessageDigest.getInstance(SHA_256);
+            java.security.MessageDigest plaintextDigest = java.security.MessageDigest.getInstance(SHA_256);
+            javax.crypto.Cipher cipher = CryptoService.newAesDecryptCipher(aesKey, initVector);
+            try (java.io.InputStream encrypted = Files.newInputStream(encryptedTemp);
+                 java.security.DigestInputStream digestEncrypted =
+                         new java.security.DigestInputStream(encrypted, encryptedDigest);
+                 javax.crypto.CipherInputStream cipherIn =
+                         new javax.crypto.CipherInputStream(digestEncrypted, cipher);
+                 java.security.DigestInputStream digestPlain =
+                         new java.security.DigestInputStream(cipherIn, plaintextDigest);
+                 java.io.OutputStream out = Files.newOutputStream(partFile)) {
+                digestPlain.transferTo(out);
+            }
+            byte[] expectedEncryptedHash = part.encryptedPartHash();
+            if (expectedEncryptedHash != null) {
+                byte[] actualEncryptedHash = encryptedDigest.digest();
+                if (!java.util.Arrays.equals(expectedEncryptedHash, actualEncryptedHash)) {
+                    throw new KsefException(
+                            String.format(java.util.Locale.ROOT, ERR_HASH_MISMATCH, part.ordinalNumber()),
+                            null);
+                }
+                LOGGER.debug(LOG_VERIFY, referenceNumber, part.ordinalNumber());
+            }
+            byte[] expectedPlaintextHash = part.partHash();
+            if (expectedPlaintextHash != null) {
+                byte[] actualPlaintextHash = plaintextDigest.digest();
+                if (!java.util.Arrays.equals(expectedPlaintextHash, actualPlaintextHash)) {
+                    throw new KsefException(
+                            String.format(java.util.Locale.ROOT, ERR_HASH_MISMATCH, part.ordinalNumber()),
+                            null);
+                }
+            }
+        } catch (java.security.NoSuchAlgorithmException missingAlgorithm) {
+            throw new KsefException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
+        } catch (IOException ioFailure) {
+            throw new KsefException(ERR_ZIP_FAILED, ioFailure);
         }
     }
 

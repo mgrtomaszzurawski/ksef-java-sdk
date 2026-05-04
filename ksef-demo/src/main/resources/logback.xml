@@ -14,6 +14,7 @@
         </encoder>
     </appender>
 
+    <logger name="io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport" level="TRACE"/>
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>

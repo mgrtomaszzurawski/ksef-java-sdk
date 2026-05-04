@@ -95,6 +95,60 @@ class OpenApiPathCoverageTest {
                 "OpenAPI spec lost paths: only " + specPaths.size() + " present");
     }
 
+    @Test
+    void registry_namedTestClassesAllExist() throws IOException {
+        // Codex round-9 F2 — registry was a declaration gate that could not detect
+        // when a named test class was renamed/deleted. This second-stage check
+        // walks src/test/java, builds the set of all simple test class names that
+        // exist on disk, then asserts every comment-cited class name in the
+        // registry actually corresponds to one of them.
+        java.util.Set<String> testClassesOnDisk = scanTestClassNames();
+        java.util.List<String> badRefs = new ArrayList<>();
+        try (var lines = Files.lines(Path.of("src/test/resources/" + COVERAGE_REGISTRY_RESOURCE))) {
+            lines.forEach(rawLine -> {
+                int hash = rawLine.indexOf(COMMENT_MARKER);
+                if (hash < 0) {
+                    return;
+                }
+                String pathPart = rawLine.substring(0, hash).trim();
+                String commentPart = rawLine.substring(hash + 1).trim();
+                if (pathPart.isEmpty() || commentPart.isEmpty()) {
+                    return;
+                }
+                for (String classRef : commentPart.split(",")) {
+                    String trimmed = classRef.trim();
+                    if (trimmed.isEmpty()) {
+                        continue;
+                    }
+                    if (!testClassesOnDisk.contains(trimmed)) {
+                        badRefs.add(pathPart + " -> " + trimmed);
+                    }
+                }
+            });
+        }
+        if (!badRefs.isEmpty()) {
+            fail("Registry references test classes that are not present in src/test/java:\n  - "
+                    + String.join("\n  - ", badRefs));
+        }
+    }
+
+    private static java.util.Set<String> scanTestClassNames() throws IOException {
+        java.util.Set<String> result = new java.util.HashSet<>();
+        Path testRoot = Path.of("src/test/java");
+        if (!Files.isDirectory(testRoot)) {
+            return result;
+        }
+        try (var stream = Files.walk(testRoot)) {
+            stream
+                    .filter(p -> p.toString().endsWith(".java"))
+                    .forEach(p -> {
+                        String name = p.getFileName().toString();
+                        result.add(name.substring(0, name.length() - ".java".length()));
+                    });
+        }
+        return result;
+    }
+
     private static List<String> loadSpecPaths() throws IOException {
         Path specPath = Path.of(OPENAPI_PATH);
         ObjectMapper mapper = new ObjectMapper();

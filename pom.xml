@@ -38,6 +38,7 @@
         <module>ksef-client</module>
         <module>ksef-demo</module>
         <module>ksef-examples</module>
+        <module>ksef-jpms-consumer</module>
     </modules>
 
     <properties>

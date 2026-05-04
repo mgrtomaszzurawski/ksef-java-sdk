@@ -68,14 +68,16 @@ public final class KsefTestRuntime {
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return new KsefHttpRuntime(
-                KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + KSEF_PATH_PREFIX),
-                HttpClient.newHttpClient(),
-                mapper,
-                new RetryHandler(retryPolicy),
-                new SessionContext(),
-                DEFAULT_READ_TIMEOUT,
-                () -> { /* no reauth in unit tests */ },
-                () -> { /* no proactive auth in unit tests */ },
+                new KsefHttpRuntime.Transport(
+                        KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + KSEF_PATH_PREFIX),
+                        HttpClient.newHttpClient(),
+                        mapper,
+                        new RetryHandler(retryPolicy),
+                        DEFAULT_READ_TIMEOUT),
+                new KsefHttpRuntime.AuthHooks(
+                        new SessionContext(),
+                        () -> { /* no reauth in unit tests */ },
+                        () -> { /* no proactive auth in unit tests */ }),
                 featurePolicy);
     }
 }

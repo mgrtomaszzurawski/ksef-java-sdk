@@ -166,8 +166,9 @@ public final class KsefClient implements AutoCloseable {
         this.objectMapper = createObjectMapper();
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
-        this.runtime = new KsefHttpRuntime(environment, httpClient, objectMapper,
-                retryHandler, sessionContext, readTimeout, this::reauthenticate, this::ensureAuthenticated,
+        this.runtime = new KsefHttpRuntime(
+                new KsefHttpRuntime.Transport(environment, httpClient, objectMapper, retryHandler, readTimeout),
+                new KsefHttpRuntime.AuthHooks(sessionContext, this::reauthenticate, this::ensureAuthenticated),
                 builder.featurePolicy);
         this.authClient = new AuthClient(this.runtime);
         this.securityClient = new SecurityClient(this.runtime);
@@ -572,8 +573,16 @@ public final class KsefClient implements AutoCloseable {
 
 
     @Override
-    public void close() {
+    public synchronized void close() {
         closed = true;
+        // Lifecycle hygiene (Codex round-9 F6) — clear cached public keys and
+        // bearer/refresh tokens so they are eligible for GC immediately rather
+        // than only when the KsefClient itself becomes unreachable. The
+        // close-flag check above already prevents any further protected calls;
+        // this just makes the secret material unreachable sooner.
+        publicKeyCache.clear();
+        sessionContext.clear();
+        authenticated = false;
     }
 
     public static Builder builder(KsefEnvironment environment) {

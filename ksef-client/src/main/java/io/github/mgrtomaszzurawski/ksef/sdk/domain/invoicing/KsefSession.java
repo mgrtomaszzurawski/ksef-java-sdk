@@ -268,8 +268,17 @@ public final class KsefSession implements AutoCloseable {
             return;
         }
         closed = true;
-        closeWithRetry();
-        pollUntilComplete();
+        try {
+            closeWithRetry();
+            pollUntilComplete();
+        } finally {
+            // CWE-316 hardening — wipe AES key + IV from heap regardless of how
+            // close + poll resolved. Symmetric with PreparedInvoiceExport.close().
+            // Subsequent send()/upo() calls already fail via the closed flag, so
+            // the arrays are unreachable past this point.
+            java.util.Arrays.fill(aesKey, (byte) 0);
+            java.util.Arrays.fill(initVector, (byte) 0);
+        }
     }
 
     private void ensureOpen() {

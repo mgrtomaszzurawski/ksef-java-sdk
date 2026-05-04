@@ -89,6 +89,25 @@ class RetryAfterParserTest {
     }
 
     @Test
+    void parser_acceptsAsctimeDateFormat() throws Exception {
+        // RFC 7231 third permitted format: ANSI C asctime (no zone — interpreted as GMT).
+        // Spec example shape: "Sun Nov  6 08:49:37 1994" — note the double space when
+        // day-of-month is single-digit. The HttpSupport asctime formatter matches this.
+        // Pick a future date so the parsed delta is positive.
+        java.time.ZonedDateTime future = java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC)
+                .plusSeconds(FUTURE_DELTA_SECONDS);
+        DateTimeFormatter asctime = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy",
+                java.util.Locale.ROOT);
+        String httpDate = future.format(asctime);
+
+        Optional<Long> result = invokeParseRetryAfterValue(httpDate);
+
+        assertTrue(result.isPresent(), "asctime HTTP-date must parse: " + httpDate);
+        assertTrue(result.get() >= FUTURE_DELTA_SECONDS - 2 && result.get() <= FUTURE_DELTA_SECONDS,
+                "Parsed delta must be ~" + FUTURE_DELTA_SECONDS + "s; got " + result.get());
+    }
+
+    @Test
     void parser_collapsesPastHttpDateToZero() throws Exception {
         // Spec: past dates produce delta=0, not negative.
         String pastDate = "Sun, 06 Nov 1994 08:49:37 GMT";

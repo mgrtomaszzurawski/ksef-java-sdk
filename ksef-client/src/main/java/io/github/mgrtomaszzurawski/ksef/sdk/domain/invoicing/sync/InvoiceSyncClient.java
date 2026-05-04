@@ -69,6 +69,12 @@ public final class InvoiceSyncClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceSyncClient.class);
     private static final int MAX_WINDOWS_PER_SUBJECT = 1_000;
+    /** Standard KSeF export ZIP entries are XML files. */
+    private static final String XML_EXTENSION = ".xml";
+    /** Common SDK / KSeF ZIP naming convention #1 — {@code faktura_N.xml}. */
+    private static final String FAKTURA_NAME_PREFIX = "faktura_";
+    /** Common SDK / KSeF ZIP naming convention #2 — {@code invoice-N.xml}. */
+    private static final String INVOICE_NAME_PREFIX = "invoice-";
     private static final String ERR_NULL_PLAN = "plan must not be null";
     private static final String ERR_NULL_STORE = "checkpointStore must not be null";
     private static final String ERR_NULL_SINK = "sink must not be null";
@@ -265,15 +271,15 @@ public final class InvoiceSyncClient {
      */
     private static Path matchInvoiceXml(ExportedInvoiceDirectory dir, KsefNumber typed, int ordinal) {
         Map<String, Path> all = dir.invoiceXmls();
-        Path byKsefNumber = all.get(typed.value() + ".xml");
+        Path byKsefNumber = all.get(typed.value() + XML_EXTENSION);
         if (byKsefNumber != null) {
             return byKsefNumber;
         }
-        Path byFaktura = all.get("faktura_" + (ordinal + 1) + ".xml");
+        Path byFaktura = all.get(FAKTURA_NAME_PREFIX + (ordinal + 1) + XML_EXTENSION);
         if (byFaktura != null) {
             return byFaktura;
         }
-        Path byInvoice = all.get("invoice-" + (ordinal + 1) + ".xml");
+        Path byInvoice = all.get(INVOICE_NAME_PREFIX + (ordinal + 1) + XML_EXTENSION);
         if (byInvoice != null) {
             return byInvoice;
         }
