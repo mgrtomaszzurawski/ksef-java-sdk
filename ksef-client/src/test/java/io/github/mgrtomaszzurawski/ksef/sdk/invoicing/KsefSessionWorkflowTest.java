@@ -159,7 +159,7 @@ class KsefSessionWorkflowTest {
     @Test
     void failedInvoices_returnsFailedList(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices/failed"))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices/failed?pageSize=250"))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
