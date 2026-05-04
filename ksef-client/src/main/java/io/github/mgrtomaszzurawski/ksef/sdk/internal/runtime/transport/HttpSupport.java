@@ -274,14 +274,15 @@ public final class HttpSupport {
     public <T> T deleteAuthenticatedWithResponse(String path, String token,
                                                   Class<T> responseType, String operationName) {
         return runtime.retryHandler().execute(() -> sendAuthenticatedJson(
-                bearer -> HttpRequest.newBuilder()
-                        .uri(uri(path))
-                        .timeout(runtime.readTimeout())
-                        .header(ACCEPT, APPLICATION_JSON)
-                        .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS)
-                        .header(AUTHORIZATION, BEARER_PREFIX + bearer)
-                        .DELETE()
-                        .build(),
+                bearer -> {
+                    HttpRequest.Builder builder = HttpRequest.newBuilder()
+                            .uri(uri(path))
+                            .timeout(runtime.readTimeout())
+                            .header(ACCEPT, APPLICATION_JSON)
+                            .header(AUTHORIZATION, BEARER_PREFIX + bearer);
+                    applyFeatureHeaders(builder, path);
+                    return builder.DELETE().build();
+                },
                 token, responseType), operationName);
     }
 
@@ -291,13 +292,14 @@ public final class HttpSupport {
      */
     public void deleteAuthenticated(String path, String token, String operationName) {
         runtime.retryHandler().runPost(() -> sendAuthenticatedNoContent(
-                bearer -> HttpRequest.newBuilder()
-                        .uri(uri(path))
-                        .timeout(runtime.readTimeout())
-                        .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS)
-                        .header(AUTHORIZATION, BEARER_PREFIX + bearer)
-                        .DELETE()
-                        .build(),
+                bearer -> {
+                    HttpRequest.Builder builder = HttpRequest.newBuilder()
+                            .uri(uri(path))
+                            .timeout(runtime.readTimeout())
+                            .header(AUTHORIZATION, BEARER_PREFIX + bearer);
+                    applyFeatureHeaders(builder, path);
+                    return builder.DELETE().build();
+                },
                 token), operationName);
     }
 

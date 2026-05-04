@@ -58,6 +58,29 @@ import static org.mockito.Mockito.when;
 @WireMockTest(httpsEnabled = true)
 class PreparedInvoiceExportWorkflowTest {
 
+    private static final String DISABLE_HOSTNAME_VERIFY_PROPERTY =
+            "jdk.internal.httpclient.disableHostnameVerification";
+    private static String previousDisableHostnameVerify;
+
+    @org.junit.jupiter.api.BeforeAll
+    static void disableHostnameVerification() {
+        // Capture the previous value so AfterAll can restore the JVM exactly as it was.
+        // WireMock serves a self-signed cert whose CN/SAN does not match "localhost";
+        // the JDK HttpClient honours this single property for SAN-mismatch suppression.
+        // Test scope only — the SDK's own HttpClient validates certs as normal.
+        previousDisableHostnameVerify = System.getProperty(DISABLE_HOSTNAME_VERIFY_PROPERTY);
+        System.setProperty(DISABLE_HOSTNAME_VERIFY_PROPERTY, "true");
+    }
+
+    @org.junit.jupiter.api.AfterAll
+    static void restoreHostnameVerification() {
+        if (previousDisableHostnameVerify == null) {
+            System.clearProperty(DISABLE_HOSTNAME_VERIFY_PROPERTY);
+        } else {
+            System.setProperty(DISABLE_HOSTNAME_VERIFY_PROPERTY, previousDisableHostnameVerify);
+        }
+    }
+
     private static final String EXPORT_REF = "20260418-EX-1234567890-ABCDEF1234-01";
     private static final String PART_PATH = "/parts/part1.bin";
     private static final String METADATA_FILE = "_metadata.json";
@@ -380,10 +403,8 @@ class PreparedInvoiceExportWorkflowTest {
      * Test scope only — the SDK's own HttpClient validates certs as normal.
      */
     private static HttpClient insecureHttpClient() {
-        // Disable JDK HttpClient hostname verification at the JVM level.
-        // This is the only switch the JDK 17 HttpClient honours for SAN/CN
-        // mismatches; trust managers alone are not enough.
-        System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
+        // Hostname-verification suppression is set/restored at @BeforeAll/@AfterAll
+        // so it does not contaminate other tests in the same JVM (Codex F9).
         try {
             javax.net.ssl.TrustManager[] trustAll = new javax.net.ssl.TrustManager[]{
                     new javax.net.ssl.X509ExtendedTrustManager() {

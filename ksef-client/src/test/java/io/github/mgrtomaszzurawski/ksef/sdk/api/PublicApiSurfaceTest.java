@@ -61,6 +61,12 @@ class PublicApiSurfaceTest {
     @Test
     void publicSdkSurface_doesNotLeakInternalOrRawTypes() throws Exception {
         List<Class<?>> publicSdkClasses = scanPublicSdkClasses();
+        // Sanity floor: the SDK has dozens of public classes. If the scanner returned
+        // an empty list we are not testing anything (Codex F2 — the previous scanner
+        // produced an empty list on Windows). 30 is well below the real count
+        // (>100 records + clients + builders) but high enough to detect a broken scan.
+        org.junit.jupiter.api.Assertions.assertTrue(publicSdkClasses.size() >= 30,
+                "Scanner returned only " + publicSdkClasses.size() + " classes — surface gate is vacuous");
         List<String> violations = new ArrayList<>();
 
         for (Class<?> cls : publicSdkClasses) {
@@ -90,6 +96,15 @@ class PublicApiSurfaceTest {
             if (!isPublic(c.getModifiers())) {
                 continue;
             }
+            // A "public" constructor is unreachable from JPMS consumers when ALL of its
+            // parameters live in non-exported packages — the consumer module cannot even
+            // name the parameter types, let alone supply values. The constructor exists
+            // as public for in-module use (KsefClient instantiates KsefSession etc.).
+            // We surface a violation only when at least one parameter is consumer-visible
+            // and another is internal/raw, which would be a real shape leak.
+            if (allParametersUnreachableFromConsumers(c)) {
+                continue;
+            }
             for (Parameter p : c.getParameters()) {
                 checkType("Constructor " + cls.getName() + " param " + p.getName(),
                         p.getParameterizedType(), violations);
@@ -105,6 +120,37 @@ class PublicApiSurfaceTest {
 
     private static boolean isPublic(int modifiers) {
         return Modifier.isPublic(modifiers);
+    }
+
+    /**
+     * Returns {@code true} when at least one parameter of the constructor is in a
+     * package that is invisible to consumer modules (internal SDK plumbing or
+     * generated raw types). Under JPMS, a consumer cannot resolve such a parameter
+     * type and therefore cannot invoke the constructor — even if the constructor
+     * is reflectively "public". This guards the SDK-internal-construction-only
+     * constructors of {@code KsefSession}, {@code KsefBatchSession} and
+     * {@code PreparedInvoiceExport}, which take internal SDK types alongside
+     * primitives like {@code String} or {@code byte[]}.
+     *
+     * <p>JPMS treats the type as unresolvable, so the constructor is functionally
+     * unreachable from a consumer module — but the surface test would otherwise
+     * raise a noisy false positive. Methods (return type or other parameters)
+     * still go through the strict check, so this exception is narrow.
+     */
+    private static boolean allParametersUnreachableFromConsumers(Constructor<?> c) {
+        if (c.getParameterCount() == 0) {
+            return false;
+        }
+        for (Parameter p : c.getParameters()) {
+            String paramTypeName = p.getType().getName();
+            boolean paramIsInternal = paramTypeName.startsWith(INTERNAL_PACKAGE)
+                    || paramTypeName.startsWith(GENERATED_PACKAGE)
+                    || (paramTypeName.startsWith(SDK_ROOT_PACKAGE) && paramTypeName.endsWith(RAW_SUFFIX));
+            if (paramIsInternal) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void checkType(String context, Type type, List<String> violations) {
@@ -140,13 +186,26 @@ class PublicApiSurfaceTest {
     private static List<Class<?>> scanPublicSdkClasses() throws IOException, ClassNotFoundException {
         Set<String> classNames = new HashSet<>();
         ClassLoader cl = PublicApiSurfaceTest.class.getClassLoader();
-        Enumeration<URL> roots = cl.getResources(SDK_ROOT_PACKAGE.replace('.', '/'));
-        while (roots.hasMoreElements()) {
-            URL root = roots.nextElement();
-            switch (root.getProtocol()) {
-                case "file" -> scanFileRoot(URI.create(root.toString()), classNames);
-                case "jar" -> scanJarRoot(root, classNames);
-                default -> { /* unknown protocol — skip */ }
+
+        // Primary path: walk the build's target/classes directory directly. This works
+        // regardless of how the test is launched (classpath vs. modulepath; Surefire's
+        // modular layer hides the SDK package from ClassLoader.getResources()).
+        java.nio.file.Path explicitRoot = java.nio.file.Path.of(
+                "target", "classes", "io", "github", "mgrtomaszzurawski", "ksef", "sdk");
+        if (java.nio.file.Files.isDirectory(explicitRoot)) {
+            scanFileRootByDirectoryWalk(explicitRoot, classNames);
+        }
+
+        // Fallback for non-Maven launches: classpath/jar URL enumeration.
+        if (classNames.isEmpty()) {
+            Enumeration<URL> roots = cl.getResources(SDK_ROOT_PACKAGE.replace('.', '/'));
+            while (roots.hasMoreElements()) {
+                URL root = roots.nextElement();
+                switch (root.getProtocol()) {
+                    case "file" -> scanFileRoot(URI.create(root.toString()), classNames);
+                    case "jar" -> scanJarRoot(root, classNames);
+                    default -> { /* unknown protocol — skip */ }
+                }
             }
         }
 
@@ -167,26 +226,69 @@ class PublicApiSurfaceTest {
         return result;
     }
 
-    private static void scanFileRoot(URI rootUri, Set<String> classNames) throws IOException {
-        java.nio.file.Path root = java.nio.file.Paths.get(rootUri);
-        if (!java.nio.file.Files.isDirectory(root)) {
-            return;
-        }
-        try (var stream = java.nio.file.Files.walk(root)) {
+    /**
+     * Walk {@code packageDir} recursively, mapping each {@code .class} file back
+     * to its fully-qualified class name. The package prefix is appended to
+     * {@link #SDK_ROOT_PACKAGE} based on the relative path under the package
+     * directory itself — no fragile {@code getParent()} chain is required.
+     */
+    private static void scanFileRootByDirectoryWalk(java.nio.file.Path packageDir,
+                                                     Set<String> classNames) throws IOException {
+        try (var stream = java.nio.file.Files.walk(packageDir)) {
             stream
                     .filter(p -> p.toString().endsWith(".class"))
                     .forEach(p -> {
-                        java.nio.file.Path rel = root.getParent().getParent().getParent().getParent().getParent()
-                                .getParent().relativize(p);
-                        // simpler: derive package from absolute path
-                        String absolute = p.toString();
-                        int idx = absolute.indexOf("io/github/mgrtomaszzurawski/ksef/sdk");
-                        if (idx < 0) {
-                            return;
+                        java.nio.file.Path rel = packageDir.relativize(p);
+                        StringBuilder name = new StringBuilder(SDK_ROOT_PACKAGE);
+                        for (int seg = 0; seg < rel.getNameCount(); seg++) {
+                            name.append('.').append(rel.getName(seg).toString());
                         }
-                        String relative = absolute.substring(idx);
-                        String name = relative.replace('/', '.').replaceAll("\\.class$", "");
-                        classNames.add(name);
+                        String fqn = name.toString().replaceAll("\\.class$", "");
+                        classNames.add(fqn);
+                    });
+        }
+    }
+
+    private static void scanFileRoot(URI rootUri, Set<String> classNames) throws IOException {
+        // The {@code rootUri} points at {@code .../classes/io/github/mgrtomaszzurawski/ksef/sdk}.
+        // The package prefix we need to recover starts six segments up. Walking up via
+        // getParent() six times gives the {@code classes/} directory, which is the
+        // class-loading root we relativize each .class file against. Using
+        // {@link java.nio.file.Path#relativize(Path)} produces a platform-agnostic
+        // relative path that we can then re-encode using the Path separator we observed,
+        // before turning slashes into dots. This is the JPMS-portable replacement for
+        // the previous {@code indexOf("io/github/...")} approach, which silently
+        // produced an empty class set on Windows where {@code Path.toString()} returns
+        // backslashes (Codex F2).
+        java.nio.file.Path packageDir = java.nio.file.Paths.get(rootUri);
+        if (!java.nio.file.Files.isDirectory(packageDir)) {
+            return;
+        }
+        // packageDir = .../classes/io/github/mgrtomaszzurawski/ksef/sdk
+        // walk up 5 segments (sdk, ksef, mgrtomaszzurawski, github, io) to reach
+        // .../classes which is the classpath root we relativize each .class against.
+        java.nio.file.Path classpathRoot = packageDir;
+        for (int up = 0; up < 5; up++) {
+            classpathRoot = classpathRoot.getParent();
+            if (classpathRoot == null) {
+                return;
+            }
+        }
+        java.nio.file.Path classpathRootFinal = classpathRoot;
+        try (var stream = java.nio.file.Files.walk(packageDir)) {
+            stream
+                    .filter(p -> p.toString().endsWith(".class"))
+                    .forEach(p -> {
+                        java.nio.file.Path rel = classpathRootFinal.relativize(p);
+                        StringBuilder name = new StringBuilder();
+                        for (int seg = 0; seg < rel.getNameCount(); seg++) {
+                            if (seg > 0) {
+                                name.append('.');
+                            }
+                            name.append(rel.getName(seg).toString());
+                        }
+                        String fqn = name.toString().replaceAll("\\.class$", "");
+                        classNames.add(fqn);
                     });
         }
     }

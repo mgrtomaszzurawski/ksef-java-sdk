@@ -106,6 +106,7 @@ public final class KsefBatchSession implements AutoCloseable {
     private final String referenceNumber;
     private final List<PartUploadRequest> partUploadRequests;
     private final BatchPackageBuilder.BatchPackage batchPackage;
+    private final java.util.function.LongSupplier nanoTimeSource;
     private volatile boolean closed;
 
     /**
@@ -120,7 +121,7 @@ public final class KsefBatchSession implements AutoCloseable {
      */
     public KsefBatchSession(SessionClient sessionClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests) {
-        this(sessionClient, null, referenceNumber, partUploadRequests, null);
+        this(sessionClient, null, referenceNumber, partUploadRequests, null, System::nanoTime);
     }
 
     /**
@@ -133,6 +134,21 @@ public final class KsefBatchSession implements AutoCloseable {
     public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage) {
+        this(sessionClient, httpClient, referenceNumber, partUploadRequests, batchPackage, System::nanoTime);
+    }
+
+    /**
+     * Internal constructor used by tests that need to drive the upload-budget
+     * deadline branch deterministically. Production code paths use
+     * {@code System::nanoTime}; tests can substitute a {@link java.util.function.LongSupplier}
+     * that simulates clock progression beyond the per-part budget.
+     *
+     * @apiNote Internal — {@link SessionClient} parameter type is not exported.
+     */
+    public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+                     List<PartUploadRequest> partUploadRequests,
+                     BatchPackageBuilder.BatchPackage batchPackage,
+                     java.util.function.LongSupplier nanoTimeSource) {
         this.sessionClient = sessionClient;
         this.httpClient = httpClient;
         this.referenceNumber = referenceNumber;
@@ -142,6 +158,7 @@ public final class KsefBatchSession implements AutoCloseable {
             throw new IllegalArgumentException(ERR_PART_COUNT_MISMATCH);
         }
         this.batchPackage = batchPackage;
+        this.nanoTimeSource = java.util.Objects.requireNonNull(nanoTimeSource, "nanoTimeSource");
     }
 
     /**
@@ -189,10 +206,10 @@ public final class KsefBatchSession implements AutoCloseable {
         // for the entire upload. Track elapsed time and fail-fast if the
         // budget is about to be exceeded; this surfaces a clean SDK error
         // instead of a server timeout/rejection mid-upload.
-        long startNanos = System.nanoTime();
+        long startNanos = nanoTimeSource.getAsLong();
         long budgetNanos = partUploadRequests.size() * UPLOAD_BUDGET_NANOS_PER_PART;
         for (int index = 0; index < partUploadRequests.size(); index++) {
-            long elapsedNanos = System.nanoTime() - startNanos;
+            long elapsedNanos = nanoTimeSource.getAsLong() - startNanos;
             if (elapsedNanos > budgetNanos) {
                 throw new KsefNetworkException(
                         String.format("Batch upload deadline exceeded after %d parts; "

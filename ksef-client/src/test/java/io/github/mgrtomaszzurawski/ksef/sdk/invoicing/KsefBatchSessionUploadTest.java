@@ -191,6 +191,92 @@ class KsefBatchSessionUploadTest {
         }
     }
 
+    @Test
+    void uploadParts_whenCumulativeBudgetExceeded_throwsBeforeUploadingNext(WireMockRuntimeInfo wmInfo,
+                                                                            @TempDir Path tempDir) throws Exception {
+        // given — two parts; injected nanoTime jumps past 2 * 20-minute budget
+        // immediately after the first part is uploaded, so the second part hits
+        // the REQ-SESS-13 deadline check and aborts.
+        Path partFile1 = writePartFile(tempDir, "part1.bin");
+        Path partFile2 = writePartFile(tempDir, "part2.bin");
+        stubFor(put(urlEqualTo(UPLOAD_PATH_1))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_OK)));
+        stubFor(put(urlEqualTo(UPLOAD_PATH_2))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_OK)));
+
+        List<PartUploadRequest> uploads = List.of(
+                new PartUploadRequest(1, "PUT",
+                        URI.create(wmInfo.getHttpBaseUrl() + UPLOAD_PATH_1), Map.of()),
+                new PartUploadRequest(2, "PUT",
+                        URI.create(wmInfo.getHttpBaseUrl() + UPLOAD_PATH_2), Map.of()));
+
+        // Clock jumps past 41 minutes (>2 * 20-min budget) on second call.
+        long[] clockTicks = {0L, 41L * 60L * 1_000_000_000L, 41L * 60L * 1_000_000_000L};
+        java.util.concurrent.atomic.AtomicInteger tickIndex = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.function.LongSupplier fakeClock = () -> clockTicks[Math.min(tickIndex.getAndIncrement(),
+                clockTicks.length - 1)];
+
+        try (KsefBatchSession session = createBudgetTestSession(wmInfo, uploads, List.of(partFile1, partFile2), fakeClock)) {
+
+            // when / then
+            io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException failure =
+                    assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException.class,
+                            session::uploadParts);
+            assertTrue(failure.getMessage().contains("REQ-SESS-13"),
+                    "Error must cite REQ-SESS-13; got: " + failure.getMessage());
+            assertTrue(failure.getMessage().contains("20"),
+                    "Error must mention the 20-minute budget; got: " + failure.getMessage());
+        }
+    }
+
+    @Test
+    void uploadParts_whenMethodIsUnsupported_failsCleanly(WireMockRuntimeInfo wmInfo, @TempDir Path tempDir) throws Exception {
+        // given — server reports method "PATCH" (not GET/PUT/POST). HttpClient.send
+        // accepts arbitrary methods through the request builder, but a server that
+        // does not allow PATCH on the presigned URL will reject. Here we stub the
+        // PUT path to fail; the SDK's request builder uses PATCH literally and
+        // WireMock will not match → the client should surface a network error.
+        Path partFile = writePartFile(tempDir, "part1.bin");
+        stubFor(put(urlEqualTo(UPLOAD_PATH_1))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_OK)));
+
+        List<PartUploadRequest> uploads = List.of(
+                new PartUploadRequest(1, "PATCH",
+                        URI.create(wmInfo.getHttpBaseUrl() + UPLOAD_PATH_1), Map.of()));
+
+        try (KsefBatchSession session = createSession(wmInfo, uploads, List.of(partFile))) {
+
+            // when / then — PATCH is not registered as a stub method on this URL,
+            // WireMock returns 404 → SDK wraps as KsefNetworkException.
+            assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException.class,
+                    session::uploadParts);
+        }
+    }
+
+    private static KsefBatchSession createBudgetTestSession(WireMockRuntimeInfo wmInfo,
+                                                             List<PartUploadRequest> uploads,
+                                                             List<Path> partFiles,
+                                                             java.util.function.LongSupplier fakeClock) {
+        // Same as createSession but with an injected nano-time source for REQ-SESS-13
+        // budget testing. Stubs close + status so try-with-resources can complete.
+        stubFor(post(urlEqualTo("/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
+        stubFor(get(urlEqualTo("/v2/sessions/" + TEST_BATCH_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody("""
+                                {"status":{"code":200,"description":"OK"},
+                                 "dateCreated":"2026-04-18T12:00:00+02:00"}""")));
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        runtime.sessionContext().activate(TEST_TOKEN, TEST_BATCH_REF, java.time.OffsetDateTime.now().plusHours(1));
+        SessionClient sessionClient = new SessionClient(runtime);
+        BatchPackageBuilder.BatchPackage pkg = new BatchPackageBuilder.BatchPackage(
+                stubBatchFileSpec(partFiles.size()), partFiles);
+        return new KsefBatchSession(sessionClient, HttpClient.newHttpClient(),
+                TEST_BATCH_REF, uploads, pkg, fakeClock);
+    }
+
     private static Path writePartFile(Path tempDir, String name) throws Exception {
         Path partFile = tempDir.resolve(name);
         Files.write(partFile, PART_CONTENT);

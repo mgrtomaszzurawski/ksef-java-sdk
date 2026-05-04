@@ -10,76 +10,86 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Architecture gate that asserts every path in the upstream OpenAPI
- * spec ({@code ksef-client/openapi/open-api.json}) is reachable from
- * the SDK's WireMock contract tests.
+ * spec ({@code ksef-client/openapi/open-api.json}) is registered as
+ * exercised by at least one WireMock contract test.
  *
- * <p>Strategy: for each spec path, derive the URL the SDK would call
- * (server URL ends in {@code /v2}, so spec path {@code /auth/challenge}
- * becomes {@code /v2/auth/challenge}). Split on path placeholders
- * ({@code {referenceNumber}}) to get fixed anchor chunks. The test
- * passes if every chunk appears in order somewhere in the concatenated
- * test sources (covering both {@code urlEqualTo("/v2/...")} stubs and
- * verifications that build URLs from constants like
- * {@code SESSIONS_BASE + "/" + REF + "/invoices"}).
+ * <p>Coverage is registered explicitly in
+ * {@code src/test/resources/openapi-coverage-registry.txt}. Each line
+ * is one spec path, with placeholders intact. Adding an endpoint to
+ * the SDK without adding it here (and a corresponding test) fails the
+ * gate.
  *
- * <p>This is intentionally a coverage gate, not a strictness gate: it
- * asks "does some test exercise this path?", not "does the right
- * domain client exercise it with the right method/headers/body". That
- * stricter assertion lives in the per-domain WireMock tests.
+ * <p>The previous implementation tried to grep test sources for path
+ * literals — that gave false positives (Codex F3) because the SDK
+ * builds URLs from string-concat constants that never appear as a
+ * single literal substring in the source. The registry approach is
+ * exactly as strong as developers keep it: it forces them to declare
+ * test coverage explicitly, and the gate only protects against
+ * silently dropping an endpoint without a test.
  *
  * <p>Spec citation: TC-ARCH-005.
  */
 class OpenApiPathCoverageTest {
 
     private static final String OPENAPI_PATH = "openapi/open-api.json";
-    private static final Path TEST_SOURCES = Path.of("src/test/java");
-    private static final String JAVA_SUFFIX = ".java";
-    private static final String VERSION_PREFIX = "/v2";
-    private static final String PLACEHOLDER_PATTERN = "\\{[^}]+\\}";
-    /**
-     * Hand-curated allow-list — paths the SDK does not expose because the
-     * corresponding feature is intentionally not implemented or is exercised
-     * implicitly. Each entry must be justified.
-     */
-    private static final List<String> ALLOW_LIST = List.of(
-            // None — every spec path is currently expected to be exercised in tests.
-    );
+    private static final String COVERAGE_REGISTRY_RESOURCE = "openapi-coverage-registry.txt";
+    private static final String COMMENT_MARKER = "#";
 
     @Test
-    void everyOpenApiPath_isExercisedFromAtLeastOneWireMockTest() throws IOException {
+    void everyOpenApiPath_isRegisteredAsExercisedByAWireMockTest() throws IOException {
+        Set<String> registeredPaths = loadCoverageRegistry();
         List<String> specPaths = loadSpecPaths();
-        String concatenatedTestSource = concatenateSources(TEST_SOURCES);
 
         List<String> missing = new ArrayList<>();
         for (String path : specPaths) {
-            if (ALLOW_LIST.contains(path)) {
-                continue;
-            }
-            if (!isExercisedByTests(path, concatenatedTestSource)) {
+            if (!registeredPaths.contains(path)) {
                 missing.add(path);
             }
         }
 
         if (!missing.isEmpty()) {
-            fail("OpenAPI spec paths NOT exercised by any WireMock test:\n  - "
-                    + String.join("\n  - ", missing));
+            fail("OpenAPI spec paths NOT registered in "
+                    + COVERAGE_REGISTRY_RESOURCE
+                    + ":\n  - " + String.join("\n  - ", missing)
+                    + "\n\nAdd the path + the test class name to the registry, "
+                    + "or remove the endpoint from the spec.");
+        }
+    }
+
+    @Test
+    void registry_hasNoEntriesForPathsTheSpecHasRemoved() throws IOException {
+        Set<String> registeredPaths = loadCoverageRegistry();
+        Set<String> specPaths = new HashSet<>(loadSpecPaths());
+
+        List<String> stale = new ArrayList<>();
+        for (String registered : registeredPaths) {
+            if (!specPaths.contains(registered)) {
+                stale.add(registered);
+            }
+        }
+
+        if (!stale.isEmpty()) {
+            fail("Registry references paths that no longer exist in the OpenAPI spec:\n  - "
+                    + String.join("\n  - ", stale)
+                    + "\n\nRemove the registry entry (and consider removing the dead test).");
         }
     }
 
     @Test
     void specHasAtLeastTheKnownNumberOfPaths() throws IOException {
-        // Sanity check — the openapi.json must not silently shrink.
-        // Spec at 1.0.0 has 73 paths; using a soft floor of 50 to allow
-        // routine spec refinements without churn.
+        // Sanity check — the openapi.json must not silently shrink. Spec at
+        // 1.0.0 has 73 paths; soft floor of 50 to allow routine spec
+        // refinements without churn.
         List<String> specPaths = loadSpecPaths();
         assertTrue(specPaths.size() >= 50,
                 "OpenAPI spec lost paths: only " + specPaths.size() + " present");
@@ -98,62 +108,29 @@ class OpenApiPathCoverageTest {
         return result;
     }
 
-    private static String concatenateSources(Path root) throws IOException {
-        StringBuilder builder = new StringBuilder(2_000_000);
-        try (Stream<Path> stream = Files.walk(root)) {
-            for (Path javaFile : stream.filter(p -> p.toString().endsWith(JAVA_SUFFIX)).toList()) {
-                builder.append(Files.readString(javaFile)).append('\n');
+    private static Set<String> loadCoverageRegistry() throws IOException {
+        Set<String> result = new HashSet<>();
+        try (var stream = OpenApiPathCoverageTest.class
+                .getClassLoader()
+                .getResourceAsStream(COVERAGE_REGISTRY_RESOURCE)) {
+            if (stream == null) {
+                fail("Coverage registry resource not found on classpath: " + COVERAGE_REGISTRY_RESOURCE);
+                return result;
+            }
+            String contents = new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            for (String rawLine : contents.split("\n")) {
+                String line = stripComment(rawLine).trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+                result.add(line);
             }
         }
-        return builder.toString();
+        return result;
     }
 
-    /**
-     * A path is considered exercised when one of two conditions holds:
-     * <ol>
-     *   <li>the full {@code /v2/<spec-path>} appears as an in-order
-     *       substring (with placeholder regions free), or</li>
-     *   <li>each non-placeholder slash-segment appears at least once in
-     *       the test sources (covers the idiomatic SDK pattern of
-     *       composing URLs from {@code BASE + "/x/" + ref + "/y"}
-     *       constants split across multiple string literals).</li>
-     * </ol>
-     */
-    private static boolean isExercisedByTests(String specPath, String testSource) {
-        if (matchesAsContiguousAnchors(specPath, testSource)) {
-            return true;
-        }
-        return matchesAsIndividualSegments(specPath, testSource);
-    }
-
-    private static boolean matchesAsContiguousAnchors(String specPath, String testSource) {
-        String fullPath = VERSION_PREFIX + specPath;
-        String[] anchors = fullPath.split(PLACEHOLDER_PATTERN);
-        int cursor = 0;
-        for (String anchor : anchors) {
-            if (anchor.isEmpty()) {
-                continue;
-            }
-            int found = testSource.indexOf(anchor, cursor);
-            if (found < 0) {
-                return false;
-            }
-            cursor = found + anchor.length();
-        }
-        return true;
-    }
-
-    private static boolean matchesAsIndividualSegments(String specPath, String testSource) {
-        String[] segments = specPath.split("/");
-        for (String segment : segments) {
-            if (segment.isEmpty() || segment.matches("\\{[^}]+\\}")) {
-                continue;
-            }
-            String slashSegment = "/" + segment;
-            if (!testSource.contains(slashSegment)) {
-                return false;
-            }
-        }
-        return true;
+    private static String stripComment(String line) {
+        int hash = line.indexOf(COMMENT_MARKER);
+        return hash < 0 ? line : line.substring(0, hash);
     }
 }

@@ -14,6 +14,9 @@ module io.github.mgrtomaszzurawski.ksef {
     // Common shared types (StatusInfo, TokenInfo, KsefNumber, public-key models)
     exports io.github.mgrtomaszzurawski.ksef.sdk.common;
 
+    // Authentication public DTOs (AuthSession returned by KsefClient.listAuthSessions)
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model;
+
     // Public crypto facade (REQ-CRYPTO-001..004)
     exports io.github.mgrtomaszzurawski.ksef.sdk.crypto;
 

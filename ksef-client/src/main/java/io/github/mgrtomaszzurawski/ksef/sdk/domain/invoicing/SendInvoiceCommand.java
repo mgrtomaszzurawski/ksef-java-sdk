@@ -102,9 +102,17 @@ public sealed interface SendInvoiceCommand
      */
     record TechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrectedInvoice) implements SendInvoiceCommand {
 
+        /** SHA-256 length in bytes — KSeF requires the corrected-invoice hash to be exactly 32 bytes. */
+        private static final int SHA256_LENGTH_BYTES = 32;
+
         public TechnicalCorrection {
             Objects.requireNonNull(invoiceXml, "invoiceXml must not be null");
             Objects.requireNonNull(hashOfCorrectedInvoice, "hashOfCorrectedInvoice must not be null");
+            if (hashOfCorrectedInvoice.length != SHA256_LENGTH_BYTES) {
+                throw new IllegalArgumentException(
+                        "hashOfCorrectedInvoice must be exactly " + SHA256_LENGTH_BYTES
+                                + " bytes (SHA-256), got " + hashOfCorrectedInvoice.length);
+            }
             invoiceXml = invoiceXml.clone();
             hashOfCorrectedInvoice = hashOfCorrectedInvoice.clone();
         }
