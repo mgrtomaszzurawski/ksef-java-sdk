@@ -115,7 +115,7 @@ public final class KsefBatchSession implements AutoCloseable {
     private volatile boolean closed;
 
     /**
-     * Package-private — see {@link KsefSessionFactory} class-level Javadoc
+     * Package-private — see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
      * (Codex round-9 fresh review H3).
      */
     KsefBatchSession(SessionClient sessionClient, String referenceNumber,
@@ -124,7 +124,7 @@ public final class KsefBatchSession implements AutoCloseable {
     }
 
     /**
-     * Package-private — see {@link KsefSessionFactory} class-level Javadoc
+     * Package-private — see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
      * (Codex round-9 fresh review H3).
      */
     KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
@@ -135,7 +135,7 @@ public final class KsefBatchSession implements AutoCloseable {
 
     /**
      * Package-private — internal constructor with injectable nano-time source
-     * for upload-budget tests; see {@link KsefSessionFactory} class-level Javadoc
+     * for upload-budget tests; see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
      * for the construction policy (Codex round-9 fresh review H3).
      */
     KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,

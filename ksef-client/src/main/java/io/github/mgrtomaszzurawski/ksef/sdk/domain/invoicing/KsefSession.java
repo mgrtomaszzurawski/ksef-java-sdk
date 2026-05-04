@@ -86,7 +86,7 @@ public final class KsefSession implements AutoCloseable {
      * taking an internal-package type ({@link SessionClient}) leaks
      * construction details into the binary/Javadoc surface even though JPMS
      * makes the type unreachable from consumers. Construction now happens
-     * exclusively via the same-package {@link KsefSessionFactory} bridge,
+     * exclusively via the same-package {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} bridge,
      * which is itself in the exported package but is the single named
      * entry-point and clearly documented as internal-only.
      */

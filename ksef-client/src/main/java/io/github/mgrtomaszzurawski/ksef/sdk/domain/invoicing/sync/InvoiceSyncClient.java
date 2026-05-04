@@ -85,6 +85,8 @@ public final class InvoiceSyncClient {
     private static final String ERR_NULL_SINK = "sink must not be null";
     private static final String ERR_METADATA_PARSE = "Failed to parse _metadata.json from export package";
     private static final String ERR_METADATA_SHAPE = "_metadata.json must be either an array or an object with an 'invoices' array";
+    private static final String ERR_METADATA_MISSING = "Export package reports invoiceCount=%d but the decrypted package has no _metadata.json — refusing to advance the checkpoint (Codex round-9 fresh-review F3 fail-closed)";
+    private static final String ERR_METADATA_EMPTY = "Export package reports invoiceCount=%d but _metadata.json is empty — refusing to advance the checkpoint (Codex round-9 fresh-review F3 fail-closed)";
 
     private final InvoiceClient invoiceClient;
     private final ObjectMapper objectMapper;
@@ -171,6 +173,18 @@ public final class InvoiceSyncClient {
 
             ExportedInvoiceDirectory dir = export.downloadAndDecryptTo(status, windowDir);
             List<InvoiceMetadata> metadatas = readMetadataJson(dir);
+            // Codex round-9 fresh-review F3 — fail closed if KSeF reports a
+            // non-empty package but the decrypted directory is missing the
+            // metadata file (or it's empty). Otherwise the dispatch loop
+            // emits zero invoices and the checkpoint advances anyway,
+            // permanently skipping this window.
+            long reportedCount = pkg.invoiceCount();
+            if (dir.metadataJson() == null) {
+                throw new KsefException(String.format(Locale.ROOT, ERR_METADATA_MISSING, reportedCount), null);
+            }
+            if (metadatas.isEmpty()) {
+                throw new KsefException(String.format(Locale.ROOT, ERR_METADATA_EMPTY, reportedCount), null);
+            }
             long dispatched = dispatchInvoices(metadatas, dir, plan.fullContent(), sink, seenKsefNumbers, subjectType);
 
             // Commit-after-accept: only persist the checkpoint after every

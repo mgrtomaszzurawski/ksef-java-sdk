@@ -49,7 +49,7 @@ class OpenApiPathCoverageTest {
 
     @Test
     void everyOpenApiPath_isRegisteredAsExercisedByAWireMockTest() throws IOException {
-        Set<String> registeredPaths = loadCoverageRegistry();
+        Set<String> registeredPaths = registryPathsCovered();
         List<String> specPaths = loadSpecPaths();
 
         List<String> missing = new ArrayList<>();
@@ -70,7 +70,7 @@ class OpenApiPathCoverageTest {
 
     @Test
     void registry_hasNoEntriesForPathsTheSpecHasRemoved() throws IOException {
-        Set<String> registeredPaths = loadCoverageRegistry();
+        Set<String> registeredPaths = registryPathsCovered();
         Set<String> specPaths = new HashSet<>(loadSpecPaths());
 
         List<String> stale = new ArrayList<>();
@@ -88,36 +88,89 @@ class OpenApiPathCoverageTest {
     }
 
     /**
-     * Codex round-9 fresh review M2 — path-only coverage lets a path with
-     * GET+POST+DELETE be marked covered when only one method is actually
-     * pinned by a wire test. This second-stage check counts the spec
-     * operations (method+path tuples) and asserts the registry is at
-     * least within a known floor of method coverage. Each path in the
-     * spec contributes 1+ operations; the registry currently counts each
-     * path entry as covering ALL methods on that path (until migration
-     * completes), so this check enforces the spec doesn't grow new
-     * operations without a corresponding registry entry.
+     * Reduce the registry's mixed-format entries (path-only + {@code METHOD path}
+     * tuples) to the underlying set of paths covered. A tuple covers its path;
+     * a path-only line covers itself.
+     */
+    private static Set<String> registryPathsCovered() throws IOException {
+        Set<String> result = new HashSet<>();
+        for (String entry : loadCoverageRegistry()) {
+            int firstSpace = entry.indexOf(' ');
+            if (firstSpace > 0 && HTTP_METHODS.contains(entry.substring(0, firstSpace).toLowerCase(java.util.Locale.ROOT))) {
+                result.add(entry.substring(firstSpace + 1));
+            } else {
+                result.add(entry);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Codex round-9 fresh-review F4 — strict operation-level coverage.
+     *
+     * <p>For multi-method spec paths a path-only registry entry no longer
+     * counts as covering every method — each operation must have its own
+     * {@code METHOD path} tuple (or all operations on that path may be
+     * covered by their respective tuples). Single-method paths are still
+     * allowed to use the path-only short form because the implication is
+     * unambiguous.
      */
     @Test
-    void everyOpenApiOperation_hasARegisteredPathOrTuple() throws IOException {
+    void everyOpenApiOperation_hasARegisteredTuple() throws IOException {
         Set<String> registeredEntries = loadCoverageRegistry();
-        List<String> specOperations = loadSpecOperations();
+        java.util.Map<String, java.util.List<String>> methodsByPath = loadMethodsByPath();
 
         List<String> missing = new ArrayList<>();
-        for (String operation : specOperations) {
-            String path = operation.substring(operation.indexOf(' ') + 1);
-            if (!registeredEntries.contains(operation) && !registeredEntries.contains(path)) {
-                missing.add(operation);
+        for (var entry : methodsByPath.entrySet()) {
+            String path = entry.getKey();
+            List<String> methods = entry.getValue();
+            boolean isMultiMethod = methods.size() > 1;
+            for (String method : methods) {
+                String tuple = method + " " + path;
+                if (registeredEntries.contains(tuple)) {
+                    continue;
+                }
+                if (!isMultiMethod && registeredEntries.contains(path)) {
+                    // Single-method path allowed to use path-only short form.
+                    continue;
+                }
+                missing.add(tuple);
             }
         }
 
         if (!missing.isEmpty()) {
-            fail("OpenAPI operations NOT registered in "
+            fail("OpenAPI operations NOT registered as method-specific tuples in "
                     + COVERAGE_REGISTRY_RESOURCE
                     + ":\n  - " + String.join("\n  - ", missing)
-                    + "\n\nEither add the path to the registry (covers all "
-                    + "methods on that path) or add a method-specific tuple "
-                    + "like 'POST /tokens'.");
+                    + "\n\nMulti-method paths require one tuple per method "
+                    + "(e.g. 'GET /tokens' AND 'POST /tokens'). "
+                    + "Single-method paths may keep the path-only short form.");
+        }
+    }
+
+    /**
+     * Codex round-9 fresh-review F4 — also fail if the registry contains a
+     * path-only entry for a path that the spec defines with more than one
+     * method (the path-only entry would silently mask drift on a sibling
+     * method).
+     */
+    @Test
+    void registry_hasNoPathOnlyEntriesForMultiMethodSpecPaths() throws IOException {
+        Set<String> registeredEntries = loadCoverageRegistry();
+        java.util.Map<String, java.util.List<String>> methodsByPath = loadMethodsByPath();
+
+        List<String> overlyBroad = new ArrayList<>();
+        for (var entry : methodsByPath.entrySet()) {
+            String path = entry.getKey();
+            if (entry.getValue().size() > 1 && registeredEntries.contains(path)) {
+                overlyBroad.add(path + " (methods in spec: " + entry.getValue() + ")");
+            }
+        }
+
+        if (!overlyBroad.isEmpty()) {
+            fail("Registry uses path-only entries for multi-method spec paths "
+                    + "(must be method-specific tuples instead):\n  - "
+                    + String.join("\n  - ", overlyBroad));
         }
     }
 
@@ -203,22 +256,40 @@ class OpenApiPathCoverageTest {
      * {@code "POST /tokens"}, {@code "GET /tokens/{referenceNumber}"}).
      */
     private static List<String> loadSpecOperations() throws IOException {
+        List<String> result = new ArrayList<>();
+        for (var entry : loadMethodsByPath().entrySet()) {
+            for (String method : entry.getValue()) {
+                result.add(method + " " + entry.getKey());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns a map from {@code /path} → sorted-uppercase method list (e.g.
+     * {@code [DELETE, GET, POST]}). Used by the multi-method-vs-single-method
+     * coverage gates.
+     */
+    private static java.util.Map<String, java.util.List<String>> loadMethodsByPath() throws IOException {
         Path specPath = Path.of(OPENAPI_PATH);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode root = mapper.readTree(Files.readAllBytes(specPath));
         JsonNode paths = root.path("paths");
-        List<String> result = new ArrayList<>();
+        java.util.Map<String, java.util.List<String>> result = new java.util.LinkedHashMap<>();
         Iterator<String> pathNames = paths.fieldNames();
         while (pathNames.hasNext()) {
             String path = pathNames.next();
             JsonNode pathNode = paths.path(path);
+            java.util.List<String> methods = new ArrayList<>();
             Iterator<String> methodNames = pathNode.fieldNames();
             while (methodNames.hasNext()) {
                 String method = methodNames.next();
                 if (HTTP_METHODS.contains(method.toLowerCase(java.util.Locale.ROOT))) {
-                    result.add(method.toUpperCase(java.util.Locale.ROOT) + " " + path);
+                    methods.add(method.toUpperCase(java.util.Locale.ROOT));
                 }
             }
+            java.util.Collections.sort(methods);
+            result.put(path, methods);
         }
         return result;
     }

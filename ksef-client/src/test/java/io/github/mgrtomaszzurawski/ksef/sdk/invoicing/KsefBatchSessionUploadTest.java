@@ -163,7 +163,7 @@ class KsefBatchSessionUploadTest {
                 new PartUploadRequest(1, "PUT",
                         URI.create(wmInfo.getHttpBaseUrl() + UPLOAD_PATH_1), Map.of()));
         // Use the no-package constructor (the PreparedBatchPackage flow)
-        try (KsefBatchSession session = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newBatchSession(sessionClient, TEST_BATCH_REF, uploads)) {
+        try (KsefBatchSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(sessionClient, TEST_BATCH_REF, uploads)) {
 
             // when / then
             assertThrows(IllegalStateException.class, session::uploadParts);
@@ -273,7 +273,7 @@ class KsefBatchSessionUploadTest {
         SessionClient sessionClient = new SessionClient(runtime);
         BatchPackageBuilder.BatchPackage pkg = new BatchPackageBuilder.BatchPackage(
                 stubBatchFileSpec(partFiles.size()), partFiles);
-        return io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newBatchSession(sessionClient, HttpClient.newHttpClient(),
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(sessionClient, HttpClient.newHttpClient(),
                 TEST_BATCH_REF, uploads, pkg, fakeClock);
     }
 
@@ -303,7 +303,7 @@ class KsefBatchSessionUploadTest {
         SessionClient sessionClient = new SessionClient(runtime);
         BatchPackageBuilder.BatchPackage pkg = new BatchPackageBuilder.BatchPackage(
                 stubBatchFileSpec(partFiles.size()), partFiles);
-        return io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newBatchSession(sessionClient, HttpClient.newHttpClient(),
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(sessionClient, HttpClient.newHttpClient(),
                 TEST_BATCH_REF, uploads, pkg);
     }
 

@@ -122,12 +122,12 @@ class InvoiceSyncClientIntegrationTest {
                 new StatusInfo(STATUS_OK, "OK", List.of()), null, null, pkg);
 
         when(invoiceClient.getExportStatus(anyString())).thenReturn(terminalStatus);
-        PreparedInvoiceExport realExport = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newPreparedExport(invoiceClient, insecureHttpClient(),
+        PreparedInvoiceExport realExport = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceClient, insecureHttpClient(),
                 EXPORT_REF, aesKey, iv);
 
         // First call to prepareExport returns the real handle that drives a real
         // download/decrypt; the second call returns an empty package so the loop stops.
-        PreparedInvoiceExport emptyExport = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newPreparedExport(invoiceClient, insecureHttpClient(),
+        PreparedInvoiceExport emptyExport = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceClient, insecureHttpClient(),
                 EXPORT_REF, CryptoService.generateAesKey(), CryptoService.generateIv());
         when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryBuilder.class), anyBoolean()))
                 .thenAnswer(invocation -> {

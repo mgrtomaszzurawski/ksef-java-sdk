@@ -125,7 +125,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
      * @{@code @apiNote Internal} comment from drifting from reality. The
      * AES key and IV must come from the matching server-issued export
      * prepare response — passing arbitrary bytes here is undefined
-     * behaviour. Constructed via the same-package {@link KsefSessionFactory}.
+     * behaviour. Constructed via the same-package {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor}.
      */
     PreparedInvoiceExport(InvoiceClient invoices,
                           HttpClient httpClient,
@@ -345,7 +345,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private void streamDownloadDecryptVerify(InvoicePackagePart part, Path partFile) {
         URI url = part.url();
         if (url.getScheme() == null || !SCHEME_HTTPS.equalsIgnoreCase(url.getScheme())) {
-            throw new KsefException(ERR_INSECURE_PART_URL + url, null);
+            throw new KsefException(ERR_INSECURE_PART_URL + redactQuery(url), null);
         }
         if (part.method() != null && !HTTP_GET.equalsIgnoreCase(part.method())) {
             throw new KsefException(ERR_UNSUPPORTED_METHOD + part.method(), null);
@@ -588,7 +588,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private byte[] downloadPart(InvoicePackagePart part) {
         URI url = part.url();
         if (url.getScheme() == null || !SCHEME_HTTPS.equalsIgnoreCase(url.getScheme())) {
-            throw new KsefException(ERR_INSECURE_PART_URL + url, null);
+            throw new KsefException(ERR_INSECURE_PART_URL + redactQuery(url), null);
         }
         if (part.method() != null && !HTTP_GET.equalsIgnoreCase(part.method())) {
             throw new KsefException(ERR_UNSUPPORTED_METHOD + part.method(), null);

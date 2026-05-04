@@ -79,18 +79,8 @@ class PublicApiSurfaceTest {
     }
 
     private static void checkClass(Class<?> cls, List<String> violations) {
-        boolean isInternalConstructionBridge = isInternalConstructionBridge(cls);
         for (Method m : cls.getDeclaredMethods()) {
             if (!isPublic(m.getModifiers())) {
-                continue;
-            }
-            // Internal-construction bridges (e.g. KsefSessionFactory) are by
-            // design the only legal cross-package construction path for
-            // package-private constructors that take internal types — Codex
-            // round-9 H3. The factory class lives in an exported package but
-            // its existence and naming explicitly signal "internal entry
-            // point", so the methods may reference internal/transport types.
-            if (isInternalConstructionBridge) {
                 continue;
             }
             checkType("Method " + cls.getName() + "." + m.getName() + " return", m.getGenericReturnType(), violations);
@@ -102,10 +92,13 @@ class PublicApiSurfaceTest {
                 checkType("Method " + cls.getName() + "." + m.getName() + " throws", ex.getType(), violations);
             }
         }
-        // Constructors: Codex round-9 H3 — any public constructor on an
+        // Codex round-9 fresh-review F1: any public constructor on an
         // exported SDK type must NOT reference internal/generated/raw
         // types. The previous JPMS-reachability exemption was removed.
-        // Internal-only construction now goes through KsefSessionFactory.
+        // Internal construction now goes through
+        // {@code sdk.internal.client.session.SessionHandleConstructor}
+        // (in a NON-exported package, so its public methods never appear in
+        // the consumer-facing binary/Javadoc surface).
         for (Constructor<?> c : cls.getDeclaredConstructors()) {
             if (!isPublic(c.getModifiers())) {
                 continue;
@@ -121,23 +114,6 @@ class PublicApiSurfaceTest {
             }
             checkType("Field " + cls.getName() + "." + f.getName(), f.getGenericType(), violations);
         }
-    }
-
-    /**
-     * Whitelist for the named construction-bridge classes that are the only
-     * legal cross-package entry points for package-private constructors of
-     * {@code KsefSession}, {@code KsefBatchSession}, and
-     * {@code PreparedInvoiceExport} (all in {@code sdk.domain.invoicing}).
-     *
-     * <p>The bridge class lives in an exported package and its methods
-     * reference internal-package types — exempting it is what Codex
-     * round-9 H3 recommended ("package-local factories/bridges so KsefClient
-     * and internal clients can still instantiate handles without exporting
-     * construction details").
-     */
-    private static boolean isInternalConstructionBridge(Class<?> cls) {
-        return "io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory"
-                .equals(cls.getName());
     }
 
     private static boolean isPublic(int modifiers) {

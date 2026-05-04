@@ -1,7 +1,12 @@
 # ksef-client
 
-Library module of the [KSeF Java SDK](../README.md) — published to Maven Central as
+Library module of the [KSeF Java SDK](../README.md) — coordinates
 `io.github.mgrtomaszzurawski:ksef-client`.
+
+> **Status:** Maven Central staging dry-run pending. Until the artifact is
+> live on Central, install the `1.0.0` jar locally with
+> `mvn install -pl ksef-client -DskipTests` to use it from a downstream
+> project.
 
 If you only need to consume the SDK, this README is enough. For project-wide
 context, the architecture deep-dive, and the demo / live-validation harness,
@@ -14,7 +19,7 @@ see the [root README](../README.md) and the
 <dependency>
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-client</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 

@@ -3,7 +3,7 @@
 Copy-paste-runnable examples covering the most common KSeF SDK use cases.
 
 Each example is a single self-contained `.java` file with a `main()` method.
-They depend on the published artifact (or the local `0.1.0-SNAPSHOT`
+They depend on the published artifact (or the local `1.0.0`
 `mvn install` you already use for `ksef-demo`).
 
 ## How to run
@@ -21,9 +21,9 @@ They depend on the published artifact (or the local `0.1.0-SNAPSHOT`
    # Or compile manually
    CLASSPATH=$(mvn -q dependency:build-classpath -pl ksef-client \
        -DincludeScope=runtime -Dmdep.outputFile=/dev/stdout)
-   javac -cp "$CLASSPATH:ksef-client/target/ksef-client-0.1.0-SNAPSHOT.jar" \
+   javac -cp "$CLASSPATH:ksef-client/target/ksef-client-1.0.0.jar" \
          examples/SendOnlineInvoice.java
-   java -cp "$CLASSPATH:ksef-client/target/ksef-client-0.1.0-SNAPSHOT.jar:examples" \
+   java -cp "$CLASSPATH:ksef-client/target/ksef-client-1.0.0.jar:examples" \
         SendOnlineInvoice
    ```
 3. Each example reads credentials from environment variables: `KSEF_TOKEN`,

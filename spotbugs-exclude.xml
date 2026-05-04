@@ -73,4 +73,12 @@
         <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.builder\.OnlineSessionBuilder\$SessionOpenResult"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
+    <!-- BatchPackageBuilder.BatchPackage is a record whose compact constructor
+         already calls List.copyOf(partFiles) — the stored list is immutable.
+         SpotBugs cannot detect the defensive copy pattern in record compact
+         constructors and flags the auto-generated accessor regardless. -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.internal\.runtime\.batch\.BatchPackageBuilder\$BatchPackage"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
 </FindBugsFilter>

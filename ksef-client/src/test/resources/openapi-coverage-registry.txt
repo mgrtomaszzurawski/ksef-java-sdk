@@ -87,8 +87,10 @@
 /permissions/query/eu-entities/grants                           # PermissionClientTest
 
 # Tokens
-/tokens                                                         # TokenClientTest
-/tokens/{referenceNumber}                                       # TokenClientTest
+GET /tokens                                                     # TokenClientTest
+POST /tokens                                                    # TokenClientTest
+GET /tokens/{referenceNumber}                                   # TokenClientTest
+DELETE /tokens/{referenceNumber}                                # TokenClientTest
 
 # Limits
 /limits/context                                                 # LimitsClientTest
@@ -109,7 +111,10 @@
 /testdata/attachment/revoke                                     # TestDataClientTest
 /testdata/context/block                                         # TestDataClientTest
 /testdata/context/unblock                                       # TestDataClientTest
-/testdata/limits/context/session                                # TestDataClientTest
-/testdata/limits/subject/certificate                            # TestDataClientTest
-/testdata/rate-limits                                           # TestDataClientTest
+POST /testdata/limits/context/session                           # TestDataClientTest
+DELETE /testdata/limits/context/session                         # TestDataClientTest
+POST /testdata/limits/subject/certificate                       # TestDataClientTest
+DELETE /testdata/limits/subject/certificate                     # TestDataClientTest
+POST /testdata/rate-limits                                      # TestDataClientTest
+DELETE /testdata/rate-limits                                    # TestDataClientTest
 /testdata/rate-limits/production                                # TestDataClientTest
