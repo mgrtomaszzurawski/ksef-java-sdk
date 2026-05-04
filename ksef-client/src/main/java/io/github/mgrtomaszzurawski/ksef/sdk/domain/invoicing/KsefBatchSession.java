@@ -90,6 +90,11 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
     private static final String METHOD_PUT = "PUT";
 
+    /**
+     * URL is logged via {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction#redactQuery(java.net.URI)}
+     * — KSeF returns presigned upload URLs whose query parameters are
+     * effectively short-lived bearer credentials (Codex H1).
+     */
     private static final String LOG_PART_UPLOADED = "Uploaded batch part {} to {}";
     private static final String LOG_CLOSED = "Closed KSeF batch session {}";
     private static final String LOG_CLOSE_BUSY_RETRY = "Batch session {} still busy (415), retrying in {}ms";
@@ -110,42 +115,30 @@ public final class KsefBatchSession implements AutoCloseable {
     private volatile boolean closed;
 
     /**
-     * Constructor used by tests and by {@link KsefClient} when opening a batch session
-     * from a pre-built {@link PreparedBatchPackage} (no SDK-managed part files —
-     * the consumer is responsible for uploading via {@link #partUploadRequests()};
-     * {@link #uploadParts()} will fail).
-     *
-     * @apiNote Internal — constructed by {@code KsefClient.openBatchSession(...)}.
-     * The {@link SessionClient} parameter type lives in a non-exported package, so
-     * this constructor is not callable from consumer code despite being public.
+     * Package-private — see {@link KsefSessionFactory} class-level Javadoc
+     * (Codex round-9 fresh review H3).
      */
-    public KsefBatchSession(SessionClient sessionClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests) {
         this(sessionClient, null, referenceNumber, partUploadRequests, null, System::nanoTime);
     }
 
     /**
-     * Full constructor — used by {@link KsefClient} when the session was opened from a
-     * list of raw invoices and the SDK retains references to the encrypted part files
-     * for upload + cleanup.
-     *
-     * @apiNote Internal — see the alternative-overload note above.
+     * Package-private — see {@link KsefSessionFactory} class-level Javadoc
+     * (Codex round-9 fresh review H3).
      */
-    public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage) {
         this(sessionClient, httpClient, referenceNumber, partUploadRequests, batchPackage, System::nanoTime);
     }
 
     /**
-     * Internal constructor used by tests that need to drive the upload-budget
-     * deadline branch deterministically. Production code paths use
-     * {@code System::nanoTime}; tests can substitute a {@link java.util.function.LongSupplier}
-     * that simulates clock progression beyond the per-part budget.
-     *
-     * @apiNote Internal — {@link SessionClient} parameter type is not exported.
+     * Package-private — internal constructor with injectable nano-time source
+     * for upload-budget tests; see {@link KsefSessionFactory} class-level Javadoc
+     * for the construction policy (Codex round-9 fresh review H3).
      */
-    public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage,
                      java.util.function.LongSupplier nanoTimeSource) {
@@ -242,7 +235,8 @@ public final class KsefBatchSession implements AutoCloseable {
                         String.format(ERR_UPLOAD_FAILED, upload.ordinalNumber(), response.statusCode()),
                         null);
             }
-            LOGGER.debug(LOG_PART_UPLOADED, upload.ordinalNumber(), upload.url());
+            LOGGER.debug(LOG_PART_UPLOADED, upload.ordinalNumber(),
+                    io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction.redactQuery(upload.url()));
         } catch (IOException ioFailure) {
             throw new KsefNetworkException(
                     String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), ioFailure);

@@ -79,8 +79,18 @@ class PublicApiSurfaceTest {
     }
 
     private static void checkClass(Class<?> cls, List<String> violations) {
+        boolean isInternalConstructionBridge = isInternalConstructionBridge(cls);
         for (Method m : cls.getDeclaredMethods()) {
             if (!isPublic(m.getModifiers())) {
+                continue;
+            }
+            // Internal-construction bridges (e.g. KsefSessionFactory) are by
+            // design the only legal cross-package construction path for
+            // package-private constructors that take internal types — Codex
+            // round-9 H3. The factory class lives in an exported package but
+            // its existence and naming explicitly signal "internal entry
+            // point", so the methods may reference internal/transport types.
+            if (isInternalConstructionBridge) {
                 continue;
             }
             checkType("Method " + cls.getName() + "." + m.getName() + " return", m.getGenericReturnType(), violations);
@@ -92,17 +102,12 @@ class PublicApiSurfaceTest {
                 checkType("Method " + cls.getName() + "." + m.getName() + " throws", ex.getType(), violations);
             }
         }
+        // Constructors: Codex round-9 H3 — any public constructor on an
+        // exported SDK type must NOT reference internal/generated/raw
+        // types. The previous JPMS-reachability exemption was removed.
+        // Internal-only construction now goes through KsefSessionFactory.
         for (Constructor<?> c : cls.getDeclaredConstructors()) {
             if (!isPublic(c.getModifiers())) {
-                continue;
-            }
-            // A "public" constructor is unreachable from JPMS consumers when ALL of its
-            // parameters live in non-exported packages — the consumer module cannot even
-            // name the parameter types, let alone supply values. The constructor exists
-            // as public for in-module use (KsefClient instantiates KsefSession etc.).
-            // We surface a violation only when at least one parameter is consumer-visible
-            // and another is internal/raw, which would be a real shape leak.
-            if (allParametersUnreachableFromConsumers(c)) {
                 continue;
             }
             for (Parameter p : c.getParameters()) {
@@ -118,40 +123,27 @@ class PublicApiSurfaceTest {
         }
     }
 
+    /**
+     * Whitelist for the named construction-bridge classes that are the only
+     * legal cross-package entry points for package-private constructors of
+     * {@code KsefSession}, {@code KsefBatchSession}, and
+     * {@code PreparedInvoiceExport} (all in {@code sdk.domain.invoicing}).
+     *
+     * <p>The bridge class lives in an exported package and its methods
+     * reference internal-package types — exempting it is what Codex
+     * round-9 H3 recommended ("package-local factories/bridges so KsefClient
+     * and internal clients can still instantiate handles without exporting
+     * construction details").
+     */
+    private static boolean isInternalConstructionBridge(Class<?> cls) {
+        return "io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory"
+                .equals(cls.getName());
+    }
+
     private static boolean isPublic(int modifiers) {
         return Modifier.isPublic(modifiers);
     }
 
-    /**
-     * Returns {@code true} when at least one parameter of the constructor is in a
-     * package that is invisible to consumer modules (internal SDK plumbing or
-     * generated raw types). Under JPMS, a consumer cannot resolve such a parameter
-     * type and therefore cannot invoke the constructor — even if the constructor
-     * is reflectively "public". This guards the SDK-internal-construction-only
-     * constructors of {@code KsefSession}, {@code KsefBatchSession} and
-     * {@code PreparedInvoiceExport}, which take internal SDK types alongside
-     * primitives like {@code String} or {@code byte[]}.
-     *
-     * <p>JPMS treats the type as unresolvable, so the constructor is functionally
-     * unreachable from a consumer module — but the surface test would otherwise
-     * raise a noisy false positive. Methods (return type or other parameters)
-     * still go through the strict check, so this exception is narrow.
-     */
-    private static boolean allParametersUnreachableFromConsumers(Constructor<?> c) {
-        if (c.getParameterCount() == 0) {
-            return false;
-        }
-        for (Parameter p : c.getParameters()) {
-            String paramTypeName = p.getType().getName();
-            boolean paramIsInternal = paramTypeName.startsWith(INTERNAL_PACKAGE)
-                    || paramTypeName.startsWith(GENERATED_PACKAGE)
-                    || (paramTypeName.startsWith(SDK_ROOT_PACKAGE) && paramTypeName.endsWith(RAW_SUFFIX));
-            if (paramIsInternal) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private static void checkType(String context, Type type, List<String> violations) {
         if (type instanceof Class<?> klass) {

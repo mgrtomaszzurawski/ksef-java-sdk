@@ -13,12 +13,13 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
@@ -28,8 +29,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * WireMock public-flow test for {@link KsefClient#openBatchSession(FormCode, PreparedBatchPackage)}
@@ -59,12 +58,25 @@ class KsefClientOpenBatchSessionTest {
     private static final String BATCH_PATH = "/v2/sessions/batch";
     private static final String BATCH_REF = "20260504-BA-1234567890-AAAAAAAAAA-01";
     private static final String UPLOAD_URL = "https://upload.example.com/part1";
+    private static final String UPLOAD_METHOD = "PUT";
     private static final String CUSTOM_HEADER = "x-amz-content-sha256";
     private static final String CUSTOM_HEADER_VALUE = "abcdef0123";
-    private static final byte[] FAKE_HASH = new byte[32];
+    /** SHA-256 produces 32 bytes. */
+    private static final int SHA_256_BYTES = 32;
+    /** AES-256 key length: 256 bits / 8 = 32 bytes. */
+    private static final int AES_KEY_BYTES = 32;
+    /** AES-CBC initialization vector: AES block size = 128 bits / 8 = 16 bytes. */
+    private static final int AES_IV_BYTES = 16;
+    /** Synthetic batch file size for the manual-overload test. */
+    private static final long BATCH_FILE_SIZE = 1024L;
+    /** Synthetic single-part size for the manual-overload test (must equal {@link #BATCH_FILE_SIZE} for one part). */
+    private static final long BATCH_PART_FILE_SIZE = 512L;
+    /** Expected ordinal number of the single part in the open-batch response stub. */
+    private static final int FIRST_PART_ORDINAL = 1;
+    /** Expected count of partUploadRequests after mapping the open-batch response stub. */
+    private static final int EXPECTED_UPLOAD_REQUESTS = 1;
+    private static final byte[] FAKE_HASH = new byte[SHA_256_BYTES];
     private static final byte[] FAKE_PART_BYTES = "encrypted".getBytes(StandardCharsets.UTF_8);
-    private static final long FILE_SIZE = 1024L;
-    private static final long PART_FILE_SIZE = 512L;
     private static final String OPEN_BATCH_RESPONSE = """
             {
               "referenceNumber": "%s",
@@ -92,10 +104,10 @@ class KsefClientOpenBatchSessionTest {
             stubBatchOpenWithSinglePart();
             stubBatchClose();
 
-            BatchFileSpec spec = new BatchFileSpec(FILE_SIZE, FAKE_HASH, List.of(
-                    new BatchFileSpec.Part(1, PART_FILE_SIZE, FAKE_HASH)));
+            BatchFileSpec spec = new BatchFileSpec(BATCH_FILE_SIZE, FAKE_HASH, List.of(
+                    new BatchFileSpec.Part(FIRST_PART_ORDINAL, BATCH_PART_FILE_SIZE, FAKE_HASH)));
             PreparedBatchPackage pkg = new PreparedBatchPackage(spec,
-                    new byte[32], new byte[16], List.of(FAKE_PART_BYTES));
+                    new byte[AES_KEY_BYTES], new byte[AES_IV_BYTES], List.of(FAKE_PART_BYTES));
 
             // when
             KsefBatchSession session = client.openBatchSession(FormCode.FA2, pkg);
@@ -111,40 +123,50 @@ class KsefClientOpenBatchSessionTest {
                     .withRequestBody(matchingJsonPath("$.encryption.encryptedSymmetricKey"))
                     .withRequestBody(matchingJsonPath("$.encryption.initializationVector"))
                     .withRequestBody(matchingJsonPath("$.batchFile.fileSize",
-                            equalTo(String.valueOf(FILE_SIZE))))
+                            equalTo(String.valueOf(BATCH_FILE_SIZE))))
                     .withRequestBody(matchingJsonPath("$.batchFile.fileHash"))
                     .withRequestBody(matchingJsonPath("$.batchFile.fileParts[0].ordinalNumber",
-                            equalTo("1")))
+                            equalTo(String.valueOf(FIRST_PART_ORDINAL))))
                     .withRequestBody(matchingJsonPath("$.batchFile.fileParts[0].fileSize",
-                            equalTo(String.valueOf(PART_FILE_SIZE))))
+                            equalTo(String.valueOf(BATCH_PART_FILE_SIZE))))
                     .withRequestBody(matchingJsonPath("$.batchFile.fileParts[0].fileHash")));
 
-            assertNotNull(session, "openBatchSession must return a non-null session");
+            // and — response mapping must preserve every upload-request field
+            // (Codex F1 review: original test asserted only referenceNumber).
             assertEquals(BATCH_REF, session.referenceNumber());
+            assertEquals(EXPECTED_UPLOAD_REQUESTS, session.partUploadRequests().size());
+            PartUploadRequest upload = session.partUploadRequests().get(0);
+            assertEquals(FIRST_PART_ORDINAL, upload.ordinalNumber());
+            assertEquals(UPLOAD_METHOD, upload.method());
+            assertEquals(URI.create(UPLOAD_URL), upload.url());
+            assertEquals(CUSTOM_HEADER_VALUE, upload.headers().get(CUSTOM_HEADER));
         }
     }
 
     @Test
     void openBatchSession_withInvoiceList_postsExpectedBatchOpenRequest(WireMockRuntimeInfo wmInfo) {
         // Convenience overload — SDK builds the prepared package internally
-        // (zip + encrypt + split + hash). Verifies the same wire-shape contract.
-        // We do NOT assert the returned session here because the SDK's
-        // splitter chooses the part count and the stub would have to mirror
-        // it dynamically; the wire-body assertion is what Codex F1 asked for.
+        // (zip + encrypt + split + hash). The stub returns one part, and the
+        // splitter for a tiny 10-byte invoice also produces one part, so the
+        // count-mismatch guard does not fire here — both successful and
+        // count-mismatch outcomes are acceptable for the wire-shape contract
+        // this test pins. The verify(...) below proves the request went out
+        // with the expected JSON shape.
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             stubSymmetricKeyEncryptionCert();
             stubBatchOpenAcceptingAnyPartCount();
+            stubBatchClose();
 
             byte[] invoice = "<Invoice/>".getBytes(StandardCharsets.UTF_8);
 
-            // when / then — let the open call fail at the constructor count-check
-            // (we don't have a way to mirror the dynamic part count), but do
-            // verify the request body that did go out.
+            // when — let the call return a session OR throw count-mismatch;
+            // either way the request body that reached the server is what we
+            // assert below.
             try {
-                client.openBatchSession(FormCode.FA2, List.of(invoice));
-            } catch (IllegalArgumentException ignoredCountMismatch) {
-                // expected — stub returns a single-part response, splitter may
-                // build N parts; the request body assertion below is the gate.
+                client.openBatchSession(FormCode.FA2, List.of(invoice)).close();
+            } catch (IllegalArgumentException countMismatch) {
+                // expected if the splitter happens to produce a different
+                // part count than the single-part stub returns.
             }
 
             verify(postRequestedFor(urlEqualTo(BATCH_PATH))
@@ -157,7 +179,7 @@ class KsefClientOpenBatchSessionTest {
                     .withRequestBody(matchingJsonPath("$.batchFile.fileHash",
                             matching(".+")))
                     .withRequestBody(matchingJsonPath("$.batchFile.fileParts[0].ordinalNumber",
-                            equalTo("1"))));
+                            equalTo(String.valueOf(FIRST_PART_ORDINAL)))));
         }
     }
 

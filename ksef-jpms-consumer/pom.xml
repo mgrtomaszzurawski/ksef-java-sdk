@@ -29,6 +29,13 @@
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <skipTests>true</skipTests>
         <gpg.skip>true</gpg.skip>
+        <!--
+            Compile-only fixture. JpmsConsumerCompileFixture exists solely so
+            javac fails when the SDK leaks an internal type through a public
+            method signature; it is never executed at runtime, so coverage
+            gating against it produces a permanent false negative.
+        -->
+        <sonar.coverage.exclusions>**/JpmsConsumerCompileFixture.java</sonar.coverage.exclusions>
     </properties>
 
     <dependencies>

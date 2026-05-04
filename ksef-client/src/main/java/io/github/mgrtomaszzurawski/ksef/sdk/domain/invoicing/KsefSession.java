@@ -82,11 +82,15 @@ public final class KsefSession implements AutoCloseable {
             new java.util.concurrent.atomic.AtomicInteger();
 
     /**
-     * @apiNote Internal — constructed by {@code KsefClient.openSession(FormCode)}.
-     * The {@link SessionClient} parameter type lives in a non-exported package,
-     * so this constructor is not callable from consumer code despite being public.
+     * Package-private — Codex round-9 fresh review H3: a public constructor
+     * taking an internal-package type ({@link SessionClient}) leaks
+     * construction details into the binary/Javadoc surface even though JPMS
+     * makes the type unreachable from consumers. Construction now happens
+     * exclusively via the same-package {@link KsefSessionFactory} bridge,
+     * which is itself in the exported package but is the single named
+     * entry-point and clearly documented as internal-only.
      */
-    public KsefSession(SessionClient sessionClient, String referenceNumber,
+    KsefSession(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
         this.sessionClient = sessionClient;
         this.referenceNumber = referenceNumber;

@@ -100,11 +100,16 @@ class PreparedBatchPackageTest {
         return arr;
     }
 
+    /** SHA-256 hash length — required by BatchFileSpec strict validation (Codex M1). */
+    private static final int SHA_256_BYTES = 32;
+
     private static BatchFileSpec makeSpec(int partCount) {
         BatchFileSpec.Part[] parts = new BatchFileSpec.Part[partCount];
         for (int idx = 0; idx < partCount; idx++) {
-            parts[idx] = new BatchFileSpec.Part(idx + 1, PART_SIZE, new byte[]{(byte) idx});
+            byte[] partHash = new byte[SHA_256_BYTES];
+            partHash[0] = (byte) idx;
+            parts[idx] = new BatchFileSpec.Part(idx + 1, PART_SIZE, partHash);
         }
-        return new BatchFileSpec(PART_SIZE * partCount, new byte[]{1, 2, 3}, List.of(parts));
+        return new BatchFileSpec(PART_SIZE * partCount, new byte[SHA_256_BYTES], List.of(parts));
     }
 }

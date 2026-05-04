@@ -54,7 +54,7 @@ class LifecycleZeroizationTest {
         HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
-        KsefSession session = new KsefSession(sessionClient, TEST_SESSION_REF, aesKey.clone(), iv.clone());
+        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newOnlineSession(sessionClient, TEST_SESSION_REF, aesKey.clone(), iv.clone());
 
         // when
         session.close();
@@ -78,7 +78,7 @@ class LifecycleZeroizationTest {
         HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
-        KsefSession session = new KsefSession(sessionClient, TEST_SESSION_REF,
+        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newOnlineSession(sessionClient, TEST_SESSION_REF,
                 CryptoService.generateAesKey(), CryptoService.generateIv());
 
         session.close();

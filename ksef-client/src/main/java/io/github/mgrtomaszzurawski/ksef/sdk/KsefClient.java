@@ -249,7 +249,8 @@ public final class KsefClient implements AutoCloseable {
         OnlineSession session = sessionClient.openOnline(request);
         LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
 
-        return new KsefSession(sessionClient, session.referenceNumber(), aesKey, initVector);
+        return io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newOnlineSession(
+                sessionClient, session.referenceNumber(), aesKey, initVector);
     }
 
     /**
@@ -296,7 +297,8 @@ public final class KsefClient implements AutoCloseable {
         BatchSession session = sessionClient.openBatch(request);
         LOGGER.debug(LOG_OPENED_BATCH_SESSION, session.referenceNumber(), formCode);
 
-        return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
+        return io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newBatchSession(
+                sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), null);
     }
 
@@ -350,7 +352,8 @@ public final class KsefClient implements AutoCloseable {
         LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,
                 session.referenceNumber(), invoiceXmls.size(), formCode);
 
-        return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
+        return io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newBatchSession(
+                sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), pkg);
     }
 

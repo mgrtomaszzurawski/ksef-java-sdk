@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
@@ -44,8 +45,10 @@ import org.slf4j.LoggerFactory;
  *       with the cursor as {@code dateFrom};</li>
  *   <li>poll until terminal, download all parts, verify SHA-256, decrypt,
  *       unzip to {@code outputDirectory}/&lt;subject&gt;/window-&lt;n&gt;/;</li>
- *   <li>parse {@code _metadata.json} (array of invoice metadata) and
- *       dispatch each invoice through the {@link InvoiceSink};</li>
+ *   <li>parse {@code _metadata.json} as the spec-shaped object wrapper
+ *       {@code { "invoices": [...] }} (the bare-array shape produced by
+ *       earlier draft documentation is also tolerated for compatibility)
+ *       and dispatch each invoice through the {@link InvoiceSink};</li>
  *   <li>after all invoices in the package are accepted, persist the
  *       checkpoint via {@link InvoicePackage#continuationCursor()} —
  *       which honours {@code IsTruncated=true → LastPermanentStorageDate}
@@ -75,9 +78,13 @@ public final class InvoiceSyncClient {
     private static final String FAKTURA_NAME_PREFIX = "faktura_";
     /** Common SDK / KSeF ZIP naming convention #2 — {@code invoice-N.xml}. */
     private static final String INVOICE_NAME_PREFIX = "invoice-";
+    /** Top-level field name in {@code _metadata.json} per KSeF spec (object wrapper). */
+    private static final String METADATA_INVOICES_FIELD = "invoices";
     private static final String ERR_NULL_PLAN = "plan must not be null";
     private static final String ERR_NULL_STORE = "checkpointStore must not be null";
     private static final String ERR_NULL_SINK = "sink must not be null";
+    private static final String ERR_METADATA_PARSE = "Failed to parse _metadata.json from export package";
+    private static final String ERR_METADATA_SHAPE = "_metadata.json must be either an array or an object with an 'invoices' array";
 
     private final InvoiceClient invoiceClient;
     private final ObjectMapper objectMapper;
@@ -247,16 +254,30 @@ public final class InvoiceSyncClient {
         }
         try {
             byte[] bytes = Files.readAllBytes(metadataPath);
-            // _metadata.json per spec is a JSON array of InvoiceMetadata-shaped
-            // objects (the wire shape returned by /invoices/query/metadata,
-            // minus the pagination envelope). Parse as InvoiceMetadataRaw[]
-            // then map via the same mappers used by InvoiceClient.
-            InvoiceMetadataRaw[] rawArray = objectMapper.readValue(bytes, InvoiceMetadataRaw[].class);
-            return java.util.Arrays.stream(rawArray)
-                    .map(InvoicingMappers::toInvoiceMetadata)
-                    .toList();
+            // Codex H2: KSeF spec (export prepare endpoint description in
+            // open-api.json + ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md
+            // section "Plik _metadata.json") states the file is an object
+            // with an "invoices" array, e.g. {"invoices": [...]}. Earlier
+            // drafts of this SDK assumed a bare array — keep tolerating
+            // that shape so existing on-disk packages still parse.
+            JsonNode root = objectMapper.readTree(bytes);
+            JsonNode invoicesNode;
+            if (root.isArray()) {
+                invoicesNode = root;
+            } else if (root.isObject() && root.has(METADATA_INVOICES_FIELD)
+                    && root.get(METADATA_INVOICES_FIELD).isArray()) {
+                invoicesNode = root.get(METADATA_INVOICES_FIELD);
+            } else {
+                throw new KsefException(ERR_METADATA_SHAPE, null);
+            }
+            List<InvoiceMetadata> out = new java.util.ArrayList<>(invoicesNode.size());
+            for (JsonNode element : invoicesNode) {
+                InvoiceMetadataRaw raw = objectMapper.treeToValue(element, InvoiceMetadataRaw.class);
+                out.add(InvoicingMappers.toInvoiceMetadata(raw));
+            }
+            return List.copyOf(out);
         } catch (IOException ex) {
-            throw new KsefException("Failed to parse _metadata.json from export package", ex);
+            throw new KsefException(ERR_METADATA_PARSE, ex);
         }
     }
 

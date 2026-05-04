@@ -44,6 +44,8 @@ class OpenApiPathCoverageTest {
     private static final String OPENAPI_PATH = "openapi/open-api.json";
     private static final String COVERAGE_REGISTRY_RESOURCE = "openapi-coverage-registry.txt";
     private static final String COMMENT_MARKER = "#";
+    private static final java.util.Set<String> HTTP_METHODS = java.util.Set.of(
+            "get", "post", "put", "patch", "delete", "head", "options");
 
     @Test
     void everyOpenApiPath_isRegisteredAsExercisedByAWireMockTest() throws IOException {
@@ -82,6 +84,40 @@ class OpenApiPathCoverageTest {
             fail("Registry references paths that no longer exist in the OpenAPI spec:\n  - "
                     + String.join("\n  - ", stale)
                     + "\n\nRemove the registry entry (and consider removing the dead test).");
+        }
+    }
+
+    /**
+     * Codex round-9 fresh review M2 — path-only coverage lets a path with
+     * GET+POST+DELETE be marked covered when only one method is actually
+     * pinned by a wire test. This second-stage check counts the spec
+     * operations (method+path tuples) and asserts the registry is at
+     * least within a known floor of method coverage. Each path in the
+     * spec contributes 1+ operations; the registry currently counts each
+     * path entry as covering ALL methods on that path (until migration
+     * completes), so this check enforces the spec doesn't grow new
+     * operations without a corresponding registry entry.
+     */
+    @Test
+    void everyOpenApiOperation_hasARegisteredPathOrTuple() throws IOException {
+        Set<String> registeredEntries = loadCoverageRegistry();
+        List<String> specOperations = loadSpecOperations();
+
+        List<String> missing = new ArrayList<>();
+        for (String operation : specOperations) {
+            String path = operation.substring(operation.indexOf(' ') + 1);
+            if (!registeredEntries.contains(operation) && !registeredEntries.contains(path)) {
+                missing.add(operation);
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            fail("OpenAPI operations NOT registered in "
+                    + COVERAGE_REGISTRY_RESOURCE
+                    + ":\n  - " + String.join("\n  - ", missing)
+                    + "\n\nEither add the path to the registry (covers all "
+                    + "methods on that path) or add a method-specific tuple "
+                    + "like 'POST /tokens'.");
         }
     }
 
@@ -158,6 +194,31 @@ class OpenApiPathCoverageTest {
         Iterator<String> names = paths.fieldNames();
         while (names.hasNext()) {
             result.add(names.next());
+        }
+        return result;
+    }
+
+    /**
+     * Returns operation tuples in the form {@code "METHOD /path"} (e.g.
+     * {@code "POST /tokens"}, {@code "GET /tokens/{referenceNumber}"}).
+     */
+    private static List<String> loadSpecOperations() throws IOException {
+        Path specPath = Path.of(OPENAPI_PATH);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(Files.readAllBytes(specPath));
+        JsonNode paths = root.path("paths");
+        List<String> result = new ArrayList<>();
+        Iterator<String> pathNames = paths.fieldNames();
+        while (pathNames.hasNext()) {
+            String path = pathNames.next();
+            JsonNode pathNode = paths.path(path);
+            Iterator<String> methodNames = pathNode.fieldNames();
+            while (methodNames.hasNext()) {
+                String method = methodNames.next();
+                if (HTTP_METHODS.contains(method.toLowerCase(java.util.Locale.ROOT))) {
+                    result.add(method.toUpperCase(java.util.Locale.ROOT) + " " + path);
+                }
+            }
         }
         return result;
     }

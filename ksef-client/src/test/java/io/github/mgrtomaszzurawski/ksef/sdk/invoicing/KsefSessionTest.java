@@ -209,7 +209,7 @@ class KsefSessionTest {
         SessionClient sessionClient = new SessionClient(runtime);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
-        return new KsefSession(sessionClient, TEST_SESSION_REF, aesKey, initVector);
+        return io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newOnlineSession(sessionClient, TEST_SESSION_REF, aesKey, initVector);
     }
 
     private static void stubCloseAndStatusOk() {

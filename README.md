@@ -7,7 +7,9 @@ OpenAPI-first Java SDK for the Polish National e-Invoicing System ([KSeF](https:
 
 Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-docs) OpenAPI specification, with a hand-written ergonomic overlay that hides the protocol details (challenge-response auth, AES-256-CBC session encryption, XAdES-BASELINE-B signing, retry-with-backoff, batch upload + polling).
 
-> **Pre-release:** The SDK is at `0.1.0` and not yet published to Maven Central. Install locally with `mvn install` to use today.
+> **Status:** SDK has reached `1.0.0` source-tree readiness. Maven Central
+> publication is gated on a clean release-profile dry run; until the artifact
+> is staged on Central, install locally with `mvn install` to use it.
 
 ## Quick start
 
@@ -17,7 +19,7 @@ Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-do
 <dependency>
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-client</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -128,7 +130,7 @@ Plus session-level helpers on `KsefClient` itself:
 | Exceptions | Basic `ApiException` | Typed hierarchy (`KsefAuthException`, `KsefServerException`, `KsefRateLimitException`, …) |
 | Build tool | Gradle | Maven |
 | Java version | 11 source, 21 toolchain | 17+ |
-| Distribution | GitHub Packages only | Maven Central (post-1.0) |
+| Distribution | GitHub Packages only | Maven Central (release-profile staging dry-run pending) |
 | JPMS | None | Named module with strict export boundaries |
 
 ## Sample app (`ksef-demo`)
@@ -196,11 +198,11 @@ See:
 
 ## Status
 
-- ✅ All 11 KSeF API domains covered (60+ live ops verified against demo env)
-- ✅ 391 unit + integration tests (WireMock-mocked HTTP, full transport coverage)
+- ✅ All 11 KSeF API domains covered (62+ live ops verified against demo env)
+- ✅ 500+ unit + integration tests (WireMock-mocked HTTP, full transport coverage)
 - ✅ JaCoCo coverage report generated (`mvn verify` → `target/site/jacoco/`)
-- 🚧 Per-builder method coverage gate (PLAN A.9 — gradual ratcheting in progress)
-- 🚧 JSpecify null-safety annotations (PLAN A.8)
-- 🚧 Maven Central first publish (post-Phase-9)
+- ✅ Per-builder method coverage gate green
+- 🚧 JSpecify null-safety annotations (ADR-017)
+- 🚧 Maven Central first publish (release-profile dry run pending)
 
 Project state and roadmap: [`context/PLAN-2026-04-03-2045-implementation-plan.md`](context/PLAN-2026-04-03-2045-implementation-plan.md).

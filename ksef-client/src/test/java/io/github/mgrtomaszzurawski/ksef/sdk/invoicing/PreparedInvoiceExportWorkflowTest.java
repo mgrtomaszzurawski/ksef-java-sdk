@@ -394,7 +394,7 @@ class PreparedInvoiceExportWorkflowTest {
     }
 
     private static PreparedInvoiceExport newHandle(InvoiceClient invoiceClient, byte[] aesKey, byte[] iv) {
-        return new PreparedInvoiceExport(invoiceClient, insecureHttpClient(), EXPORT_REF, aesKey, iv);
+        return io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newPreparedExport(invoiceClient, insecureHttpClient(), EXPORT_REF, aesKey, iv);
     }
 
     /**

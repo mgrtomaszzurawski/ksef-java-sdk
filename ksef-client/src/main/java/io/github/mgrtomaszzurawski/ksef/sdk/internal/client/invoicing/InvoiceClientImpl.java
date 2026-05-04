@@ -217,7 +217,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
         ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, rawRequest, token,
                 ExportInvoicesResponseRaw.class, OP_PREPARE_EXPORT);
         ExportInvoicesResult result = InvoicingMappers.toExportInvoicesResult(rawValue);
-        return new PreparedInvoiceExport(this, httpClient, result.referenceNumber(), aesKey, initVector);
+        return io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSessionFactory.newPreparedExport(
+                this, httpClient, result.referenceNumber(), aesKey, initVector);
     }
 
     private static PublicKey parsePublicKey(PublicKeyCertificate certificate) {

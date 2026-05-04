@@ -538,29 +538,11 @@ public final class HttpSupport {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(LOG_RESPONSE, request.method(), request.uri(),
                         response.statusCode(), System.currentTimeMillis() - start);
-                logResponseBodyAtTrace(response.body());
             }
             return response;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
-        }
-    }
-
-    /**
-     * Trace-level diagnostic: dumps the raw response body so a wire-shape
-     * mismatch can be diagnosed against the live KSeF server. Only emitted
-     * when the {@code HttpSupport} logger is at TRACE.
-     */
-    private static void logResponseBodyAtTrace(Object body) {
-        if (!LOGGER.isTraceEnabled()) {
-            return;
-        }
-        if (body instanceof byte[] bodyBytes) {
-            LOGGER.trace("HTTP response body ({} bytes): {}", bodyBytes.length,
-                    new String(bodyBytes, java.nio.charset.StandardCharsets.UTF_8));
-        } else if (body instanceof String bodyStr) {
-            LOGGER.trace("HTTP response body: {}", bodyStr);
         }
     }
 
