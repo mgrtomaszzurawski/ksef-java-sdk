@@ -131,7 +131,8 @@ First public Maven Central release.
   removal).
 - Version bumped from `0.1.0` to `1.0.0` across root, ksef-client,
   ksef-demo, ksef-examples poms.
-- License switched to Apache-2.0 (per ADR-007).
+- License remains AGPL-3.0-only (per revised ADR-007 — the original
+  plan to switch to Apache-2.0 at v1.0 was deprecated).
 - Maven Central pom metadata (SCM, developers, description, license)
   already in place from earlier releases.
 
@@ -344,7 +345,9 @@ ADRs ([`ADR/`](ADR/)):
 - **ADR-004** — domain-specific clients (vs single god-class).
 - **ADR-005** — SDK overlay on generated code (immutable records as public API).
 - **ADR-006** — separate SDK and sample-app modules.
-- **ADR-007** — licence strategy (AGPL-3.0 pre-1.0 → Apache-2.0 at v1.0).
+- **ADR-007** — licence strategy (AGPL-3.0-only retained at 1.0.0 per
+  revised decision; the original plan to switch to Apache-2.0 was
+  deprecated).
 - **ADR-008** — API redesign: `KsefSession` / `KsefBatchSession` session
   abstractions.
 - **ADR-009** — demo app purpose shift to live-validation harness.
@@ -366,7 +369,4 @@ ADRs ([`ADR/`](ADR/)):
   ~139 builder methods need explicit unit tests before the gate is enabled.
 - JSpecify null-safety annotations on the public API are pending (PLAN A.8 /
   ADR-017).
-- License switch to Apache-2.0 lands at the v1.0 tag (ADR-007), not in this
-  pre-release.
-
 [Unreleased]: https://github.com/mgrtomaszzurawski/ksef-java-sdk/commits/develop

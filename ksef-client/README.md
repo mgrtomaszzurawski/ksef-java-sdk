@@ -154,5 +154,5 @@ Implementation plan and roadmap:
 
 ## License
 
-[AGPL-3.0-only](../LICENSE) for the pre-release line; will switch to Apache-2.0
-at the v1.0 tag (see ADR-007).
+[AGPL-3.0-only](../LICENSE). See ADR-007 for the rationale (the original
+plan to switch to Apache-2.0 at v1.0 was deprecated).
