@@ -82,6 +82,13 @@ public final class SessionHandleConstructor {
 
     private SessionHandleConstructor() { }
 
+    /**
+     * setAccessible is intentional and the whole point of this bridge —
+     * see class-level Javadoc (Codex round-9 fresh-review F1). PMD's
+     * AvoidAccessibilityAlteration rule is the right default for most
+     * code, but here it would defeat the design.
+     */
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     private static <T> Constructor<T> makeAccessible(Constructor<T> ctor) {
         ctor.setAccessible(true);
         return ctor;
