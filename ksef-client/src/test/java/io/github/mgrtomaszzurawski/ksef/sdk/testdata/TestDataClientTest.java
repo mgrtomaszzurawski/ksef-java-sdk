@@ -369,8 +369,6 @@ class TestDataClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = createClient(wmInfo);
-        ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
-        return ksef;
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
     }
 }

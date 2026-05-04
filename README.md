@@ -192,7 +192,7 @@ See:
 
 ## License
 
-[AGPL-3.0-only](LICENSE.txt) — copyleft license. Suitable for SaaS / internal-tool use; commercial OEM use requires a separate agreement (planned to switch to Apache-2.0 at 1.0 — see ADR-007).
+[AGPL-3.0-only](LICENSE.txt) — strong-copyleft license. Suitable for SaaS / internal-tool use; commercial closed-source integration requires a separate agreement. Solo-maintained SDK, tested against the KSeF demo environment; provided without warranty (see LICENSE).
 
 ## Status
 

@@ -34,6 +34,7 @@ public final class SendInvoiceBuilder {
     private final byte[] aesKey;
     private final byte[] initVector;
     private boolean offlineMode;
+    private byte[] hashOfCorrectedInvoice;
 
     private SendInvoiceBuilder(byte[] invoiceContent, byte[] aesKey, byte[] initVector) {
         this.invoiceContent = Objects.requireNonNull(invoiceContent, ERR_NULL_INVOICE_CONTENT);
@@ -61,11 +62,28 @@ public final class SendInvoiceBuilder {
     }
 
     /**
+     * Mark this invoice as a technical correction (korekta techniczna) of
+     * an earlier invoice. {@code hashOfCorrected} is the SHA-256 of the
+     * original invoice's XML content. Implies {@link #offline()} per spec
+     * ({@code ksef-docs/offline/korekta-techniczna.md}).
+     *
+     * <p>Spec citation: REQ-OFFLINE-003.
+     */
+    public SendInvoiceBuilder technicalCorrection(byte[] hashOfCorrected) {
+        Objects.requireNonNull(hashOfCorrected, "hashOfCorrected is required");
+        this.hashOfCorrectedInvoice = hashOfCorrected.clone();
+        this.offlineMode = true;
+        return this;
+    }
+
+    /**
      * Return a fresh builder pre-populated with this builder's current field values.
      */
     public SendInvoiceBuilder toBuilder() {
         SendInvoiceBuilder copy = new SendInvoiceBuilder(this.invoiceContent, this.aesKey, this.initVector);
         copy.offlineMode = this.offlineMode;
+        copy.hashOfCorrectedInvoice = this.hashOfCorrectedInvoice == null
+                ? null : this.hashOfCorrectedInvoice.clone();
         return copy;
     }
 
@@ -83,11 +101,12 @@ public final class SendInvoiceBuilder {
         byte[] encryptedHash = computeSha256(encryptedContent);
         return new SendInvoiceRequest(
                 invoiceHash,
-                (long) invoiceContent.length,
+                invoiceContent.length,
                 encryptedHash,
-                (long) encryptedContent.length,
+                encryptedContent.length,
                 encryptedContent,
-                offlineMode);
+                offlineMode,
+                hashOfCorrectedInvoice);
     }
 
     private static byte[] computeSha256(byte[] data) {

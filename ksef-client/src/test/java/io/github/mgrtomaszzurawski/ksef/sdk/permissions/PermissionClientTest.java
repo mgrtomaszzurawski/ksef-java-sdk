@@ -467,11 +467,6 @@ class PermissionClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
-                .credentials(new KsefTokenCredentials("test-token", "1234567890"))
-                .retryPolicy(RetryPolicy.builder().enabled(false).build())
-                .build();
-        ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
-        return ksef;
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
     }
 }

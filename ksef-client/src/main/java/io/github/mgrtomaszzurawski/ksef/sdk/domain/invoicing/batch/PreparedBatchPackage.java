@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -82,4 +83,43 @@ public record PreparedBatchPackage(BatchFileSpec spec,
 
     @Override
     public byte[] initVector() { return initVector.clone(); }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof PreparedBatchPackage other)) {
+            return false;
+        }
+        if (!Objects.equals(spec, other.spec)
+                || !Arrays.equals(aesKey, other.aesKey)
+                || !Arrays.equals(initVector, other.initVector)
+                || partBytes.size() != other.partBytes.size()) {
+            return false;
+        }
+        for (int index = 0; index < partBytes.size(); index++) {
+            if (!Arrays.equals(partBytes.get(index), other.partBytes.get(index))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(spec, Arrays.hashCode(aesKey), Arrays.hashCode(initVector));
+        for (byte[] part : partBytes) {
+            result = 31 * result + Arrays.hashCode(part);
+        }
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "PreparedBatchPackage[spec=" + spec
+                + ", aesKey=" + aesKey.length + " bytes"
+                + ", initVector=" + initVector.length + " bytes"
+                + ", partBytes=" + partBytes.size() + " parts]";
+    }
 }

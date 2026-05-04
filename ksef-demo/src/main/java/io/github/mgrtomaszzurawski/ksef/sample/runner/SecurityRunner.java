@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 
 /**
  * Runner for SecurityClient operations. Fetches KSeF public key certificates
@@ -49,8 +48,7 @@ public final class SecurityRunner implements DemoRunner {
         List<RunResult> results = new ArrayList<>();
         long start = System.currentTimeMillis();
         try {
-            List<PublicKeyCertificate> certs = new SecurityClient(context.client())
-                    .getPublicKeyCertificates();
+            List<PublicKeyCertificate> certs = context.client().publicKeyCertificates();
             LOGGER.info("[{}] fetched {} certificates", NAME, certs.size());
 
             for (PublicKeyCertificate cert : certs) {

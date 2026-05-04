@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenRefreshR
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthorizationPolicyRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InitTokenAuthenticationRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationInit;
@@ -72,8 +73,8 @@ public final class AuthClient {
     private static final String CHALLENGE_CLOSE = "</Challenge>";
     private static final String CONTEXT_IDENTIFIER_OPEN = "<ContextIdentifier><";
     private static final String CONTEXT_IDENTIFIER_INNER_CLOSE = "></ContextIdentifier>";
-    private static final String SUBJECT_IDENTIFIER_TYPE_FIXED =
-            "<SubjectIdentifierType>certificateSubject</SubjectIdentifierType>";
+    private static final String SUBJECT_IDENTIFIER_TYPE_OPEN = "<SubjectIdentifierType>";
+    private static final String SUBJECT_IDENTIFIER_TYPE_CLOSE = "</SubjectIdentifierType>";
     private static final String XML_CLOSE_BRACKET = ">";
     private static final String XML_END_TAG_PREFIX = "</";
 
@@ -144,9 +145,36 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithXades(
             String challenge, X509Certificate certificate, PrivateKey privateKey,
             KsefIdentifier identifier) {
+        return authenticateWithXades(challenge, certificate, privateKey, identifier,
+                CertificateSubjectIdentifier.subject());
+    }
+
+    /**
+     * Authenticate using XAdES signature flow with a generic identifier and
+     * an explicit {@link CertificateSubjectIdentifier} strategy. Closes
+     * REQ-AUTH-033 (certificate fingerprint variant of
+     * {@code SubjectIdentifierType}).
+     */
+    public AuthenticationInit authenticateWithXades(
+            String challenge, X509Certificate certificate, PrivateKey privateKey,
+            KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier) {
+        return authenticateWithXades(challenge, certificate, privateKey, identifier, subjectIdentifier,
+                io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults());
+    }
+
+    /**
+     * Authenticate with explicit {@link io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions}.
+     * Closes REQ-AUTH-039/040 to the extent of the documented narrow scope
+     * (BASELINE-B + SHA-256). Other combinations throw.
+     */
+    public AuthenticationInit authenticateWithXades(
+            String challenge, X509Certificate certificate, PrivateKey privateKey,
+            KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier,
+            io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
         LOGGER.debug(LOG_CALL, OP_AUTH_XADES);
-        String authXml = buildAuthTokenRequestXml(challenge, identifier);
-        String signedXml = SigningService.signXml(authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey);
+        String authXml = buildAuthTokenRequestXml(challenge, identifier, subjectIdentifier);
+        String signedXml = SigningService.signXml(
+                authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey, signingOptions);
         AuthenticationInitResponseRaw response = http.postXml(
                 PATH_XADES_SIGNATURE, signedXml, AuthenticationInitResponseRaw.class, OP_AUTH_XADES);
         activateSession(response);
@@ -297,7 +325,8 @@ public final class AuthClient {
                 response.getAuthenticationToken().getValidUntil());
     }
 
-    private static String buildAuthTokenRequestXml(String challenge, KsefIdentifier identifier) {
+    private static String buildAuthTokenRequestXml(String challenge, KsefIdentifier identifier,
+                                                   CertificateSubjectIdentifier subjectIdentifier) {
         String elementName = xmlElementForType(identifier.type());
         return XML_PROLOG
                 + AUTH_TOKEN_REQUEST_OPEN
@@ -305,7 +334,7 @@ public final class AuthClient {
                 + CONTEXT_IDENTIFIER_OPEN + elementName + XML_CLOSE_BRACKET
                 + escapeXml(identifier.value())
                 + XML_END_TAG_PREFIX + elementName + CONTEXT_IDENTIFIER_INNER_CLOSE
-                + SUBJECT_IDENTIFIER_TYPE_FIXED
+                + SUBJECT_IDENTIFIER_TYPE_OPEN + subjectIdentifier.wireType() + SUBJECT_IDENTIFIER_TYPE_CLOSE
                 + AUTH_TOKEN_REQUEST_CLOSE;
     }
 

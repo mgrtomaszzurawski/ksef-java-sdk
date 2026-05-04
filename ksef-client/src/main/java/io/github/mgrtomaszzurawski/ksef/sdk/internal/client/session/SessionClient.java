@@ -16,6 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
@@ -237,18 +238,32 @@ public final class SessionClient {
     }
 
     /**
-     * Download UPO by KSeF invoice number.
+     * Download UPO by KSeF invoice number. Validates length, format, and
+     * CRC-8 checksum of {@code ksefNumber} before the network call
+     * (REQ-SESS-18/19/20).
      *
      * @param referenceNumber the session reference number
-     * @param ksefNumber the KSeF invoice number
+     * @param ksefNumber the KSeF invoice number — pre-validated by
+     *     {@link KsefNumber}
      * @return raw UPO bytes (XML)
      */
-    public byte[] getUpoByKsefNumber(String referenceNumber, String ksefNumber) {
+    public byte[] getUpoByKsefNumber(String referenceNumber, KsefNumber ksefNumber) {
+        String value = ksefNumber.value();
         LOGGER.debug(LOG_CALL_REF, OP_GET_UPO_BY_KSEF, referenceNumber);
         requireSafePathSegment(referenceNumber);
-        requireSafePathSegment(ksefNumber);
+        requireSafePathSegment(value);
         String token = http.requireToken();
-        String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber) + SEGMENT_KSEF_UPO + ksefNumber + SEGMENT_INVOICE_UPO;
+        String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber)
+                + SEGMENT_KSEF_UPO + value + SEGMENT_INVOICE_UPO;
         return http.getAuthenticatedBytes(path, token, OP_GET_UPO_BY_KSEF);
+    }
+
+    /**
+     * Convenience overload that parses the raw KSeF number string into a
+     * {@link KsefNumber} before delegating. Throws
+     * {@link IllegalArgumentException} on invalid input.
+     */
+    public byte[] getUpoByKsefNumber(String referenceNumber, String ksefNumber) {
+        return getUpoByKsefNumber(referenceNumber, KsefNumber.parse(ksefNumber));
     }
 }

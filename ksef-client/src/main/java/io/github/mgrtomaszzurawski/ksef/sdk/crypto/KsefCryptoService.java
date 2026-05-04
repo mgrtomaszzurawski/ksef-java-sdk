@@ -1,0 +1,299 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk.crypto;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CsrSupport;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.GeneralSecurityException;
+import java.security.spec.ECGenParameterSpec;
+import java.util.Objects;
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+
+/**
+ * Public KSeF cryptography facade.
+ *
+ * <p>Exposes the cryptographic primitives KSeF protocol consumers need
+ * for offline workflows, certificate enrollment, custom signing, and
+ * advanced batch / export use cases. The same primitives are used
+ * internally by sessions, batch, auth, and export.
+ *
+ * <p>The default no-arg constructor is sufficient — no configuration is
+ * required. The facade is stateless and thread-safe.
+ *
+ * <p>Spec citations: REQ-CRYPTO-001..004,
+ * {@code ksef-docs/sesja-interaktywna.md} (AES-256 + IV sizes),
+ * {@code ksef-docs/przeglad-kluczowych-zmian-ksef-api-2-0.md} (RSA-OAEP-SHA256),
+ * {@code ksef-docs/certyfikaty-KSeF.md} (CSR generation for cert enrollment).
+ */
+public final class KsefCryptoService {
+
+    private static final String SHA_256_ALGORITHM = "SHA-256";
+    private static final String RSA_KEY_ALGORITHM = "RSA";
+    private static final String EC_KEY_ALGORITHM = "EC";
+    private static final int RSA_DEFAULT_KEY_SIZE = 2048;
+    /** KSeF spec mandates RSA key sizes &gt;= 2048 bits per {@code ksef-docs/auth/podpis-xades.md:48}. */
+    private static final int RSA_MIN_KEY_SIZE = 2048;
+    private static final String EC_DEFAULT_CURVE = "secp256r1";
+    private static final int STREAM_BUFFER_BYTES = 8 * 1024;
+    private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 algorithm not available";
+    private static final String ERR_KEY_GEN_UNAVAILABLE = "Key generation algorithm not available";
+    private static final String ERR_RSA_KEY_SIZE_TOO_SMALL =
+            "RSA key size must be >= " + RSA_MIN_KEY_SIZE + " bits per KSeF spec";
+    private static final String ERR_MATERIAL_NULL = "material must not be null";
+    private static final String ERR_IN_NULL = "in must not be null";
+
+    /**
+     * Generate a fresh AES-256 key + 16-byte IV pair via secure random.
+     */
+    public EncryptionMaterial generateAesKeyAndIv() {
+        return new EncryptionMaterial(CryptoService.generateAesKey(), CryptoService.generateIv());
+    }
+
+    /**
+     * Wrap the {@code material}'s AES key with the supplied KSeF public
+     * key (RSA-OAEP-SHA256 / MGF1-SHA-256, or ECDH per key type) and pair
+     * with the plaintext IV.
+     */
+    public KsefEncryptionInfo encryptKey(EncryptionMaterial material, PublicKey ksefPublicKey) {
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
+        Objects.requireNonNull(ksefPublicKey, "ksefPublicKey must not be null");
+        byte[] wrapped = CryptoService.encryptWithPublicKey(material.aesKey(), ksefPublicKey);
+        return new KsefEncryptionInfo(wrapped, material.initVector());
+    }
+
+    /**
+     * Encrypt {@code plaintext} with AES-256-CBC + PKCS#7 padding using
+     * the supplied {@link EncryptionMaterial}.
+     */
+    public byte[] encrypt(byte[] plaintext, EncryptionMaterial material) {
+        Objects.requireNonNull(plaintext, "plaintext must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
+        return CryptoService.encryptAes(plaintext, material.aesKey(), material.initVector());
+    }
+
+    /**
+     * Decrypt {@code ciphertext} with AES-256-CBC + PKCS#7 padding using
+     * the supplied {@link EncryptionMaterial}.
+     */
+    public byte[] decrypt(byte[] ciphertext, EncryptionMaterial material) {
+        Objects.requireNonNull(ciphertext, "ciphertext must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
+        return CryptoService.decryptAes(ciphertext, material.aesKey(), material.initVector());
+    }
+
+    /**
+     * Encrypt the entire {@code in} stream into {@code out} using
+     * AES-256-CBC + PKCS#7. Closes neither stream.
+     */
+    public void encryptStream(InputStream in, OutputStream out, EncryptionMaterial material) throws IOException {
+        Objects.requireNonNull(in, ERR_IN_NULL);
+        Objects.requireNonNull(out, "out must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
+        Cipher cipher = CryptoService.newAesEncryptCipher(material.aesKey(), material.initVector());
+        try (CipherOutputStream cipherOut = new CipherOutputStream(new NonClosingOutputStream(out), cipher)) {
+            transfer(in, cipherOut);
+        }
+    }
+
+    /**
+     * Decrypt the entire {@code in} stream into {@code out} using
+     * AES-256-CBC + PKCS#7. Closes neither stream.
+     */
+    public void decryptStream(InputStream in, OutputStream out, EncryptionMaterial material) throws IOException {
+        Objects.requireNonNull(in, ERR_IN_NULL);
+        Objects.requireNonNull(out, "out must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
+        Cipher cipher = CryptoService.newAesDecryptCipher(material.aesKey(), material.initVector());
+        // CipherInputStream.close() would close the wrapped caller-provided
+        // input stream. Wrapping with NonClosingInputStream preserves the
+        // documented contract ("Closes neither stream") for both directions.
+        try (CipherInputStream cipherIn = new CipherInputStream(new NonClosingInputStream(in), cipher)) {
+            transfer(cipherIn, out);
+        }
+    }
+
+    /**
+     * Compute size + SHA-256 of the supplied bytes.
+     */
+    public FileMetadata computeFileMetadata(byte[] content) {
+        Objects.requireNonNull(content, "content must not be null");
+        try {
+            byte[] hash = MessageDigest.getInstance(SHA_256_ALGORITHM).digest(content);
+            return new FileMetadata(content.length, hash);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new KsefCryptoException(ERR_SHA256_UNAVAILABLE, ex);
+        }
+    }
+
+    /**
+     * Compute size + SHA-256 of the supplied stream. Reads the entire
+     * stream; does not close it.
+     */
+    public FileMetadata computeFileMetadata(InputStream in) throws IOException {
+        Objects.requireNonNull(in, ERR_IN_NULL);
+        try {
+            MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
+            byte[] buffer = new byte[STREAM_BUFFER_BYTES];
+            long size = 0;
+            int read = in.read(buffer);
+            while (read >= 0) {
+                digest.update(buffer, 0, read);
+                size += read;
+                read = in.read(buffer);
+            }
+            return new FileMetadata(size, digest.digest());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new KsefCryptoException(ERR_SHA256_UNAVAILABLE, ex);
+        }
+    }
+
+    /**
+     * Generate a new RSA key pair (default 2048-bit) for KSeF
+     * certificate enrollment.
+     */
+    public KeyPair generateRsaKeyPair() {
+        return generateRsaKeyPair(RSA_DEFAULT_KEY_SIZE);
+    }
+
+    /**
+     * Generate a new RSA key pair of the requested size (>= 2048 bits per
+     * KSeF spec {@code ksef-docs/auth/podpis-xades.md:48}).
+     */
+    public KeyPair generateRsaKeyPair(int keySize) {
+        if (keySize < RSA_MIN_KEY_SIZE) {
+            throw new IllegalArgumentException(ERR_RSA_KEY_SIZE_TOO_SMALL + ", got " + keySize);
+        }
+        try {
+            KeyPairGenerator generator = KeyPairGenerator.getInstance(RSA_KEY_ALGORITHM);
+            generator.initialize(keySize);
+            return generator.generateKeyPair();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new KsefCryptoException(ERR_KEY_GEN_UNAVAILABLE, ex);
+        }
+    }
+
+    /**
+     * Generate a new EC key pair (default {@code secp256r1} / P-256) for
+     * KSeF certificate enrollment.
+     */
+    public KeyPair generateEcKeyPair() {
+        return generateEcKeyPair(EC_DEFAULT_CURVE);
+    }
+
+    /**
+     * Generate a new EC key pair on the named curve.
+     */
+    public KeyPair generateEcKeyPair(String curveName) {
+        try {
+            KeyPairGenerator generator = KeyPairGenerator.getInstance(EC_KEY_ALGORITHM);
+            generator.initialize(new ECGenParameterSpec(curveName));
+            return generator.generateKeyPair();
+        } catch (GeneralSecurityException ex) {
+            throw new KsefCryptoException(ERR_KEY_GEN_UNAVAILABLE, ex);
+        }
+    }
+
+    /**
+     * Generate a CSR (PKCS#10) for KSeF certificate enrollment.
+     *
+     * <p>The CSR is signed with the supplied private key. The subject DN
+     * is built from {@code request}; the algorithm
+     * ({@code SHA256withRSA} or {@code SHA256withECDSA}) is auto-detected
+     * from the key type.
+     *
+     * <p>Spec citation: {@code ksef-docs/certyfikaty-KSeF.md} certificate
+     * enrollment workflow.
+     */
+    public CsrResult generateCsr(CsrRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
+        return CsrSupport.generate(request);
+    }
+
+    private static void transfer(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[STREAM_BUFFER_BYTES];
+        int read = in.read(buffer);
+        while (read >= 0) {
+            out.write(buffer, 0, read);
+            read = in.read(buffer);
+        }
+    }
+
+    /**
+     * Output stream that ignores {@code close()} so callers can supply
+     * their own stream and have it survive a {@code CipherOutputStream}
+     * close.
+     */
+    private static final class NonClosingOutputStream extends OutputStream {
+        private final OutputStream delegate;
+
+        NonClosingOutputStream(OutputStream delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            delegate.write(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            delegate.write(b, off, len);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            delegate.flush();
+        }
+
+        @Override
+        public void close() {
+            // intentionally do not close the delegate
+        }
+    }
+
+    /**
+     * Input stream that ignores {@code close()} so callers can supply
+     * their own stream and have it survive a {@code CipherInputStream}
+     * close. Mirror of {@link NonClosingOutputStream} on the input side.
+     */
+    private static final class NonClosingInputStream extends InputStream {
+        private final InputStream delegate;
+
+        NonClosingInputStream(InputStream delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public int read() throws IOException {
+            return delegate.read();
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            return delegate.read(b, off, len);
+        }
+
+        @Override
+        public int available() throws IOException {
+            return delegate.available();
+        }
+
+        @Override
+        public void close() {
+            // intentionally do not close the delegate
+        }
+    }
+}

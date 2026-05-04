@@ -62,6 +62,8 @@ public final class CryptoService {
     private static final String ERR_INVALID_IV_LENGTH = "IV must be 16 bytes, got: ";
     private static final String RSA_ALGORITHM_NAME = "RSA";
     private static final String EC_ALGORITHM_NAME = "EC";
+    /** SonarQube rule key suppressed at every AES-CBC site (KSeF protocol mandates CBC; ADR-011). */
+    private static final String SONAR_AES_CBC_RULE = "java:S5542";
     private static final String MGF1_FUNCTION = "MGF1";
     private static final int GCM_TAG_BITS = 128;
     private static final int GCM_NONCE_BYTES = 12;
@@ -182,7 +184,7 @@ public final class CryptoService {
      * @param aesKey must be exactly 32 bytes (AES-256)
      * @param initVector must be exactly 16 bytes
      */
-    @SuppressWarnings("java:S5542") // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011); GCM/CCM are not supported by the server.
+    @SuppressWarnings(SONAR_AES_CBC_RULE) // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011); GCM/CCM are not supported by the server.
     public static byte[] encryptAes(byte[] plaintext, byte[] aesKey, byte[] initVector) {
         validateKeyAndIv(aesKey, initVector);
         try {
@@ -208,7 +210,7 @@ public final class CryptoService {
      * @param initVector must be exactly 16 bytes
      * @return initialized Cipher in encrypt mode
      */
-    @SuppressWarnings("java:S5542") // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011).
+    @SuppressWarnings(SONAR_AES_CBC_RULE) // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011).
     public static Cipher newAesEncryptCipher(byte[] aesKey, byte[] initVector) {
         validateKeyAndIv(aesKey, initVector);
         try {
@@ -223,13 +225,31 @@ public final class CryptoService {
     }
 
     /**
+     * Create a configured AES-256-CBC Cipher in decrypt mode for streaming
+     * usage (e.g. with {@link javax.crypto.CipherInputStream}).
+     */
+    @SuppressWarnings(SONAR_AES_CBC_RULE) // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011).
+    public static Cipher newAesDecryptCipher(byte[] aesKey, byte[] initVector) {
+        validateKeyAndIv(aesKey, initVector);
+        try {
+            Cipher cipher = Cipher.getInstance(AES_CBC_PKCS5);
+            cipher.init(Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(aesKey, AES_ALGORITHM),
+                    new IvParameterSpec(initVector));
+            return cipher;
+        } catch (GeneralSecurityException exception) {
+            throw new KsefCryptoException(ERR_DECRYPT_AES, exception);
+        }
+    }
+
+    /**
      * Decrypt content with AES-256-CBC.
      *
      * @param ciphertext the data to decrypt
      * @param aesKey must be exactly 32 bytes (AES-256)
      * @param initVector must be exactly 16 bytes
      */
-    @SuppressWarnings("java:S5542") // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011).
+    @SuppressWarnings(SONAR_AES_CBC_RULE) // KSeF protocol mandates AES-256-CBC + PKCS#7 padding (see ADR-011).
     public static byte[] decryptAes(byte[] ciphertext, byte[] aesKey, byte[] initVector) {
         validateKeyAndIv(aesKey, initVector);
         try {

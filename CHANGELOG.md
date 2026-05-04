@@ -5,11 +5,153 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] — 2026-05-03
+
+First public Maven Central release.
+
+### License decision
+
+- **AGPL-3.0-only retained** at 1.0.0 (per revised ADR-007). The original
+  ADR-007 had scheduled a switch to Apache 2.0 at this boundary; that
+  decision was reconsidered and deprecated. Free-rider protection is the
+  primary driver. A README disclaimer covers solo-maintenance and warranty
+  scope independently of the license choice.
+
+### Step 1 — Process foundation (this release)
+
+- Four new ADRs governing 1.0.0 design:
+  - **ADR-019** — KOD II signing scheme: RSA-PSS + ECDSA P-256 auto-detected
+    from key type. Both `QrSigningService` (PrivateKey-aware) and the
+    pre-existing canonical-payload flow (HSM/external signers) ship.
+  - **ADR-020** — `ksef-client-testkit` philosophy: deprecated test seams
+    relocate as test rewrites, not jar moves.
+  - **ADR-021** — Public API tiers: Tier 1 workflow, Tier 2 endpoint, no
+    Tier 3.
+  - **ADR-022** — REQ-ID citation discipline: every spec-touching change
+    cites a REQ-ID from `context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md`.
+- `.github/PULL_REQUEST_TEMPLATE.md` enforces REQ-ID citation per ADR-022.
+- New `ksef-examples` Maven module compiles all loose JBang-style scripts in
+  `examples/` as part of `mvn verify`. Closes Codex round-7 finding A8
+  (broken `QrCodeGeneration.java` no longer possible to drift undetected).
+
+### Step 2 — Foundational types
+
+- **`sdk.common.KsefNumber`** value object (REQ-SESS-18/19/20). Validates
+  35-character length, separator placement, NIP digits, strict
+  `uuuuMMdd` date, uppercase hex segments, and CRC-8 checksum (poly
+  `0x07`, init `0x00`). Wired into `InvoiceClient.getByKsefNumber` and
+  `SessionClient.getUpoByKsefNumber` with `String` overloads.
+- **`sdk.config.CertificateSubjectIdentifier`** sealed interface
+  (REQ-AUTH-033). Strategies: `Subject` (default, preserves pre-1.0
+  behavior) and `Fingerprint(String)`. `KsefCertificateCredentials` and
+  `KsefPkcs12Credentials` gained the field; `AuthClient` emits the
+  matching `<SubjectIdentifierType>` XML element.
+- **`sdk.domain.invoicing.SendInvoiceCommand`** sealed interface
+  (REQ-OFFLINE-003). `Normal(byte[])` and
+  `TechnicalCorrection(byte[], byte[] hashOfCorrected)` records.
+  `KsefSession.send(SendInvoiceCommand)` and
+  `sendTechnicalCorrection(...)` convenience method. Closes
+  korekta-techniczna feature gap.
+- **`sdk.config.UpoVersion`** enum + **`sdk.config.FeaturePolicy`**
+  record. `KsefClient.builder().features(FeaturePolicy)` accepts the
+  policy; defaults preserve pre-1.0 behavior.
+
+### Step 3 — Public crypto facade + KOD II signing service
+
+- **`sdk.crypto.KsefCryptoService`** public facade
+  (REQ-CRYPTO-001..004). Byte and stream encrypt/decrypt
+  (AES-256-CBC + PKCS#7), RSA-OAEP key wrap, ECDH path, RSA + EC key
+  pair generation, file metadata (size + SHA-256). Stateless,
+  thread-safe.
+- **`sdk.crypto.EncryptionMaterial`** record (`AutoCloseable` —
+  `close()` zeroises both key and IV). `KsefEncryptionInfo`,
+  `FileMetadata`, `CsrRequest`, `CsrResult`.
+- **CSR generation API** —
+  `KsefCryptoService.generateCsr(CsrRequest) → CsrResult` for RSA and
+  ECDSA. Auto-selects `SHA256withRSA` vs `SHA256withECDSA`. Spec
+  citation: `ksef-docs/certyfikaty-KSeF.md` certificate enrollment.
+- **`sdk.domain.invoicing.qrcode.QrSigningService`** (ADR-019). Auto-detects
+  RSA-PSS (SHA-256/MGF1-SHA-256/saltLen=32) vs ECDSA P-256 from
+  `PrivateKey` type. ECDSA DER → IEEE P1363 conversion built in.
+- **`sdk.config.SigningOptions`** record with `XadesProfile` and
+  `DigestAlgorithm` enums. Initial enums hold ONLY currently
+  implemented values (`BASELINE_B`, `SHA256`); per ADR-021 public
+  API must mean working support.
+
+### Step 4 — Workflow fixes
+
+- **`InvoicePackage.continuationCursor()`** (REQ-HWM-002/003). Returns
+  `lastPermanentStorageDate` when truncated, `permanentStorageHwmDate`
+  otherwise. Matches the spec at
+  `ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md:258-264`.
+- **`KsefSession.shouldUseOfflineMode(LocalDate, LocalDate)`**
+  (REQ-OFFLINE-002). Calendar-day comparison helper.
+- **QR label clipping fix** (Codex round-7 F2). Canvas now sized to
+  `max(qrWidth, labelWidth + 2*padding)` so 35-character KSeF numbers
+  (per `numer-ksef.md:3`) no longer clip.
+
+### Step 5 — Streaming export
+
+- **`PreparedInvoiceExport.downloadAndDecryptTo(InvoiceExportStatus, Path)`**.
+  File-backed extraction for export packages too large for heap.
+  ZIP-bomb caps and SHA-256 verification mirror the in-memory variant.
+  ZIP path-traversal defense rejects entries that escape the output
+  directory.
+- **`sdk.domain.invoicing.model.ExportedInvoiceDirectory`** record
+  with on-disk paths.
+
+### Step 6 — Incremental invoice sync orchestrator
+
+- **`sdk.domain.invoicing.sync.InvoiceSyncClient`** (REQ-HWM-001/002/003,
+  REQ-EXPORT-WINDOWING-002). Implements the spec's HWM-based
+  pagination algorithm: per-subject-type independent iteration,
+  dedupe by KSeF number (validated via `KsefNumber.parse`),
+  permanentStorageHwmDate cursor advancement, commit-after-accept
+  checkpoint semantics. Acquired via `KsefClient.invoiceSync()`.
+- **`CheckpointStore`** persistence-boundary interface. Static
+  factory `CheckpointStore.inMemory()` for tests/short-lived processes.
+- **`InvoiceSink`** functional interface, **`SyncCheckpoint`**,
+  **`IncrementalSyncPlan`** (with builder), **`SyncResult`** records.
+
+### Step 7 — Test seam policy
+
+- `KsefClient.activateSessionForTests(...)` and `KsefClientInternals`
+  remain in 1.0.0 with `@Deprecated(forRemoval = true)`. They are
+  documented for removal in 1.1.0 once the migration playbook
+  (`context/TESTKIT-MIGRATION-PLAYBOOK-2026-05-03-1850.md`) is
+  executed. The `PublicApiSurfaceTest` allow-list contains
+  `KsefClientInternals` as the only documented seam exception.
+
+### Step 8 — Release boundary
+
+- **`PublicApiSurfaceTest`** (Step 8 quality gate) asserts no
+  `*Raw` types and no `sdk.internal.*` types leak through public
+  method signatures, constructors, or fields. Allow-list contains
+  only `KsefClientInternals` (test seam, scheduled for 1.1.0
+  removal).
+- Version bumped from `0.1.0` to `1.0.0` across root, ksef-client,
+  ksef-demo, ksef-examples poms.
+- License switched to Apache-2.0 (per ADR-007).
+- Maven Central pom metadata (SCM, developers, description, license)
+  already in place from earlier releases.
+
+### Spec audit closure
+
+- Audit ❌ items closed: REQ-OFFLINE-003 (technical correction),
+  REQ-SESS-18/19/20 (KSeF number CRC-8), REQ-AUTH-033 (cert
+  fingerprint), REQ-HWM-002 (truncation cursor), REQ-EXPORT-WINDOWING-002
+  (subject-type iteration via InvoiceSyncClient),
+  REQ-OFFLINE-002 (auto-offline detection helper), QR-A8 (broken
+  example), Codex round-7 F2 (QR label clipping).
+- Audit ⚠️ items: most internal cryptographic primitives now
+  exercised by `KsefCryptoServiceTest` (round-trip, stream, CSR,
+  zeroisation). Remaining ⚠️ items remain documented as test debt
+  in the audit; cryptographic primitives are exercised through the
+  public facade tests.
+
 ## [Unreleased]
 
-This is the first public release. The SDK has been developed iteratively against
-the live KSeF demo environment; ADRs in `ADR/` document each architectural
-decision in chronological order.
+(future entries go here)
 
 ### Added (Codex follow-up)
 

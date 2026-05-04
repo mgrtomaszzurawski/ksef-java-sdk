@@ -8,6 +8,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 
@@ -112,6 +113,34 @@ public final class KsefVerificationLinks {
         public byte[] signature() {
             return signature.clone();
         }
+
+        @Override
+        public boolean equals(Object o) {
+            return this == o
+                    || (o instanceof CertificateVerificationParams other
+                        && contextType == other.contextType
+                        && Objects.equals(contextValue, other.contextValue)
+                        && Objects.equals(sellerNip, other.sellerNip)
+                        && Objects.equals(certificateSerial, other.certificateSerial)
+                        && Arrays.equals(invoiceSha256, other.invoiceSha256)
+                        && Arrays.equals(signature, other.signature));
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(contextType, contextValue, sellerNip, certificateSerial,
+                    Arrays.hashCode(invoiceSha256), Arrays.hashCode(signature));
+        }
+
+        @Override
+        public String toString() {
+            return "CertificateVerificationParams[contextType=" + contextType
+                    + ", contextValue=" + contextValue
+                    + ", sellerNip=" + sellerNip
+                    + ", certificateSerial=" + certificateSerial
+                    + ", invoiceSha256=" + invoiceSha256.length + " bytes"
+                    + ", signature=" + signature.length + " bytes]";
+        }
     }
 
     /**
@@ -165,6 +194,32 @@ public final class KsefVerificationLinks {
         @Override
         public byte[] invoiceSha256() {
             return invoiceSha256.clone();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return this == o
+                    || (o instanceof CertificateSigningInput other
+                        && contextType == other.contextType
+                        && Objects.equals(contextValue, other.contextValue)
+                        && Objects.equals(sellerNip, other.sellerNip)
+                        && Objects.equals(certificateSerial, other.certificateSerial)
+                        && Arrays.equals(invoiceSha256, other.invoiceSha256));
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(contextType, contextValue, sellerNip, certificateSerial,
+                    Arrays.hashCode(invoiceSha256));
+        }
+
+        @Override
+        public String toString() {
+            return "CertificateSigningInput[contextType=" + contextType
+                    + ", contextValue=" + contextValue
+                    + ", sellerNip=" + sellerNip
+                    + ", certificateSerial=" + certificateSerial
+                    + ", invoiceSha256=" + invoiceSha256.length + " bytes]";
         }
     }
 

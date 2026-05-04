@@ -5,6 +5,7 @@
 
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
@@ -19,7 +20,20 @@ import java.util.List;
  */
 public interface InvoiceClient {
 
-    byte[] getByKsefNumber(String ksefNumber);
+    /**
+     * Retrieve invoice XML by KSeF number. Validates length, format, and
+     * CRC-8 checksum (REQ-SESS-18/19/20) before the network call.
+     */
+    byte[] getByKsefNumber(KsefNumber ksefNumber);
+
+    /**
+     * Convenience overload that parses the raw string into a
+     * {@link KsefNumber} before delegating. Throws
+     * {@link IllegalArgumentException} on invalid input.
+     */
+    default byte[] getByKsefNumber(String ksefNumber) {
+        return getByKsefNumber(KsefNumber.parse(ksefNumber));
+    }
 
     InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query);
     List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query);

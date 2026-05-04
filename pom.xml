@@ -6,7 +6,7 @@
 
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-java-sdk</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <name>KSeF Java SDK</name>
@@ -37,6 +37,7 @@
     <modules>
         <module>ksef-client</module>
         <module>ksef-demo</module>
+        <module>ksef-examples</module>
     </modules>
 
     <properties>

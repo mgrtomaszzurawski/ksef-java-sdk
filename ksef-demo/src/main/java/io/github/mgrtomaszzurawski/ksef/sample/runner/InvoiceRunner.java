@@ -38,7 +38,6 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_I
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_TIMEOUT_MS;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 
 /**
  * Runner for InvoiceClient operations.
@@ -149,7 +148,7 @@ public final class InvoiceRunner implements DemoRunner {
     }
 
     private static java.security.PublicKey extractEncryptionKey(DemoContext context) {
-        PublicKeyCertificate certificate = new SecurityClient(context.client()).getPublicKeyCertificates().stream()
+        PublicKeyCertificate certificate = context.client().publicKeyCertificates().stream()
                 .filter(cert -> cert.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_ENCRYPTION_CERT));

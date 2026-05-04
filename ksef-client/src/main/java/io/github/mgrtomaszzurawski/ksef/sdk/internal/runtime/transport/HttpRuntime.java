@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -50,4 +51,10 @@ public interface HttpRuntime {
      * remains driven by {@link #reauthenticate()} on HTTP 401.
      */
     String requireToken();
+
+    /**
+     * Active KSeF feature policy (UPO version, problem-details opt-in).
+     * Default {@link FeaturePolicy#defaults()} preserves pre-1.0 behavior.
+     */
+    FeaturePolicy featurePolicy();
 }

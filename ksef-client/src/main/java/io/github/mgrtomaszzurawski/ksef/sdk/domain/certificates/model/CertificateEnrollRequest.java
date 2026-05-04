@@ -51,4 +51,12 @@ public record CertificateEnrollRequest(
     public int hashCode() {
         return Objects.hash(certificateName, certificateType, validFrom, Arrays.hashCode(csr));
     }
+
+    @Override
+    public String toString() {
+        return "CertificateEnrollRequest[certificateName=" + certificateName
+                + ", certificateType=" + certificateType
+                + ", csr=" + csr.length + " bytes"
+                + ", validFrom=" + validFrom + "]";
+    }
 }

@@ -123,7 +123,7 @@ public final class ValidationProbe {
             client.authenticate();
             LOGGER.info("Authenticated successfully");
 
-            String bearer = client.runtime().sessionContext().token();
+            String bearer = client.bearerToken();
 
             ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
             probe.runAllProbes();

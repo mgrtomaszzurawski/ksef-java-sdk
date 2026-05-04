@@ -6,7 +6,7 @@
 
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-demo</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>KSeF Demo App</name>

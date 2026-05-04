@@ -69,6 +69,15 @@ public final class KsefBatchSession implements AutoCloseable {
      * genuinely stalled.
      */
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
+    /**
+     * REQ-SESS-13 — KSeF allows 20 minutes per part for the cumulative
+     * upload budget. The SDK fails fast if this budget is exceeded
+     * mid-upload rather than letting the server reject the request.
+     * Spec: {@code ksef-docs/sesja-wsadowa.md:288-293}.
+     */
+    private static final long UPLOAD_BUDGET_MINUTES_PER_PART = 20L;
+    private static final long UPLOAD_BUDGET_NANOS_PER_PART =
+            UPLOAD_BUDGET_MINUTES_PER_PART * 60L * 1_000_000_000L;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
     private static final String ERR_NO_PARTS = "No parts to upload — session was opened with a "
             + "PreparedBatchPackage, not a list of invoice XMLs";
@@ -97,6 +106,7 @@ public final class KsefBatchSession implements AutoCloseable {
     private final String referenceNumber;
     private final List<PartUploadRequest> partUploadRequests;
     private final BatchPackageBuilder.BatchPackage batchPackage;
+    private final java.util.function.LongSupplier nanoTimeSource;
     private volatile boolean closed;
 
     /**
@@ -108,13 +118,10 @@ public final class KsefBatchSession implements AutoCloseable {
      * @apiNote Internal — constructed by {@code KsefClient.openBatchSession(...)}.
      * The {@link SessionClient} parameter type lives in a non-exported package, so
      * this constructor is not callable from consumer code despite being public.
-     * @deprecated For SDK-internal construction only. Consumers must obtain a
-     *     batch session via {@code KsefClient.openBatchSession(...)}.
      */
-    @Deprecated(since = "0.1.0")
     public KsefBatchSession(SessionClient sessionClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests) {
-        this(sessionClient, null, referenceNumber, partUploadRequests, null);
+        this(sessionClient, null, referenceNumber, partUploadRequests, null, System::nanoTime);
     }
 
     /**
@@ -123,12 +130,25 @@ public final class KsefBatchSession implements AutoCloseable {
      * for upload + cleanup.
      *
      * @apiNote Internal — see the alternative-overload note above.
-     * @deprecated For SDK-internal construction only.
      */
-    @Deprecated(since = "0.1.0")
     public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage) {
+        this(sessionClient, httpClient, referenceNumber, partUploadRequests, batchPackage, System::nanoTime);
+    }
+
+    /**
+     * Internal constructor used by tests that need to drive the upload-budget
+     * deadline branch deterministically. Production code paths use
+     * {@code System::nanoTime}; tests can substitute a {@link java.util.function.LongSupplier}
+     * that simulates clock progression beyond the per-part budget.
+     *
+     * @apiNote Internal — {@link SessionClient} parameter type is not exported.
+     */
+    public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+                     List<PartUploadRequest> partUploadRequests,
+                     BatchPackageBuilder.BatchPackage batchPackage,
+                     java.util.function.LongSupplier nanoTimeSource) {
         this.sessionClient = sessionClient;
         this.httpClient = httpClient;
         this.referenceNumber = referenceNumber;
@@ -138,6 +158,7 @@ public final class KsefBatchSession implements AutoCloseable {
             throw new IllegalArgumentException(ERR_PART_COUNT_MISMATCH);
         }
         this.batchPackage = batchPackage;
+        this.nanoTimeSource = java.util.Objects.requireNonNull(nanoTimeSource, "nanoTimeSource");
     }
 
     /**
@@ -181,7 +202,21 @@ public final class KsefBatchSession implements AutoCloseable {
             throw new IllegalStateException(ERR_NO_PARTS);
         }
         List<Path> partFiles = batchPackage.partFiles();
+        // REQ-SESS-13: KSeF gives 20 minutes per part (cumulative across parts)
+        // for the entire upload. Track elapsed time and fail-fast if the
+        // budget is about to be exceeded; this surfaces a clean SDK error
+        // instead of a server timeout/rejection mid-upload.
+        long startNanos = nanoTimeSource.getAsLong();
+        long budgetNanos = partUploadRequests.size() * UPLOAD_BUDGET_NANOS_PER_PART;
         for (int index = 0; index < partUploadRequests.size(); index++) {
+            long elapsedNanos = nanoTimeSource.getAsLong() - startNanos;
+            if (elapsedNanos > budgetNanos) {
+                throw new KsefNetworkException(
+                        String.format("Batch upload deadline exceeded after %d parts; "
+                                        + "spec budget is %d minutes per part (REQ-SESS-13)",
+                                index, UPLOAD_BUDGET_MINUTES_PER_PART),
+                        null);
+            }
             uploadSinglePart(partUploadRequests.get(index), partFiles.get(index));
         }
     }

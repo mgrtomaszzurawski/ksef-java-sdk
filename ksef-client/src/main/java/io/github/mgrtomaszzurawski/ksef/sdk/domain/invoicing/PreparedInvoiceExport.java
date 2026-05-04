@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoiceDirectory;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoicePackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackagePart;
@@ -19,6 +20,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.security.NoSuchAlgorithmException;
@@ -59,6 +62,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final String LOG_AWAIT = "[export {}] awaiting ready (terminal status >= 200)";
     private static final String LOG_DOWNLOAD = "[export {}] downloading {} parts";
     private static final String LOG_VERIFY = "[export {}] part {} hash verified";
+    private static final String LOG_TEMP_CLEANUP_FAILED = "[export {}] failed to clean up temp file {}: {}";
     private static final int STATUS_POLL_DELAY_MS = 1500;
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     /** Lower bound (inclusive) for terminal export-status codes — anything {@code >= 200} is final. */
@@ -94,6 +98,8 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final int MAX_ZIP_ENTRIES = 100_000;
     private static final long MAX_ZIP_TOTAL_BYTES = 4L * 1024 * 1024 * 1024; // 4 GiB
     private static final long MAX_ZIP_ENTRY_BYTES = 256L * 1024 * 1024;      // 256 MiB
+    /** Subdirectory name (under outputDirectory) for staging decrypted parts during streaming unzip. */
+    private static final String PARTS_TEMP_SUBDIR = ".parts";
 
     private final InvoiceClient invoices;
     private final HttpClient httpClient;
@@ -104,9 +110,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
 
     /**
      * @apiNote Internal — constructed by {@code InvoiceClientImpl.prepareExport(...)}.
-     * @deprecated For SDK-internal construction only.
      */
-    @Deprecated(since = "0.1.0")
     public PreparedInvoiceExport(InvoiceClient invoices,
                                  HttpClient httpClient,
                                  String referenceNumber,
@@ -205,6 +209,173 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             }
         }
         return unzipPackage(archiveBuffer.toByteArray());
+    }
+
+    /**
+     * File-backed variant of
+     * {@link #downloadAndDecrypt(InvoiceExportStatus)} for export packages
+     * too large to hold in heap.
+     *
+     * <p>Downloads each part, verifies SHA-256, decrypts, then unzips
+     * each entry directly to {@code outputDirectory}. The metadata file
+     * (if present) is written to {@code outputDirectory/_metadata.json};
+     * each invoice XML to {@code outputDirectory/<entryName>}.
+     *
+     * <p>The directory is created if it does not exist.
+     *
+     * <p>Spec citation: Step 5 of
+     * {@code context/IMPLEMENTATION-PLAN-1.0.0-2026-05-03-1712.md}.
+     *
+     * @param status the terminal status returned by {@link #awaitReady()}
+     * @param outputDirectory directory where the package contents are written
+     * @return file-backed handle with on-disk paths
+     */
+    public ExportedInvoiceDirectory downloadAndDecryptTo(InvoiceExportStatus status, Path outputDirectory) {
+        requireNotDisposed();
+        Objects.requireNonNull(status, ERR_NULL_STATUS);
+        Objects.requireNonNull(status.invoicePackage(), ERR_NULL_PARTS);
+        Objects.requireNonNull(status.invoicePackage().parts(), ERR_NULL_PARTS);
+        Objects.requireNonNull(outputDirectory, "outputDirectory must not be null");
+        LOGGER.debug(LOG_DOWNLOAD, referenceNumber, status.invoicePackage().parts().size());
+
+        try {
+            Files.createDirectories(outputDirectory);
+        } catch (IOException ex) {
+            throw new KsefException(ERR_ZIP_FAILED, ex);
+        }
+
+        // True streaming pipeline:
+        //   1. per-part: download bytes (bounded by spec ≤256 MiB), verify
+        //      encrypted hash, decrypt, verify plaintext hash, write
+        //      decrypted plaintext to a temp file in outputDir/.parts/
+        //   2. concatenate the temp files via SequenceInputStream and feed
+        //      to ZipInputStream which writes each entry to outputDir
+        //   3. delete temp files (best-effort cleanup)
+        //
+        // Memory bound: at most one part's plaintext at a time
+        // (≤256 MiB), never the whole archive (which can reach 4 GiB
+        // before the cap kicks in). Closes F3.
+        Path partsDir;
+        try {
+            partsDir = Files.createDirectories(outputDirectory.resolve(PARTS_TEMP_SUBDIR));
+        } catch (IOException ex) {
+            throw new KsefException(ERR_ZIP_FAILED, ex);
+        }
+        java.util.List<Path> partFiles = new java.util.ArrayList<>();
+        try {
+            for (InvoicePackagePart part : status.invoicePackage().parts()) {
+                byte[] encryptedBytes = downloadPart(part);
+                verifyEncryptedPartHash(part, encryptedBytes);
+                byte[] decryptedBytes = CryptoService.decryptAes(encryptedBytes, aesKey, initVector);
+                verifyPlaintextPartHash(part, decryptedBytes);
+                Path partFile = partsDir.resolve("part-" + part.ordinalNumber() + ".bin");
+                try {
+                    Files.write(partFile, decryptedBytes);
+                } catch (IOException ex) {
+                    throw new KsefException(ERR_ZIP_FAILED, ex);
+                }
+                partFiles.add(partFile);
+                // Allow the part bytes to be GC'd before downloading next.
+                encryptedBytes = null;
+                decryptedBytes = null;
+            }
+            return unzipPackageStreamToDirectory(partFiles, outputDirectory);
+        } finally {
+            for (Path p : partFiles) {
+                try {
+                    Files.deleteIfExists(p);
+                } catch (IOException cleanupFailure) {
+                    LOGGER.debug(LOG_TEMP_CLEANUP_FAILED, referenceNumber, p, cleanupFailure.getMessage());
+                }
+            }
+            try {
+                Files.deleteIfExists(partsDir);
+            } catch (IOException cleanupFailure) {
+                LOGGER.debug(LOG_TEMP_CLEANUP_FAILED, referenceNumber, partsDir, cleanupFailure.getMessage());
+            }
+        }
+    }
+
+    private static ExportedInvoiceDirectory unzipPackageStreamToDirectory(
+            java.util.List<Path> partFiles, Path outputDir) {
+        // Build SequenceInputStream over per-part FileInputStream lazily —
+        // feeds the ZipInputStream a continuous stream without ever loading
+        // the full archive into heap. Each part stream is opened on demand
+        // and closed by the SequenceInputStream as it advances, so we don't
+        // need a separate cleanup loop.
+        java.util.Iterator<Path> pathIterator = partFiles.iterator();
+        java.util.Enumeration<java.io.InputStream> streams = new java.util.Enumeration<>() {
+            @Override public boolean hasMoreElements() { return pathIterator.hasNext(); }
+            @Override public java.io.InputStream nextElement() {
+                try {
+                    return Files.newInputStream(pathIterator.next());
+                } catch (IOException openFailure) {
+                    throw new KsefException(ERR_ZIP_FAILED, openFailure);
+                }
+            }
+        };
+        try (java.io.SequenceInputStream concat = new java.io.SequenceInputStream(streams);
+             ZipInputStream zip = new ZipInputStream(concat)) {
+            return readEntriesIntoDirectory(zip, outputDir);
+        } catch (IOException zipFailure) {
+            throw new KsefException(ERR_ZIP_FAILED, zipFailure);
+        }
+    }
+
+    private static ExportedInvoiceDirectory readEntriesIntoDirectory(ZipInputStream zip, Path outputDir)
+            throws IOException {
+        Map<String, Path> invoiceXmls = new HashMap<>();
+        Path metadataPath = null;
+        long totalBytes = 0L;
+        int entryCount = 0;
+        ZipEntry entry = zip.getNextEntry();
+        while (entry != null) {
+            if (!entry.isDirectory()) {
+                entryCount++;
+                if (entryCount > MAX_ZIP_ENTRIES) {
+                    throw new KsefException(
+                            String.format(Locale.ROOT, ERR_ENTRY_LIMIT, entryCount, MAX_ZIP_ENTRIES), null);
+                }
+                Path target = resolveEntryTarget(outputDir, entry);
+                long entrySize = writeEntryToTarget(zip, target, entry.getName());
+                totalBytes += entrySize;
+                if (totalBytes > MAX_ZIP_TOTAL_BYTES) {
+                    throw new KsefException(
+                            String.format(Locale.ROOT, ERR_TOTAL_SIZE, totalBytes, MAX_ZIP_TOTAL_BYTES), null);
+                }
+                if (METADATA_FILE.equals(entry.getName())) {
+                    metadataPath = target;
+                } else {
+                    invoiceXmls.put(entry.getName(), target);
+                }
+            }
+            entry = zip.getNextEntry();
+        }
+        return new ExportedInvoiceDirectory(outputDir, metadataPath, invoiceXmls);
+    }
+
+    private static Path resolveEntryTarget(Path outputDir, ZipEntry entry) throws IOException {
+        String entryName = entry.getName();
+        if (entryName == null) {
+            throw new KsefException("ZIP entry has null name", null);
+        }
+        Path target = outputDir.resolve(entryName).normalize();
+        if (!target.startsWith(outputDir.normalize())) {
+            throw new KsefException("ZIP entry escapes output directory: " + entryName, null);
+        }
+        Path parent = target.getParent();
+        Files.createDirectories(parent == null ? outputDir : parent);
+        return target;
+    }
+
+    private static long writeEntryToTarget(ZipInputStream zip, Path target, String entryName) throws IOException {
+        long entrySize = Files.copy(zip, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        if (entrySize > MAX_ZIP_ENTRY_BYTES) {
+            throw new KsefException(
+                    String.format(Locale.ROOT, ERR_ENTRY_SIZE, entryName, entrySize, MAX_ZIP_ENTRY_BYTES),
+                    null);
+        }
+        return entrySize;
     }
 
     private byte[] downloadPart(InvoicePackagePart part) {

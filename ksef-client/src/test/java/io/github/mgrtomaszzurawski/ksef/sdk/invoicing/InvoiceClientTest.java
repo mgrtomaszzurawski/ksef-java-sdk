@@ -42,7 +42,7 @@ class InvoiceClientTest {
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
     private static final String TEST_NIP = "1234567890";
     private static final String TEST_KSEF_TOKEN = "test-ksef-token";
-    private static final String TEST_KSEF_NUMBER = "1234567890-20260404-ABCDEF123456-78";
+    private static final String TEST_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final String TEST_EXPORT_REF = "20260404-EX-1234567890-ABCDEF1234-05";
     private static final int KSEF_STATUS_OK = 200;
     private static final byte[] TEST_INVOICE_XML = "<Faktura>test invoice</Faktura>".getBytes(StandardCharsets.UTF_8);
@@ -300,11 +300,6 @@ class InvoiceClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
-                .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
-                .retryPolicy(RetryPolicy.builder().enabled(false).build())
-                .build();
-        ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
-        return ksef;
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
     }
 }

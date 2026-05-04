@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutE
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,20 +70,22 @@ public final class KsefSession implements AutoCloseable {
     private static final String LOG_TERMINAL_FAILURE =
             "Session {} reached terminal failure state — code={} description={}";
 
+    /** REQ-SESS-41 — KSeF caps a single session at 10,000 invoices. */
+    private static final int MAX_INVOICES_PER_SESSION = 10_000;
+
     private final SessionClient sessionClient;
     private final String referenceNumber;
     private final byte[] aesKey;
     private final byte[] initVector;
     private volatile boolean closed;
+    private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
+            new java.util.concurrent.atomic.AtomicInteger();
 
     /**
      * @apiNote Internal — constructed by {@code KsefClient.openSession(FormCode)}.
      * The {@link SessionClient} parameter type lives in a non-exported package,
      * so this constructor is not callable from consumer code despite being public.
-     * @deprecated For SDK-internal construction only. Consumers must obtain a
-     *     session via {@code KsefClient.openSession(FormCode)}.
      */
-    @Deprecated(since = "0.1.0")
     public KsefSession(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
         this.sessionClient = sessionClient;
@@ -103,9 +106,71 @@ public final class KsefSession implements AutoCloseable {
      * @throws IllegalStateException if the session is already closed
      */
     public SendInvoiceResult send(byte[] invoiceXml) {
+        return send(SendInvoiceCommand.normal(invoiceXml));
+    }
+
+    /**
+     * Send an invoice within this session using the supplied command shape
+     * (normal vs technical correction). REQ-OFFLINE-003.
+     *
+     * <p>Encrypts with the session's AES key, computes hashes, and posts
+     * the encrypted payload. For
+     * {@link SendInvoiceCommand.TechnicalCorrection} the
+     * {@code hashOfCorrectedInvoice} field is forwarded and offline mode
+     * is implied at the wire level.
+     */
+    public SendInvoiceResult send(SendInvoiceCommand command) {
         ensureOpen();
-        var request = SendInvoiceBuilder.create(invoiceXml, aesKey, initVector).build();
-        return sessionClient.sendInvoice(referenceNumber, request);
+        Objects.requireNonNull(command, "command must not be null");
+        // REQ-SESS-41 — KSeF caps a single session at 10,000 invoices. Reject
+        // the (10001)st send before crafting the request so the caller gets a
+        // clean SDK error instead of a server rejection.
+        int attempted = sentInvoiceCount.incrementAndGet();
+        if (attempted > MAX_INVOICES_PER_SESSION) {
+            sentInvoiceCount.decrementAndGet();
+            throw new IllegalStateException(
+                    "KSeF caps a single session at " + MAX_INVOICES_PER_SESSION
+                            + " invoices (REQ-SESS-41); already sent "
+                            + (attempted - 1) + " in this session — open a new session to send more");
+        }
+        SendInvoiceBuilder builder = SendInvoiceBuilder.create(command.invoiceXml(), aesKey, initVector);
+        if (command instanceof SendInvoiceCommand.TechnicalCorrection correction) {
+            builder = builder.technicalCorrection(correction.hashOfCorrectedInvoice());
+        }
+        return sessionClient.sendInvoice(referenceNumber, builder.build());
+    }
+
+    /**
+     * Convenience for sending a technical correction (korekta techniczna).
+     * Equivalent to
+     * {@code send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected))}.
+     * REQ-OFFLINE-003.
+     */
+    public SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
+        return send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected));
+    }
+
+    /**
+     * Returns {@code true} when KSeF would auto-classify an invoice as
+     * offline based on its issue date vs. the current invoicing date.
+     *
+     * <p>Per spec ({@code ksef-docs/offline/automatyczne-okreslanie-trybu-offline.md:6-14}):
+     * an invoice is automatically considered offline when the calendar
+     * day of {@code issueDate} is earlier than the calendar day of
+     * {@code invoicingDate}. The comparison is by date only, ignoring
+     * time-of-day.
+     *
+     * <p>Use this helper to decide between {@link SendInvoiceCommand#normal}
+     * and an offline-mode send before posting to KSeF, so a server-side
+     * mode mismatch does not cause a round-trip failure.
+     *
+     * <p>Spec citation: REQ-OFFLINE-002.
+     */
+    public static boolean shouldUseOfflineMode(java.time.LocalDate issueDate,
+                                                java.time.LocalDate invoicingDate) {
+        Objects.requireNonNull(issueDate, "issueDate must not be null");
+        Objects.requireNonNull(invoicingDate, "invoicingDate must not be null");
+        return issueDate.isBefore(invoicingDate);
     }
 
     /**
@@ -155,6 +220,30 @@ public final class KsefSession implements AutoCloseable {
      */
     public byte[] upo(String invoiceReferenceNumber) {
         return sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
+    }
+
+    /**
+     * Download UPO (official receipt) by KSeF invoice number. Works on
+     * closed sessions — UPO is only available after close completes.
+     * The KSeF number's structure (length, segments, CRC-8) is validated
+     * by {@link io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber}.
+     *
+     * @param ksefNumber the KSeF invoice number
+     * @return raw UPO bytes (XML)
+     */
+    public byte[] upoByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber ksefNumber) {
+        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
+    }
+
+    /**
+     * Convenience overload that parses the raw KSeF number string before
+     * delegating. Throws {@link IllegalArgumentException} on invalid input.
+     *
+     * @param ksefNumber the KSeF invoice number as a raw string
+     * @return raw UPO bytes (XML)
+     */
+    public byte[] upoByKsefNumber(String ksefNumber) {
+        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
     }
 
     /**

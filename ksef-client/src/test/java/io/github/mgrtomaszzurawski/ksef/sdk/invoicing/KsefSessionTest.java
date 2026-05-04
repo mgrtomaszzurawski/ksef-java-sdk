@@ -7,7 +7,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -203,13 +202,11 @@ class KsefSessionTest {
     }
 
     private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
-                .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
-                .retryPolicy(RetryPolicy.builder().enabled(false).build())
-                .build();
-        ksef.activateSessionForTests(TEST_TOKEN, TEST_SESSION_REF, null);
-
-        SessionClient sessionClient = new SessionClient(KsefClientInternals.runtime(ksef));
+        io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime runtime =
+                io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
+        runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF,
+                java.time.OffsetDateTime.now().plusHours(1));
+        SessionClient sessionClient = new SessionClient(runtime);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
         return new KsefSession(sessionClient, TEST_SESSION_REF, aesKey, initVector);

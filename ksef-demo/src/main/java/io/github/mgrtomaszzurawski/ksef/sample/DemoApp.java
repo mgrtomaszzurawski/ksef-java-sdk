@@ -81,14 +81,16 @@ public final class DemoApp {
 
         KsefCredentials credentials = buildCredentials(properties);
 
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(properties.environment()))
+        String resolvedEnvUrl = appendApiVersionIfMissing(properties.environment());
+
+        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(resolvedEnvUrl))
                 .credentials(credentials)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
 
             DemoContext context = new DemoContext(client, mode, state,
                     properties.ksefToken(), properties.nipIdentifier(),
-                    credentials.identifier().type(), properties.environment());
+                    credentials.identifier().type(), resolvedEnvUrl);
 
             List<DemoRunner> runners = buildRunners(mode);
             DemoSession session = new DemoSession(context);
@@ -122,6 +124,25 @@ public final class DemoApp {
             System.exit(EXIT_FAILURE);
             return DemoMode.READ_ONLY;
         }
+    }
+
+    /**
+     * Append the {@code /v2} API version path segment to a bare host URL if it
+     * is missing. The KSeF SDK's {@link KsefEnvironment#custom(String)} is
+     * strict — it takes the supplied base URL verbatim and does not auto-add
+     * the version. Operators commonly write {@code ksef.environment} as a
+     * bare host (the way KSeF's own portal documents it), so the demo wrapper
+     * normalises it before handing it to the SDK. Without this, every
+     * authenticated call would return 404 (verified by E2E run on
+     * {@code api-demo.ksef.mf.gov.pl} 2026-05-04).
+     */
+    private static String appendApiVersionIfMissing(String envUrl) {
+        if (envUrl.endsWith("/v2") || envUrl.endsWith("/v2/")) {
+            return envUrl;
+        }
+        // Strip any trailing slash before appending so we don't end up with "//v2".
+        String trimmed = envUrl.endsWith("/") ? envUrl.substring(0, envUrl.length() - 1) : envUrl;
+        return trimmed + "/v2";
     }
 
     private static void validateProperties(AppProperties properties) {
