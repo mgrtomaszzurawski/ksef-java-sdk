@@ -83,4 +83,21 @@ public record SendInvoiceRequest(
                 Arrays.hashCode(encryptedInvoiceContent),
                 Arrays.hashCode(hashOfCorrectedInvoice));
     }
+
+    @Override
+    public String toString() {
+        return "SendInvoiceRequest[invoiceSize=" + invoiceSize
+                + ", encryptedInvoiceSize=" + encryptedInvoiceSize
+                + ", offlineMode=" + offlineMode
+                + ", invoiceHash=" + bytesLabel(invoiceHash)
+                + ", encryptedInvoiceHash=" + bytesLabel(encryptedInvoiceHash)
+                + ", encryptedInvoiceContent=" + bytesLabel(encryptedInvoiceContent)
+                + ", hashOfCorrectedInvoice="
+                + (hashOfCorrectedInvoice == null ? "null" : bytesLabel(hashOfCorrectedInvoice))
+                + "]";
+    }
+
+    private static String bytesLabel(byte[] bytes) {
+        return bytes.length + " bytes";
+    }
 }

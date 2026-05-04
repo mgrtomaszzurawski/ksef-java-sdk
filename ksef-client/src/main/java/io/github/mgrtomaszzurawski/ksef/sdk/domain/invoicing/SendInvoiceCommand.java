@@ -75,18 +75,18 @@ public sealed interface SendInvoiceCommand
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Normal other)) {
-                return false;
-            }
-            return Arrays.equals(invoiceXml, other.invoiceXml);
+            return this == o
+                    || (o instanceof Normal other && Arrays.equals(invoiceXml, other.invoiceXml));
         }
 
         @Override
         public int hashCode() {
             return Arrays.hashCode(invoiceXml);
+        }
+
+        @Override
+        public String toString() {
+            return "Normal[invoiceXml=" + invoiceXml.length + " bytes]";
         }
     }
 
@@ -134,6 +134,12 @@ public sealed interface SendInvoiceCommand
         @Override
         public int hashCode() {
             return Objects.hash(Arrays.hashCode(invoiceXml), Arrays.hashCode(hashOfCorrectedInvoice));
+        }
+
+        @Override
+        public String toString() {
+            return "TechnicalCorrection[invoiceXml=" + invoiceXml.length + " bytes"
+                    + ", hashOfCorrectedInvoice=" + hashOfCorrectedInvoice.length + " bytes]";
         }
     }
 }

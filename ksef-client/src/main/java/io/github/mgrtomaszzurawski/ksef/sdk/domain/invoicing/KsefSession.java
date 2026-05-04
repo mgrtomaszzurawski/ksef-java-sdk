@@ -85,10 +85,7 @@ public final class KsefSession implements AutoCloseable {
      * @apiNote Internal — constructed by {@code KsefClient.openSession(FormCode)}.
      * The {@link SessionClient} parameter type lives in a non-exported package,
      * so this constructor is not callable from consumer code despite being public.
-     * @deprecated For SDK-internal construction only. Consumers must obtain a
-     *     session via {@code KsefClient.openSession(FormCode)}.
      */
-    @Deprecated(since = "0.1.0")
     public KsefSession(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
         this.sessionClient = sessionClient;
@@ -223,6 +220,30 @@ public final class KsefSession implements AutoCloseable {
      */
     public byte[] upo(String invoiceReferenceNumber) {
         return sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
+    }
+
+    /**
+     * Download UPO (official receipt) by KSeF invoice number. Works on
+     * closed sessions — UPO is only available after close completes.
+     * The KSeF number's structure (length, segments, CRC-8) is validated
+     * by {@link io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber}.
+     *
+     * @param ksefNumber the KSeF invoice number
+     * @return raw UPO bytes (XML)
+     */
+    public byte[] upoByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber ksefNumber) {
+        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
+    }
+
+    /**
+     * Convenience overload that parses the raw KSeF number string before
+     * delegating. Throws {@link IllegalArgumentException} on invalid input.
+     *
+     * @param ksefNumber the KSeF invoice number as a raw string
+     * @return raw UPO bytes (XML)
+     */
+    public byte[] upoByKsefNumber(String ksefNumber) {
+        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
     }
 
     /**

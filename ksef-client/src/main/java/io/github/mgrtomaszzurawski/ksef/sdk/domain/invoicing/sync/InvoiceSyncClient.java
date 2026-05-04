@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -95,8 +94,9 @@ public final class InvoiceSyncClient {
         Objects.requireNonNull(checkpointStore, ERR_NULL_STORE);
         Objects.requireNonNull(sink, ERR_NULL_SINK);
 
-        Map<InvoiceQuerySubjectType, Long> counts = new HashMap<>();
-        Map<InvoiceQuerySubjectType, SyncCheckpoint> finalCheckpoints = new HashMap<>();
+        Map<InvoiceQuerySubjectType, Long> counts = new java.util.EnumMap<>(InvoiceQuerySubjectType.class);
+        Map<InvoiceQuerySubjectType, SyncCheckpoint> finalCheckpoints =
+                new java.util.EnumMap<>(InvoiceQuerySubjectType.class);
 
         for (InvoiceQuerySubjectType subjectType : plan.subjectTypes()) {
             long count = syncSubjectType(plan, subjectType, checkpointStore, sink);
@@ -119,70 +119,119 @@ public final class InvoiceSyncClient {
         long processed = 0;
 
         for (int windowIndex = 0; windowIndex < MAX_WINDOWS_PER_SUBJECT; windowIndex++) {
-            InvoiceQueryBuilder query = subjectQuery(subjectType, plan.dateType(), cursor);
-            if (plan.to() != null) {
-                query.dateTo(plan.to());
+            WindowOutcome outcome = processOneWindow(plan, subjectType, store, sink,
+                    cursor, windowIndex, seenKsefNumbers);
+            processed += outcome.processedDelta();
+            if (outcome.advancedCursor() == null) {
+                break;
             }
-
-            try (PreparedInvoiceExport export = invoiceClient.prepareExport(query, plan.fullContent())) {
-                InvoiceExportStatus status = export.awaitReady();
-                InvoicePackage pkg = status.invoicePackage();
-                if (pkg == null || pkg.invoiceCount() == null || pkg.invoiceCount() == 0L) {
-                    LOGGER.debug("[sync {} window {}] empty package — stop", subjectType, windowIndex);
-                    break;
-                }
-
-                Path windowDir = plan.outputDirectory()
-                        .resolve(subjectType.name().toLowerCase(Locale.ROOT))
-                        .resolve("window-" + windowIndex);
-                Files.createDirectories(windowDir);
-
-                ExportedInvoiceDirectory dir = export.downloadAndDecryptTo(status, windowDir);
-                List<InvoiceMetadata> metadatas = readMetadataJson(dir);
-
-                int dispatched = 0;
-                for (InvoiceMetadata metadata : metadatas) {
-                    if (metadata.ksefNumber() == null) {
-                        continue;
-                    }
-                    if (seenKsefNumbers.contains(metadata.ksefNumber())) {
-                        continue;
-                    }
-                    KsefNumber typed;
-                    try {
-                        typed = KsefNumber.parse(metadata.ksefNumber());
-                    } catch (IllegalArgumentException badNumber) {
-                        LOGGER.warn("[sync {}] skipping invoice with invalid KSeF number: {}",
-                                subjectType, metadata.ksefNumber());
-                        continue;
-                    }
-                    Path xmlPath = plan.fullContent() ? matchInvoiceXml(dir, typed, dispatched) : null;
-                    sink.accept(typed, metadata, xmlPath);
-                    seenKsefNumbers.add(metadata.ksefNumber());
-                    processed++;
-                    dispatched++;
-                }
-
-                // Commit-after-accept: only persist the checkpoint after every
-                // invoice in this package was accepted by the sink. If the
-                // sink threw, control already left this method and the
-                // checkpoint stays at the previous value; the next run will
-                // re-process this window.
-                OffsetDateTime nextCursor = pkg.continuationCursor();
-                boolean truncated = Boolean.TRUE.equals(pkg.isTruncated());
-                if (nextCursor != null && (cursor == null || !nextCursor.equals(cursor))) {
-                    store.save(subjectType, new SyncCheckpoint(nextCursor, truncated));
-                    cursor = nextCursor;
-                } else {
-                    LOGGER.debug("[sync {} window {}] cursor did not advance — stop", subjectType, windowIndex);
-                    break;
-                }
-            } catch (IOException ex) {
-                throw new KsefException("Failed to materialise sync window for " + subjectType, ex);
-            }
+            cursor = outcome.advancedCursor();
         }
 
         return processed;
+    }
+
+    private WindowOutcome processOneWindow(IncrementalSyncPlan plan,
+                                           InvoiceQuerySubjectType subjectType,
+                                           CheckpointStore store,
+                                           InvoiceSink sink,
+                                           OffsetDateTime cursor,
+                                           int windowIndex,
+                                           Set<String> seenKsefNumbers) {
+        InvoiceQueryBuilder query = subjectQuery(subjectType, plan.dateType(), cursor);
+        if (plan.to() != null) {
+            query.dateTo(plan.to());
+        }
+
+        try (PreparedInvoiceExport export = invoiceClient.prepareExport(query, plan.fullContent())) {
+            InvoiceExportStatus status = export.awaitReady();
+            InvoicePackage pkg = status.invoicePackage();
+            if (pkg == null || pkg.invoiceCount() == null || pkg.invoiceCount() == 0L) {
+                LOGGER.debug("[sync {} window {}] empty package — stop", subjectType, windowIndex);
+                return WindowOutcome.stop(0L);
+            }
+
+            Path windowDir = plan.outputDirectory()
+                    .resolve(subjectType.name().toLowerCase(Locale.ROOT))
+                    .resolve("window-" + windowIndex);
+            Files.createDirectories(windowDir);
+
+            ExportedInvoiceDirectory dir = export.downloadAndDecryptTo(status, windowDir);
+            List<InvoiceMetadata> metadatas = readMetadataJson(dir);
+            long dispatched = dispatchInvoices(metadatas, dir, plan.fullContent(), sink, seenKsefNumbers, subjectType);
+
+            // Commit-after-accept: only persist the checkpoint after every
+            // invoice in this package was accepted by the sink. If the
+            // sink threw, control already left this method and the
+            // checkpoint stays at the previous value; the next run will
+            // re-process this window.
+            OffsetDateTime nextCursor = pkg.continuationCursor();
+            boolean truncated = Boolean.TRUE.equals(pkg.isTruncated());
+            if (nextCursor != null && (cursor == null || !nextCursor.equals(cursor))) {
+                store.save(subjectType, new SyncCheckpoint(nextCursor, truncated));
+                return WindowOutcome.advance(dispatched, nextCursor);
+            }
+            LOGGER.debug("[sync {} window {}] cursor did not advance — stop", subjectType, windowIndex);
+            return WindowOutcome.stop(dispatched);
+        } catch (IOException ex) {
+            throw new KsefException("Failed to materialise sync window for " + subjectType, ex);
+        }
+    }
+
+    private long dispatchInvoices(List<InvoiceMetadata> metadatas,
+                                  ExportedInvoiceDirectory dir,
+                                  boolean fullContent,
+                                  InvoiceSink sink,
+                                  Set<String> seenKsefNumbers,
+                                  InvoiceQuerySubjectType subjectType) {
+        long dispatched = 0;
+        for (InvoiceMetadata metadata : metadatas) {
+            KsefNumber typed = parsableUnseenKsefNumber(metadata, seenKsefNumbers, subjectType);
+            if (typed == null) {
+                continue;
+            }
+            Path xmlPath = fullContent ? matchInvoiceXml(dir, typed, (int) dispatched) : null;
+            sink.accept(typed, metadata, xmlPath);
+            seenKsefNumbers.add(metadata.ksefNumber());
+            dispatched++;
+        }
+        return dispatched;
+    }
+
+    /**
+     * Returns the parsed {@link KsefNumber} for {@code metadata}, or
+     * {@code null} when the entry should be skipped (missing number,
+     * already seen, or malformed). Logs a warning for malformed numbers
+     * so the operator notices server-side data quality issues.
+     */
+    private KsefNumber parsableUnseenKsefNumber(InvoiceMetadata metadata,
+                                                 Set<String> seenKsefNumbers,
+                                                 InvoiceQuerySubjectType subjectType) {
+        String raw = metadata.ksefNumber();
+        if (raw == null || seenKsefNumbers.contains(raw)) {
+            return null;
+        }
+        try {
+            return KsefNumber.parse(raw);
+        } catch (IllegalArgumentException badNumber) {
+            LOGGER.warn("[sync {}] skipping invoice with invalid KSeF number: {}", subjectType, raw);
+            return null;
+        }
+    }
+
+    /**
+     * Outcome of processing a single sync window. {@code advancedCursor}
+     * is {@code null} when the loop should stop (empty package or
+     * non-advancing cursor).
+     */
+    private record WindowOutcome(long processedDelta, OffsetDateTime advancedCursor) {
+        static WindowOutcome advance(long delta, OffsetDateTime cursor) {
+            return new WindowOutcome(delta, cursor);
+        }
+
+        static WindowOutcome stop(long delta) {
+            return new WindowOutcome(delta, null);
+        }
     }
 
     private List<InvoiceMetadata> readMetadataJson(ExportedInvoiceDirectory dir) {

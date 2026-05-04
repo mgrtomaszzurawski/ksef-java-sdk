@@ -41,26 +41,31 @@ class PreparedBatchPackageTest {
     @Test
     void constructor_whenAesKeyWrongLength_throwsIllegalArgument() {
         byte[] tooShort = new byte[AES_KEY_LENGTH - 1];
-        assertThrows(IllegalArgumentException.class, () -> new PreparedBatchPackage(
-                makeSpec(1), tooShort, filledBytes(IV_LENGTH, FILL_IV_BYTE),
-                List.of(new byte[]{1})));
+        BatchFileSpec spec = makeSpec(1);
+        byte[] iv = filledBytes(IV_LENGTH, FILL_IV_BYTE);
+        List<byte[]> parts = List.of(new byte[]{1});
+        assertThrows(IllegalArgumentException.class,
+                () -> new PreparedBatchPackage(spec, tooShort, iv, parts));
     }
 
     @Test
     void constructor_whenIvWrongLength_throwsIllegalArgument() {
         byte[] tooShort = new byte[IV_LENGTH - 1];
-        assertThrows(IllegalArgumentException.class, () -> new PreparedBatchPackage(
-                makeSpec(1), filledBytes(AES_KEY_LENGTH, FILL_KEY_BYTE), tooShort,
-                List.of(new byte[]{1})));
+        BatchFileSpec spec = makeSpec(1);
+        byte[] aesKey = filledBytes(AES_KEY_LENGTH, FILL_KEY_BYTE);
+        List<byte[]> parts = List.of(new byte[]{1});
+        assertThrows(IllegalArgumentException.class,
+                () -> new PreparedBatchPackage(spec, aesKey, tooShort, parts));
     }
 
     @Test
     void constructor_whenPartCountMismatch_throwsIllegalArgument() {
         BatchFileSpec spec = makeSpec(2);
+        byte[] aesKey = filledBytes(AES_KEY_LENGTH, FILL_KEY_BYTE);
+        byte[] iv = filledBytes(IV_LENGTH, FILL_IV_BYTE);
         List<byte[]> onePart = List.of(new byte[]{1});
-        assertThrows(IllegalArgumentException.class, () -> new PreparedBatchPackage(
-                spec, filledBytes(AES_KEY_LENGTH, FILL_KEY_BYTE),
-                filledBytes(IV_LENGTH, FILL_IV_BYTE), onePart));
+        assertThrows(IllegalArgumentException.class,
+                () -> new PreparedBatchPackage(spec, aesKey, iv, onePart));
     }
 
     @Test

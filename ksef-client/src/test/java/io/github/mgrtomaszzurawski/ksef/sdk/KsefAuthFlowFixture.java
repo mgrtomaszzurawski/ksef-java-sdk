@@ -22,11 +22,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
  * Test-only fixture that drives the full KSeF token-based authentication
  * flow against a WireMock instance.
  *
- * <p>Used by SDK tests that previously relied on the deprecated
- * {@code KsefClient.activateSessionForTests(...)} seam to skip auth.
- * Per ADR-020 the seam is gone in 1.0.0 and tests drive the real
- * challenge → encrypt-token → poll → redeem flow against WireMock
- * stubs.
+ * <p>Used by SDK tests that need an authenticated {@link KsefClient}
+ * without poking internals. Per ADR-020 the SDK exposes no test seam
+ * for skipping auth, so tests drive the real challenge → encrypt-token
+ * → poll → redeem flow against WireMock stubs.
  *
  * <p>Stubs the five auth endpoints plus the
  * {@code /security/public-key-certificates} endpoint that the SDK

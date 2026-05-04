@@ -117,10 +117,7 @@ public final class KsefBatchSession implements AutoCloseable {
      * @apiNote Internal — constructed by {@code KsefClient.openBatchSession(...)}.
      * The {@link SessionClient} parameter type lives in a non-exported package, so
      * this constructor is not callable from consumer code despite being public.
-     * @deprecated For SDK-internal construction only. Consumers must obtain a
-     *     batch session via {@code KsefClient.openBatchSession(...)}.
      */
-    @Deprecated(since = "0.1.0")
     public KsefBatchSession(SessionClient sessionClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests) {
         this(sessionClient, null, referenceNumber, partUploadRequests, null);
@@ -132,9 +129,7 @@ public final class KsefBatchSession implements AutoCloseable {
      * for upload + cleanup.
      *
      * @apiNote Internal — see the alternative-overload note above.
-     * @deprecated For SDK-internal construction only.
      */
-    @Deprecated(since = "0.1.0")
     public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage) {
@@ -195,7 +190,7 @@ public final class KsefBatchSession implements AutoCloseable {
         // budget is about to be exceeded; this surfaces a clean SDK error
         // instead of a server timeout/rejection mid-upload.
         long startNanos = System.nanoTime();
-        long budgetNanos = (long) partUploadRequests.size() * UPLOAD_BUDGET_NANOS_PER_PART;
+        long budgetNanos = partUploadRequests.size() * UPLOAD_BUDGET_NANOS_PER_PART;
         for (int index = 0; index < partUploadRequests.size(); index++) {
             long elapsedNanos = System.nanoTime() - startNanos;
             if (elapsedNanos > budgetNanos) {

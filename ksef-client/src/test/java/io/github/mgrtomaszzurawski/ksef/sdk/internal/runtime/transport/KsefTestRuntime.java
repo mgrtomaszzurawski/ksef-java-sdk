@@ -27,10 +27,8 @@ import org.openapitools.jackson.nullable.JsonNullableModule;
  * internal tests reach it because their classpath includes the same
  * module's {@code internal} packages at compile-and-test time.
  *
- * <p>Replaces the previous {@code KsefClientInternals.runtime(...)} path
- * which lived in the exported {@code sdk} package and leaked the
- * internal {@code HttpRuntime} type. Per ADR-020 the seam was always
- * meant to live in non-exported test infrastructure.
+ * <p>Lives in non-exported test infrastructure per ADR-020 — the
+ * SDK's main artifact has no public seam exposing {@code HttpRuntime}.
  */
 public final class KsefTestRuntime {
 
@@ -47,13 +45,23 @@ public final class KsefTestRuntime {
      * state without driving the full WireMock auth flow.
      */
     public static HttpRuntime forWireMock(WireMockRuntimeInfo wmInfo) {
-        return forWireMock(wmInfo, RetryPolicy.builder().enabled(false).build());
+        return forWireMock(wmInfo, RetryPolicy.builder().enabled(false).build(), FeaturePolicy.defaults());
     }
 
     /**
      * Construct a fresh {@link HttpRuntime} with a custom retry policy.
      */
     public static HttpRuntime forWireMock(WireMockRuntimeInfo wmInfo, RetryPolicy retryPolicy) {
+        return forWireMock(wmInfo, retryPolicy, FeaturePolicy.defaults());
+    }
+
+    /**
+     * Construct a fresh {@link HttpRuntime} with custom retry and feature
+     * policies. Used by tests asserting feature-header behaviour.
+     */
+    public static HttpRuntime forWireMock(WireMockRuntimeInfo wmInfo,
+                                          RetryPolicy retryPolicy,
+                                          FeaturePolicy featurePolicy) {
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .registerModule(new JsonNullableModule())
@@ -68,6 +76,6 @@ public final class KsefTestRuntime {
                 DEFAULT_READ_TIMEOUT,
                 () -> { /* no reauth in unit tests */ },
                 () -> { /* no proactive auth in unit tests */ },
-                FeaturePolicy.defaults());
+                featurePolicy);
     }
 }

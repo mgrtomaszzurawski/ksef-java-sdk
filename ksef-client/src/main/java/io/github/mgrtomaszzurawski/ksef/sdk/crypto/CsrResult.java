@@ -54,4 +54,9 @@ public record CsrResult(byte[] pkcs10Der, KeyPair keyPair) {
     public int hashCode() {
         return Objects.hash(Arrays.hashCode(pkcs10Der), keyPair);
     }
+
+    @Override
+    public String toString() {
+        return "CsrResult[pkcs10Der=" + pkcs10Der.length + " bytes, keyPair=" + keyPair + "]";
+    }
 }

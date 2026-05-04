@@ -46,7 +46,6 @@ public record KsefNumber(String value) {
     private static final int NIP_LENGTH = 10;
     private static final int DATE_LENGTH = 8;
     private static final int TECHNICAL_LENGTH = 12;
-    private static final int CHECKSUM_LENGTH = 2;
     private static final int NIP_END = NIP_LENGTH;
     private static final int DATE_START = NIP_LENGTH + 1;
     private static final int DATE_END = DATE_START + DATE_LENGTH;
@@ -91,13 +90,10 @@ public record KsefNumber(String value) {
         validateLength(value);
         validateSeparators(value);
         validateNip(value);
-        LocalDate ignored = parseDate(value);
+        parseDate(value);
         validateTechnical(value);
         validateChecksumFormat(value);
         validateChecksumValue(value);
-        // ignored is computed only to enforce date validity; the parsed value
-        // is exposed lazily via acceptanceDate() to keep the record state
-        // identical to its canonical String representation.
     }
 
     /**
@@ -209,9 +205,9 @@ public record KsefNumber(String value) {
         for (byte b : data) {
             crc ^= b & CRC_BYTE_MASK;
             for (int i = 0; i < BITS_PER_BYTE; i++) {
-                crc = (crc & CRC_HIGH_BIT) != 0
-                        ? ((crc << 1) ^ CRC_POLYNOMIAL) & CRC_BYTE_MASK
-                        : (crc << 1) & CRC_BYTE_MASK;
+                crc = (crc & CRC_HIGH_BIT) == 0
+                        ? (crc << 1) & CRC_BYTE_MASK
+                        : ((crc << 1) ^ CRC_POLYNOMIAL) & CRC_BYTE_MASK;
             }
         }
         return String.format(Locale.ROOT, CRC_FORMAT, crc);

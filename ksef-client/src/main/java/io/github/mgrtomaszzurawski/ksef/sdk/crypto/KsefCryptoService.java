@@ -14,7 +14,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.GeneralSecurityException;
 import java.security.spec.ECGenParameterSpec;
@@ -53,6 +52,8 @@ public final class KsefCryptoService {
     private static final String ERR_KEY_GEN_UNAVAILABLE = "Key generation algorithm not available";
     private static final String ERR_RSA_KEY_SIZE_TOO_SMALL =
             "RSA key size must be >= " + RSA_MIN_KEY_SIZE + " bits per KSeF spec";
+    private static final String ERR_MATERIAL_NULL = "material must not be null";
+    private static final String ERR_IN_NULL = "in must not be null";
 
     /**
      * Generate a fresh AES-256 key + 16-byte IV pair via secure random.
@@ -67,7 +68,7 @@ public final class KsefCryptoService {
      * with the plaintext IV.
      */
     public KsefEncryptionInfo encryptKey(EncryptionMaterial material, PublicKey ksefPublicKey) {
-        Objects.requireNonNull(material, "material must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
         Objects.requireNonNull(ksefPublicKey, "ksefPublicKey must not be null");
         byte[] wrapped = CryptoService.encryptWithPublicKey(material.aesKey(), ksefPublicKey);
         return new KsefEncryptionInfo(wrapped, material.initVector());
@@ -79,7 +80,7 @@ public final class KsefCryptoService {
      */
     public byte[] encrypt(byte[] plaintext, EncryptionMaterial material) {
         Objects.requireNonNull(plaintext, "plaintext must not be null");
-        Objects.requireNonNull(material, "material must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
         return CryptoService.encryptAes(plaintext, material.aesKey(), material.initVector());
     }
 
@@ -89,7 +90,7 @@ public final class KsefCryptoService {
      */
     public byte[] decrypt(byte[] ciphertext, EncryptionMaterial material) {
         Objects.requireNonNull(ciphertext, "ciphertext must not be null");
-        Objects.requireNonNull(material, "material must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
         return CryptoService.decryptAes(ciphertext, material.aesKey(), material.initVector());
     }
 
@@ -98,9 +99,9 @@ public final class KsefCryptoService {
      * AES-256-CBC + PKCS#7. Closes neither stream.
      */
     public void encryptStream(InputStream in, OutputStream out, EncryptionMaterial material) throws IOException {
-        Objects.requireNonNull(in, "in must not be null");
+        Objects.requireNonNull(in, ERR_IN_NULL);
         Objects.requireNonNull(out, "out must not be null");
-        Objects.requireNonNull(material, "material must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
         Cipher cipher = CryptoService.newAesEncryptCipher(material.aesKey(), material.initVector());
         try (CipherOutputStream cipherOut = new CipherOutputStream(new NonClosingOutputStream(out), cipher)) {
             transfer(in, cipherOut);
@@ -112,18 +113,15 @@ public final class KsefCryptoService {
      * AES-256-CBC + PKCS#7. Closes neither stream.
      */
     public void decryptStream(InputStream in, OutputStream out, EncryptionMaterial material) throws IOException {
-        Objects.requireNonNull(in, "in must not be null");
+        Objects.requireNonNull(in, ERR_IN_NULL);
         Objects.requireNonNull(out, "out must not be null");
-        Objects.requireNonNull(material, "material must not be null");
+        Objects.requireNonNull(material, ERR_MATERIAL_NULL);
         Cipher cipher = CryptoService.newAesDecryptCipher(material.aesKey(), material.initVector());
         // CipherInputStream.close() would close the wrapped caller-provided
         // input stream. Wrapping with NonClosingInputStream preserves the
         // documented contract ("Closes neither stream") for both directions.
-        CipherInputStream cipherIn = new CipherInputStream(new NonClosingInputStream(in), cipher);
-        try {
+        try (CipherInputStream cipherIn = new CipherInputStream(new NonClosingInputStream(in), cipher)) {
             transfer(cipherIn, out);
-        } finally {
-            cipherIn.close();
         }
     }
 
@@ -145,15 +143,16 @@ public final class KsefCryptoService {
      * stream; does not close it.
      */
     public FileMetadata computeFileMetadata(InputStream in) throws IOException {
-        Objects.requireNonNull(in, "in must not be null");
+        Objects.requireNonNull(in, ERR_IN_NULL);
         try {
             MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
             byte[] buffer = new byte[STREAM_BUFFER_BYTES];
             long size = 0;
-            int read;
-            while ((read = in.read(buffer)) >= 0) {
+            int read = in.read(buffer);
+            while (read >= 0) {
                 digest.update(buffer, 0, read);
                 size += read;
+                read = in.read(buffer);
             }
             return new FileMetadata(size, digest.digest());
         } catch (NoSuchAlgorithmException ex) {
@@ -225,9 +224,10 @@ public final class KsefCryptoService {
 
     private static void transfer(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[STREAM_BUFFER_BYTES];
-        int read;
-        while ((read = in.read(buffer)) >= 0) {
+        int read = in.read(buffer);
+        while (read >= 0) {
             out.write(buffer, 0, read);
+            read = in.read(buffer);
         }
     }
 

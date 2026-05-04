@@ -256,13 +256,14 @@ public final class HttpSupport {
      */
     public byte[] getAuthenticatedBytes(String path, String token, String operationName) {
         return runtime.retryHandler().execute(() -> sendAuthenticatedBytes(
-                bearer -> HttpRequest.newBuilder()
-                        .uri(uri(path))
-                        .timeout(runtime.readTimeout())
-                        .header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS)
-                        .header(AUTHORIZATION, BEARER_PREFIX + bearer)
-                        .GET()
-                        .build(),
+                bearer -> {
+                    HttpRequest.Builder builder = HttpRequest.newBuilder()
+                            .uri(uri(path))
+                            .timeout(runtime.readTimeout())
+                            .header(AUTHORIZATION, BEARER_PREFIX + bearer);
+                    applyFeatureHeaders(builder, path);
+                    return builder.GET().build();
+                },
                 token), operationName);
     }
 

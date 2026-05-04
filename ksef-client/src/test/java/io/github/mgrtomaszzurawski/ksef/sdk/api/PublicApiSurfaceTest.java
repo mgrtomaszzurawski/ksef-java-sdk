@@ -57,14 +57,6 @@ class PublicApiSurfaceTest {
     private static final String INTERNAL_PACKAGE = "io.github.mgrtomaszzurawski.ksef.sdk.internal";
     private static final String GENERATED_PACKAGE = "io.github.mgrtomaszzurawski.ksef.client";
     private static final String RAW_SUFFIX = "Raw";
-    /**
-     * Allow-list — types intentionally documented as test seams in 1.0.0.
-     * Tracked for removal in 1.1.0 per
-     * {@code context/TESTKIT-MIGRATION-PLAYBOOK-2026-05-03-1850.md}
-     * and ADR-020. Each entry must be {@code @Deprecated(forRemoval = true)}.
-     */
-    private static final Set<String> ALLOW_LIST_DEPRECATED_SEAMS = Set.of(
-            "io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals");
 
     @Test
     void publicSdkSurface_doesNotLeakInternalOrRawTypes() throws Exception {
@@ -72,9 +64,6 @@ class PublicApiSurfaceTest {
         List<String> violations = new ArrayList<>();
 
         for (Class<?> cls : publicSdkClasses) {
-            if (ALLOW_LIST_DEPRECATED_SEAMS.contains(cls.getName())) {
-                continue;
-            }
             checkClass(cls, violations);
         }
 

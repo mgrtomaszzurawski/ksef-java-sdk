@@ -50,4 +50,9 @@ public record FileMetadata(long size, byte[] sha256) {
     public int hashCode() {
         return Objects.hash(size, Arrays.hashCode(sha256));
     }
+
+    @Override
+    public String toString() {
+        return "FileMetadata[size=" + size + ", sha256=" + java.util.HexFormat.of().formatHex(sha256) + "]";
+    }
 }

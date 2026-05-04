@@ -206,9 +206,11 @@ public final class KsefClient implements AutoCloseable {
         }
         doAuthenticate();
         authenticated = true;
-        KsefIdentifier identifier = credentials.identifier();
-        LOGGER.debug(LOG_AUTHENTICATED, identifier.type(),
-                IdentifierMasking.maskTail(identifier.value()));
+        if (LOGGER.isDebugEnabled()) {
+            KsefIdentifier identifier = credentials.identifier();
+            LOGGER.debug(LOG_AUTHENTICATED, identifier.type(),
+                    IdentifierMasking.maskTail(identifier.value()));
+        }
     }
 
     /**
@@ -352,44 +354,6 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Seed the session context directly with an existing access token,
-     * reference number, and (optional) refresh token, bypassing the full
-     * challenge/redeem flow.
-     *
-     * <p>This is the supported test-only seam for unit tests that mock the
-     * KSeF API surface but still need a {@link KsefClient} that thinks it is
-     * authenticated. It is also useful for advanced consumers who already
-     * possess a valid bearer token from an out-of-band flow (e.g. token
-     * persisted from a previous session).
-     *
-     * <p>Marks the client as authenticated; subsequent calls to
-     * {@link #authenticate()} are no-ops until {@link #terminateAuth()} or a
-     * 401 reauth is triggered.
-     *
-     * @apiNote SDK-internal / advanced. Most consumers should call
-     *     {@link #authenticate()} instead.
-     * @param accessToken the bearer access token
-     * @param referenceNumber the auth-session reference number returned by
-     *     {@code /auth/token/redeem}
-     * @param refreshToken the refresh token, or {@code null} when none
-     * @deprecated Test/advanced seam — to be moved into a separate
-     *     {@code ksef-client-testkit} artifact in 0.2.x. Will be removed
-     *     from the main module before stable 1.0; do not depend on this
-     *     in consumer code.
-     */
-    @Deprecated(since = "0.1.0", forRemoval = true)
-    public synchronized void activateSessionForTests(String accessToken,
-                                                     String referenceNumber,
-                                                     String refreshToken) {
-        ensureOpen();
-        sessionContext.activate(accessToken, referenceNumber, null);
-        if (refreshToken != null) {
-            sessionContext.storeRefreshToken(refreshToken);
-        }
-        authenticated = true;
-    }
-
-    /**
      * Terminate the current authentication session.
      * Clears all session state. After calling this, {@link #authenticate()} must be
      * called again (explicitly or lazily) before any further operations.
@@ -400,6 +364,88 @@ public final class KsefClient implements AutoCloseable {
         authenticated = false;
         publicKeyCache.clear();
         LOGGER.debug(LOG_TERMINATED);
+    }
+
+    /**
+     * List active auth sessions for this consumer's KSeF context. Maps the
+     * raw {@code GET /auth/sessions} response into the public
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession}
+     * records.
+     */
+    public synchronized java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession> listAuthSessions() {
+        ensureOpen();
+        ensureAuthenticated();
+        return authClient.listSessions().items().stream()
+                .map(item -> new io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession(
+                        item.referenceNumber(),
+                        item.startDate(),
+                        item.authenticationMethodInfo() == null
+                                ? null : item.authenticationMethodInfo().displayName(),
+                        item.status(),
+                        Boolean.TRUE.equals(item.tokenRedeemed()),
+                        item.lastTokenRefreshDate(),
+                        item.refreshTokenValidUntil(),
+                        Boolean.TRUE.equals(item.current())))
+                .toList();
+    }
+
+    /**
+     * Terminate a specific auth session by its reference number. Useful
+     * for cleaning up orphaned sessions or terminating a session other
+     * than the current one. Use {@link #terminateAuth()} for the
+     * current session.
+     */
+    public synchronized void terminateAuthSession(String referenceNumber) {
+        ensureOpen();
+        ensureAuthenticated();
+        authClient.terminateSession(java.util.Objects.requireNonNull(referenceNumber, "referenceNumber must not be null"));
+    }
+
+    /**
+     * Manually trigger a refresh of the current access token using the
+     * stored refresh token (if any). The SDK normally does this
+     * automatically on HTTP 401; consumers can call this proactively
+     * before issuing a long-running batch to ensure the token won't
+     * expire mid-flow.
+     *
+     * @throws io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException
+     *     if no refresh token is available or the refresh endpoint
+     *     itself returns a non-success status. In that case the caller
+     *     should re-authenticate via {@link #authenticate()}.
+     */
+    public synchronized void refreshAuthToken() {
+        ensureOpen();
+        if (!tryRefreshToken()) {
+            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException(
+                    "Refresh-token unavailable or refresh endpoint failed; call authenticate() to re-establish session",
+                    null, 0, null);
+        }
+    }
+
+    /**
+     * Return the cached KSeF public-key certificates. The SDK fetches
+     * these once on first use (for invoice / token encryption) and
+     * caches them per JVM. Useful for consumer-side audit or display.
+     */
+    public synchronized java.util.List<PublicKeyCertificate> publicKeyCertificates() {
+        ensureOpen();
+        return securityClient.getPublicKeyCertificates();
+    }
+
+    /**
+     * Return the current bearer access token (the JWT the SDK injects in
+     * the {@code Authorization} header). Intended for advanced consumers
+     * that need to issue HTTP requests against KSeF outside the SDK's
+     * own transport plumbing (for example, probing test/diagnostic
+     * endpoints, or feeding tokens into a third-party HTTP framework).
+     *
+     * <p>Returns {@code null} when the client is not authenticated.
+     * Triggers lazy authentication if needed.
+     */
+    public synchronized String bearerToken() {
+        ensureOpen();
+        ensureAuthenticated();
+        return sessionContext.token();
     }
 
     /**
@@ -524,14 +570,6 @@ public final class KsefClient implements AutoCloseable {
     /** Configured KSeF environment for this client. */
     public KsefEnvironment environment() { return environment; }
 
-    /**
-     * Package-private accessor for the internal {@link HttpRuntime} adapter.
-     * Used by {@link KsefClientInternals} (in the same package) to expose the
-     * runtime to SDK-internal unit tests. Domain client implementations
-     * receive {@link HttpRuntime} directly via their constructors and never
-     * call this method.
-     */
-    HttpRuntime internalRuntime() { return runtime; }
 
     @Override
     public void close() {

@@ -101,9 +101,9 @@ public final class SendInvoiceBuilder {
         byte[] encryptedHash = computeSha256(encryptedContent);
         return new SendInvoiceRequest(
                 invoiceHash,
-                (long) invoiceContent.length,
+                invoiceContent.length,
                 encryptedHash,
-                (long) encryptedContent.length,
+                encryptedContent.length,
                 encryptedContent,
                 offlineMode,
                 hashOfCorrectedInvoice);

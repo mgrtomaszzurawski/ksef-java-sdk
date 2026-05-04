@@ -17,8 +17,9 @@ import java.util.Objects;
  * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}.
  *
  * @param cursor last successfully processed permanent-storage timestamp
- *     (advances by {@link InvoicePackage#continuationCursor()} on each
- *     window)
+ *     (advances by
+ *     {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage#continuationCursor()}
+ *     on each window)
  * @param lastTruncated whether the last window was truncated
  */
 public record SyncCheckpoint(OffsetDateTime cursor, boolean lastTruncated) {

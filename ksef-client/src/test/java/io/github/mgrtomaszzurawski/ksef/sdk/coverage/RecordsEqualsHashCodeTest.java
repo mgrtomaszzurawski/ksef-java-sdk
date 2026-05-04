@@ -64,9 +64,9 @@ class RecordsEqualsHashCodeTest {
                 CERT_NAME_RIGHT, KsefCertificateType.OFFLINE, FAKE_CSR_OTHER, null);
         assertEquals(left, leftCopy);
         assertEquals(left.hashCode(), leftCopy.hashCode());
-        assertNotEquals(left, right);
-        assertNotEquals(left, null);
-        assertNotEquals(left, "not-a-record");
+        assertNotEquals(right, left);
+        assertNotEquals(null, left);
+        assertNotEquals("not-a-record", left);
         assertEquals(left, left);
     }
 
@@ -120,8 +120,8 @@ class RecordsEqualsHashCodeTest {
         assertEquals(left, left);
         assertEquals(left, right);
         assertEquals(left.hashCode(), right.hashCode());
-        assertNotEquals(left, null);
-        assertNotEquals(left, "not-a-record");
+        assertNotEquals(null, left);
+        assertNotEquals("not-a-record", left);
     }
 
     @Test

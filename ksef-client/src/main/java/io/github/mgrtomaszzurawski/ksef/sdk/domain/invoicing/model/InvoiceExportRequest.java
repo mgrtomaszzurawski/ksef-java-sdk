@@ -52,4 +52,12 @@ public record InvoiceExportRequest(
                 Arrays.hashCode(encryptedSymmetricKey),
                 Arrays.hashCode(initVector));
     }
+
+    @Override
+    public String toString() {
+        return "InvoiceExportRequest[encryptedSymmetricKey=" + encryptedSymmetricKey.length + " bytes"
+                + ", initVector=" + initVector.length + " bytes"
+                + ", onlyMetadata=" + onlyMetadata
+                + ", filters=" + filters + "]";
+    }
 }

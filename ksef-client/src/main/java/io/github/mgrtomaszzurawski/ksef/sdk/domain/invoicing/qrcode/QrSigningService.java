@@ -140,7 +140,7 @@ public final class QrSigningService {
             sourceOffset = source.length - width;
         }
         int copyLen = Math.min(source.length - sourceOffset, width);
-        int destStart = destOffset + (width - copyLen);
+        int destStart = destOffset + width - copyLen;
         System.arraycopy(source, sourceOffset, dest, destStart, copyLen);
     }
 }

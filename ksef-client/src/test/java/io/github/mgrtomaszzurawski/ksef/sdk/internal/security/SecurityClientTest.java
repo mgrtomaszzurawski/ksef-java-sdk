@@ -6,14 +6,11 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.security;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -49,16 +46,15 @@ class SecurityClientTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(PUBLIC_KEY_CERTS_RESPONSE)));
 
-        try (KsefClient ksef = createClient(wmInfo)) {
-            SecurityClient securityClient = new SecurityClient(KsefClientInternals.runtime(ksef));
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        SecurityClient securityClient = new SecurityClient(runtime);
 
-            // when
-            List<PublicKeyCertificate> certs = securityClient.getPublicKeyCertificates();
+        // when
+        List<PublicKeyCertificate> certs = securityClient.getPublicKeyCertificates();
 
-            // then
-            assertFalse(certs.isEmpty());
-            assertEquals(1, certs.size());
-        }
+        // then
+        assertFalse(certs.isEmpty());
+        assertEquals(1, certs.size());
     }
 
     @Test
@@ -69,18 +65,10 @@ class SecurityClientTest {
                         .withStatus(TestHttpConstants.HTTP_SERVER_ERROR)
                         .withBody("{\"error\":\"Internal Server Error\"}")));
 
-        try (KsefClient ksef = createClient(wmInfo)) {
-            SecurityClient securityClient = new SecurityClient(KsefClientInternals.runtime(ksef));
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        SecurityClient securityClient = new SecurityClient(runtime);
 
-            // then
-            assertThrows(KsefServerException.class, securityClient::getPublicKeyCertificates);
-        }
-    }
-
-    private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {
-        return KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
-                .credentials(new KsefTokenCredentials("test-token", "1234567890"))
-                .retryPolicy(RetryPolicy.builder().enabled(false).build())
-                .build();
+        // then
+        assertThrows(KsefServerException.class, securityClient::getPublicKeyCertificates);
     }
 }

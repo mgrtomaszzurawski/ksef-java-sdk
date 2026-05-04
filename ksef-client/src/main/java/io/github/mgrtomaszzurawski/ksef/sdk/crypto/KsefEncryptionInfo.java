@@ -56,4 +56,10 @@ public record KsefEncryptionInfo(byte[] encryptedSymmetricKey, byte[] initVector
     public int hashCode() {
         return Objects.hash(Arrays.hashCode(encryptedSymmetricKey), Arrays.hashCode(initVector));
     }
+
+    @Override
+    public String toString() {
+        return "KsefEncryptionInfo[encryptedSymmetricKey=" + encryptedSymmetricKey.length
+                + " bytes, initVector=" + initVector.length + " bytes]";
+    }
 }

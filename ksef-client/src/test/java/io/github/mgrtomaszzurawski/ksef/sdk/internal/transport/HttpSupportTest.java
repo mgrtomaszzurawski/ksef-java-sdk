@@ -7,16 +7,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.transport;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
@@ -46,7 +43,6 @@ class HttpSupportTest {
     private static final String TEST_CHALLENGE = "20260404-CR-AAAAAAAAAA-BBBBBBBBBB-CC";
     private static final String TEST_TOKEN = "test-token";
     private static final String BEARER_TOKEN = "Bearer test-token";
-    private static final String CREDENTIALS_NIP = "1234567890";
     private static final String OPERATION_GET = "testGet";
     private static final String OPERATION_POST = "testPost";
     private static final String OPERATION_DELETE = "testDelete";
@@ -202,10 +198,7 @@ class HttpSupportTest {
     }
 
     private static HttpSupport createHttpSupport(WireMockRuntimeInfo wmInfo) {
-        KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
-                .credentials(new KsefTokenCredentials(TEST_TOKEN, CREDENTIALS_NIP))
-                .retryPolicy(RetryPolicy.builder().enabled(false).build())
-                .build();
-        return new HttpSupport(KsefClientInternals.runtime(ksef));
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        return new HttpSupport(runtime);
     }
 }

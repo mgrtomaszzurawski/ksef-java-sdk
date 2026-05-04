@@ -21,14 +21,12 @@ import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClientInternals;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,7 +61,6 @@ public final class SessionRunner implements DemoRunner {
     private static final String OP_UPO_BY_KSEF = "getUpoByKsefNumber";
     private static final String OP_STALE_SESSION_RECOVERY = "staleSessionRecovery";
 
-    private static final String SKIP_NOT_FULL = "FULL mode only — sends a real invoice";
     private static final String SKIP_NO_KSEF_NUMBER =
             "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
     private static final String FAIL_UPO_BYTES_DIFFER =
@@ -352,8 +349,7 @@ public final class SessionRunner implements DemoRunner {
         context.setInvoiceKsefNumber(ksefNumber);
 
         try {
-            byte[] upoByKsef = new SessionClient(KsefClientInternals.runtime(context.client())).getUpoByKsefNumber(
-                    session.referenceNumber(), ksefNumber);
+            byte[] upoByKsef = session.upoByKsefNumber(ksefNumber);
             LOGGER.info(LOG_UPO_BY_KSEF_RETRIEVED, NAME, upoByKsef.length);
 
             if (upoByInvoiceRef.length > 0 && !Arrays.equals(upoByInvoiceRef, upoByKsef)) {
