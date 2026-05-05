@@ -213,6 +213,91 @@ them as typed errors so the consumer can react.
   in the audit; cryptographic primitives are exercised through the
   public facade tests.
 
+### Final-stretch 1.0.0 fixes (2026-05-04 to 2026-05-05)
+
+Workflow-correctness blockers (Codex F1-F8 across two review rounds):
+
+- **`SendInvoiceCommand.Offline` + `KsefSession.sendOffline(byte[])`** —
+  public offline-mode invoice send (offline24 / offline-niedostępność /
+  awaryjny). Sets `offlineMode=true` on the wire without requiring
+  technical-correction semantics.
+- **`BatchSessionOptions(boolean offlineMode)`** — required parameter
+  on every batch-open public method (`openBatchSession` ×2,
+  `openBatchSessionFromFiles`). Static factories
+  `BatchSessionOptions.online()` / `.offline()`.
+- **`InvoiceClientImpl.queryAllMetadata` truncation algorithm** —
+  rewritten per spec (`przyrostowe-pobieranie-faktur.md`):
+  `pageOffset++` for `hasMore && !isTruncated`; reset `pageOffset` and
+  advance `dateRange.from` to last record's date for `isTruncated`.
+  Throws `KsefException` instead of silent partial data when the
+  truncated page lacks a usable cursor.
+- **`PermissionClient.queryAll*`, `TokenClient.listAll`,
+  `CertificateClient.queryAll`** — abstract on the interface;
+  compile-enforced full pagination contract.
+- **`KsefCryptoService.parsePrivateKey(byte[])` /
+  `parseCertificate(byte[])`** — public PEM/DER parsers (PKCS#8 +
+  X.509). Path overloads. Legacy PKCS#1 / SEC1 / encrypted PKCS#8
+  rejected with diagnostic pointing at `openssl pkcs8`.
+- **`AuthorizationPolicy(ip4Addresses, ip4Ranges, ip4Masks)`** — public
+  IP allow-list policy with full OpenAPI `AllowedIps` shape (max 10
+  per kind, regex-validated). Surfaced via
+  `KsefCredentials.authorizationPolicy()` default + 3-arg
+  `KsefTokenCredentials` canonical constructor. `AuthClient`
+  translates to `AllowedIpsRaw`.
+- **`KsefSession.validUntil()` / `KsefBatchSession.validUntil()` +
+  `timeToExpiry(Clock)`** — open-response `validUntil` retained on
+  the handle; `Optional<Duration>` helper for clock-relative remaining
+  budget.
+- **`KsefSessionCooldownException`** — typed exception for the
+  ~30-60 s post-termination cooldown observed during pre-1.0
+  validation. Public `TYPICAL_COOLDOWN`, `COOLDOWN_STATUS_CODE`,
+  `isCooldownStatus(int)` predicate, `suggestedRetryAfter()`.
+- **`SendInvoiceBuilder` payload-size guard** — fail-fast
+  `IllegalArgumentException` when invoiceXml exceeds the spec
+  3 MiB max-with-attachments limit; prevents needless encrypt-and-post
+  round-trips.
+- **`InvoiceClient.exportInvoices(InvoiceExportBuilder)`** — removed
+  `@Deprecated`, repositioned as Tier-3 advanced API per ADR-021.
+  Most consumers use `prepareExport(InvoiceQueryBuilder, boolean)`.
+
+Release-artefact polish:
+
+- **README.md** — `FormCode.FA2` → `FormCode.FA3` in both quickstart
+  samples; new "Form-code per environment" callout pointing at
+  `srodowiska.md` (DEMO/PROD: FA(3) only; TEST also accepts FA(2)).
+- **CHANGELOG.md:350** — `CERTIFICATES` → `CLEANUP` matching the
+  actual `DemoMode` enum.
+- **`InvoiceSink` Javadoc** — explicit cross-run idempotency contract:
+  `accept(...)` may receive the same `KsefNumber` again across
+  process restarts, overlapping HWM windows, or caller-driven retries;
+  implementations must persist by `KsefNumber` idempotently.
+- **`examples/IncrementalSync.java`** — new compile-checked example
+  demonstrating `InvoiceSyncClient.sync(...)` workflow.
+- **Maven Central artefact gate** — `maven-javadoc-plugin`
+  `excludePackageNames` covers `sdk.internal.*`, `client`, `client.*`,
+  `xml.*`. New `JavadocPackageGateTest` pins the documented surface
+  to JPMS exports.
+- **`@since 1.0.0`** on every public top-level type
+  (269 files mass-updated).
+- **SPDX-License-Identifier** on every `.java` (28 ksef-demo files
+  back-filled with the AGPL header tag).
+- **OWASP `dependency-check-maven`** plugin under new
+  `security-scan` Maven profile (manual run pre-release).
+
+Wire-shape regression coverage added:
+
+- `ManualValidationWireShapeTest` (6 tests): `restrictToPermanentStorageHwmDate`,
+  new query filters, sessions URL shape, permissions pagination,
+  truncation cursor.
+- `JavadocPackageGateTest` (2 tests): no internal/generated package
+  leakage; documented set == JPMS exports.
+- `KsefCryptoServiceTest` (4 new tests): PEM/DER parsers + legacy
+  rejection.
+- `AuthorizationPolicyTest` (7 tests): factories, validation matrix.
+- `SendInvoiceBuilderSizeGuardTest` (2 tests): at-limit, over-limit.
+- New offline-mode WireMock assertions in `KsefSessionTest` and
+  `KsefClientOpenBatchSessionTest`.
+
 ## [Unreleased]
 
 (future entries go here)
