@@ -77,6 +77,14 @@ public final class KsefXmlValidator {
                 KsefXmlValidator::loadSchemaOrThrow);
         java.util.List<String> issues = new java.util.ArrayList<>();
         Validator validator = schema.newValidator();
+        try {
+            // XXE hardening on the validator itself — the schema is already
+            // hardened, but each Validator instance also accepts these props.
+            validator.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            validator.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        } catch (SAXException ignored) {
+            // properties unsupported on some JAXP impls
+        }
         validator.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
             @Override
             public void warning(org.xml.sax.SAXParseException ex) {
@@ -128,6 +136,11 @@ public final class KsefXmlValidator {
             }
             SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            // XXE hardening: explicitly forbid the parser from resolving DTD
+            // declarations or external entities. The classpath resolver below
+            // is the only sanctioned source of external XSD references.
+            factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
             // FA(3) schema is dense enough to trip the JDK default 5_000-node
             // expansion ceiling. Raising it just for this factory is safe — the
             // parser does not visit external (network) entities thanks to the
