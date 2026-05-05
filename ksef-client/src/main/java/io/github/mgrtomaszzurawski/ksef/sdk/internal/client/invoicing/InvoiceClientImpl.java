@@ -67,6 +67,9 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String ERR_NULL_EXPORT = "exportBuilder must not be null";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
     private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
+    private static final String ERR_TRUNCATED_NO_CURSOR =
+            "queryAllMetadata: server returned isTruncated=true but no usable date cursor on the last record "
+                    + "for the selected dateType axis — cannot advance pagination safely";
     private static final String CERT_TYPE_X509 = "X.509";
     private static final int DEFAULT_MAX_RESULTS = 10000;
     /** Spec-defined maximum page size for {@code POST /invoices/query/metadata}. */
@@ -178,7 +181,12 @@ public final class InvoiceClientImpl implements InvoiceClient {
                 // infinite loops on busy taxpayers.
                 java.time.OffsetDateTime cursor = lastRecordCursor(page, query.build().dateType());
                 if (cursor == null) {
-                    break;
+                    // Codex 2026-05-05 F3 — fail-fast on internally
+                    // inconsistent server response: a truncated page that
+                    // doesn't supply the date axis we need cannot be
+                    // advanced. Returning partial data here would lie to
+                    // the caller about result completeness.
+                    throw new KsefException(ERR_TRUNCATED_NO_CURSOR, null);
                 }
                 filters.getDateRange().from(cursor);
                 pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;

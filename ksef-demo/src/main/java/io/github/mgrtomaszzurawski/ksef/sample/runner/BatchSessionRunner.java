@@ -22,6 +22,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +61,7 @@ public final class BatchSessionRunner implements DemoRunner {
         long openStart = System.currentTimeMillis();
         KsefBatchSession batch;
         try {
-            batch = context.client().openBatchSession(FormCode.FA2, invoiceXmls);
+            batch = context.client().openBatchSession(FormCode.FA2, invoiceXmls, BatchSessionOptions.online());
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_OPEN_BATCH, elapsed(openStart),
                     errorMessage(exception)));

@@ -12,6 +12,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
 import java.net.URI;
@@ -110,7 +111,7 @@ class KsefClientOpenBatchSessionTest {
                     new byte[AES_KEY_BYTES], new byte[AES_IV_BYTES], List.of(FAKE_PART_BYTES));
 
             // when
-            KsefBatchSession session = client.openBatchSession(FormCode.FA2, pkg);
+            KsefBatchSession session = client.openBatchSession(FormCode.FA2, pkg, BatchSessionOptions.online());
 
             // then — open request body must carry formCode, encryption, batchFile/fileParts.
             // This is the assertion Codex F1 said was missing — wire shape pinned.
@@ -163,7 +164,7 @@ class KsefClientOpenBatchSessionTest {
             // either way the request body that reached the server is what we
             // assert below.
             try {
-                client.openBatchSession(FormCode.FA2, List.of(invoice)).close();
+                client.openBatchSession(FormCode.FA2, List.of(invoice), BatchSessionOptions.online()).close();
             } catch (IllegalArgumentException countMismatch) {
                 // expected if the splitter happens to produce a different
                 // part count than the single-part stub returns.
@@ -180,6 +181,29 @@ class KsefClientOpenBatchSessionTest {
                             matching(".+")))
                     .withRequestBody(matchingJsonPath("$.batchFile.fileParts[0].ordinalNumber",
                             equalTo(String.valueOf(FIRST_PART_ORDINAL)))));
+        }
+    }
+
+    @Test
+    void openBatchSession_withOfflineOptions_postsOfflineModeTrue(WireMockRuntimeInfo wmInfo) {
+        // Codex 2026-05-05 F2 — passing BatchSessionOptions.offline() must
+        // surface offlineMode=true in the wire body. Online (the default
+        // factory) flips back to false and is also asserted to pin the
+        // mapping.
+        try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
+            stubSymmetricKeyEncryptionCert();
+            stubBatchOpenWithSinglePart();
+            stubBatchClose();
+
+            BatchFileSpec spec = new BatchFileSpec(BATCH_FILE_SIZE, FAKE_HASH, List.of(
+                    new BatchFileSpec.Part(FIRST_PART_ORDINAL, BATCH_PART_FILE_SIZE, FAKE_HASH)));
+            PreparedBatchPackage pkg = new PreparedBatchPackage(spec,
+                    new byte[AES_KEY_BYTES], new byte[AES_IV_BYTES], List.of(FAKE_PART_BYTES));
+
+            client.openBatchSession(FormCode.FA2, pkg, BatchSessionOptions.offline());
+
+            verify(postRequestedFor(urlEqualTo(BATCH_PATH))
+                    .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true"))));
         }
     }
 

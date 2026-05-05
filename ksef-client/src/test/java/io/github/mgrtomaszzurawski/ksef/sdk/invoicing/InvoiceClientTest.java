@@ -260,6 +260,39 @@ class InvoiceClientTest {
     }
 
     @Test
+    void queryAllMetadata_truncatedNullCursor_throwsKsefException(WireMockRuntimeInfo wmInfo) {
+        // Codex 2026-05-05 F3 — server returns isTruncated=true but the last
+        // record on the page has no value on the date axis we picked
+        // (invoicingDate here, since the query filters by invoicingDateFrom).
+        // Spec doesn't envisage this state; under the new fail-fast contract
+        // queryAllMetadata throws instead of silently dropping pages.
+        String pageOneBody = """
+                {
+                  "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat"}],
+                  "hasMore": true,
+                  "isTruncated": true,
+                  "permanentStorageHwmDate": "2026-04-30T00:00:00Z"
+                }
+                """.formatted(TEST_KSEF_NUMBER);
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(pageOneBody)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"));
+            io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException thrown =
+                    org.junit.jupiter.api.Assertions.assertThrows(
+                            io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
+                            () -> ksef.invoices().queryAllMetadata(query));
+            assertTrue(thrown.getMessage().contains("isTruncated"),
+                    "exception message must explain truncation, was: " + thrown.getMessage());
+        }
+    }
+
+    @Test
     void exportInvoices_whenRequested_returnsExportReference(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubFor(post(urlEqualTo(PATH_EXPORTS))

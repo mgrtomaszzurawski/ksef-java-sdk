@@ -10,29 +10,36 @@ import java.util.Objects;
 /**
  * The mode in which an invoice is sent to KSeF within a session.
  *
- * <p>KSeF defines two send modes (see
- * {@code ksef-docs/sesja-interaktywna.md} and
+ * <p>KSeF defines three send modes (see
+ * {@code ksef-docs/sesja-interaktywna.md},
+ * {@code ksef-docs/offline/automatyczne-okreslanie-trybu-offline.md} and
  * {@code ksef-docs/offline/korekta-techniczna.md}):
  *
  * <ul>
  *   <li>{@link Normal} — standard online or batch send. The invoice XML
- *       is encrypted with the session AES key and submitted.</li>
+ *       is encrypted with the session AES key and submitted with
+ *       {@code offlineMode=false}.</li>
+ *   <li>{@link Offline} — invoice issued during an offline window
+ *       (offline24, awaria, niedostępność). Same wire shape as
+ *       {@link Normal} except {@code offlineMode=true} so the server
+ *       knows to apply offline-issuance rules.</li>
  *   <li>{@link TechnicalCorrection} — a "korekta techniczna" (technical
  *       correction) replacing an earlier invoice. The request must
  *       include {@code hashOfCorrectedInvoice} (SHA-256 of the original
- *       invoice's XML content) and must be sent in offline mode.
- *       Permitted only within an interactive online session per spec
- *       (REQ-OFFLINE-005).</li>
+ *       invoice's XML content) and is implicitly offline at the wire
+ *       level. Permitted only within an interactive online session per
+ *       spec (REQ-OFFLINE-005).</li>
  * </ul>
  *
- * <p>Use the static factory methods {@link #normal(byte[])} and
+ * <p>Use the static factory methods {@link #normal(byte[])},
+ * {@link #offline(byte[])} and
  * {@link #technicalCorrection(byte[], byte[])} to obtain instances.
  *
  * <p>Spec citation: REQ-OFFLINE-003 in
  * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}.
  */
 public sealed interface SendInvoiceCommand
-        permits SendInvoiceCommand.Normal, SendInvoiceCommand.TechnicalCorrection {
+        permits SendInvoiceCommand.Normal, SendInvoiceCommand.Offline, SendInvoiceCommand.TechnicalCorrection {
 
     /**
      * The invoice XML content to send. Returned as a defensive copy.
@@ -40,12 +47,24 @@ public sealed interface SendInvoiceCommand
     byte[] invoiceXml();
 
     /**
-     * Construct a normal (non-correction) send command.
+     * Construct a normal (non-correction, online) send command.
      *
      * @param invoiceXml the invoice XML bytes (unencrypted)
      */
     static SendInvoiceCommand normal(byte[] invoiceXml) {
         return new Normal(invoiceXml);
+    }
+
+    /**
+     * Construct an offline-mode send command (Codex 2026-05-05 F1).
+     * Use this when the invoice was issued during an offline window
+     * (offline24, awaria, niedostępność) and KSeF must apply
+     * offline-issuance rules at acceptance time.
+     *
+     * @param invoiceXml the invoice XML bytes (unencrypted)
+     */
+    static SendInvoiceCommand offline(byte[] invoiceXml) {
+        return new Offline(invoiceXml);
     }
 
     /**
@@ -87,6 +106,41 @@ public sealed interface SendInvoiceCommand
         @Override
         public String toString() {
             return "Normal[invoiceXml=" + invoiceXml.length + " bytes]";
+        }
+    }
+
+    /**
+     * Offline-mode invoice send. Same wire shape as {@link Normal} except
+     * {@code offlineMode=true}. Used when the invoice was issued during
+     * an offline window (offline24, awaria, niedostępność). Codex
+     * 2026-05-05 F1.
+     */
+    record Offline(byte[] invoiceXml) implements SendInvoiceCommand {
+
+        public Offline {
+            Objects.requireNonNull(invoiceXml, "invoiceXml must not be null");
+            invoiceXml = invoiceXml.clone();
+        }
+
+        @Override
+        public byte[] invoiceXml() {
+            return invoiceXml.clone();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return this == o
+                    || (o instanceof Offline other && Arrays.equals(invoiceXml, other.invoiceXml));
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(invoiceXml);
+        }
+
+        @Override
+        public String toString() {
+            return "Offline[invoiceXml=" + invoiceXml.length + " bytes]";
         }
     }
 

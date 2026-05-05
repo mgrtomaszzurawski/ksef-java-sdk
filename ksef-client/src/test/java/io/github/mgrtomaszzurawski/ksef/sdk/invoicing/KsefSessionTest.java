@@ -17,10 +17,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoServic
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
+import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -199,6 +204,27 @@ class KsefSessionTest {
         assertEquals(TERMINAL_FAILURE_CODE, failure.code());
         assertEquals(TERMINAL_FAILURE_DESCRIPTION, failure.description());
         assertEquals(TEST_SESSION_REF, failure.referenceNumber());
+    }
+
+    @Test
+    void sendOffline_postsOfflineModeTrueAndNoCorrectionHash(WireMockRuntimeInfo wmInfo) {
+        // Codex 2026-05-05 F1 — public offline send must reach the wire as
+        // offlineMode=true and MUST NOT carry hashOfCorrectedInvoice (that
+        // field is reserved for technical-correction, REQ-OFFLINE-004).
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(SEND_INVOICE_RESPONSE)));
+        stubCloseAndStatusOk();
+
+        try (KsefSession session = createSession(wmInfo)) {
+            session.sendOffline(TEST_INVOICE_XML);
+
+            verify(postRequestedFor(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
+                    .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true")))
+                    .withRequestBody(notMatching("(?s).*hashOfCorrectedInvoice.*")));
+        }
     }
 
     private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {

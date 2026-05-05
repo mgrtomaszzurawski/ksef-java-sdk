@@ -31,6 +31,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
@@ -108,6 +109,7 @@ public final class KsefClient implements AutoCloseable {
     private static final String ERR_FORM_CODE_NULL = "formCode must not be null";
     private static final String ERR_BATCH_PACKAGE_NULL = "preparedPackage must not be null";
     private static final String ERR_INVOICES_NULL = "invoices must not be null";
+    private static final String ERR_BATCH_OPTIONS_NULL = "options must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
     private static final String ERR_NO_CERT = "No certificate found with usage: ";
@@ -265,17 +267,20 @@ public final class KsefClient implements AutoCloseable {
      * KSeF-side decryption failure.
      *
      * <p>For the common case where the SDK should build and encrypt the
-     * package itself, prefer {@link #openBatchSession(FormCode, List)}.
+     * package itself, prefer {@link #openBatchSession(FormCode, List, BatchSessionOptions)}.
      *
      * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
      * @param preparedPackage caller-prepared spec + key/IV + encrypted part bytes
+     * @param options batch session options (see {@link BatchSessionOptions})
      * @return an open batch session — use with try-with-resources
      */
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefBatchSession openBatchSession(FormCode formCode,
-                                                          PreparedBatchPackage preparedPackage) {
+                                                          PreparedBatchPackage preparedPackage,
+                                                          BatchSessionOptions options) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(preparedPackage, ERR_BATCH_PACKAGE_NULL);
+        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
         ensureOpen();
         ensureAuthenticated();
 
@@ -292,7 +297,8 @@ public final class KsefClient implements AutoCloseable {
                 .encryption(new EncryptionInfoRaw()
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(preparedPackage.spec()));
+                .batchFile(toBatchFileInfoRaw(preparedPackage.spec()))
+                .offlineMode(options.offlineMode());
 
         BatchSession session = sessionClient.openBatch(request);
         LOGGER.debug(LOG_OPENED_BATCH_SESSION, session.referenceNumber(), formCode);
@@ -320,13 +326,16 @@ public final class KsefClient implements AutoCloseable {
      *
      * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
      * @param invoiceXmls non-empty list of raw invoice XML byte arrays
+     * @param options batch session options (see {@link BatchSessionOptions})
      * @return an open batch session pre-loaded with the encrypted part bytes
      */
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefBatchSession openBatchSession(FormCode formCode,
-                                                          List<byte[]> invoiceXmls) {
+                                                          List<byte[]> invoiceXmls,
+                                                          BatchSessionOptions options) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(invoiceXmls, ERR_INVOICES_NULL);
+        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
         ensureOpen();
         ensureAuthenticated();
 
@@ -346,7 +355,8 @@ public final class KsefClient implements AutoCloseable {
                 .encryption(new EncryptionInfoRaw()
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(pkg.spec()));
+                .batchFile(toBatchFileInfoRaw(pkg.spec()))
+                .offlineMode(options.offlineMode());
 
         BatchSession session = sessionClient.openBatch(request);
         LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,
@@ -358,7 +368,7 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * File-streaming variant of {@link #openBatchSession(FormCode, List)}.
+     * File-streaming variant of {@link #openBatchSession(FormCode, List, BatchSessionOptions)}.
      * Each invoice is read straight from disk into the batch ZIP rather than
      * materialised as a {@code byte[]} in heap (Codex round-9
      * manual-validation A.4.2). Use this for large batches — e.g. the spec
@@ -367,13 +377,16 @@ public final class KsefClient implements AutoCloseable {
      *
      * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
      * @param invoiceFiles non-empty list of paths to invoice XML files
+     * @param options batch session options (see {@link BatchSessionOptions})
      * @return an open batch session pre-loaded with the encrypted part bytes
      */
     @SuppressWarnings("java:S2629")
     public synchronized KsefBatchSession openBatchSessionFromFiles(FormCode formCode,
-                                                                     List<java.nio.file.Path> invoiceFiles) {
+                                                                     List<java.nio.file.Path> invoiceFiles,
+                                                                     BatchSessionOptions options) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(invoiceFiles, ERR_INVOICES_NULL);
+        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
         ensureOpen();
         ensureAuthenticated();
 
@@ -393,7 +406,8 @@ public final class KsefClient implements AutoCloseable {
                 .encryption(new EncryptionInfoRaw()
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(pkg.spec()));
+                .batchFile(toBatchFileInfoRaw(pkg.spec()))
+                .offlineMode(options.offlineMode());
 
         BatchSession session = sessionClient.openBatch(request);
         LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,

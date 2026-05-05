@@ -140,6 +140,8 @@ public final class KsefSession implements AutoCloseable {
         SendInvoiceBuilder builder = SendInvoiceBuilder.create(command.invoiceXml(), aesKey, initVector);
         if (command instanceof SendInvoiceCommand.TechnicalCorrection correction) {
             builder = builder.technicalCorrection(correction.hashOfCorrectedInvoice());
+        } else if (command instanceof SendInvoiceCommand.Offline) {
+            builder = builder.offline();
         }
         return sessionClient.sendInvoice(referenceNumber, builder.build());
     }
@@ -152,6 +154,16 @@ public final class KsefSession implements AutoCloseable {
      */
     public SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
         return send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected));
+    }
+
+    /**
+     * Convenience for sending an invoice issued during an offline window
+     * (offline24, awaria, niedostępność). Equivalent to
+     * {@code send(SendInvoiceCommand.offline(invoiceXml))}. Codex
+     * 2026-05-05 F1.
+     */
+    public SendInvoiceResult sendOffline(byte[] invoiceXml) {
+        return send(SendInvoiceCommand.offline(invoiceXml));
     }
 
     /**
