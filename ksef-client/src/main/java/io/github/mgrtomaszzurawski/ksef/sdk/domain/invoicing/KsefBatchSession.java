@@ -35,21 +35,27 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Batch session flow (manual variant):
  * <ol>
- *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, PreparedBatchPackage)}</li>
+ *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode,
+ *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage,
+ *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)}</li>
  *   <li>Upload encrypted ZIP parts to the URLs from {@link #partUploadRequests()}</li>
  *   <li>Call {@link #close()} (or use try-with-resources) to finalize</li>
  * </ol>
  *
  * <p>Batch session flow (automated variant):
  * <ol>
- *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, java.util.List)}
+ *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, java.util.List,
+ *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)}
  *       — the SDK builds the encrypted ZIP and computes hashes using temp files</li>
  *   <li>Call {@link #uploadParts()} to push every encrypted part file to its URL</li>
  *   <li>Call {@link #close()} to finalize and delete the temp files</li>
  * </ol>
  *
- * @see KsefClient#openBatchSession(FormCode, PreparedBatchPackage)
- * @see KsefClient#openBatchSession(FormCode, java.util.List)
+ * @see KsefClient#openBatchSession(FormCode,
+ *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage,
+ *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
+ * @see KsefClient#openBatchSession(FormCode, java.util.List,
+ *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
  */
 public final class KsefBatchSession implements AutoCloseable {
 
@@ -179,7 +185,9 @@ public final class KsefBatchSession implements AutoCloseable {
      * Upload all encrypted batch parts to their respective URLs.
      *
      * <p>Only available when the session was opened via
-     * {@link KsefClient#openBatchSession(FormCode, java.util.List)} — that flow keeps
+     * {@link KsefClient#openBatchSession(FormCode, java.util.List,
+     *     io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)}
+     * — that flow keeps
      * references to the encrypted part files. When the session was opened from a
      * {@link PreparedBatchPackage}, this method throws {@link IllegalStateException}.
      *

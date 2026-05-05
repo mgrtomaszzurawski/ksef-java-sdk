@@ -439,6 +439,17 @@
                             <head>Implementation Note:</head>
                         </tag>
                     </tags>
+                    <!--
+                        Codex 2026-05-05 round-2 F3 — Maven Central javadoc-jar must
+                        document only the JPMS-exported public surface. Internal SDK
+                        plumbing (sdk.internal.*), generated OpenAPI client (client.*),
+                        and generated JAXB XML packages (xml.*) are implementation
+                        detail. Excluded here; the JavadocPackageGateTest
+                        regression-tests this list against actual generated output.
+                    -->
+                    <excludePackageNames>
+                        io.github.mgrtomaszzurawski.ksef.sdk.internal.*:io.github.mgrtomaszzurawski.ksef.client:io.github.mgrtomaszzurawski.ksef.client.*:io.github.mgrtomaszzurawski.ksef.xml.*
+                    </excludePackageNames>
                 </configuration>
                 <executions>
                     <execution>

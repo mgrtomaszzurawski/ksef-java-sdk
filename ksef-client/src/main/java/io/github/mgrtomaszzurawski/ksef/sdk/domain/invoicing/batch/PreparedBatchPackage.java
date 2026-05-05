@@ -29,9 +29,10 @@ import java.util.Objects;
  * encrypted with a different key or IV, KSeF will reject the upload.
  *
  * <p>Most consumers should prefer the convenience overload
- * {@code openBatchSession(FormCode, List&lt;byte[]&gt;)} which builds and
- * encrypts the package internally — this manual entry point exists for
- * advanced flows that need streaming or external part preparation.
+ * {@code openBatchSession(FormCode, List&lt;byte[]&gt;, BatchSessionOptions)}
+ * which builds and encrypts the package internally — this manual entry
+ * point exists for advanced flows that need streaming or external part
+ * preparation.
  *
  * @param spec metadata describing the unencrypted batch file and the
  *             encrypted parts (sizes + SHA-256 hashes)

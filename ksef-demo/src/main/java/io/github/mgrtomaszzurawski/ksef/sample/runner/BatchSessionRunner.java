@@ -35,7 +35,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  * Runner for batch session operations using KsefBatchSession.
  *
  * <p>Exercises the automated batch flow:
- * {@code openBatchSession(FormCode, List<byte[]>)} → {@code uploadParts()} →
+ * {@code openBatchSession(FormCode, List<byte[]>, BatchSessionOptions)} → {@code uploadParts()} →
  * {@code status()} → {@code close()}.</p>
  *
  * <p>FULL mode only — sends actual invoices to KSeF.</p>

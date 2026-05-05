@@ -50,7 +50,8 @@ try (KsefClient client = KsefClient.builder(KsefEnvironment.TEST)
 
 ```java
 List<byte[]> invoiceXmls = List.of(invoice1Xml, invoice2Xml, invoice3Xml);
-try (KsefBatchSession batch = client.openBatchSession(FormCode.FA2, invoiceXmls)) {
+try (KsefBatchSession batch = client.openBatchSession(
+        FormCode.FA2, invoiceXmls, BatchSessionOptions.online())) {
     batch.uploadParts();
     // close() returns when the server reaches a terminal state (UPO ready,
     // schema rejection, etc.); throws KsefSessionTerminalFailureException on

@@ -207,6 +207,56 @@ class KsefClientOpenBatchSessionTest {
         }
     }
 
+    @Test
+    void openBatchSession_withInvoiceListAndOfflineOptions_postsOfflineModeTrue(WireMockRuntimeInfo wmInfo) {
+        // Codex 2026-05-05 round-2 F2 — pin offline-mode wire shape on the
+        // List<byte[]> entry point too. The dynamic splitter may produce a
+        // different part count than the single-part stub; the verify(...)
+        // below asserts the request body that reached the server, so we
+        // accept either successful return or count-mismatch throw.
+        try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
+            stubSymmetricKeyEncryptionCert();
+            stubBatchOpenAcceptingAnyPartCount();
+            stubBatchClose();
+
+            byte[] invoice = "<Invoice/>".getBytes(StandardCharsets.UTF_8);
+
+            try {
+                client.openBatchSession(FormCode.FA2, List.of(invoice), BatchSessionOptions.offline()).close();
+            } catch (IllegalArgumentException countMismatch) {
+                // expected if splitter part count != stub part count
+            }
+
+            verify(postRequestedFor(urlEqualTo(BATCH_PATH))
+                    .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true"))));
+        }
+    }
+
+    @Test
+    void openBatchSessionFromFiles_withOfflineOptions_postsOfflineModeTrue(WireMockRuntimeInfo wmInfo) throws java.io.IOException {
+        // Codex 2026-05-05 round-2 F2 — pin offline-mode wire shape on the
+        // file-streaming entry point too.
+        java.nio.file.Path tempInvoice = java.nio.file.Files.createTempFile("ksef-test-invoice", ".xml");
+        java.nio.file.Files.write(tempInvoice, "<Invoice/>".getBytes(StandardCharsets.UTF_8));
+        try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
+            stubSymmetricKeyEncryptionCert();
+            stubBatchOpenAcceptingAnyPartCount();
+            stubBatchClose();
+
+            try {
+                client.openBatchSessionFromFiles(FormCode.FA2,
+                        List.of(tempInvoice), BatchSessionOptions.offline()).close();
+            } catch (IllegalArgumentException countMismatch) {
+                // expected if splitter part count != stub part count
+            }
+
+            verify(postRequestedFor(urlEqualTo(BATCH_PATH))
+                    .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true"))));
+        } finally {
+            java.nio.file.Files.deleteIfExists(tempInvoice);
+        }
+    }
+
     private static void stubBatchClose() {
         stubFor(post(urlEqualTo(BATCH_PATH + "/" + BATCH_REF + "/close"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
