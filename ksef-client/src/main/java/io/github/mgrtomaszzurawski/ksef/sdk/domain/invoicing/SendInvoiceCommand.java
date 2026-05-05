@@ -43,6 +43,11 @@ import java.util.Objects;
 public sealed interface SendInvoiceCommand
         permits SendInvoiceCommand.Normal, SendInvoiceCommand.Offline, SendInvoiceCommand.TechnicalCorrection {
 
+    /** Shared error message for nested-record null checks. */
+    String ERR_INVOICE_XML_NULL = "invoiceXml must not be null";
+    /** Shared toString() suffix used by the byte[]-summarising overrides. */
+    String BYTES_TOSTRING_SUFFIX = " bytes]";
+
     /**
      * The invoice XML content to send. Returned as a defensive copy.
      */
@@ -85,7 +90,7 @@ public sealed interface SendInvoiceCommand
     record Normal(byte[] invoiceXml) implements SendInvoiceCommand {
 
         public Normal {
-            Objects.requireNonNull(invoiceXml, "invoiceXml must not be null");
+            Objects.requireNonNull(invoiceXml, ERR_INVOICE_XML_NULL);
             invoiceXml = invoiceXml.clone();
         }
 
@@ -107,7 +112,7 @@ public sealed interface SendInvoiceCommand
 
         @Override
         public String toString() {
-            return "Normal[invoiceXml=" + invoiceXml.length + " bytes]";
+            return "Normal[invoiceXml=" + invoiceXml.length + BYTES_TOSTRING_SUFFIX;
         }
     }
 
@@ -120,7 +125,7 @@ public sealed interface SendInvoiceCommand
     record Offline(byte[] invoiceXml) implements SendInvoiceCommand {
 
         public Offline {
-            Objects.requireNonNull(invoiceXml, "invoiceXml must not be null");
+            Objects.requireNonNull(invoiceXml, ERR_INVOICE_XML_NULL);
             invoiceXml = invoiceXml.clone();
         }
 
@@ -142,7 +147,7 @@ public sealed interface SendInvoiceCommand
 
         @Override
         public String toString() {
-            return "Offline[invoiceXml=" + invoiceXml.length + " bytes]";
+            return "Offline[invoiceXml=" + invoiceXml.length + BYTES_TOSTRING_SUFFIX;
         }
     }
 
@@ -162,7 +167,7 @@ public sealed interface SendInvoiceCommand
         private static final int SHA256_LENGTH_BYTES = 32;
 
         public TechnicalCorrection {
-            Objects.requireNonNull(invoiceXml, "invoiceXml must not be null");
+            Objects.requireNonNull(invoiceXml, ERR_INVOICE_XML_NULL);
             Objects.requireNonNull(hashOfCorrectedInvoice, "hashOfCorrectedInvoice must not be null");
             if (hashOfCorrectedInvoice.length != SHA256_LENGTH_BYTES) {
                 throw new IllegalArgumentException(
@@ -203,7 +208,7 @@ public sealed interface SendInvoiceCommand
         @Override
         public String toString() {
             return "TechnicalCorrection[invoiceXml=" + invoiceXml.length + " bytes"
-                    + ", hashOfCorrectedInvoice=" + hashOfCorrectedInvoice.length + " bytes]";
+                    + ", hashOfCorrectedInvoice=" + hashOfCorrectedInvoice.length + BYTES_TOSTRING_SUFFIX;
         }
     }
 }

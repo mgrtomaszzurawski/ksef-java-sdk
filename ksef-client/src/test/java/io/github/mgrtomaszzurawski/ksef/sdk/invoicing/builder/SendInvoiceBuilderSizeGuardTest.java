@@ -24,7 +24,9 @@ class SendInvoiceBuilderSizeGuardTest {
     @Test
     void create_belowMaxSize_succeeds() {
         byte[] xml = new byte[MAX_INVOICE_BYTES];
-        SendInvoiceBuilder.create(xml, AES_KEY_FAKE, IV_FAKE);
+        SendInvoiceBuilder builder = SendInvoiceBuilder.create(xml, AES_KEY_FAKE, IV_FAKE);
+        org.junit.jupiter.api.Assertions.assertNotNull(builder,
+                "at-limit payload must yield a usable builder instance");
     }
 
     @Test
