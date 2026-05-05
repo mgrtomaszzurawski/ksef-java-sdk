@@ -19,6 +19,8 @@ import java.util.Objects;
  *
  * @param xadesProfile XAdES profile (currently only {@link XadesProfile#BASELINE_B})
  * @param digestAlgorithm digest algorithm (currently only {@link DigestAlgorithm#SHA256})
+ *
+ * @since 1.0.0
  */
 public record SigningOptions(XadesProfile xadesProfile, DigestAlgorithm digestAlgorithm) {
 

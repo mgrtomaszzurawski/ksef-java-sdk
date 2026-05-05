@@ -33,6 +33,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.In
 /**
  * Client for KSeF session operations — online and batch session lifecycle,
  * invoice submission, and UPO retrieval.
+ *
+ * @since 1.0.0
  */
 public final class SessionClient {
 

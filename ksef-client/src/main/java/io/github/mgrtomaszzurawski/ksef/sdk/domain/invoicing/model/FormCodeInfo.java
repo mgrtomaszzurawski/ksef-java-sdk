@@ -10,6 +10,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * @param systemCode system code (e.g. "FA")
  * @param schemaVersion schema version (e.g. "2")
  * @param value full form code value
+ *
+ * @since 1.0.0
  */
 public record FormCodeInfo(String systemCode, String schemaVersion, String value) {
 

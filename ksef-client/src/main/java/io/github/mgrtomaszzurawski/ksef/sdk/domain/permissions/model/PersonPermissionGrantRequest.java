@@ -9,6 +9,8 @@ import java.util.Objects;
 
 /**
  * SDK request for {@code PermissionClient.grantPerson(...)}.
+ *
+ * @since 1.0.0
  */
 public record PersonPermissionGrantRequest(
         PersonSubjectIdentifierType identifierType,

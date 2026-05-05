@@ -16,6 +16,8 @@ import java.util.Objects;
  * @param validFrom certificate validity start
  * @param validTo certificate validity end
  * @param usage list of permitted usages for this certificate
+ *
+ * @since 1.0.0
  */
 public record PublicKeyCertificate(
         byte[] certificate,

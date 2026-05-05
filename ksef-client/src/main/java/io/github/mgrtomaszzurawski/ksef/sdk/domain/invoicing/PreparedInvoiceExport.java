@@ -52,6 +52,8 @@ import org.slf4j.LoggerFactory;
  * <p>The {@link #downloadAndDecrypt(InvoiceExportStatus)} helper hides the
  * end-to-end flow described in the official KSeF
  * <a href="https://github.com/CIRFMF/ksef-docs/blob/main/pobieranie-faktur/przyrostowe-pobieranie-faktur.md">incremental retrieval docs</a>.
+ *
+ * @since 1.0.0
  */
 public final class PreparedInvoiceExport implements AutoCloseable {
 

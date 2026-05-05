@@ -10,6 +10,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
  * @param canRequest whether the subject can request new certificates
  * @param enrollment enrollment limits
  * @param certificate certificate limits
+ *
+ * @since 1.0.0
  */
 public record CertificateLimits(boolean canRequest, CertificateLimit enrollment, CertificateLimit certificate) {
 

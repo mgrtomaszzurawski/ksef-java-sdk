@@ -10,6 +10,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestRateLimits
 /**
  * Builder for KSeF test rate limits override requests.
  * <p>At least one rate-limit category must be set.
+ *
+ * @since 1.0.0
  */
 public final class TestRateLimitsBuilder {
 

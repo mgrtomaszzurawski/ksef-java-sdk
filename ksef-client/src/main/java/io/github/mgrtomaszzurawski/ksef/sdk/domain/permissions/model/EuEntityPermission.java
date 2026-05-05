@@ -8,6 +8,8 @@ import java.time.OffsetDateTime;
 
 /**
  * An EU entity permission entry from query results.
+ *
+ * @since 1.0.0
  */
 public record EuEntityPermission(
         String id,

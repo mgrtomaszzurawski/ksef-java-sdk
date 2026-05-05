@@ -13,6 +13,8 @@ import java.util.Objects;
  * Builder for KSeF certificate enrollment requests.
  * <p>Required: certificateName, certificateType, csr (PKCS#10 in DER format).
  * Optional: validFrom.
+ *
+ * @since 1.0.0
  */
 public final class CertificateEnrollBuilder {
 

@@ -19,6 +19,8 @@ import java.util.Objects;
  *     {@link UpoVersion#DEFAULT} — no header)
  * @param problemDetails whether to request RFC 7807 Problem Details
  *     bodies on 4xx/5xx responses (default {@code true})
+ *
+ * @since 1.0.0
  */
 public record FeaturePolicy(UpoVersion upoVersion, boolean problemDetails) {
 

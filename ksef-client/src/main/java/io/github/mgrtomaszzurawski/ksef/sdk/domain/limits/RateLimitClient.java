@@ -24,6 +24,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ApiRateLimits;
  * (per {@code ksef-docs/limity/limity-api.md}). Treat
  * {@link #getRateLimits()} as a read-only diagnostic, not a budgeting
  * primitive.
+ *
+ * @since 1.0.0
  */
 public interface RateLimitClient {
 

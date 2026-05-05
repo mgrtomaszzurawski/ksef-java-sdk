@@ -17,6 +17,8 @@ import java.util.Objects;
  * <p>Carries the session reference number, the terminal status code, the
  * server-supplied description, and any nested error details so callers can
  * map the failure to a typed business outcome.
+ *
+ * @since 1.0.0
  */
 public final class KsefSessionTerminalFailureException extends KsefException {
 

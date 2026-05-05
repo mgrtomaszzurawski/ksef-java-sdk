@@ -16,6 +16,8 @@ import org.jspecify.annotations.Nullable;
  * @param certificateType Authentication or Offline
  * @param csr PKCS#10 certificate signing request in DER format (cloned defensively)
  * @param validFrom optional validity start date (null → valid from issuance)
+ *
+ * @since 1.0.0
  */
 public record CertificateEnrollRequest(
         String certificateName,

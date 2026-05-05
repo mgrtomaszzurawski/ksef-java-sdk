@@ -17,6 +17,8 @@ import java.util.List;
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
  * and exporting invoices.
+ *
+ * @since 1.0.0
  */
 public interface InvoiceClient {
 

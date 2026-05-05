@@ -31,6 +31,8 @@ import java.util.Objects;
  *
  * <p>Spec citation: REQ-AUTH-027, REQ-AUTH-033 in
  * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}.
+ *
+ * @since 1.0.0
  */
 public sealed interface CertificateSubjectIdentifier
         permits CertificateSubjectIdentifier.Subject,

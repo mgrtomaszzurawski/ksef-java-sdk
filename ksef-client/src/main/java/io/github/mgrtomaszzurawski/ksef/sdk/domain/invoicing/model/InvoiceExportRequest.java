@@ -11,6 +11,8 @@ import java.util.Objects;
  * SDK request payload for {@code InvoiceClient.exportInvoices(...)}.
  * Carries the per-export AES key (RSA-encrypted with KSeF's public key) and
  * the query filters describing which invoices to export.
+ *
+ * @since 1.0.0
  */
 public record InvoiceExportRequest(
         byte[] encryptedSymmetricKey,

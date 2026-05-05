@@ -32,6 +32,8 @@ import java.util.regex.Pattern;
  * pattern at construction time; malformed entries throw
  * {@link IllegalArgumentException} immediately rather than reaching
  * the server.
+ *
+ * @since 1.0.0
  */
 public record AuthorizationPolicy(
         List<String> ip4Addresses,

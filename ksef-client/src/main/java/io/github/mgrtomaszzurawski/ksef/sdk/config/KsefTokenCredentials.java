@@ -21,6 +21,8 @@ import org.jspecify.annotations.Nullable;
  *     (Codex 2026-05-05 #7 / F6); when {@code null}, the SDK falls back
  *     to the challenge's reported {@code clientIp} as a single exact
  *     address
+ *
+ * @since 1.0.0
  */
 public record KsefTokenCredentials(String ksefToken, KsefIdentifier identifier,
                                    @Nullable AuthorizationPolicy authPolicy)

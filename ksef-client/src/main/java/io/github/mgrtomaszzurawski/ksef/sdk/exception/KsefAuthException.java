@@ -9,6 +9,8 @@ import java.io.Serial;
 /**
  * Thrown on HTTP 401 (Unauthorized) or 403 (Forbidden).
  * Indicates authentication or authorization failure.
+ *
+ * @since 1.0.0
  */
 public class KsefAuthException extends KsefException {
 

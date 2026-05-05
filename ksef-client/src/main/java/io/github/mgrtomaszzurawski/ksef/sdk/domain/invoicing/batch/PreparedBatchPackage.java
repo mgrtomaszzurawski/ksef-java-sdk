@@ -39,6 +39,8 @@ import java.util.Objects;
  * @param aesKey 32-byte AES-256 session key used to encrypt {@code partBytes}
  * @param initVector 16-byte AES-CBC IV used to encrypt {@code partBytes}
  * @param partBytes ciphertext of each part, in {@link BatchFileSpec.Part#ordinalNumber()} order
+ *
+ * @since 1.0.0
  */
 public record PreparedBatchPackage(BatchFileSpec spec,
                                    byte[] aesKey,

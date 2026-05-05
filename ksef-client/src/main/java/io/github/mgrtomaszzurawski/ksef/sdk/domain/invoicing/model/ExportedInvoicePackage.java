@@ -16,6 +16,8 @@ import java.util.Objects;
  *                     no metadata file was emitted
  * @param invoiceXmls map of invoice file name (inside the ZIP) to invoice XML
  *                    bytes; never {@code null}, may be empty for empty exports
+ *
+ * @since 1.0.0
  */
 public record ExportedInvoicePackage(byte[] metadataJson, Map<String, byte[]> invoiceXmls) {
 

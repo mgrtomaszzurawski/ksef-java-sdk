@@ -14,6 +14,8 @@ import java.util.Map;
  * @param description human-readable status description
  * @param details optional additional detail messages
  * @param extensions optional key-value extensions
+ *
+ * @since 1.0.0
  */
 public record InvoiceStatusInfo(int code, String description, List<String> details, Map<String, String> extensions) {
 

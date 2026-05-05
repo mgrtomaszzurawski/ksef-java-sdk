@@ -9,6 +9,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * {@code POST /invoices/query/metadata} should be applied to.
  *
  * <p>Mirrors the OpenAPI {@code AmountType} enum.
+ *
+ * @since 1.0.0
  */
 public enum InvoiceQueryAmountType {
 

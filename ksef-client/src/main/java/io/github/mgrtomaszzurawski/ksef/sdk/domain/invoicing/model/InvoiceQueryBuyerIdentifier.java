@@ -16,6 +16,8 @@ import org.jspecify.annotations.Nullable;
  *
  * @param type the buyer identifier kind
  * @param value the identifier value (optional for {@code NONE})
+ *
+ * @since 1.0.0
  */
 public record InvoiceQueryBuyerIdentifier(BuyerIdentifierType type, @Nullable String value) {
 

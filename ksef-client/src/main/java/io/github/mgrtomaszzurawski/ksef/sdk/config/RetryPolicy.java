@@ -5,6 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
 /**
  * Configurable retry policy for KSeF API calls.
+ *
+ * @since 1.0.0
  */
 public record RetryPolicy(
         boolean enabled,

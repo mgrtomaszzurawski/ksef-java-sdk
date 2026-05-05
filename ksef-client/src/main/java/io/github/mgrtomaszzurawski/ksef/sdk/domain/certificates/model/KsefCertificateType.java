@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
 /**
  * Type of KSeF certificate.
+ *
+ * @since 1.0.0
  */
 public enum KsefCertificateType {
 

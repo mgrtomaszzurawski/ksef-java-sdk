@@ -8,6 +8,8 @@ import java.util.Objects;
 
 /**
  * SDK request for {@code PermissionClient.grantAuthorization(...)}.
+ *
+ * @since 1.0.0
  */
 public record EntityAuthorizationPermissionGrantRequest(
         EntityAuthorizationIdentifierType identifierType,

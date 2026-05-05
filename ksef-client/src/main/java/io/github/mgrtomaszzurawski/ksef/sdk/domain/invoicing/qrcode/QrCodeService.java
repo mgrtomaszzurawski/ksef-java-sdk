@@ -31,6 +31,8 @@ import javax.imageio.ImageIO;
  * {@link KsefVerificationLinks} for KOD I (online) and KOD II (offline-certificate)
  * URL builders. This service only renders any string into a QR PNG; it does not
  * know about KSeF URL structure.
+ *
+ * @since 1.0.0
  */
 public final class QrCodeService {
 

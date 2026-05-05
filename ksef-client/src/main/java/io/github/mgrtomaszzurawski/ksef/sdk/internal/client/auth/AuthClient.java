@@ -41,6 +41,8 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
 /**
  * Client for KSeF authentication operations.
  * Supports XAdES signature-based and KSeF token-based authentication flows.
+ *
+ * @since 1.0.0
  */
 public final class AuthClient {
 

@@ -23,6 +23,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.config;
  * <p>Spec citation: {@code ksef-docs/api-changelog.md} feature-header
  * entries; REQ-MISC test gap (UPO links) in
  * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}.
+ *
+ * @since 1.0.0
  */
 public enum UpoVersion {
 

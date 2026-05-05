@@ -8,6 +8,8 @@ import java.util.Objects;
 
 /**
  * SDK request for {@code TestDataClient.setSessionLimits(...)}.
+ *
+ * @since 1.0.0
  */
 public record TestSessionLimitsRequest(TestSessionLimits onlineSession, TestSessionLimits batchSession) {
 

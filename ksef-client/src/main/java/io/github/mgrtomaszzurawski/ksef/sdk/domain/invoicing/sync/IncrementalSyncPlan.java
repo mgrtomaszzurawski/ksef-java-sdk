@@ -38,6 +38,8 @@ import java.util.Objects;
  *     ({@code true}) or only metadata ({@code false}). Default
  *     {@code true} — metadata-only sync still iterates packages but
  *     {@link InvoiceSink} receives {@code null} for {@code xmlPath}.
+ *
+ * @since 1.0.0
  */
 public record IncrementalSyncPlan(
         OffsetDateTime from,

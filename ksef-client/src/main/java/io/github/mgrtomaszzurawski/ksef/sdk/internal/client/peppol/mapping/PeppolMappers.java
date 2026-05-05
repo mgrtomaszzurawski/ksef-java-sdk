@@ -13,6 +13,8 @@ import java.util.List;
 /**
  * Internal mappers from generated {@code *Raw} types to public peppol
  * domain records. Lives in a non-exported package; consumers can't reach it.
+ *
+ * @since 1.0.0
  */
 public final class PeppolMappers {
 

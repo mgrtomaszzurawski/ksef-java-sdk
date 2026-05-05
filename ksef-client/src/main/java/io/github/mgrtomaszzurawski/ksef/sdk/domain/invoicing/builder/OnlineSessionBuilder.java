@@ -13,6 +13,8 @@ import java.util.Objects;
 /**
  * Builder for opening an online session.
  * <p>Required: form code, KSeF public key for encryption.
+ *
+ * @since 1.0.0
  */
 public final class OnlineSessionBuilder {
 

@@ -16,6 +16,8 @@ import java.util.Objects;
  *
  * @param encryptedSymmetricKey RSA-OAEP-wrapped AES key
  * @param initVector plaintext 16-byte AES-CBC IV
+ *
+ * @since 1.0.0
  */
 public record KsefEncryptionInfo(byte[] encryptedSymmetricKey, byte[] initVector) {
 

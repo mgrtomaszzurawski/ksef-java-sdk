@@ -62,6 +62,8 @@ import org.slf4j.LoggerFactory;
  *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
  * @see KsefClient#openBatchSession(FormCode, java.util.List,
  *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
+ *
+ * @since 1.0.0
  */
 public final class KsefBatchSession implements AutoCloseable {
 

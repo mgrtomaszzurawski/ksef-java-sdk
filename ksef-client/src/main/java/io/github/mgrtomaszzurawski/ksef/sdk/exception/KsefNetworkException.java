@@ -9,6 +9,8 @@ import java.io.Serial;
 /**
  * Thrown on I/O errors, timeouts, and connection failures.
  * Status code is always 0 (no HTTP response received).
+ *
+ * @since 1.0.0
  */
 public class KsefNetworkException extends KsefException {
 

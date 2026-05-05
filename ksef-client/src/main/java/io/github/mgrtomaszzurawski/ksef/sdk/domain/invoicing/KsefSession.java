@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
  * then polls until processing completes (status 200). UPO is available after close completes.
  *
  * @see KsefClient#openSession(FormCode)
+ *
+ * @since 1.0.0
  */
 public final class KsefSession implements AutoCloseable {
 

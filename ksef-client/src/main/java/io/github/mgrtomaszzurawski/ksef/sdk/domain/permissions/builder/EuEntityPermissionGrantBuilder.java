@@ -13,6 +13,8 @@ import java.util.Objects;
 /**
  * Builder for EU entity permission grant requests.
  * <p>Required: fingerprint, description (5-256 chars), subject details, at least one permission.
+ *
+ * @since 1.0.0
  */
 public final class EuEntityPermissionGrantBuilder {
 

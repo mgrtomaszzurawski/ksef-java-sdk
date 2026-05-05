@@ -42,6 +42,8 @@ import java.util.List;
  * instantiation.
  *
  * @apiNote Internal — never call from consumer code.
+ *
+ * @since 1.0.0
  */
 public final class SessionHandleConstructor {
 

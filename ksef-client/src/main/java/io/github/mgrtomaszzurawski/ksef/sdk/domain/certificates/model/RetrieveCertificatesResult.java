@@ -10,6 +10,8 @@ import java.util.List;
  * Result of retrieving certificates.
  *
  * @param certificates list of retrieved certificates
+ *
+ * @since 1.0.0
  */
 public record RetrieveCertificatesResult(List<RetrievedCertificate> certificates) {
 

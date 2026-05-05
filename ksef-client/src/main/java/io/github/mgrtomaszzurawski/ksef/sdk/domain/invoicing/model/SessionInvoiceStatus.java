@@ -25,6 +25,8 @@ import java.util.Objects;
  * @param upoDownloadUrlExpirationDate when the UPO download URL expires
  * @param invoicingMode whether submitted online or offline
  * @param status invoice processing status
+ *
+ * @since 1.0.0
  */
 public record SessionInvoiceStatus(
         int ordinalNumber,

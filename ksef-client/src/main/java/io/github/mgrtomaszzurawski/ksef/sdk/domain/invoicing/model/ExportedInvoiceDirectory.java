@@ -23,6 +23,8 @@ import java.util.Objects;
  *     the export had no metadata file
  * @param invoiceXmls map from invoice file name (inside the ZIP) to its
  *     on-disk path
+ *
+ * @since 1.0.0
  */
 public record ExportedInvoiceDirectory(
         Path outputDirectory,

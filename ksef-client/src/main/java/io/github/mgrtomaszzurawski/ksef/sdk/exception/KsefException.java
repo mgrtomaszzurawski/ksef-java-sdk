@@ -9,6 +9,8 @@ import java.io.Serial;
 /**
  * Base exception for all KSeF SDK errors.
  * All subclasses are unchecked (extend RuntimeException).
+ *
+ * @since 1.0.0
  */
 public class KsefException extends RuntimeException {
 

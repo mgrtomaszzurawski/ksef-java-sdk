@@ -23,6 +23,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.mapping.Token
 
 /**
  * Client for KSeF API token management — generate, list, query status, and revoke tokens.
+ *
+ * @since 1.0.0
  */
 public final class TokenClientImpl implements TokenClient {
 

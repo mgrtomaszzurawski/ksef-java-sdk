@@ -10,6 +10,8 @@ import java.util.List;
  * UPO (official receipt) information with download pages.
  *
  * @param pages download pages for the UPO
+ *
+ * @since 1.0.0
  */
 public record UpoInfo(List<UpoPage> pages) {
 

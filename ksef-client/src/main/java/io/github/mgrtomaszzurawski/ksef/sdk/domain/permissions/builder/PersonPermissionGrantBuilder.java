@@ -15,6 +15,8 @@ import java.util.Objects;
  * Builder for person permission grant requests.
  * <p>Required: subject identifier (NIP/PESEL/Fingerprint), description (5-256 chars),
  * subject details (firstName + lastName), and at least one permission.
+ *
+ * @since 1.0.0
  */
 public final class PersonPermissionGrantBuilder {
 

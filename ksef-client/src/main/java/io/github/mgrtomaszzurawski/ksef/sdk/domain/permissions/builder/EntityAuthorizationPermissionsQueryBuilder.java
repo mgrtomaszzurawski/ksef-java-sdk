@@ -15,6 +15,8 @@ import java.util.Objects;
 /**
  * Builder for entity authorization permissions query requests.
  * <p>Required: query direction (granted or received). All other fields are optional.
+ *
+ * @since 1.0.0
  */
 public final class EntityAuthorizationPermissionsQueryBuilder {
 

@@ -11,6 +11,8 @@ import java.util.Objects;
 /**
  * Builder for KSeF test subject certificate limits override requests.
  * <p>Required: subjectIdentifierType. Optional: maxEnrollments, maxCertificates.
+ *
+ * @since 1.0.0
  */
 public final class TestSubjectLimitsBuilder {
 

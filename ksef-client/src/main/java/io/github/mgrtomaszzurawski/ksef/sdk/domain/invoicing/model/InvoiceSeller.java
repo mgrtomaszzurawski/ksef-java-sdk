@@ -9,6 +9,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  *
  * @param nip seller NIP (tax ID)
  * @param name seller name (may be null)
+ *
+ * @since 1.0.0
  */
 public record InvoiceSeller(String nip, String name) {
 

@@ -47,6 +47,8 @@ import java.nio.file.Path;
  * primary/unique key on the destination store. The SDK deduplicates
  * within a single sync run, but cross-run dedup is the sink's
  * responsibility.
+ *
+ * @since 1.0.0
  */
 @FunctionalInterface
 public interface InvoiceSink {

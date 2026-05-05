@@ -10,6 +10,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * @param identifierType type of buyer identifier
  * @param identifierValue buyer identifier value (NIP, VAT UE number, etc.)
  * @param name buyer name (may be null)
+ *
+ * @since 1.0.0
  */
 public record InvoiceBuyer(BuyerIdentifierType identifierType, String identifierValue, String name) {
 

@@ -19,6 +19,8 @@ import java.util.List;
  * @param lastInvoicingDate last invoicing date in the package
  * @param lastPermanentStorageDate last permanent storage date
  * @param permanentStorageHwmDate high-water-mark date for permanent storage
+ *
+ * @since 1.0.0
  */
 public record InvoicePackage(
         Long invoiceCount,

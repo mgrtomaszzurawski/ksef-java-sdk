@@ -5,6 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
 /**
  * KSeF API environment configuration.
+ *
+ * @since 1.0.0
  */
 public final class KsefEnvironment {
 

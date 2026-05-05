@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
 /**
  * Reason for revoking a KSeF certificate.
+ *
+ * @since 1.0.0
  */
 public enum CertificateRevocationReason {
 

@@ -10,6 +10,8 @@ import java.io.Serial;
  * Thrown on HTTP 429 (Too Many Requests).
  * The KSeF API returns rate limit information in the response body and a
  * {@code Retry-After} header indicating when the client should retry.
+ *
+ * @since 1.0.0
  */
 public class KsefRateLimitException extends KsefException {
 

@@ -11,6 +11,8 @@ import java.util.List;
  *
  * @param continuationToken token for fetching next page, null if no more results
  * @param tokens token items
+ *
+ * @since 1.0.0
  */
 public record TokenList(String continuationToken, List<TokenListItem> tokens) {
 

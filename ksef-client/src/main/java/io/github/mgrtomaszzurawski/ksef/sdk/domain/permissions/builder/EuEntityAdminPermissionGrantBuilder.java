@@ -11,6 +11,8 @@ import java.util.Objects;
  * Builder for EU entity administration permission grant requests.
  * <p>Required: fingerprint, contextNipVatUe, description (5-256 chars),
  * euEntityName, subjectEntityByFingerprint, euEntityDetails.
+ *
+ * @since 1.0.0
  */
 public final class EuEntityAdminPermissionGrantBuilder {
 

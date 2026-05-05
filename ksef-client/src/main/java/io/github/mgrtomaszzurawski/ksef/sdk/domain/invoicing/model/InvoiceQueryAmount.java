@@ -17,6 +17,8 @@ import java.util.Objects;
  * @param type which monetary axis to filter on
  * @param from lower bound (inclusive)
  * @param to upper bound (inclusive)
+ *
+ * @since 1.0.0
  */
 public record InvoiceQueryAmount(InvoiceQueryAmountType type, BigDecimal from, BigDecimal to) {
 

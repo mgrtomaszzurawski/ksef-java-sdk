@@ -16,6 +16,8 @@ import java.util.Objects;
  * Builder for indirect permission grant requests (through an intermediary entity).
  * <p>Required: subject identifier (NIP/PESEL/Fingerprint), description (5-256 chars),
  * personDetails, at least one permission. Optional: target identifier.
+ *
+ * @since 1.0.0
  */
 public final class IndirectPermissionGrantBuilder {
 

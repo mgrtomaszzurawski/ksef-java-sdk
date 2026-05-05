@@ -18,6 +18,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
 /**
  * Client for KSeF security operations (public key certificate retrieval).
  * These operations do not require authentication.
+ *
+ * @since 1.0.0
  */
 public final class SecurityClient {
 

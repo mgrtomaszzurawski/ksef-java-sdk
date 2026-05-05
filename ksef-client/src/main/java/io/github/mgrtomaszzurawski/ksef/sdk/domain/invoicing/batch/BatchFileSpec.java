@@ -26,6 +26,8 @@ import java.util.Objects;
  * @param fileSize total file size in bytes (max 5 GB)
  * @param fileHash SHA-256 hash of the entire file (raw bytes, not Base64)
  * @param parts metadata for each file part (max 50 parts, each max 100 MB before encryption)
+ *
+ * @since 1.0.0
  */
 public record BatchFileSpec(long fileSize, byte[] fileHash, List<Part> parts) {
 

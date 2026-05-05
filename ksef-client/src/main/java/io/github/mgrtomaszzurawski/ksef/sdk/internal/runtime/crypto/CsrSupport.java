@@ -26,6 +26,8 @@ import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
  * for EC). Used by {@code KsefCryptoService.generateCsr(...)}.
  *
  * <p>Spec: {@code ksef-docs/certyfikaty-KSeF.md} certificate enrollment.
+ *
+ * @since 1.0.0
  */
 public final class CsrSupport {
 

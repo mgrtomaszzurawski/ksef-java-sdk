@@ -12,6 +12,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersR
  *
  * <p>Lists Peppol service providers registered in KSeF. Results are sorted by
  * {@code dateCreated} descending, then {@code id} ascending. Requires authentication.
+ *
+ * @since 1.0.0
  */
 public interface PeppolClient {
 

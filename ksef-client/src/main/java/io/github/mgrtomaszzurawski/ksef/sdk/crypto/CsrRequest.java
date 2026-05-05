@@ -22,6 +22,8 @@ import java.util.Objects;
  * @param keyPair RSA or EC key pair; signature algorithm is auto-selected
  *     by key type ({@code SHA256withRSA} for RSA, {@code SHA256withECDSA}
  *     for EC)
+ *
+ * @since 1.0.0
  */
 public record CsrRequest(String subjectDn, KeyPair keyPair) {
 

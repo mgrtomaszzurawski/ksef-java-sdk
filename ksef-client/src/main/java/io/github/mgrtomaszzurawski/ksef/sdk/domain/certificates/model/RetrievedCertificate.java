@@ -14,6 +14,8 @@ import java.util.Objects;
  * @param certificateName certificate name
  * @param certificateSerialNumber serial number
  * @param certificateType certificate type (Authentication or Offline)
+ *
+ * @since 1.0.0
  */
 public record RetrievedCertificate(
         byte[] certificate,

@@ -8,6 +8,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationMethodCategor
 
 /**
  * Category of authentication method used in KSeF.
+ *
+ * @since 1.0.0
  */
 public enum AuthenticationMethodCategory {
 

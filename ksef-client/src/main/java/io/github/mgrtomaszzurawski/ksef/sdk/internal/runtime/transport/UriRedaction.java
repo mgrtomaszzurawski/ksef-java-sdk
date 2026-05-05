@@ -18,6 +18,8 @@ import java.net.URI;
  * <p>Codex round-9 fresh review H1: {@code KsefBatchSession} previously
  * logged the full upload URL at DEBUG; export error messages already
  * redacted via the inline helper this class generalises.
+ *
+ * @since 1.0.0
  */
 public final class UriRedaction {
 

@@ -13,6 +13,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
  *
  * @param referenceNumber operation reference number for status polling
  * @param authenticationToken the operation token with validity period
+ *
+ * @since 1.0.0
  */
 public record AuthenticationInit(String referenceNumber, TokenInfo authenticationToken) {
 

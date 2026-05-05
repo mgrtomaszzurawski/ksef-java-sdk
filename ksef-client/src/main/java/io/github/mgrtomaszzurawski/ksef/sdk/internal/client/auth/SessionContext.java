@@ -11,6 +11,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Thread-safe holder for KSeF session state.
  * Stores the JWT token and session reference number obtained during authentication.
  * Updated atomically on auth, refresh, and session termination.
+ *
+ * @since 1.0.0
  */
 public final class SessionContext {
 

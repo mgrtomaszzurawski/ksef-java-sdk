@@ -26,6 +26,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
  * client.openBatchSession(FormCode.FA2, invoices, BatchSessionOptions.online());
  * client.openBatchSession(FormCode.FA2, invoices, BatchSessionOptions.offline());
  * }</pre>
+ *
+ * @since 1.0.0
  */
 public record BatchSessionOptions(boolean offlineMode) {
 

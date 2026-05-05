@@ -24,6 +24,8 @@ import java.time.Duration;
  * may also retry their own way; the exception is purely advisory.
  *
  * @see KsefException
+ *
+ * @since 1.0.0
  */
 public class KsefSessionCooldownException extends KsefException {
 

@@ -57,6 +57,8 @@ import java.util.zip.ZipOutputStream;
  * (in package {@code sdk}) can call into it. Its package
  * {@code sdk.internal.batch} is intentionally not exported via {@code module-info.java};
  * consumers cannot reach this type.
+ *
+ * @since 1.0.0
  */
 public final class BatchPackageBuilder {
 

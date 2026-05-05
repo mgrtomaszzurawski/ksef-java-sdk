@@ -14,6 +14,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  *   <li>{@link #RR} — RR (faktury rolnicze)</li>
  *   <li>{@link #FA_RR} — combined FA + RR scope</li>
  * </ul>
+ *
+ * @since 1.0.0
  */
 public enum InvoiceFormType {
     FA,

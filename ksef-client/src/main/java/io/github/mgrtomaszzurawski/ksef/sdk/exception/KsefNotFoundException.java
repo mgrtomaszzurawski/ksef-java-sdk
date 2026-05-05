@@ -8,6 +8,8 @@ import java.io.Serial;
 
 /**
  * Thrown on HTTP 404 (Not Found) or 410 (Gone).
+ *
+ * @since 1.0.0
  */
 public class KsefNotFoundException extends KsefException {
 

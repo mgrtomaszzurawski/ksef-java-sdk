@@ -12,6 +12,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationMethodInfoRaw
  * @param category authentication method category
  * @param code authentication method code string
  * @param displayName human-readable display name
+ *
+ * @since 1.0.0
  */
 public record AuthenticationMethodInfo(
         AuthenticationMethodCategory category,

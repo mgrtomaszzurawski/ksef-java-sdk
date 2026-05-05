@@ -12,6 +12,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession
  *
  * @param onlineSession online session limits
  * @param batchSession batch session limits
+ *
+ * @since 1.0.0
  */
 public record ContextLimits(OnlineSessionLimits onlineSession, BatchSessionLimits batchSession) {
 

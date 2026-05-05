@@ -21,6 +21,8 @@ import java.util.Objects;
  *     {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage#continuationCursor()}
  *     on each window)
  * @param lastTruncated whether the last window was truncated
+ *
+ * @since 1.0.0
  */
 public record SyncCheckpoint(OffsetDateTime cursor, boolean lastTruncated) {
 

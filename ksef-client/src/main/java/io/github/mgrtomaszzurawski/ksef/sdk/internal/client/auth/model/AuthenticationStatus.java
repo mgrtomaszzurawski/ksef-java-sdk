@@ -18,6 +18,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
  * @param tokenRedeemed whether the operation token has been redeemed
  * @param lastTokenRefreshDate when the token was last refreshed
  * @param refreshTokenValidUntil when the refresh token expires
+ *
+ * @since 1.0.0
  */
 public record AuthenticationStatus(
         OffsetDateTime startDate,

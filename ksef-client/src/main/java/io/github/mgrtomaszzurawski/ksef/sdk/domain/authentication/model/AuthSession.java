@@ -33,6 +33,8 @@ import java.time.OffsetDateTime;
  *     ({@code null} when no refresh token)
  * @param current whether this is the session that issued the
  *     {@code GET /auth/sessions} call
+ *
+ * @since 1.0.0
  */
 public record AuthSession(
         String referenceNumber,

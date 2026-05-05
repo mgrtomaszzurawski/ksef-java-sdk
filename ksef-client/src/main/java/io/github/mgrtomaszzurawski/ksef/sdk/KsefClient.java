@@ -99,6 +99,8 @@ import org.slf4j.LoggerFactory;
  *     }
  * }
  * }</pre>
+ *
+ * @since 1.0.0
  */
 public final class KsefClient implements AutoCloseable {
 

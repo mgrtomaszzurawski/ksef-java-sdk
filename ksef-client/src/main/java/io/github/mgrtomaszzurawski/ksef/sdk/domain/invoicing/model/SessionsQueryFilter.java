@@ -27,6 +27,8 @@ import org.jspecify.annotations.Nullable;
  * @param dateModifiedTo inclusive upper bound
  * @param statuses narrow to one or more numeric status codes (e.g.
  *     {@code [100, 200]} for in-flight + success)
+ *
+ * @since 1.0.0
  */
 public record SessionsQueryFilter(
         KsefSessionType sessionType,

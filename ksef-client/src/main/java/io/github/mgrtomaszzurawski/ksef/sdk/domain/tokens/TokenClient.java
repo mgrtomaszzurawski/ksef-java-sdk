@@ -12,6 +12,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 
 /**
  * Client for KSeF API token management — generate, list, query status, and revoke tokens.
+ *
+ * @since 1.0.0
  */
 public interface TokenClient {
 

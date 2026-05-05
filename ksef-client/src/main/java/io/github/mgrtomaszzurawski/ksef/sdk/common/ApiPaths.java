@@ -22,6 +22,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
  * @apiNote Public for consumer URL construction. The SDK's domain clients
  *          consume these constants internally — consumers usually don't need
  *          to touch them.
+ *
+ * @since 1.0.0
  */
 public final class ApiPaths {
 

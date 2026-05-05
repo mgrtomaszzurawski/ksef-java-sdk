@@ -11,6 +11,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * SDK request for {@code TestDataClient.createSubject(...)}.
+ *
+ * @since 1.0.0
  */
 public record TestSubjectCreateRequest(
         String subjectNip,

@@ -22,6 +22,8 @@ import java.util.Objects;
 /**
  * Builder for invoice metadata query filters.
  * <p>Required fields: subjectType, dateType, dateFrom. Server enforces dateRange max 3 months.
+ *
+ * @since 1.0.0
  */
 public final class InvoiceQueryBuilder {
 

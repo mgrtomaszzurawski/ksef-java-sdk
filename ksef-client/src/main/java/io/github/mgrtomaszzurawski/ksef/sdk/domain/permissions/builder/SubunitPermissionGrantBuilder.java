@@ -13,6 +13,8 @@ import java.util.Objects;
  * Builder for subunit permission grant requests.
  * <p>Required: subject identifier (NIP/PESEL/Fingerprint), context identifier,
  * description (5-256 chars), personDetails. Optional: subunitName.
+ *
+ * @since 1.0.0
  */
 public final class SubunitPermissionGrantBuilder {
 

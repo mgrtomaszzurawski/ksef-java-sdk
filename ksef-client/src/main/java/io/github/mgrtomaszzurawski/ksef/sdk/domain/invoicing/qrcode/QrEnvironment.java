@@ -11,6 +11,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;
  * <p>The QR hosts are independent of the API hosts ({@code api-test}, {@code api-demo},
  * {@code api}) — verification links are served from {@code qr-test}, {@code qr-demo},
  * and {@code qr} respectively.
+ *
+ * @since 1.0.0
  */
 public enum QrEnvironment {
     /** Test environment ({@code https://qr-test.ksef.mf.gov.pl}). */

@@ -10,6 +10,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * @param maxInvoiceSizeInMB maximum invoice size in megabytes
  * @param maxInvoiceWithAttachmentSizeInMB maximum invoice with attachment size in megabytes
  * @param maxInvoices maximum number of invoices per session
+ *
+ * @since 1.0.0
  */
 public record BatchSessionLimits(Integer maxInvoiceSizeInMB, Integer maxInvoiceWithAttachmentSizeInMB, Integer maxInvoices) {
 

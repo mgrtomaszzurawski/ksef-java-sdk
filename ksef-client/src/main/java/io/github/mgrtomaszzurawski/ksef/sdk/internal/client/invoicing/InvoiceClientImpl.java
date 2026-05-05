@@ -45,6 +45,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.In
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
  * and exporting invoices.
+ *
+ * @since 1.0.0
  */
 public final class InvoiceClientImpl implements InvoiceClient {
 

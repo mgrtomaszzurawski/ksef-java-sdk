@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 
 /**
  * Identifier type for test data context authentication operations.
+ *
+ * @since 1.0.0
  */
 public enum TestDataIdentifierType {
 

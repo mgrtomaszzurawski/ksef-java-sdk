@@ -19,6 +19,8 @@ import org.jspecify.annotations.Nullable;
  *     ({@code pobieranie-faktur/przyrostowe-pobieranie-faktur.md}). Set by
  *     {@code InvoiceSyncClient} on every export it opens; consumers do not
  *     normally need to set this directly. Default {@code false}.
+ *
+ * @since 1.0.0
  */
 public record InvoiceQueryFilters(
         InvoiceQuerySubjectType subjectType,

@@ -13,6 +13,8 @@ import org.jspecify.annotations.Nullable;
  * <p>{@code authorizingType} is implicitly NIP-only (KSeF spec). The
  * {@code authorizedType} accepts {@link EntityAuthorizationIdentifierType}
  * (NIP or PEPPOL_ID).
+ *
+ * @since 1.0.0
  */
 public record EntityAuthorizationPermissionsQueryRequest(
         AuthorizationQueryType queryType,

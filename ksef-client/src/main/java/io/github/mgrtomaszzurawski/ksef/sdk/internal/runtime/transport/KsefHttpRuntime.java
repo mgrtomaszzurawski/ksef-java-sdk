@@ -25,6 +25,8 @@ import java.util.Objects;
  * {@link AuthHooks}, {@link FeaturePolicy}) instead of nine flat parameters.
  * This closes Sonar S107 without losing the explicit shape of each
  * collaborator (Codex round-9 follow-up).
+ *
+ * @since 1.0.0
  */
 public final class KsefHttpRuntime implements HttpRuntime {
 

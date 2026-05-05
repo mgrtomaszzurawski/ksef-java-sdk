@@ -10,6 +10,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLim
 /**
  * Builder for KSeF test session limits override requests.
  * <p>Required: onlineSession and batchSession limits.
+ *
+ * @since 1.0.0
  */
 public final class TestSessionLimitsBuilder {
 

@@ -49,6 +49,8 @@ import javax.crypto.CipherOutputStream;
  * {@code ksef-docs/sesja-interaktywna.md} (AES-256 + IV sizes),
  * {@code ksef-docs/przeglad-kluczowych-zmian-ksef-api-2-0.md} (RSA-OAEP-SHA256),
  * {@code ksef-docs/certyfikaty-KSeF.md} (CSR generation for cert enrollment).
+ *
+ * @since 1.0.0
  */
 public final class KsefCryptoService {
 

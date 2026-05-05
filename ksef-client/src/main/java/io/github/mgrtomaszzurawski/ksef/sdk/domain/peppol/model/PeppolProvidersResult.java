@@ -11,6 +11,8 @@ import java.util.List;
  *
  * @param providers list of providers on the current page (never null, empty when no results)
  * @param hasMore true when additional pages of results are available
+ *
+ * @since 1.0.0
  */
 public record PeppolProvidersResult(List<PeppolProvider> providers, boolean hasMore) {
 

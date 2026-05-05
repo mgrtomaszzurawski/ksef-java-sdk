@@ -14,6 +14,8 @@ import java.util.Objects;
  * Builder for invoice export requests. Generates a fresh AES key and IV per
  * {@link #build()} call and encrypts the AES key with the supplied KSeF
  * public key. Required: filters (use {@link InvoiceQueryBuilder}).
+ *
+ * @since 1.0.0
  */
 public final class InvoiceExportBuilder {
 

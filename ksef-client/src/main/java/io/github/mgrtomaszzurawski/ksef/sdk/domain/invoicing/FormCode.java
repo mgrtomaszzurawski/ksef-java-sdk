@@ -20,6 +20,8 @@ import java.util.Objects;
  *
  * <p>For invoice types not covered by the predefined constants, use
  * {@link #custom(String, String, String)}.
+ *
+ * @since 1.0.0
  */
 public final class FormCode {
 

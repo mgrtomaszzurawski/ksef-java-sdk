@@ -19,6 +19,8 @@ import java.util.Objects;
 /**
  * Builder for person permissions query requests.
  * <p>Required: query type. All other fields are optional.
+ *
+ * @since 1.0.0
  */
 public final class PersonPermissionsQueryBuilder {
 

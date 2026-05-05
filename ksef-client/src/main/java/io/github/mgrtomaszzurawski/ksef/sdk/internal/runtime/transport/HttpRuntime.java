@@ -17,6 +17,8 @@ import java.time.Duration;
  * (transport, low-level) importing {@code KsefClient} (the high-level facade).
  * {@code KsefClient} implements this interface; {@code HttpSupport} depends
  * only on the abstraction.
+ *
+ * @since 1.0.0
  */
 public interface HttpRuntime {
 

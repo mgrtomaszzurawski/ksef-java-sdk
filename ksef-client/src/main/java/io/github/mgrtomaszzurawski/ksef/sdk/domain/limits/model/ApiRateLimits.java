@@ -19,6 +19,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
  * @param invoiceExportStatus export status checks
  * @param invoiceDownload invoice download operations
  * @param other other operations
+ *
+ * @since 1.0.0
  */
 public record ApiRateLimits(
         RateLimitValues onlineSession,

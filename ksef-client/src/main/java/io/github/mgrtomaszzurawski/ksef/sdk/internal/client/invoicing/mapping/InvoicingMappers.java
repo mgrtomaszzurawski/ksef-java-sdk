@@ -63,6 +63,8 @@ import java.util.Map;
 /**
  * Internal mappers from generated {@code *Raw} types to public invoicing
  * domain records. Lives in a non-exported package; consumers can't reach it.
+ *
+ * @since 1.0.0
  */
 public final class InvoicingMappers {
 

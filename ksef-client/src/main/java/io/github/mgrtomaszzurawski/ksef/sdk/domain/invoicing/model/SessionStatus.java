@@ -18,6 +18,8 @@ import java.time.OffsetDateTime;
  * @param invoiceCount total invoices submitted
  * @param successfulInvoiceCount successfully processed invoices
  * @param failedInvoiceCount failed invoices
+ *
+ * @since 1.0.0
  */
 public record SessionStatus(
         StatusInfo status,

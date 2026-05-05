@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 /**
  * Identifier types for person-permission subjects.
+ *
+ * @since 1.0.0
  */
 public enum PersonSubjectIdentifierType {
     NIP,

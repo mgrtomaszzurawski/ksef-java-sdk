@@ -17,6 +17,8 @@ import java.util.Objects;
  *
  * @param type identifier type (never {@code null})
  * @param value identifier value (never {@code null} or blank)
+ *
+ * @since 1.0.0
  */
 public record KsefIdentifier(Type type, String value) {
 

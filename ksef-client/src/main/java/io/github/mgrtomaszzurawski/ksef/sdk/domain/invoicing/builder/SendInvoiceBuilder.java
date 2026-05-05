@@ -21,6 +21,8 @@ import java.util.Objects;
  * var request = SendInvoiceBuilder.create(invoiceXmlBytes, sessionAesKey, sessionIv)
  *     .build();
  * }</pre>
+ *
+ * @since 1.0.0
  */
 public final class SendInvoiceBuilder {
 

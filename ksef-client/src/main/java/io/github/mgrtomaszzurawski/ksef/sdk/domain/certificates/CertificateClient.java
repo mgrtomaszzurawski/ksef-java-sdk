@@ -19,6 +19,8 @@ import java.util.List;
 /**
  * Client for KSeF certificate management — enrollment, retrieval, querying,
  * revocation, and limits.
+ *
+ * @since 1.0.0
  */
 public interface CertificateClient {
 
