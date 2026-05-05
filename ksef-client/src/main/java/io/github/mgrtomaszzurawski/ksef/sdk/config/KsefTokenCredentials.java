@@ -5,6 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
 
 import java.util.Objects;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * KSeF token-based authentication credentials.
@@ -15,8 +17,13 @@ import java.util.Objects;
  *
  * @param ksefToken the KSeF authorization token
  * @param identifier authentication context identifier (NIP, internal id, EU VAT, or Peppol)
+ * @param authPolicy optional IP allow-list for the authentication ticket
+ *     (Codex 2026-05-05 #7 / F6); when {@code null}, the SDK falls back
+ *     to the challenge's reported {@code clientIp} as a single exact
+ *     address
  */
-public record KsefTokenCredentials(String ksefToken, KsefIdentifier identifier)
+public record KsefTokenCredentials(String ksefToken, KsefIdentifier identifier,
+                                   @Nullable AuthorizationPolicy authPolicy)
         implements KsefCredentials {
 
     private static final String ERR_NULL_TOKEN = "ksefToken must not be null";
@@ -35,18 +42,32 @@ public record KsefTokenCredentials(String ksefToken, KsefIdentifier identifier)
     }
 
     /**
+     * Backwards-compatible constructor — token + identifier with no
+     * custom authorization policy.
+     */
+    public KsefTokenCredentials(String ksefToken, KsefIdentifier identifier) {
+        this(ksefToken, identifier, null);
+    }
+
+    /**
      * Backwards-compatible constructor — accepts a plain NIP string.
      *
      * @param ksefToken the KSeF authorization token
      * @param nip 10-digit Polish tax identification number
      */
     public KsefTokenCredentials(String ksefToken, String nip) {
-        this(ksefToken, KsefIdentifier.nip(nip));
+        this(ksefToken, KsefIdentifier.nip(nip), null);
+    }
+
+    @Override
+    public Optional<AuthorizationPolicy> authorizationPolicy() {
+        return Optional.ofNullable(authPolicy);
     }
 
     @Override
     public String toString() {
-        return "KsefTokenCredentials[identifier=" + identifier + "]";
+        return "KsefTokenCredentials[identifier=" + identifier
+                + (authPolicy == null ? "" : ", authPolicy=set") + "]";
     }
 
 }

@@ -777,7 +777,8 @@ public final class KsefClient implements AutoCloseable {
         PublicKey tokenKey = getPublicKey(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION);
         AuthenticationChallenge challenge = authClient.requestChallenge();
         authClient.authenticateWithToken(challenge, credentials.ksefToken(),
-                credentials.identifier(), tokenKey);
+                credentials.identifier(), tokenKey,
+                credentials.authorizationPolicy().orElse(null));
         pollAuthStatus();
         authClient.redeemTokens();
     }

@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.config;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Authentication credentials for KSeF API access.
@@ -34,6 +35,22 @@ public sealed interface KsefCredentials
      * @return identifier (type + value)
      */
     KsefIdentifier identifier();
+
+    /**
+     * Optional IP allow-list policy applied at authentication time. Codex
+     * 2026-05-05 #7 / F6.
+     *
+     * <p>When empty, the SDK passes only the challenge's reported
+     * {@code clientIp} as a single exact address. When present, the SDK
+     * sends the full policy (exact addresses + ranges + CIDR masks) to
+     * the server's {@code authorizationPolicy.allowedIps} field.
+     *
+     * <p>Default returns empty so existing implementations need no
+     * change.
+     */
+    default Optional<AuthorizationPolicy> authorizationPolicy() {
+        return Optional.empty();
+    }
 
     /**
      * The NIP (Polish tax identification number) of the authenticating entity.
