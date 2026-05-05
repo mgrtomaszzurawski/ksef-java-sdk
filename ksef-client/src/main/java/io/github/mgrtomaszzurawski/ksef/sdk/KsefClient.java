@@ -252,7 +252,7 @@ public final class KsefClient implements AutoCloseable {
         LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
 
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(
-                sessionClient, session.referenceNumber(), aesKey, initVector);
+                sessionClient, session.referenceNumber(), aesKey, initVector, session.validUntil());
     }
 
     /**

@@ -207,6 +207,32 @@ class KsefSessionTest {
     }
 
     @Test
+    void validUntil_returnsValueWhenConstructedWithDeadline() {
+        // Codex 2026-05-05 F8a — validUntil should round-trip through the
+        // package-private constructor and timeToExpiry should compute
+        // duration against the supplied clock.
+        java.time.OffsetDateTime deadline = java.time.OffsetDateTime.parse("2026-04-18T13:00:00+02:00");
+        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor
+                .newOnlineSession(null, TEST_SESSION_REF, new byte[0], new byte[0], deadline);
+
+        assertEquals(deadline, session.validUntil().orElseThrow());
+        java.time.Clock fixed = java.time.Clock.fixed(
+                java.time.OffsetDateTime.parse("2026-04-18T12:00:00+02:00").toInstant(),
+                java.time.ZoneOffset.UTC);
+        assertEquals(java.time.Duration.ofHours(1),
+                session.timeToExpiry(fixed).orElseThrow());
+    }
+
+    @Test
+    void validUntil_emptyWhenLegacyConstructor() {
+        // Legacy 4-arg ctor (no validUntil) → accessor returns empty.
+        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor
+                .newOnlineSession(null, TEST_SESSION_REF, new byte[0], new byte[0]);
+        assertEquals(java.util.Optional.empty(), session.validUntil());
+        assertEquals(java.util.Optional.empty(), session.timeToExpiry(java.time.Clock.systemUTC()));
+    }
+
+    @Test
     void sendOffline_postsOfflineModeTrueAndNoCorrectionHash(WireMockRuntimeInfo wmInfo) {
         // Codex 2026-05-05 F1 — public offline send must reach the wire as
         // offlineMode=true and MUST NOT carry hashOfCorrectedInvoice (that

@@ -14,8 +14,13 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +82,7 @@ public final class KsefSession implements AutoCloseable {
     private final String referenceNumber;
     private final byte[] aesKey;
     private final byte[] initVector;
+    @Nullable private final OffsetDateTime validUntil;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -92,10 +98,39 @@ public final class KsefSession implements AutoCloseable {
      */
     KsefSession(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
+        this(sessionClient, referenceNumber, aesKey, initVector, null);
+    }
+
+    KsefSession(SessionClient sessionClient, String referenceNumber,
+                byte[] aesKey, byte[] initVector,
+                @Nullable OffsetDateTime validUntil) {
         this.sessionClient = sessionClient;
         this.referenceNumber = referenceNumber;
         this.aesKey = aesKey;
         this.initVector = initVector;
+        this.validUntil = validUntil;
+    }
+
+    /**
+     * Session expiration timestamp captured from the open-session
+     * response (Codex 2026-05-05 F8a). May be empty for sessions
+     * constructed via legacy paths or test fixtures that don't pass it.
+     *
+     * <p>Use {@link #status()} to fetch the current value from the
+     * server when freshness matters.
+     */
+    public Optional<OffsetDateTime> validUntil() {
+        return Optional.ofNullable(validUntil);
+    }
+
+    /**
+     * Time remaining until {@link #validUntil()} relative to the supplied
+     * clock. Empty when {@code validUntil} is unknown. Negative durations
+     * indicate an already-expired session.
+     */
+    public Optional<Duration> timeToExpiry(Clock clock) {
+        Objects.requireNonNull(clock, "clock must not be null");
+        return validUntil().map(deadline -> Duration.between(clock.instant(), deadline.toInstant()));
     }
 
     /**

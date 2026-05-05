@@ -7,16 +7,28 @@ package io.github.mgrtomaszzurawski.ksef.sdk.crypto;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CsrSupport;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.GeneralSecurityException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 import java.util.Objects;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -54,6 +66,21 @@ public final class KsefCryptoService {
             "RSA key size must be >= " + RSA_MIN_KEY_SIZE + " bits per KSeF spec";
     private static final String ERR_MATERIAL_NULL = "material must not be null";
     private static final String ERR_IN_NULL = "in must not be null";
+    private static final String ERR_BYTES_NULL = "bytes must not be null";
+    private static final String ERR_PATH_NULL = "path must not be null";
+    private static final String ERR_PEM_NO_BEGIN = "PEM input does not contain a recognised BEGIN marker";
+    private static final String ERR_PEM_NO_END = "PEM input does not contain a matching END marker";
+    private static final String ERR_PRIVATE_KEY_PARSE = "Failed to parse private key";
+    private static final String ERR_CERTIFICATE_PARSE = "Failed to parse X.509 certificate";
+
+    private static final String CERT_X509 = "X.509";
+    private static final String PEM_BEGIN_PREFIX = "-----BEGIN ";
+    private static final String PEM_END_PREFIX = "-----END ";
+    private static final String PEM_FOOTER_SUFFIX = "-----";
+    private static final String PEM_PRIVATE_KEY_LABEL = "PRIVATE KEY";
+    private static final String PEM_RSA_PRIVATE_KEY_LABEL = "RSA PRIVATE KEY";
+    private static final String PEM_EC_PRIVATE_KEY_LABEL = "EC PRIVATE KEY";
+    private static final String PEM_ENCRYPTED_PRIVATE_KEY_LABEL = "ENCRYPTED PRIVATE KEY";
 
     /**
      * Generate a fresh AES-256 key + 16-byte IV pair via secure random.
@@ -220,6 +247,137 @@ public final class KsefCryptoService {
     public CsrResult generateCsr(CsrRequest request) {
         Objects.requireNonNull(request, "request must not be null");
         return CsrSupport.generate(request);
+    }
+
+    /**
+     * Parse a PKCS#8 private key from PEM or DER bytes. Codex 2026-05-05
+     * F5 — public helper for offline-certificate / KOD II workflows where
+     * the consumer holds a private key on disk and needs it as a
+     * {@link PrivateKey} for signing.
+     *
+     * <p>Accepts:
+     * <ul>
+     *   <li>DER bytes (raw PKCS#8 binary)</li>
+     *   <li>PEM with {@code -----BEGIN PRIVATE KEY-----} (PKCS#8 text)</li>
+     * </ul>
+     *
+     * <p>Does not accept legacy PKCS#1
+     * ({@code -----BEGIN RSA PRIVATE KEY-----} or
+     * {@code -----BEGIN EC PRIVATE KEY-----}) or encrypted
+     * ({@code -----BEGIN ENCRYPTED PRIVATE KEY-----}) keys; convert
+     * those to PKCS#8 first (e.g.
+     * {@code openssl pkcs8 -topk8 -nocrypt -in legacy.pem -out pkcs8.pem})
+     * — pure-JCA decoding of legacy formats requires BouncyCastle which
+     * the SDK does not bundle.
+     *
+     * <p>The returned key's algorithm is detected from the encoded
+     * structure ({@code RSA} or {@code EC}). Throws
+     * {@link KsefCryptoException} on malformed input or unsupported
+     * algorithm.
+     */
+    public PrivateKey parsePrivateKey(byte[] bytes) {
+        Objects.requireNonNull(bytes, ERR_BYTES_NULL);
+        byte[] der = looksLikePem(bytes) ? decodePem(bytes, PEM_PRIVATE_KEY_LABEL) : bytes;
+        try {
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(der);
+            try {
+                return KeyFactory.getInstance(RSA_KEY_ALGORITHM).generatePrivate(spec);
+            } catch (InvalidKeySpecException notRsa) {
+                return KeyFactory.getInstance(EC_KEY_ALGORITHM).generatePrivate(spec);
+            }
+        } catch (GeneralSecurityException ex) {
+            throw new KsefCryptoException(ERR_PRIVATE_KEY_PARSE, ex);
+        }
+    }
+
+    /**
+     * Convenience overload — read PEM/DER private key bytes from a file
+     * path and parse via {@link #parsePrivateKey(byte[])}.
+     */
+    public PrivateKey parsePrivateKey(Path path) {
+        Objects.requireNonNull(path, ERR_PATH_NULL);
+        try {
+            return parsePrivateKey(Files.readAllBytes(path));
+        } catch (IOException ex) {
+            throw new KsefCryptoException(ERR_PRIVATE_KEY_PARSE, ex);
+        }
+    }
+
+    /**
+     * Parse an X.509 certificate from PEM or DER bytes. Codex 2026-05-05
+     * F5 — public helper for offline-certificate / KOD II workflows.
+     *
+     * <p>Accepts:
+     * <ul>
+     *   <li>DER bytes (raw X.509 binary)</li>
+     *   <li>PEM with {@code -----BEGIN CERTIFICATE-----}</li>
+     * </ul>
+     */
+    public X509Certificate parseCertificate(byte[] bytes) {
+        Objects.requireNonNull(bytes, ERR_BYTES_NULL);
+        try {
+            CertificateFactory factory = CertificateFactory.getInstance(CERT_X509);
+            return (X509Certificate) factory.generateCertificate(new ByteArrayInputStream(bytes));
+        } catch (CertificateException ex) {
+            throw new KsefCryptoException(ERR_CERTIFICATE_PARSE, ex);
+        }
+    }
+
+    /**
+     * Convenience overload — read PEM/DER certificate bytes from a file
+     * path and parse via {@link #parseCertificate(byte[])}.
+     */
+    public X509Certificate parseCertificate(Path path) {
+        Objects.requireNonNull(path, ERR_PATH_NULL);
+        try {
+            return parseCertificate(Files.readAllBytes(path));
+        } catch (IOException ex) {
+            throw new KsefCryptoException(ERR_CERTIFICATE_PARSE, ex);
+        }
+    }
+
+    private static boolean looksLikePem(byte[] bytes) {
+        if (bytes.length < PEM_BEGIN_PREFIX.length()) {
+            return false;
+        }
+        String head = new String(bytes, 0, Math.min(bytes.length, 64), StandardCharsets.US_ASCII);
+        return head.contains(PEM_BEGIN_PREFIX);
+    }
+
+    private static byte[] decodePem(byte[] pem, String requiredLabel) {
+        String text = new String(pem, StandardCharsets.US_ASCII);
+        String beginMarker = PEM_BEGIN_PREFIX + requiredLabel + PEM_FOOTER_SUFFIX;
+        String endMarker = PEM_END_PREFIX + requiredLabel + PEM_FOOTER_SUFFIX;
+        int beginIdx = text.indexOf(beginMarker);
+        if (beginIdx < 0) {
+            throw new KsefCryptoException(ERR_PEM_NO_BEGIN
+                    + " (expected " + beginMarker + "; got "
+                    + (text.contains(PEM_BEGIN_PREFIX) ? unsupportedPemKindHint(text) : "no PEM markers") + ")", null);
+        }
+        int afterBegin = beginIdx + beginMarker.length();
+        int endIdx = text.indexOf(endMarker, afterBegin);
+        if (endIdx < 0) {
+            throw new KsefCryptoException(ERR_PEM_NO_END + " for " + requiredLabel, null);
+        }
+        String base64 = text.substring(afterBegin, endIdx).replaceAll("\\s+", "");
+        try {
+            return Base64.getDecoder().decode(base64);
+        } catch (IllegalArgumentException ex) {
+            throw new KsefCryptoException(ERR_PRIVATE_KEY_PARSE, ex);
+        }
+    }
+
+    private static String unsupportedPemKindHint(String text) {
+        if (text.contains(PEM_BEGIN_PREFIX + PEM_RSA_PRIVATE_KEY_LABEL)) {
+            return "legacy PKCS#1 (BEGIN RSA PRIVATE KEY) — convert to PKCS#8";
+        }
+        if (text.contains(PEM_BEGIN_PREFIX + PEM_EC_PRIVATE_KEY_LABEL)) {
+            return "legacy SEC1 (BEGIN EC PRIVATE KEY) — convert to PKCS#8";
+        }
+        if (text.contains(PEM_BEGIN_PREFIX + PEM_ENCRYPTED_PRIVATE_KEY_LABEL)) {
+            return "encrypted PKCS#8 (BEGIN ENCRYPTED PRIVATE KEY) — decrypt first";
+        }
+        return "unrecognised PEM kind";
     }
 
     private static void transfer(InputStream in, OutputStream out) throws IOException {

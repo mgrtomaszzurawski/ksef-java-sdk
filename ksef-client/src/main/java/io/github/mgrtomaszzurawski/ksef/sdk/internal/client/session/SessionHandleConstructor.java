@@ -49,9 +49,11 @@ public final class SessionHandleConstructor {
             "SDK internal error: reflective construction of session handle failed";
 
     private static final Constructor<KsefSession> ONLINE_SESSION_CTOR;
+    private static final Constructor<KsefSession> ONLINE_SESSION_CTOR_VALID_UNTIL;
     private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_3_ARG;
     private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_5_ARG;
     private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_6_ARG;
+    private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_7_ARG_VALID_UNTIL;
     private static final Constructor<PreparedInvoiceExport> PREPARED_EXPORT_CTOR;
 
     static {
@@ -59,6 +61,10 @@ public final class SessionHandleConstructor {
             ONLINE_SESSION_CTOR = makeAccessible(
                     KsefSession.class.getDeclaredConstructor(
                             SessionClient.class, String.class, byte[].class, byte[].class));
+            ONLINE_SESSION_CTOR_VALID_UNTIL = makeAccessible(
+                    KsefSession.class.getDeclaredConstructor(
+                            SessionClient.class, String.class, byte[].class, byte[].class,
+                            java.time.OffsetDateTime.class));
             BATCH_SESSION_CTOR_3_ARG = makeAccessible(
                     KsefBatchSession.class.getDeclaredConstructor(
                             SessionClient.class, String.class, List.class));
@@ -71,6 +77,12 @@ public final class SessionHandleConstructor {
                             SessionClient.class, HttpClient.class, String.class,
                             List.class, BatchPackageBuilder.BatchPackage.class,
                             java.util.function.LongSupplier.class));
+            BATCH_SESSION_CTOR_7_ARG_VALID_UNTIL = makeAccessible(
+                    KsefBatchSession.class.getDeclaredConstructor(
+                            SessionClient.class, HttpClient.class, String.class,
+                            List.class, BatchPackageBuilder.BatchPackage.class,
+                            java.util.function.LongSupplier.class,
+                            java.time.OffsetDateTime.class));
             PREPARED_EXPORT_CTOR = makeAccessible(
                     PreparedInvoiceExport.class.getDeclaredConstructor(
                             InvoiceClient.class, HttpClient.class, String.class,
@@ -105,6 +117,19 @@ public final class SessionHandleConstructor {
     }
 
     /**
+     * @apiNote Internal — F8a variant carrying the open-response
+     *     {@code validUntil} into the handle.
+     */
+    public static KsefSession newOnlineSession(SessionClient sessionClient,
+                                                 String referenceNumber,
+                                                 byte[] aesKey,
+                                                 byte[] initVector,
+                                                 java.time.OffsetDateTime validUntil) {
+        return invoke(ONLINE_SESSION_CTOR_VALID_UNTIL, sessionClient,
+                referenceNumber, aesKey, initVector, validUntil);
+    }
+
+    /**
      * @apiNote Internal — see class-level Javadoc.
      */
     public static KsefBatchSession newBatchSession(SessionClient sessionClient,
@@ -123,6 +148,20 @@ public final class SessionHandleConstructor {
                                                     BatchPackageBuilder.BatchPackage batchPackage) {
         return invoke(BATCH_SESSION_CTOR_5_ARG, sessionClient, httpClient,
                 referenceNumber, partUploadRequests, batchPackage);
+    }
+
+    /**
+     * @apiNote Internal — F8a variant carrying the open-response
+     *     {@code validUntil} into the handle.
+     */
+    public static KsefBatchSession newBatchSession(SessionClient sessionClient,
+                                                    HttpClient httpClient,
+                                                    String referenceNumber,
+                                                    List<PartUploadRequest> partUploadRequests,
+                                                    BatchPackageBuilder.BatchPackage batchPackage,
+                                                    java.time.OffsetDateTime validUntil) {
+        return invoke(BATCH_SESSION_CTOR_7_ARG_VALID_UNTIL, sessionClient, httpClient,
+                referenceNumber, partUploadRequests, batchPackage, (java.util.function.LongSupplier) System::nanoTime, validUntil);
     }
 
     /**

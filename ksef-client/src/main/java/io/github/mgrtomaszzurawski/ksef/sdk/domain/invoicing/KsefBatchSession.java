@@ -21,8 +21,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,6 +124,7 @@ public final class KsefBatchSession implements AutoCloseable {
     private final List<PartUploadRequest> partUploadRequests;
     private final BatchPackageBuilder.BatchPackage batchPackage;
     private final java.util.function.LongSupplier nanoTimeSource;
+    @Nullable private final OffsetDateTime validUntil;
     private volatile boolean closed;
 
     /**
@@ -148,6 +155,20 @@ public final class KsefBatchSession implements AutoCloseable {
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage,
                      java.util.function.LongSupplier nanoTimeSource) {
+        this(sessionClient, httpClient, referenceNumber, partUploadRequests, batchPackage,
+                nanoTimeSource, null);
+    }
+
+    /**
+     * Package-private — canonical constructor with validUntil
+     * (Codex 2026-05-05 F8a). The other ctors delegate here with
+     * {@code validUntil=null}.
+     */
+    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+                     List<PartUploadRequest> partUploadRequests,
+                     BatchPackageBuilder.BatchPackage batchPackage,
+                     java.util.function.LongSupplier nanoTimeSource,
+                     @Nullable OffsetDateTime validUntil) {
         this.sessionClient = sessionClient;
         this.httpClient = httpClient;
         this.referenceNumber = referenceNumber;
@@ -157,7 +178,30 @@ public final class KsefBatchSession implements AutoCloseable {
             throw new IllegalArgumentException(ERR_PART_COUNT_MISMATCH);
         }
         this.batchPackage = batchPackage;
-        this.nanoTimeSource = java.util.Objects.requireNonNull(nanoTimeSource, "nanoTimeSource");
+        this.nanoTimeSource = Objects.requireNonNull(nanoTimeSource, "nanoTimeSource");
+        this.validUntil = validUntil;
+    }
+
+    /**
+     * Session expiration timestamp captured from the open-batch
+     * response (Codex 2026-05-05 F8a). May be empty for sessions
+     * constructed via legacy paths or test fixtures.
+     *
+     * <p>Use {@link #status()} to fetch the current value from the
+     * server when freshness matters.
+     */
+    public Optional<OffsetDateTime> validUntil() {
+        return Optional.ofNullable(validUntil);
+    }
+
+    /**
+     * Time remaining until {@link #validUntil()} relative to the supplied
+     * clock. Empty when {@code validUntil} is unknown. Negative durations
+     * indicate an already-expired session.
+     */
+    public Optional<Duration> timeToExpiry(Clock clock) {
+        Objects.requireNonNull(clock, "clock must not be null");
+        return validUntil().map(deadline -> Duration.between(clock.instant(), deadline.toInstant()));
     }
 
     /**
