@@ -5,6 +5,10 @@
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="error"/>
+    <!-- Restrict file-level checks (FileTabCharacter, NewlineAtEndOfFile) to Java sources;
+         bundled XSD resources (xsd/FA/...) and generated openapi properties files are
+         not Java code and should not trigger Checkstyle errors. -->
+    <property name="fileExtensions" value="java"/>
 
     <module name="TreeWalker">
         <!-- Naming -->

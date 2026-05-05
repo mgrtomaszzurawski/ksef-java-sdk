@@ -48,6 +48,9 @@ public final class KsefXmlValidator {
     private static final String ERR_NULL_FORM = "formCode must not be null";
     private static final String ERR_SCHEMA_LOAD = "Failed to load XSD schema for form code: ";
     private static final String ERR_VALIDATION_FAILED = "Invoice XML failed XSD validation: ";
+    private static final String ISSUE_SEPARATOR = " — ";
+    private static final String LINE_LABEL = " line ";
+    private static final String COLUMN_LABEL = ":";
 
     /** Resource path inside the SDK jar for each {@link FormCode#systemCode()}. */
     private static final java.util.Map<String, String> SCHEMA_RESOURCE_BY_SYSTEM_CODE = java.util.Map.of(
@@ -77,21 +80,21 @@ public final class KsefXmlValidator {
         validator.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
             @Override
             public void warning(org.xml.sax.SAXParseException ex) {
-                issues.add("WARNING line " + ex.getLineNumber() + ":" + ex.getColumnNumber() + " — " + ex.getMessage());
+                issues.add(formatIssue("WARNING", ex));
             }
             @Override
             public void error(org.xml.sax.SAXParseException ex) {
-                issues.add("ERROR line " + ex.getLineNumber() + ":" + ex.getColumnNumber() + " — " + ex.getMessage());
+                issues.add(formatIssue("ERROR", ex));
             }
             @Override
             public void fatalError(org.xml.sax.SAXParseException ex) {
-                issues.add("FATAL line " + ex.getLineNumber() + ":" + ex.getColumnNumber() + " — " + ex.getMessage());
+                issues.add(formatIssue("FATAL", ex));
             }
         });
         try {
             validator.validate(new StreamSource(new ByteArrayInputStream(invoiceXml)));
         } catch (SAXException | IOException ex) {
-            issues.add("FATAL — " + ex.getMessage());
+            issues.add("FATAL" + ISSUE_SEPARATOR + ex.getMessage());
         }
         return List.copyOf(issues);
     }
@@ -105,6 +108,11 @@ public final class KsefXmlValidator {
         if (!issues.isEmpty()) {
             throw new KsefXmlValidationException(ERR_VALIDATION_FAILED + String.join("; ", issues), issues);
         }
+    }
+
+    private static String formatIssue(String severity, org.xml.sax.SAXParseException ex) {
+        return severity + LINE_LABEL + ex.getLineNumber() + COLUMN_LABEL + ex.getColumnNumber()
+                + ISSUE_SEPARATOR + ex.getMessage();
     }
 
     private static Schema loadSchemaOrThrow(String systemCode) {
@@ -147,6 +155,7 @@ public final class KsefXmlValidator {
         private static final String BAZOWE_RESOURCE_PREFIX = "/xsd/FA/bazowe/";
 
         @Override
+        @SuppressWarnings("PMD.UseObjectForClearerAPI") // signature fixed by W3C LSResourceResolver interface
         public org.w3c.dom.ls.LSInput resolveResource(String type, String namespaceURI, String publicId,
                                                        String systemId, String baseURI) {
             if (systemId == null) {
