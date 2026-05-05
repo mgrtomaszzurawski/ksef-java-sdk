@@ -52,7 +52,7 @@ public interface TokenClient {
                 detail -> detail.status() != null
                         && (detail.status() == io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus.ACTIVE
                             || detail.status() == io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus.FAILED),
-                detail -> detail.status(),
+                TokenDetail::status,
                 timeout,
                 null);
     }

@@ -349,10 +349,9 @@ public final class KsefCryptoService {
         return head.contains(PEM_BEGIN_PREFIX);
     }
 
-    private static byte[] decodePem(byte[] pem, String requiredLabel) {
-        String text = new String(pem, StandardCharsets.US_ASCII);
+    private static byte[] decodePem(byte[] pemBytes, String requiredLabel) {
+        String text = new String(pemBytes, StandardCharsets.US_ASCII);
         String beginMarker = PEM_BEGIN_PREFIX + requiredLabel + PEM_FOOTER_SUFFIX;
-        String endMarker = PEM_END_PREFIX + requiredLabel + PEM_FOOTER_SUFFIX;
         int beginIdx = text.indexOf(beginMarker);
         if (beginIdx < 0) {
             throw new KsefCryptoException(ERR_PEM_NO_BEGIN
@@ -360,6 +359,7 @@ public final class KsefCryptoService {
                     + (text.contains(PEM_BEGIN_PREFIX) ? unsupportedPemKindHint(text) : "no PEM markers") + ")", null);
         }
         int afterBegin = beginIdx + beginMarker.length();
+        String endMarker = PEM_END_PREFIX + requiredLabel + PEM_FOOTER_SUFFIX;
         int endIdx = text.indexOf(endMarker, afterBegin);
         if (endIdx < 0) {
             throw new KsefCryptoException(ERR_PEM_NO_END + " for " + requiredLabel, null);

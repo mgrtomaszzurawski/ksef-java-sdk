@@ -46,6 +46,8 @@ public class KsefSessionCooldownException extends KsefException {
 
     private static final long serialVersionUID = 1L;
 
+    private final Duration suggestedRetryAfter;
+
     /**
      * Predicate helper: returns {@code true} when the supplied status
      * code matches the empirically-observed cooldown signal. Consumers
@@ -55,8 +57,6 @@ public class KsefSessionCooldownException extends KsefException {
     public static boolean isCooldownStatus(int statusCode) {
         return statusCode == COOLDOWN_STATUS_CODE;
     }
-
-    private final Duration suggestedRetryAfter;
 
     public KsefSessionCooldownException(String message) {
         this(message, TYPICAL_COOLDOWN);
