@@ -83,6 +83,8 @@ public final class KsefCryptoService {
     private static final String PEM_RSA_PRIVATE_KEY_LABEL = "RSA PRIVATE KEY";
     private static final String PEM_EC_PRIVATE_KEY_LABEL = "EC PRIVATE KEY";
     private static final String PEM_ENCRYPTED_PRIVATE_KEY_LABEL = "ENCRYPTED PRIVATE KEY";
+    /** Bytes inspected to detect PEM-vs-DER input — long enough to capture the {@code -----BEGIN ... -----} marker. */
+    private static final int PEM_HEADER_PROBE_BYTES = 64;
 
     /**
      * Generate a fresh AES-256 key + 16-byte IV pair via secure random.
@@ -342,7 +344,8 @@ public final class KsefCryptoService {
         if (bytes.length < PEM_BEGIN_PREFIX.length()) {
             return false;
         }
-        String head = new String(bytes, 0, Math.min(bytes.length, 64), StandardCharsets.US_ASCII);
+        String head = new String(bytes, 0, Math.min(bytes.length, PEM_HEADER_PROBE_BYTES),
+                StandardCharsets.US_ASCII);
         return head.contains(PEM_BEGIN_PREFIX);
     }
 

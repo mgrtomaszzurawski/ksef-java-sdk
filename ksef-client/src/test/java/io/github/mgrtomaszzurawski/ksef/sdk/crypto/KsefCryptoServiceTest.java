@@ -29,6 +29,8 @@ class KsefCryptoServiceTest {
     private static final int EXPECTED_SHA256_SIZE = 32;
     private static final int EXPECTED_RSA_KEY_SIZE = 2048;
     private static final String EC_DEFAULT_CURVE = "EC";
+    /** PEM line length per RFC 7468 (canonical {@code openssl} default). */
+    private static final int PEM_LINE_LENGTH = 64;
 
     private final KsefCryptoService crypto = new KsefCryptoService();
 
@@ -169,7 +171,7 @@ class KsefCryptoServiceTest {
         KeyPair generated = crypto.generateRsaKeyPair();
         byte[] pkcs8Der = generated.getPrivate().getEncoded();
         String pem = "-----BEGIN PRIVATE KEY-----\n"
-                + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(pkcs8Der)
+                + Base64.getMimeEncoder(PEM_LINE_LENGTH, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(pkcs8Der)
                 + "\n-----END PRIVATE KEY-----\n";
 
         // when
@@ -218,7 +220,7 @@ class KsefCryptoServiceTest {
         var testCerts = io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates.generateRsa();
         byte[] der = testCerts.certificate().getEncoded();
         String pem = "-----BEGIN CERTIFICATE-----\n"
-                + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(der)
+                + Base64.getMimeEncoder(PEM_LINE_LENGTH, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(der)
                 + "\n-----END CERTIFICATE-----\n";
 
         // when

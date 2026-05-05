@@ -109,9 +109,9 @@ class JpmsExportsCoverageTest {
 
         Set<String> exports = new HashSet<>();
         for (String line : Files.readAllLines(moduleInfo)) {
-            Matcher m = EXPORTS_DIRECTIVE.matcher(line);
-            if (m.matches()) {
-                exports.add(m.group(1));
+            Matcher matcher = EXPORTS_DIRECTIVE.matcher(line);
+            if (matcher.matches()) {
+                exports.add(matcher.group(1));
             }
         }
         return exports;

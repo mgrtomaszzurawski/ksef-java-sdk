@@ -45,6 +45,7 @@ class KsefClientConcurrencyTest {
     private static final int THREAD_COUNT = 8;
     private static final int CALLS_PER_THREAD = 25;
     private static final long EXECUTOR_TIMEOUT_SECONDS = 60L;
+    private static final long EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 10L;
     private static final String TOKENS_PATH = "/v2/tokens";
     private static final String EMPTY_TOKEN_LIST = """
             {"queryTokens": [], "continuationToken": null}
@@ -88,8 +89,9 @@ class KsefClientConcurrencyTest {
                         "no thread should have observed null tokens or thrown");
             } finally {
                 executor.shutdownNow();
-                assertTrue(executor.awaitTermination(10L, TimeUnit.SECONDS),
-                        "executor should terminate within 10s");
+                assertTrue(executor.awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                        "executor should terminate within "
+                                + EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS + "s");
             }
         }
     }
