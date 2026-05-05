@@ -29,6 +29,15 @@ public final class SendInvoiceBuilder {
     private static final String ERR_NULL_AES_KEY = "aesKey is required";
     private static final String ERR_NULL_INIT_VECTOR = "initVector is required";
     private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 not available";
+    /**
+     * KSeF spec limit (Codex 2026-05-05 #11): a single invoice with attachments
+     * cannot exceed 3 MiB. We fail fast at builder creation rather than letting
+     * the server reject the encrypted payload, so the caller gets a clear SDK
+     * error pointing at the original input size.
+     */
+    private static final int MAX_INVOICE_BYTES = 3 * 1024 * 1024;
+    private static final String ERR_INVOICE_TOO_LARGE =
+            "invoiceXml exceeds spec limit (max " + MAX_INVOICE_BYTES + " bytes; got %d)";
 
     private final byte[] invoiceContent;
     private final byte[] aesKey;
@@ -40,6 +49,9 @@ public final class SendInvoiceBuilder {
         this.invoiceContent = Objects.requireNonNull(invoiceContent, ERR_NULL_INVOICE_CONTENT);
         this.aesKey = Objects.requireNonNull(aesKey, ERR_NULL_AES_KEY);
         this.initVector = Objects.requireNonNull(initVector, ERR_NULL_INIT_VECTOR);
+        if (invoiceContent.length > MAX_INVOICE_BYTES) {
+            throw new IllegalArgumentException(String.format(ERR_INVOICE_TOO_LARGE, invoiceContent.length));
+        }
     }
 
     /**

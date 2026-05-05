@@ -225,7 +225,19 @@ public final class KsefClient implements AutoCloseable {
      *
      * <p>KSeF allows only one active online session per NIP at a time.
      *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * <p><strong>Cooldown after termination.</strong> Per
+     * {@code context/RCA/RCA-session-cooldown-consecutive-runs-2026-04-04-2105.md}:
+     * after a terminated online session, the server enforces a
+     * ~30–60 s cooldown for the same NIP. A new session opened too
+     * soon will return a reference number but reject the first
+     * {@code send(...)} with HTTP 415. The SDK translates that into
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException}
+     * with a {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#suggestedRetryAfter()}
+     * recommendation. Consumers should wait at least
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#TYPICAL_COOLDOWN}
+     * before reopening.
+     *
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @return an open session — use with try-with-resources
      */
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
