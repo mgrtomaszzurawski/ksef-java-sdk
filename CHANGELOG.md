@@ -31,6 +31,53 @@ First public Maven Central release.
   primary driver. A README disclaimer covers solo-maintenance and warranty
   scope independently of the license choice.
 
+### Known server-side issues
+
+These are KSeF server behaviours empirically observed during pre-1.0
+validation that consumers will encounter at runtime. They are not SDK
+bugs and not always reflected in the upstream `ksef-docs` repository.
+The SDK either handles them transparently (where noted) or surfaces
+them as typed errors so the consumer can react.
+
+- **Online session cooldown after termination (~30-60 s).** Opening a
+  new online session for the same NIP within ~30 seconds of a previous
+  session's termination yields a session that opens with a reference
+  number but enters status 415 immediately and rejects invoice
+  submissions. SDK surfaces this via `KsefSessionCooldownException`
+  on `openSession(...)` for fast-fail clarity (auto-retry with backoff
+  is on the consumer's policy).
+- **Session status 415 is the normal "open" state during processing.**
+  After `close()`, the server returns 415 while batch validation is
+  still in flight; this is not a failure. SDK polls until terminal
+  inside `KsefSession.close()` / `KsefBatchSession.close()`.
+- **Authentication is asynchronous (status 450 transient).** After
+  posting `/auth/xades-signature` or `/auth/ksef-token`, the
+  `redeemTokens` call returns HTTP 450 until the server finishes
+  challenge processing. SDK polls `GET /auth/{ref}` internally before
+  redeem; consumers see only the final outcome.
+- **XAdES terminate requires prior token redeem.** Calling
+  `terminateAuth()` immediately after async XAdES authentication
+  (without `redeemTokens` between) returns HTTP 500. SDK guards this
+  with state tracking in `SessionContext`.
+- **Certificate serial number is not immediately available.**
+  `enroll()` accepts the CSR and returns a reference number, but the
+  certificate's serial number is populated asynchronously. Consumers
+  must poll `getEnrollmentStatus(ref)` until terminal. (See `*AndAwait`
+  helpers added in 1.0.)
+- **Certificate operations require certificate-based authentication.**
+  Token-based auth cannot reach the certificate enrollment endpoints.
+  Consumers must authenticate with `KsefCertificateCredentials` /
+  `KsefPkcs12Credentials` to use cert-domain APIs.
+- **`certificates/enrollments` returns HTTP 500 on invalid
+  `certificateType`.** Server crashes instead of returning a typed
+  validation error. SDK validates the enum upstream so this only fires
+  for callers bypassing the typed builder.
+- **Permissions: `subjectDetails` required despite spec saying
+  optional.** The `permissions/persons/grants` endpoint rejects
+  requests without `subjectDetails` even though the OpenAPI schema
+  marks it optional. SDK populates it from the subject identifier;
+  external callers using the raw types must include it.
+
 ### Step 1 — Process foundation (this release)
 
 - Four new ADRs governing 1.0.0 design:
