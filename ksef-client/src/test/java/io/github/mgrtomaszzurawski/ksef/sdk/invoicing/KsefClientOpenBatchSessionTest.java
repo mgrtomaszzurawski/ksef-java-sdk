@@ -166,6 +166,9 @@ class KsefClientOpenBatchSessionTest {
             try {
                 client.openBatchSession(FormCode.FA2, List.of(invoice), BatchSessionOptions.online()).close();
             } catch (IllegalArgumentException countMismatch) {
+                if (!countMismatch.getMessage().contains("partUploadRequests count")) {
+                    throw countMismatch;
+                }
                 // expected if the splitter happens to produce a different
                 // part count than the single-part stub returns.
             }
@@ -224,6 +227,9 @@ class KsefClientOpenBatchSessionTest {
             try {
                 client.openBatchSession(FormCode.FA2, List.of(invoice), BatchSessionOptions.offline()).close();
             } catch (IllegalArgumentException countMismatch) {
+                if (!countMismatch.getMessage().contains("partUploadRequests count")) {
+                    throw countMismatch;
+                }
                 // expected if splitter part count != stub part count
             }
 
@@ -247,6 +253,9 @@ class KsefClientOpenBatchSessionTest {
                 client.openBatchSessionFromFiles(FormCode.FA2,
                         List.of(tempInvoice), BatchSessionOptions.offline()).close();
             } catch (IllegalArgumentException countMismatch) {
+                if (!countMismatch.getMessage().contains("partUploadRequests count")) {
+                    throw countMismatch;
+                }
                 // expected if splitter part count != stub part count
             }
 

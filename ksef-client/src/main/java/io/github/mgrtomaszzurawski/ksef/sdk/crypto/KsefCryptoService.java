@@ -85,6 +85,16 @@ public final class KsefCryptoService {
     private static final String PEM_ENCRYPTED_PRIVATE_KEY_LABEL = "ENCRYPTED PRIVATE KEY";
     /** Bytes inspected to detect PEM-vs-DER input — long enough to capture the {@code -----BEGIN ... -----} marker. */
     private static final int PEM_HEADER_PROBE_BYTES = 64;
+    /**
+     * Hardening cap on PEM/DER input bytes. Real KSeF private keys
+     * (RSA-2048 / EC P-256) and certificates fit well under 8 KiB; a
+     * 1 MiB ceiling rejects accidentally-large payloads (e.g. a wrong
+     * file path) before parsing allocates a proportional ASCII string.
+     * Codex 2026-05-05 round-3 Security review SUGGESTION.
+     */
+    private static final int MAX_PEM_OR_DER_BYTES = 1 * 1024 * 1024;
+    private static final String ERR_INPUT_TOO_LARGE =
+            "input exceeds " + MAX_PEM_OR_DER_BYTES + " byte cap (got %d) — verify the supplied bytes/path";
 
     /**
      * Generate a fresh AES-256 key + 16-byte IV pair via secure random.
@@ -281,6 +291,9 @@ public final class KsefCryptoService {
      */
     public PrivateKey parsePrivateKey(byte[] bytes) {
         Objects.requireNonNull(bytes, ERR_BYTES_NULL);
+        if (bytes.length > MAX_PEM_OR_DER_BYTES) {
+            throw new KsefCryptoException(String.format(ERR_INPUT_TOO_LARGE, bytes.length), null);
+        }
         byte[] der = looksLikePem(bytes) ? decodePem(bytes, PEM_PRIVATE_KEY_LABEL) : bytes;
         try {
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(der);
@@ -319,6 +332,9 @@ public final class KsefCryptoService {
      */
     public X509Certificate parseCertificate(byte[] bytes) {
         Objects.requireNonNull(bytes, ERR_BYTES_NULL);
+        if (bytes.length > MAX_PEM_OR_DER_BYTES) {
+            throw new KsefCryptoException(String.format(ERR_INPUT_TOO_LARGE, bytes.length), null);
+        }
         try {
             CertificateFactory factory = CertificateFactory.getInstance(CERT_X509);
             return (X509Certificate) factory.generateCertificate(new ByteArrayInputStream(bytes));

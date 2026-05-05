@@ -264,9 +264,34 @@ public final class KsefClient implements AutoCloseable {
 
         OnlineSession session = sessionClient.openOnline(request);
         LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
+        guardAgainstCooldown(session.referenceNumber());
 
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(
                 sessionClient, session.referenceNumber(), aesKey, initVector, session.validUntil());
+    }
+
+    /**
+     * Codex 2026-05-05 #8b — proactively detect the post-termination
+     * cooldown window. KSeF returns a fresh session reference on
+     * {@code openOnline}, but the session can immediately enter status
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#COOLDOWN_STATUS_CODE 415}
+     * when reopened too soon after a previous termination for the same
+     * NIP. We catch that here and surface it as a typed exception
+     * instead of letting the caller hit it on first {@code send(...)}.
+     */
+    private void guardAgainstCooldown(String referenceNumber) {
+        var status = sessionClient.getStatus(referenceNumber);
+        if (status.status() != null
+                && io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException.isCooldownStatus(
+                        status.status().code())) {
+            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException(
+                    "openSession returned reference " + referenceNumber
+                            + " but immediately reports status 415 — server is in the post-termination"
+                            + " cooldown window for this NIP. Wait at least "
+                            + io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException
+                                    .TYPICAL_COOLDOWN
+                            + " before retrying.");
+        }
     }
 
     /**
@@ -604,7 +629,7 @@ public final class KsefClient implements AutoCloseable {
      * @return all matching session summary items
      */
     public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
-            querySessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
+            queryAllSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
         Objects.requireNonNull(filter, "filter must not be null");
         ensureOpen();
         ensureAuthenticated();

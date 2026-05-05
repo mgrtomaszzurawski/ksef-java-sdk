@@ -137,7 +137,7 @@ class ManualValidationWireShapeTest {
             SessionsQueryFilter filter = SessionsQueryFilter.forOnline()
                     .statuses(100, 200)
                     .build();
-            List<SessionListItem> result = client.querySessions(filter);
+            List<SessionListItem> result = client.queryAllSessions(filter);
 
             assertNotNull(result, "querySessions returns empty list, not null, on no results");
             verify(getRequestedFor(urlPathEqualTo(SESSIONS_PATH))

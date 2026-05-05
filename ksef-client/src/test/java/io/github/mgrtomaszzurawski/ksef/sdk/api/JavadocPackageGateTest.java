@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,11 +55,8 @@ class JavadocPackageGateTest {
     @Test
     void javadocPackages_containNoInternalOrGeneratedSurface() throws IOException {
         Path packagesFile = Paths.get(PACKAGES_FILE_PATH);
-        if (!Files.isRegularFile(packagesFile)) {
-            // mvn test alone doesn't trigger javadoc; mvn verify does.
-            // The release pipeline runs the latter.
-            return;
-        }
+        Assumptions.assumeTrue(Files.isRegularFile(packagesFile),
+                "javadoc not generated yet (run mvn verify); test reported as SKIPPED rather than passing vacuously");
 
         Set<String> documented = readDocumentedPackages(packagesFile);
         assertFalse(documented.isEmpty(),

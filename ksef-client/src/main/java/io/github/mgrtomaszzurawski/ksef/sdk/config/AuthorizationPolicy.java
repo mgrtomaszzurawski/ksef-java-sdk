@@ -42,12 +42,13 @@ public record AuthorizationPolicy(
 
     private static final int MAX_PER_KIND = 10;
 
-    private static final Pattern IPV4_ADDRESS = Pattern.compile(
-            "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
-    private static final Pattern IPV4_RANGE = Pattern.compile(
-            "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}-((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
+    /** Each octet 0-255 with mandatory dots between them — tightened beyond the OpenAPI spec regex which permitted optional dots. */
+    private static final String IPV4_OCTET = "(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)";
+    private static final String IPV4_FULL = IPV4_OCTET + "\\." + IPV4_OCTET + "\\." + IPV4_OCTET + "\\." + IPV4_OCTET;
+    private static final Pattern IPV4_ADDRESS = Pattern.compile("^" + IPV4_FULL + "$");
+    private static final Pattern IPV4_RANGE = Pattern.compile("^" + IPV4_FULL + "-" + IPV4_FULL + "$");
     private static final Pattern IPV4_MASK = Pattern.compile(
-            "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}/(0|[1-9]|1[0-9]|2[0-9]|3[0-2])$");
+            "^" + IPV4_FULL + "/(0|[1-9]|1\\d|2\\d|3[0-2])$");
 
     private static final String ERR_TOO_MANY = "%s exceeds spec limit of " + MAX_PER_KIND + " (got %d)";
     private static final String ERR_ADDR_INVALID = "ip4Addresses[%d] is not a valid IPv4 address: %s";
