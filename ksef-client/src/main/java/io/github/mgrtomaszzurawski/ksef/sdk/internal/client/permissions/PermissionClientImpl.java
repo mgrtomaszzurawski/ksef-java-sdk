@@ -451,6 +451,9 @@ public final class PermissionClientImpl implements PermissionClient {
                     token, QueryPersonalPermissionsResponseRaw.class, OP_QUERY_PERSONAL);
             PersonalPermissions page = PermissionsMappers.toPersonalPermissions(raw);
             all.addAll(page.permissions());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0, io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             if (!page.hasMore()) {
                 return java.util.List.copyOf(all);
             }
@@ -473,6 +476,9 @@ public final class PermissionClientImpl implements PermissionClient {
                     token, QueryPersonPermissionsResponseRaw.class, OP_QUERY_PERSONS);
             PersonPermissions page = PermissionsMappers.toPersonPermissions(raw);
             all.addAll(page.permissions());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0, io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             if (!page.hasMore()) {
                 return java.util.List.copyOf(all);
             }
@@ -494,6 +500,9 @@ public final class PermissionClientImpl implements PermissionClient {
                     QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
             SubunitPermissions page = PermissionsMappers.toSubunitPermissions(raw);
             all.addAll(page.permissions());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0, io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             if (!page.hasMore()) {
                 return java.util.List.copyOf(all);
             }
@@ -515,6 +524,9 @@ public final class PermissionClientImpl implements PermissionClient {
                     QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
             EntityPermissions page = PermissionsMappers.toEntityPermissions(raw);
             all.addAll(page.permissions());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0, io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             if (!page.hasMore()) {
                 return java.util.List.copyOf(all);
             }
@@ -536,6 +548,9 @@ public final class PermissionClientImpl implements PermissionClient {
                     QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
             SubordinateEntityRoles page = PermissionsMappers.toSubordinateEntityRoles(raw);
             all.addAll(page.roles());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0, io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             if (!page.hasMore()) {
                 return java.util.List.copyOf(all);
             }
@@ -558,6 +573,9 @@ public final class PermissionClientImpl implements PermissionClient {
                     token, QueryEntityAuthorizationPermissionsResponseRaw.class, OP_QUERY_AUTHORIZATIONS);
             EntityAuthorizationPermissions page = PermissionsMappers.toEntityAuthorizationPermissions(raw);
             all.addAll(page.authorizationGrants());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0, io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             if (!page.hasMore()) {
                 return java.util.List.copyOf(all);
             }
@@ -580,6 +598,9 @@ public final class PermissionClientImpl implements PermissionClient {
                     token, QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
             EuEntityPermissions page = PermissionsMappers.toEuEntityPermissions(raw);
             all.addAll(page.permissions());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0, io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             if (!page.hasMore()) {
                 return java.util.List.copyOf(all);
             }

@@ -112,6 +112,10 @@ public final class SessionClient {
                     all.add(toSessionListItem(item));
                 }
             }
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0,
+                        io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             String next = raw.getContinuationToken();
             if (next == null || next.isEmpty()) {
                 return java.util.List.copyOf(all);
@@ -313,6 +317,10 @@ public final class SessionClient {
                     ? getFailedInvoicesPage(referenceNumber, continuationToken)
                     : getInvoicesPage(referenceNumber, continuationToken);
             all.addAll(page.invoices());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0,
+                        io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             String next = page.continuationToken();
             if (next == null || next.isEmpty()) {
                 return java.util.List.copyOf(all);

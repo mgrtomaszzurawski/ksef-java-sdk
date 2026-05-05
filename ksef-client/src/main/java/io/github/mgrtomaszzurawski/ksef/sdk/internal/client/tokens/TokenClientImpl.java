@@ -97,6 +97,10 @@ public final class TokenClientImpl implements TokenClient {
                             continuationToken);
             TokenList page = TokensMappers.toTokenList(rawValue);
             all.addAll(page.tokens());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0,
+                        io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             String next = page.continuationToken();
             if (next == null || next.isEmpty()) {
                 return java.util.List.copyOf(all);

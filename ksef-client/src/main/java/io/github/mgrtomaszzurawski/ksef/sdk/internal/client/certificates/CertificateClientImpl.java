@@ -218,6 +218,10 @@ public final class CertificateClientImpl implements CertificateClient {
                     token, QueryCertificatesResponseRaw.class, OP_QUERY);
             CertificateQueryResult page = CertificatesMappers.toCertificateQueryResult(raw);
             all.addAll(page.certificates());
+            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
+                return java.util.List.copyOf(all.subList(0,
+                        io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
+            }
             if (!page.hasMore()) {
                 return java.util.List.copyOf(all);
             }

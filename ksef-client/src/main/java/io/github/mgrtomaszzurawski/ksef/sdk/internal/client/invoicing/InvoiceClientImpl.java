@@ -160,6 +160,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
         // touched pageOffset, which dropped invoices that arrived between the
         // first page and HWM advancement.
         int pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
+        java.time.OffsetDateTime previousCursor = null;
         while (true) {
             InvoiceMetadataResult page = doQueryMetadata(filters,
                     pageOffset, QUERY_METADATA_MAX_PAGE_SIZE);
@@ -190,8 +191,20 @@ public final class InvoiceClientImpl implements InvoiceClient {
                     // the caller about result completeness.
                     throw new KsefException(ERR_TRUNCATED_NO_CURSOR, null);
                 }
-                filters.getDateRange().from(cursor);
-                pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
+                if (cursor.equals(previousCursor)) {
+                    // Codex 2026-05-05 round-3 Performance review IMPORTANT —
+                    // 251+ records sharing the same date axis value would
+                    // re-fetch identical pages until maxResults cuts off,
+                    // producing up to 9 750 duplicate rows. Detect the
+                    // non-advancing cursor and fall back to pageOffset++ on
+                    // the same dateRange — the server can still paginate
+                    // within the same-date cluster via offset.
+                    pageOffset++;
+                } else {
+                    filters.getDateRange().from(cursor);
+                    pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
+                    previousCursor = cursor;
+                }
             } else {
                 // hasMore && !isTruncated: stay on the same dateRange, advance
                 // pageOffset to fetch the next page.
