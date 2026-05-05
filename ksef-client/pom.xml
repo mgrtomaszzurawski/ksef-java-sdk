@@ -181,6 +181,25 @@
     </dependencies>
 
     <build>
+        <!--
+            Bundle FA(2)/FA(3) XSDs into the published jar so that
+            KsefXmlValidator can load them from the classpath at runtime.
+            JAXB plugin already reads them from ${project.basedir}/xsd/
+            for code generation; this <resources> entry copies the same
+            files into target/classes/xsd/ for runtime classpath access.
+        -->
+        <resources>
+            <resource>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>xsd/FA/schemat_FA(*)_*.xsd</include>
+                    <include>xsd/FA/bazowe/*.xsd</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
         <plugins>
             <!-- OpenAPI generator: REST API models from open-api.json -->
             <plugin>

@@ -1,7 +1,7 @@
 # ADR-018: Generated `*Raw` types on internal bridge methods (deferred to 0.2.0)
 
 Date: 2026-05-02
-Status: Accepted (with deferred follow-up)
+Status: Accepted — closure verified 2026-05-05 for 1.0.0 (Builder.build() returns SDK-owned records; no public from(*Raw) factories on domain records; the deferred 0.2.0 follow-up landed before 1.0.0 tag)
 
 ## Context
 

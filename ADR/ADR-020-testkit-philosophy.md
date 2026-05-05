@@ -1,7 +1,7 @@
 # ADR-020: `ksef-client-testkit` philosophy — fixtures, not backdoors
 
 Date: 2026-05-03
-Status: Accepted
+Status: Accepted — closure verified 2026-05-05 for 1.0.0 (KsefClientInternals removed; no testkit backdoor module needed because no public-static seams remain; the deferred 0.2.x extraction is moot)
 
 ## Context
 
