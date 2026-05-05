@@ -76,4 +76,50 @@ public interface PermissionClient {
             queryAllAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
     java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission>
             queryAllEuEntities(EuEntityPermissionsQueryBuilder builder);
+
+    // Codex 2026-05-05 #10 / F7 — *AndAwait helpers. Each issues the
+    // grant operation, polls getOperationStatus(reference) until the
+    // server reports a terminal state (status.code() >= 200), returns
+    // the terminal status. Throws KsefAsyncTimeoutException on timeout.
+
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            grantPersonAndAwait(PersonPermissionGrantBuilder builder, java.time.Duration timeout) {
+        return awaitOperationTerminal(grantPerson(builder).referenceNumber(), timeout, "grantPerson");
+    }
+
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            grantEntityAndAwait(EntityPermissionGrantBuilder builder, java.time.Duration timeout) {
+        return awaitOperationTerminal(grantEntity(builder).referenceNumber(), timeout, "grantEntity");
+    }
+
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            grantAuthorizationAndAwait(EntityAuthorizationPermissionGrantBuilder builder, java.time.Duration timeout) {
+        return awaitOperationTerminal(grantAuthorization(builder).referenceNumber(), timeout, "grantAuthorization");
+    }
+
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            grantSubunitAndAwait(SubunitPermissionGrantBuilder builder, java.time.Duration timeout) {
+        return awaitOperationTerminal(grantSubunit(builder).referenceNumber(), timeout, "grantSubunit");
+    }
+
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            grantEuEntityAndAwait(EuEntityPermissionGrantBuilder builder, java.time.Duration timeout) {
+        return awaitOperationTerminal(grantEuEntity(builder).referenceNumber(), timeout, "grantEuEntity");
+    }
+
+    private io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            awaitOperationTerminal(String referenceNumber, java.time.Duration timeout, String opName) {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
+                opName,
+                () -> getOperationStatus(referenceNumber),
+                status -> status.status() != null && status.status().code() >= 200,
+                status -> status.status() == null ? null : status.status().code(),
+                timeout,
+                null);
+    }
 }

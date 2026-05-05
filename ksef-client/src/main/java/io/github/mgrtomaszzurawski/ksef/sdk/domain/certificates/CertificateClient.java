@@ -42,4 +42,25 @@ public interface CertificateClient {
      */
     List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
             queryAll(CertificateQueryBuilder builder);
+
+    /**
+     * Codex 2026-05-05 #10 / F7 — enroll a certificate and poll
+     * {@link #getEnrollmentStatus(String)} until terminal
+     * (status.code() &gt;= 200). Returns the terminal status which
+     * carries the assigned {@code certificateSerialNumber} on success.
+     * Throws {@code KsefAsyncTimeoutException} on timeout.
+     *
+     * @since 1.0.0
+     */
+    default CertificateEnrollmentStatus enrollAndAwait(CertificateEnrollBuilder builder,
+                                                        java.time.Duration timeout) {
+        EnrollCertificateResult result = enroll(builder);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
+                "enrollCertificate",
+                () -> getEnrollmentStatus(result.referenceNumber()),
+                status -> status.status() != null && status.status().code() >= 200,
+                status -> status.status() == null ? null : status.status().code(),
+                timeout,
+                null);
+    }
 }
