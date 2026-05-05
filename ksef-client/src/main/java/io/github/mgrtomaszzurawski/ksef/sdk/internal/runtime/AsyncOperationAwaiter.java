@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.time.Duration;
 import java.time.Instant;
@@ -92,20 +93,4 @@ public final class AsyncOperationAwaiter {
         return Math.max(MIN_POLL_MILLIS, Math.min(MAX_POLL_MILLIS, requested));
     }
 
-    /**
-     * Thrown by {@link AsyncOperationAwaiter#awaitTerminal} when the
-     * caller-supplied timeout elapses before the operation reached a
-     * terminal state. Public so consumers using {@code *AndAwait} can
-     * handle it specifically.
-     *
-     * @since 1.0.0
-     */
-    public static final class KsefAsyncTimeoutException extends KsefException {
-
-        private static final long serialVersionUID = 1L;
-
-        public KsefAsyncTimeoutException(String message) {
-            super(message, null);
-        }
-    }
 }

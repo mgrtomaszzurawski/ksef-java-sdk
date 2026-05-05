@@ -112,6 +112,30 @@ public interface PermissionClient {
         return awaitOperationTerminal(grantEuEntity(builder).referenceNumber(), timeout, "grantEuEntity");
     }
 
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            grantIndirectAndAwait(IndirectPermissionGrantBuilder builder, java.time.Duration timeout) {
+        return awaitOperationTerminal(grantIndirect(builder).referenceNumber(), timeout, "grantIndirect");
+    }
+
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            grantEuEntityAdminAndAwait(EuEntityAdminPermissionGrantBuilder builder, java.time.Duration timeout) {
+        return awaitOperationTerminal(grantEuEntityAdmin(builder).referenceNumber(), timeout, "grantEuEntityAdmin");
+    }
+
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            revokeCommonAndAwait(String permissionId, java.time.Duration timeout) {
+        return awaitOperationTerminal(revokeCommon(permissionId).referenceNumber(), timeout, "revokeCommon");
+    }
+
+    /** @since 1.0.0 */
+    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+            revokeAuthorizationAndAwait(String permissionId, java.time.Duration timeout) {
+        return awaitOperationTerminal(revokeAuthorization(permissionId).referenceNumber(), timeout, "revokeAuthorization");
+    }
+
     private io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
             awaitOperationTerminal(String referenceNumber, java.time.Duration timeout, String opName) {
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(

@@ -23,8 +23,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
  * <p>Use the static factories {@link #online()} and {@link #offline()}
  * for clear call sites:
  * <pre>{@code
- * client.openBatchSession(FormCode.FA2, invoices, BatchSessionOptions.online());
- * client.openBatchSession(FormCode.FA2, invoices, BatchSessionOptions.offline());
+ * client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.online());
+ * client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.offline());
  * }</pre>
  *
  * @since 1.0.0

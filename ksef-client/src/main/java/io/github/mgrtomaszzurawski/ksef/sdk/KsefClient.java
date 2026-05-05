@@ -94,7 +94,7 @@ import org.slf4j.LoggerFactory;
  *
  *     client.authenticate();
  *
- *     try (KsefSession session = client.openSession(FormCode.FA2)) {
+ *     try (KsefSession session = client.openSession(FormCode.FA3)) {
  *         session.send(invoiceXmlBytes);
  *     }
  * }
@@ -283,7 +283,7 @@ public final class KsefClient implements AutoCloseable {
      * <p>For the common case where the SDK should build and encrypt the
      * package itself, prefer {@link #openBatchSession(FormCode, List, BatchSessionOptions)}.
      *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @param preparedPackage caller-prepared spec + key/IV + encrypted part bytes
      * @param options batch session options (see {@link BatchSessionOptions})
      * @return an open batch session — use with try-with-resources
@@ -338,7 +338,7 @@ public final class KsefClient implements AutoCloseable {
      * {@link KsefBatchSession#uploadParts()} to push the encrypted bytes, then
      * {@link KsefBatchSession#close()} to finalise the session.
      *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @param invoiceXmls non-empty list of raw invoice XML byte arrays
      * @param options batch session options (see {@link BatchSessionOptions})
      * @return an open batch session pre-loaded with the encrypted part bytes
@@ -389,7 +389,7 @@ public final class KsefClient implements AutoCloseable {
      * cap of 10 000 invoices (REQ-SESS-41) — so peak heap stays bounded by
      * the chunk-encryption buffer.
      *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @param invoiceFiles non-empty list of paths to invoice XML files
      * @param options batch session options (see {@link BatchSessionOptions})
      * @return an open batch session pre-loaded with the encrypted part bytes
@@ -513,13 +513,18 @@ public final class KsefClient implements AutoCloseable {
 
     /**
      * Return the current bearer access token (the JWT the SDK injects in
-     * the {@code Authorization} header). Intended for advanced consumers
-     * that need to issue HTTP requests against KSeF outside the SDK's
-     * own transport plumbing (for example, probing test/diagnostic
-     * endpoints, or feeding tokens into a third-party HTTP framework).
+     * the {@code Authorization} header) — Tier-3 advanced API per
+     * ADR-021. Intended for consumers that need to issue HTTP requests
+     * against KSeF outside the SDK's own transport plumbing (for
+     * example, probing test/diagnostic endpoints, or feeding tokens
+     * into a third-party HTTP framework).
      *
      * <p>Returns {@code null} when the client is not authenticated.
      * Triggers lazy authentication if needed.
+     *
+     * @apiNote Advanced. Most consumers should not need this — domain
+     *     clients ({@code client.invoices()}, {@code client.permissions()},
+     *     etc.) handle authentication internally.
      */
     public synchronized String bearerToken() {
         ensureOpen();

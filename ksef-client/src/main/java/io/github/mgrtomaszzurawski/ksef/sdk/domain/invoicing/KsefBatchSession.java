@@ -89,7 +89,8 @@ public final class KsefBatchSession implements AutoCloseable {
      * mid-upload rather than letting the server reject the request.
      * Spec: {@code ksef-docs/sesja-wsadowa.md:288-293}.
      */
-    private static final long UPLOAD_BUDGET_MINUTES_PER_PART = 20L;
+    /** REQ-SESS-13 — minutes per part the server allows for the cumulative upload. */
+    public static final long UPLOAD_BUDGET_MINUTES_PER_PART = 20L;
     private static final long UPLOAD_BUDGET_NANOS_PER_PART =
             UPLOAD_BUDGET_MINUTES_PER_PART * 60L * 1_000_000_000L;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
@@ -204,6 +205,20 @@ public final class KsefBatchSession implements AutoCloseable {
     public Optional<Duration> timeToExpiry(Clock clock) {
         Objects.requireNonNull(clock, "clock must not be null");
         return validUntil().map(deadline -> Duration.between(clock.instant(), deadline.toInstant()));
+    }
+
+    /**
+     * Spec-defined upload budget for this session: {@link #UPLOAD_BUDGET_MINUTES_PER_PART}
+     * minutes per declared part, applied cumulatively to the entire
+     * {@link #uploadParts()} call (REQ-SESS-13). Consumers planning
+     * external retry/circuit-breaker logic can use this to compute
+     * their own deadline before invoking the SDK.
+     *
+     * @return total minutes allowed = parts × {@link #UPLOAD_BUDGET_MINUTES_PER_PART}
+     * @since 1.0.0
+     */
+    public Duration uploadBudget() {
+        return Duration.ofMinutes(partUploadRequests.size() * UPLOAD_BUDGET_MINUTES_PER_PART);
     }
 
     /**

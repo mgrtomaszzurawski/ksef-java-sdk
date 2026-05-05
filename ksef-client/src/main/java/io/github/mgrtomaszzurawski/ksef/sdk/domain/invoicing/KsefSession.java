@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Example:
  * <pre>{@code
- * try (KsefSession session = client.openSession(FormCode.FA2)) {
+ * try (KsefSession session = client.openSession(FormCode.FA3)) {
  *     SendInvoiceResult result = session.send(invoiceXmlBytes);
  *     byte[] upo = session.upo(result.referenceNumber());
  * }

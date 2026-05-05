@@ -40,7 +40,8 @@ public interface TokenClient {
      * {@link #getStatus(String)} until terminal. Terminal statuses for
      * a freshly generated token are {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus#ACTIVE ACTIVE}
      * (success) or {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus#FAILED FAILED}.
-     * Throws {@code KsefAsyncTimeoutException} on timeout.
+     * Throws {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException}
+     * on timeout.
      *
      * @since 1.0.0
      */

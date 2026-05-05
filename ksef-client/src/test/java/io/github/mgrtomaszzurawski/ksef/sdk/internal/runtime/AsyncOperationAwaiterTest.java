@@ -33,8 +33,8 @@ class AsyncOperationAwaiterTest {
 
     @Test
     void awaitTerminal_throwsOnTimeoutWithStatusCodeInMessage() {
-        AsyncOperationAwaiter.KsefAsyncTimeoutException ex = assertThrows(
-                AsyncOperationAwaiter.KsefAsyncTimeoutException.class,
+        io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException ex = assertThrows(
+                io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException.class,
                 () -> AsyncOperationAwaiter.awaitTerminal(
                         "neverTerminal",
                         () -> 42,

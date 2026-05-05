@@ -48,7 +48,8 @@ public interface CertificateClient {
      * {@link #getEnrollmentStatus(String)} until terminal
      * (status.code() &gt;= 200). Returns the terminal status which
      * carries the assigned {@code certificateSerialNumber} on success.
-     * Throws {@code KsefAsyncTimeoutException} on timeout.
+     * Throws {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException}
+     * on timeout.
      *
      * @since 1.0.0
      */
