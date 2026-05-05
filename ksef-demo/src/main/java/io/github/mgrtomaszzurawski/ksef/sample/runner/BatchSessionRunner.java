@@ -61,7 +61,7 @@ public final class BatchSessionRunner implements DemoRunner {
         long openStart = System.currentTimeMillis();
         KsefBatchSession batch;
         try {
-            batch = context.client().openBatchSession(FormCode.FA2, invoiceXmls, BatchSessionOptions.online());
+            batch = context.client().openBatchSession(FormCode.FA3, invoiceXmls, BatchSessionOptions.online());
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_OPEN_BATCH, elapsed(openStart),
                     errorMessage(exception)));

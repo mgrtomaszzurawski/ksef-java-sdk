@@ -51,7 +51,7 @@ public final class BatchInvoiceUpload {
             client.authenticate();
             System.out.println("Authenticated as " + nip);
 
-            try (KsefBatchSession batch = client.openBatchSession(FormCode.FA2, invoices, BatchSessionOptions.online())) {
+            try (KsefBatchSession batch = client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.online())) {
                 System.out.println("Batch session: " + batch.referenceNumber());
                 System.out.println("Parts to upload: " + batch.partUploadRequests().size());
 

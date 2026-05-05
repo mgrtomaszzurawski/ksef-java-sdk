@@ -40,18 +40,22 @@ try (KsefClient client = KsefClient.builder(KsefEnvironment.TEST)
 
     client.authenticate();
 
-    try (KsefSession session = client.openSession(FormCode.FA2)) {
+    try (KsefSession session = client.openSession(FormCode.FA3)) {
         session.send(invoiceXml);
     }
 }
 ```
+
+> **Form-code per environment:** DEMO and PROD accept `FA(3)`, `FA_PEF(3)`,
+> `FA_KOR_PEF(3)` only. TEST additionally accepts `FA(2)` for backward
+> compatibility (`FormCode.FA2`). See `ksef-docs/srodowiska.md`.
 
 ### Batch invoice upload
 
 ```java
 List<byte[]> invoiceXmls = List.of(invoice1Xml, invoice2Xml, invoice3Xml);
 try (KsefBatchSession batch = client.openBatchSession(
-        FormCode.FA2, invoiceXmls, BatchSessionOptions.online())) {
+        FormCode.FA3, invoiceXmls, BatchSessionOptions.online())) {
     batch.uploadParts();
     // close() returns when the server reaches a terminal state (UPO ready,
     // schema rejection, etc.); throws KsefSessionTerminalFailureException on

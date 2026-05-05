@@ -347,7 +347,7 @@ First public Maven Central release.
   README "Logging" section).
 - 391 unit + integration tests across 33 test classes (WireMock-mocked HTTP).
 - Demo / live-validation harness: `ksef-demo` module with per-domain runners and
-  named modes (`AUTH_SAFE`, `READ_ONLY`, `FULL`, `CERTIFICATES`).
+  named modes (`AUTH_SAFE`, `READ_ONLY`, `FULL`, `CLEANUP`).
 - Maven Central release profile (`mvn deploy -Prelease`) — GPG signing +
   Sonatype Central Portal upload.
 

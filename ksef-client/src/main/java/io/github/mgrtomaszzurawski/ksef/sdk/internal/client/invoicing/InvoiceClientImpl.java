@@ -201,13 +201,13 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     /**
-     * Start an invoice export job.
+     * Start an invoice export job — Tier-3 advanced API per ADR-021.
+     * Most consumers should use
+     * {@link #prepareExport(InvoiceQueryBuilder, boolean)}.
      *
      * @param exportBuilder the export builder with date range and filters
      * @return response with the export reference number for status polling
-     * @deprecated prefer {@link #prepareExport(InvoiceQueryBuilder, boolean)}
      */
-    @Deprecated(since = "0.1.0")
     @Override
     public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder) {
         LOGGER.debug(LOG_CALL, OP_EXPORT);

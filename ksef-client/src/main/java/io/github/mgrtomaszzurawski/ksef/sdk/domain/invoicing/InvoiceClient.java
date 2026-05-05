@@ -40,16 +40,21 @@ public interface InvoiceClient {
     List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults);
 
     /**
-     * Low-level "start export" entry point. Caller must already hold the KSeF
-     * symmetric-key public key, generate AES key + IV, and retain them
-     * outside the SDK in order to decrypt the returned package later.
+     * Low-level "start export" entry point — Tier-3 advanced API per
+     * ADR-021. Caller manages the KSeF symmetric-key public-key fetch,
+     * AES key + IV generation, and key retention out-of-band so the
+     * returned export package can be decrypted later.
      *
-     * @deprecated For most consumers, prefer
-     *     {@link #prepareExport(InvoiceQueryBuilder, boolean)} which retains
-     *     the AES key + IV inside the returned {@link PreparedInvoiceExport}
-     *     handle and exposes a polling/download/decrypt workflow.
+     * <p>Most consumers should use
+     * {@link #prepareExport(InvoiceQueryBuilder, boolean)} instead — it
+     * retains the AES key + IV inside a {@link PreparedInvoiceExport}
+     * handle and exposes the full poll/download/decrypt workflow with
+     * automatic crypto material zeroisation on close.
+     *
+     * @apiNote Advanced. Use {@code prepareExport(...)} unless you have
+     *     a specific reason to manage the symmetric key material yourself
+     *     (e.g. integration with an external HSM).
      */
-    @Deprecated(since = "0.1.0")
     ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder);
 
     InvoiceExportStatus getExportStatus(String referenceNumber);
