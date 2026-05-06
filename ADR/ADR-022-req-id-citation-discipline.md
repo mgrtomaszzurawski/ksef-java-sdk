@@ -16,10 +16,9 @@ before writing the corresponding code, and found cases where:
 - spec-allowed-but-not-implemented features were silently absent (XAdES
   profiles beyond BASELINE-B, alternative digests)
 
-The audit at `context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md` extracted
-223 concrete spec requirements with REQ-IDs and classified each as
-✅ ok / ⚠️ untested / ❌ missing. That audit closed the gap for one
-moment in time.
+A 2026-05-03 internal audit extracted 223 concrete spec requirements
+with REQ-IDs and classified each as ✅ ok / ⚠️ untested / ❌ missing.
+That audit closed the gap for one moment in time.
 
 Without process discipline the gap reopens within 2-3 PRs:
 
@@ -112,9 +111,7 @@ A change is **not** spec-touching if it modifies:
 ## Spec citations
 
 The spec itself doesn't mandate this discipline; this is internal SDK
-process. The audit at
-`context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md` is the artifact this
-ADR governs.
+process driven by the 2026-05-03 spec-conformance audit.
 
 ## Related
 
@@ -123,6 +120,3 @@ ADR governs.
   `ksef-docs/uwierzytelnianie.md`)
 - ADR-021 — public API tiers (constrains what new types can land
   without REQ-ID)
-- `context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md` — the living audit
-- `context/IMPLEMENTATION-PLAN-1.0.0-2026-05-03-1712.md` — implementation
-  plan whose Step 1 introduces this discipline

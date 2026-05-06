@@ -6,9 +6,9 @@
  * Public records describing KSeF authentication-flow state — challenge
  * payloads, redeem responses, session listings, refresh-token info.
  *
- * <p>All records are immutable and constructed via {@code from(*Raw)}
- * factory methods that map the OpenAPI-generated transport types
- * (kept off the public surface per ADR-005).
+ * <p>All records are immutable and returned by SDK clients/builders.
+ * The mapping from OpenAPI-generated transport types is handled
+ * internally and does not appear on the public surface (per ADR-005).
  *
  * @since 1.0.0
  */

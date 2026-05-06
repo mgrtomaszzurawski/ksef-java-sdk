@@ -54,9 +54,10 @@ silent `List.of()` / `0` / `null` masking the problem.
 
 ### Carve-out for known server violations
 
-If `context/RCA/*.md` documents a specific field where the KSeF server
-has been observed returning null despite the spec marking it required,
-that field's null-check stays in place with an inline pointer:
+If a documented bug report (RCA) records a specific field where the
+KSeF server has been observed returning null despite the spec marking
+it required, that field's null-check stays in place with an inline
+pointer:
 
 ```java
 // RCA-XX: server observed returning null despite spec marking required;
@@ -83,7 +84,7 @@ Defensive coding against contract violations:
 The right escalation path on an actual server violation:
 
 1. NPE surfaces in test or production telemetry.
-2. RCA recorded in `context/RCA/`.
+2. RCA / bug report recorded.
 3. Issue filed with KSeF (CIRFMF/ksef-docs).
 4. Per-field defensive check added with the RCA reference.
 

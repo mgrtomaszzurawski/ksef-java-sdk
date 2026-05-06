@@ -31,9 +31,8 @@ must sign. The consumer signs with their own crypto stack
 (JCA `Signature`, HSM, external signing service, etc.) and passes the
 signature into `buildCertificateVerificationUrl(..., signature)`.
 
-A round of cross-agent design discussion (`context/cross-agent-discussion.md`)
-proposed adding a `KOD II` signing convenience that owns a `PrivateKey` and
-performs the signing internally. That raised a concern about whether such a
+A round of cross-agent design discussion proposed adding a `KOD II` signing
+convenience that owns a `PrivateKey` and performs the signing internally. That raised a concern about whether such a
 convenience contradicts the PKI-neutral stance.
 
 ## Decision
@@ -72,10 +71,11 @@ deprecate the canonical-payload flow.
 
 ## Consequences
 
-- 1.0.0 KOD II ergonomics: consumers with a Java `PrivateKey` get
-  `client.qr().signingService().certificateVerificationUrl(...)` (one call).
-  Consumers with HSM or external signers continue using the canonical-payload
-  flow.
+- 1.0.0 KOD II ergonomics: consumers with a Java `PrivateKey` instantiate
+  `QrSigningService` directly and call
+  `signingService.certificateVerificationUrl(...)`. Consumers with HSM or
+  external signers continue using the canonical-payload flow via
+  `KsefVerificationLinks.canonicalCertificateSigningPayload(...)`.
 - The SDK does not promise support for any algorithm other than RSASSA-PSS
   with the spec parameters and ECDSA P-256/SHA-256. The Javadoc on
   `QrSigningService` cites this ADR.
@@ -112,5 +112,5 @@ deprecate the canonical-payload flow.
 ## Related
 
 - ADR-005 — SDK overlay on generated code (records as public API)
-- ADR-016 — `KsefClient` single entry point (`client.qr()` accessor)
-- REQ-QR-14 through REQ-QR-18 in `context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md`
+- ADR-016 — `KsefClient` single entry point
+- REQ-QR-14 through REQ-QR-18

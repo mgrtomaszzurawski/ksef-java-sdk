@@ -108,8 +108,6 @@ expose private SDK state.
 ## Spec citations
 
 - `ksef-docs/uwierzytelnianie.md` — auth flow (drives Type A migrations)
-- `context/PLAN-2026-04-03-2045-implementation-plan.md` — original Phase 9
-  release-blocker entries that introduced the deprecated seams
 
 ## Related
 

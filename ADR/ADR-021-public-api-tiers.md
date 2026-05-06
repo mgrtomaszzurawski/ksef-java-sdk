@@ -32,9 +32,9 @@ The 1.0.0 SDK has two tiers. There is no third.
   what SDK examples demonstrate. It is the answer to "how do I [send /
   download / verify / authenticate / sync]?". Examples:
   - `try (KsefSession s = client.openSession(FormCode.FA3)) { s.send(xml); s.closeAndAwait(); }`
-  - `client.batch().prepare(FormCode.FA3).addInvoice(...).uploadAndClose()`
+  - `try (KsefBatchSession b = client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.online())) { b.uploadParts(); b.closeAndAwait(); }`
   - `client.invoiceSync().sync(plan, checkpointStore, sink)`
-  - `client.qr().invoiceVerificationUrl(nip, issueDate, sha256)`
+  - `KsefVerificationLinks.buildInvoiceVerificationUrl(env, nip, issueDate, base64UrlSha256)`
 - **Tier 2 — Domain endpoint API.** Endpoint-shaped methods on domain
   clients. Used when the workflow API doesn't fit (custom polling cadence,
   partial flows, building blocks for a custom orchestrator). Examples:

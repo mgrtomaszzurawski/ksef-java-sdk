@@ -41,6 +41,7 @@ They depend on the published artifact (or the local `1.0.0`
 | `EnrollAndRevokeCertificate.java` | Enroll a new certificate from a CSR, poll for the serial number, revoke. |
 | `Handle401Refresh.java` | Demonstrate auto re-authentication on token expiry. |
 | `QrCodeGeneration.java` | Generate a verification QR code for a given KSeF number. |
+| `IncrementalSync.java` | Incremental invoice sync via `InvoiceSyncClient` with checkpoint persistence. |
 
 ## Notes
 

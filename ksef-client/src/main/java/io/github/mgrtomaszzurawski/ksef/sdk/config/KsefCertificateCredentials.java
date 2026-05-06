@@ -26,6 +26,25 @@ import java.util.Objects;
  * ADR-021 (public knobs must mean working support, not aspirational
  * support). Default is {@link SigningOptions#defaults()}.
  *
+ * <p><strong>VAT-UE callers (EU-entity flows):</strong> KSeF rejects the
+ * intuitive direct-auth path for EU entities. The working contract is:
+ * <ol>
+ *   <li>The Polish owner first grants {@code EuEntityAdminPermission}
+ *       to the EU entity's certificate — the grant subject is the
+ *       SHA-256 hex fingerprint of the certificate's public key.</li>
+ *   <li>The EU entity's self-signed certificate must use
+ *       {@code organizationIdentifier} RDN of {@code VATPL-{ownerNip}}
+ *       (not the compound {@code {ownerNip}-{country}{specific}} —
+ *       that shape is rejected with KSeF code 21117).</li>
+ *   <li>Authenticate with {@code subjectIdentifier} set to
+ *       {@link CertificateSubjectIdentifier#fingerprint(String)} and
+ *       {@code identifier} set to
+ *       {@link KsefIdentifier#nipVatUe(String)} carrying the compound
+ *       {@code {ownerNip}-{country}{specific}}.</li>
+ * </ol>
+ * Skipping step 1 yields KSeF code 21117 (invalid identifier);
+ * inverting subject/context yields code 410 (mismatched identifiers).
+ *
  * @param certificate X.509 certificate (qualified or test)
  * @param privateKey private key corresponding to the certificate
  * @param identifier authentication context identifier (NIP, internal id, EU VAT, or Peppol)

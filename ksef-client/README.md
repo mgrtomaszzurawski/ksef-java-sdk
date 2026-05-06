@@ -51,17 +51,27 @@ via `KsefIdentifier`:
 |------|--------|-----|
 | `Nip` | 10 digits | Polish tax ID — most common authentication identifier |
 | `Pesel` | 11 digits | Polish personal ID — natural-person authentication |
-| `Fingerprint` | hex | Certificate fingerprint identifier (foreign certs) |
-| `NipVatUe` | EU prefix + 10 digits | EU VAT number (only on EU-entity flows) |
+| `Fingerprint` | SHA-256 hex of cert public key | Certificate fingerprint identifier (foreign / EU entities) |
+| `NipVatUe` | `{ownerNip}-{country}{specific}` compound | EU VAT number context bound to a Polish owner NIP |
 
 Construct via the factory methods:
 
 ```java
 KsefIdentifier.nip("1234567890");
 KsefIdentifier.pesel("12345678901");
-KsefIdentifier.fingerprint("abcd...");
-KsefIdentifier.nipVatUe("PL1234567890");
+KsefIdentifier.fingerprint("abcd1234...");          // SHA-256 hex of cert pubkey
+KsefIdentifier.nipVatUe("1234567890-DE123456789");  // ownerNip-{country}{specific}
 ```
+
+> **VAT-UE authenticated context** is a two-step flow: (1) the EU-entity
+> certificate must first be granted `EuEntityAdminPermission` by the
+> Polish owner — the grant is keyed on the SHA-256 fingerprint of the
+> cert's public key; (2) authentication then uses
+> `CertificateSubjectIdentifier.fingerprint(hex)` together with
+> `KsefIdentifier.nipVatUe(compound)` as the operation context. The
+> certificate's `organizationIdentifier` RDN must be `VATPL-{ownerNip}`,
+> not the compound. See `KsefCertificateCredentials` Javadoc for the
+> full contract.
 
 Some flows accept only a NIP (e.g. credentials) — those constructors take a
 plain `String` for ergonomics.

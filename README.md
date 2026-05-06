@@ -32,7 +32,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 
-byte[] invoiceXml = ...; // your FA(2) or FA(3) invoice
+byte[] invoiceXml = ...; // your FA(3) invoice
 
 try (KsefClient client = KsefClient.builder(KsefEnvironment.TEST)
         .credentials(new KsefTokenCredentials("your-ksef-token", "1234567890"))
@@ -110,7 +110,7 @@ KsefClient.builder(KsefEnvironment.TEST)
 `KsefClient` is the single entry point. Domain operations are reached via accessors:
 
 - `client.invoices()` — query metadata, export packages, retrieve by KSeF number
-- `client.permissions()` — grant/revoke/query for persons, entities, EU entities, subunits, proxies (19 ops)
+- `client.permissions()` — grant/revoke/query/stream for persons, entities, EU entities, subunits, proxies, plus `*AndAwait` helpers
 - `client.tokens()` — KSeF API token lifecycle
 - `client.certificates()` — enrollment, revocation, query
 - `client.peppol()` — Peppol provider directory query
@@ -182,14 +182,14 @@ mvn verify -pl ksef-client  # produces target/site/jacoco/index.html
 
 The SDK uses SLF4J. No logging backend is bundled — your application picks the implementation (Logback, Log4j2, `slf4j-simple`, etc.).
 
-**Default level should be `WARN`** for the SDK logger (`io.github.mgrtomaszzurawski.ksef`). Per AWS/Azure SDK guidelines, leaving the SDK at `WARN` keeps production logs quiet; consumers turn on `DEBUG` only when diagnosing a specific problem.
+**Default level should be `WARN`** for the SDK logger. All SDK loggers live under `io.github.mgrtomaszzurawski.ksef.sdk.*`. Per AWS/Azure SDK guidelines, leaving the SDK at `WARN` keeps production logs quiet; consumers turn on `DEBUG` only when diagnosing a specific problem.
 
 ```xml
 <!-- logback.xml — show only terminal failures by default -->
-<logger name="io.github.mgrtomaszzurawski.ksef" level="WARN"/>
+<logger name="io.github.mgrtomaszzurawski.ksef.sdk" level="WARN"/>
 
 <!-- Diagnostic mode: log every HTTP request/response + per-call entry -->
-<logger name="io.github.mgrtomaszzurawski.ksef" level="DEBUG"/>
+<logger name="io.github.mgrtomaszzurawski.ksef.sdk" level="DEBUG"/>
 ```
 
 What you'll see at `DEBUG`: HTTP method + URI, response status + elapsed ms, per-domain operation entry. Bodies are never logged (they carry NIPs, PESELs, JWT tokens, AES keys, full invoice XML — `RODO` violation if leaked).
@@ -206,10 +206,9 @@ Bundled official KSeF OpenAPI/XSD files (`ksef-client/openapi/open-api.json`, `k
 
 ## Status
 
-- ✅ All 11 KSeF API domains covered (62+ live ops verified against demo env)
-- ✅ 500+ unit + integration tests (WireMock-mocked HTTP, full transport coverage)
-- ✅ JaCoCo coverage report generated (`mvn verify` → `target/site/jacoco/`)
-- ✅ Per-builder method coverage gate green
+- ✅ All 11 KSeF API domains covered (101 OK / 0 FAIL / 15 SKIP across DEMO + TEST live demo runs; SKIPs are documented per-runner and reflect domain-content limitations such as the PEPPOL accepted-UBL fixture)
+- ✅ 660+ unit + integration tests across 71 test classes (WireMock-mocked HTTP, full transport coverage)
+- ✅ JaCoCo coverage gate green at `INSTRUCTION ≥ 0.75`, `METHOD ≥ 0.80` (`mvn verify` → `target/site/jacoco/`); per-builder 100% method gate is tracked separately
 - 🚧 JSpecify null-safety annotations (ADR-017)
 - 🚧 Maven Central first publish (release-profile dry run pending)
 

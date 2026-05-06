@@ -91,12 +91,13 @@ public final class QrCodeGeneration {
             return QrEnvironment.TEST;
         }
         String upper = envName.trim().toUpperCase(Locale.ROOT);
-        if (upper.equals(ENV_DEMO)) {
-            return QrEnvironment.DEMO;
-        }
-        if (upper.equals(ENV_PROD)) {
-            return QrEnvironment.PROD;
-        }
-        return QrEnvironment.TEST;
+        return switch (upper) {
+            case "TEST" -> QrEnvironment.TEST;
+            case ENV_DEMO -> QrEnvironment.DEMO;
+            case ENV_PROD -> QrEnvironment.PROD;
+            default -> throw new IllegalArgumentException(
+                    "Unsupported KSEF_QR_ENV value: '" + envName
+                    + "' (allowed: TEST, DEMO, PROD)");
+        };
     }
 }
