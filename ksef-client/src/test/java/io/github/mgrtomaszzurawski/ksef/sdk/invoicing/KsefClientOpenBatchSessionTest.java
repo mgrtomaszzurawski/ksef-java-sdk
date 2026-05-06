@@ -163,15 +163,8 @@ class KsefClientOpenBatchSessionTest {
             // when — let the call return a session OR throw count-mismatch;
             // either way the request body that reached the server is what we
             // assert below.
-            try {
-                client.openBatchSession(FormCode.FA2, List.of(invoice), BatchSessionOptions.online()).close();
-            } catch (IllegalArgumentException countMismatch) {
-                if (!countMismatch.getMessage().contains("partUploadRequests count")) {
-                    throw countMismatch;
-                }
-                // expected if the splitter happens to produce a different
-                // part count than the single-part stub returns.
-            }
+            runOpenAcceptingPartCountMismatch(() ->
+                    client.openBatchSession(FormCode.FA2, List.of(invoice), BatchSessionOptions.online()).close());
 
             verify(postRequestedFor(urlEqualTo(BATCH_PATH))
                     .withRequestBody(matchingJsonPath("$.formCode.value", equalTo("FA")))
@@ -224,14 +217,8 @@ class KsefClientOpenBatchSessionTest {
 
             byte[] invoice = "<Invoice/>".getBytes(StandardCharsets.UTF_8);
 
-            try {
-                client.openBatchSession(FormCode.FA2, List.of(invoice), BatchSessionOptions.offline()).close();
-            } catch (IllegalArgumentException countMismatch) {
-                if (!countMismatch.getMessage().contains("partUploadRequests count")) {
-                    throw countMismatch;
-                }
-                // expected if splitter part count != stub part count
-            }
+            runOpenAcceptingPartCountMismatch(() ->
+                    client.openBatchSession(FormCode.FA2, List.of(invoice), BatchSessionOptions.offline()).close());
 
             verify(postRequestedFor(urlEqualTo(BATCH_PATH))
                     .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true"))));
@@ -249,20 +236,30 @@ class KsefClientOpenBatchSessionTest {
             stubBatchOpenAcceptingAnyPartCount();
             stubBatchClose();
 
-            try {
-                client.openBatchSessionFromFiles(FormCode.FA2,
-                        List.of(tempInvoice), BatchSessionOptions.offline()).close();
-            } catch (IllegalArgumentException countMismatch) {
-                if (!countMismatch.getMessage().contains("partUploadRequests count")) {
-                    throw countMismatch;
-                }
-                // expected if splitter part count != stub part count
-            }
+            runOpenAcceptingPartCountMismatch(() ->
+                    client.openBatchSessionFromFiles(FormCode.FA2,
+                            List.of(tempInvoice), BatchSessionOptions.offline()).close());
 
             verify(postRequestedFor(urlEqualTo(BATCH_PATH))
                     .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true"))));
         } finally {
             java.nio.file.Files.deleteIfExists(tempInvoice);
+        }
+    }
+
+    /**
+     * Run an open-batch action; assert that any thrown {@link IllegalArgumentException}
+     * is exactly the part-count-mismatch one we expect from the constructor when
+     * the stubbed response has fewer/more partUploadRequests than the splitter
+     * actually produces. Any other IAE re-throws so the test fails loudly.
+     */
+    private static void runOpenAcceptingPartCountMismatch(Runnable openAction) {
+        try {
+            openAction.run();
+        } catch (IllegalArgumentException countMismatch) {
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    countMismatch.getMessage().contains("partUploadRequests count"),
+                    "Only the part-count-mismatch IAE is expected here, got: " + countMismatch.getMessage());
         }
     }
 
@@ -307,7 +304,7 @@ class KsefClientOpenBatchSessionTest {
             io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates testCerts =
                     io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates.generateRsa();
             String certBase64 = java.util.Base64.getEncoder().encodeToString(testCerts.certificate().getEncoded());
-            String now = java.time.OffsetDateTime.now().toString();
+            String validFrom = java.time.OffsetDateTime.now().toString();
             String later = java.time.OffsetDateTime.now().plusYears(1).toString();
             stubFor(get(urlEqualTo("/v2/security/public-key-certificates"))
                     .atPriority(1)
@@ -329,7 +326,7 @@ class KsefClientOpenBatchSessionTest {
                                         "validTo": "%s"
                                       }
                                     ]
-                                    """.formatted(certBase64, now, later, certBase64, now, later))));
+                                    """.formatted(certBase64, validFrom, later, certBase64, validFrom, later))));
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to stub SymmetricKeyEncryption cert", ex);
         }

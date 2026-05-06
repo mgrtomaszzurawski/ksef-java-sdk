@@ -58,24 +58,29 @@ class CertificatesMappersTest {
 
     @Test
     void toCertificateLimit_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {"remaining": %d, "limit": %d}
                 """.formatted(LIMIT_REMAINING, LIMIT_VALUE);
         CertificateLimitRaw raw = OBJECT_MAPPER.readValue(json, CertificateLimitRaw.class);
 
+        // when
         CertificateLimit result = CertificatesMappers.toCertificateLimit(raw);
 
+        // then
         assertEquals(LIMIT_REMAINING, result.remaining());
         assertEquals(LIMIT_VALUE, result.limit());
     }
 
     @Test
     void toCertificateLimit_nullInput_yieldsNull() {
+        // when / then
         assertNull(CertificatesMappers.toCertificateLimit(null));
     }
 
     @Test
     void toCertificateLimits_mapsBothNestedLimits() throws Exception {
+        // given
         String json = """
                 {
                   "canRequest": true,
@@ -85,8 +90,10 @@ class CertificatesMappersTest {
                 """.formatted(LIMIT_REMAINING, LIMIT_VALUE, LIMIT_REMAINING, LIMIT_VALUE);
         CertificateLimitsResponseRaw raw = OBJECT_MAPPER.readValue(json, CertificateLimitsResponseRaw.class);
 
+        // when
         CertificateLimits result = CertificatesMappers.toCertificateLimits(raw);
 
+        // then
         assertNotNull(result.enrollment());
         assertNotNull(result.certificate());
         assertEquals(LIMIT_REMAINING, result.enrollment().remaining());
@@ -94,6 +101,7 @@ class CertificatesMappersTest {
 
     @Test
     void toCertificateEnrollmentData_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "commonName": "%s",
@@ -109,8 +117,10 @@ class CertificatesMappersTest {
         CertificateEnrollmentDataResponseRaw raw =
                 OBJECT_MAPPER.readValue(json, CertificateEnrollmentDataResponseRaw.class);
 
+        // when
         CertificateEnrollmentData result = CertificatesMappers.toCertificateEnrollmentData(raw);
 
+        // then
         assertEquals(COMMON_NAME, result.commonName());
         assertEquals("PL", result.countryName());
         assertEquals("Jan", result.givenName());
@@ -120,6 +130,7 @@ class CertificatesMappersTest {
 
     @Test
     void toCertificateEnrollmentStatus_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "requestDate": "%s",
@@ -130,8 +141,10 @@ class CertificatesMappersTest {
         CertificateEnrollmentStatusResponseRaw raw =
                 OBJECT_MAPPER.readValue(json, CertificateEnrollmentStatusResponseRaw.class);
 
+        // when
         CertificateEnrollmentStatus result = CertificatesMappers.toCertificateEnrollmentStatus(raw);
 
+        // then
         assertEquals(SERIAL, result.certificateSerialNumber());
         assertNotNull(result.status());
         assertEquals(200, result.status().code());
@@ -139,6 +152,7 @@ class CertificatesMappersTest {
 
     @Test
     void toCertificateListItem_withSubjectIdentifier_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "certificateSerialNumber": "%s",
@@ -155,8 +169,10 @@ class CertificatesMappersTest {
                 """.formatted(SERIAL, NAME, COMMON_NAME, NIP, DATE_ISO, DATE_ISO, DATE_ISO, DATE_ISO);
         CertificateListItemRaw raw = OBJECT_MAPPER.readValue(json, CertificateListItemRaw.class);
 
+        // when
         CertificateListItem result = CertificatesMappers.toCertificateListItem(raw);
 
+        // then
         assertEquals(SERIAL, result.certificateSerialNumber());
         assertEquals(NAME, result.name());
         assertEquals("Authentication", result.type());
@@ -167,6 +183,7 @@ class CertificatesMappersTest {
 
     @Test
     void toCertificateListItem_withoutSubjectIdentifier_yieldsNullSubjectFields() throws Exception {
+        // given
         String json = """
                 {
                   "certificateSerialNumber": "%s",
@@ -183,8 +200,10 @@ class CertificatesMappersTest {
                 """.formatted(SERIAL, NAME, COMMON_NAME, DATE_ISO, DATE_ISO, DATE_ISO, DATE_ISO);
         CertificateListItemRaw raw = OBJECT_MAPPER.readValue(json, CertificateListItemRaw.class);
 
+        // when
         CertificateListItem result = CertificatesMappers.toCertificateListItem(raw);
 
+        // then
         assertNull(result.subjectIdentifierType());
         assertNull(result.subjectIdentifierValue());
         assertEquals("Offline", result.type());
@@ -193,19 +212,23 @@ class CertificatesMappersTest {
 
     @Test
     void toEnrollCertificateResult_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {"referenceNumber": "ref-1", "timestamp": "%s"}
                 """.formatted(DATE_ISO);
         EnrollCertificateResponseRaw raw = OBJECT_MAPPER.readValue(json, EnrollCertificateResponseRaw.class);
 
+        // when
         EnrollCertificateResult result = CertificatesMappers.toEnrollCertificateResult(raw);
 
+        // then
         assertEquals("ref-1", result.referenceNumber());
         assertNotNull(result.timestamp());
     }
 
     @Test
     void toRetrievedCertificate_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "certificate": "%s",
@@ -216,8 +239,10 @@ class CertificatesMappersTest {
                 """.formatted(CERTIFICATE_BASE64, NAME, SERIAL);
         RetrieveCertificatesListItemRaw raw = OBJECT_MAPPER.readValue(json, RetrieveCertificatesListItemRaw.class);
 
+        // when
         RetrievedCertificate result = CertificatesMappers.toRetrievedCertificate(raw);
 
+        // then
         assertNotNull(result.certificate());
         assertEquals(NAME, result.certificateName());
         assertEquals(SERIAL, result.certificateSerialNumber());
@@ -226,6 +251,7 @@ class CertificatesMappersTest {
 
     @Test
     void toCertificateRevocationReasonRaw_coversAllEnumBranches() {
+        // when / then
         assertEquals(CertificateRevocationReasonRaw.UNSPECIFIED,
                 CertificatesMappers.toCertificateRevocationReasonRaw(CertificateRevocationReason.UNSPECIFIED));
         assertEquals(CertificateRevocationReasonRaw.SUPERSEDED,
@@ -236,6 +262,7 @@ class CertificatesMappersTest {
 
     @Test
     void toCertificateListItemStatusRaw_coversAllEnumBranches() {
+        // when / then
         assertEquals(CertificateListItemStatusRaw.ACTIVE,
                 CertificatesMappers.toCertificateListItemStatusRaw(CertificateStatus.ACTIVE));
         assertEquals(CertificateListItemStatusRaw.BLOCKED,
@@ -248,6 +275,7 @@ class CertificatesMappersTest {
 
     @Test
     void toKsefCertificateTypeRaw_coversAllEnumBranches() {
+        // when / then
         assertEquals(KsefCertificateTypeRaw.AUTHENTICATION,
                 CertificatesMappers.toKsefCertificateTypeRaw(KsefCertificateType.AUTHENTICATION));
         assertEquals(KsefCertificateTypeRaw.OFFLINE,
@@ -256,55 +284,67 @@ class CertificatesMappersTest {
 
     @Test
     void toEnrollCertificateRequestRaw_withValidFrom_setsField() {
+        // given
         var request = new io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest(
                 NAME, KsefCertificateType.AUTHENTICATION, CSR_BYTES,
                 java.time.OffsetDateTime.parse(DATE_ISO));
 
-        var raw = CertificatesMappers.toEnrollCertificateRequestRaw(request);
+        // when
+        var rawRequest = CertificatesMappers.toEnrollCertificateRequestRaw(request);
 
-        assertEquals(NAME, raw.getCertificateName());
-        assertEquals(KsefCertificateTypeRaw.AUTHENTICATION, raw.getCertificateType());
-        assertNotNull(raw.getCsr());
-        assertNotNull(raw.getValidFrom());
+        // then
+        assertEquals(NAME, rawRequest.getCertificateName());
+        assertEquals(KsefCertificateTypeRaw.AUTHENTICATION, rawRequest.getCertificateType());
+        assertNotNull(rawRequest.getCsr());
+        assertNotNull(rawRequest.getValidFrom());
     }
 
     @Test
     void toEnrollCertificateRequestRaw_withoutValidFrom_skipsValidFrom() {
+        // given
         var request = new io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest(
                 NAME, KsefCertificateType.OFFLINE, CSR_BYTES, null);
 
-        var raw = CertificatesMappers.toEnrollCertificateRequestRaw(request);
+        // when
+        var rawRequest = CertificatesMappers.toEnrollCertificateRequestRaw(request);
 
-        assertEquals(NAME, raw.getCertificateName());
-        assertEquals(KsefCertificateTypeRaw.OFFLINE, raw.getCertificateType());
-        assertNull(raw.getValidFrom());
+        // then
+        assertEquals(NAME, rawRequest.getCertificateName());
+        assertEquals(KsefCertificateTypeRaw.OFFLINE, rawRequest.getCertificateType());
+        assertNull(rawRequest.getValidFrom());
     }
 
     @Test
     void toQueryCertificatesRequestRaw_setsAllOptionalFields() {
+        // given
         var request = new io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest(
                 SERIAL, NAME, KsefCertificateType.AUTHENTICATION,
                 CertificateStatus.ACTIVE, java.time.OffsetDateTime.parse(DATE_ISO));
 
-        var raw = CertificatesMappers.toQueryCertificatesRequestRaw(request);
+        // when
+        var rawRequest = CertificatesMappers.toQueryCertificatesRequestRaw(request);
 
-        assertEquals(SERIAL, raw.getCertificateSerialNumber());
-        assertEquals(NAME, raw.getName());
-        assertEquals(KsefCertificateTypeRaw.AUTHENTICATION, raw.getType());
-        assertEquals(CertificateListItemStatusRaw.ACTIVE, raw.getStatus());
-        assertNotNull(raw.getExpiresAfter());
+        // then
+        assertEquals(SERIAL, rawRequest.getCertificateSerialNumber());
+        assertEquals(NAME, rawRequest.getName());
+        assertEquals(KsefCertificateTypeRaw.AUTHENTICATION, rawRequest.getType());
+        assertEquals(CertificateListItemStatusRaw.ACTIVE, rawRequest.getStatus());
+        assertNotNull(rawRequest.getExpiresAfter());
     }
 
     @Test
     void toQueryCertificatesRequestRaw_skipsNullFields() {
+        // given
         var request = new io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest(
                 null, null, null, null, null);
 
-        var raw = CertificatesMappers.toQueryCertificatesRequestRaw(request);
+        // when
+        var rawRequest = CertificatesMappers.toQueryCertificatesRequestRaw(request);
 
-        assertNull(raw.getName());
-        assertNull(raw.getType());
-        assertNull(raw.getStatus());
-        assertNull(raw.getExpiresAfter());
+        // then
+        assertNull(rawRequest.getName());
+        assertNull(rawRequest.getType());
+        assertNull(rawRequest.getStatus());
+        assertNull(rawRequest.getExpiresAfter());
     }
 }

@@ -68,10 +68,22 @@ class UncoveredBuildersCoverageTest {
 
     @Test
     void invoiceExportBuilder_fullContent_andToBuilder() {
+        // given — a query filter set so .build() can succeed on the copy
+        var filters = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder
+                .seller()
+                .permanentStorageDateFrom(FROM)
+                .permanentStorageDateTo(TO);
+
+        // when
         InvoiceExportBuilder builder = InvoiceExportBuilder.create(realRsaKey())
+                .filters(filters)
                 .fullContent();
         InvoiceExportBuilder copy = builder.toBuilder();
-        assertNotNull(copy);
+        var request = copy.build();
+
+        // then — toBuilder() must preserve onlyMetadata=false (fullContent flag)
+        assertEquals(false, request.onlyMetadata(),
+                "toBuilder() must preserve fullContent flag (onlyMetadata=false) from the source builder");
     }
 
     @Test
@@ -111,29 +123,64 @@ class UncoveredBuildersCoverageTest {
 
     @Test
     void subunitPermissionGrantBuilder_forFingerprint() {
+        // given
         String fingerprint = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
-        SubunitPermissionGrantBuilder builder = SubunitPermissionGrantBuilder.forFingerprint(fingerprint);
-        assertNotNull(builder);
+
+        // when
+        var request = SubunitPermissionGrantBuilder.forFingerprint(fingerprint)
+                .contextInternalId("ctx-1")
+                .description("desc")
+                .personDetails("Jan", "Kowalski")
+                .build();
+
+        // then — fingerprint flows into identifierValue with FINGERPRINT identifierType
+        assertEquals(fingerprint, request.identifierValue());
+        assertEquals(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubjectIdentifierType.FINGERPRINT,
+                request.identifierType());
     }
 
     @Test
     void testPermissionsGrantBuilder_authorizedPesel_authorizedFingerprint() {
-        TestPermissionsGrantBuilder withPesel = TestPermissionsGrantBuilder.create("1234567890")
-                .authorizedPesel("82060411457");
-        assertNotNull(withPesel);
+        // given
+        String supplierNip = "1234567890";
+        String pesel = "82060411457";
+        String fingerprint = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
 
-        TestPermissionsGrantBuilder withFingerprint = TestPermissionsGrantBuilder.create("1234567890")
-                .authorizedFingerprint("a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0");
-        assertNotNull(withFingerprint);
+        // when — apply each authorized-* setter on a fresh builder
+        var withPesel = TestPermissionsGrantBuilder.create(supplierNip)
+                .authorizedPesel(pesel)
+                .invoiceRead()
+                .build();
+        var withFingerprint = TestPermissionsGrantBuilder.create(supplierNip)
+                .authorizedFingerprint(fingerprint)
+                .invoiceRead()
+                .build();
+
+        // then — each setter chooses the right authorizedType + value
+        assertEquals(pesel, withPesel.authorizedValue());
+        assertEquals(io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataAuthorizedIdentifierType.PESEL,
+                withPesel.authorizedType());
+        assertEquals(fingerprint, withFingerprint.authorizedValue());
+        assertEquals(io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataAuthorizedIdentifierType.FINGERPRINT,
+                withFingerprint.authorizedType());
     }
 
     @Test
     void ksefClientBuilder_connectTimeout_readTimeout_features() {
+        // given / when — exercise the three setters and confirm the builder
+        // build()s without throwing (the setters are simple stores; richer
+        // verification would require exposing internals not on public API)
         var builder = io.github.mgrtomaszzurawski.ksef.sdk.KsefClient
                 .builder(KsefEnvironment.TEST)
                 .connectTimeout(java.time.Duration.ofSeconds(10))
                 .readTimeout(java.time.Duration.ofSeconds(30))
                 .features(io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy.defaults());
+
+        // then — chain returns same builder type, ready for build()
         assertNotNull(builder);
+        try (var client = builder.build()) {
+            assertNotNull(client);
+            assertEquals(KsefEnvironment.TEST, client.environment());
+        }
     }
 }

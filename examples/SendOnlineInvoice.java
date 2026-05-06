@@ -41,7 +41,7 @@ public final class SendOnlineInvoice {
                 .build()) {
 
             client.authenticate();
-            System.out.println("Authenticated as " + nip);
+            System.out.println("Authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
             try (KsefSession session = client.openSession(FormCode.FA3)) {
                 System.out.println("Session opened: " + session.referenceNumber());

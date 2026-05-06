@@ -36,6 +36,14 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPerm
  */
 public interface PermissionClient {
 
+    /**
+     * KSeF permission-operation status codes are conventionally
+     * {@code 100/110} (in-progress), {@code 200} (success), and
+     * {@code 4xx/5xx} (failure). Anything {@code &gt;= 200} is terminal —
+     * the poll loop stops and returns the status to the caller.
+     */
+    int TERMINAL_STATUS_CODE_THRESHOLD = 200;
+
     PermissionOperationResult grantPerson(PersonPermissionGrantBuilder builder);
     PermissionOperationResult grantEntity(EntityPermissionGrantBuilder builder);
     PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantBuilder builder);
@@ -142,7 +150,7 @@ public interface PermissionClient {
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
                 opName,
                 () -> getOperationStatus(referenceNumber),
-                status -> status.status() != null && status.status().code() >= 200,
+                status -> status.status() != null && status.status().code() >= TERMINAL_STATUS_CODE_THRESHOLD,
                 status -> status.status() == null ? null : status.status().code(),
                 timeout,
                 null);

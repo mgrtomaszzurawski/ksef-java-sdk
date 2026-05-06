@@ -316,9 +316,7 @@ public final class BatchPackageBuilder {
 
         private BatchPart writeToDisk(BatchAssemblyMode.OnDisk onDisk, byte[] ciphertext, byte[] partHash)
                 throws IOException {
-            Path partPath = onDisk.tempDirectory() == null
-                    ? Files.createTempFile(TEMP_PREFIX_PART, TEMP_SUFFIX)
-                    : Files.createTempFile(onDisk.tempDirectory(), TEMP_PREFIX_PART, TEMP_SUFFIX);
+            Path partPath = createOwnerOnlyTempFile(onDisk.tempDirectory());
             partPath.toFile().deleteOnExit();
             Files.write(partPath, ciphertext);
             BatchPart.OnDiskPart part = new BatchPart.OnDiskPart(nextOrdinal, ciphertext.length, partHash, partPath);
@@ -340,6 +338,31 @@ public final class BatchPackageBuilder {
             MessageDigest digest = newSha256();
             digest.update(bytes);
             return digest.digest();
+        }
+
+        /**
+         * Create a temp file with owner-only POSIX permissions where supported.
+         * Files hold AES-CBC ciphertext only — keys never on disk — but
+         * defense-in-depth: prevent accidental disclosure on multi-user hosts.
+         * Falls back to default permissions on non-POSIX filesystems (Windows).
+         */
+        private static Path createOwnerOnlyTempFile(Path tempDirectory) throws IOException {
+            try {
+                java.nio.file.attribute.FileAttribute<?> ownerOnly =
+                        java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                                java.util.EnumSet.of(
+                                        java.nio.file.attribute.PosixFilePermission.OWNER_READ,
+                                        java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
+                if (tempDirectory == null) {
+                    return Files.createTempFile(TEMP_PREFIX_PART, TEMP_SUFFIX, ownerOnly);
+                }
+                return Files.createTempFile(tempDirectory, TEMP_PREFIX_PART, TEMP_SUFFIX, ownerOnly);
+            } catch (UnsupportedOperationException nonPosix) {
+                if (tempDirectory == null) {
+                    return Files.createTempFile(TEMP_PREFIX_PART, TEMP_SUFFIX);
+                }
+                return Files.createTempFile(tempDirectory, TEMP_PREFIX_PART, TEMP_SUFFIX);
+            }
         }
 
         long totalRawBytes() {
@@ -396,6 +419,12 @@ public final class BatchPackageBuilder {
          * Read the encrypted bytes for part {@code index}, regardless of
          * whether the part lives on disk or in heap. Defensive copy on
          * the in-memory path.
+         *
+         * <p><strong>Test-only helper.</strong> Production batch upload
+         * uses {@code BodyPublishers.ofFile(...)} which streams from disk
+         * without materialising the full part. This method exists only
+         * for unit-test assertions on small fixture parts; do not call it
+         * from production code paths against real 100 MiB parts.
          */
         public byte[] readPartBytes(int index) throws java.io.IOException {
             BatchPart part = parts.get(index);

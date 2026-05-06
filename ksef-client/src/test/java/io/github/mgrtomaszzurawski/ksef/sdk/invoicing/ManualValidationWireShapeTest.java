@@ -77,12 +77,12 @@ class ManualValidationWireShapeTest {
                 .permanentStorageDateFrom(OffsetDateTime.parse("2026-04-01T00:00:00Z"))
                 .restrictToPermanentStorageHwm();
 
-        var raw = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingRequestMappers
+        var rawFilters = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingRequestMappers
                 .toInvoiceQueryFiltersRaw(query.build());
 
         // The flag is wrapped as JsonNullable on the Raw — getDateRange()
         // exposes the inner Boolean via the *_JsonNullable accessor.
-        var jsonNullable = raw.getDateRange().getRestrictToPermanentStorageHwmDate_JsonNullable();
+        var jsonNullable = rawFilters.getDateRange().getRestrictToPermanentStorageHwmDate_JsonNullable();
         assertTrue(jsonNullable.isPresent(),
                 "restrictToPermanentStorageHwmDate must be set when builder.restrictToPermanentStorageHwm() called");
         assertEquals(Boolean.TRUE, jsonNullable.get());

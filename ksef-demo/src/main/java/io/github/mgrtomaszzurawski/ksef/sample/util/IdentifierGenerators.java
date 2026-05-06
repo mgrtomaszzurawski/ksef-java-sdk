@@ -55,20 +55,20 @@ public final class IdentifierGenerators {
             for (int i = 1; i < NIP_LENGTH - 1; i++) {
                 digits[i] = RANDOM.nextInt(0, 10);
             }
-            int sum = 0;
+            int weightedSum = 0;
             for (int i = 0; i < NIP_CHECKSUM_WEIGHTS.length; i++) {
-                sum += digits[i] * NIP_CHECKSUM_WEIGHTS[i];
+                weightedSum += digits[i] * NIP_CHECKSUM_WEIGHTS[i];
             }
-            int check = sum % CHECKSUM_MODULUS;
-            if (check == CHECKSUM_INVALID) {
+            int checkDigit = weightedSum % CHECKSUM_MODULUS;
+            if (checkDigit == CHECKSUM_INVALID) {
                 continue;
             }
-            digits[NIP_LENGTH - 1] = check;
-            StringBuilder sb = new StringBuilder(NIP_LENGTH);
-            for (int d : digits) {
-                sb.append(d);
+            digits[NIP_LENGTH - 1] = checkDigit;
+            StringBuilder builder = new StringBuilder(NIP_LENGTH);
+            for (int digit : digits) {
+                builder.append(digit);
             }
-            return sb.toString();
+            return builder.toString();
         }
     }
 
@@ -79,12 +79,12 @@ public final class IdentifierGenerators {
      * auth submitted with this peppolId as the certificate subject.
      */
     public static String generatePeppolId() {
-        StringBuilder sb = new StringBuilder(PEPPOL_PREFIX.length() + PEPPOL_DIGIT_COUNT);
-        sb.append(PEPPOL_PREFIX);
+        StringBuilder builder = new StringBuilder(PEPPOL_PREFIX.length() + PEPPOL_DIGIT_COUNT);
+        builder.append(PEPPOL_PREFIX);
         for (int i = 0; i < PEPPOL_DIGIT_COUNT; i++) {
-            sb.append(RANDOM.nextInt(0, 10));
+            builder.append(RANDOM.nextInt(0, 10));
         }
-        return sb.toString();
+        return builder.toString();
     }
 
     /**
@@ -99,13 +99,13 @@ public final class IdentifierGenerators {
      * VIES); KSeF TEST env auto-creates the resulting VAT-UE context.
      */
     public static String generateRandomVatUe() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(generateRandomNip());
-        sb.append('-');
-        sb.append(VAT_UE_PREFIX);
+        StringBuilder builder = new StringBuilder();
+        builder.append(generateRandomNip());
+        builder.append('-');
+        builder.append(VAT_UE_PREFIX);
         for (int i = 0; i < VAT_UE_DIGIT_COUNT; i++) {
-            sb.append(RANDOM.nextInt(0, 10));
+            builder.append(RANDOM.nextInt(0, 10));
         }
-        return sb.toString();
+        return builder.toString();
     }
 }

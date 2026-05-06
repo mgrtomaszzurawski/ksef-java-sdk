@@ -19,7 +19,7 @@ class FormCodeTest {
     private static final String SCHEMA_VERSION_FA = "1-0E";
     private static final String VALUE_FA = "FA";
     private static final String SYSTEM_CODE_PEF3 = "PEF (3)";
-    private static final String SYSTEM_CODE_CUSTOM_PEF = "PEF (3)";
+    private static final String SYSTEM_CODE_PEF_KOR3 = "PEF_KOR (3)";
     private static final String SCHEMA_VERSION_PEF = "2-1";
     private static final String VALUE_PEF = "PEF";
 
@@ -48,10 +48,10 @@ class FormCodeTest {
     @Test
     void custom_whenValidInputs_createsSuccessfully() {
         // when
-        FormCode formCode = FormCode.custom(SYSTEM_CODE_CUSTOM_PEF, SCHEMA_VERSION_PEF, VALUE_PEF);
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_PEF3, SCHEMA_VERSION_PEF, VALUE_PEF);
 
         // then
-        assertEquals(SYSTEM_CODE_CUSTOM_PEF, formCode.systemCode());
+        assertEquals(SYSTEM_CODE_PEF3, formCode.systemCode());
         assertEquals(SCHEMA_VERSION_PEF, formCode.schemaVersion());
         assertEquals(VALUE_PEF, formCode.value());
     }
@@ -127,7 +127,7 @@ class FormCodeTest {
         FormCode formCode = FormCode.PEF_KOR3;
 
         // then
-        assertEquals("PEF_KOR (3)", formCode.systemCode());
+        assertEquals(SYSTEM_CODE_PEF_KOR3, formCode.systemCode());
         assertEquals(SCHEMA_VERSION_PEF, formCode.schemaVersion());
         assertEquals(VALUE_PEF, formCode.value());
     }

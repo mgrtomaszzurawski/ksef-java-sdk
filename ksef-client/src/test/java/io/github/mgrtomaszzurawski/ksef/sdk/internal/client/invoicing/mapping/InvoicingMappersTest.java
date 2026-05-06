@@ -91,14 +91,17 @@ class InvoicingMappersTest {
 
     @Test
     void toBatchSessionLimits_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {"maxInvoiceSizeInMB": %d, "maxInvoiceWithAttachmentSizeInMB": %d, "maxInvoices": %d}
                 """.formatted(MAX_INVOICE_SIZE_MB, MAX_INVOICE_WITH_ATTACH_MB, MAX_INVOICES);
         BatchSessionEffectiveContextLimitsRaw raw =
                 OBJECT_MAPPER.readValue(json, BatchSessionEffectiveContextLimitsRaw.class);
 
+        // when
         BatchSessionLimits result = InvoicingMappers.toBatchSessionLimits(raw);
 
+        // then
         assertEquals(MAX_INVOICE_SIZE_MB, result.maxInvoiceSizeInMB());
         assertEquals(MAX_INVOICE_WITH_ATTACH_MB, result.maxInvoiceWithAttachmentSizeInMB());
         assertEquals(MAX_INVOICES, result.maxInvoices());
@@ -106,11 +109,13 @@ class InvoicingMappersTest {
 
     @Test
     void toBatchSessionLimits_nullInput_yieldsNull() {
+        // when / then
         assertNull(InvoicingMappers.toBatchSessionLimits(null));
     }
 
     @Test
     void toBuyerIdentifierType_coversAllEnumBranches() {
+        // when / then
         assertEquals(BuyerIdentifierType.NIP, InvoicingMappers.toBuyerIdentifierType(BuyerIdentifierTypeRaw.NIP));
         assertEquals(BuyerIdentifierType.VAT_UE, InvoicingMappers.toBuyerIdentifierType(BuyerIdentifierTypeRaw.VAT_UE));
         assertEquals(BuyerIdentifierType.OTHER, InvoicingMappers.toBuyerIdentifierType(BuyerIdentifierTypeRaw.OTHER));
@@ -120,6 +125,7 @@ class InvoicingMappersTest {
 
     @Test
     void toThirdSubjectIdentifierType_coversAllEnumBranches() {
+        // when / then
         assertEquals(ThirdSubjectIdentifierType.NIP, InvoicingMappers.toThirdSubjectIdentifierType(ThirdSubjectIdentifierTypeRaw.NIP));
         assertEquals(ThirdSubjectIdentifierType.INTERNAL_ID, InvoicingMappers.toThirdSubjectIdentifierType(ThirdSubjectIdentifierTypeRaw.INTERNAL_ID));
         assertEquals(ThirdSubjectIdentifierType.VAT_UE, InvoicingMappers.toThirdSubjectIdentifierType(ThirdSubjectIdentifierTypeRaw.VAT_UE));
@@ -130,6 +136,7 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoiceType_coversAllEnumBranches() {
+        // when / then
         for (InvoiceTypeRaw raw : InvoiceTypeRaw.values()) {
             assertNotNull(InvoicingMappers.toInvoiceType(raw),
                     "missing branch for InvoiceTypeRaw." + raw);
@@ -141,6 +148,7 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoicingMode_coversAllEnumBranches() {
+        // when / then
         assertEquals(InvoicingMode.ONLINE, InvoicingMappers.toInvoicingMode(InvoicingModeRaw.ONLINE));
         assertEquals(InvoicingMode.OFFLINE, InvoicingMappers.toInvoicingMode(InvoicingModeRaw.OFFLINE));
         assertNull(InvoicingMappers.toInvoicingMode(null));
@@ -148,13 +156,16 @@ class InvoicingMappersTest {
 
     @Test
     void toFormCodeInfo_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {"systemCode": "FA (2)", "schemaVersion": "1-0E", "value": "FA"}
                 """;
         FormCodeRaw raw = OBJECT_MAPPER.readValue(json, FormCodeRaw.class);
 
+        // when
         FormCodeInfo result = InvoicingMappers.toFormCodeInfo(raw);
 
+        // then
         assertEquals("FA (2)", result.systemCode());
         assertEquals("1-0E", result.schemaVersion());
         assertEquals("FA", result.value());
@@ -162,18 +173,22 @@ class InvoicingMappersTest {
 
     @Test
     void toFormCodeInfo_nullInput_yieldsNull() {
+        // when / then
         assertNull(InvoicingMappers.toFormCodeInfo(null));
     }
 
     @Test
     void toInvoiceBuyer_withIdentifier_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {"identifier": {"type": "Nip", "value": "%s"}, "name": "%s"}
                 """.formatted(NIP, BUYER_NAME);
         InvoiceMetadataBuyerRaw raw = OBJECT_MAPPER.readValue(json, InvoiceMetadataBuyerRaw.class);
 
+        // when
         InvoiceBuyer result = InvoicingMappers.toInvoiceBuyer(raw);
 
+        // then
         assertEquals(BuyerIdentifierType.NIP, result.identifierType());
         assertEquals(NIP, result.identifierValue());
         assertEquals(BUYER_NAME, result.name());
@@ -181,13 +196,16 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoiceBuyer_withoutIdentifier_yieldsNullIdFields() throws Exception {
+        // given
         String json = """
                 {"identifier": null, "name": "%s"}
                 """.formatted(BUYER_NAME);
         InvoiceMetadataBuyerRaw raw = OBJECT_MAPPER.readValue(json, InvoiceMetadataBuyerRaw.class);
 
+        // when
         InvoiceBuyer result = InvoicingMappers.toInvoiceBuyer(raw);
 
+        // then
         assertNull(result.identifierType());
         assertNull(result.identifierValue());
         assertEquals(BUYER_NAME, result.name());
@@ -195,18 +213,22 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoiceBuyer_nullInput_yieldsNull() {
+        // when / then
         assertNull(InvoicingMappers.toInvoiceBuyer(null));
     }
 
     @Test
     void toInvoiceThirdSubject_withIdentifier_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {"identifier": {"type": "Nip", "value": "%s"}, "name": "%s", "role": %d}
                 """.formatted(NIP, SUBJECT_NAME, SUBJECT_ROLE);
         InvoiceMetadataThirdSubjectRaw raw = OBJECT_MAPPER.readValue(json, InvoiceMetadataThirdSubjectRaw.class);
 
+        // when
         InvoiceThirdSubject result = InvoicingMappers.toInvoiceThirdSubject(raw);
 
+        // then
         assertEquals(ThirdSubjectIdentifierType.NIP, result.identifierType());
         assertEquals(NIP, result.identifierValue());
         assertEquals(SUBJECT_NAME, result.name());
@@ -215,13 +237,16 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoiceThirdSubject_withoutIdentifier_yieldsNullIdFields() throws Exception {
+        // given
         String json = """
                 {"identifier": null, "name": "%s", "role": %d}
                 """.formatted(SUBJECT_NAME, SUBJECT_ROLE);
         InvoiceMetadataThirdSubjectRaw raw = OBJECT_MAPPER.readValue(json, InvoiceMetadataThirdSubjectRaw.class);
 
+        // when
         InvoiceThirdSubject result = InvoicingMappers.toInvoiceThirdSubject(raw);
 
+        // then
         assertNull(result.identifierType());
         assertNull(result.identifierValue());
         assertEquals(SUBJECT_NAME, result.name());
@@ -229,6 +254,7 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoicePackagePart_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "ordinalNumber": %d,
@@ -244,8 +270,10 @@ class InvoicingMappersTest {
                         PART_SIZE, PART_HASH, ENCRYPTED_PART_SIZE, ENCRYPTED_PART_HASH, DATE_ISO);
         InvoicePackagePartRaw raw = OBJECT_MAPPER.readValue(json, InvoicePackagePartRaw.class);
 
+        // when
         InvoicePackagePart result = InvoicingMappers.toInvoicePackagePart(raw);
 
+        // then
         assertEquals(PART_ORDINAL, result.ordinalNumber());
         assertEquals(PART_NAME, result.partName());
         assertEquals(PART_METHOD, result.method());
@@ -258,6 +286,7 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoicePackage_mapsAllFieldsWithParts() throws Exception {
+        // given
         String json = """
                 {
                   "invoiceCount": %d,
@@ -286,8 +315,10 @@ class InvoicingMappersTest {
                         LOCAL_DATE_ISO, DATE_ISO, DATE_ISO, DATE_ISO);
         InvoicePackageRaw raw = OBJECT_MAPPER.readValue(json, InvoicePackageRaw.class);
 
+        // when
         InvoicePackage result = InvoicingMappers.toInvoicePackage(raw);
 
+        // then
         assertEquals(INVOICE_COUNT, result.invoiceCount());
         assertEquals(PACKAGE_SIZE, result.size());
         assertEquals(1, result.parts().size());
@@ -295,11 +326,13 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoicePackage_nullInput_yieldsNull() {
+        // when / then
         assertNull(InvoicingMappers.toInvoicePackage(null));
     }
 
     @Test
     void toInvoiceStatusInfo_withDetailsAndExtensions_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "code": %d,
@@ -309,8 +342,10 @@ class InvoicingMappersTest {
                 }""".formatted(STATUS_CODE_OK, STATUS_DESCRIPTION);
         InvoiceStatusInfoRaw raw = OBJECT_MAPPER.readValue(json, InvoiceStatusInfoRaw.class);
 
+        // when
         InvoiceStatusInfo result = InvoicingMappers.toInvoiceStatusInfo(raw);
 
+        // then
         assertEquals(STATUS_CODE_OK, result.code());
         assertEquals(STATUS_DESCRIPTION, result.description());
         assertEquals(2, result.details().size());
@@ -319,37 +354,45 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoiceStatusInfo_withoutDetailsAndExtensions_yieldsEmptyCollections() throws Exception {
+        // given
         String json = """
                 {"code": %d, "description": "%s", "details": null, "extensions": null}
                 """.formatted(STATUS_CODE_OK, STATUS_DESCRIPTION);
         InvoiceStatusInfoRaw raw = OBJECT_MAPPER.readValue(json, InvoiceStatusInfoRaw.class);
 
+        // when
         InvoiceStatusInfo result = InvoicingMappers.toInvoiceStatusInfo(raw);
 
+        // then
         assertEquals(0, result.details().size());
         assertEquals(0, result.extensions().size());
     }
 
     @Test
     void toInvoiceStatusInfo_nullInput_yieldsNull() {
+        // when / then
         assertNull(InvoicingMappers.toInvoiceStatusInfo(null));
     }
 
     @Test
     void toUpoPage_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {"referenceNumber": "%s", "downloadUrl": "%s", "downloadUrlExpirationDate": "%s"}
                 """.formatted(UPO_REF, UPO_URL, DATE_ISO);
         UpoPageResponseRaw raw = OBJECT_MAPPER.readValue(json, UpoPageResponseRaw.class);
 
+        // when
         UpoPage result = InvoicingMappers.toUpoPage(raw);
 
+        // then
         assertEquals(UPO_REF, result.referenceNumber());
         assertEquals(java.net.URI.create(UPO_URL), result.downloadUrl());
     }
 
     @Test
     void toInvoiceMetadata_withSellerBuyerSubjectsAndAllOptional_mapsEveryField() throws Exception {
+        // given
         String json = """
                 {
                   "ksefNumber": "%s",
@@ -382,8 +425,10 @@ class InvoicingMappersTest {
                         NIP, SUBJECT_NAME, SUBJECT_ROLE);
         InvoiceMetadataRaw raw = OBJECT_MAPPER.readValue(json, InvoiceMetadataRaw.class);
 
+        // when
         InvoiceMetadata result = InvoicingMappers.toInvoiceMetadata(raw);
 
+        // then
         assertEquals(KSEF_NUMBER, result.ksefNumber());
         assertEquals(INVOICE_NUMBER, result.invoiceNumber());
         assertNotNull(result.seller());
@@ -397,6 +442,7 @@ class InvoicingMappersTest {
 
     @Test
     void toInvoiceMetadata_withoutThirdSubjects_yieldsEmptyList() throws Exception {
+        // given
         String json = """
                 {
                   "ksefNumber": "%s",
@@ -425,8 +471,10 @@ class InvoicingMappersTest {
                         INVOICE_HASH);
         InvoiceMetadataRaw raw = OBJECT_MAPPER.readValue(json, InvoiceMetadataRaw.class);
 
+        // when
         InvoiceMetadata result = InvoicingMappers.toInvoiceMetadata(raw);
 
+        // then
         assertEquals(0, result.thirdSubjects().size());
         assertNull(result.buyer());
         assertNull(result.formCode());

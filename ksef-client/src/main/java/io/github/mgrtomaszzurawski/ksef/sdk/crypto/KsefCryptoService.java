@@ -294,9 +294,9 @@ public final class KsefCryptoService {
         if (bytes.length > MAX_PEM_OR_DER_BYTES) {
             throw new KsefCryptoException(String.format(ERR_INPUT_TOO_LARGE, bytes.length), null);
         }
-        byte[] der = looksLikePem(bytes) ? decodePem(bytes, PEM_PRIVATE_KEY_LABEL) : bytes;
+        byte[] derBytes = looksLikePem(bytes) ? decodePem(bytes, PEM_PRIVATE_KEY_LABEL) : bytes;
         try {
-            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(der);
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(derBytes);
             try {
                 return KeyFactory.getInstance(RSA_KEY_ALGORITHM).generatePrivate(spec);
             } catch (InvalidKeySpecException notRsa) {

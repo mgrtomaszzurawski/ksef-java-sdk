@@ -51,8 +51,11 @@ class BatchTempCleanupTest {
 
     @Test
     void purgeOrphans_missingDirectory_doesNotThrow() {
+        // given
         Path nonExistent = Path.of("/definitely/does/not/exist/" + System.nanoTime());
-        BatchTempCleanup.purgeOrphans(nonExistent, Duration.ofHours(1));
-        // No assertion — the contract is "best-effort, never throws".
+
+        // when / then — contract is "best-effort, never throws"
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
+                BatchTempCleanup.purgeOrphans(nonExistent, Duration.ofHours(1)));
     }
 }

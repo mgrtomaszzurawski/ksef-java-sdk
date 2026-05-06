@@ -50,7 +50,7 @@ public final class EnrollAndRevokeCertificate {
                 .build()) {
 
             client.authenticate();
-            System.out.println("XAdES authenticated as " + nip);
+            System.out.println("XAdES authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
             CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder
                     .create("Example certificate", KsefCertificateType.AUTHENTICATION, csrDer);

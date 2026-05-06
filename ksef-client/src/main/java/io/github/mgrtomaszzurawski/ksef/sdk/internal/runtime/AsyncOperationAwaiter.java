@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -66,6 +67,10 @@ public final class AsyncOperationAwaiter {
                                       Function<S, Object> statusCodeOf,
                                       Duration timeout,
                                       Duration pollInterval) {
+        Objects.requireNonNull(operationName, "operationName must not be null");
+        Objects.requireNonNull(statusFetcher, "statusFetcher must not be null");
+        Objects.requireNonNull(isTerminal, "isTerminal must not be null");
+        Objects.requireNonNull(timeout, "timeout must not be null");
         long pollMillis = clamp(pollInterval == null
                 ? DEFAULT_POLL_INTERVAL.toMillis() : pollInterval.toMillis());
         Instant deadline = Instant.now().plus(timeout);

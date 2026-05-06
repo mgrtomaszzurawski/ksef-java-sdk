@@ -82,9 +82,8 @@ class JavadocPackageGateTest {
     @Test
     void javadocPackages_matchJpmsExportsExactly() throws IOException {
         Path packagesFile = Paths.get(PACKAGES_FILE_PATH);
-        if (!Files.isRegularFile(packagesFile)) {
-            return;
-        }
+        org.junit.jupiter.api.Assumptions.assumeTrue(Files.isRegularFile(packagesFile),
+                "javadoc package listing not generated yet — run `mvn javadoc:javadoc` first");
 
         Set<String> documented = readDocumentedPackages(packagesFile);
         Set<String> exported = parseExportedPackages();
@@ -104,17 +103,17 @@ class JavadocPackageGateTest {
         }
 
         if (!documentedButNotExported.isEmpty() || !exportedButNotDocumented.isEmpty()) {
-            StringBuilder msg = new StringBuilder("Javadoc surface and JPMS exports diverge.\n");
+            StringBuilder errorMessage = new StringBuilder("Javadoc surface and JPMS exports diverge.\n");
             if (!documentedButNotExported.isEmpty()) {
-                msg.append("Documented but not exported (remove from javadoc or add to module-info):\n  - ")
+                errorMessage.append("Documented but not exported (remove from javadoc or add to module-info):\n  - ")
                         .append(String.join("\n  - ", documentedButNotExported))
                         .append("\n");
             }
             if (!exportedButNotDocumented.isEmpty()) {
-                msg.append("Exported but not documented (extend <excludePackageNames> exception or fix javadoc):\n  - ")
+                errorMessage.append("Exported but not documented (extend <excludePackageNames> exception or fix javadoc):\n  - ")
                         .append(String.join("\n  - ", exportedButNotDocumented));
             }
-            fail(msg.toString());
+            fail(errorMessage.toString());
         }
     }
 

@@ -103,6 +103,9 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
     private static final String METHOD_PUT = "PUT";
+    private static final String SCHEME_HTTPS = "https";
+    private static final String ERR_INSECURE_UPLOAD_URL =
+            "Refusing to upload batch part over non-HTTPS URL: ";
 
     /**
      * URL is logged via {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction#redactQuery(java.net.URI)}
@@ -284,7 +287,24 @@ public final class KsefBatchSession implements AutoCloseable {
 
     private void uploadSinglePart(PartUploadRequest upload,
                                   io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart part) {
-        HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url());
+        // Defense in depth: KSeF only ever returns HTTPS pre-signed URLs,
+        // but assert it explicitly so a misbehaving/spoofed presigner
+        // cannot trick the SDK into uploading ciphertext over plaintext.
+        if (upload.url().getScheme() == null
+                || !SCHEME_HTTPS.equalsIgnoreCase(upload.url().getScheme())) {
+            throw new KsefException(
+                    ERR_INSECURE_UPLOAD_URL
+                            + io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction
+                                    .redactQuery(upload.url()),
+                    null);
+        }
+        HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url())
+                // Performance review CRITICAL: cap the per-request socket
+                // timeout at the per-part upload budget so a hung TCP
+                // connection mid-upload aborts cleanly rather than
+                // deadlocking the call. The outer per-part budget check
+                // only fires between parts.
+                .timeout(Duration.ofMinutes(UPLOAD_BUDGET_MINUTES_PER_PART));
         String method = upload.method() != null ? upload.method() : METHOD_PUT;
         HttpRequest.BodyPublisher publisher;
         try {

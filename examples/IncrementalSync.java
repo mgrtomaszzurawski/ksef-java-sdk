@@ -61,7 +61,7 @@ public final class IncrementalSync {
                 .build()) {
 
             client.authenticate();
-            System.out.println("Authenticated as " + nip);
+            System.out.println("Authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
             // The CheckpointStore persists the HWM cursor between runs.
             // For production, replace with a database-backed implementation;

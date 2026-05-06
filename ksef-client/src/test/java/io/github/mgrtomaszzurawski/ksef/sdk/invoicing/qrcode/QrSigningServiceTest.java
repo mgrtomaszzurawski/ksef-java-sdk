@@ -93,10 +93,10 @@ class QrSigningServiceTest {
 
         // when — sign produces P1363 R||S; verifier wants DER, so we re-encode
         byte[] p1363 = signingService.sign(payload, ecPair.getPrivate());
-        byte[] der = p1363ToDer(p1363);
+        byte[] derEncodedSignature = p1363ToDer(p1363);
 
         // then
-        assertTrue(verifyEcdsa(ecPair.getPublic(), payload, der),
+        assertTrue(verifyEcdsa(ecPair.getPublic(), payload, derEncodedSignature),
                 "ECDSA signature converted back to DER must verify with the paired public key");
     }
 

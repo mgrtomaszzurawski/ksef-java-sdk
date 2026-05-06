@@ -41,7 +41,6 @@ class BatchAssemblyModeTest {
     private static final byte AES_IV_FILL = (byte) 0xBB;
     private static final int AES_KEY_BYTES = 32;
     private static final int AES_IV_BYTES = 16;
-    private static final int SHA_256_BYTES = 32;
     private static final long SMALL_PART_SIZE = 64L;
     private static final String INVOICE_A = "<Invoice><Number>A</Number></Invoice>";
     private static final String INVOICE_B = "<Invoice><Number>B</Number></Invoice>";

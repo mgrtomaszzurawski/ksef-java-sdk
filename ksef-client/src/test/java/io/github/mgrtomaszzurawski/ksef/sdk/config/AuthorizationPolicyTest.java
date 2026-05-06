@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.config;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -44,7 +45,7 @@ class AuthorizationPolicyTest {
     void canonicalConstructor_rejectsInvalidAddress() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> new AuthorizationPolicy(List.of("not-an-ip"), List.of(), List.of()));
-        assertEquals(true, ex.getMessage().contains("not a valid IPv4 address"));
+        assertTrue(ex.getMessage().contains("not a valid IPv4 address"));
     }
 
     @Test
@@ -65,6 +66,6 @@ class AuthorizationPolicyTest {
                 "1.1.1.6", "1.1.1.7", "1.1.1.8", "1.1.1.9", "1.1.1.10", "1.1.1.11");
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> new AuthorizationPolicy(eleven, List.of(), List.of()));
-        assertEquals(true, ex.getMessage().contains("exceeds spec limit"));
+        assertTrue(ex.getMessage().contains("exceeds spec limit"));
     }
 }

@@ -67,6 +67,7 @@ class PermissionsMappersTest {
 
     @Test
     void toEntityAuthorizationGrant_withAuthorIdentifier_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -79,8 +80,10 @@ class PermissionsMappersTest {
                 }""".formatted(GRANT_ID, NIP_VALUE, NIP_VALUE, NIP_VALUE, DESCRIPTION, START_DATE_ISO);
         EntityAuthorizationGrantRaw raw = OBJECT_MAPPER.readValue(json, EntityAuthorizationGrantRaw.class);
 
+        // when
         EntityAuthorizationGrant result = PermissionsMappers.toEntityAuthorizationGrant(raw);
 
+        // then
         assertEquals(GRANT_ID, result.id());
         assertNotNull(result.authorIdentifier());
         assertEquals(NIP_VALUE, result.authorIdentifier().value());
@@ -93,6 +96,7 @@ class PermissionsMappersTest {
 
     @Test
     void toEntityAuthorizationGrant_withoutAuthorIdentifier_yieldsNullAuthor() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -105,13 +109,16 @@ class PermissionsMappersTest {
                 }""".formatted(GRANT_ID, NIP_VALUE, NIP_VALUE, DESCRIPTION, START_DATE_ISO);
         EntityAuthorizationGrantRaw raw = OBJECT_MAPPER.readValue(json, EntityAuthorizationGrantRaw.class);
 
+        // when
         EntityAuthorizationGrant result = PermissionsMappers.toEntityAuthorizationGrant(raw);
 
+        // then
         assertNull(result.authorIdentifier(), "null authorIdentifier branch must yield null mapped author");
     }
 
     @Test
     void toEntityPermission_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -123,8 +130,10 @@ class PermissionsMappersTest {
                 }""".formatted(GRANT_ID, NIP_VALUE, DESCRIPTION, START_DATE_ISO);
         EntityPermissionItemRaw raw = OBJECT_MAPPER.readValue(json, EntityPermissionItemRaw.class);
 
+        // when
         EntityPermission result = PermissionsMappers.toEntityPermission(raw);
 
+        // then
         assertEquals(GRANT_ID, result.id());
         assertNotNull(result.contextIdentifier());
         assertEquals(NIP_VALUE, result.contextIdentifier().value());
@@ -135,6 +144,7 @@ class PermissionsMappersTest {
 
     @Test
     void toEntityRole_withParent_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "parentEntityIdentifier": {"type": "Nip", "value": "%s"},
@@ -144,8 +154,10 @@ class PermissionsMappersTest {
                 }""".formatted(NIP_VALUE, DESCRIPTION, START_DATE_ISO);
         EntityRoleRaw raw = OBJECT_MAPPER.readValue(json, EntityRoleRaw.class);
 
+        // when
         EntityRole result = PermissionsMappers.toEntityRole(raw);
 
+        // then
         assertNotNull(result.parentEntityIdentifier());
         assertEquals(NIP_VALUE, result.parentEntityIdentifier().value());
         assertEquals("CourtBailiff", result.role());
@@ -153,6 +165,7 @@ class PermissionsMappersTest {
 
     @Test
     void toEntityRole_withoutParent_yieldsNullParent() throws Exception {
+        // given
         String json = """
                 {
                   "parentEntityIdentifier": null,
@@ -162,13 +175,16 @@ class PermissionsMappersTest {
                 }""".formatted(DESCRIPTION, START_DATE_ISO);
         EntityRoleRaw raw = OBJECT_MAPPER.readValue(json, EntityRoleRaw.class);
 
+        // when
         EntityRole result = PermissionsMappers.toEntityRole(raw);
 
+        // then
         assertNull(result.parentEntityIdentifier(), "null parent branch must propagate");
     }
 
     @Test
     void toEuEntityPermission_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -183,8 +199,10 @@ class PermissionsMappersTest {
                         FINGERPRINT_VALUE, DESCRIPTION, START_DATE_ISO);
         EuEntityPermissionRaw raw = OBJECT_MAPPER.readValue(json, EuEntityPermissionRaw.class);
 
+        // when
         EuEntityPermission result = PermissionsMappers.toEuEntityPermission(raw);
 
+        // then
         assertEquals(GRANT_ID, result.id());
         assertEquals(VAT_UE, result.vatUeIdentifier());
         assertEquals(EU_ENTITY_NAME, result.euEntityName());
@@ -193,6 +211,7 @@ class PermissionsMappersTest {
 
     @Test
     void toPersonalPermission_withAllIdentifiersAndPersonDetails_mapsAllBranches() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -210,8 +229,10 @@ class PermissionsMappersTest {
                         FIRST_NAME, LAST_NAME, START_DATE_ISO);
         PersonalPermissionRaw raw = OBJECT_MAPPER.readValue(json, PersonalPermissionRaw.class);
 
+        // when
         PersonalPermission result = PermissionsMappers.toPersonalPermission(raw);
 
+        // then
         assertEquals(GRANT_ID, result.id());
         assertNotNull(result.contextIdentifier());
         assertNotNull(result.authorizedIdentifier());
@@ -226,6 +247,7 @@ class PermissionsMappersTest {
 
     @Test
     void toPersonalPermission_withEntityDetailsAndNullIdentifiers_mapsNullBranches() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -242,8 +264,10 @@ class PermissionsMappersTest {
                 }""".formatted(GRANT_ID, DESCRIPTION, ENTITY_FULL_NAME, START_DATE_ISO);
         PersonalPermissionRaw raw = OBJECT_MAPPER.readValue(json, PersonalPermissionRaw.class);
 
+        // when
         PersonalPermission result = PermissionsMappers.toPersonalPermission(raw);
 
+        // then
         assertNull(result.contextIdentifier());
         assertNull(result.authorizedIdentifier());
         assertNull(result.targetIdentifier());
@@ -254,6 +278,7 @@ class PermissionsMappersTest {
 
     @Test
     void toPersonPermission_withAllOptionalIdentifiers_mapsAllBranches() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -270,8 +295,10 @@ class PermissionsMappersTest {
                         DESCRIPTION, START_DATE_ISO);
         PersonPermissionRaw raw = OBJECT_MAPPER.readValue(json, PersonPermissionRaw.class);
 
+        // when
         PersonPermission result = PermissionsMappers.toPersonPermission(raw);
 
+        // then
         assertEquals(GRANT_ID, result.id());
         assertNotNull(result.authorizedIdentifier());
         assertNotNull(result.contextIdentifier());
@@ -281,6 +308,7 @@ class PermissionsMappersTest {
 
     @Test
     void toPersonPermission_withoutOptionalIdentifiers_mapsNullBranches() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -296,14 +324,17 @@ class PermissionsMappersTest {
                 }""".formatted(GRANT_ID, PESEL_VALUE, NIP_VALUE, DESCRIPTION, START_DATE_ISO);
         PersonPermissionRaw raw = OBJECT_MAPPER.readValue(json, PersonPermissionRaw.class);
 
+        // when
         PersonPermission result = PermissionsMappers.toPersonPermission(raw);
 
+        // then
         assertNull(result.contextIdentifier());
         assertNull(result.targetIdentifier());
     }
 
     @Test
     void toSubordinateEntityRole_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "subordinateEntityIdentifier": {"type": "Nip", "value": "%s"},
@@ -313,8 +344,10 @@ class PermissionsMappersTest {
                 }""".formatted(NIP_VALUE, DESCRIPTION, START_DATE_ISO);
         SubordinateEntityRoleRaw raw = OBJECT_MAPPER.readValue(json, SubordinateEntityRoleRaw.class);
 
+        // when
         SubordinateEntityRole result = PermissionsMappers.toSubordinateEntityRole(raw);
 
+        // then
         assertNotNull(result.subordinateEntityIdentifier());
         assertEquals(NIP_VALUE, result.subordinateEntityIdentifier().value());
         assertEquals("LocalGovernmentSubUnit", result.role());
@@ -322,6 +355,7 @@ class PermissionsMappersTest {
 
     @Test
     void toSubunitPermission_mapsAllFields() throws Exception {
+        // given
         String json = """
                 {
                   "id": "%s",
@@ -336,8 +370,10 @@ class PermissionsMappersTest {
                         SUBUNIT_NAME, START_DATE_ISO);
         SubunitPermissionRaw raw = OBJECT_MAPPER.readValue(json, SubunitPermissionRaw.class);
 
+        // when
         SubunitPermission result = PermissionsMappers.toSubunitPermission(raw);
 
+        // then
         assertEquals(GRANT_ID, result.id());
         assertEquals(SUBUNIT_NAME, result.subunitName());
         assertNotNull(result.subunitIdentifier());

@@ -60,6 +60,8 @@ public final class PeppolProviderRunner implements DemoRunner {
     private static final String OP_OPEN_SESSION = "openSession";
     private static final String OP_SEND_INVOICE = "sendInvoice";
     private static final String OP_CLOSE = "close";
+    /** KSeF terminal-success status code on permission grant operations. */
+    private static final int GRANT_SUCCESS_STATUS_CODE = 200;
 
     @Override
     public String name() { return NAME; }
@@ -134,7 +136,7 @@ public final class PeppolProviderRunner implements DemoRunner {
             var status = context.client().permissions()
                     .grantAuthorizationAndAwait(builder, java.time.Duration.ofSeconds(30));
             int code = status.status() == null ? -1 : status.status().code();
-            if (code == 200) {
+            if (code == GRANT_SUCCESS_STATUS_CODE) {
                 results.add(RunResult.ok(NAME, "grantPefInvoicingToProvider", elapsed(start),
                         "peppolId=" + peppolId));
                 return true;

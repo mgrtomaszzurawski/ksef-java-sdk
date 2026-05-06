@@ -41,6 +41,12 @@ import java.util.List;
  * {@code newInstance} calls have negligible overhead vs. direct
  * instantiation.
  *
+ * <p><strong>Future:</strong> if a future module-layout refactor splits
+ * {@code sdk.domain.invoicing} into a separate JPMS module, the
+ * reflective bridge becomes obsolete — replace with a package-level
+ * factory class colocated with the handles, or use a JPMS {@code opens}
+ * directive scoped to {@code sdk.internal.client.session}.
+ *
  * @apiNote Internal — never call from consumer code.
  *
  * @since 1.0.0

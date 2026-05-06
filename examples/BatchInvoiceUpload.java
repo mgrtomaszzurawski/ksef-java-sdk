@@ -49,7 +49,7 @@ public final class BatchInvoiceUpload {
                 .build()) {
 
             client.authenticate();
-            System.out.println("Authenticated as " + nip);
+            System.out.println("Authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
             try (KsefBatchSession batch = client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.online())) {
                 System.out.println("Batch session: " + batch.referenceNumber());

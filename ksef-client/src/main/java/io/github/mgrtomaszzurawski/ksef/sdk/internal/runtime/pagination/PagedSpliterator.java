@@ -48,8 +48,14 @@ public final class PagedSpliterator {
      * (or the cursor analogue) repeatedly would otherwise drive an
      * infinite walk; we abort after this many empty pages with a typed
      * exception so callers see the bug instead of a hung thread.
+     *
+     * <p>Tunable via the JVM system property
+     * {@code ksef.sdk.pagination.maxConsecutiveEmptyPages} for the rare
+     * scenario where a sparse query legitimately hits more empty pages
+     * (e.g. cursor-based scans across many empty shards).
      */
-    static final int MAX_CONSECUTIVE_EMPTY_PAGES = 100_000;
+    static final int MAX_CONSECUTIVE_EMPTY_PAGES =
+            Integer.getInteger("ksef.sdk.pagination.maxConsecutiveEmptyPages", 100_000);
 
     private static final String ERR_TOO_MANY_EMPTY_PAGES =
             "Aborting paginated walk: server returned more than "

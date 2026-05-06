@@ -170,12 +170,12 @@ class KsefCryptoServiceTest {
         // given — a freshly-generated RSA key encoded as PKCS#8 PEM
         KeyPair generated = crypto.generateRsaKeyPair();
         byte[] pkcs8Der = generated.getPrivate().getEncoded();
-        String pem = "-----BEGIN PRIVATE KEY-----\n"
+        String pemEncodedKey = "-----BEGIN PRIVATE KEY-----\n"
                 + Base64.getMimeEncoder(PEM_LINE_LENGTH, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(pkcs8Der)
                 + "\n-----END PRIVATE KEY-----\n";
 
         // when
-        PrivateKey parsed = crypto.parsePrivateKey(pem.getBytes(StandardCharsets.US_ASCII));
+        PrivateKey parsed = crypto.parsePrivateKey(pemEncodedKey.getBytes(StandardCharsets.US_ASCII));
 
         // then
         assertNotNull(parsed);
@@ -218,14 +218,14 @@ class KsefCryptoServiceTest {
                 java.security.cert.CertificateFactory.getInstance("X.509");
         // Use a freshly self-signed cert via internal TestCertificates helper
         var testCerts = io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates.generateRsa();
-        byte[] der = testCerts.certificate().getEncoded();
-        String pem = "-----BEGIN CERTIFICATE-----\n"
-                + Base64.getMimeEncoder(PEM_LINE_LENGTH, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(der)
+        byte[] derBytes = testCerts.certificate().getEncoded();
+        String pemEncodedCert = "-----BEGIN CERTIFICATE-----\n"
+                + Base64.getMimeEncoder(PEM_LINE_LENGTH, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(derBytes)
                 + "\n-----END CERTIFICATE-----\n";
 
         // when
-        X509Certificate fromDer = crypto.parseCertificate(der);
-        X509Certificate fromPem = crypto.parseCertificate(pem.getBytes(StandardCharsets.US_ASCII));
+        X509Certificate fromDer = crypto.parseCertificate(derBytes);
+        X509Certificate fromPem = crypto.parseCertificate(pemEncodedCert.getBytes(StandardCharsets.US_ASCII));
 
         // then
         assertNotNull(fromDer);

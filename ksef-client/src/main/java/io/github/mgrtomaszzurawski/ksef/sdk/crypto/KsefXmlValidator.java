@@ -61,6 +61,8 @@ public final class KsefXmlValidator {
     private static final String LINE_LABEL = " line ";
     private static final String COLUMN_LABEL = ":";
     private static final String BANNED_CODEPOINT_PREFIX = "Banned XML 1.0 codepoint U+";
+    /** Oracle JAXP-specific override that caps maxOccurs on schema loaders. Best-effort — not all JAXP impls honor it. */
+    private static final String ORACLE_JAXP_MAX_OCCUR_LIMIT = "http://www.oracle.com/xml/jaxp/properties/maxOccurLimit";
     private static final int CODEPOINT_TAB = 0x09;
     private static final int CODEPOINT_LF = 0x0A;
     private static final int CODEPOINT_CR = 0x0D;
@@ -123,12 +125,9 @@ public final class KsefXmlValidator {
      *     bundled XSD or the XSD itself fails to load.
      */
     public static List<String> validate(byte[] invoiceXml, FormCode formCode) {
-        List<ValidationIssue> issues = validateDetailed(invoiceXml, formCode);
-        List<String> stringified = new ArrayList<>(issues.size());
-        for (ValidationIssue issue : issues) {
-            stringified.add(issue.toString());
-        }
-        return List.copyOf(stringified);
+        return validateDetailed(invoiceXml, formCode).stream()
+                .map(ValidationIssue::toString)
+                .toList();
     }
 
     /**
@@ -264,7 +263,7 @@ public final class KsefXmlValidator {
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
             try {
-                factory.setProperty("http://www.oracle.com/xml/jaxp/properties/maxOccurLimit", 0);
+                factory.setProperty(ORACLE_JAXP_MAX_OCCUR_LIMIT, 0);
             } catch (SAXException ignored) {
                 // Property unsupported in some JAXP impls — schema may still load.
             }
