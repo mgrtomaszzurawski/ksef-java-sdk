@@ -10,4 +10,21 @@
 
         Empty by default — populate as findings come in.
     -->
+
+    <suppress>
+        <notes><![CDATA[
+            CVE-2025-7962 is a Jakarta MAIL SMTP-injection vulnerability
+            (CR/LF in message headers). The dependency-check CPE matcher
+            misidentifies angus-activation (Eclipse Angus Activation —
+            MIME type data-handling, transitive dep of jakarta.xml.bind /
+            JAXB) as angus-mail because of the similar naming pattern;
+            confidence LOW per the report. This SDK does NOT use Jakarta
+            Mail / SMTP at all — angus-activation is pulled in for JAXB
+            MIME-type registration only. The SMTP-injection sink does
+            not exist in our dependency tree. Verified:
+            `mvn dependency:tree | grep -i mail` returns nothing.
+        ]]></notes>
+        <filePath regex="true">.*angus-activation-.*\.jar</filePath>
+        <cve>CVE-2025-7962</cve>
+    </suppress>
 </suppressions>

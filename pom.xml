@@ -116,8 +116,16 @@
                             <failBuildOnCVSS>7</failBuildOnCVSS>
                             <skipTestScope>true</skipTestScope>
                             <suppressionFiles>
-                                <suppressionFile>${project.basedir}/owasp-suppressions.xml</suppressionFile>
+                                <suppressionFile>${maven.multiModuleProjectDirectory}/owasp-suppressions.xml</suppressionFile>
                             </suppressionFiles>
+                            <!--
+                                OSS Index integration requires Sonatype API
+                                credentials we don't ship; disable so the
+                                scan relies on the bundled NVD database
+                                only. Re-enable for organisations that
+                                have a registered OSS Index account.
+                            -->
+                            <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
                             <formats>
                                 <format>HTML</format>
                                 <format>JSON</format>
