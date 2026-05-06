@@ -83,9 +83,24 @@ public final class PeppolProviderRunner implements DemoRunner {
             return results;
         }
 
-        // Step 3: provider re-auths and opens a PEF batch session for each form code.
-        runFormCode(context, peppolId, FormCode.PEF3, "[FA_PEF(3)]", results);
-        runFormCode(context, peppolId, FormCode.PEF_KOR3, "[FA_KOR_PEF(3)]", results);
+        // Step 3: PEF(3). Capture the assigned KSeF number (if KSeF accepts the
+        // fixture) so we can chain a real correction in step 4.
+        String priorKsefNumber = runFormCode(context, peppolId, FormCode.PEF3, "[FA_PEF(3)]", null, results);
+
+        // Step 4: PEF_KOR(3) is a correction document — it must reference an
+        // accepted prior invoice's KSeF number. If PEF(3) above did not yield
+        // one (current state: KSeF rejects the fixture on business validation,
+        // so no KSeF number is assigned), skip PEF_KOR rather than ship a
+        // fixture that still contains an unresolved #ksef_number# placeholder.
+        if (priorKsefNumber == null) {
+            results.add(RunResult.skip(NAME, OP_OPEN_SESSION + "[FA_KOR_PEF(3)]",
+                    "PEF_KOR(3) requires the KSeF number of an accepted prior PEF(3) invoice; "
+                            + "the PEF(3) run above did not yield one (likely KSeF business validation "
+                            + "rejected the fixture). Re-run with a fully-conforming PEPPOL BIS Billing 3.0 "
+                            + "PEF fixture to enable the chain."));
+            return results;
+        }
+        runFormCode(context, peppolId, FormCode.PEF_KOR3, "[FA_KOR_PEF(3)]", priorKsefNumber, results);
         return results;
     }
 
@@ -133,8 +148,13 @@ public final class PeppolProviderRunner implements DemoRunner {
         }
     }
 
-    private void runFormCode(DemoContext context, String peppolId, FormCode formCode,
-                              String label, List<RunResult> results) {
+    /**
+     * @return the KSeF number assigned to the sent invoice if KSeF accepted
+     *     it, or {@code null} if the invoice was rejected (so the caller can
+     *     decide to skip a chained correction document).
+     */
+    private String runFormCode(DemoContext context, String peppolId, FormCode formCode,
+                              String label, String priorKsefNumber, List<RunResult> results) {
         // PEF flow uses online sessions, not batch (per upstream
         // PeppolInvoiceIntegrationTest). KSeF /v2/sessions/batch requires
         // InvoiceWrite permission which is not granted to a Peppol provider —
@@ -144,6 +164,7 @@ public final class PeppolProviderRunner implements DemoRunner {
         KsefCertificateCredentials creds = new KsefCertificateCredentials(
                 cert.certificate(), cert.privateKey(), KsefIdentifier.peppolId(peppolId));
 
+        String invoiceRef = null;
         try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(context.environment()))
                 .credentials(creds)
                 .retryPolicy(RetryPolicy.builder().build())
@@ -156,29 +177,51 @@ public final class PeppolProviderRunner implements DemoRunner {
             try (KsefSession session = client.openSession(formCode)) {
                 results.add(RunResult.ok(NAME, OP_OPEN_SESSION + label, elapsed(openStart),
                         "ref=" + session.referenceNumber()));
-                runSend(session, formCode, context.nipIdentifier(), label, results);
+                invoiceRef = runSend(session, formCode, context.nipIdentifier(),
+                        priorKsefNumber, label, results);
                 runClose(session, label, results);
+                if (invoiceRef != null) {
+                    return queryAssignedKsefNumber(session, invoiceRef);
+                }
             }
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_AUTH + label, elapsed(authStart),
                     errorMessage(exception)));
         }
+        return null;
     }
 
-    private void runSend(KsefSession session, FormCode formCode, String supplierNip,
-                          String label, List<RunResult> results) {
+    /**
+     * @return the invoice reference if send succeeded, otherwise {@code null}.
+     */
+    private String runSend(KsefSession session, FormCode formCode, String supplierNip,
+                            String priorKsefNumber, String label, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             // PEF UBL templates use {supplier_nip} for the Polish company on whose
             // behalf the Peppol provider sends the invoice. That identity is the
             // owner NIP from the TEST env primary context, NOT the peppolId.
-            byte[] invoice = TestInvoiceXml.generate(formCode, supplierNip);
+            byte[] invoice = TestInvoiceXml.generate(formCode, supplierNip, priorKsefNumber);
             var sendResult = session.send(invoice);
             results.add(RunResult.ok(NAME, OP_SEND_INVOICE + label, elapsed(start),
                     "invoiceRef=" + sendResult.referenceNumber()));
+            return sendResult.referenceNumber();
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_SEND_INVOICE + label, elapsed(start),
                     errorMessage(exception)));
+            return null;
+        }
+    }
+
+    private String queryAssignedKsefNumber(KsefSession session, String invoiceRef) {
+        try {
+            var status = session.invoiceStatus(invoiceRef);
+            String ksefNumber = status.ksefNumber();
+            return ksefNumber == null || ksefNumber.isBlank() ? null : ksefNumber;
+        } catch (Exception ignored) {
+            // Best-effort: KSeF rejected the invoice or status query failed —
+            // either way, we cannot chain a correction.
+            return null;
         }
     }
 
@@ -191,13 +234,13 @@ public final class PeppolProviderRunner implements DemoRunner {
         } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException terminalFailure) {
             // KSeF rejects the placeholder-substituted CIRFMF PEF UBL sample on
             // strict business-rule validation (code=445 "Błąd weryfikacji, brak
-            // poprawnych faktur"). The SDK side of the lifecycle reached send +
-            // poll-to-terminal correctly; the rejection is a fixture-content
-            // issue (a fully-conforming PEF UBL invoice would require domain
-            // expertise beyond the demo scope). Report as OK with note so the
-            // upstream pieces (auth, grant, open, send, status-poll) stay
-            // surfaced as live-verified.
-            results.add(RunResult.ok(NAME, OP_CLOSE + label, elapsed(start),
+            // poprawnych faktur"). The SDK lifecycle reached send + poll-to-
+            // terminal correctly; the rejection is a fixture-content issue (a
+            // fully-conforming PEF UBL invoice would require PEPPOL BIS Billing
+            // 3.0 domain expertise beyond the demo scope). Report as SKIP so
+            // it does not inflate the OK total — the message preserves the
+            // diagnostic context that the SDK lifecycle was verified live.
+            results.add(RunResult.skip(NAME, OP_CLOSE + label, elapsed(start),
                     "session reached terminal status code=" + (terminalFailure.statusCode())
                             + " on KSeF business validation of the PEF UBL fixture — SDK lifecycle "
                             + "(auth/grant/open/send/poll) verified live; UBL content conformance "

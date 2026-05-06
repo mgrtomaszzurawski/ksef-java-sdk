@@ -130,4 +130,32 @@ class PagedSpliteratorTest {
         assertThrows(NullPointerException.class,
                 () -> new PagedSpliterator.CursorPage<>(null, null));
     }
+
+    @Test
+    void offsetStream_serverReturnsEmptyHasMoreTrueForever_abortsWithIllegalState() {
+        AtomicInteger callCount = new AtomicInteger();
+        Stream<Integer> stream = PagedSpliterator.stream(pageOffset -> {
+            callCount.incrementAndGet();
+            return new PagedSpliterator.Page<>(List.of(), true);
+        });
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, stream::toList);
+        assertTrue(ex.getMessage().contains("consecutive empty pages"), ex.getMessage());
+        assertTrue(callCount.get() > PagedSpliterator.MAX_CONSECUTIVE_EMPTY_PAGES,
+                "should reach defensive bound, was: " + callCount.get());
+    }
+
+    @Test
+    void cursorStream_serverReturnsEmptyNonNullCursorForever_abortsWithIllegalState() {
+        AtomicInteger callCount = new AtomicInteger();
+        Stream<String> stream = PagedSpliterator.cursorStream(cursor -> {
+            int call = callCount.incrementAndGet();
+            return new PagedSpliterator.CursorPage<>(List.of(), "cursor-" + call);
+        });
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, stream::toList);
+        assertTrue(ex.getMessage().contains("consecutive empty pages"), ex.getMessage());
+        assertTrue(callCount.get() > PagedSpliterator.MAX_CONSECUTIVE_EMPTY_PAGES,
+                "should reach defensive bound, was: " + callCount.get());
+    }
 }

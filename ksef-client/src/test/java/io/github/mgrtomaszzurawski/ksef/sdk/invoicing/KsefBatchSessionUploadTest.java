@@ -307,11 +307,11 @@ class KsefBatchSessionUploadTest {
                 TEST_BATCH_REF, uploads, pkg);
     }
 
-    private static List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart>
+    private static List<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart>
             wrapAsParts(List<Path> partFiles) {
         // Test fixture — use 0 for missing files so the upload code path still
         // exercises the FileNotFoundException branch on missing-file tests.
-        List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart> parts =
+        List<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart> parts =
                 new java.util.ArrayList<>();
         byte[] fakeHash = new byte[32];
         int ordinal = 1;
@@ -324,7 +324,7 @@ class KsefBatchSessionUploadTest {
             } catch (java.io.IOException ignored) {
                 // best-effort sizing for fixtures
             }
-            parts.add(new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart.OnDiskPart(
+            parts.add(new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart(
                     ordinal++, size, fakeHash, path));
         }
         return parts;

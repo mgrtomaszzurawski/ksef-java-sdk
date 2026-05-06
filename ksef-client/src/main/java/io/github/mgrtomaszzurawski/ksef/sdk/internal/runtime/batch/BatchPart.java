@@ -2,8 +2,9 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,11 +22,12 @@ import java.util.Objects;
  *       {@link #cleanup()} is a no-op (GC).</li>
  * </ul>
  *
- * <p>Internal to the SDK transport layer — consumers do not see this
- * type. {@code KsefBatchSession.uploadParts} pattern-matches on the
- * subtype to pick the right {@code java.net.http.HttpRequest.BodyPublisher}.
- *
- * @since 1.0.0
+ * <p>Internal to the SDK transport layer — not part of the public,
+ * Maven-Central-exported API surface (lives under
+ * {@code sdk.internal.runtime.batch}, which is not exported by
+ * {@code module-info.java}). {@code KsefBatchSession.uploadParts}
+ * pattern-matches on the subtype to pick the right
+ * {@code java.net.http.HttpRequest.BodyPublisher}.
  */
 public sealed interface BatchPart {
 

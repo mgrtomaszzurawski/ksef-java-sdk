@@ -258,9 +258,9 @@ public final class KsefClient implements AutoCloseable {
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefSession openSession(FormCode formCode) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
-        formCode.assertAllowedOn(environment);
         ensureOpen();
         ensureAuthenticated();
+        formCode.assertAllowedOn(environment);
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
         byte[] aesKey = CryptoService.generateAesKey();
@@ -322,6 +322,14 @@ public final class KsefClient implements AutoCloseable {
      * <p>For the common case where the SDK should build and encrypt the
      * package itself, prefer {@link #openBatchSession(FormCode, List, BatchSessionOptions)}.
      *
+     * <p><strong>Cleanup ownership:</strong> the SDK does not delete files or
+     * release buffers referenced by {@code preparedPackage} after the returned
+     * session is closed — they were not created by the SDK. The caller is
+     * responsible for cleaning up any temp files / large buffers they pass in.
+     * The auto-built overloads ({@link #openBatchSession(FormCode, List, BatchSessionOptions)}
+     * and {@link #openBatchSessionFromFiles(FormCode, List, BatchSessionOptions)})
+     * own their parts and clean up automatically.
+     *
      * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @param preparedPackage caller-prepared spec + key/IV + encrypted part bytes
      * @param options batch session options (see {@link BatchSessionOptions})
@@ -334,13 +342,13 @@ public final class KsefClient implements AutoCloseable {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(preparedPackage, ERR_BATCH_PACKAGE_NULL);
         Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
-        formCode.assertAllowedOn(environment);
         // Codex round-9 manual validation A.4.2.3: batch sessions do not
         // exhibit the post-termination 415 cooldown documented for online
         // sessions (see context/RCA/RCA-session-cooldown-consecutive-runs-2026-04-04-2105.md).
         // No guardAgainstCooldown call here.
         ensureOpen();
         ensureAuthenticated();
+        formCode.assertAllowedOn(environment);
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
         byte[] aesKey = preparedPackage.aesKey();
@@ -394,12 +402,12 @@ public final class KsefClient implements AutoCloseable {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(invoiceXmls, ERR_INVOICES_NULL);
         Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
-        formCode.assertAllowedOn(environment);
         // Codex round-9 manual validation A.4.2.3: batch cooldown asymmetry
         // intentional — see openBatchSession(PreparedBatchPackage) overload
         // for the rationale.
         ensureOpen();
         ensureAuthenticated();
+        formCode.assertAllowedOn(environment);
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
         byte[] aesKey = CryptoService.generateAesKey();
@@ -449,12 +457,12 @@ public final class KsefClient implements AutoCloseable {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(invoiceFiles, ERR_INVOICES_NULL);
         Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
-        formCode.assertAllowedOn(environment);
         // Codex round-9 manual validation A.4.2.3: batch cooldown asymmetry
         // intentional — see openBatchSession(PreparedBatchPackage) overload
         // for the rationale.
         ensureOpen();
         ensureAuthenticated();
+        formCode.assertAllowedOn(environment);
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
         byte[] aesKey = CryptoService.generateAesKey();
@@ -494,6 +502,7 @@ public final class KsefClient implements AutoCloseable {
         authClient.terminateCurrentSession();
         authenticated = false;
         publicKeyCache.clear();
+        lastChallengeClientIp = null;
         LOGGER.debug(LOG_TERMINATED);
     }
 
@@ -605,6 +614,7 @@ public final class KsefClient implements AutoCloseable {
         authenticated = false;
         publicKeyCache.clear();
         sessionContext.clear();
+        lastChallengeClientIp = null;
         authenticate();
         LOGGER.debug(LOG_REAUTHENTICATED);
     }
@@ -758,6 +768,7 @@ public final class KsefClient implements AutoCloseable {
         publicKeyCache.clear();
         sessionContext.clear();
         authenticated = false;
+        lastChallengeClientIp = null;
     }
 
     public static Builder builder(KsefEnvironment environment) {

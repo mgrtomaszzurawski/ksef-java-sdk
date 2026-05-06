@@ -262,7 +262,7 @@ public final class KsefBatchSession implements AutoCloseable {
         if (batchPackage == null || httpClient == null) {
             throw new IllegalStateException(ERR_NO_PARTS);
         }
-        List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart> partFiles = batchPackage.parts();
+        List<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart> partFiles = batchPackage.parts();
         // REQ-SESS-13: KSeF gives 20 minutes per part (cumulative across parts)
         // for the entire upload. Track elapsed time and fail-fast if the
         // budget is about to be exceeded; this surfaces a clean SDK error
@@ -283,14 +283,14 @@ public final class KsefBatchSession implements AutoCloseable {
     }
 
     private void uploadSinglePart(PartUploadRequest upload,
-                                  io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart part) {
+                                  io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart part) {
         HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url());
         String method = upload.method() != null ? upload.method() : METHOD_PUT;
         HttpRequest.BodyPublisher publisher;
         try {
-            if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart.OnDiskPart onDisk) {
+            if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart onDisk) {
                 publisher = BodyPublishers.ofFile(onDisk.path());
-            } else if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart.InMemoryPart inMem) {
+            } else if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.InMemoryPart inMem) {
                 publisher = BodyPublishers.ofByteArray(inMem.bytes());
             } else {
                 throw new IllegalStateException("Unknown BatchPart subtype: " + part.getClass());

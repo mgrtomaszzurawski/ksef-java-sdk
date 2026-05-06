@@ -32,6 +32,13 @@ import org.slf4j.LoggerFactory;
  *       is best-effort, never blocks construction.</li>
  * </ul>
  *
+ * <p><strong>Custom temp directories:</strong> automatic constructor-time
+ * cleanup only scans {@code java.io.tmpdir}. If callers configure a custom
+ * directory via {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode#onDisk(Path)},
+ * they must call {@link #purgeOrphans(Path, Duration)} themselves at
+ * application startup to recover crashed batches in that directory —
+ * the SDK does not track caller-supplied directories across JVM restarts.
+ *
  * @since 1.0.0
  */
 public final class BatchTempCleanup {
@@ -40,8 +47,13 @@ public final class BatchTempCleanup {
     private static final String LOG_DELETED = "Deleted orphaned batch temp file: {}";
     private static final String LOG_SKIPPED = "Skipping orphan cleanup, IO error scanning {}: {}";
 
-    /** Default minimum age for a tempfile to be considered orphaned. */
-    public static final Duration DEFAULT_ORPHAN_AGE = Duration.ofHours(1);
+    /**
+     * Default minimum age for a tempfile to be considered orphaned. Set
+     * to 24 hours so a long-running batch upload (slow link, large
+     * multi-part batch) is not treated as orphaned by a freshly-started
+     * sibling {@code KsefClient} on the same host.
+     */
+    public static final Duration DEFAULT_ORPHAN_AGE = Duration.ofHours(24);
 
     private BatchTempCleanup() { }
 

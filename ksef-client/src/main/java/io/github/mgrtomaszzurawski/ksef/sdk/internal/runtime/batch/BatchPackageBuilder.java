@@ -7,7 +7,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.IOException;
@@ -253,7 +252,15 @@ public final class BatchPackageBuilder {
         private boolean closed;
 
         ChunkSink(long maxPartSize, byte[] aesKey, byte[] initVector, BatchAssemblyMode mode) {
-            this.chunkBuffer = new byte[(int) Math.min(maxPartSize, Integer.MAX_VALUE)];
+            // Cap the chunking buffer against the in-memory cap so callers
+            // who pick inMemory(50MB) do not get a 100MB-default chunk
+            // buffer allocated regardless. For OnDisk mode the buffer
+            // stays at maxPartSize (default 100 MB).
+            long bufferSize = maxPartSize;
+            if (mode instanceof BatchAssemblyMode.InMemory inMem) {
+                bufferSize = Math.min(maxPartSize, inMem.maxBytes());
+            }
+            this.chunkBuffer = new byte[(int) Math.min(bufferSize, Integer.MAX_VALUE)];
             this.aesKey = aesKey.clone();
             this.initVector = initVector.clone();
             this.mode = mode;

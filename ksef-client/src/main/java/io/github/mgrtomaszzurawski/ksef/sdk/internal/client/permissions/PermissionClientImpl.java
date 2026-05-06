@@ -428,9 +428,9 @@ public final class PermissionClientImpl implements PermissionClient {
         return PermissionsMappers.toEuEntityPermissions(rawValue);
     }
 
-    // ======================== queryAll variants (Codex A.4.1) ========================
-    // Each iterates pageOffset internally using spec-max page size; consumers
-    // get one flat list and never see continuation/pagination details.
+    // ======================== stream variants (Codex A.4.1 / F3) ========================
+    // Each returns a lazy Stream<T> that walks one page at a time using
+    // spec-max page size; callers bound memory via .limit(N) / .takeWhile(...).
 
     private static String pagedPath(String basePath, int pageOffset) {
         return basePath + PERMISSION_QUERY_PAGE_PARAMS + pageOffset + PERMISSION_QUERY_PAGE_SIZE_PARAM;

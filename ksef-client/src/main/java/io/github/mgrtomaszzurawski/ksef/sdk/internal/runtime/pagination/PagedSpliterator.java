@@ -42,6 +42,21 @@ import java.util.stream.StreamSupport;
  */
 public final class PagedSpliterator {
 
+    /**
+     * Defensive bound on consecutive empty-but-not-terminal pages. A
+     * misbehaving server returning {@code Page(items=[], hasMore=true)}
+     * (or the cursor analogue) repeatedly would otherwise drive an
+     * infinite walk; we abort after this many empty pages with a typed
+     * exception so callers see the bug instead of a hung thread.
+     */
+    static final int MAX_CONSECUTIVE_EMPTY_PAGES = 100_000;
+
+    private static final String ERR_TOO_MANY_EMPTY_PAGES =
+            "Aborting paginated walk: server returned more than "
+                    + MAX_CONSECUTIVE_EMPTY_PAGES
+                    + " consecutive empty pages with hasMore/nextCursor still set. "
+                    + "This indicates a server bug or contract drift.";
+
     private PagedSpliterator() { }
 
     /**
@@ -140,6 +155,7 @@ public final class PagedSpliterator {
 
         @Override
         protected boolean fetchUntilNonEmptyOrEnd() {
+            int consecutiveEmpty = 0;
             while (!exhausted) {
                 Page<T> page = fetchPage.apply(nextPageOffset);
                 nextPageOffset++;
@@ -149,6 +165,12 @@ public final class PagedSpliterator {
                 }
                 if (!buffer.isEmpty()) {
                     return true;
+                }
+                if (page.hasMore()) {
+                    consecutiveEmpty++;
+                    if (consecutiveEmpty > MAX_CONSECUTIVE_EMPTY_PAGES) {
+                        throw new IllegalStateException(ERR_TOO_MANY_EMPTY_PAGES);
+                    }
                 }
             }
             return false;
@@ -166,6 +188,7 @@ public final class PagedSpliterator {
 
         @Override
         protected boolean fetchUntilNonEmptyOrEnd() {
+            int consecutiveEmpty = 0;
             while (!exhausted) {
                 CursorPage<T> page = fetchPage.apply(nextCursor);
                 buffer.addAll(page.items());
@@ -177,6 +200,12 @@ public final class PagedSpliterator {
                 }
                 if (!buffer.isEmpty()) {
                     return true;
+                }
+                if (!exhausted) {
+                    consecutiveEmpty++;
+                    if (consecutiveEmpty > MAX_CONSECUTIVE_EMPTY_PAGES) {
+                        throw new IllegalStateException(ERR_TOO_MANY_EMPTY_PAGES);
+                    }
                 }
             }
             return false;

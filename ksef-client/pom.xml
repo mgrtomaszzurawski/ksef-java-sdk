@@ -221,6 +221,14 @@
                             <modelNameSuffix>Raw</modelNameSuffix>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
+                            <!--
+                                Build-avoidance: hash the input spec and skip
+                                regeneration when it has not changed. Saves
+                                ~90 seconds per incremental compile during
+                                development. `mvn clean` invalidates the hash
+                                marker, so a clean build still regenerates.
+                            -->
+                            <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <configOptions>
                                 <dateLibrary>java8</dateLibrary>
                                 <useJakartaEe>true</useJakartaEe>

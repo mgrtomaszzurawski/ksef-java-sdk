@@ -252,9 +252,9 @@ class BatchPackageBuilderTest {
                 List.of(invoice), aesKey(), aesIv());
         List<Path> partPaths = new ArrayList<>();
         for (var part : batchPackage.parts()) {
-            assertTrue(part instanceof io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart.OnDiskPart,
+            assertTrue(part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart,
                     "default mode is on-disk");
-            Path path = ((io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart.OnDiskPart) part).path();
+            Path path = ((io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart) part).path();
             partPaths.add(path);
             assertTrue(Files.exists(path), "part file should exist before cleanup");
         }
