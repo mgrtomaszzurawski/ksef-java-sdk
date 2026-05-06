@@ -69,8 +69,8 @@ public final class BatchPackageBuilder {
     private static final long DEFAULT_MAX_PART_SIZE = 100L * 1024L * 1024L;
     /** REQ-SESS-41 — KSeF caps a single session at 10,000 invoices (online or batch). */
     private static final int MAX_INVOICES_PER_SESSION = 10_000;
-    private static final int MAX_PARTS = 50;
-    private static final long MAX_FILE_SIZE = 5_000_000_000L;
+    private static final int MAX_PARTS = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.MAX_BATCH_PARTS;
+    private static final long MAX_FILE_SIZE = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.MAX_BATCH_TOTAL_BYTES;
     private static final int STREAM_BUFFER_BYTES = 64 * 1024;
     private static final String TEMP_PREFIX_ZIP = "ksef-batch-zip-";
     private static final String TEMP_PREFIX_PART = "ksef-batch-part-";

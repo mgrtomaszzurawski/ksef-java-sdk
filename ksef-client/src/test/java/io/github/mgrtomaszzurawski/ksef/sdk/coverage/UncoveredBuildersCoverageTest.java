@@ -55,10 +55,12 @@ class UncoveredBuildersCoverageTest {
     @Test
     void onlineSessionBuilder_factoryMethods_andToBuilder() {
         PublicKey key = realRsaKey();
-        // fa2 / fa3 / custom factories
         assertNotNull(OnlineSessionBuilder.fa2(key));
         assertNotNull(OnlineSessionBuilder.fa3(key));
-        OnlineSessionBuilder custom = OnlineSessionBuilder.custom("Custom (1)", "0-0X", "FA", key);
+        OnlineSessionBuilder custom = OnlineSessionBuilder.fromFormCode(
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode.custom(
+                        "Custom (1)", "0-0X", "FA"),
+                key);
         OnlineSessionBuilder copy = custom.toBuilder();
         assertNotNull(copy);
         assertNotNull(copy.build());

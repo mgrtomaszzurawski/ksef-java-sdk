@@ -203,7 +203,19 @@ class FeaturePolicyHeadersTest {
     @Test
     void featurePolicy_rejectsNullUpoVersion() {
         org.junit.jupiter.api.Assertions.assertThrows(NullPointerException.class,
-                () -> new FeaturePolicy(null, true));
+                () -> new FeaturePolicy(null, true, false));
+    }
+
+    @Test
+    void enforceXadesCompliance_default_isFalse() {
+        FeaturePolicy fresh = FeaturePolicy.defaults();
+        org.junit.jupiter.api.Assertions.assertFalse(fresh.enforceXadesCompliance());
+    }
+
+    @Test
+    void enforceXadesCompliance_builderSetsTrue() {
+        FeaturePolicy strict = FeaturePolicy.builder().enforceXadesCompliance(true).build();
+        org.junit.jupiter.api.Assertions.assertTrue(strict.enforceXadesCompliance());
     }
 
     private static HttpRuntime activatedRuntime(WireMockRuntimeInfo wmInfo, FeaturePolicy featurePolicy) {

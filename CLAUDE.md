@@ -231,7 +231,7 @@ Builders enforce required fields and validate constraints discovered by the serv
 - Factory methods encode choices: `InvoiceQueryBuilder.seller()`, `OnlineSessionBuilder.fa2(key)`
 - Required fields fail-fast with `Objects.requireNonNull` or `IllegalStateException`
 - Server-side constraints replicated: description 5-256 chars, dateRange max 3 months, etc.
-- Builders return Raw request types (consumed by domain clients)
+- Builders return SDK domain records (e.g. `OnlineSessionOpenRequest`, `TokenGenerateRequest`); domain clients map records to `*Raw` internally via package-private mappers
 
 ### KSeF server error mechanism
 

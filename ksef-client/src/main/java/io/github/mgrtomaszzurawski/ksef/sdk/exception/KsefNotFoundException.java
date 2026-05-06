@@ -7,7 +7,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 import java.io.Serial;
 
 /**
- * Thrown on HTTP 404 (Not Found) or 410 (Gone).
+ * Thrown on HTTP 404 (Not Found). HTTP 410 (Gone) maps to the more
+ * specific {@link KsefRetentionExpiredException} subtype — catching
+ * {@link KsefNotFoundException} still handles 410 because the subtype
+ * extends this class.
  *
  * @since 1.0.0
  */

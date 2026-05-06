@@ -119,17 +119,27 @@ public final class KsefHttpRuntime implements HttpRuntime {
         private final SessionContext sessionContext;
         private final Runnable reauthHook;
         private final Runnable proactiveAuthHook;
+        private final java.util.function.BooleanSupplier certificateAuthCheck;
 
         public AuthHooks(SessionContext sessionContext,
                           Runnable reauthHook,
-                          Runnable proactiveAuthHook) {
+                          Runnable proactiveAuthHook,
+                          java.util.function.BooleanSupplier certificateAuthCheck) {
             this.sessionContext = Objects.requireNonNull(sessionContext, "sessionContext must not be null");
             this.reauthHook = Objects.requireNonNull(reauthHook, "reauthHook must not be null");
             this.proactiveAuthHook = Objects.requireNonNull(proactiveAuthHook, "proactiveAuthHook must not be null");
+            this.certificateAuthCheck = Objects.requireNonNull(certificateAuthCheck,
+                    "certificateAuthCheck must not be null");
         }
 
         SessionContext sessionContext() { return sessionContext; }
         Runnable reauthHook() { return reauthHook; }
         Runnable proactiveAuthHook() { return proactiveAuthHook; }
+        java.util.function.BooleanSupplier certificateAuthCheck() { return certificateAuthCheck; }
+    }
+
+    @Override
+    public boolean isAuthenticatedViaCertificate() {
+        return auth.certificateAuthCheck().getAsBoolean();
     }
 }

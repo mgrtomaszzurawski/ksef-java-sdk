@@ -77,7 +77,8 @@ public final class KsefTestRuntime {
                 new KsefHttpRuntime.AuthHooks(
                         new SessionContext(),
                         () -> { /* no reauth in unit tests */ },
-                        () -> { /* no proactive auth in unit tests */ }),
+                        () -> { /* no proactive auth in unit tests */ },
+                        () -> true),
                 featurePolicy);
     }
 }

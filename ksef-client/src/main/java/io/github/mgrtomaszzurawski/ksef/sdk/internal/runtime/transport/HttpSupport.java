@@ -42,6 +42,9 @@ public final class HttpSupport {
     private static final String X_ERROR_FORMAT_PROBLEM_DETAILS = "problem-details";
     private static final String X_KSEF_FEATURE_HEADER = "X-KSeF-Feature";
     private static final String UPO_V4_3_FEATURE = "upo-v4-3";
+    private static final String ENFORCE_XADES_COMPLIANCE_FEATURE = "enforce-xades-compliance";
+    private static final String AUTH_XADES_PATH_FRAGMENT = "/auth/xades-signature";
+    private static final String AUTH_KSEF_TOKEN_PATH_FRAGMENT = "/auth/ksef-token";
     /** Substring matched against request path to detect UPO-related calls (REQ-MISC; FeaturePolicy). */
     private static final String UPO_PATH_FRAGMENT = "/upo";
     private static final String RETRY_AFTER_HEADER = "Retry-After";
@@ -375,11 +378,19 @@ public final class HttpSupport {
                 && isUpoPath(path)) {
             return UPO_V4_3_FEATURE;
         }
+        if (policy.enforceXadesCompliance() && isXadesAuthPath(path)) {
+            return ENFORCE_XADES_COMPLIANCE_FEATURE;
+        }
         return null;
     }
 
     private static boolean isUpoPath(String path) {
         return path != null && path.contains(UPO_PATH_FRAGMENT);
+    }
+
+    private static boolean isXadesAuthPath(String path) {
+        return path != null
+                && (path.contains(AUTH_XADES_PATH_FRAGMENT) || path.contains(AUTH_KSEF_TOKEN_PATH_FRAGMENT));
     }
 
     /**
@@ -429,7 +440,7 @@ public final class HttpSupport {
         }
         int status = response.statusCode();
         if (status != HTTP_OK) {
-            throw KsefException.of(request.method() + " " + request.uri(), null, status,
+            throw KsefException.of(request.method() + " " + UriRedaction.redactNipSegments(request.uri()), null, status,
                     new String(response.body(), java.nio.charset.StandardCharsets.UTF_8),
                     parseRetryAfterSeconds(response));
         }
@@ -510,7 +521,7 @@ public final class HttpSupport {
                                      Class<T> responseType) throws IOException {
         int status = response.statusCode();
         if (status != HTTP_OK && status != HTTP_CREATED && status != HTTP_ACCEPTED) {
-            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body(),
+            throw KsefException.of(request.method() + " " + UriRedaction.redactNipSegments(request.uri()), null, status, response.body(),
                     parseRetryAfterSeconds(response));
         }
         return deserialize(response.body(), responseType);
@@ -520,7 +531,7 @@ public final class HttpSupport {
         HttpResponse<String> response = send(request);
         int status = response.statusCode();
         if (status != HTTP_OK) {
-            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body(),
+            throw KsefException.of(request.method() + " " + UriRedaction.redactNipSegments(request.uri()), null, status, response.body(),
                     parseRetryAfterSeconds(response));
         }
         return runtime.objectMapper().readValue(response.body(), typeRef);
@@ -534,7 +545,7 @@ public final class HttpSupport {
     private void handleNoContentResponse(HttpRequest request, HttpResponse<String> response) {
         int status = response.statusCode();
         if (status != HTTP_NO_CONTENT && status != HTTP_OK) {
-            throw KsefException.of(request.method() + " " + request.uri(), null, status, response.body(),
+            throw KsefException.of(request.method() + " " + UriRedaction.redactNipSegments(request.uri()), null, status, response.body(),
                     parseRetryAfterSeconds(response));
         }
     }
@@ -551,18 +562,18 @@ public final class HttpSupport {
             throws IOException {
         long start = System.currentTimeMillis();
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(LOG_REQUEST, request.method(), request.uri());
+            LOGGER.debug(LOG_REQUEST, request.method(), UriRedaction.redactNipSegments(request.uri()));
         }
         try {
             HttpResponse<T> response = runtime.httpClient().send(request, bodyHandler);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(LOG_RESPONSE, request.method(), request.uri(),
+                LOGGER.debug(LOG_RESPONSE, request.method(), UriRedaction.redactNipSegments(request.uri()),
                         response.statusCode(), System.currentTimeMillis() - start);
             }
             return response;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IOException(request.method() + " " + request.uri() + " interrupted", exception);
+            throw new IOException(request.method() + " " + UriRedaction.redactNipSegments(request.uri()) + " interrupted", exception);
         }
     }
 

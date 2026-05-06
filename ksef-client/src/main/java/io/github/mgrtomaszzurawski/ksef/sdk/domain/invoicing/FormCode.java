@@ -4,22 +4,29 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import java.util.Objects;
 
 /**
  * Invoice form code identifying the schema used for invoice submission.
  *
- * <p>Each form code is a triplet of (systemCode, schemaVersion, value) that tells KSeF
- * which invoice format to expect in the session.
+ * <p>Each form code is a triplet of {@code (systemCode, schemaVersion, value)}
+ * that tells KSeF which invoice format to expect in the session.
  *
- * <p>Common values:
+ * <p>Predefined constants (per {@code ksef-docs/srodowiska.md} and the
+ * {@code open-api.json} {@code FormCodeRequest} schema):
  * <ul>
- *   <li>{@link #FA2} — FA(2) invoice, the most common format</li>
- *   <li>{@link #FA3} — FA(3) invoice</li>
+ *   <li>{@link #FA2} — FA(2) standard invoice; accepted on TEST only.</li>
+ *   <li>{@link #FA3} — FA(3) standard invoice; accepted on TEST/DEMO/PROD.</li>
+ *   <li>{@link #PEF3} — PEF(3) public-procurement invoice.</li>
+ *   <li>{@link #PEF_KOR3} — PEF_KOR(3) PEF correction invoice.</li>
  * </ul>
  *
  * <p>For invoice types not covered by the predefined constants, use
- * {@link #custom(String, String, String)}.
+ * {@link #custom(String, String, String)}. Note that
+ * {@code KsefXmlValidator} bundles XSDs only for FA(2) and FA(3); PEF
+ * variants must be validated by the caller (or accepted as
+ * server-validated only).
  *
  * @since 1.0.0
  */
@@ -28,12 +35,22 @@ public final class FormCode {
     private static final String ERR_NULL_SYSTEM_CODE = "systemCode must not be null";
     private static final String ERR_NULL_SCHEMA_VERSION = "schemaVersion must not be null";
     private static final String ERR_NULL_VALUE = "value must not be null";
+    private static final String ERR_NULL_ENVIRONMENT = "environment must not be null";
+    private static final String ERR_FA2_NOT_ALLOWED =
+            "FA(2) is accepted only on the TEST environment; DEMO and PROD reject FA(2). "
+                    + "Use FormCode.FA3 (or FormCode.PEF3 / FormCode.PEF_KOR3) instead.";
 
-    /** FA(2) — standard invoice, schema 1-0E. */
+    /** FA(2) — standard invoice, schema 1-0E. TEST environment only. */
     public static final FormCode FA2 = new FormCode("FA (2)", "1-0E", "FA");
 
     /** FA(3) — standard invoice, schema 1-0E. */
     public static final FormCode FA3 = new FormCode("FA (3)", "1-0E", "FA");
+
+    /** PEF(3) — public-procurement invoice, schema 2-1. */
+    public static final FormCode PEF3 = new FormCode("PEF (3)", "2-1", "PEF");
+
+    /** PEF_KOR(3) — PEF correction invoice, schema 2-1. */
+    public static final FormCode PEF_KOR3 = new FormCode("PEF_KOR (3)", "2-1", "PEF");
 
     private final String systemCode;
     private final String schemaVersion;
@@ -48,9 +65,13 @@ public final class FormCode {
     /**
      * Create a custom form code for invoice types not covered by predefined constants.
      *
-     * @param systemCode e.g. "FA", "PEF", "RR"
-     * @param schemaVersion e.g. "2", "3"
-     * @param value e.g. "FA (2)", "PEF (3)"
+     * <p>Field positions match the canonical {@code FormCodeRequest} schema:
+     *
+     * @param systemCode full system identifier — e.g. {@code "FA (3)"},
+     *     {@code "PEF (3)"}, {@code "PEF_KOR (3)"}
+     * @param schemaVersion XSD-level version string — e.g. {@code "1-0E"}
+     *     for FA(3), {@code "2-1"} for PEF(3)
+     * @param value short type tag — e.g. {@code "FA"}, {@code "PEF"}
      * @return custom form code
      */
     public static FormCode custom(String systemCode, String schemaVersion, String value) {
@@ -67,6 +88,31 @@ public final class FormCode {
 
     public String value() {
         return value;
+    }
+
+    /**
+     * Throw {@link IllegalArgumentException} when this form code is not
+     * accepted on the supplied environment. Per
+     * {@code ksef-docs/srodowiska.md}, FA(2) is accepted only on
+     * {@link KsefEnvironment#TEST}; DEMO and PROD accept FA(3), PEF(3)
+     * and PEF_KOR(3) only. Custom form codes are not checked (the SDK
+     * cannot infer their environment policy) and pass through.
+     *
+     * <p>Called by {@code KsefClient.openSession} and
+     * {@code openBatchSession*} as a client-side preflight so misconfigured
+     * consumers fail fast with a clear message instead of seeing a
+     * server-side schema rejection on the first invoice send.
+     */
+    public void assertAllowedOn(KsefEnvironment environment) {
+        Objects.requireNonNull(environment, ERR_NULL_ENVIRONMENT);
+        if (!this.equals(FA2)) {
+            return;
+        }
+        if (environment.equals(KsefEnvironment.DEMO)
+                || environment.equals(KsefEnvironment.PREPROD)
+                || environment.equals(KsefEnvironment.PROD)) {
+            throw new IllegalArgumentException(ERR_FA2_NOT_ALLOWED);
+        }
     }
 
     @Override

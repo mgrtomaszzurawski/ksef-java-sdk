@@ -9,6 +9,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First public Maven Central release.
 
+### Polish pass — Codex / Claude Code v2 closure (2026-05-05)
+
+Closes the verified findings from the 2026-05-05 17:39 Codex review and
+the Claude Code v2 manual validation audit:
+
+- **F1 CRITICAL** — `OnlineSessionBuilder.fa2/fa3` was building wrong
+  FormCode triples (e.g. `("FA", "3", "FA (3)")` instead of canonical
+  `("FA (3)", "1-0E", "FA")`). Builder now delegates to the
+  `FormCode.FA2` / `FormCode.FA3` constants used by the main
+  `KsefClient.openSession(FormCode)` path. New
+  `fromFormCode(FormCode, PublicKey)` factory replaces the wrong
+  `custom(...)` overload.
+- **F2** — Added first-class `FormCode.PEF3` and `FormCode.PEF_KOR3`
+  constants; corrected `FormCode.custom(...)` Javadoc to show fields
+  in the canonical position order.
+- **FORM-1** — `KsefClient.openSession(...)` /
+  `openBatchSession*(...)` now preflight FormCode against the active
+  environment via `FormCode.assertAllowedOn(KsefEnvironment)`. FA(2)
+  on DEMO/PREPROD/PROD fails fast instead of reaching server-side
+  schema rejection.
+- **A.4.2.2** — `pollAuthStatus` now treats codes 100/450 as
+  in-progress, 200 as success, anything else as terminal failure
+  carrying the actual status code + description in
+  `KsefAuthException`. Previously every non-200 collapsed into a
+  generic poll timeout.
+- **A.4.2.1** — Added `FeaturePolicy.enforceXadesCompliance` opt-in
+  emitting `X-KSeF-Feature: enforce-xades-compliance` on
+  `/auth/xades-signature` and `/auth/ksef-token` (api-changelog v2.1.1).
+- **A.4.2.4 / FACT-VER-1** — `KsefXmlValidator` now exposes structured
+  `ValidationIssue` records with explicit `Severity` enum via
+  `validateDetailed(...)`. `validateOrThrow(...)` rejects only on
+  ERROR/FATAL, not on WARNING. New `checkRecommendedCharsets(byte[])`
+  preflights the W3C XML 1.0 banned codepoint set
+  (api-changelog v2.4.0, PRD effective 2026-07-16).
+- **A.4.1 LOG-1** — `UriRedaction.redactNipSegments(URI)` masks
+  10-digit decimal path segments before they hit DEBUG logs and
+  `KsefException.message`. Routes all `request.uri()` sites in
+  `HttpSupport` through the helper.
+- **RETRY-1** — Added `KsefRetentionExpiredException` (subtype of
+  `KsefNotFoundException`) for HTTP 410 Gone (KSeF retention policy
+  expiry, api-changelog v2.4.0). Source-compatible — existing
+  `catch (KsefNotFoundException ...)` still handles 410.
+- **SESS-B-5** — `PreparedBatchPackage` now validates the aggregate
+  KSeF caps (max 50 parts, max 5 GB pre-encryption file size) at
+  construction. New public constants `KsefLimits.MAX_BATCH_PARTS` and
+  `MAX_BATCH_TOTAL_BYTES`.
+- **CERT-9** — `CertificateClient.enroll(...)` and
+  `getEnrollmentData()` now log a WARN when invoked on a
+  token-authenticated session (KSeF restricts cert-domain ops to
+  certificate-based auth). The server-side typed error remains the
+  authoritative outcome — the WARN gives operators an early heads-up.
+- **AUTH-15** — `KsefClient.lastChallengeClientIp()` exposes the
+  `clientIp` reported by the most recent `/auth/challenge` so callers
+  can autopin `AuthorizationPolicy` on subsequent token
+  authentications.
+- **A.4.2.3** — Documented in the three batch openSession overloads
+  the intentional asymmetry vs online cooldown guard, citing the RCA
+  path.
+- **F3 / KsefLimits Javadoc** — Corrected the `KsefLimits` Javadoc to
+  state that only `InvoiceClient.queryAllMetadata(query, int maxResults)`
+  accepts a caller override; other `queryAll*` / `listAll` helpers
+  cap silently and the recommended pattern for exhaustive walks is
+  the paged variant with explicit `pageOffset`.
+- **ENV-1** — `KsefEnvironment.PREPROD` Javadoc clarifies it is not
+  listed in `srodowiska.md` and may not be reachable; `DEMO` is the
+  recommended pre-production target.
+
 ### Source-incompatible record changes (1.0.0 stabilisation)
 
 - **`InvoiceQueryFilters`** — record component count grew from 10 to 16

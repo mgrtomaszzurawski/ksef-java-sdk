@@ -69,7 +69,10 @@ public class KsefException extends RuntimeException {
         if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
             return new KsefAuthException(message, cause, statusCode, responseBody);
         }
-        if (statusCode == HTTP_NOT_FOUND || statusCode == HTTP_GONE) {
+        if (statusCode == HTTP_GONE) {
+            return new KsefRetentionExpiredException(message, cause, statusCode, responseBody);
+        }
+        if (statusCode == HTTP_NOT_FOUND) {
             return new KsefNotFoundException(message, cause, statusCode, responseBody);
         }
         if (statusCode == HTTP_TOO_MANY_REQUESTS) {

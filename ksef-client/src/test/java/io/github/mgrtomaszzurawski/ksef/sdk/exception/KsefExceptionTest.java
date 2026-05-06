@@ -46,12 +46,14 @@ class KsefExceptionTest {
     }
 
     @Test
-    void of_whenGone_returnsNotFoundException() {
+    void of_whenGone_returnsRetentionExpiredException() {
         // when
         KsefException result = KsefException.of(ERROR_MESSAGE, null, HTTP_GONE, RESPONSE_BODY);
 
         // then
+        assertInstanceOf(KsefRetentionExpiredException.class, result);
         assertInstanceOf(KsefNotFoundException.class, result);
+        assertEquals(HTTP_GONE, result.statusCode());
     }
 
     @Test

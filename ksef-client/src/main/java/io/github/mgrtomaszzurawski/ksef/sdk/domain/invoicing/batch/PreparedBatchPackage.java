@@ -76,6 +76,8 @@ public record PreparedBatchPackage(BatchFileSpec spec,
         if (partBytes.size() != spec.parts().size()) {
             throw new IllegalArgumentException(ERR_PARTS_SIZE_MISMATCH);
         }
+        // Aggregate caps (50 parts, 5 GiB) are enforced by BatchFileSpec
+        // before this constructor is reachable — no duplicate check needed.
         aesKey = aesKey.clone();
         initVector = initVector.clone();
         partBytes = List.copyOf(partBytes);

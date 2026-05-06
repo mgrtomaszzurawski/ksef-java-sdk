@@ -9,11 +9,19 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
  * consumers can reason about page sizes, payload caps, and operation
  * budgets without hard-coding values.
  *
- * <p>Codex 2026-05-05 round-3 Performance review IMPORTANT — every
- * full-pagination helper ({@code queryAll*}, {@code listAll},
- * {@code getAllInvoices}, {@code queryAllSessions}) now caps the
- * returned list at {@link #DEFAULT_QUERY_RESULT_LIMIT} unless the
- * caller passes an explicit larger {@code maxResults}.
+ * <p>Every full-pagination helper ({@code queryAll*}, {@code listAll},
+ * {@code queryAllSessions}) caps the returned list at
+ * {@link #DEFAULT_QUERY_RESULT_LIMIT} as a safety against unbounded
+ * heap growth on large subjects. The cap is reached silently — the
+ * caller receives the truncated list and cannot detect drop versus
+ * exhaustive walk by inspecting the result alone.
+ *
+ * <p>Currently only
+ * {@code InvoiceClient.queryAllMetadata(query, int maxResults)} accepts
+ * a caller-supplied override. For other helpers, the recommended
+ * pattern when an exhaustive walk is required is to call the paged
+ * variant ({@code query(...)} / {@code list(...)}) directly with an
+ * explicit {@code pageOffset} loop.
  *
  * @since 1.0.0
  */
@@ -36,6 +44,12 @@ public final class KsefLimits {
 
     /** REQ-SESS-41 — KSeF caps a single session at 10 000 invoices. */
     public static final int MAX_SESSION_INVOICES = 10_000;
+
+    /** KSeF spec maximum number of parts per batch upload (per {@code weryfikacja-faktury.md}). */
+    public static final int MAX_BATCH_PARTS = 50;
+
+    /** KSeF spec maximum aggregate batch payload size, pre-encryption (5 GiB per OpenAPI {@code BatchFile.fileSize}). */
+    public static final long MAX_BATCH_TOTAL_BYTES = 5L * 1024L * 1024L * 1024L;
 
     private KsefLimits() { }
 }

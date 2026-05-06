@@ -19,10 +19,17 @@ import java.util.Objects;
  *     {@link UpoVersion#DEFAULT} — no header)
  * @param problemDetails whether to request RFC 7807 Problem Details
  *     bodies on 4xx/5xx responses (default {@code true})
+ * @param enforceXadesCompliance whether to send the early-adopt
+ *     {@code X-KSeF-Feature: enforce-xades-compliance} header on the
+ *     XAdES authentication paths ({@code /auth/xades-signature} and
+ *     {@code /auth/ksef-token}). Surfaces strict XAdES validation on
+ *     DEMO/PROD before the global cutover. Default {@code false} —
+ *     keep production callers on lenient validation until they are
+ *     ready (api-changelog v2.1.1).
  *
  * @since 1.0.0
  */
-public record FeaturePolicy(UpoVersion upoVersion, boolean problemDetails) {
+public record FeaturePolicy(UpoVersion upoVersion, boolean problemDetails, boolean enforceXadesCompliance) {
 
     private static final String ERR_NULL_UPO = "upoVersion must not be null";
 
@@ -32,10 +39,10 @@ public record FeaturePolicy(UpoVersion upoVersion, boolean problemDetails) {
 
     /**
      * Default policy: server-default UPO version, RFC 7807 Problem Details
-     * enabled. Matches pre-1.0 behavior.
+     * enabled, lenient XAdES validation.
      */
     public static FeaturePolicy defaults() {
-        return new FeaturePolicy(UpoVersion.DEFAULT, true);
+        return new FeaturePolicy(UpoVersion.DEFAULT, true, false);
     }
 
     /**
@@ -49,6 +56,7 @@ public record FeaturePolicy(UpoVersion upoVersion, boolean problemDetails) {
 
         private UpoVersion upoVersion = UpoVersion.DEFAULT;
         private boolean problemDetails = true;
+        private boolean enforceXadesCompliance;
 
         private Builder() { }
 
@@ -68,8 +76,19 @@ public record FeaturePolicy(UpoVersion upoVersion, boolean problemDetails) {
             return this;
         }
 
+        /**
+         * Toggle {@code X-KSeF-Feature: enforce-xades-compliance} for the
+         * XAdES auth paths. Default: {@code false}. Enable to opt in to
+         * the strict XAdES validator on DEMO/PROD before the global
+         * cutover (api-changelog v2.1.1).
+         */
+        public Builder enforceXadesCompliance(boolean enabled) {
+            this.enforceXadesCompliance = enabled;
+            return this;
+        }
+
         public FeaturePolicy build() {
-            return new FeaturePolicy(upoVersion, problemDetails);
+            return new FeaturePolicy(upoVersion, problemDetails, enforceXadesCompliance);
         }
     }
 }

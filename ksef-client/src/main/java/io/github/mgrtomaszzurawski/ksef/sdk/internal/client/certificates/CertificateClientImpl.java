@@ -67,11 +67,23 @@ public final class CertificateClientImpl implements CertificateClient {
     private static final String ERR_NULL_BUILDER = "builder is required";
     private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBERS = "certificateSerialNumbers is required";
     private static final String ERR_NULL_REVOCATION_REASON = "revocationReason is required";
+    private static final String WARN_TOKEN_AUTH_FOR_CERT_OP =
+            "Calling certificate operation {} on a token-authenticated session — KSeF restricts "
+                    + "/certificates/enrollments and /certificates/enrollments/data to certificate-based auth "
+                    + "(KsefCertificateCredentials / KsefPkcs12Credentials). The server will return a typed error.";
 
     private final HttpSupport http;
+    private final HttpRuntime runtime;
 
     public CertificateClientImpl(HttpRuntime runtime) {
+        this.runtime = runtime;
         this.http = new HttpSupport(runtime);
+    }
+
+    private void warnIfNotCertificateAuth(String operation) {
+        if (!runtime.isAuthenticatedViaCertificate()) {
+            LOGGER.warn(WARN_TOKEN_AUTH_FOR_CERT_OP, operation);
+        }
     }
 
     /**
@@ -96,6 +108,7 @@ public final class CertificateClientImpl implements CertificateClient {
     @Override
     public CertificateEnrollmentData getEnrollmentData() {
         LOGGER.debug(LOG_CALL, OP_GET_ENROLLMENT_DATA);
+        warnIfNotCertificateAuth(OP_GET_ENROLLMENT_DATA);
         String token = http.requireToken();
         CertificateEnrollmentDataResponseRaw rawValue = http.getAuthenticated(PATH_ENROLLMENT_DATA, token,
                 CertificateEnrollmentDataResponseRaw.class, OP_GET_ENROLLMENT_DATA);
@@ -111,6 +124,7 @@ public final class CertificateClientImpl implements CertificateClient {
     @Override
     public EnrollCertificateResult enroll(CertificateEnrollBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_ENROLL);
+        warnIfNotCertificateAuth(OP_ENROLL);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         EnrollCertificateRequestRaw request = CertificatesMappers.toEnrollCertificateRequestRaw(builder.build());
         String token = http.requireToken();

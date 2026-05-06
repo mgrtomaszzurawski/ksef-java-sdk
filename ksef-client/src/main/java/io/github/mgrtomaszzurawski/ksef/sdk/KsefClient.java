@@ -134,6 +134,11 @@ public final class KsefClient implements AutoCloseable {
     private static final int AUTH_POLL_DELAY_MS = 2000;
     private static final int AUTH_POLL_MAX_ATTEMPTS = 15;
     private static final int STATUS_CODE_OK = 200;
+    private static final int AUTH_STATUS_CODE_PROCESSING = 100;
+    private static final int AUTH_STATUS_CODE_VERIFYING_CERT = 450;
+    private static final String ERR_AUTH_FAILED_PREFIX = "KSeF authentication failed (code=";
+    private static final String ERR_AUTH_FAILED_SEPARATOR = ", description=";
+    private static final String ERR_AUTH_FAILED_SUFFIX = ")";
 
     private final KsefEnvironment environment;
     private final KsefCredentials credentials;
@@ -159,6 +164,7 @@ public final class KsefClient implements AutoCloseable {
     private final Map<PublicKeyCertificateUsage, PublicKey> publicKeyCache = new ConcurrentHashMap<>();
     private volatile boolean authenticated;
     private volatile boolean closed;
+    private volatile String lastChallengeClientIp;
 
     private KsefClient(Builder builder) {
         this.environment = builder.environment;
@@ -172,7 +178,8 @@ public final class KsefClient implements AutoCloseable {
         this.sessionContext = new SessionContext();
         this.runtime = new KsefHttpRuntime(
                 new KsefHttpRuntime.Transport(environment, httpClient, objectMapper, retryHandler, readTimeout),
-                new KsefHttpRuntime.AuthHooks(sessionContext, this::reauthenticate, this::ensureAuthenticated),
+                new KsefHttpRuntime.AuthHooks(sessionContext, this::reauthenticate, this::ensureAuthenticated,
+                        this::isCertificateBackedCredentials),
                 builder.featurePolicy);
         this.authClient = new AuthClient(this.runtime);
         this.securityClient = new SecurityClient(this.runtime);
@@ -245,6 +252,7 @@ public final class KsefClient implements AutoCloseable {
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefSession openSession(FormCode formCode) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
+        formCode.assertAllowedOn(environment);
         ensureOpen();
         ensureAuthenticated();
 
@@ -320,6 +328,11 @@ public final class KsefClient implements AutoCloseable {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(preparedPackage, ERR_BATCH_PACKAGE_NULL);
         Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
+        formCode.assertAllowedOn(environment);
+        // Codex round-9 manual validation A.4.2.3: batch sessions do not
+        // exhibit the post-termination 415 cooldown documented for online
+        // sessions (see context/RCA/RCA-session-cooldown-consecutive-runs-2026-04-04-2105.md).
+        // No guardAgainstCooldown call here.
         ensureOpen();
         ensureAuthenticated();
 
@@ -375,6 +388,10 @@ public final class KsefClient implements AutoCloseable {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(invoiceXmls, ERR_INVOICES_NULL);
         Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
+        formCode.assertAllowedOn(environment);
+        // Codex round-9 manual validation A.4.2.3: batch cooldown asymmetry
+        // intentional — see openBatchSession(PreparedBatchPackage) overload
+        // for the rationale.
         ensureOpen();
         ensureAuthenticated();
 
@@ -426,6 +443,10 @@ public final class KsefClient implements AutoCloseable {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(invoiceFiles, ERR_INVOICES_NULL);
         Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
+        formCode.assertAllowedOn(environment);
+        // Codex round-9 manual validation A.4.2.3: batch cooldown asymmetry
+        // intentional — see openBatchSession(PreparedBatchPackage) overload
+        // for the rationale.
         ensureOpen();
         ensureAuthenticated();
 
@@ -653,6 +674,29 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
+     * The {@code clientIp} value reported by KSeF in the most recent
+     * {@code /auth/challenge} response, or {@code null} if no challenge
+     * has been requested yet on this client.
+     *
+     * <p>Use to autopin {@link io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy}
+     * for token authentication: read this after the first {@link #authenticate()}
+     * call, then build a fresh policy that whitelists exactly this IP and
+     * pass it via {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials}
+     * on subsequent authentications.
+     *
+     * <p>Provided per Codex round-9 manual validation AUTH-15 — the
+     * {@code requestChallenge()} response is internal-only by design,
+     * but the {@code clientIp} field it carries is operationally useful.
+     *
+     * @return the client IP from the latest challenge, or {@code null}
+     *
+     * @since 1.0.0
+     */
+    public String lastChallengeClientIp() {
+        return lastChallengeClientIp;
+    }
+
+    /**
      * Access certificate management operations (enroll, retrieve, revoke, query).
      */
     public CertificateClient certificates() {
@@ -808,6 +852,7 @@ public final class KsefClient implements AutoCloseable {
     private void authenticateWithToken(KsefTokenCredentials credentials) {
         PublicKey tokenKey = getPublicKey(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION);
         AuthenticationChallenge challenge = authClient.requestChallenge();
+        this.lastChallengeClientIp = challenge.clientIp();
         authClient.authenticateWithToken(challenge, credentials.ksefToken(),
                 credentials.identifier(), tokenKey,
                 credentials.authorizationPolicy().orElse(null));
@@ -820,6 +865,7 @@ public final class KsefClient implements AutoCloseable {
                                              CertificateSubjectIdentifier subjectIdentifier,
                                              io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
+        this.lastChallengeClientIp = challenge.clientIp();
         authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier,
                 subjectIdentifier, signingOptions);
         pollAuthStatus();
@@ -836,14 +882,34 @@ public final class KsefClient implements AutoCloseable {
                 io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults());
     }
 
+    private boolean isCertificateBackedCredentials() {
+        return credentials instanceof KsefCertificateCredentials
+                || credentials instanceof KsefPkcs12Credentials;
+    }
+
     private void pollAuthStatus() {
         String refNumber = sessionContext.referenceNumber();
         for (int attempt = 0; attempt < AUTH_POLL_MAX_ATTEMPTS; attempt++) {
             sleep();
             AuthenticationStatus status = authClient.getStatus(refNumber);
-            if (status.status() != null && status.status().code() == STATUS_CODE_OK) {
+            if (status.status() == null) {
+                continue;
+            }
+            int code = status.status().code();
+            if (code == STATUS_CODE_OK) {
                 return;
             }
+            if (code == AUTH_STATUS_CODE_PROCESSING || code == AUTH_STATUS_CODE_VERIFYING_CERT) {
+                continue;
+            }
+            // Codex round-9 manual validation A.4.2.2: any other terminal
+            // status code (e.g. 400 — invalid signature, revoked cert, no
+            // permissions for context) is reported with the actual reason
+            // instead of being swallowed as a generic poll timeout.
+            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException(
+                    ERR_AUTH_FAILED_PREFIX + code + ERR_AUTH_FAILED_SEPARATOR
+                            + status.status().description() + ERR_AUTH_FAILED_SUFFIX,
+                    null, code, null);
         }
         throw new IllegalStateException(ERR_AUTH_TIMEOUT);
     }

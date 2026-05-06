@@ -9,6 +9,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,11 +36,18 @@ import org.xml.sax.SAXException;
  * validator does not guarantee server acceptance (KSeF business rules
  * are not in the XSD).
  *
+ * <p>Bundled XSDs cover {@link FormCode#FA2} and {@link FormCode#FA3}
+ * only. PEF/KOR_PEF (and any other custom form code) raise
+ * {@link KsefXmlValidationException} from {@link #validate(byte[], FormCode)}
+ * at schema-load time — the validator is FA-only by design.
+ *
  * <p>The validator throws {@link KsefXmlValidationException} (a
  * {@link KsefException} subclass) on failure with the SAX line/column
  * info carried in the message. {@link #validate(byte[], FormCode)}
  * returns the list of validation issues — empty when the document is
- * valid.
+ * valid. {@link #validateDetailed(byte[], FormCode)} returns
+ * structured {@link ValidationIssue} records with explicit
+ * {@link Severity} so callers can distinguish warnings from errors.
  *
  * @since 1.0.0
  */
@@ -51,6 +60,15 @@ public final class KsefXmlValidator {
     private static final String ISSUE_SEPARATOR = " — ";
     private static final String LINE_LABEL = " line ";
     private static final String COLUMN_LABEL = ":";
+    private static final String BANNED_CODEPOINT_PREFIX = "Banned XML 1.0 codepoint U+";
+    private static final int CODEPOINT_TAB = 0x09;
+    private static final int CODEPOINT_LF = 0x0A;
+    private static final int CODEPOINT_CR = 0x0D;
+    private static final int FIRST_PRINTABLE_ASCII = 0x20;
+    private static final int SURROGATE_RANGE_START = 0xD800;
+    private static final int SURROGATE_RANGE_END = 0xDFFF;
+    private static final int NONCHARACTER_FFFE = 0xFFFE;
+    private static final int NONCHARACTER_FFFF = 0xFFFF;
 
     /** Resource path inside the SDK jar for each {@link FormCode#systemCode()}. */
     private static final java.util.Map<String, String> SCHEMA_RESOURCE_BY_SYSTEM_CODE = java.util.Map.of(
@@ -60,26 +78,74 @@ public final class KsefXmlValidator {
 
     private static final ConcurrentMap<String, Schema> SCHEMA_CACHE = new ConcurrentHashMap<>();
 
+    /** Severity reported by the SAX-driven XSD validator. */
+    public enum Severity {
+        /** SAX warning — schema-level note, not a document defect. */
+        WARNING,
+        /** SAX recoverable error — document is structurally invalid. */
+        ERROR,
+        /** SAX fatal error — parsing cannot continue. */
+        FATAL
+    }
+
+    /**
+     * Structured validation issue with explicit severity.
+     *
+     * @param severity {@link Severity} of this issue
+     * @param line     XML line number reported by the parser, or {@code -1}
+     *                 when not available
+     * @param column   XML column number reported by the parser, or {@code -1}
+     *                 when not available
+     * @param message  human-readable message from the parser
+     */
+    public record ValidationIssue(Severity severity, int line, int column, String message) {
+
+        @Override
+        public String toString() {
+            return severity + LINE_LABEL + line + COLUMN_LABEL + column + ISSUE_SEPARATOR + message;
+        }
+    }
+
     private KsefXmlValidator() { }
 
     /**
      * Validate {@code invoiceXml} against the XSD shipped for the
      * supplied {@link FormCode}. Returns the (possibly empty) list of
-     * SAX validation issues — empty list means valid.
+     * SAX validation issues serialised as strings — empty list means
+     * valid.
+     *
+     * <p>Severities collapse into the string prefix
+     * ({@code WARNING/ERROR/FATAL}). Use
+     * {@link #validateDetailed(byte[], FormCode)} when you need to
+     * distinguish severities programmatically.
      *
      * @throws KsefXmlValidationException when the form code has no
      *     bundled XSD or the XSD itself fails to load.
      */
     public static List<String> validate(byte[] invoiceXml, FormCode formCode) {
+        List<ValidationIssue> issues = validateDetailed(invoiceXml, formCode);
+        List<String> stringified = new ArrayList<>(issues.size());
+        for (ValidationIssue issue : issues) {
+            stringified.add(issue.toString());
+        }
+        return List.copyOf(stringified);
+    }
+
+    /**
+     * Detailed validation — returns structured {@link ValidationIssue}
+     * records. Empty list means valid.
+     *
+     * @throws KsefXmlValidationException when the form code has no
+     *     bundled XSD or the XSD itself fails to load.
+     */
+    public static List<ValidationIssue> validateDetailed(byte[] invoiceXml, FormCode formCode) {
         Objects.requireNonNull(invoiceXml, ERR_NULL_XML);
         Objects.requireNonNull(formCode, ERR_NULL_FORM);
         Schema schema = SCHEMA_CACHE.computeIfAbsent(formCode.systemCode(),
                 KsefXmlValidator::loadSchemaOrThrow);
-        java.util.List<String> issues = new java.util.ArrayList<>();
+        List<ValidationIssue> issues = new ArrayList<>();
         Validator validator = schema.newValidator();
         try {
-            // XXE hardening on the validator itself — the schema is already
-            // hardened, but each Validator instance also accepts these props.
             validator.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             validator.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
         } catch (SAXException ignored) {
@@ -88,39 +154,98 @@ public final class KsefXmlValidator {
         validator.setErrorHandler(new org.xml.sax.helpers.DefaultHandler() {
             @Override
             public void warning(org.xml.sax.SAXParseException ex) {
-                issues.add(formatIssue("WARNING", ex));
+                issues.add(toIssue(Severity.WARNING, ex));
             }
             @Override
             public void error(org.xml.sax.SAXParseException ex) {
-                issues.add(formatIssue("ERROR", ex));
+                issues.add(toIssue(Severity.ERROR, ex));
             }
             @Override
             public void fatalError(org.xml.sax.SAXParseException ex) {
-                issues.add(formatIssue("FATAL", ex));
+                issues.add(toIssue(Severity.FATAL, ex));
             }
         });
         try {
             validator.validate(new StreamSource(new ByteArrayInputStream(invoiceXml)));
         } catch (SAXException | IOException ex) {
-            issues.add("FATAL" + ISSUE_SEPARATOR + ex.getMessage());
+            issues.add(new ValidationIssue(Severity.FATAL, -1, -1, ex.getMessage()));
         }
         return List.copyOf(issues);
     }
 
     /**
      * Validate-or-throw shorthand. Throws {@link KsefXmlValidationException}
-     * with all collected issues when {@code invoiceXml} fails validation.
+     * with all collected issues when {@code invoiceXml} fails validation
+     * with {@link Severity#ERROR} or {@link Severity#FATAL}.
+     * {@link Severity#WARNING}-only results pass through silently.
      */
     public static void validateOrThrow(byte[] invoiceXml, FormCode formCode) {
-        List<String> issues = validate(invoiceXml, formCode);
-        if (!issues.isEmpty()) {
-            throw new KsefXmlValidationException(ERR_VALIDATION_FAILED + String.join("; ", issues), issues);
+        List<ValidationIssue> issues = validateDetailed(invoiceXml, formCode);
+        boolean hasFailure = false;
+        List<String> failureMessages = new ArrayList<>();
+        for (ValidationIssue issue : issues) {
+            if (issue.severity() == Severity.ERROR || issue.severity() == Severity.FATAL) {
+                hasFailure = true;
+            }
+            failureMessages.add(issue.toString());
+        }
+        if (hasFailure) {
+            throw new KsefXmlValidationException(
+                    ERR_VALIDATION_FAILED + String.join("; ", failureMessages),
+                    List.copyOf(failureMessages));
         }
     }
 
-    private static String formatIssue(String severity, org.xml.sax.SAXParseException ex) {
-        return severity + LINE_LABEL + ex.getLineNumber() + COLUMN_LABEL + ex.getColumnNumber()
-                + ISSUE_SEPARATOR + ex.getMessage();
+    /**
+     * Pre-flight check for the W3C XML 1.0 banned-codepoint set per
+     * {@code ksef-docs/faktury/weryfikacja-faktury.md} (api-changelog
+     * v2.4.0, effective on PROD 2026-07-16). Rejects control
+     * characters U+0000–U+001F except TAB (U+0009), LF (U+000A) and
+     * CR (U+000D); rejects unpaired surrogates and U+FFFE / U+FFFF.
+     *
+     * <p>Opt-in: KSeF still rejects these server-side, so this check
+     * exists as a fail-fast option for callers that prefer to surface
+     * the banned codepoint locally before encryption + upload. Returns
+     * an empty list when the bytes contain no banned codepoints.
+     *
+     * <p>The input is parsed as UTF-8. If the bytes are not valid
+     * UTF-8 the malformed sequences are themselves treated as banned
+     * (decoded with {@link java.nio.charset.CodingErrorAction#REPLACE}
+     * is not used here — the malformed input itself is reported as a
+     * banned-codepoint violation).
+     */
+    public static List<String> checkRecommendedCharsets(byte[] invoiceXml) {
+        Objects.requireNonNull(invoiceXml, ERR_NULL_XML);
+        String text = new String(invoiceXml, StandardCharsets.UTF_8);
+        List<String> findings = new ArrayList<>();
+        int length = text.length();
+        int index = 0;
+        while (index < length) {
+            int codepoint = text.codePointAt(index);
+            if (isBannedCodepoint(codepoint)) {
+                findings.add(BANNED_CODEPOINT_PREFIX + String.format("%04X", codepoint)
+                        + LINE_LABEL + index);
+            }
+            index += Character.charCount(codepoint);
+        }
+        return List.copyOf(findings);
+    }
+
+    private static boolean isBannedCodepoint(int codepoint) {
+        if (codepoint == CODEPOINT_TAB || codepoint == CODEPOINT_LF || codepoint == CODEPOINT_CR) {
+            return false;
+        }
+        if (codepoint < FIRST_PRINTABLE_ASCII) {
+            return true;
+        }
+        if (codepoint >= SURROGATE_RANGE_START && codepoint <= SURROGATE_RANGE_END) {
+            return true;
+        }
+        return codepoint == NONCHARACTER_FFFE || codepoint == NONCHARACTER_FFFF;
+    }
+
+    private static ValidationIssue toIssue(Severity severity, org.xml.sax.SAXParseException ex) {
+        return new ValidationIssue(severity, ex.getLineNumber(), ex.getColumnNumber(), ex.getMessage());
     }
 
     private static Schema loadSchemaOrThrow(String systemCode) {
@@ -136,26 +261,13 @@ public final class KsefXmlValidator {
             }
             SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            // XXE hardening: explicitly forbid the parser from resolving DTD
-            // declarations or external entities. The classpath resolver below
-            // is the only sanctioned source of external XSD references.
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            // FA(3) schema is dense enough to trip the JDK default 5_000-node
-            // expansion ceiling. Raising it just for this factory is safe — the
-            // parser does not visit external (network) entities thanks to the
-            // ClasspathResourceResolver below; the only schemas it sees are
-            // the bundled ones.
             try {
                 factory.setProperty("http://www.oracle.com/xml/jaxp/properties/maxOccurLimit", 0);
             } catch (SAXException ignored) {
                 // Property unsupported in some JAXP impls — schema may still load.
             }
-            // KSeF FA(2)/(3) XSDs reference bundled "bazowe/*" via http:// URLs.
-            // Resolve those locally from /xsd/FA/bazowe/ on the classpath so the
-            // SchemaFactory does not attempt network access (the
-            // FEATURE_SECURE_PROCESSING above otherwise blocks it with
-            // "http access is not allowed").
             factory.setResourceResolver(new ClasspathResourceResolver());
             return factory.newSchema(new StreamSource(stream));
         } catch (SAXException | IOException ex) {
@@ -174,7 +286,6 @@ public final class KsefXmlValidator {
             if (systemId == null) {
                 return null;
             }
-            // Map http://...something.xsd → /xsd/FA/bazowe/something.xsd on the classpath.
             int lastSlash = systemId.lastIndexOf('/');
             String fileName = lastSlash >= 0 ? systemId.substring(lastSlash + 1) : systemId;
             InputStream resourceStream = KsefXmlValidator.class.getResourceAsStream(
