@@ -47,16 +47,23 @@ public final class FormCode {
     public static final FormCode FA3 = new FormCode("FA (3)", "1-0E", "FA");
 
     /**
-     * FA_PEF(3) — public-procurement invoice (UBL/Peppol), schema 2-1.
-     * Per {@code ksef-docs/srodowiska.md} accepted on TEST/DEMO/PROD.
+     * PEF(3) — public-procurement invoice (UBL/Peppol), schema 2-1.
+     * The session-open systemCode is {@code "PEF (3)"} per the
+     * canonical KSeF wire contract (matches upstream
+     * {@code CIRFMF/ksef-client-java SystemCode.PEF_3}). Accepted on
+     * TEST/DEMO/PROD when authenticated as a Peppol provider with
+     * {@code PefInvoiceWrite} permission. {@code srodowiska.md} lists
+     * the human-readable label {@code "FA_PEF (3)"} for the
+     * <em>document type</em>, but the wire-level systemCode in the
+     * open-session request stays {@code "PEF (3)"}.
      */
-    public static final FormCode PEF3 = new FormCode("FA_PEF (3)", "2-1", "PEF");
+    public static final FormCode PEF3 = new FormCode("PEF (3)", "2-1", "PEF");
 
     /**
-     * FA_KOR_PEF(3) — PEF correction invoice, schema 2-1.
-     * Per {@code ksef-docs/srodowiska.md} accepted on TEST/DEMO/PROD.
+     * PEF_KOR(3) — PEF correction invoice, schema 2-1. See {@link #PEF3}
+     * for the systemCode-vs-document-type-label note.
      */
-    public static final FormCode PEF_KOR3 = new FormCode("FA_KOR_PEF (3)", "2-1", "PEF");
+    public static final FormCode PEF_KOR3 = new FormCode("PEF_KOR (3)", "2-1", "PEF");
 
     private final String systemCode;
     private final String schemaVersion;

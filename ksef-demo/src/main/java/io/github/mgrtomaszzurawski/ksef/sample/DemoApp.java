@@ -24,6 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.runner.CertificateRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.DemoRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.InvoiceRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.LimitsRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.PeppolProviderRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.PeppolRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.PermissionRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.QrCodeRunner;
@@ -32,12 +33,17 @@ import io.github.mgrtomaszzurawski.ksef.sample.runner.SecurityRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.SessionRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.TestDataRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.TokenRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.VatUeProviderRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.util.IdentifierGenerators;
+import io.github.mgrtomaszzurawski.ksef.sample.util.SelfSignedCerts;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -80,33 +86,79 @@ public final class DemoApp {
         }
 
         KsefCredentials credentials = buildCredentials(properties);
-
         String resolvedEnvUrl = appendApiVersionIfMissing(properties.environment());
 
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(resolvedEnvUrl))
+        RunReport primaryReport = runPass(mode, state, credentials, resolvedEnvUrl,
+                properties.ksefToken(), properties.nipIdentifier(),
+                buildRunners(mode), "primary");
+
+        RunReport testEnvReport = null;
+        if (properties.hasTestEnvironment() && (mode == DemoMode.AUTH_SAFE || mode == DemoMode.FULL)) {
+            testEnvReport = runTestEnvPass(mode, state, properties);
+        }
+
+        state.setLastRunTimestamp(Instant.now().toString());
+        state.setLastRunMode(mode.name());
+        try {
+            state.save(STATE_FILE);
+        } catch (IOException exception) {
+            LOGGER.error("Failed to save state file: {}", exception.getMessage());
+        }
+
+        primaryReport.print();
+        int exitCode = primaryReport.exitCode();
+        if (testEnvReport != null) {
+            LOGGER.info("--- TEST environment pass ---");
+            testEnvReport.print();
+            exitCode = Math.max(exitCode, testEnvReport.exitCode());
+        }
+        System.exit(exitCode);
+    }
+
+    private static RunReport runPass(DemoMode mode, DemoState state, KsefCredentials credentials,
+                                      String envUrl, String ksefToken, String nipIdentifier,
+                                      List<DemoRunner> runners, String label) {
+        LOGGER.info("Running {} pass against {}", label, envUrl);
+        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(envUrl))
                 .credentials(credentials)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
-
             DemoContext context = new DemoContext(client, mode, state,
-                    properties.ksefToken(), properties.nipIdentifier(),
-                    credentials.identifier().type(), resolvedEnvUrl);
-
-            List<DemoRunner> runners = buildRunners(mode);
-            DemoSession session = new DemoSession(context);
-            RunReport report = session.execute(runners);
-
-            state.setLastRunTimestamp(Instant.now().toString());
-            state.setLastRunMode(mode.name());
-            try {
-                state.save(STATE_FILE);
-            } catch (IOException exception) {
-                LOGGER.error("Failed to save state file: {}", exception.getMessage());
-            }
-
-            report.print();
-            System.exit(report.exitCode());
+                    ksefToken, nipIdentifier, credentials.identifier().type(), envUrl);
+            return new DemoSession(context).execute(runners);
         }
+    }
+
+    private static RunReport runTestEnvPass(DemoMode mode, DemoState state, AppProperties properties) {
+        String testEnvUrl = appendApiVersionIfMissing(properties.testEnvironment());
+        // KSeF TEST env auto-creates contexts on first XAdES auth signed with a
+        // self-signed cert whose CN matches the desired identifier. We generate
+        // a fresh NIP and self-signed cert for each TEST run; the throw-away
+        // identity covers FA(2)/FA(3) form-code-with-NIP-context coverage that
+        // DEMO env cannot run with our pre-issued real-NIP token.
+        String randomNip = IdentifierGenerators.generateRandomNip();
+        SelfSignedCerts.GeneratedCertificate cert = SelfSignedCerts.forNip(randomNip);
+        KsefCredentials testCreds = new KsefCertificateCredentials(
+                cert.certificate(), cert.privateKey(), KsefIdentifier.nip(randomNip));
+        return runPass(mode, state, testCreds, testEnvUrl, null, randomNip,
+                buildTestEnvRunners(mode), "test-env");
+    }
+
+    private static List<DemoRunner> buildTestEnvRunners(DemoMode mode) {
+        // TEST env pass focuses on form-code/auth-context coverage that the
+        // primary DEMO/PROD pass cannot exercise with real-NIP creds. Avoid
+        // duplicating the breadth-of-API runners (AuthRunner, LimitsRunner,
+        // PermissionRunner, ...) — those are already covered by the primary
+        // pass and adding them here just doubles network traffic and result
+        // noise.
+        List<DemoRunner> runners = new ArrayList<>();
+        if (mode == DemoMode.FULL) {
+            runners.add(new BatchSessionRunner());
+            runners.add(new SessionRunner());
+            runners.add(new PeppolProviderRunner());
+            runners.add(new VatUeProviderRunner());
+        }
+        return runners;
     }
 
     private static DemoMode resolveMode(String[] args) {

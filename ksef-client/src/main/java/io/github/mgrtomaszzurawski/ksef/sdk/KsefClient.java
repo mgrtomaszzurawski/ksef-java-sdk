@@ -687,7 +687,7 @@ public final class KsefClient implements AutoCloseable {
      * <p>Use to autopin {@link io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy}
      * for token authentication: read this after the first {@link #authenticate()}
      * call, then build a fresh policy that whitelists exactly this IP and
-     * pass it via {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.KsefTokenCredentials}
+     * pass it via {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials}
      * on subsequent authentications.
      *
      * <p>Provided per Codex round-9 manual validation AUTH-15 — the
