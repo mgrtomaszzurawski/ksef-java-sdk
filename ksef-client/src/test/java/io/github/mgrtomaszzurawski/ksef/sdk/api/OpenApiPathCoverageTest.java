@@ -49,9 +49,11 @@ class OpenApiPathCoverageTest {
 
     @Test
     void everyOpenApiPath_isRegisteredAsExercisedByAWireMockTest() throws IOException {
+        // given / when
         Set<String> registeredPaths = registryPathsCovered();
         List<String> specPaths = loadSpecPaths();
 
+        // then
         List<String> missing = new ArrayList<>();
         for (String path : specPaths) {
             if (!registeredPaths.contains(path)) {
@@ -70,9 +72,11 @@ class OpenApiPathCoverageTest {
 
     @Test
     void registry_hasNoEntriesForPathsTheSpecHasRemoved() throws IOException {
+        // given / when
         Set<String> registeredPaths = registryPathsCovered();
         Set<String> specPaths = new HashSet<>(loadSpecPaths());
 
+        // then
         List<String> stale = new ArrayList<>();
         for (String registered : registeredPaths) {
             if (!specPaths.contains(registered)) {
@@ -117,9 +121,11 @@ class OpenApiPathCoverageTest {
      */
     @Test
     void everyOpenApiOperation_hasARegisteredTuple() throws IOException {
+        // given / when
         Set<String> registeredEntries = loadCoverageRegistry();
         java.util.Map<String, java.util.List<String>> methodsByPath = loadMethodsByPath();
 
+        // then
         List<String> missing = new ArrayList<>();
         for (var entry : methodsByPath.entrySet()) {
             String path = entry.getKey();
@@ -156,9 +162,11 @@ class OpenApiPathCoverageTest {
      */
     @Test
     void registry_hasNoPathOnlyEntriesForMultiMethodSpecPaths() throws IOException {
+        // given / when
         Set<String> registeredEntries = loadCoverageRegistry();
         java.util.Map<String, java.util.List<String>> methodsByPath = loadMethodsByPath();
 
+        // then
         List<String> overlyBroad = new ArrayList<>();
         for (var entry : methodsByPath.entrySet()) {
             String path = entry.getKey();
@@ -176,23 +184,27 @@ class OpenApiPathCoverageTest {
 
     @Test
     void specHasAtLeastTheKnownNumberOfPaths() throws IOException {
-        // Sanity check — the openapi.json must not silently shrink. Spec at
-        // 1.0.0 has 73 paths; soft floor of 50 to allow routine spec
+        // given / when — sanity check that openapi.json must not silently shrink.
+        // Spec at 1.0.0 has 73 paths; soft floor of 50 to allow routine spec
         // refinements without churn.
         List<String> specPaths = loadSpecPaths();
+
+        // then
         assertTrue(specPaths.size() >= 50,
                 "OpenAPI spec lost paths: only " + specPaths.size() + " present");
     }
 
     @Test
     void registry_namedTestClassesAllExist() throws IOException {
-        // Codex round-9 F2 — registry was a declaration gate that could not detect
+        // given — Codex round-9 F2 — registry was a declaration gate that could not detect
         // when a named test class was renamed/deleted. This second-stage check
         // walks src/test/java, builds the set of all simple test class names that
         // exist on disk, then asserts every comment-cited class name in the
         // registry actually corresponds to one of them.
         java.util.Set<String> testClassesOnDisk = scanTestClassNames();
         java.util.List<String> badRefs = new ArrayList<>();
+
+        // when
         try (var lines = Files.lines(Path.of("src/test/resources/" + COVERAGE_REGISTRY_RESOURCE))) {
             lines.forEach(rawLine -> {
                 int hash = rawLine.indexOf(COMMENT_MARKER);
@@ -215,6 +227,8 @@ class OpenApiPathCoverageTest {
                 }
             });
         }
+
+        // then
         if (!badRefs.isEmpty()) {
             fail("Registry references test classes that are not present in src/test/java:\n  - "
                     + String.join("\n  - ", badRefs));

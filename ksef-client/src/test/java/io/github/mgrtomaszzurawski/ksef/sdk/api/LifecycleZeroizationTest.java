@@ -74,6 +74,7 @@ class LifecycleZeroizationTest {
 
     @Test
     void ksefSession_close_isIdempotentEvenAfterZeroization(WireMockRuntimeInfo wmInfo) {
+        // given
         stubCloseAndStatusOk();
         HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, OffsetDateTime.now().plusHours(1));
@@ -81,9 +82,10 @@ class LifecycleZeroizationTest {
         KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF,
                 CryptoService.generateAesKey(), CryptoService.generateIv());
 
+        // when
         session.close();
 
-        // Second close on a zeroized session must not throw.
+        // then — second close on a zeroized session must not throw.
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(session::close);
     }
 
@@ -93,7 +95,7 @@ class LifecycleZeroizationTest {
             // given — force lazy auth so sessionContext + publicKeyCache are populated.
             client.authenticate();
             // sanity precondition — bearer token is held
-            assertEquals(KsefAuthFlowFixture.DEFAULT_TEST_TOKEN, client.bearerToken());
+            assertEquals(java.util.Optional.of(KsefAuthFlowFixture.DEFAULT_TEST_TOKEN), client.bearerToken());
 
             // when
             client.close();

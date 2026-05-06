@@ -45,9 +45,11 @@ public final class AsyncOperationAwaiter {
     private AsyncOperationAwaiter() { }
 
     /**
-     * Poll {@code statusFetcher} every {@code pollInterval} until
-     * {@code isTerminal} returns true or {@code timeout} elapses.
+     * Configuration for {@link #awaitTerminal(Config)}. Bundles the six
+     * parameters previously taken individually so callers can express
+     * the await contract without a wide positional argument list.
      *
+     * @param <S> the status type the fetcher yields
      * @param operationName diagnostic name for the timeout exception
      * @param statusFetcher supplies the current status object on each tick
      * @param isTerminal returns true when the status object represents a
@@ -57,33 +59,42 @@ public final class AsyncOperationAwaiter {
      * @param timeout overall budget; throws {@link KsefAsyncTimeoutException}
      *     when exceeded
      * @param pollInterval delay between polls (clamped to
-     *     [{@value #MIN_POLL_MILLIS}, {@value #MAX_POLL_MILLIS}] ms)
-     * @return the first terminal status object returned by
-     *     {@code statusFetcher}
+     *     [{@value #MIN_POLL_MILLIS}, {@value #MAX_POLL_MILLIS}] ms);
+     *     {@code null} uses {@link #DEFAULT_POLL_INTERVAL}
      */
-    public static <S> S awaitTerminal(String operationName,
-                                      Supplier<S> statusFetcher,
-                                      Function<S, Boolean> isTerminal,
-                                      Function<S, Object> statusCodeOf,
-                                      Duration timeout,
-                                      Duration pollInterval) {
-        Objects.requireNonNull(operationName, "operationName must not be null");
-        Objects.requireNonNull(statusFetcher, "statusFetcher must not be null");
-        Objects.requireNonNull(isTerminal, "isTerminal must not be null");
-        Objects.requireNonNull(timeout, "timeout must not be null");
-        long pollMillis = clamp(pollInterval == null
-                ? DEFAULT_POLL_INTERVAL.toMillis() : pollInterval.toMillis());
-        Instant deadline = Instant.now().plus(timeout);
-        S status = null;
+    public record Config<S>(String operationName,
+                             Supplier<S> statusFetcher,
+                             Function<S, Boolean> isTerminal,
+                             Function<S, Object> statusCodeOf,
+                             Duration timeout,
+                             Duration pollInterval) {
+        public Config {
+            Objects.requireNonNull(operationName, "operationName must not be null");
+            Objects.requireNonNull(statusFetcher, "statusFetcher must not be null");
+            Objects.requireNonNull(isTerminal, "isTerminal must not be null");
+            Objects.requireNonNull(timeout, "timeout must not be null");
+        }
+    }
+
+    /**
+     * Poll the configured status fetcher until {@code isTerminal} returns
+     * true or {@code timeout} elapses.
+     *
+     * @return the first terminal status object returned by the fetcher
+     */
+    public static <S> S awaitTerminal(Config<S> config) {
+        long pollMillis = clamp(config.pollInterval() == null
+                ? DEFAULT_POLL_INTERVAL.toMillis() : config.pollInterval().toMillis());
+        Instant deadline = Instant.now().plus(config.timeout());
         while (true) {
-            status = statusFetcher.get();
-            if (Boolean.TRUE.equals(isTerminal.apply(status))) {
+            S status = config.statusFetcher().get();
+            if (Boolean.TRUE.equals(config.isTerminal().apply(status))) {
                 return status;
             }
             if (Instant.now().isAfter(deadline)) {
-                Object lastCode = statusCodeOf == null ? "?" : statusCodeOf.apply(status);
+                Object lastCode = config.statusCodeOf() == null ? "?" : config.statusCodeOf().apply(status);
                 throw new KsefAsyncTimeoutException(String.format(
-                        ERR_TIMEOUT_FORMAT, operationName, timeout, lastCode));
+                        ERR_TIMEOUT_FORMAT, config.operationName(), config.timeout(), lastCode));
             }
             try {
                 Thread.sleep(pollMillis);

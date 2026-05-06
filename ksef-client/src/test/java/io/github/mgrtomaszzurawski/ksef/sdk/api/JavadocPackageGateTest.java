@@ -54,11 +54,15 @@ class JavadocPackageGateTest {
 
     @Test
     void javadocPackages_containNoInternalOrGeneratedSurface() throws IOException {
+        // given
         Path packagesFile = Paths.get(PACKAGES_FILE_PATH);
         Assumptions.assumeTrue(Files.isRegularFile(packagesFile),
                 "javadoc not generated yet (run mvn verify); test reported as SKIPPED rather than passing vacuously");
 
+        // when
         Set<String> documented = readDocumentedPackages(packagesFile);
+
+        // then
         assertFalse(documented.isEmpty(),
                 "javadoc packages file is empty — javadoc generation must produce at least the public SDK surface");
 
@@ -81,13 +85,16 @@ class JavadocPackageGateTest {
 
     @Test
     void javadocPackages_matchJpmsExportsExactly() throws IOException {
+        // given
         Path packagesFile = Paths.get(PACKAGES_FILE_PATH);
         org.junit.jupiter.api.Assumptions.assumeTrue(Files.isRegularFile(packagesFile),
                 "javadoc package listing not generated yet — run `mvn javadoc:javadoc` first");
 
+        // when
         Set<String> documented = readDocumentedPackages(packagesFile);
         Set<String> exported = parseExportedPackages();
 
+        // then
         List<String> documentedButNotExported = new ArrayList<>();
         for (String pkg : documented) {
             if (!exported.contains(pkg)) {

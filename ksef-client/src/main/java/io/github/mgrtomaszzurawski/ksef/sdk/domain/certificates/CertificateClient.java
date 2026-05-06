@@ -58,11 +58,12 @@ public interface CertificateClient {
                                                         java.time.Duration timeout) {
         EnrollCertificateResult result = enroll(builder);
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
-                "enrollCertificate",
-                () -> getEnrollmentStatus(result.referenceNumber()),
-                status -> status.status() != null && status.status().code() >= 200,
-                status -> status.status() == null ? null : status.status().code(),
-                timeout,
-                null);
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.Config<>(
+                        "enrollCertificate",
+                        () -> getEnrollmentStatus(result.referenceNumber()),
+                        status -> status.status() != null && status.status().code() >= 200,
+                        status -> status.status() == null ? null : status.status().code(),
+                        timeout,
+                        null));
     }
 }

@@ -63,6 +63,8 @@ public final class SelfSignedCerts {
     private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
     private static final String KEY_ALGORITHM = "RSA";
     private static final int KEY_SIZE_BITS = 2048;
+    /** X.509 serial number bit length. 64 bits is plenty of entropy for throw-away demo certs. */
+    private static final int SERIAL_BIT_LENGTH = 64;
     private static final long DEFAULT_VALIDITY_HOURS = 24L;
     private static final long ONE_HOUR_MILLIS = 60L * 60L * 1000L;
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -137,7 +139,7 @@ public final class SelfSignedCerts {
             Instant now = Instant.now();
             Date notBefore = Date.from(now.minusMillis(ONE_HOUR_MILLIS));
             Date notAfter = Date.from(now.plus(validity));
-            BigInteger serial = new BigInteger(64, RANDOM);
+            BigInteger serial = new BigInteger(SERIAL_BIT_LENGTH, RANDOM);
             JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
                     x500Name, serial, notBefore, notAfter, x500Name, keyPair.getPublic());
             ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM)

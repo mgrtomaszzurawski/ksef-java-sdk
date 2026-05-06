@@ -14,38 +14,61 @@ class UriRedactionTest {
 
     @Test
     void redactNipSegments_pathWithNip_masksNip() {
+        // given
         URI uri = URI.create("https://api-test.ksef.mf.gov.pl/v2/invoices/ksef/1234567890");
+
+        // when
         String redacted = UriRedaction.redactNipSegments(uri);
+
+        // then
         assertFalse(redacted.contains("1234567890"));
         assertTrue(redacted.contains("***7890"));
     }
 
     @Test
     void redactNipSegments_pathWithKsefNumber_masksFullSegment() {
+        // given
         URI uri = URI.create("https://api.ksef.mf.gov.pl/v2/invoices/ksef/1234567890-20260505-AB-1234");
+
+        // when
         String redacted = UriRedaction.redactNipSegments(uri);
+
+        // then
         assertFalse(redacted.contains("1234567890-20260505"));
         assertTrue(redacted.contains("***1234"));
     }
 
     @Test
     void redactNipSegments_pathWithoutNip_unchangedExceptScheme() {
+        // given
         URI uri = URI.create("https://api.ksef.mf.gov.pl/v2/auth/challenge");
+
+        // when
         String redacted = UriRedaction.redactNipSegments(uri);
+
+        // then
         assertEquals("https://api.ksef.mf.gov.pl/v2/auth/challenge", redacted);
     }
 
     @Test
     void redactNipSegments_uriWithQuery_redactsQuery() {
+        // given
         URI uri = URI.create("https://blob.example/path?sig=secret&se=2026");
+
+        // when
         String redacted = UriRedaction.redactNipSegments(uri);
+
+        // then
         assertFalse(redacted.contains("sig=secret"));
         assertTrue(redacted.contains("<redacted>"));
     }
 
     @Test
     void redactQuery_noQuery_returnsOriginal() {
+        // given
         URI uri = URI.create("https://api.ksef.mf.gov.pl/v2/auth");
+
+        // when / then
         assertEquals("https://api.ksef.mf.gov.pl/v2/auth", UriRedaction.redactQuery(uri));
     }
 }

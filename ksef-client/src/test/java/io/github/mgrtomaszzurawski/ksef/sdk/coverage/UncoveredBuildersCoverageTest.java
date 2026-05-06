@@ -88,28 +88,50 @@ class UncoveredBuildersCoverageTest {
 
     @Test
     void sendInvoiceBuilder_toBuilder_preservesContent() {
-        SendInvoiceBuilder builder = SendInvoiceBuilder.create(FAKE_INVOICE, FAKE_AES, FAKE_IV)
+        // given
+        SendInvoiceBuilder original = SendInvoiceBuilder.create(FAKE_INVOICE, FAKE_AES, FAKE_IV)
                 .offline();
-        SendInvoiceBuilder copy = builder.toBuilder();
-        assertNotNull(copy.build());
+
+        // when
+        SendInvoiceBuilder copy = original.toBuilder();
+        var copiedRequest = copy.build();
+
+        // then — toBuilder() must preserve offlineMode flag
+        assertEquals(true, copiedRequest.offlineMode(),
+                "toBuilder() must preserve offline flag from the source builder");
     }
 
     @Test
     void incrementalSyncPlanBuilder_to_andOtherSetters() {
+        // given
+        Path syncDir = Path.of("/tmp/sync");
+
+        // when
         IncrementalSyncPlan plan = IncrementalSyncPlan.builder()
                 .from(FROM)
                 .to(TO)
                 .subjectTypes(InvoiceQuerySubjectType.SUBJECT1)
-                .outputDirectory(Path.of("/tmp/sync"))
+                .outputDirectory(syncDir)
                 .fullContent(true)
                 .build();
+
+        // then — every setter must round-trip into the built plan
+        assertEquals(FROM, plan.from());
         assertEquals(TO, plan.to());
+        assertEquals(syncDir, plan.outputDirectory());
+        assertEquals(true, plan.fullContent());
+        assertTrue(plan.subjectTypes().contains(InvoiceQuerySubjectType.SUBJECT1),
+                "subjectTypes setter must add SUBJECT1");
     }
 
     @Test
     void sessionsQueryFilterBuilder_allOptionalSetters() {
+        // given
+        String reference = "20260418-SE-1234567890-AAAAAAAAAA-01";
+
+        // when
         SessionsQueryFilter filter = SessionsQueryFilter.forBatch()
-                .referenceNumber("20260418-SE-1234567890-AAAAAAAAAA-01")
+                .referenceNumber(reference)
                 .dateCreatedFrom(FROM)
                 .dateCreatedTo(TO)
                 .dateClosedFrom(FROM)
@@ -117,8 +139,16 @@ class UncoveredBuildersCoverageTest {
                 .dateModifiedFrom(FROM)
                 .dateModifiedTo(TO)
                 .build();
+
+        // then — every optional setter must round-trip into the built filter
         assertEquals(KsefSessionType.BATCH, filter.sessionType());
+        assertEquals(reference, filter.referenceNumber());
         assertEquals(FROM, filter.dateCreatedFrom());
+        assertEquals(TO, filter.dateCreatedTo());
+        assertEquals(FROM, filter.dateClosedFrom());
+        assertEquals(TO, filter.dateClosedTo());
+        assertEquals(FROM, filter.dateModifiedFrom());
+        assertEquals(TO, filter.dateModifiedTo());
     }
 
     @Test

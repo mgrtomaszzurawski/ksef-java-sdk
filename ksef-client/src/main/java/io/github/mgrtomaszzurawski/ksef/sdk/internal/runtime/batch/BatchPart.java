@@ -71,14 +71,27 @@ public sealed interface BatchPart {
         }
     }
 
-    /** Encrypted bytes held in heap. */
+    /**
+     * Encrypted bytes held in heap.
+     *
+     * <p><strong>Memory contract:</strong> the {@code bytes} component is
+     * stored by reference (no defensive clone). This record is internal
+     * (lives in non-exported {@code sdk.internal.runtime.batch}) and is
+     * only constructed by {@code BatchPackageBuilder.ChunkSink} from a
+     * just-encrypted buffer that has no other live references. The
+     * accessor likewise returns the internal buffer; the upload path
+     * passes it to {@code BodyPublishers.ofByteArray} which performs its
+     * own internal copy. Skipping the defensive clones keeps peak heap
+     * at 1× per part instead of 3× (per Codex round-9 fresh review).
+     * The {@code hash} component is small (32 bytes) and stays defensive
+     * since it is a security-sensitive integrity check.
+     */
     record InMemoryPart(int ordinalNumber, byte[] hash, byte[] bytes) implements BatchPart {
 
         public InMemoryPart {
             Objects.requireNonNull(hash, "hash must not be null");
             Objects.requireNonNull(bytes, "bytes must not be null");
             hash = hash.clone();
-            bytes = bytes.clone();
         }
 
         @Override
@@ -91,15 +104,20 @@ public sealed interface BatchPart {
             return hash.clone();
         }
 
-        public byte[] bytes() {
-            return bytes.clone();
-        }
-
         @Override
         public void cleanup() {
             // GC — nothing to release.
         }
 
+        /**
+         * Equality by SHA-256 hash + ordinal — does NOT walk the bytes
+         * payload (which can be up to 100 MB per part / 5 GiB across
+         * a full batch). Two parts with matching ordinal and matching
+         * SHA-256 are cryptographically equivalent (collision-resistant
+         * hash); the explicit byte-level comparison the JDK record
+         * default would emit is unnecessary and a memory-pressure
+         * footgun for large batches.
+         */
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -109,15 +127,13 @@ public sealed interface BatchPart {
                 return false;
             }
             return ordinalNumber == other.ordinalNumber
-                    && Arrays.equals(hash, other.hash)
-                    && Arrays.equals(bytes, other.bytes);
+                    && Arrays.equals(hash, other.hash);
         }
 
         @Override
         public int hashCode() {
             int result = Integer.hashCode(ordinalNumber);
             result = 31 * result + Arrays.hashCode(hash);
-            result = 31 * result + Arrays.hashCode(bytes);
             return result;
         }
     }

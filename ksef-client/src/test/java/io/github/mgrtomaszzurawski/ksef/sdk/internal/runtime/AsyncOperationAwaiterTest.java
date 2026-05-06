@@ -18,30 +18,37 @@ class AsyncOperationAwaiterTest {
 
     @Test
     void awaitTerminal_returnsAsSoonAsTerminalReached() {
+        // given
         AtomicInteger ticks = new AtomicInteger();
-        Integer result = AsyncOperationAwaiter.awaitTerminal(
-                "test",
-                () -> ticks.incrementAndGet(),
-                value -> value >= 3,
-                value -> value,
-                Duration.ofSeconds(5),
-                Duration.ofMillis(100));
 
+        // when
+        Integer result = AsyncOperationAwaiter.awaitTerminal(
+                new AsyncOperationAwaiter.Config<>(
+                        "test",
+                        () -> ticks.incrementAndGet(),
+                        value -> value >= 3,
+                        value -> value,
+                        Duration.ofSeconds(5),
+                        Duration.ofMillis(100)));
+
+        // then
         assertEquals(3, result);
         assertTrue(ticks.get() >= 3);
     }
 
     @Test
     void awaitTerminal_throwsOnTimeoutWithStatusCodeInMessage() {
+        // when / then
         io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException ex = assertThrows(
                 io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException.class,
                 () -> AsyncOperationAwaiter.awaitTerminal(
-                        "neverTerminal",
-                        () -> 42,
-                        value -> false,
-                        value -> value,
-                        Duration.ofMillis(300),
-                        Duration.ofMillis(100)));
+                        new AsyncOperationAwaiter.Config<>(
+                                "neverTerminal",
+                                () -> 42,
+                                value -> false,
+                                value -> value,
+                                Duration.ofMillis(300),
+                                Duration.ofMillis(100))));
         assertTrue(ex.getMessage().contains("neverTerminal"),
                 "operation name in timeout message: " + ex.getMessage());
         assertTrue(ex.getMessage().contains("42"),
@@ -50,14 +57,17 @@ class AsyncOperationAwaiterTest {
 
     @Test
     void awaitTerminal_clampsPollIntervalToMinimum() {
-        // Below-minimum poll interval still works (clamped, not rejected).
+        // given / when — below-minimum poll interval still works (clamped, not rejected)
         Integer result = AsyncOperationAwaiter.awaitTerminal(
-                "test",
-                () -> 1,
-                value -> true,
-                value -> value,
-                Duration.ofSeconds(1),
-                Duration.ofMillis(1));
+                new AsyncOperationAwaiter.Config<>(
+                        "test",
+                        () -> 1,
+                        value -> true,
+                        value -> value,
+                        Duration.ofSeconds(1),
+                        Duration.ofMillis(1)));
+
+        // then
         assertEquals(1, result);
     }
 }

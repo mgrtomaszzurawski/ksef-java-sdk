@@ -48,9 +48,12 @@ class BatchAssemblyModeTest {
 
     @Test
     void onDiskDefault_writesPartsToJavaIoTmpdir() throws Exception {
+        // when
         BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
                 threeInvoices(), aesKey(), aesIv(),
                 SMALL_PART_SIZE, BatchAssemblyMode.onDisk());
+
+        // then
         try {
             Path tmpdir = Path.of(System.getProperty("java.io.tmpdir"));
             for (BatchPart part : pkg.parts()) {
@@ -65,9 +68,12 @@ class BatchAssemblyModeTest {
 
     @Test
     void onDiskCustomPath_writesPartsToSuppliedDirectory(@TempDir Path customDir) throws Exception {
+        // when
         BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
                 threeInvoices(), aesKey(), aesIv(),
                 SMALL_PART_SIZE, BatchAssemblyMode.onDisk(customDir));
+
+        // then
         try {
             for (BatchPart part : pkg.parts()) {
                 BatchPart.OnDiskPart onDisk = assertInstanceOf(BatchPart.OnDiskPart.class, part);
@@ -80,6 +86,7 @@ class BatchAssemblyModeTest {
 
     @Test
     void onDisk_cleanup_deletesAllPartFiles(@TempDir Path customDir) {
+        // given
         BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
                 threeInvoices(), aesKey(), aesIv(),
                 SMALL_PART_SIZE, BatchAssemblyMode.onDisk(customDir));
@@ -88,8 +95,10 @@ class BatchAssemblyModeTest {
             paths.add(((BatchPart.OnDiskPart) part).path());
         }
 
+        // when
         pkg.cleanup();
 
+        // then
         for (Path path : paths) {
             assertFalse(Files.exists(path), "cleanup must delete part file: " + path);
         }
@@ -97,9 +106,12 @@ class BatchAssemblyModeTest {
 
     @Test
     void inMemory_holdsBytesInHeap_andDecryptsToOriginalZip() throws Exception {
+        // when
         BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
                 threeInvoices(), aesKey(), aesIv(),
                 SMALL_PART_SIZE, BatchAssemblyMode.inMemory(10_000_000));
+
+        // then
         try {
             for (BatchPart part : pkg.parts()) {
                 BatchPart.InMemoryPart inMem = assertInstanceOf(BatchPart.InMemoryPart.class, part);
@@ -128,7 +140,7 @@ class BatchAssemblyModeTest {
 
     @Test
     void inMemory_capExceeded_failsFast() {
-        // Tiny cap + small chunk size guarantees the second chunk's emit
+        // when / then — tiny cap + small chunk size guarantees the second chunk's emit
         // pushes total above the cap.
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> BatchPackageBuilder.build(
@@ -140,6 +152,7 @@ class BatchAssemblyModeTest {
 
     @Test
     void inMemory_negativeCap_rejectedAtConstruction() {
+        // when / then
         assertThrows(IllegalArgumentException.class,
                 () -> BatchAssemblyMode.inMemory(-1));
         assertThrows(IllegalArgumentException.class,
@@ -148,21 +161,26 @@ class BatchAssemblyModeTest {
 
     @Test
     void onDisk_nullPath_rejectedAtConstruction() {
+        // when / then
         assertThrows(NullPointerException.class,
                 () -> BatchAssemblyMode.onDisk(null));
     }
 
     @Test
     void specHashes_areIdenticalAcrossModes() throws Exception {
-        // Stream-through pipeline must produce byte-identical results
+        // given — stream-through pipeline must produce byte-identical results
         // regardless of where the encrypted parts land. Hashes anchored
         // to plaintext (full-zip + per-part-ciphertext) cannot drift
         // between OnDisk and InMemory.
         List<byte[]> invoices = threeInvoices();
+
+        // when
         BatchPackageBuilder.BatchPackage diskPkg = BatchPackageBuilder.build(
                 invoices, aesKey(), aesIv(), SMALL_PART_SIZE, BatchAssemblyMode.onDisk());
         BatchPackageBuilder.BatchPackage memPkg = BatchPackageBuilder.build(
                 invoices, aesKey(), aesIv(), SMALL_PART_SIZE, BatchAssemblyMode.inMemory(10_000_000));
+
+        // then
         try {
             assertArrayEquals(diskPkg.spec().fileHash(), memPkg.spec().fileHash());
             assertEquals(diskPkg.spec().fileSize(), memPkg.spec().fileSize());

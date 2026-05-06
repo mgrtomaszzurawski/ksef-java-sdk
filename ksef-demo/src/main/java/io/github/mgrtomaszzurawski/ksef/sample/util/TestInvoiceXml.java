@@ -70,6 +70,7 @@ public final class TestInvoiceXml {
     private static final String DEFAULT_BUYER_REFERENCE = "BR-DEMO";
     private static final String DEFAULT_IBAN = "PL12345678901234567890123456";
     private static final String INVOICE_NUMBER_PREFIX = "SDK-DEMO-";
+    private static final int DEFAULT_PAYMENT_TERM_DAYS = 14;
     private static final String ERR_TEMPLATE_NOT_FOUND = "Invoice template not found on classpath: ";
     private static final String ERR_UNKNOWN_FORM_CODE = "Unknown FormCode for fixture generation: ";
     private static final String ERR_PEF_KOR_REQUIRES_KSEF_NUMBER =
@@ -162,7 +163,7 @@ public final class TestInvoiceXml {
 
     private static Map<String, String> placeholders(String sellerNip, String priorKsefNumber) {
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-        String dueDate = LocalDate.now().plusDays(14).format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String dueDate = LocalDate.now().plusDays(DEFAULT_PAYMENT_TERM_DAYS).format(DateTimeFormatter.ISO_LOCAL_DATE);
         String datetime = OffsetDateTime.now(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
         String invoiceNumber = INVOICE_NUMBER_PREFIX + System.nanoTime();

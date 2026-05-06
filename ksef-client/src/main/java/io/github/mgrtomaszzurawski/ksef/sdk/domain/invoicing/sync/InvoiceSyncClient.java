@@ -132,12 +132,11 @@ public final class InvoiceSyncClient {
                 .map(SyncCheckpoint::cursor)
                 .orElse(plan.from());
 
-        Set<String> seenKsefNumbers = new HashSet<>();
+        SubjectSyncContext ctx = new SubjectSyncContext(plan, subjectType, store, sink, new HashSet<>());
         long processed = 0;
 
         for (int windowIndex = 0; windowIndex < MAX_WINDOWS_PER_SUBJECT; windowIndex++) {
-            WindowOutcome outcome = processOneWindow(plan, subjectType, store, sink,
-                    cursor, windowIndex, seenKsefNumbers);
+            WindowOutcome outcome = processOneWindow(ctx, cursor, windowIndex);
             processed += outcome.processedDelta();
             if (outcome.advancedCursor() == null) {
                 break;
@@ -148,14 +147,23 @@ public final class InvoiceSyncClient {
         return processed;
     }
 
-    private WindowOutcome processOneWindow(IncrementalSyncPlan plan,
-                                           InvoiceQuerySubjectType subjectType,
-                                           CheckpointStore store,
-                                           InvoiceSink sink,
+    /**
+     * Per-subject-type sync context — bundles the immutable parameters
+     * shared across all windows of one subject type so the per-window
+     * methods stay narrow.
+     */
+    private record SubjectSyncContext(IncrementalSyncPlan plan,
+                                      InvoiceQuerySubjectType subjectType,
+                                      CheckpointStore store,
+                                      InvoiceSink sink,
+                                      Set<String> seenKsefNumbers) { }
+
+    private WindowOutcome processOneWindow(SubjectSyncContext ctx,
                                            OffsetDateTime cursor,
-                                           int windowIndex,
-                                           Set<String> seenKsefNumbers) {
-        InvoiceQueryBuilder query = subjectQuery(subjectType, plan.dateType(), cursor);
+                                           int windowIndex) {
+        IncrementalSyncPlan plan = ctx.plan();
+        InvoiceQuerySubjectType subjectType = ctx.subjectType();
+        InvoiceQueryBuilder query = subjectQuery(subjectType, IncrementalSyncPlan.DATE_TYPE, cursor);
         if (plan.to() != null) {
             query.dateTo(plan.to());
         }
@@ -187,7 +195,7 @@ public final class InvoiceSyncClient {
             if (metadatas.isEmpty()) {
                 throw new KsefException(String.format(Locale.ROOT, ERR_METADATA_EMPTY, reportedCount), null);
             }
-            long dispatched = dispatchInvoices(metadatas, dir, plan.fullContent(), sink, seenKsefNumbers, subjectType);
+            long dispatched = dispatchInvoices(ctx, metadatas, dir);
 
             // Commit-after-accept: only persist the checkpoint after every
             // invoice in this package was accepted by the sink. If the
@@ -197,7 +205,7 @@ public final class InvoiceSyncClient {
             OffsetDateTime nextCursor = pkg.continuationCursor();
             boolean truncated = Boolean.TRUE.equals(pkg.isTruncated());
             if (nextCursor != null && (cursor == null || !nextCursor.equals(cursor))) {
-                store.save(subjectType, new SyncCheckpoint(nextCursor, truncated));
+                ctx.store().save(subjectType, new SyncCheckpoint(nextCursor, truncated));
                 return WindowOutcome.advance(dispatched, nextCursor);
             }
             LOGGER.debug("[sync {} window {}] cursor did not advance — stop", subjectType, windowIndex);
@@ -207,21 +215,18 @@ public final class InvoiceSyncClient {
         }
     }
 
-    private long dispatchInvoices(List<InvoiceMetadata> metadatas,
-                                  ExportedInvoiceDirectory dir,
-                                  boolean fullContent,
-                                  InvoiceSink sink,
-                                  Set<String> seenKsefNumbers,
-                                  InvoiceQuerySubjectType subjectType) {
+    private long dispatchInvoices(SubjectSyncContext ctx,
+                                  List<InvoiceMetadata> metadatas,
+                                  ExportedInvoiceDirectory dir) {
         long dispatched = 0;
         for (InvoiceMetadata metadata : metadatas) {
-            KsefNumber typed = parsableUnseenKsefNumber(metadata, seenKsefNumbers, subjectType);
+            KsefNumber typed = parsableUnseenKsefNumber(metadata, ctx.seenKsefNumbers(), ctx.subjectType());
             if (typed == null) {
                 continue;
             }
-            Path xmlPath = fullContent ? matchInvoiceXml(dir, typed, (int) dispatched) : null;
-            sink.accept(typed, metadata, xmlPath);
-            seenKsefNumbers.add(metadata.ksefNumber());
+            Path xmlPath = ctx.plan().fullContent() ? matchInvoiceXml(dir, typed, (int) dispatched) : null;
+            ctx.sink().accept(typed, metadata, xmlPath);
+            ctx.seenKsefNumbers().add(metadata.ksefNumber());
             dispatched++;
         }
         return dispatched;

@@ -88,9 +88,10 @@ public final class DemoApp {
         KsefCredentials credentials = buildCredentials(properties);
         String resolvedEnvUrl = appendApiVersionIfMissing(properties.environment());
 
-        RunReport primaryReport = runPass(mode, state, credentials, resolvedEnvUrl,
+        RunReport primaryReport = runPass(new PassConfig(
+                mode, state, credentials, resolvedEnvUrl,
                 properties.ksefToken(), properties.nipIdentifier(),
-                buildRunners(mode), "primary");
+                buildRunners(mode), "primary"));
 
         RunReport testEnvReport = null;
         if (properties.hasTestEnvironment() && (mode == DemoMode.AUTH_SAFE || mode == DemoMode.FULL)) {
@@ -115,17 +116,24 @@ public final class DemoApp {
         System.exit(exitCode);
     }
 
-    private static RunReport runPass(DemoMode mode, DemoState state, KsefCredentials credentials,
-                                      String envUrl, String ksefToken, String nipIdentifier,
-                                      List<DemoRunner> runners, String label) {
-        LOGGER.info("Running {} pass against {}", label, envUrl);
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(envUrl))
-                .credentials(credentials)
+    /**
+     * Bundle of parameters for {@link #runPass(PassConfig)}. Reduces the
+     * arity of the previously 8-parameter method to one config record.
+     */
+    private record PassConfig(DemoMode mode, DemoState state, KsefCredentials credentials,
+                              String envUrl, String ksefToken, String nipIdentifier,
+                              List<DemoRunner> runners, String label) { }
+
+    private static RunReport runPass(PassConfig config) {
+        LOGGER.info("Running {} pass against {}", config.label(), config.envUrl());
+        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(config.envUrl()))
+                .credentials(config.credentials())
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
-            DemoContext context = new DemoContext(client, mode, state,
-                    ksefToken, nipIdentifier, credentials.identifier().type(), envUrl);
-            return new DemoSession(context).execute(runners);
+            DemoContext context = new DemoContext(client, config.mode(), config.state(),
+                    config.ksefToken(), config.nipIdentifier(),
+                    config.credentials().identifier().type(), config.envUrl());
+            return new DemoSession(context).execute(config.runners());
         }
     }
 
@@ -140,8 +148,8 @@ public final class DemoApp {
         SelfSignedCerts.GeneratedCertificate cert = SelfSignedCerts.forNip(randomNip);
         KsefCredentials testCreds = new KsefCertificateCredentials(
                 cert.certificate(), cert.privateKey(), KsefIdentifier.nip(randomNip));
-        return runPass(mode, state, testCreds, testEnvUrl, null, randomNip,
-                buildTestEnvRunners(mode), "test-env");
+        return runPass(new PassConfig(mode, state, testCreds, testEnvUrl, null, randomNip,
+                buildTestEnvRunners(mode), "test-env"));
     }
 
     private static List<DemoRunner> buildTestEnvRunners(DemoMode mode) {

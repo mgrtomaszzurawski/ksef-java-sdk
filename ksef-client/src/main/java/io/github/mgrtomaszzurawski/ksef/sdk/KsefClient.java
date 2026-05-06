@@ -72,6 +72,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import org.openapitools.jackson.nullable.JsonNullableModule;
@@ -195,9 +196,15 @@ public final class KsefClient implements AutoCloseable {
         // Best-effort recovery — if a previous JVM crashed mid-batch, its
         // encrypted part files are still in /tmp. Delete anything older than
         // the orphan-age cutoff that matches the SDK's exact prefix.
-        io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.purgeOrphans(
-                null,
-                io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.DEFAULT_ORPHAN_AGE);
+        // Run async on a daemon thread so a slow Files.list on a large /tmp
+        // does not block KsefClient construction.
+        Thread cleanupThread = new Thread(() ->
+                io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.purgeOrphans(
+                        null,
+                        io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.DEFAULT_ORPHAN_AGE),
+                "ksef-batch-temp-cleanup");
+        cleanupThread.setDaemon(true);
+        cleanupThread.start();
     }
 
     /**
@@ -580,17 +587,21 @@ public final class KsefClient implements AutoCloseable {
      * example, probing test/diagnostic endpoints, or feeding tokens
      * into a third-party HTTP framework).
      *
-     * <p>Returns {@code null} when the client is not authenticated.
+     * <p>Returns an empty {@link Optional} when no token is available.
      * Triggers lazy authentication if needed.
      *
      * @apiNote Advanced. Most consumers should not need this — domain
      *     clients ({@code client.invoices()}, {@code client.permissions()},
      *     etc.) handle authentication internally.
+     *
+     * @return the active bearer token, or empty if the session has none
+     *
+     * @since 1.0.0
      */
-    public synchronized String bearerToken() {
+    public synchronized Optional<String> bearerToken() {
         ensureOpen();
         ensureAuthenticated();
-        return sessionContext.token();
+        return Optional.ofNullable(sessionContext.token());
     }
 
     /**
@@ -704,12 +715,13 @@ public final class KsefClient implements AutoCloseable {
      * {@code requestChallenge()} response is internal-only by design,
      * but the {@code clientIp} field it carries is operationally useful.
      *
-     * @return the client IP from the latest challenge, or {@code null}
+     * @return the client IP from the latest challenge, or empty if no
+     *     challenge has been issued yet
      *
      * @since 1.0.0
      */
-    public String lastChallengeClientIp() {
-        return lastChallengeClientIp;
+    public Optional<String> lastChallengeClientIp() {
+        return Optional.ofNullable(lastChallengeClientIp);
     }
 
     /**

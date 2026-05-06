@@ -64,7 +64,10 @@ class JpmsExportsCoverageTest {
 
     @Test
     void everyExportedPackageHasAtLeastOnePublicClass() throws IOException {
+        // given / when
         Set<String> exportedPackages = parseExportedPackages();
+
+        // then
         assertFalse(exportedPackages.isEmpty(),
                 "module-info.java declared no exports — surface gate is vacuous");
 
@@ -82,9 +85,11 @@ class JpmsExportsCoverageTest {
 
     @Test
     void everyPublicSdkPackageIsExported() throws IOException {
+        // given / when
         Set<String> exportedPackages = parseExportedPackages();
         Set<String> publicPackagesWithClasses = scanSdkPackagesContainingPublicClasses();
 
+        // then
         List<String> unexported = new ArrayList<>();
         for (String pkg : publicPackagesWithClasses) {
             if (pkg.startsWith(INTERNAL_PACKAGE_PREFIX)) {

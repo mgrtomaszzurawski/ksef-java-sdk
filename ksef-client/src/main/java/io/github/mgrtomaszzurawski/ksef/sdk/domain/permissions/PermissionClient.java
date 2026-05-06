@@ -148,11 +148,12 @@ public interface PermissionClient {
     private io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
             awaitOperationTerminal(String referenceNumber, java.time.Duration timeout, String opName) {
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
-                opName,
-                () -> getOperationStatus(referenceNumber),
-                status -> status.status() != null && status.status().code() >= TERMINAL_STATUS_CODE_THRESHOLD,
-                status -> status.status() == null ? null : status.status().code(),
-                timeout,
-                null);
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.Config<>(
+                        opName,
+                        () -> getOperationStatus(referenceNumber),
+                        status -> status.status() != null && status.status().code() >= TERMINAL_STATUS_CODE_THRESHOLD,
+                        status -> status.status() == null ? null : status.status().code(),
+                        timeout,
+                        null));
     }
 }

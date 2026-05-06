@@ -240,7 +240,8 @@ public final class BatchPackageBuilder {
      */
     private static final class ChunkSink extends OutputStream {
 
-        private final byte[] chunkBuffer;
+        private final int chunkBufferSize;
+        private byte[] chunkBuffer;
         private final byte[] aesKey;
         private final byte[] initVector;
         private final BatchAssemblyMode mode;
@@ -256,14 +257,24 @@ public final class BatchPackageBuilder {
             // who pick inMemory(50MB) do not get a 100MB-default chunk
             // buffer allocated regardless. For OnDisk mode the buffer
             // stays at maxPartSize (default 100 MB).
+            //
+            // Lazy allocation: chunkBuffer is allocated on the first write
+            // (see ensureChunkBuffer) so a tiny ZIP that fits in << 100MB
+            // never pays the 100MB allocation cost.
             long bufferSize = maxPartSize;
             if (mode instanceof BatchAssemblyMode.InMemory inMem) {
                 bufferSize = Math.min(maxPartSize, inMem.maxBytes());
             }
-            this.chunkBuffer = new byte[(int) Math.min(bufferSize, Integer.MAX_VALUE)];
+            this.chunkBufferSize = (int) Math.min(bufferSize, Integer.MAX_VALUE);
             this.aesKey = aesKey.clone();
             this.initVector = initVector.clone();
             this.mode = mode;
+        }
+
+        private void ensureChunkBuffer() {
+            if (chunkBuffer == null) {
+                chunkBuffer = new byte[chunkBufferSize];
+            }
         }
 
         @Override
@@ -274,6 +285,7 @@ public final class BatchPackageBuilder {
 
         @Override
         public void write(byte[] buffer, int offset, int length) throws IOException {
+            ensureChunkBuffer();
             int remaining = length;
             int from = offset;
             while (remaining > 0) {

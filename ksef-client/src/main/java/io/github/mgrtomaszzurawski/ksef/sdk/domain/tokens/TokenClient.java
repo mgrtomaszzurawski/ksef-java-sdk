@@ -48,14 +48,15 @@ public interface TokenClient {
     default TokenDetail generateAndAwait(TokenGenerateBuilder tokenBuilder, java.time.Duration timeout) {
         GenerateTokenResult result = generate(tokenBuilder);
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
-                "generateToken",
-                () -> getStatus(result.referenceNumber()),
-                detail -> detail.status() != null
-                        && (detail.status() == io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus.ACTIVE
-                            || detail.status() == io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus.FAILED),
-                TokenDetail::status,
-                timeout,
-                null);
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.Config<>(
+                        "generateToken",
+                        () -> getStatus(result.referenceNumber()),
+                        detail -> detail.status() != null
+                                && (detail.status() == io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus.ACTIVE
+                                    || detail.status() == io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus.FAILED),
+                        TokenDetail::status,
+                        timeout,
+                        null));
     }
 
 }

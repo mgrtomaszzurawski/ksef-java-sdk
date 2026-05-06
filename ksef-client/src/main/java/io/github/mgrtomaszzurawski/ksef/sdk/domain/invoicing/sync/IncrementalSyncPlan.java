@@ -66,15 +66,6 @@ public record IncrementalSyncPlan(
         subjectTypes = List.copyOf(subjectTypes);
     }
 
-    /**
-     * @return always {@link #DATE_TYPE} — kept as a method (rather than direct
-     *     field access) so call-sites compile after the record component was
-     *     removed.
-     */
-    public InvoiceQueryDateType dateType() {
-        return DATE_TYPE;
-    }
-
     public static Builder builder() {
         return new Builder();
     }
