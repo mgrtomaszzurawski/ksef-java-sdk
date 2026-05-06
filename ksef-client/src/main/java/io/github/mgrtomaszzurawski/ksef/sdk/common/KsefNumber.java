@@ -36,8 +36,7 @@ import java.util.Objects;
  * {@link String#toUpperCase(java.util.Locale)} with {@link java.util.Locale#ROOT}
  * before parsing.
  *
- * <p>Spec reference: REQ-SESS-18, REQ-SESS-19, REQ-SESS-20 in
- * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}.
+ * <p>Spec reference: REQ-SESS-18, REQ-SESS-19, REQ-SESS-20.
  *
  * @since 1.0.0
  */

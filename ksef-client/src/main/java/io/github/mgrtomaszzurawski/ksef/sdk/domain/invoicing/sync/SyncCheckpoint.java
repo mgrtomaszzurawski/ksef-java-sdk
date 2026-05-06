@@ -13,8 +13,7 @@ import java.util.Objects;
  * <p>Holds the cursor (last processed timestamp) used to resume the next
  * sync run from where the previous one left off.
  *
- * <p>Spec citation: REQ-HWM-001/002/003 in
- * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}.
+ * <p>Spec citation: REQ-HWM-001/002/003.
  *
  * @param cursor last successfully processed permanent-storage timestamp
  *     (advances by

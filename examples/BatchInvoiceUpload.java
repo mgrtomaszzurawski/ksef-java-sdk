@@ -81,6 +81,7 @@ public final class BatchInvoiceUpload {
         }
         return switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
+            case "DEMO" -> KsefEnvironment.DEMO;
             case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> KsefEnvironment.custom(envName);

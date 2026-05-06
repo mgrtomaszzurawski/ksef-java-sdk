@@ -243,9 +243,8 @@ public final class KsefClient implements AutoCloseable {
      *
      * <p>KSeF allows only one active online session per NIP at a time.
      *
-     * <p><strong>Cooldown after termination.</strong> Per
-     * {@code context/RCA/RCA-session-cooldown-consecutive-runs-2026-04-04-2105.md}:
-     * after a terminated online session, the server enforces a
+     * <p><strong>Cooldown after termination.</strong> After a
+     * terminated online session, the server enforces a
      * ~30–60 s cooldown for the same NIP. A new session opened too
      * soon will return a reference number but reject the first
      * {@code send(...)} with HTTP 415. The SDK translates that into
@@ -345,10 +344,8 @@ public final class KsefClient implements AutoCloseable {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(preparedPackage, ERR_BATCH_PACKAGE_NULL);
         Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
-        // Codex round-9 manual validation A.4.2.3: batch sessions do not
-        // exhibit the post-termination 415 cooldown documented for online
-        // sessions (see context/RCA/RCA-session-cooldown-consecutive-runs-2026-04-04-2105.md).
-        // No guardAgainstCooldown call here.
+        // Batch sessions do not exhibit the post-termination 415 cooldown
+        // documented for online sessions, so no guardAgainstCooldown here.
         ensureOpen();
         ensureAuthenticated();
         formCode.assertAllowedOn(environment);

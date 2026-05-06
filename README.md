@@ -98,7 +98,7 @@ KsefClient.builder(KsefEnvironment.TEST)
     .readTimeout(Duration.ofSeconds(30))       // per-request response wait
     .retryPolicy(RetryPolicy.builder()
             .maxAttempts(3)
-            .baseDelay(Duration.ofSeconds(1))
+            .backoffStrategy(RetryPolicy.BackoffStrategy.EXPONENTIAL)
             .retryOn5xx(true)
             .retryOn429(true)
             .build())
@@ -196,9 +196,7 @@ What you'll see at `DEBUG`: HTTP method + URI, response status + elapsed ms, per
 
 ## Architecture
 
-See:
-- [`context/ARCHITECTURE.md`](context/ARCHITECTURE.md) — current package layout, encryption flow, JPMS boundaries
-- [`ADR/`](ADR/) — architectural decision records covering generation strategy, package structure, single-entry-point design, encryption semantics, batch assembly modes, transport-level URI redaction, JPMS public-API defense, XXE hardening, etc.
+See [`ADR/`](ADR/) — architectural decision records covering generation strategy, package structure, single-entry-point design, encryption semantics, batch assembly modes, transport-level URI redaction, JPMS public-API defense, XXE hardening, etc. Layered package layout, encryption flow, and JPMS boundaries are documented in the ADR set; key entry points are ADR-005, ADR-008, ADR-011, ADR-012, ADR-016.
 
 ## License
 
@@ -215,4 +213,4 @@ Bundled official KSeF OpenAPI/XSD files (`ksef-client/openapi/open-api.json`, `k
 - 🚧 JSpecify null-safety annotations (ADR-017)
 - 🚧 Maven Central first publish (release-profile dry run pending)
 
-Project state and roadmap: [`context/PLAN-2026-04-03-2045-implementation-plan.md`](context/PLAN-2026-04-03-2045-implementation-plan.md).
+Project state and roadmap is tracked in this `CHANGELOG.md` and the `ADR/` set.

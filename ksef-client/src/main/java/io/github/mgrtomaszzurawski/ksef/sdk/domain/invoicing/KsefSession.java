@@ -95,15 +95,6 @@ public final class KsefSession implements AutoCloseable {
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
 
-    /**
-     * Package-private — Codex round-9 fresh review H3: a public constructor
-     * taking an internal-package type ({@link SessionClient}) leaks
-     * construction details into the binary/Javadoc surface even though JPMS
-     * makes the type unreachable from consumers. Construction now happens
-     * exclusively via the same-package {@code SessionHandleConstructor} (internal bridge),
-     * which is itself in the exported package but is the single named
-     * entry-point and clearly documented as internal-only.
-     */
     KsefSession(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
         this(sessionClient, referenceNumber, aesKey, initVector, null);

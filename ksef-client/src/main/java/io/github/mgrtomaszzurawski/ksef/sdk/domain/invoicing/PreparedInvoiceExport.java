@@ -267,9 +267,6 @@ public final class PreparedInvoiceExport implements AutoCloseable {
      *
      * <p>The output directory is created if it does not exist.
      *
-     * <p>Spec citation: Step 5 of
-     * {@code context/IMPLEMENTATION-PLAN-1.0.0-2026-05-03-1712.md}.
-     *
      * @param status the terminal status returned by {@link #awaitReady()}
      * @param outputDirectory directory where the package contents are written
      * @return file-backed handle with on-disk paths

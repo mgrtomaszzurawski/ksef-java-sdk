@@ -5,9 +5,12 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] — 2026-05-03
+## [1.0.0] — planned
 
-First public Maven Central release.
+Source-tree readiness for the first public Maven Central release. The
+artefact has not been staged or published yet; the dependency snippets
+in the README show the coordinates that will resolve once Central
+publication completes.
 
 ### Polish pass — Codex / Claude Code v2 closure (2026-05-05)
 
@@ -68,10 +71,11 @@ the Claude Code v2 manual validation audit:
   the intentional asymmetry vs online cooldown guard, citing the RCA
   path.
 - **F3 / KsefLimits Javadoc** — Corrected the `KsefLimits` Javadoc to
-  state that only `InvoiceClient.queryAllMetadata(query, int maxResults)`
-  accepts a caller override; other `queryAll*` / `listAll` helpers
-  cap silently and the recommended pattern for exhaustive walks is
-  the paged variant with explicit `pageOffset`.
+  describe the actual paginating helpers: `InvoiceClient.streamMetadata`
+  and the per-domain `stream*` paginators on `PermissionClient`,
+  `TokenClient`, `CertificateClient`. Snapshot helpers (`query*`) cap
+  at the server `pageSize` and require explicit cursor walks to exhaust
+  larger result sets.
 - **ENV-1** — `KsefEnvironment.PREPROD` Javadoc clarifies it is not
   listed in `srodowiska.md` and may not be reachable; `DEMO` is the
   recommended pre-production target.
@@ -85,10 +89,10 @@ the Claude Code v2 manual validation audit:
   path is `InvoiceQueryBuilder.build()`, which is updated.
 - **`IncrementalSyncPlan`** — `dateType` record component REMOVED
   (HWM sync only works with `PERMANENT_STORAGE` per spec; an
-  arbitrary-axis setter was unsafe and is gone). The `dateType()`
-  accessor method survives as a constant-returning shim so existing
-  read-side callers still compile; positional constructor invocations
-  of the record will break.
+  arbitrary-axis setter was unsafe and is gone). The accessor method
+  was also removed; callers that read `.dateType()` must update to
+  read the static constant `IncrementalSyncPlan.DATE_TYPE`. Positional
+  constructor invocations of the record will break.
 
 ### License decision
 
@@ -292,14 +296,14 @@ Workflow-correctness blockers (Codex F1-F8 across two review rounds):
   on every batch-open public method (`openBatchSession` ×2,
   `openBatchSessionFromFiles`). Static factories
   `BatchSessionOptions.online()` / `.offline()`.
-- **`InvoiceClientImpl.queryAllMetadata` truncation algorithm** —
+- **`InvoiceClientImpl.streamMetadata` truncation algorithm** —
   rewritten per spec (`przyrostowe-pobieranie-faktur.md`):
   `pageOffset++` for `hasMore && !isTruncated`; reset `pageOffset` and
   advance `dateRange.from` to last record's date for `isTruncated`.
   Throws `KsefException` instead of silent partial data when the
   truncated page lacks a usable cursor.
-- **`PermissionClient.queryAll*`, `TokenClient.listAll`,
-  `CertificateClient.queryAll`** — abstract on the interface;
+- **`PermissionClient.stream*`, `TokenClient.streamTokens`,
+  `CertificateClient.streamCertificates`** — abstract on the interface;
   compile-enforced full pagination contract.
 - **`KsefCryptoService.parsePrivateKey(byte[])` /
   `parseCertificate(byte[])`** — public PEM/DER parsers (PKCS#8 +
@@ -365,11 +369,7 @@ Wire-shape regression coverage added:
 - New offline-mode WireMock assertions in `KsefSessionTest` and
   `KsefClientOpenBatchSessionTest`.
 
-## [Unreleased]
-
-(future entries go here)
-
-### Added (Codex follow-up)
+### Added (Codex round 9 — pre-stabilisation)
 
 - `PreparedInvoiceExport` — public handle returned from
   `client.invoices().prepareExport(...)` that retains the AES key + IV used
@@ -411,10 +411,6 @@ Wire-shape regression coverage added:
   `KsefBatchSession.close()` when polling never reaches a terminal status
   within the polling budget. Try-with-resources no longer exits silently on
   indeterminate state.
-- `KsefClientInternals` — deprecated public static seam exposing
-  `runtime(KsefClient)` / `sessionContext(KsefClient)` for SDK-internal unit
-  tests. Scheduled to move into a separate `ksef-client-testkit` artifact in
-  0.2.x.
 - `X-Error-Format: problem-details` header on every authenticated request, so
   KSeF returns structured RFC 7807 problem details on 4xx/5xx responses.
 - `Retry-After` honored on HTTP 429 retries, clamped to
@@ -422,9 +418,9 @@ Wire-shape regression coverage added:
   three permitted formats (RFC 1123, RFC 850, asctime); past dates collapse
   to immediate retry.
 
-### Changed (Codex follow-up)
+### Changed (Codex round 9 — pre-stabilisation)
 
-- `InvoiceClient.queryAllMetadata` no longer drops caller-supplied filters
+- `InvoiceClient.streamMetadata` no longer drops caller-supplied filters
   (`ksefNumber`, `invoiceNumber`, `sellerNip`, `invoicingMode`,
   `isSelfInvoicing`, `hasAttachment`, `amount`, `currencyCodes`,
   `buyerIdentifier`) between pages. Cursor advances by mutating
@@ -461,12 +457,12 @@ Wire-shape regression coverage added:
   permission operations, retention/410 Gone responses, optional Problem Details
   format, increased rate limits.
 
-### Removed (Codex follow-up)
+### Removed (Codex round 9 — pre-stabilisation)
 
-- `KsefClient.runtime()` removed from the public API (binary-breaking; no
-  released consumers exist yet). Replaced by package-private
-  `internalRuntime()`. Test code accesses the runtime through the new
-  `KsefClientInternals.runtime(KsefClient)` static seam.
+- `KsefClient.runtime()` removed from the public API. Replaced by
+  package-private `internalRuntime()`. (Final 1.0.0 stabilisation also
+  removed the `KsefClientInternals` and `activateSessionForTests` seams
+  recorded earlier in this file.)
 - Eleven internal client-impl ctors changed from `(KsefClient ksef)` to
   `(HttpRuntime runtime)` (`AuthClient`, `CertificateClientImpl`,
   `InvoiceClientImpl`, `LimitsClientImpl`, `RateLimitClientImpl`,
@@ -474,30 +470,6 @@ Wire-shape regression coverage added:
   `SessionClient`, `TestDataClientImpl`, `TokenClientImpl`). These types
   live in `sdk.internal.client.*` (not exported via JPMS), so no public
   binary contract changes; documented for completeness.
-
-### Deprecated (Codex follow-up)
-
-- `KsefClient.activateSessionForTests(...)` annotated
-  `@Deprecated(since = "0.1.0", forRemoval = true)`. The method stays
-  reachable so the existing test fixtures keep compiling; planned to move
-  into a dedicated `ksef-client-testkit` artifact in 0.2.x.
-- `KsefClientInternals` annotated `@Deprecated(since = "0.1.0", forRemoval = true)`.
-  Same migration target as `activateSessionForTests`.
-- `InvoiceClient.exportInvoices(InvoiceExportBuilder)` annotated
-  `@Deprecated(since = "0.1.0")` with javadoc redirecting to
-  `prepareExport(query, fullContent)`. Legacy entry remains reachable for
-  low-level use; IDE warnings surface the recommendation.
-
-### Known limitations
-
-- `Builder.build()` and `Record.from(*Raw)` bridge methods reference
-  OpenAPI-generated `*Raw` types in their signatures. The `client.model`
-  package is not exported via JPMS, so JPMS named-module consumers cannot
-  invoke these methods directly. The documented public flows (passing a
-  builder into a domain client method, receiving a record from a domain
-  client method) are unaffected. See [ADR-018](ADR/ADR-018-raw-types-on-internal-bridge-methods.md);
-  0.2.0 will eliminate `*Raw` from these signatures via SDK-owned request
-  records and internal mapper extraction.
 
 ### Added
 
@@ -523,7 +495,7 @@ Wire-shape regression coverage added:
   (PKCS#12 keystore or raw certificate + private key).
 - Configurable retry: `RetryPolicy` with exponential backoff + full jitter, on
   5xx and 429 responses.
-- Date-cursor pagination helper: `InvoiceClient.queryAllMetadata(...)` walks all
+- Date-cursor pagination helper: `InvoiceClient.streamMetadata(...)` walks all
   pages using `permanentStorageHwmDate` as cursor.
 - Typed exception hierarchy: `KsefAuthException`, `KsefServerException`,
   `KsefRateLimitException`, `KsefNotFoundException`,
@@ -544,7 +516,7 @@ Wire-shape regression coverage added:
   `Logger`; `HttpSupport` logs every wire-level request/response at `DEBUG`
   with method, URI, status, elapsed time. Default consumer level: `WARN` (see
   README "Logging" section).
-- 391 unit + integration tests across 33 test classes (WireMock-mocked HTTP).
+- 660+ unit + integration tests across 71 test classes (WireMock-mocked HTTP).
 - Demo / live-validation harness: `ksef-demo` module with per-domain runners and
   named modes (`AUTH_SAFE`, `READ_ONLY`, `FULL`, `CLEANUP`).
 - Maven Central release profile (`mvn deploy -Prelease`) — GPG signing +
@@ -584,4 +556,4 @@ ADRs ([`ADR/`](ADR/)):
   ~139 builder methods need explicit unit tests before the gate is enabled.
 - JSpecify null-safety annotations on the public API are pending (PLAN A.8 /
   ADR-017).
-[Unreleased]: https://github.com/mgrtomaszzurawski/ksef-java-sdk/commits/develop
+[1.0.0]: https://github.com/mgrtomaszzurawski/ksef-java-sdk/commits/develop

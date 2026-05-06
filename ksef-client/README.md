@@ -10,8 +10,7 @@ Library module of the [KSeF Java SDK](../README.md) — coordinates
 
 If you only need to consume the SDK, this README is enough. For project-wide
 context, the architecture deep-dive, and the demo / live-validation harness,
-see the [root README](../README.md) and the
-[`ARCHITECTURE.md`](../context/ARCHITECTURE.md) note.
+see the [root README](../README.md) and the [`ADR/`](../ADR/) set.
 
 ## Quickstart
 
@@ -154,10 +153,10 @@ retry semantics, encryption flow, session abstractions — lives in
 [`ADR/`](../ADR/) at the repository root. Sixteen ADRs as of this release,
 each immutable in body once accepted (only `Status:` changes after the fact).
 
-Implementation plan and roadmap:
-[`context/PLAN-2026-04-03-2045-implementation-plan.md`](../context/PLAN-2026-04-03-2045-implementation-plan.md).
+Implementation plan and roadmap are tracked in the root [CHANGELOG.md](../CHANGELOG.md)
+and the [`ADR/`](../ADR/) set.
 
 ## License
 
-[AGPL-3.0-only](../LICENSE). See ADR-007 for the rationale (the original
+[AGPL-3.0-only](../LICENSE.txt). See ADR-007 for the rationale (the original
 plan to switch to Apache-2.0 at v1.0 was deprecated).

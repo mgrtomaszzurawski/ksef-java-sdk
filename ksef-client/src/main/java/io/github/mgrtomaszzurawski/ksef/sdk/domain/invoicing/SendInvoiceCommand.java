@@ -35,8 +35,7 @@ import java.util.Objects;
  * {@link #offline(byte[])} and
  * {@link #technicalCorrection(byte[], byte[])} to obtain instances.
  *
- * <p>Spec citation: REQ-OFFLINE-003 in
- * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}.
+ * <p>Spec citation: REQ-OFFLINE-003.
  *
  * @since 1.0.0
  */
