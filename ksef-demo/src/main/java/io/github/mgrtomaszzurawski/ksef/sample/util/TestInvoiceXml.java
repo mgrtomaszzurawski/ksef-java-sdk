@@ -19,20 +19,29 @@ package io.github.mgrtomaszzurawski.ksef.sample.util;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Generates minimal valid FA(2) invoice XML for testing.
- * Uses a hardcoded template with parameterized seller NIP and dates.
+ * Generates minimal valid FA(3) invoice XML accepted by KSeF DEMO/PROD.
+ *
+ * <p>Adapted from the official {@code CIRFMF/ksef-client-java}
+ * {@code demo-web-app} sample template
+ * ({@code resources/xml/invoices/sample/invoice-template_v3.xml}). DEMO
+ * and PROD reject FA(2); demo runners therefore open sessions with
+ * {@code FormCode.FA3} and feed the bytes produced here to
+ * {@code session.send(...)}.
  */
 public final class TestInvoiceXml {
 
-    private static final String FA2_NAMESPACE = "http://crd.gov.pl/wzor/2023/06/29/12648/";
+    private static final String FA3_NAMESPACE = "http://crd.gov.pl/wzor/2025/06/25/13775/";
     private static final String ETD_NAMESPACE = "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/";
     private static final String SCHEMA_VERSION = "1-0E";
-    private static final String SYSTEM_CODE = "FA (2)";
+    private static final String SYSTEM_CODE = "FA (3)";
     private static final String FORM_CODE_VALUE = "FA";
     private static final String INVOICE_NUMBER_PREFIX = "SDK-DEMO-";
+    private static final String BUYER_NIP = "3861610227";
     private static final String BUYER_NAME = "SDK Demo Buyer";
     private static final String SELLER_NAME = "SDK Demo Seller";
     private static final String ITEM_NAME = "SDK Demo Service";
@@ -48,13 +57,15 @@ public final class TestInvoiceXml {
     private TestInvoiceXml() { }
 
     /**
-     * Generate a minimal valid FA(2) invoice XML.
+     * Generate a minimal valid FA(3) invoice XML.
      *
      * @param sellerNip the seller's NIP (10 digits)
      * @return invoice XML bytes in UTF-8
      */
     public static byte[] generate(String sellerNip) {
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String generationTimestamp = OffsetDateTime.now(ZoneOffset.UTC)
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
         String invoiceNumber = INVOICE_NUMBER_PREFIX + System.currentTimeMillis();
 
         String xml = """
@@ -62,8 +73,8 @@ public final class TestInvoiceXml {
                 <Faktura xmlns="%s" xmlns:etd="%s">
                   <Naglowek>
                     <KodFormularza kodSystemowy="%s" wersjaSchemy="%s">%s</KodFormularza>
-                    <WariantFormularza>2</WariantFormularza>
-                    <DataWytworzeniaFa>%sT00:00:00</DataWytworzeniaFa>
+                    <WariantFormularza>3</WariantFormularza>
+                    <DataWytworzeniaFa>%s</DataWytworzeniaFa>
                     <SystemInfo>KSeF Java SDK Demo</SystemInfo>
                   </Naglowek>
                   <Podmiot1>
@@ -79,7 +90,7 @@ public final class TestInvoiceXml {
                   </Podmiot1>
                   <Podmiot2>
                     <DaneIdentyfikacyjne>
-                      <NIP>1111111111</NIP>
+                      <NIP>%s</NIP>
                       <Nazwa>%s</Nazwa>
                     </DaneIdentyfikacyjne>
                     <Adres>
@@ -87,11 +98,16 @@ public final class TestInvoiceXml {
                       <AdresL1>ul. Kupiecka 2</AdresL1>
                       <AdresL2>00-002 Warszawa</AdresL2>
                     </Adres>
+                    <DaneKontaktowe>
+                      <Email>buyer@example.com</Email>
+                    </DaneKontaktowe>
+                    <JST>2</JST>
+                    <GV>2</GV>
                   </Podmiot2>
                   <Fa>
                     <KodWaluty>%s</KodWaluty>
                     <P_1>%s</P_1>
-                    <P_2>%s</P_2>
+                    <P_2>FA/%s</P_2>
                     <P_6>%s</P_6>
                     <P_13_1>%s</P_13_1>
                     <P_14_1>%s</P_14_1>
@@ -125,15 +141,13 @@ public final class TestInvoiceXml {
                   </Fa>
                 </Faktura>
                 """.formatted(
-                FA2_NAMESPACE, ETD_NAMESPACE,
+                FA3_NAMESPACE, ETD_NAMESPACE,
                 SYSTEM_CODE, SCHEMA_VERSION, FORM_CODE_VALUE,
-                today,
+                generationTimestamp,
                 sellerNip, SELLER_NAME,
-                BUYER_NAME,
+                BUYER_NIP, BUYER_NAME,
                 CURRENCY,
-                today,
-                invoiceNumber,
-                today,
+                today, invoiceNumber, today,
                 NET_AMOUNT, VAT_AMOUNT, GROSS_AMOUNT,
                 ITEM_NAME, UNIT, QUANTITY, NET_UNIT_PRICE, NET_AMOUNT, VAT_RATE
         );
