@@ -146,12 +146,12 @@ public final class BatchTempCleanup {
      * throttle window.
      */
     public static void scheduleAutoCleanup() {
-        long now = System.nanoTime();
+        long currentNanos = System.nanoTime();
         long previous = LAST_AUTO_CLEANUP_NANOS.get();
-        if (previous != 0 && now - previous < AUTO_CLEANUP_THROTTLE_NANOS) {
+        if (previous != 0 && currentNanos - previous < AUTO_CLEANUP_THROTTLE_NANOS) {
             return;
         }
-        if (!LAST_AUTO_CLEANUP_NANOS.compareAndSet(previous, now)) {
+        if (!LAST_AUTO_CLEANUP_NANOS.compareAndSet(previous, currentNanos)) {
             return;
         }
         AUTO_CLEANUP_EXECUTOR.execute(() -> purgeOrphans(null, DEFAULT_ORPHAN_AGE));

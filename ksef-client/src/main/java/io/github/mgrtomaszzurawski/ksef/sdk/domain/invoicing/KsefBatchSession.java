@@ -104,6 +104,8 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
     private static final String METHOD_PUT = "PUT";
     private static final String SCHEME_HTTPS = "https";
+    private static final String SCHEME_HTTP = "http";
+    private static final String LOCALHOST_HOSTNAME = "localhost";
     private static final String ERR_INSECURE_UPLOAD_URL =
             "Refusing to upload batch part over non-HTTPS URL: ";
 
@@ -290,8 +292,10 @@ public final class KsefBatchSession implements AutoCloseable {
         // Defense in depth: KSeF only ever returns HTTPS pre-signed URLs,
         // but assert it explicitly so a misbehaving/spoofed presigner
         // cannot trick the SDK into uploading ciphertext over plaintext.
-        if (upload.url().getScheme() == null
-                || !SCHEME_HTTPS.equalsIgnoreCase(upload.url().getScheme())) {
+        // Loopback (localhost / 127.x / [::1]) is accepted because the
+        // MITM threat does not apply on the local interface and WireMock-
+        // backed tests cannot serve TLS without per-test cert plumbing.
+        if (!isAcceptableUploadScheme(upload.url())) {
             throw new KsefException(
                     ERR_INSECURE_UPLOAD_URL
                             + io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction
@@ -311,7 +315,10 @@ public final class KsefBatchSession implements AutoCloseable {
             if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart onDisk) {
                 publisher = BodyPublishers.ofFile(onDisk.path());
             } else if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.InMemoryPart inMem) {
-                publisher = BodyPublishers.ofByteArray(inMem.bytes());
+                // Use openStream() instead of bytes() to avoid the defensive
+                // accessor clone — ByteArrayInputStream wraps the internal
+                // byte[] without copying and provides read-only access.
+                publisher = BodyPublishers.ofInputStream(inMem::openStream);
             } else {
                 throw new IllegalStateException("Unknown BatchPart subtype: " + part.getClass());
             }
@@ -340,6 +347,43 @@ public final class KsefBatchSession implements AutoCloseable {
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             throw new KsefNetworkException(ERR_UPLOAD_INTERRUPTED, interrupted);
+        }
+    }
+
+    /**
+     * Whether the supplied upload URL scheme is safe to PUT batch
+     * ciphertext to. Accepts HTTPS unconditionally; accepts HTTP only
+     * when the host is a loopback address ({@code localhost},
+     * {@code 127.x.x.x}, {@code [::1]}) — MITM threat model does not
+     * apply on the local interface and WireMock-based tests cannot
+     * easily serve TLS.
+     */
+    private static boolean isAcceptableUploadScheme(java.net.URI url) {
+        String scheme = url.getScheme();
+        if (scheme == null) {
+            return false;
+        }
+        return SCHEME_HTTPS.equalsIgnoreCase(scheme)
+                || (SCHEME_HTTP.equalsIgnoreCase(scheme) && isLoopbackHost(url.getHost()));
+    }
+
+    /**
+     * Loopback check via {@link java.net.InetAddress#isLoopbackAddress()}
+     * — covers both IPv4 (127.0.0.0/8) and IPv6 (::1) without literal IP
+     * patterns. Falls back to the {@code "localhost"} hostname check
+     * before resolving (DNS lookup is avoided for the literal string).
+     */
+    private static boolean isLoopbackHost(String host) {
+        if (host == null) {
+            return false;
+        }
+        if (LOCALHOST_HOSTNAME.equalsIgnoreCase(host)) {
+            return true;
+        }
+        try {
+            return java.net.InetAddress.getByName(host).isLoopbackAddress();
+        } catch (java.net.UnknownHostException ignored) {
+            return false;
         }
     }
 

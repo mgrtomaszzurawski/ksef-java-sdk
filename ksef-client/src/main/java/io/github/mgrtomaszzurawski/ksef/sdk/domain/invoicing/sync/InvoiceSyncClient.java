@@ -132,12 +132,12 @@ public final class InvoiceSyncClient {
                 .map(SyncCheckpoint::cursor)
                 .orElse(plan.from());
 
-        SubjectSyncContext ctx = new SubjectSyncContext(plan, subjectType, store, sink);
+        SubjectSyncContext context = new SubjectSyncContext(plan, subjectType, store, sink);
         Set<String> seenKsefNumbers = new HashSet<>();
         long processed = 0;
 
         for (int windowIndex = 0; windowIndex < MAX_WINDOWS_PER_SUBJECT; windowIndex++) {
-            WindowOutcome outcome = processOneWindow(ctx, cursor, windowIndex, seenKsefNumbers);
+            WindowOutcome outcome = processOneWindow(context, cursor, windowIndex, seenKsefNumbers);
             processed += outcome.processedDelta();
             if (outcome.advancedCursor() == null) {
                 break;
@@ -161,12 +161,12 @@ public final class InvoiceSyncClient {
                                       CheckpointStore store,
                                       InvoiceSink sink) { }
 
-    private WindowOutcome processOneWindow(SubjectSyncContext ctx,
+    private WindowOutcome processOneWindow(SubjectSyncContext context,
                                            OffsetDateTime cursor,
                                            int windowIndex,
                                            Set<String> seenKsefNumbers) {
-        IncrementalSyncPlan plan = ctx.plan();
-        InvoiceQuerySubjectType subjectType = ctx.subjectType();
+        IncrementalSyncPlan plan = context.plan();
+        InvoiceQuerySubjectType subjectType = context.subjectType();
         InvoiceQueryBuilder query = subjectQuery(subjectType, IncrementalSyncPlan.DATE_TYPE, cursor);
         if (plan.to() != null) {
             query.dateTo(plan.to());
@@ -199,7 +199,7 @@ public final class InvoiceSyncClient {
             if (metadatas.isEmpty()) {
                 throw new KsefException(String.format(Locale.ROOT, ERR_METADATA_EMPTY, reportedCount), null);
             }
-            long dispatched = dispatchInvoices(ctx, metadatas, dir, seenKsefNumbers);
+            long dispatched = dispatchInvoices(context, metadatas, dir, seenKsefNumbers);
 
             // Commit-after-accept: only persist the checkpoint after every
             // invoice in this package was accepted by the sink. If the
@@ -209,7 +209,7 @@ public final class InvoiceSyncClient {
             OffsetDateTime nextCursor = pkg.continuationCursor();
             boolean truncated = Boolean.TRUE.equals(pkg.isTruncated());
             if (nextCursor != null && (cursor == null || !nextCursor.equals(cursor))) {
-                ctx.store().save(subjectType, new SyncCheckpoint(nextCursor, truncated));
+                context.store().save(subjectType, new SyncCheckpoint(nextCursor, truncated));
                 return WindowOutcome.advance(dispatched, nextCursor);
             }
             LOGGER.debug("[sync {} window {}] cursor did not advance — stop", subjectType, windowIndex);
@@ -219,18 +219,18 @@ public final class InvoiceSyncClient {
         }
     }
 
-    private long dispatchInvoices(SubjectSyncContext ctx,
+    private long dispatchInvoices(SubjectSyncContext context,
                                   List<InvoiceMetadata> metadatas,
                                   ExportedInvoiceDirectory dir,
                                   Set<String> seenKsefNumbers) {
         long dispatched = 0;
         for (InvoiceMetadata metadata : metadatas) {
-            KsefNumber typed = parsableUnseenKsefNumber(metadata, seenKsefNumbers, ctx.subjectType());
+            KsefNumber typed = parsableUnseenKsefNumber(metadata, seenKsefNumbers, context.subjectType());
             if (typed == null) {
                 continue;
             }
-            Path xmlPath = ctx.plan().fullContent() ? matchInvoiceXml(dir, typed, (int) dispatched) : null;
-            ctx.sink().accept(typed, metadata, xmlPath);
+            Path xmlPath = context.plan().fullContent() ? matchInvoiceXml(dir, typed, (int) dispatched) : null;
+            context.sink().accept(typed, metadata, xmlPath);
             seenKsefNumbers.add(metadata.ksefNumber());
             dispatched++;
         }
