@@ -24,8 +24,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
@@ -61,6 +63,8 @@ class KsefBatchSessionUploadTest {
     private static final String CUSTOM_HEADER = "x-amz-content-sha256";
     private static final String CUSTOM_HEADER_VALUE = "abc123";
     private static final byte[] PART_CONTENT = "encrypted-part-bytes".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    /** SHA-256 hash length in bytes — matches the project-wide constant pattern. */
+    private static final int SHA_256_BYTES = 32;
 
     @Test
     void uploadParts_putsBytesToEachPresignedUrlWithoutBearer(WireMockRuntimeInfo wmInfo, @TempDir Path tempDir) throws Exception {
@@ -277,6 +281,132 @@ class KsefBatchSessionUploadTest {
                 TEST_BATCH_REF, uploads, pkg, fakeClock);
     }
 
+    @Test
+    void uploadParts_rejectsHttpNonLoopbackHost_throwsBeforeRequest(WireMockRuntimeInfo wmInfo,
+                                                                     @TempDir Path tempDir) throws Exception {
+        // given — upload URL points to a non-loopback hostname over plain HTTP.
+        // Per KsefBatchSession.isAcceptableUploadScheme, this must fail FAST
+        // (no DNS lookup, no request) so a hostile/spoofed presigned URL
+        // cannot trick the SDK into uploading ciphertext over plaintext.
+        Path partFile = writePartFile(tempDir, "part.bin");
+        List<PartUploadRequest> uploads = List.of(
+                new PartUploadRequest(1, "PUT",
+                        URI.create("http://evil.example.com/upload"), Map.of()));
+
+        try (KsefBatchSession session = createSession(wmInfo, uploads, List.of(partFile))) {
+            // when / then
+            io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException ex =
+                    assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
+                            session::uploadParts);
+            assertTrue(ex.getMessage().contains("non-HTTPS"),
+                    "Error must explain HTTPS requirement; got: " + ex.getMessage());
+            verify(exactly(0), putRequestedFor(anyUrl()));
+        }
+    }
+
+    @Test
+    void uploadParts_rejectsHttpNonLoopbackIpLiteral_throwsBeforeRequest(WireMockRuntimeInfo wmInfo,
+                                                                          @TempDir Path tempDir) throws Exception {
+        // given — public IP (192.0.2.x is TEST-NET-1 reserved for documentation)
+        // over plain HTTP. Even though the host is an IP literal (so the regex
+        // would let DNS resolution proceed), InetAddress.isLoopbackAddress()
+        // correctly returns false for it.
+        Path partFile = writePartFile(tempDir, "part.bin");
+        List<PartUploadRequest> uploads = List.of(
+                new PartUploadRequest(1, "PUT",
+                        URI.create("http://192.0.2.10/upload"), Map.of()));
+
+        try (KsefBatchSession session = createSession(wmInfo, uploads, List.of(partFile))) {
+            // when / then
+            io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException ex =
+                    assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
+                            session::uploadParts);
+            assertTrue(ex.getMessage().contains("non-HTTPS"),
+                    "Error must explain HTTPS requirement; got: " + ex.getMessage());
+            verify(exactly(0), putRequestedFor(anyUrl()));
+        }
+    }
+
+    @Test
+    void uploadParts_acceptsHttpIpv4LoopbackLiteral_succeeds(WireMockRuntimeInfo wmInfo,
+                                                              @TempDir Path tempDir) throws Exception {
+        // given — IPv4 loopback literal URL (not the "localhost" hostname),
+        // routed to the WireMock port. Verifies that 127.0.0.1 is treated
+        // as loopback by InetAddress.isLoopbackAddress() and the upload
+        // gate accepts it.
+        Path partFile = writePartFile(tempDir, "part.bin");
+        stubFor(put(urlEqualTo(UPLOAD_PATH_1))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_OK)));
+
+        URI loopbackUrl = URI.create("http://127.0.0.1:" + wmInfo.getHttpPort() + UPLOAD_PATH_1);
+        List<PartUploadRequest> uploads = List.of(
+                new PartUploadRequest(1, "PUT", loopbackUrl, Map.of()));
+
+        try (KsefBatchSession session = createSession(wmInfo, uploads, List.of(partFile))) {
+            // when
+            session.uploadParts();
+            // then
+            verify(putRequestedFor(urlEqualTo(UPLOAD_PATH_1)));
+        }
+    }
+
+    @Test
+    void uploadParts_inMemoryPartViaOpenStream_putsPayloadToUrl(WireMockRuntimeInfo wmInfo) throws Exception {
+        // given — single InMemoryPart instead of OnDiskPart; upload path must
+        // use BodyPublishers.ofInputStream(part::openStream) and the bytes
+        // must arrive at the presigned endpoint.
+        byte[] cipherBytes = "in-memory-cipher".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] hash = new byte[SHA_256_BYTES];
+        var inMemPart = new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch
+                .BatchPart.InMemoryPart(1, hash, cipherBytes);
+
+        stubFor(put(urlEqualTo(UPLOAD_PATH_1))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_OK)));
+        stubFor(post(urlEqualTo("/v2/sessions/batch/" + TEST_BATCH_REF + "/close"))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
+        stubFor(get(urlEqualTo("/v2/sessions/" + TEST_BATCH_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody("""
+                                {"status":{"code":200,"description":"OK"},
+                                 "dateCreated":"2026-04-18T12:00:00+02:00"}""")));
+
+        List<PartUploadRequest> uploads = List.of(
+                new PartUploadRequest(1, "PUT",
+                        URI.create(wmInfo.getHttpBaseUrl() + UPLOAD_PATH_1), Map.of()));
+
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        runtime.sessionContext().activate(TEST_TOKEN, TEST_BATCH_REF, OffsetDateTime.now().plusHours(1));
+        SessionClient sessionClient = new SessionClient(runtime);
+        var spec = stubBatchFileSpec(1);
+        BatchPackageBuilder.BatchPackage pkg = new BatchPackageBuilder.BatchPackage(
+                spec,
+                List.<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart>of(inMemPart));
+
+        // BodyPublishers.ofInputStream produces a chunked-transfer-encoded
+        // PUT (no Content-Length); WireMock's default HTTP/2 server
+        // returns RST_STREAM on chunked PUT. Real KSeF presigned URLs
+        // (S3-backed) handle this correctly per the live demo. Force
+        // HTTP/1.1 in the test client so WireMock can serve the request.
+        HttpClient http1Client = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+        try (KsefBatchSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session
+                .SessionHandleConstructor.newBatchSession(sessionClient, http1Client,
+                        TEST_BATCH_REF, uploads, pkg)) {
+            // when
+            session.uploadParts();
+
+            // then — body bytes must match the ciphertext exactly. WireMock
+            // captures the full request body, allowing byte-level verification
+            // that openStream() did not corrupt or partially consume it.
+            verify(putRequestedFor(urlEqualTo(UPLOAD_PATH_1))
+                    .withRequestBody(equalTo(new String(cipherBytes,
+                            java.nio.charset.StandardCharsets.UTF_8))));
+        }
+    }
+
     private static Path writePartFile(Path tempDir, String name) throws Exception {
         Path partFile = tempDir.resolve(name);
         Files.write(partFile, PART_CONTENT);
@@ -313,7 +443,7 @@ class KsefBatchSessionUploadTest {
         // exercises the FileNotFoundException branch on missing-file tests.
         List<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart> parts =
                 new java.util.ArrayList<>();
-        byte[] fakeHash = new byte[32];
+        byte[] fakeHash = new byte[SHA_256_BYTES];
         int ordinal = 1;
         for (Path path : partFiles) {
             long size = 0L;
@@ -335,7 +465,7 @@ class KsefBatchSessionUploadTest {
         // only the part count matters for the constructor's count-mismatch guard.
         List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec.Part> parts =
                 new java.util.ArrayList<>();
-        byte[] fakeHash = new byte[32];
+        byte[] fakeHash = new byte[SHA_256_BYTES];
         for (int index = 1; index <= partCount; index++) {
             parts.add(new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec.Part(
                     index, PART_CONTENT.length, fakeHash));

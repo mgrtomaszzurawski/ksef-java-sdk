@@ -11,7 +11,8 @@ OpenAPI-first Java SDK for the Polish National e-Invoicing System (KSeF) REST AP
 ## Release status
 
 **Pre-1.0. No version has been published to Maven Central yet.** Current
-artefact version is `0.1.0-SNAPSHOT`. There is no consumer contract to
+artefact version is `1.0.0` in the pom (preparing for first release; no
+git tag, no Maven Central artefact). There is no consumer contract to
 preserve — the project has zero external dependents because the artefact
 has never been released.
 

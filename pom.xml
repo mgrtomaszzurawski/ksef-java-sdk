@@ -116,7 +116,7 @@
                             <failBuildOnCVSS>7</failBuildOnCVSS>
                             <skipTestScope>true</skipTestScope>
                             <suppressionFiles>
-                                <suppressionFile>${project.basedir}/owasp-suppressions.xml</suppressionFile>
+                                <suppressionFile>${maven.multiModuleProjectDirectory}/owasp-suppressions.xml</suppressionFile>
                             </suppressionFiles>
                             <formats>
                                 <format>HTML</format>

@@ -53,7 +53,14 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * <p>For NIP context KSeF expects the organizationIdentifier prefix
  * {@code VATPL-} followed by the NIP. For Peppol provider context the
  * organizationIdentifier matches the {@code peppolId} as-is. For
- * VAT-UE context: {@code VATPL-{nip}-{euCountryCode}{specific}}.
+ * VAT-UE context the organizationIdentifier carries
+ * {@code VATPL-{nip}} (just the NIP, not the full compound) — the
+ * VAT-UE compound is sent as the {@code KsefIdentifier.nipVatUe(...)}
+ * value separately, and KSeF resolves identity by the cert's SHA-256
+ * fingerprint after a prior {@code EuEntityAdminPermission} grant
+ * (see {@code VatUeProviderRunner}). Earlier
+ * {@code VATPL-{nip}-{euCountryCode}{specific}} shape attempts in
+ * direct-XAdES-auth were rejected by KSeF; do not reintroduce.
  *
  * <p>The certificate is throw-away — generated, used once for the
  * XAdES auth challenge signature, then discarded with the demo run.
