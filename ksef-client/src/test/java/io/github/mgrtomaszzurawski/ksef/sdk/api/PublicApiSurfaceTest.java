@@ -92,17 +92,15 @@ class PublicApiSurfaceTest {
                 checkType("Method " + cls.getName() + "." + m.getName() + " throws", ex.getType(), violations);
             }
         }
+        // Codex round-9 fresh-review F1: any public constructor on an
+        // exported SDK type must NOT reference internal/generated/raw
+        // types. The previous JPMS-reachability exemption was removed.
+        // Internal construction now goes through
+        // {@code sdk.internal.client.session.SessionHandleConstructor}
+        // (in a NON-exported package, so its public methods never appear in
+        // the consumer-facing binary/Javadoc surface).
         for (Constructor<?> c : cls.getDeclaredConstructors()) {
             if (!isPublic(c.getModifiers())) {
-                continue;
-            }
-            // A "public" constructor is unreachable from JPMS consumers when ALL of its
-            // parameters live in non-exported packages — the consumer module cannot even
-            // name the parameter types, let alone supply values. The constructor exists
-            // as public for in-module use (KsefClient instantiates KsefSession etc.).
-            // We surface a violation only when at least one parameter is consumer-visible
-            // and another is internal/raw, which would be a real shape leak.
-            if (allParametersUnreachableFromConsumers(c)) {
                 continue;
             }
             for (Parameter p : c.getParameters()) {
@@ -122,36 +120,6 @@ class PublicApiSurfaceTest {
         return Modifier.isPublic(modifiers);
     }
 
-    /**
-     * Returns {@code true} when at least one parameter of the constructor is in a
-     * package that is invisible to consumer modules (internal SDK plumbing or
-     * generated raw types). Under JPMS, a consumer cannot resolve such a parameter
-     * type and therefore cannot invoke the constructor — even if the constructor
-     * is reflectively "public". This guards the SDK-internal-construction-only
-     * constructors of {@code KsefSession}, {@code KsefBatchSession} and
-     * {@code PreparedInvoiceExport}, which take internal SDK types alongside
-     * primitives like {@code String} or {@code byte[]}.
-     *
-     * <p>JPMS treats the type as unresolvable, so the constructor is functionally
-     * unreachable from a consumer module — but the surface test would otherwise
-     * raise a noisy false positive. Methods (return type or other parameters)
-     * still go through the strict check, so this exception is narrow.
-     */
-    private static boolean allParametersUnreachableFromConsumers(Constructor<?> c) {
-        if (c.getParameterCount() == 0) {
-            return false;
-        }
-        for (Parameter p : c.getParameters()) {
-            String paramTypeName = p.getType().getName();
-            boolean paramIsInternal = paramTypeName.startsWith(INTERNAL_PACKAGE)
-                    || paramTypeName.startsWith(GENERATED_PACKAGE)
-                    || (paramTypeName.startsWith(SDK_ROOT_PACKAGE) && paramTypeName.endsWith(RAW_SUFFIX));
-            if (paramIsInternal) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private static void checkType(String context, Type type, List<String> violations) {
         if (type instanceof Class<?> klass) {

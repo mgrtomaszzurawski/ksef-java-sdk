@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 /**
  * Permission types accepted by EU entity permission queries.
+ *
+ * @since 1.0.0
  */
 public enum EuEntityQueryPermissionType {
     VAT_UE_MANAGE,

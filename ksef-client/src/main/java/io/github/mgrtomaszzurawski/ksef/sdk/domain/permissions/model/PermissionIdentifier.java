@@ -9,6 +9,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
  *
  * @param type identifier type name
  * @param value identifier value
+ *
+ * @since 1.0.0
  */
 public record PermissionIdentifier(String type, String value) {
 }

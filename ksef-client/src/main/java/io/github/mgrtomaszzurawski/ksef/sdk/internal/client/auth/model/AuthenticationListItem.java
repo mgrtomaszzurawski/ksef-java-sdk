@@ -20,6 +20,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
  * @param lastTokenRefreshDate when the token was last refreshed
  * @param refreshTokenValidUntil when the refresh token expires
  * @param current whether this is the current session
+ *
+ * @since 1.0.0
  */
 public record AuthenticationListItem(
         String referenceNumber,

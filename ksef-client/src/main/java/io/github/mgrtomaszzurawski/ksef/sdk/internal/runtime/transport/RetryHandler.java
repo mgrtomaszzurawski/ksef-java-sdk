@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Retry handler with configurable backoff for KSeF API calls.
+ *
+ * @since 1.0.0
  */
 public final class RetryHandler {
 

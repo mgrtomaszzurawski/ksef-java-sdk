@@ -15,7 +15,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectL
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import java.time.LocalDate;
 
-/** Public API for TestDataClient. */
+/**
+ * Public API for TestDataClient.
+ *
+ * @since 1.0.0
+ */
 public interface TestDataClient {
 
     void createSubject(TestSubjectCreateBuilder builder);

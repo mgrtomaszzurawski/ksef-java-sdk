@@ -52,6 +52,8 @@ import org.slf4j.LoggerFactory;
  * <p>The {@link #downloadAndDecrypt(InvoiceExportStatus)} helper hides the
  * end-to-end flow described in the official KSeF
  * <a href="https://github.com/CIRFMF/ksef-docs/blob/main/pobieranie-faktur/przyrostowe-pobieranie-faktur.md">incremental retrieval docs</a>.
+ *
+ * @since 1.0.0
  */
 public final class PreparedInvoiceExport implements AutoCloseable {
 
@@ -63,6 +65,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final String LOG_DOWNLOAD = "[export {}] downloading {} parts";
     private static final String LOG_VERIFY = "[export {}] part {} hash verified";
     private static final String LOG_TEMP_CLEANUP_FAILED = "[export {}] failed to clean up temp file {}: {}";
+    private static final String LOG_UNZIP_TMP_CLEANUP_FAILED = "[unzip] failed to clean up tmp file {}: {}";
     private static final int STATUS_POLL_DELAY_MS = 1500;
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     /** Lower bound (inclusive) for terminal export-status codes — anything {@code >= 200} is final. */
@@ -92,6 +95,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final String ERR_ENTRY_LIMIT = "ZIP archive exceeds entry-count cap (%d entries, max %d)";
     private static final String ERR_ENTRY_SIZE = "ZIP entry exceeds per-entry size cap (entry %s: %d bytes, max %d)";
     private static final String ERR_TOTAL_SIZE = "ZIP archive exceeds total uncompressed size cap (%d bytes, max %d)";
+    private static final String ERR_NO_PART_PARENT_DIR = "Part file has no parent directory: ";
     private static final String SCHEME_HTTPS = "https";
     private static final Duration DOWNLOAD_TIMEOUT = Duration.ofMinutes(5);
     /** Conservative caps to defend against malformed/zip-bomb export packages. */
@@ -100,6 +104,16 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final long MAX_ZIP_ENTRY_BYTES = 256L * 1024 * 1024;      // 256 MiB
     /** Subdirectory name (under outputDirectory) for staging decrypted parts during streaming unzip. */
     private static final String PARTS_TEMP_SUBDIR = ".parts";
+    /** Filename prefix for plaintext part temp files written under {@link #PARTS_TEMP_SUBDIR}. */
+    private static final String PART_FILE_PREFIX = "part-";
+    /** Filename prefix for encrypted-download temp files (consumed during streaming decrypt). */
+    private static final String ENCRYPTED_TEMP_PREFIX = "enc-";
+    /** Extension for binary part temp files (both encrypted-download and plaintext). */
+    private static final String PART_FILE_SUFFIX = ".bin";
+    /** Suffix appended to in-flight target files; renamed to the final name only after verification. */
+    private static final String IN_FLIGHT_SUFFIX = ".tmp";
+    /** Bounded-copy buffer size for ZIP entry extraction (matches CipherInputStream default block buffer). */
+    private static final int COPY_BUFFER_BYTES = 8 * 1024;
 
     private final InvoiceClient invoices;
     private final HttpClient httpClient;
@@ -109,13 +123,17 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private volatile boolean disposed;
 
     /**
-     * @apiNote Internal — constructed by {@code InvoiceClientImpl.prepareExport(...)}.
+     * Package-private — Codex round-9 fresh review H3: prevents the
+     * @{@code @apiNote Internal} comment from drifting from reality. The
+     * AES key and IV must come from the matching server-issued export
+     * prepare response — passing arbitrary bytes here is undefined
+     * behaviour. Constructed via the same-package {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor}.
      */
-    public PreparedInvoiceExport(InvoiceClient invoices,
-                                 HttpClient httpClient,
-                                 String referenceNumber,
-                                 byte[] aesKey,
-                                 byte[] initVector) {
+    PreparedInvoiceExport(InvoiceClient invoices,
+                          HttpClient httpClient,
+                          String referenceNumber,
+                          byte[] aesKey,
+                          byte[] initVector) {
         this.invoices = Objects.requireNonNull(invoices, ERR_NULL_INVOICES);
         this.httpClient = Objects.requireNonNull(httpClient, ERR_NULL_HTTP_CLIENT);
         this.referenceNumber = Objects.requireNonNull(referenceNumber, ERR_NULL_REFERENCE);
@@ -180,10 +198,20 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     }
 
     /**
-     * Download every package part referenced by {@code status}, verify each
-     * part's SHA-256 against {@link InvoicePackagePart#partHash()}, decrypt
-     * with the retained AES key + IV, concatenate the parts back into a ZIP
-     * archive, and unzip into an {@link ExportedInvoicePackage}.
+     * Heap-buffered variant — convenience for small exports.
+     *
+     * <p>Downloads every package part referenced by {@code status}, verifies
+     * each part's SHA-256 against {@link InvoicePackagePart#partHash()},
+     * decrypts with the retained AES key + IV, concatenates the parts back
+     * into a ZIP archive in heap, and unzips into an
+     * {@link ExportedInvoicePackage}.
+     *
+     * <p><b>Memory characteristics:</b> the entire decrypted archive is
+     * materialised in a {@link ByteArrayOutputStream}; total heap usage
+     * scales linearly with package size. Use {@link #downloadAndDecryptTo}
+     * instead for production-sized exports — the file-backed variant
+     * holds at most one 8 KiB transfer buffer per part regardless of
+     * archive size.
      *
      * @param status the terminal status returned by {@link #awaitReady()}
      * @return decrypted, unzipped invoice package
@@ -212,16 +240,32 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     }
 
     /**
-     * File-backed variant of
-     * {@link #downloadAndDecrypt(InvoiceExportStatus)} for export packages
-     * too large to hold in heap.
+     * File-streaming variant — required for production-sized exports.
      *
-     * <p>Downloads each part, verifies SHA-256, decrypts, then unzips
-     * each entry directly to {@code outputDirectory}. The metadata file
-     * (if present) is written to {@code outputDirectory/_metadata.json};
-     * each invoice XML to {@code outputDirectory/<entryName>}.
+     * <p>Downloads each part, verifies SHA-256 (encrypted + plaintext),
+     * decrypts via a streaming {@link java.security.DigestInputStream} →
+     * {@link javax.crypto.CipherInputStream} → {@link java.security.DigestInputStream}
+     * pipeline, then unzips entries with a bounded copy directly to
+     * {@code outputDirectory}. The metadata file (if present) is written to
+     * {@code outputDirectory/_metadata.json}; each invoice XML to
+     * {@code outputDirectory/<entryName>}.
      *
-     * <p>The directory is created if it does not exist.
+     * <p><b>Memory characteristics:</b> heap usage is bounded by a single
+     * 8 KiB transfer buffer per part, independent of part size or archive
+     * size. Encrypted parts are streamed to a temp file then consumed via
+     * {@link java.io.SequenceInputStream} so the full archive is never
+     * concatenated in heap.
+     *
+     * <p><b>Hardening:</b> per-entry and total ZIP size caps
+     * ({@value #MAX_ZIP_ENTRY_BYTES} bytes / {@value #MAX_ZIP_TOTAL_BYTES} bytes
+     * respectively) are checked inline during the bounded copy — an oversize
+     * entry is rejected before its bytes are written to disk. Plaintext part
+     * files and ZIP entries are written to {@code *.tmp} companions and
+     * atomic-moved into place only after hash verification (parts) /
+     * size-cap checks (zip) succeed; on any failure the tmp is deleted in
+     * a {@code finally} block so no half-written, unverified file persists.
+     *
+     * <p>The output directory is created if it does not exist.
      *
      * <p>Spec citation: Step 5 of
      * {@code context/IMPLEMENTATION-PLAN-1.0.0-2026-05-03-1712.md}.
@@ -244,17 +288,21 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             throw new KsefException(ERR_ZIP_FAILED, ex);
         }
 
-        // True streaming pipeline:
-        //   1. per-part: download bytes (bounded by spec ≤256 MiB), verify
-        //      encrypted hash, decrypt, verify plaintext hash, write
-        //      decrypted plaintext to a temp file in outputDir/.parts/
-        //   2. concatenate the temp files via SequenceInputStream and feed
-        //      to ZipInputStream which writes each entry to outputDir
-        //   3. delete temp files (best-effort cleanup)
+        // True streaming pipeline (Codex round-9 F5):
+        //   1. per-part: download to a temporary encrypted file using
+        //      BodyHandlers.ofFile (no byte[] in heap),
+        //   2. stream the encrypted file through DigestInputStream(SHA-256)
+        //      → CipherInputStream(AES-CBC decrypt) → DigestInputStream(SHA-256)
+        //      → output plaintext file. Hashes are computed during the same
+        //      single pass; no buffer holds the full part.
+        //   3. delete encrypted file as soon as plaintext file is written.
+        //   4. concatenate the plaintext files via SequenceInputStream and
+        //      feed to ZipInputStream which writes each entry to outputDir.
+        //   5. delete plaintext files (best-effort cleanup).
         //
-        // Memory bound: at most one part's plaintext at a time
-        // (≤256 MiB), never the whole archive (which can reach 4 GiB
-        // before the cap kicks in). Closes F3.
+        // Memory bound: a fixed 8 KiB transfer buffer per part, regardless of
+        // part size (256 MiB cap or otherwise). The earlier implementation
+        // held two full-part byte[] arrays simultaneously.
         Path partsDir;
         try {
             partsDir = Files.createDirectories(outputDirectory.resolve(PARTS_TEMP_SUBDIR));
@@ -264,20 +312,9 @@ public final class PreparedInvoiceExport implements AutoCloseable {
         java.util.List<Path> partFiles = new java.util.ArrayList<>();
         try {
             for (InvoicePackagePart part : status.invoicePackage().parts()) {
-                byte[] encryptedBytes = downloadPart(part);
-                verifyEncryptedPartHash(part, encryptedBytes);
-                byte[] decryptedBytes = CryptoService.decryptAes(encryptedBytes, aesKey, initVector);
-                verifyPlaintextPartHash(part, decryptedBytes);
-                Path partFile = partsDir.resolve("part-" + part.ordinalNumber() + ".bin");
-                try {
-                    Files.write(partFile, decryptedBytes);
-                } catch (IOException ex) {
-                    throw new KsefException(ERR_ZIP_FAILED, ex);
-                }
+                Path partFile = partsDir.resolve(PART_FILE_PREFIX + part.ordinalNumber() + PART_FILE_SUFFIX);
+                streamDownloadDecryptVerify(part, partFile);
                 partFiles.add(partFile);
-                // Allow the part bytes to be GC'd before downloading next.
-                encryptedBytes = null;
-                decryptedBytes = null;
             }
             return unzipPackageStreamToDirectory(partFiles, outputDirectory);
         } finally {
@@ -293,6 +330,137 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             } catch (IOException cleanupFailure) {
                 LOGGER.debug(LOG_TEMP_CLEANUP_FAILED, referenceNumber, partsDir, cleanupFailure.getMessage());
             }
+        }
+    }
+
+    /**
+     * Stream-download {@code part} to a temporary encrypted file, then stream
+     * that file through SHA-256 (encrypted hash) → AES-CBC decrypt → SHA-256
+     * (plaintext hash) → {@code partFile}. Verifies both hashes once the
+     * stream is exhausted, then deletes the encrypted temp file.
+     *
+     * <p>This is the F5 fix: prior implementation called
+     * {@code BodyHandlers.ofByteArray()} which held the full encrypted part
+     * (up to 256 MiB) in heap, and {@code decryptAes} doubled the heap
+     * footprint. The streaming variant uses a single 8 KiB buffer per part.
+     */
+    private void streamDownloadDecryptVerify(InvoicePackagePart part, Path partFile) {
+        URI url = part.url();
+        if (url.getScheme() == null || !SCHEME_HTTPS.equalsIgnoreCase(url.getScheme())) {
+            throw new KsefException(ERR_INSECURE_PART_URL + redactQuery(url), null);
+        }
+        if (part.method() != null && !HTTP_GET.equalsIgnoreCase(part.method())) {
+            throw new KsefException(ERR_UNSUPPORTED_METHOD + part.method(), null);
+        }
+        Path tempDir = partFile.getParent();
+        if (tempDir == null) {
+            throw new KsefException(ERR_NO_PART_PARENT_DIR + partFile, null);
+        }
+        Path encryptedTemp;
+        try {
+            encryptedTemp = Files.createTempFile(tempDir, ENCRYPTED_TEMP_PREFIX, PART_FILE_SUFFIX);
+        } catch (IOException ex) {
+            throw new KsefException(ERR_ZIP_FAILED, ex);
+        }
+        // Decrypted plaintext is written to a *.tmp companion next to partFile,
+        // then atomic-moved into place only after BOTH hashes verify (Codex
+        // round-9 review: prevent leaving an unverified plaintext on disk if
+        // the hash check throws).
+        Path plaintextTemp = partFile.resolveSibling(partFile.getFileName() + IN_FLIGHT_SUFFIX);
+        try {
+            HttpRequest request = HttpRequest.newBuilder(url).GET().timeout(DOWNLOAD_TIMEOUT).build();
+            HttpResponse<Path> response;
+            try {
+                response = httpClient.send(request,
+                        HttpResponse.BodyHandlers.ofFile(encryptedTemp));
+            } catch (IOException ioFailure) {
+                throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), ioFailure);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), interrupted);
+            }
+            if (response.statusCode() != HTTP_OK) {
+                throw new KsefException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url)
+                        + " status=" + response.statusCode(), null);
+            }
+            decryptAndVerifyToFile(part, encryptedTemp, plaintextTemp);
+            atomicMove(plaintextTemp, partFile);
+        } finally {
+            deleteQuietly(encryptedTemp);
+            deleteQuietly(plaintextTemp);
+        }
+    }
+
+    private void decryptAndVerifyToFile(InvoicePackagePart part, Path encryptedTemp, Path plaintextTemp) {
+        try {
+            java.security.MessageDigest encryptedDigest = java.security.MessageDigest.getInstance(SHA_256);
+            java.security.MessageDigest plaintextDigest = java.security.MessageDigest.getInstance(SHA_256);
+            javax.crypto.Cipher cipher = CryptoService.newAesDecryptCipher(aesKey, initVector);
+            try (java.io.InputStream encrypted = Files.newInputStream(encryptedTemp);
+                 java.security.DigestInputStream digestEncrypted =
+                         new java.security.DigestInputStream(encrypted, encryptedDigest);
+                 javax.crypto.CipherInputStream cipherIn =
+                         new javax.crypto.CipherInputStream(digestEncrypted, cipher);
+                 java.security.DigestInputStream digestPlain =
+                         new java.security.DigestInputStream(cipherIn, plaintextDigest);
+                 java.io.OutputStream out = Files.newOutputStream(plaintextTemp)) {
+                digestPlain.transferTo(out);
+            }
+            verifyHashOrThrow(part.encryptedPartHash(), encryptedDigest, part.ordinalNumber());
+            if (part.encryptedPartHash() != null) {
+                LOGGER.debug(LOG_VERIFY, referenceNumber, part.ordinalNumber());
+            }
+            verifyHashOrThrow(part.partHash(), plaintextDigest, part.ordinalNumber());
+        } catch (java.security.NoSuchAlgorithmException missingAlgorithm) {
+            throw new KsefException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
+        } catch (IOException ioFailure) {
+            throw new KsefException(ERR_ZIP_FAILED, ioFailure);
+        }
+    }
+
+    /**
+     * Throw {@link KsefException} if {@code expected} is non-null and does not
+     * equal the freshly-{@code .digest()}-ed accumulator.
+     */
+    private static void verifyHashOrThrow(byte[] expected, java.security.MessageDigest actualDigest, int ordinal) {
+        if (expected == null) {
+            return;
+        }
+        byte[] actual = actualDigest.digest();
+        if (!java.util.Arrays.equals(expected, actual)) {
+            throw new KsefException(
+                    String.format(java.util.Locale.ROOT, ERR_HASH_MISMATCH, ordinal),
+                    null);
+        }
+    }
+
+    /**
+     * Atomic-move {@code source} to {@code target}; falls back to a non-atomic
+     * replace if the underlying filesystem does not support
+     * {@link java.nio.file.StandardCopyOption#ATOMIC_MOVE} (rare on a single
+     * directory in normal usage).
+     */
+    private static void atomicMove(Path source, Path target) {
+        try {
+            Files.move(source, target,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (java.nio.file.AtomicMoveNotSupportedException atomicNotSupported) {
+            try {
+                Files.move(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException fallbackFailure) {
+                throw new KsefException(ERR_ZIP_FAILED, fallbackFailure);
+            }
+        } catch (IOException moveFailure) {
+            throw new KsefException(ERR_ZIP_FAILED, moveFailure);
+        }
+    }
+
+    private void deleteQuietly(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException cleanupFailure) {
+            LOGGER.debug(LOG_TEMP_CLEANUP_FAILED, referenceNumber, path, cleanupFailure.getMessage());
         }
     }
 
@@ -337,12 +505,8 @@ public final class PreparedInvoiceExport implements AutoCloseable {
                             String.format(Locale.ROOT, ERR_ENTRY_LIMIT, entryCount, MAX_ZIP_ENTRIES), null);
                 }
                 Path target = resolveEntryTarget(outputDir, entry);
-                long entrySize = writeEntryToTarget(zip, target, entry.getName());
+                long entrySize = writeEntryToTarget(zip, target, entry.getName(), totalBytes);
                 totalBytes += entrySize;
-                if (totalBytes > MAX_ZIP_TOTAL_BYTES) {
-                    throw new KsefException(
-                            String.format(Locale.ROOT, ERR_TOTAL_SIZE, totalBytes, MAX_ZIP_TOTAL_BYTES), null);
-                }
                 if (METADATA_FILE.equals(entry.getName())) {
                     metadataPath = target;
                 } else {
@@ -368,20 +532,65 @@ public final class PreparedInvoiceExport implements AutoCloseable {
         return target;
     }
 
-    private static long writeEntryToTarget(ZipInputStream zip, Path target, String entryName) throws IOException {
-        long entrySize = Files.copy(zip, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        if (entrySize > MAX_ZIP_ENTRY_BYTES) {
-            throw new KsefException(
-                    String.format(Locale.ROOT, ERR_ENTRY_SIZE, entryName, entrySize, MAX_ZIP_ENTRY_BYTES),
-                    null);
+    /**
+     * Bounded-copy ZIP entry bytes into a {@code *.tmp} companion of {@code target},
+     * checking per-entry and running-total caps inline against {@link #MAX_ZIP_ENTRY_BYTES}
+     * and {@link #MAX_ZIP_TOTAL_BYTES} BEFORE writing each chunk. On success,
+     * atomic-move the tmp into place. Codex round-9 review (F2): the previous
+     * {@code Files.copy(zip, target, REPLACE_EXISTING)} would fully materialise
+     * an oversize entry to disk before the cap check, defeating the
+     * zip-bomb-hardening claim.
+     *
+     * @param totalBytesSoFar bytes already written by previous entries in this
+     *                         archive — used for inline running-total enforcement
+     * @return number of bytes written for this entry (≤ {@link #MAX_ZIP_ENTRY_BYTES})
+     */
+    private static long writeEntryToTarget(ZipInputStream zip, Path target, String entryName,
+                                            long totalBytesSoFar) throws IOException {
+        Path tempTarget = target.resolveSibling(target.getFileName() + IN_FLIGHT_SUFFIX);
+        long entrySize = 0L;
+        boolean writeSucceeded = false;
+        try {
+            try (java.io.OutputStream out = Files.newOutputStream(tempTarget)) {
+                byte[] buffer = new byte[COPY_BUFFER_BYTES];
+                while (true) {
+                    int chunkLength = zip.read(buffer);
+                    if (chunkLength < 0) {
+                        break;
+                    }
+                    entrySize += chunkLength;
+                    if (entrySize > MAX_ZIP_ENTRY_BYTES) {
+                        throw new KsefException(
+                                String.format(Locale.ROOT, ERR_ENTRY_SIZE, entryName, entrySize, MAX_ZIP_ENTRY_BYTES),
+                                null);
+                    }
+                    long projectedTotal = totalBytesSoFar + entrySize;
+                    if (projectedTotal > MAX_ZIP_TOTAL_BYTES) {
+                        throw new KsefException(
+                                String.format(Locale.ROOT, ERR_TOTAL_SIZE, projectedTotal, MAX_ZIP_TOTAL_BYTES),
+                                null);
+                    }
+                    out.write(buffer, 0, chunkLength);
+                }
+            }
+            atomicMove(tempTarget, target);
+            writeSucceeded = true;
+            return entrySize;
+        } finally {
+            if (!writeSucceeded) {
+                try {
+                    Files.deleteIfExists(tempTarget);
+                } catch (IOException cleanupFailure) {
+                    LOGGER.debug(LOG_UNZIP_TMP_CLEANUP_FAILED, tempTarget, cleanupFailure.getMessage());
+                }
+            }
         }
-        return entrySize;
     }
 
     private byte[] downloadPart(InvoicePackagePart part) {
         URI url = part.url();
         if (url.getScheme() == null || !SCHEME_HTTPS.equalsIgnoreCase(url.getScheme())) {
-            throw new KsefException(ERR_INSECURE_PART_URL + url, null);
+            throw new KsefException(ERR_INSECURE_PART_URL + redactQuery(url), null);
         }
         if (part.method() != null && !HTTP_GET.equalsIgnoreCase(part.method())) {
             throw new KsefException(ERR_UNSUPPORTED_METHOD + part.method(), null);
@@ -403,18 +612,12 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     }
 
     /**
-     * Strip the query string from {@code url} for inclusion in error messages.
-     * KSeF presigned download URLs carry signed query parameters that should
-     * not appear in logs or thrown exceptions.
+     * Delegate to shared {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction#redactQuery(URI)}
+     * so this class and {@code KsefBatchSession} share the same redaction policy
+     * (Codex round-9 fresh review H1).
      */
     private static String redactQuery(URI url) {
-        if (url.getRawQuery() == null) {
-            return url.toString();
-        }
-        String scheme = url.getScheme();
-        String authority = url.getRawAuthority();
-        String path = url.getRawPath();
-        return scheme + "://" + authority + (path == null ? "" : path) + "?<redacted>";
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction.redactQuery(url);
     }
 
     private void verifyEncryptedPartHash(InvoicePackagePart part, byte[] encryptedBytes) {

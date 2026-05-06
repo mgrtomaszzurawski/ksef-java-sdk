@@ -20,6 +20,8 @@ import java.util.Objects;
  *     .create("1234567890", "12345678901", false, "Test person")
  *     .build();
  * }</pre>
+ *
+ * @since 1.0.0
  */
 public final class TestPersonCreateBuilder {
 

@@ -11,6 +11,8 @@ import java.time.OffsetDateTime;
 
 /**
  * Builder for KSeF certificate query requests. All fields are optional filters.
+ *
+ * @since 1.0.0
  */
 public final class CertificateQueryBuilder {
 

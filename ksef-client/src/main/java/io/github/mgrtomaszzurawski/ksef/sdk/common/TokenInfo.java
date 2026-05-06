@@ -11,6 +11,8 @@ import java.time.OffsetDateTime;
  *
  * @param token the token string
  * @param validUntil expiration timestamp
+ *
+ * @since 1.0.0
  */
 public record TokenInfo(String token, OffsetDateTime validUntil) {
 

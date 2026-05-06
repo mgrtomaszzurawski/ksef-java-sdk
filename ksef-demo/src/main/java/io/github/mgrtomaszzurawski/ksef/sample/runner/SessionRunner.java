@@ -149,7 +149,7 @@ public final class SessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         KsefSession firstSession = null;
         try {
-            firstSession = context.client().openSession(FormCode.FA2);
+            firstSession = context.client().openSession(FormCode.FA3);
             String firstRef = firstSession.referenceNumber();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_FIRST_SESSION_OPENED, NAME, firstRef);
@@ -159,24 +159,30 @@ public final class SessionRunner implements DemoRunner {
             results.add(RunResult.fail(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
                     errorMessage(exception)));
         } finally {
-            // Close the first session manually so we can swallow the documented
-            // KSeF terminal-status-440 ("Sesja anulowana") that fires when the
-            // session is closed without any invoice having been sent. The
-            // try-with-resources path would treat that as a fatal close-time
-            // exception even though the recovery test itself already succeeded.
-            if (firstSession != null) {
-                try {
-                    firstSession.close();
-                } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException terminalFailure) {
-                    // 440 ("Sesja anulowana") on close without invoices is expected.
-                    // Anything else is logged but not rethrown — the recovery test
-                    // result was already recorded above, throwing here would mask it.
-                    if (terminalFailure.code() != TERMINAL_CANCELLED_NO_INVOICES
-                            && LOGGER.isWarnEnabled()) {
-                        LOGGER.warn("[{}] unexpected terminal status on close: code={} description={}",
-                                NAME, terminalFailure.code(), terminalFailure.description());
-                    }
-                }
+            closeNoInvoicesSession(firstSession);
+        }
+    }
+
+    /**
+     * Manually close a stale-recovery session, swallowing the documented
+     * KSeF terminal-status-440 ("Sesja anulowana") that fires when an
+     * interactive session ends without any invoice having been sent. The
+     * try-with-resources path would treat 440 as a fatal close-time
+     * exception even though the recovery probe itself already succeeded.
+     * Anything other than 440 is logged but not rethrown — throwing from
+     * this finally would mask the recovery probe's own result.
+     */
+    private static void closeNoInvoicesSession(KsefSession session) {
+        if (session == null) {
+            return;
+        }
+        try {
+            session.close();
+        } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException terminalFailure) {
+            if (terminalFailure.code() != TERMINAL_CANCELLED_NO_INVOICES
+                    && LOGGER.isWarnEnabled()) {
+                LOGGER.warn("[{}] unexpected terminal status on close: code={} description={}",
+                        NAME, terminalFailure.code(), terminalFailure.description());
             }
         }
     }
@@ -184,7 +190,7 @@ public final class SessionRunner implements DemoRunner {
     private void attemptConcurrentSession(DemoContext context, List<RunResult> results, long start) {
         KsefSession second = null;
         try {
-            second = context.client().openSession(FormCode.FA2);
+            second = context.client().openSession(FormCode.FA3);
             String secondRef = second.referenceNumber();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_CONCURRENT_PERMITTED, NAME, secondRef);
@@ -199,22 +205,7 @@ public final class SessionRunner implements DemoRunner {
             results.add(RunResult.ok(NAME, OP_STALE_SESSION_RECOVERY, elapsed(start),
                     OK_CONCURRENT_REJECTED_PREFIX + rejectedClass));
         } finally {
-            // Same 440-on-close swallow as runStaleSessionRecovery — the second
-            // session also closes without any invoice having been sent.
-            if (second != null) {
-                try {
-                    second.close();
-                } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException terminalFailure) {
-                    // 440 ("Sesja anulowana") on close without invoices is expected.
-                    // Anything else is logged but not rethrown — the recovery test
-                    // result was already recorded above, throwing here would mask it.
-                    if (terminalFailure.code() != TERMINAL_CANCELLED_NO_INVOICES
-                            && LOGGER.isWarnEnabled()) {
-                        LOGGER.warn("[{}] unexpected terminal status on close: code={} description={}",
-                                NAME, terminalFailure.code(), terminalFailure.description());
-                    }
-                }
-            }
+            closeNoInvoicesSession(second);
         }
     }
 
@@ -229,7 +220,7 @@ public final class SessionRunner implements DemoRunner {
     private KsefSession runOpenSession(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            KsefSession session = context.client().openSession(FormCode.FA2);
+            KsefSession session = context.client().openSession(FormCode.FA3);
             String sessionRef = session.referenceNumber();
             LOGGER.info(LOG_OPENED, NAME, sessionRef);
             context.state().setSessionReferenceNumber(sessionRef);

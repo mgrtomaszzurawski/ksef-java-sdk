@@ -20,6 +20,8 @@ import java.time.OffsetDateTime;
  * @param validTo validity end
  * @param lastUseDate last use timestamp
  * @param requestDate enrollment request date
+ *
+ * @since 1.0.0
  */
 public record CertificateListItem(
         String certificateSerialNumber,

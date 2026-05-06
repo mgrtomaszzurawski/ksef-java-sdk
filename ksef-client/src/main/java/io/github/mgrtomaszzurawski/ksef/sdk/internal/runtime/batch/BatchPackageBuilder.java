@@ -5,11 +5,11 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,46 +17,37 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Internal helper that turns a list of raw invoice XML byte arrays into the wire-level
- * batch package — encrypted ZIP split into part files on disk, plus {@link BatchFileSpec}
- * metadata ready for the open-batch-session request.
+ * Single-pass stream-through builder: invoice bytes → ZIP → SHA-256
+ * (full) → fixed-size chunk rotator → AES-256-CBC encrypt per chunk
+ * → SHA-256 (per-part) → part sink ({@link BatchPart.OnDiskPart} or
+ * {@link BatchPart.InMemoryPart}).
+ *
+ * <p>No intermediate ZIP file. Peak disk usage equals the size of the
+ * encrypted parts (≈ original batch size + AES padding, ≤16 bytes per
+ * chunk), not 2× as in the previous two-pass implementation.
  *
  * <p>Per KSeF spec ({@code sesja-wsadowa.md}):
  * <ul>
- *   <li>The original ZIP is split into chunks of at most {@code maxPartSize} bytes
- *       <em>before encryption</em>.</li>
- *   <li>Each chunk is encrypted independently with AES-256-CBC + PKCS#7 padding using
- *       the session AES key/IV. Encryption of each chunk is a fresh {@code Cipher.doFinal()}
- *       — every part has its own padding.</li>
- *   <li>{@code BatchFileSpec.fileSize} and {@code fileHash} describe the <em>original</em>
- *       (unencrypted) ZIP. KSeF reassembles parts after decrypting each one and verifies
- *       the resulting bytes match these values.</li>
- *   <li>Per-part {@code fileSize}/{@code fileHash} describe the <em>encrypted</em> part
- *       bytes (so KSeF can verify each upload before reassembly).</li>
+ *   <li>Original ZIP split into chunks ≤ {@code maxPartSize} bytes
+ *       <em>before</em> encryption.</li>
+ *   <li>Each chunk encrypted independently with AES-256-CBC + PKCS#7
+ *       (fresh {@code Cipher.doFinal()}).</li>
+ *   <li>{@code BatchFileSpec.fileSize/fileHash} describe the
+ *       <em>unencrypted</em> ZIP. Per-part {@code fileSize/fileHash}
+ *       describe the <em>encrypted</em> bytes.</li>
  * </ul>
  *
- * <p>Two sequential streaming passes via temp files:
- * <ol>
- *   <li>Stream invoice bytes into a ZIP temp file.</li>
- *   <li>Stream the unencrypted ZIP, splitting it into chunks of {@code maxPartSize}
- *       bytes; encrypt each chunk separately, write the encrypted bytes to a part
- *       temp file, and compute both the full plaintext SHA-256 and the per-part
- *       encrypted SHA-256 in the same pass.</li>
- * </ol>
+ * @apiNote Module-internal — declared {@code public} only so
+ * {@code KsefClient} can call into it. Package not exported via JPMS.
  *
- * <p>The temporary ZIP file is deleted immediately after the encrypt-and-split pass.
- * Part files remain until {@link BatchPackage#cleanup()} is called.
- *
- * @apiNote Module-internal — declared {@code public} only so {@code KsefClient}
- * (in package {@code sdk}) can call into it. Its package
- * {@code sdk.internal.batch} is intentionally not exported via {@code module-info.java};
- * consumers cannot reach this type.
+ * @since 1.0.0
  */
 public final class BatchPackageBuilder {
 
@@ -66,12 +57,13 @@ public final class BatchPackageBuilder {
     /** Default max chunk size <em>before encryption</em>: 100 MB (per KSeF spec). */
     private static final long DEFAULT_MAX_PART_SIZE = 100L * 1024L * 1024L;
     /** REQ-SESS-41 — KSeF caps a single session at 10,000 invoices (online or batch). */
-    private static final int MAX_INVOICES_PER_SESSION = 10_000;
-    private static final int MAX_PARTS = 50;
-    private static final long MAX_FILE_SIZE = 5_000_000_000L;
-    private static final int STREAM_BUFFER_BYTES = 64 * 1024;
-    private static final String TEMP_PREFIX_ZIP = "ksef-batch-zip-";
+    private static final int MAX_INVOICES_PER_SESSION =
+            io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.MAX_SESSION_INVOICES;
+    private static final int MAX_PARTS = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.MAX_BATCH_PARTS;
+    private static final long MAX_FILE_SIZE = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.MAX_BATCH_TOTAL_BYTES;
     private static final String TEMP_PREFIX_PART = "ksef-batch-part-";
+    /** Public so orphan-cleanup at startup can match the prefix. */
+    public static final String TEMP_PART_PREFIX = TEMP_PREFIX_PART;
     private static final String TEMP_SUFFIX = ".bin";
     private static final String ERR_NULL_INVOICES = "invoices must not be null";
     private static final String ERR_EMPTY_INVOICES = "invoices must not be empty";
@@ -81,151 +73,157 @@ public final class BatchPackageBuilder {
     private static final String ERR_FILE_TOO_LARGE = "ZIP exceeds the 5GB size limit";
     private static final String ERR_HASH_ALGORITHM = "SHA-256 algorithm not available";
     private static final String ERR_BUILD = "Failed to build batch package";
+    private static final String ERR_INMEMORY_CAP =
+            "Batch payload exceeds the in-memory assembly cap (limit=%d bytes)";
+    private static final String ERR_NULL_MODE = "assemblyMode must not be null";
 
-    private BatchPackageBuilder() {
-    }
+    private BatchPackageBuilder() { }
 
     /**
-     * Build the encrypted batch package with the default chunk size (100 MB before encryption).
+     * Build the encrypted batch package from in-heap invoice bytes
+     * with the default {@link BatchAssemblyMode#onDisk()} mode.
      */
     public static BatchPackage build(List<byte[]> invoices, byte[] aesKey, byte[] initVector) {
-        return build(invoices, aesKey, initVector, DEFAULT_MAX_PART_SIZE);
+        return build(invoices, aesKey, initVector, DEFAULT_MAX_PART_SIZE, BatchAssemblyMode.onDisk());
     }
 
     /**
-     * Build the encrypted batch package with a custom max chunk size (used by tests).
-     *
-     * @param invoices invoice XML byte arrays (one per ZIP entry)
-     * @param aesKey 32-byte AES-256 key (session key)
-     * @param initVector 16-byte AES-CBC IV
-     * @param maxPartSize maximum size per chunk <em>before encryption</em>, in bytes
-     * @return the package — caller must call {@link BatchPackage#cleanup()} when done
+     * Build the encrypted batch package from in-heap invoice bytes
+     * with the supplied {@link BatchAssemblyMode}.
      */
     public static BatchPackage build(List<byte[]> invoices, byte[] aesKey, byte[] initVector,
-                              long maxPartSize) {
+                                      BatchAssemblyMode assemblyMode) {
+        return build(invoices, aesKey, initVector, DEFAULT_MAX_PART_SIZE, assemblyMode);
+    }
+
+    /** Custom-chunk-size convenience overload defaulting to on-disk assembly. */
+    public static BatchPackage build(List<byte[]> invoices, byte[] aesKey, byte[] initVector,
+                                      long maxPartSize) {
+        return build(invoices, aesKey, initVector, maxPartSize, BatchAssemblyMode.onDisk());
+    }
+
+    /**
+     * Build the encrypted batch package, streaming each invoice from
+     * disk, with the default {@link BatchAssemblyMode#onDisk()} mode.
+     */
+    public static BatchPackage buildFromFiles(List<Path> invoiceFiles, byte[] aesKey, byte[] initVector) {
+        return buildFromFiles(invoiceFiles, aesKey, initVector, DEFAULT_MAX_PART_SIZE, BatchAssemblyMode.onDisk());
+    }
+
+    /**
+     * File-streaming variant with the supplied {@link BatchAssemblyMode}.
+     */
+    public static BatchPackage buildFromFiles(List<Path> invoiceFiles, byte[] aesKey, byte[] initVector,
+                                                BatchAssemblyMode assemblyMode) {
+        return buildFromFiles(invoiceFiles, aesKey, initVector, DEFAULT_MAX_PART_SIZE, assemblyMode);
+    }
+
+    /**
+     * Build the encrypted batch package with a custom chunk size.
+     */
+    public static BatchPackage build(List<byte[]> invoices, byte[] aesKey, byte[] initVector,
+                                      long maxPartSize, BatchAssemblyMode assemblyMode) {
         Objects.requireNonNull(invoices, ERR_NULL_INVOICES);
+        Objects.requireNonNull(assemblyMode, ERR_NULL_MODE);
         if (invoices.isEmpty()) {
             throw new IllegalArgumentException(ERR_EMPTY_INVOICES);
         }
-        // REQ-SESS-41 — KSeF enforces a 10,000-invoice-per-session cap per
-        // ksef-docs/faktury/weryfikacja-faktury.md:50. Fail-fast in the SDK
-        // so the caller doesn't waste an upload that the server would
-        // reject anyway.
-        if (invoices.size() > MAX_INVOICES_PER_SESSION) {
+        rejectOversizeInvoiceCount(invoices.size());
+        return runPipeline(zip -> writeInvoiceBytes(zip, invoices),
+                aesKey, initVector, maxPartSize, assemblyMode);
+    }
+
+    /**
+     * File-streaming overload with custom chunk size.
+     */
+    public static BatchPackage buildFromFiles(List<Path> invoiceFiles, byte[] aesKey, byte[] initVector,
+                                                long maxPartSize, BatchAssemblyMode assemblyMode) {
+        Objects.requireNonNull(invoiceFiles, ERR_NULL_INVOICES);
+        Objects.requireNonNull(assemblyMode, ERR_NULL_MODE);
+        if (invoiceFiles.isEmpty()) {
+            throw new IllegalArgumentException(ERR_EMPTY_INVOICES);
+        }
+        rejectOversizeInvoiceCount(invoiceFiles.size());
+        return runPipeline(zip -> writeInvoiceFiles(zip, invoiceFiles),
+                aesKey, initVector, maxPartSize, assemblyMode);
+    }
+
+    private static void rejectOversizeInvoiceCount(int count) {
+        if (count > MAX_INVOICES_PER_SESSION) {
             throw new IllegalArgumentException(
-                    "Batch contains " + invoices.size() + " invoices but KSeF caps a single session at "
+                    "Batch contains " + count + " invoices but KSeF caps a single session at "
                             + MAX_INVOICES_PER_SESSION + " (REQ-SESS-41)");
         }
-        Path zipFile = null;
-        List<Path> partFiles = new ArrayList<>();
+    }
+
+    @FunctionalInterface
+    private interface ZipWriter {
+        void writeTo(ZipOutputStream zip) throws IOException;
+    }
+
+    private static BatchPackage runPipeline(ZipWriter writer, byte[] aesKey, byte[] initVector,
+                                             long maxPartSize, BatchAssemblyMode mode) {
+        MessageDigest fullDigest = newSha256();
+        ChunkSink chunkSink = new ChunkSink(maxPartSize, aesKey, initVector, mode);
         try {
-            zipFile = writeZipToTempFile(invoices);
-            BatchFileSpec spec = splitAndEncrypt(zipFile, aesKey, initVector, maxPartSize, partFiles);
-            return new BatchPackage(spec, List.copyOf(partFiles));
+            try (DigestOutputStream digestStream = new DigestOutputStream(chunkSink, fullDigest);
+                 ZipOutputStream zip = new ZipOutputStream(digestStream)) {
+                writer.writeTo(zip);
+            }
+            chunkSink.flushFinalChunk();
+            long totalRawSize = chunkSink.totalRawBytes();
+            if (totalRawSize > MAX_FILE_SIZE) {
+                chunkSink.cleanupAll();
+                throw new IllegalStateException(ERR_FILE_TOO_LARGE);
+            }
+            List<BatchPart> parts = chunkSink.parts();
+            if (parts.size() > MAX_PARTS) {
+                chunkSink.cleanupAll();
+                throw new IllegalStateException(ERR_TOO_MANY_PARTS);
+            }
+            List<BatchFileSpec.Part> partSpecs = new ArrayList<>(parts.size());
+            for (BatchPart part : parts) {
+                partSpecs.add(new BatchFileSpec.Part(part.ordinalNumber(), part.sizeBytes(), part.hash()));
+            }
+            BatchFileSpec spec = new BatchFileSpec(totalRawSize, fullDigest.digest(), partSpecs);
+            return new BatchPackage(spec, parts);
         } catch (RuntimeException | IOException buildFailure) {
-            cleanupQuietly(partFiles);
+            chunkSink.cleanupAll();
             throw (buildFailure instanceof RuntimeException runtimeFailure)
                     ? runtimeFailure
                     : new IllegalStateException(ERR_BUILD, buildFailure);
-        } finally {
-            if (zipFile != null) {
-                deleteQuietly(zipFile);
-            }
         }
     }
 
-    private static Path writeZipToTempFile(List<byte[]> invoices) throws IOException {
-        Path zipFile = Files.createTempFile(TEMP_PREFIX_ZIP, TEMP_SUFFIX);
-        zipFile.toFile().deleteOnExit();
-        try (OutputStream out = Files.newOutputStream(zipFile);
-             ZipOutputStream zip = new ZipOutputStream(out)) {
-            int ordinal = 1;
-            for (byte[] invoice : invoices) {
-                Objects.requireNonNull(invoice, ERR_NULL_INVOICE);
-                if (invoice.length == 0) {
-                    throw new IllegalArgumentException(ERR_EMPTY_INVOICE);
-                }
-                ZipEntry entry = new ZipEntry(INVOICE_ENTRY_PREFIX + ordinal + INVOICE_ENTRY_SUFFIX);
-                zip.putNextEntry(entry);
-                zip.write(invoice);
-                zip.closeEntry();
-                ordinal++;
+    private static void writeInvoiceBytes(ZipOutputStream zip, List<byte[]> invoices) throws IOException {
+        int ordinal = 1;
+        for (byte[] invoice : invoices) {
+            Objects.requireNonNull(invoice, ERR_NULL_INVOICE);
+            if (invoice.length == 0) {
+                throw new IllegalArgumentException(ERR_EMPTY_INVOICE);
             }
+            ZipEntry entry = new ZipEntry(INVOICE_ENTRY_PREFIX + ordinal + INVOICE_ENTRY_SUFFIX);
+            zip.putNextEntry(entry);
+            zip.write(invoice);
+            zip.closeEntry();
+            ordinal++;
         }
-        return zipFile;
     }
 
-    /**
-     * Read the ZIP file in chunks of {@code maxPartSize} bytes; for each chunk: compute
-     * the plaintext SHA-256 (combined across all chunks), encrypt the chunk independently,
-     * and write the encrypted bytes to a part temp file with their own per-part SHA-256.
-     */
-    private static BatchFileSpec splitAndEncrypt(Path zipFile, byte[] aesKey, byte[] initVector,
-                                                 long maxPartSize, List<Path> partFiles)
-            throws IOException {
-        long totalRawSize = Files.size(zipFile);
-        if (totalRawSize > MAX_FILE_SIZE) {
-            throw new IllegalStateException(ERR_FILE_TOO_LARGE);
-        }
-        MessageDigest fullDigest = newSha256();
-        List<BatchFileSpec.Part> partSpecs = new ArrayList<>();
-
-        try (InputStream zipIn = Files.newInputStream(zipFile)) {
-            byte[] readBuffer = new byte[STREAM_BUFFER_BYTES];
-            int ordinal = 0;
-            byte[] chunkBuffer = new byte[(int) Math.min(maxPartSize, Integer.MAX_VALUE)];
-            int chunkLen = 0;
-
-            while (true) {
-                int wanted = chunkBuffer.length - chunkLen;
-                int read = zipIn.read(chunkBuffer, chunkLen, Math.min(wanted, readBuffer.length));
-                if (read < 0) {
-                    break;
-                }
-                chunkLen += read;
-                fullDigest.update(chunkBuffer, chunkLen - read, read);
-                if (chunkLen == chunkBuffer.length) {
-                    ordinal++;
-                    partSpecs.add(encryptChunkToPart(chunkBuffer, chunkLen, aesKey, initVector,
-                            ordinal, partFiles));
-                    chunkLen = 0;
-                }
+    private static void writeInvoiceFiles(ZipOutputStream zip, List<Path> invoiceFiles) throws IOException {
+        int ordinal = 1;
+        for (Path invoiceFile : invoiceFiles) {
+            Objects.requireNonNull(invoiceFile, ERR_NULL_INVOICE);
+            long size = Files.size(invoiceFile);
+            if (size == 0) {
+                throw new IllegalArgumentException(ERR_EMPTY_INVOICE);
             }
-            // final partial chunk (could be empty if total raw size is multiple of maxPartSize)
-            if (chunkLen > 0) {
-                ordinal++;
-                partSpecs.add(encryptChunkToPart(chunkBuffer, chunkLen, aesKey, initVector,
-                        ordinal, partFiles));
-            }
+            ZipEntry entry = new ZipEntry(INVOICE_ENTRY_PREFIX + ordinal + INVOICE_ENTRY_SUFFIX);
+            zip.putNextEntry(entry);
+            Files.copy(invoiceFile, zip);
+            zip.closeEntry();
+            ordinal++;
         }
-
-        if (partSpecs.size() > MAX_PARTS) {
-            throw new IllegalStateException(ERR_TOO_MANY_PARTS);
-        }
-        // BatchFileSpec.fileSize/fileHash describe the *unencrypted* ZIP (per KSeF spec)
-        return new BatchFileSpec(totalRawSize, fullDigest.digest(), partSpecs);
-    }
-
-    /**
-     * Encrypt a single chunk independently and write the ciphertext to a part temp file,
-     * computing the per-part SHA-256 of the encrypted bytes.
-     */
-    private static BatchFileSpec.Part encryptChunkToPart(byte[] chunk, int chunkLen,
-                                                        byte[] aesKey, byte[] initVector,
-                                                        int ordinal, List<Path> partFiles)
-            throws IOException {
-        byte[] encrypted = CryptoService.encryptAes(
-                chunkLen == chunk.length ? chunk : java.util.Arrays.copyOf(chunk, chunkLen),
-                aesKey, initVector);
-        Path partPath = Files.createTempFile(TEMP_PREFIX_PART, TEMP_SUFFIX);
-        partPath.toFile().deleteOnExit();
-        MessageDigest partDigest = newSha256();
-        try (OutputStream raw = Files.newOutputStream(partPath);
-             DigestOutputStream out = new DigestOutputStream(raw, partDigest)) {
-            out.write(encrypted);
-        }
-        partFiles.add(partPath);
-        return new BatchFileSpec.Part(ordinal, encrypted.length, partDigest.digest());
     }
 
     private static MessageDigest newSha256() {
@@ -236,39 +234,219 @@ public final class BatchPackageBuilder {
         }
     }
 
-    private static void deleteQuietly(Path path) {
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException ignored) {
-            // best effort — temp file will be removed on JVM exit
-        }
-    }
+    /**
+     * Pipeline tail: collects bytes into a fixed-size buffer; on each
+     * full buffer encrypt + per-part hash + emit one {@link BatchPart}.
+     */
+    private static final class ChunkSink extends OutputStream {
 
-    private static void cleanupQuietly(List<Path> paths) {
-        for (Path path : paths) {
-            deleteQuietly(path);
+        private final int chunkBufferSize;
+        private byte[] chunkBuffer;
+        private final byte[] aesKey;
+        private final byte[] initVector;
+        private final BatchAssemblyMode mode;
+        private final List<BatchPart> emitted = new ArrayList<>();
+        private int chunkLen;
+        private long totalRawBytes;
+        private long totalInMemoryBytes;
+        private int nextOrdinal = 1;
+        private boolean closed;
+
+        ChunkSink(long maxPartSize, byte[] aesKey, byte[] initVector, BatchAssemblyMode mode) {
+            // Cap the chunking buffer against the in-memory cap so callers
+            // who pick inMemory(50MB) do not get a 100MB-default chunk
+            // buffer allocated regardless. For OnDisk mode the buffer
+            // stays at maxPartSize (default 100 MB).
+            //
+            // Lazy allocation: chunkBuffer is allocated on the first write
+            // (see ensureChunkBuffer) so a tiny ZIP that fits in << 100MB
+            // never pays the 100MB allocation cost.
+            long bufferSize = maxPartSize;
+            if (mode instanceof BatchAssemblyMode.InMemory inMem) {
+                bufferSize = Math.min(maxPartSize, inMem.maxBytes());
+            }
+            this.chunkBufferSize = (int) Math.min(bufferSize, Integer.MAX_VALUE);
+            this.aesKey = aesKey.clone();
+            this.initVector = initVector.clone();
+            this.mode = mode;
+        }
+
+        private void ensureChunkBuffer() {
+            if (chunkBuffer == null) {
+                chunkBuffer = new byte[chunkBufferSize];
+            }
+        }
+
+        @Override
+        public void write(int unsignedByte) throws IOException {
+            byte[] singleByteBuffer = { (byte) unsignedByte };
+            write(singleByteBuffer, 0, 1);
+        }
+
+        @Override
+        public void write(byte[] buffer, int offset, int length) throws IOException {
+            ensureChunkBuffer();
+            int remaining = length;
+            int from = offset;
+            while (remaining > 0) {
+                int free = chunkBuffer.length - chunkLen;
+                int copy = Math.min(free, remaining);
+                System.arraycopy(buffer, from, chunkBuffer, chunkLen, copy);
+                chunkLen += copy;
+                totalRawBytes += copy;
+                from += copy;
+                remaining -= copy;
+                if (chunkLen == chunkBuffer.length) {
+                    emitChunk();
+                }
+            }
+        }
+
+        void flushFinalChunk() throws IOException {
+            if (chunkLen > 0) {
+                emitChunk();
+            }
+        }
+
+        private void emitChunk() throws IOException {
+            byte[] plaintext = chunkLen == chunkBuffer.length
+                    ? chunkBuffer
+                    : Arrays.copyOf(chunkBuffer, chunkLen);
+            byte[] ciphertext = CryptoService.encryptAes(plaintext, aesKey, initVector);
+            byte[] partHash = hashOf(ciphertext);
+            BatchPart part;
+            if (mode instanceof BatchAssemblyMode.OnDisk onDisk) {
+                part = writeToDisk(onDisk, ciphertext, partHash);
+            } else if (mode instanceof BatchAssemblyMode.InMemory inMemory) {
+                part = heldInMemory(inMemory, ciphertext, partHash);
+            } else {
+                throw new IllegalStateException("Unknown BatchAssemblyMode: " + mode.getClass());
+            }
+            emitted.add(part);
+            chunkLen = 0;
+        }
+
+        private BatchPart writeToDisk(BatchAssemblyMode.OnDisk onDisk, byte[] ciphertext, byte[] partHash)
+                throws IOException {
+            Path partPath = createOwnerOnlyTempFile(onDisk.tempDirectory());
+            partPath.toFile().deleteOnExit();
+            Files.write(partPath, ciphertext);
+            BatchPart.OnDiskPart part = new BatchPart.OnDiskPart(nextOrdinal, ciphertext.length, partHash, partPath);
+            nextOrdinal++;
+            return part;
+        }
+
+        private BatchPart heldInMemory(BatchAssemblyMode.InMemory inMemory, byte[] ciphertext, byte[] partHash) {
+            totalInMemoryBytes += ciphertext.length;
+            if (totalInMemoryBytes > inMemory.maxBytes()) {
+                throw new IllegalStateException(String.format(ERR_INMEMORY_CAP, inMemory.maxBytes()));
+            }
+            BatchPart.InMemoryPart part = new BatchPart.InMemoryPart(nextOrdinal, partHash, ciphertext);
+            nextOrdinal++;
+            return part;
+        }
+
+        private static byte[] hashOf(byte[] bytes) {
+            MessageDigest digest = newSha256();
+            digest.update(bytes);
+            return digest.digest();
+        }
+
+        /**
+         * Create a temp file with owner-only POSIX permissions where supported.
+         * Files hold AES-CBC ciphertext only — keys never on disk — but
+         * defense-in-depth: prevent accidental disclosure on multi-user hosts.
+         * Falls back to default permissions on non-POSIX filesystems (Windows).
+         */
+        private static Path createOwnerOnlyTempFile(Path tempDirectory) throws IOException {
+            try {
+                java.nio.file.attribute.FileAttribute<?> ownerOnly =
+                        java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                                java.util.EnumSet.of(
+                                        java.nio.file.attribute.PosixFilePermission.OWNER_READ,
+                                        java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
+                if (tempDirectory == null) {
+                    return Files.createTempFile(TEMP_PREFIX_PART, TEMP_SUFFIX, ownerOnly);
+                }
+                return Files.createTempFile(tempDirectory, TEMP_PREFIX_PART, TEMP_SUFFIX, ownerOnly);
+            } catch (UnsupportedOperationException nonPosix) {
+                if (tempDirectory == null) {
+                    return Files.createTempFile(TEMP_PREFIX_PART, TEMP_SUFFIX);
+                }
+                return Files.createTempFile(tempDirectory, TEMP_PREFIX_PART, TEMP_SUFFIX);
+            }
+        }
+
+        long totalRawBytes() {
+            return totalRawBytes;
+        }
+
+        List<BatchPart> parts() {
+            return List.copyOf(emitted);
+        }
+
+        void cleanupAll() {
+            for (BatchPart part : emitted) {
+                part.cleanup();
+            }
+            emitted.clear();
+        }
+
+        @Override
+        public void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            // Final-chunk flush is driven by the caller via flushFinalChunk()
+            // so we do not auto-flush here (avoids double-flush when the
+            // ZipOutputStream above us also closes).
         }
     }
 
     /**
-     * Result of a successful build — references on-disk encrypted part files plus the
-     * {@link BatchFileSpec} describing the <em>unencrypted</em> ZIP, ready for the
-     * open-batch-session request.
+     * Result of a successful build — references encrypted parts in
+     * one of the {@link BatchAssemblyMode}s plus the {@link BatchFileSpec}
+     * describing the unencrypted ZIP.
      *
-     * <p>Caller must invoke {@link #cleanup()} once parts have been uploaded
-     * (typically from {@link KsefBatchSession#close()}).
+     * <p>Caller must invoke {@link #cleanup()} once parts have been
+     * uploaded — typically from {@link KsefBatchSession#close()}.
      */
-    public record BatchPackage(BatchFileSpec spec, List<Path> partFiles) {
+    public record BatchPackage(BatchFileSpec spec, List<BatchPart> parts) {
 
         public BatchPackage {
             Objects.requireNonNull(spec, "spec must not be null");
-            Objects.requireNonNull(partFiles, "partFiles must not be null");
-            partFiles = List.copyOf(partFiles);
+            Objects.requireNonNull(parts, "parts must not be null");
+            parts = List.copyOf(parts);
         }
 
-        /** Delete all part temp files. Idempotent — safe to call multiple times. */
+        /** Delete all on-disk part files and release in-memory part references. Idempotent. */
         public void cleanup() {
-            cleanupQuietly(partFiles);
+            for (BatchPart part : parts) {
+                part.cleanup();
+            }
+        }
+
+        /**
+         * Read the encrypted bytes for part {@code index}, regardless of
+         * whether the part lives on disk or in heap. Defensive copy on
+         * the in-memory path.
+         *
+         * <p><strong>Test-only helper.</strong> Production batch upload
+         * uses {@code BodyPublishers.ofFile(...)} which streams from disk
+         * without materialising the full part. This method exists only
+         * for unit-test assertions on small fixture parts; do not call it
+         * from production code paths against real 100 MiB parts.
+         */
+        public byte[] readPartBytes(int index) throws java.io.IOException {
+            BatchPart part = parts.get(index);
+            if (part instanceof BatchPart.OnDiskPart onDisk) {
+                return Files.readAllBytes(onDisk.path());
+            }
+            if (part instanceof BatchPart.InMemoryPart inMem) {
+                return inMem.bytes();
+            }
+            throw new IllegalStateException("Unknown BatchPart subtype: " + part.getClass());
         }
     }
 }

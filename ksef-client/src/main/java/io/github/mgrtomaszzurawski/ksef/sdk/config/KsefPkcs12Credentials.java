@@ -28,6 +28,8 @@ import java.util.Objects;
  * @param identifier authentication context identifier (NIP, internal id, EU VAT, or Peppol)
  * @param subjectIdentifier strategy for the {@code SubjectIdentifierType}
  *     XML element (REQ-AUTH-033)
+ *
+ * @since 1.0.0
  */
 public record KsefPkcs12Credentials(
         Path keystorePath,

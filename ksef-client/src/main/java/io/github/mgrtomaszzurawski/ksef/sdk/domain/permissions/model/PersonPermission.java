@@ -19,6 +19,8 @@ import java.time.OffsetDateTime;
  * @param permissionState Active or Inactive
  * @param startDate when the permission was granted
  * @param canDelegate whether the permission can be delegated
+ *
+ * @since 1.0.0
  */
 public record PersonPermission(
         String id,

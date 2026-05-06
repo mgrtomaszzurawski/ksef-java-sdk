@@ -9,6 +9,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
  * @param firstName first name (persons only)
  * @param surname surname (persons only)
  * @param fullName full/trade name (entities only)
+ *
+ * @since 1.0.0
  */
 public record PermissionSubjectDetails(String firstName, String surname, String fullName) {
 }

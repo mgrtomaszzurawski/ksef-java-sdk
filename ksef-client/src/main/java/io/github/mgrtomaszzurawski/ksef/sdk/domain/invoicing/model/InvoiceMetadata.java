@@ -33,6 +33,8 @@ import java.util.Objects;
  * @param invoiceHash SHA-256 hash of the invoice content
  * @param hashOfCorrectedInvoice hash of the corrected invoice (for corrections)
  * @param thirdSubjects third subjects on the invoice (may be empty)
+ *
+ * @since 1.0.0
  */
 public record InvoiceMetadata(
         String ksefNumber,

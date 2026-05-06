@@ -20,6 +20,8 @@ import java.util.List;
 /**
  * SDK-record → generated {@code *Raw} mappers for permissions requests.
  * Lives in a non-exported package; consumers can't reach it.
+ *
+ * @since 1.0.0
  */
 public final class PermissionsRequestMappers {
 

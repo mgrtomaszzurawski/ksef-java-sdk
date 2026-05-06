@@ -20,9 +20,14 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpResponse;
-import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,21 +40,29 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Batch session flow (manual variant):
  * <ol>
- *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, PreparedBatchPackage)}</li>
+ *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode,
+ *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage,
+ *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)}</li>
  *   <li>Upload encrypted ZIP parts to the URLs from {@link #partUploadRequests()}</li>
  *   <li>Call {@link #close()} (or use try-with-resources) to finalize</li>
  * </ol>
  *
  * <p>Batch session flow (automated variant):
  * <ol>
- *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, java.util.List)}
+ *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, java.util.List,
+ *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)}
  *       — the SDK builds the encrypted ZIP and computes hashes using temp files</li>
  *   <li>Call {@link #uploadParts()} to push every encrypted part file to its URL</li>
  *   <li>Call {@link #close()} to finalize and delete the temp files</li>
  * </ol>
  *
- * @see KsefClient#openBatchSession(FormCode, PreparedBatchPackage)
- * @see KsefClient#openBatchSession(FormCode, java.util.List)
+ * @see KsefClient#openBatchSession(FormCode,
+ *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage,
+ *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
+ * @see KsefClient#openBatchSession(FormCode, java.util.List,
+ *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
+ *
+ * @since 1.0.0
  */
 public final class KsefBatchSession implements AutoCloseable {
 
@@ -75,7 +88,8 @@ public final class KsefBatchSession implements AutoCloseable {
      * mid-upload rather than letting the server reject the request.
      * Spec: {@code ksef-docs/sesja-wsadowa.md:288-293}.
      */
-    private static final long UPLOAD_BUDGET_MINUTES_PER_PART = 20L;
+    /** REQ-SESS-13 — minutes per part the server allows for the cumulative upload. */
+    public static final long UPLOAD_BUDGET_MINUTES_PER_PART = 20L;
     private static final long UPLOAD_BUDGET_NANOS_PER_PART =
             UPLOAD_BUDGET_MINUTES_PER_PART * 60L * 1_000_000_000L;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
@@ -89,7 +103,15 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
     private static final String METHOD_PUT = "PUT";
+    private static final String SCHEME_HTTPS = "https";
+    private static final String ERR_INSECURE_UPLOAD_URL =
+            "Refusing to upload batch part over non-HTTPS URL: ";
 
+    /**
+     * URL is logged via {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction#redactQuery(java.net.URI)}
+     * — KSeF returns presigned upload URLs whose query parameters are
+     * effectively short-lived bearer credentials (Codex H1).
+     */
     private static final String LOG_PART_UPLOADED = "Uploaded batch part {} to {}";
     private static final String LOG_CLOSED = "Closed KSeF batch session {}";
     private static final String LOG_CLOSE_BUSY_RETRY = "Batch session {} still busy (415), retrying in {}ms";
@@ -107,58 +129,98 @@ public final class KsefBatchSession implements AutoCloseable {
     private final List<PartUploadRequest> partUploadRequests;
     private final BatchPackageBuilder.BatchPackage batchPackage;
     private final java.util.function.LongSupplier nanoTimeSource;
+    @Nullable private final OffsetDateTime validUntil;
     private volatile boolean closed;
 
     /**
-     * Constructor used by tests and by {@link KsefClient} when opening a batch session
-     * from a pre-built {@link PreparedBatchPackage} (no SDK-managed part files —
-     * the consumer is responsible for uploading via {@link #partUploadRequests()};
-     * {@link #uploadParts()} will fail).
-     *
-     * @apiNote Internal — constructed by {@code KsefClient.openBatchSession(...)}.
-     * The {@link SessionClient} parameter type lives in a non-exported package, so
-     * this constructor is not callable from consumer code despite being public.
+     * Package-private — see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
+     * (Codex round-9 fresh review H3).
      */
-    public KsefBatchSession(SessionClient sessionClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests) {
         this(sessionClient, null, referenceNumber, partUploadRequests, null, System::nanoTime);
     }
 
     /**
-     * Full constructor — used by {@link KsefClient} when the session was opened from a
-     * list of raw invoices and the SDK retains references to the encrypted part files
-     * for upload + cleanup.
-     *
-     * @apiNote Internal — see the alternative-overload note above.
+     * Package-private — see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
+     * (Codex round-9 fresh review H3).
      */
-    public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage) {
         this(sessionClient, httpClient, referenceNumber, partUploadRequests, batchPackage, System::nanoTime);
     }
 
     /**
-     * Internal constructor used by tests that need to drive the upload-budget
-     * deadline branch deterministically. Production code paths use
-     * {@code System::nanoTime}; tests can substitute a {@link java.util.function.LongSupplier}
-     * that simulates clock progression beyond the per-part budget.
-     *
-     * @apiNote Internal — {@link SessionClient} parameter type is not exported.
+     * Package-private — internal constructor with injectable nano-time source
+     * for upload-budget tests; see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
+     * for the construction policy (Codex round-9 fresh review H3).
      */
-    public KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
                      BatchPackageBuilder.BatchPackage batchPackage,
                      java.util.function.LongSupplier nanoTimeSource) {
+        this(sessionClient, httpClient, referenceNumber, partUploadRequests, batchPackage,
+                nanoTimeSource, null);
+    }
+
+    /**
+     * Package-private — canonical constructor with validUntil
+     * (Codex 2026-05-05 F8a). The other ctors delegate here with
+     * {@code validUntil=null}.
+     */
+    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+                     List<PartUploadRequest> partUploadRequests,
+                     BatchPackageBuilder.BatchPackage batchPackage,
+                     java.util.function.LongSupplier nanoTimeSource,
+                     @Nullable OffsetDateTime validUntil) {
         this.sessionClient = sessionClient;
         this.httpClient = httpClient;
         this.referenceNumber = referenceNumber;
         this.partUploadRequests = List.copyOf(partUploadRequests);
         if (batchPackage != null
-                && batchPackage.partFiles().size() != partUploadRequests.size()) {
+                && batchPackage.parts().size() != partUploadRequests.size()) {
             throw new IllegalArgumentException(ERR_PART_COUNT_MISMATCH);
         }
         this.batchPackage = batchPackage;
-        this.nanoTimeSource = java.util.Objects.requireNonNull(nanoTimeSource, "nanoTimeSource");
+        this.nanoTimeSource = Objects.requireNonNull(nanoTimeSource, "nanoTimeSource");
+        this.validUntil = validUntil;
+    }
+
+    /**
+     * Session expiration timestamp captured from the open-batch
+     * response (Codex 2026-05-05 F8a). May be empty for sessions
+     * constructed via legacy paths or test fixtures.
+     *
+     * <p>Use {@link #status()} to fetch the current value from the
+     * server when freshness matters.
+     */
+    public Optional<OffsetDateTime> validUntil() {
+        return Optional.ofNullable(validUntil);
+    }
+
+    /**
+     * Time remaining until {@link #validUntil()} relative to the supplied
+     * clock. Empty when {@code validUntil} is unknown. Negative durations
+     * indicate an already-expired session.
+     */
+    public Optional<Duration> timeToExpiry(Clock clock) {
+        Objects.requireNonNull(clock, "clock must not be null");
+        return validUntil().map(deadline -> Duration.between(clock.instant(), deadline.toInstant()));
+    }
+
+    /**
+     * Spec-defined upload budget for this session: {@link #UPLOAD_BUDGET_MINUTES_PER_PART}
+     * minutes per declared part, applied cumulatively to the entire
+     * {@link #uploadParts()} call (REQ-SESS-13). Consumers planning
+     * external retry/circuit-breaker logic can use this to compute
+     * their own deadline before invoking the SDK.
+     *
+     * @return total minutes allowed = parts × {@link #UPLOAD_BUDGET_MINUTES_PER_PART}
+     * @since 1.0.0
+     */
+    public Duration uploadBudget() {
+        return Duration.ofMinutes(partUploadRequests.size() * UPLOAD_BUDGET_MINUTES_PER_PART);
     }
 
     /**
@@ -186,7 +248,9 @@ public final class KsefBatchSession implements AutoCloseable {
      * Upload all encrypted batch parts to their respective URLs.
      *
      * <p>Only available when the session was opened via
-     * {@link KsefClient#openBatchSession(FormCode, java.util.List)} — that flow keeps
+     * {@link KsefClient#openBatchSession(FormCode, java.util.List,
+     *     io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)}
+     * — that flow keeps
      * references to the encrypted part files. When the session was opened from a
      * {@link PreparedBatchPackage}, this method throws {@link IllegalStateException}.
      *
@@ -201,7 +265,7 @@ public final class KsefBatchSession implements AutoCloseable {
         if (batchPackage == null || httpClient == null) {
             throw new IllegalStateException(ERR_NO_PARTS);
         }
-        List<Path> partFiles = batchPackage.partFiles();
+        List<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart> partFiles = batchPackage.parts();
         // REQ-SESS-13: KSeF gives 20 minutes per part (cumulative across parts)
         // for the entire upload. Track elapsed time and fail-fast if the
         // budget is about to be exceeded; this surfaces a clean SDK error
@@ -221,15 +285,41 @@ public final class KsefBatchSession implements AutoCloseable {
         }
     }
 
-    private void uploadSinglePart(PartUploadRequest upload, Path partFile) {
-        HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url());
+    private void uploadSinglePart(PartUploadRequest upload,
+                                  io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart part) {
+        // Defense in depth: KSeF only ever returns HTTPS pre-signed URLs,
+        // but assert it explicitly so a misbehaving/spoofed presigner
+        // cannot trick the SDK into uploading ciphertext over plaintext.
+        if (upload.url().getScheme() == null
+                || !SCHEME_HTTPS.equalsIgnoreCase(upload.url().getScheme())) {
+            throw new KsefException(
+                    ERR_INSECURE_UPLOAD_URL
+                            + io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction
+                                    .redactQuery(upload.url()),
+                    null);
+        }
+        HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url())
+                // Performance review CRITICAL: cap the per-request socket
+                // timeout at the per-part upload budget so a hung TCP
+                // connection mid-upload aborts cleanly rather than
+                // deadlocking the call. The outer per-part budget check
+                // only fires between parts.
+                .timeout(Duration.ofMinutes(UPLOAD_BUDGET_MINUTES_PER_PART));
         String method = upload.method() != null ? upload.method() : METHOD_PUT;
+        HttpRequest.BodyPublisher publisher;
         try {
-            builder.method(method, BodyPublishers.ofFile(partFile));
+            if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart onDisk) {
+                publisher = BodyPublishers.ofFile(onDisk.path());
+            } else if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.InMemoryPart inMem) {
+                publisher = BodyPublishers.ofByteArray(inMem.bytes());
+            } else {
+                throw new IllegalStateException("Unknown BatchPart subtype: " + part.getClass());
+            }
         } catch (java.io.FileNotFoundException missingFile) {
             throw new KsefNetworkException(
                     String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), missingFile);
         }
+        builder.method(method, publisher);
         Map<String, String> headers = upload.headers() != null ? upload.headers() : Map.of();
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             builder.header(entry.getKey(), entry.getValue());
@@ -242,7 +332,8 @@ public final class KsefBatchSession implements AutoCloseable {
                         String.format(ERR_UPLOAD_FAILED, upload.ordinalNumber(), response.statusCode()),
                         null);
             }
-            LOGGER.debug(LOG_PART_UPLOADED, upload.ordinalNumber(), upload.url());
+            LOGGER.debug(LOG_PART_UPLOADED, upload.ordinalNumber(),
+                    io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction.redactQuery(upload.url()));
         } catch (IOException ioFailure) {
             throw new KsefNetworkException(
                     String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), ioFailure);
@@ -260,6 +351,72 @@ public final class KsefBatchSession implements AutoCloseable {
      */
     public SessionStatus status() {
         return sessionClient.getStatus(referenceNumber);
+    }
+
+    /**
+     * All invoices submitted within this batch session, with the
+     * {@code x-continuation-token} cursor followed internally
+     * (Codex round-9 manual-validation A.2.2 — mirrors {@code KsefSession.invoices()}).
+     */
+    public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices invoices() {
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices(
+                null, sessionClient.getAllInvoices(referenceNumber));
+    }
+
+    /**
+     * Status of a specific invoice within this batch session.
+     */
+    public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus invoiceStatus(
+            String invoiceReferenceNumber) {
+        return sessionClient.getInvoiceStatus(referenceNumber, invoiceReferenceNumber);
+    }
+
+    /**
+     * Failed invoices within this batch session, cursor followed internally.
+     */
+    public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices failedInvoices() {
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices(
+                null, sessionClient.getAllFailedInvoices(referenceNumber));
+    }
+
+    /**
+     * Download UPO XML for a specific invoice in this batch session
+     * (post-terminal-close).
+     */
+    public byte[] upo(String invoiceReferenceNumber) {
+        return sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
+    }
+
+    /**
+     * Download UPO XML for a specific invoice by KSeF number.
+     */
+    public byte[] upoByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber ksefNumber) {
+        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
+    }
+
+    /**
+     * Convenience overload that parses the raw KSeF number string.
+     */
+    public byte[] upoByKsefNumber(String ksefNumber) {
+        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
+    }
+
+    /**
+     * Download every bulk-session UPO XML page referenced in
+     * {@link SessionStatus#upo()}. Same shape as
+     * {@code KsefSession.bulkUpos()} — see Javadoc there for spec context
+     * (Codex round-9 manual-validation A.2.1).
+     */
+    public java.util.List<byte[]> bulkUpos() {
+        SessionStatus current = sessionClient.getStatus(referenceNumber);
+        if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
+            return java.util.List.of();
+        }
+        java.util.List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
+        for (var page : current.upo().pages()) {
+            pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
+        }
+        return java.util.List.copyOf(pages);
     }
 
     /**

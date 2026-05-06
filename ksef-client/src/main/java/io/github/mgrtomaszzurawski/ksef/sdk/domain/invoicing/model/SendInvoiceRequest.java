@@ -16,6 +16,8 @@ import java.util.Objects;
  * corrections (korekta techniczna) per
  * {@code ksef-docs/offline/korekta-techniczna.md}. For normal sends it
  * stays {@code null} and is omitted from the wire request.
+ *
+ * @since 1.0.0
  */
 public record SendInvoiceRequest(
         byte[] invoiceHash,

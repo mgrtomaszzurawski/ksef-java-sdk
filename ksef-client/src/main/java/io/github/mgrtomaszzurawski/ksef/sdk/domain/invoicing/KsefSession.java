@@ -14,8 +14,13 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Example:
  * <pre>{@code
- * try (KsefSession session = client.openSession(FormCode.FA2)) {
+ * try (KsefSession session = client.openSession(FormCode.FA3)) {
  *     SendInvoiceResult result = session.send(invoiceXmlBytes);
  *     byte[] upo = session.upo(result.referenceNumber());
  * }
@@ -38,6 +43,8 @@ import org.slf4j.LoggerFactory;
  * then polls until processing completes (status 200). UPO is available after close completes.
  *
  * @see KsefClient#openSession(FormCode)
+ *
+ * @since 1.0.0
  */
 public final class KsefSession implements AutoCloseable {
 
@@ -77,21 +84,55 @@ public final class KsefSession implements AutoCloseable {
     private final String referenceNumber;
     private final byte[] aesKey;
     private final byte[] initVector;
+    @Nullable private final OffsetDateTime validUntil;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
 
     /**
-     * @apiNote Internal — constructed by {@code KsefClient.openSession(FormCode)}.
-     * The {@link SessionClient} parameter type lives in a non-exported package,
-     * so this constructor is not callable from consumer code despite being public.
+     * Package-private — Codex round-9 fresh review H3: a public constructor
+     * taking an internal-package type ({@link SessionClient}) leaks
+     * construction details into the binary/Javadoc surface even though JPMS
+     * makes the type unreachable from consumers. Construction now happens
+     * exclusively via the same-package {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} bridge,
+     * which is itself in the exported package but is the single named
+     * entry-point and clearly documented as internal-only.
      */
-    public KsefSession(SessionClient sessionClient, String referenceNumber,
+    KsefSession(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
+        this(sessionClient, referenceNumber, aesKey, initVector, null);
+    }
+
+    KsefSession(SessionClient sessionClient, String referenceNumber,
+                byte[] aesKey, byte[] initVector,
+                @Nullable OffsetDateTime validUntil) {
         this.sessionClient = sessionClient;
         this.referenceNumber = referenceNumber;
         this.aesKey = aesKey;
         this.initVector = initVector;
+        this.validUntil = validUntil;
+    }
+
+    /**
+     * Session expiration timestamp captured from the open-session
+     * response (Codex 2026-05-05 F8a). May be empty for sessions
+     * constructed via legacy paths or test fixtures that don't pass it.
+     *
+     * <p>Use {@link #status()} to fetch the current value from the
+     * server when freshness matters.
+     */
+    public Optional<OffsetDateTime> validUntil() {
+        return Optional.ofNullable(validUntil);
+    }
+
+    /**
+     * Time remaining until {@link #validUntil()} relative to the supplied
+     * clock. Empty when {@code validUntil} is unknown. Negative durations
+     * indicate an already-expired session.
+     */
+    public Optional<Duration> timeToExpiry(Clock clock) {
+        Objects.requireNonNull(clock, "clock must not be null");
+        return validUntil().map(deadline -> Duration.between(clock.instant(), deadline.toInstant()));
     }
 
     /**
@@ -136,6 +177,8 @@ public final class KsefSession implements AutoCloseable {
         SendInvoiceBuilder builder = SendInvoiceBuilder.create(command.invoiceXml(), aesKey, initVector);
         if (command instanceof SendInvoiceCommand.TechnicalCorrection correction) {
             builder = builder.technicalCorrection(correction.hashOfCorrectedInvoice());
+        } else if (command instanceof SendInvoiceCommand.Offline) {
+            builder = builder.offline();
         }
         return sessionClient.sendInvoice(referenceNumber, builder.build());
     }
@@ -148,6 +191,16 @@ public final class KsefSession implements AutoCloseable {
      */
     public SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
         return send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected));
+    }
+
+    /**
+     * Convenience for sending an invoice issued during an offline window
+     * (offline24, awaria, niedostępność). Equivalent to
+     * {@code send(SendInvoiceCommand.offline(invoiceXml))}. Codex
+     * 2026-05-05 F1.
+     */
+    public SendInvoiceResult sendOffline(byte[] invoiceXml) {
+        return send(SendInvoiceCommand.offline(invoiceXml));
     }
 
     /**
@@ -189,7 +242,10 @@ public final class KsefSession implements AutoCloseable {
      * @return submitted invoice metadata
      */
     public SessionInvoices invoices() {
-        return sessionClient.getInvoices(referenceNumber);
+        // Codex round-9 manual-validation A.2.3 — single-page getInvoices()
+        // dropped invoices for sessions with > pageSize entries. Iterate the
+        // x-continuation-token cursor internally and return one combined page.
+        return new SessionInvoices(null, sessionClient.getAllInvoices(referenceNumber));
     }
 
     /**
@@ -208,7 +264,7 @@ public final class KsefSession implements AutoCloseable {
      * @return failed invoice metadata
      */
     public SessionInvoices failedInvoices() {
-        return sessionClient.getFailedInvoices(referenceNumber);
+        return new SessionInvoices(null, sessionClient.getAllFailedInvoices(referenceNumber));
     }
 
     /**
@@ -247,6 +303,35 @@ public final class KsefSession implements AutoCloseable {
     }
 
     /**
+     * Download every bulk-session UPO referenced in
+     * {@link SessionStatus#upo()}. The KSeF spec
+     * ({@code faktury/sesje/sesja-sprawdzenie-stanu-i-pobranie-upo.md}) returns
+     * one or more {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoPage}
+     * references after a session reaches terminal status; each page can carry
+     * up to ~10 000 invoices. This method fetches the current
+     * {@link SessionStatus} and downloads every page in order.
+     *
+     * <p>Codex round-9 manual-validation A.2.1 — previously the
+     * {@code SessionClient.getUpoByReference(...)} endpoint was reachable but
+     * unreachable through {@code KsefSession}/{@code KsefBatchSession}; the
+     * consumer had to plumb {@code upo.pages[]} themselves.
+     *
+     * @return one byte[] per bulk UPO XML page, in spec order; empty list
+     *     if the session has no bulk UPO yet (typical before terminal close).
+     */
+    public java.util.List<byte[]> bulkUpos() {
+        SessionStatus current = sessionClient.getStatus(referenceNumber);
+        if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
+            return java.util.List.of();
+        }
+        java.util.List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
+        for (var page : current.upo().pages()) {
+            pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
+        }
+        return java.util.List.copyOf(pages);
+    }
+
+    /**
      * The session reference number assigned by KSeF.
      *
      * @return session reference number
@@ -268,8 +353,17 @@ public final class KsefSession implements AutoCloseable {
             return;
         }
         closed = true;
-        closeWithRetry();
-        pollUntilComplete();
+        try {
+            closeWithRetry();
+            pollUntilComplete();
+        } finally {
+            // CWE-316 hardening — wipe AES key + IV from heap regardless of how
+            // close + poll resolved. Symmetric with PreparedInvoiceExport.close().
+            // Subsequent send()/upo() calls already fail via the closed flag, so
+            // the arrays are unreachable past this point.
+            java.util.Arrays.fill(aesKey, (byte) 0);
+            java.util.Arrays.fill(initVector, (byte) 0);
+        }
     }
 
     private void ensureOpen() {

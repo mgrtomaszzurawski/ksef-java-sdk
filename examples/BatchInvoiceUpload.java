@@ -1,4 +1,4 @@
-//DEPS io.github.mgrtomaszzurawski:ksef-client:0.1.0
+//DEPS io.github.mgrtomaszzurawski:ksef-client:1.0.0
 //DEPS org.slf4j:slf4j-simple:2.0.16
 
 /*
@@ -25,6 +25,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,9 +49,9 @@ public final class BatchInvoiceUpload {
                 .build()) {
 
             client.authenticate();
-            System.out.println("Authenticated as " + nip);
+            System.out.println("Authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
-            try (KsefBatchSession batch = client.openBatchSession(FormCode.FA2, invoices)) {
+            try (KsefBatchSession batch = client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.online())) {
                 System.out.println("Batch session: " + batch.referenceNumber());
                 System.out.println("Parts to upload: " + batch.partUploadRequests().size());
 

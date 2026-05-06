@@ -10,6 +10,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
  * @param perSecond maximum requests per second
  * @param perMinute maximum requests per minute
  * @param perHour maximum requests per hour
+ *
+ * @since 1.0.0
  */
 public record RateLimitValues(Integer perSecond, Integer perMinute, Integer perHour) {
 

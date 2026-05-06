@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.mgrtomaszzurawski</groupId>
+        <artifactId>ksef-java-sdk</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>ksef-jpms-consumer</artifactId>
+    <packaging>jar</packaging>
+
+    <name>KSeF SDK JPMS consumer compile gate (TC-ARCH-001)</name>
+    <description>
+        Tiny named module that imports the KSeF SDK as a real JPMS consumer.
+        Has its own module-info.java with `requires
+        io.github.mgrtomaszzurawski.ksef`. If a public type returned by the
+        SDK lives in a non-exported package, this module fails to compile —
+        catching the regression `PublicApiSurfaceTest` cannot (e.g. `AuthSession`
+        leak in PR46). Not published to Maven Central.
+    </description>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <skipTests>true</skipTests>
+        <gpg.skip>true</gpg.skip>
+        <!--
+            Compile-only fixture. JpmsConsumerCompileFixture exists solely so
+            javac fails when the SDK leaks an internal type through a public
+            method signature; it is never executed at runtime, so coverage
+            gating against it produces a permanent false negative.
+        -->
+        <sonar.coverage.exclusions>**/JpmsConsumerCompileFixture.java</sonar.coverage.exclusions>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.mgrtomaszzurawski</groupId>
+            <artifactId>ksef-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

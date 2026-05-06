@@ -164,7 +164,7 @@ class KsefClientPublicAuthFacadeTest {
                     .withHeader(TestHttpConstants.AUTHORIZATION_HEADER,
                             equalTo(TestHttpConstants.BEARER_PREFIX + "test-refresh-token")));
             // bearerToken() now returns the refreshed token
-            assertEquals("refreshed-access-token", client.bearerToken());
+            assertEquals(java.util.Optional.of("refreshed-access-token"), client.bearerToken());
         }
     }
 
@@ -189,10 +189,10 @@ class KsefClientPublicAuthFacadeTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             // when — fixture's authenticate() finishes implicitly on first auth call;
             // bearerToken() forces ensureAuthenticated()
-            String token = client.bearerToken();
+            java.util.Optional<String> token = client.bearerToken();
 
             // then
-            assertEquals(KsefAuthFlowFixture.DEFAULT_TEST_TOKEN, token);
+            assertEquals(java.util.Optional.of(KsefAuthFlowFixture.DEFAULT_TEST_TOKEN), token);
         }
     }
 }

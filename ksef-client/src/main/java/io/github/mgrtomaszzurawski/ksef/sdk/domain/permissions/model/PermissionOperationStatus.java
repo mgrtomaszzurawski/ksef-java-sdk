@@ -10,6 +10,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
  * Status of a permission operation.
  *
  * @param status current operation status
+ *
+ * @since 1.0.0
  */
 public record PermissionOperationStatus(StatusInfo status) {
 

@@ -11,6 +11,8 @@ import java.util.List;
 
 /**
  * Builder for EU entity permissions query requests. All fields are optional.
+ *
+ * @since 1.0.0
  */
 public final class EuEntityPermissionsQueryBuilder {
 

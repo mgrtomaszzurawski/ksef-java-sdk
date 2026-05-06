@@ -11,6 +11,8 @@ import java.util.List;
  *
  * @param certificates list of certificate items
  * @param hasMore whether more results are available
+ *
+ * @since 1.0.0
  */
 public record CertificateQueryResult(List<CertificateListItem> certificates, boolean hasMore) {
 

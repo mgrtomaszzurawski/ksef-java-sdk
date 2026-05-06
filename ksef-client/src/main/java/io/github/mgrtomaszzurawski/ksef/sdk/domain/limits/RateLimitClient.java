@@ -12,6 +12,20 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ApiRateLimits;
  * <p>Obtain an instance via {@code KsefClient.rateLimits()}. The implementation
  * lives in {@code sdk.internal.client.limits} and is not exported via JPMS;
  * consumers cannot reference it directly (ADR-016).
+ *
+ * <p><b>Server-side semantics (Codex round-9 manual-validation A.4.3):</b>
+ * KSeF rate limits are enforced as a sliding window per {@code (context, IP)}
+ * tuple, server-side. The SDK reacts to rate-limit responses through
+ * {@code RetryPolicy} (HTTP 429 with {@code Retry-After}, all three RFC 7231
+ * date formats supported) but does <em>not</em> proactively pace calls to
+ * stay below the server-side budget — that would require the SDK to
+ * maintain per-IP/per-context counters and a synchronised clock against the
+ * server, which the spec explicitly says is the server's responsibility
+ * (per {@code ksef-docs/limity/limity-api.md}). Treat
+ * {@link #getRateLimits()} as a read-only diagnostic, not a budgeting
+ * primitive.
+ *
+ * @since 1.0.0
  */
 public interface RateLimitClient {
 

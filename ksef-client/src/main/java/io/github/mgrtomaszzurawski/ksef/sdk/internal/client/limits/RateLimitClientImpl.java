@@ -17,6 +17,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.mapping.Limit
 /**
  * Implementation of {@link RateLimitClient}. Constructed by {@code KsefClient};
  * lives in non-exported {@code sdk.internal.client.limits} (ADR-016).
+ *
+ * @since 1.0.0
  */
 public final class RateLimitClientImpl implements RateLimitClient {
 

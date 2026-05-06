@@ -6,14 +6,19 @@ package io.github.mgrtomaszzurawski.ksef.sdk.crypto;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KsefCryptoServiceTest {
@@ -24,6 +29,8 @@ class KsefCryptoServiceTest {
     private static final int EXPECTED_SHA256_SIZE = 32;
     private static final int EXPECTED_RSA_KEY_SIZE = 2048;
     private static final String EC_DEFAULT_CURVE = "EC";
+    /** PEM line length per RFC 7468 (canonical {@code openssl} default). */
+    private static final int PEM_LINE_LENGTH = 64;
 
     private final KsefCryptoService crypto = new KsefCryptoService();
 
@@ -156,5 +163,73 @@ class KsefCryptoServiceTest {
             }
         }
         assertTrue(originalIntact);
+    }
+
+    @Test
+    void parsePrivateKey_acceptsPkcs8Pem() {
+        // given — a freshly-generated RSA key encoded as PKCS#8 PEM
+        KeyPair generated = crypto.generateRsaKeyPair();
+        byte[] pkcs8Der = generated.getPrivate().getEncoded();
+        String pemEncodedKey = "-----BEGIN PRIVATE KEY-----\n"
+                + Base64.getMimeEncoder(PEM_LINE_LENGTH, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(pkcs8Der)
+                + "\n-----END PRIVATE KEY-----\n";
+
+        // when
+        PrivateKey parsed = crypto.parsePrivateKey(pemEncodedKey.getBytes(StandardCharsets.US_ASCII));
+
+        // then
+        assertNotNull(parsed);
+        assertEquals(generated.getPrivate().getAlgorithm(), parsed.getAlgorithm());
+        assertArrayEquals(generated.getPrivate().getEncoded(), parsed.getEncoded());
+    }
+
+    @Test
+    void parsePrivateKey_acceptsPkcs8Der() {
+        // given — raw DER bytes (no PEM framing)
+        KeyPair generated = crypto.generateRsaKeyPair();
+        byte[] pkcs8Der = generated.getPrivate().getEncoded();
+
+        // when
+        PrivateKey parsed = crypto.parsePrivateKey(pkcs8Der);
+
+        // then
+        assertEquals(generated.getPrivate().getAlgorithm(), parsed.getAlgorithm());
+    }
+
+    @Test
+    void parsePrivateKey_rejectsLegacyPkcs1WithDiagnostic() {
+        // given — legacy PKCS#1 PEM marker that we explicitly do not handle
+        String legacyRsaPem = "-----BEGIN RSA PRIVATE KEY-----\nABCD\n-----END RSA PRIVATE KEY-----\n";
+
+        // when / then
+        KsefCryptoException ex = assertThrows(KsefCryptoException.class,
+                () -> crypto.parsePrivateKey(legacyRsaPem.getBytes(StandardCharsets.US_ASCII)));
+        assertTrue(ex.getMessage().contains("PKCS#8"),
+                "diagnostic should mention PKCS#8 conversion path: " + ex.getMessage());
+    }
+
+    @Test
+    void parseCertificate_acceptsPemAndDer() throws Exception {
+        // given — a self-signed cert via the existing CSR support is overkill; use a
+        // hand-crafted minimal X.509 from KeyPair would also be heavy.
+        // Easier: round-trip through CertificateFactory with a real cert from
+        // existing test fixtures.
+        java.security.cert.CertificateFactory factory =
+                java.security.cert.CertificateFactory.getInstance("X.509");
+        // Use a freshly self-signed cert via internal TestCertificates helper
+        var testCerts = io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates.generateRsa();
+        byte[] derBytes = testCerts.certificate().getEncoded();
+        String pemEncodedCert = "-----BEGIN CERTIFICATE-----\n"
+                + Base64.getMimeEncoder(PEM_LINE_LENGTH, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(derBytes)
+                + "\n-----END CERTIFICATE-----\n";
+
+        // when
+        X509Certificate fromDer = crypto.parseCertificate(derBytes);
+        X509Certificate fromPem = crypto.parseCertificate(pemEncodedCert.getBytes(StandardCharsets.US_ASCII));
+
+        // then
+        assertNotNull(fromDer);
+        assertEquals(testCerts.certificate().getSubjectX500Principal(), fromDer.getSubjectX500Principal());
+        assertEquals(testCerts.certificate().getSubjectX500Principal(), fromPem.getSubjectX500Principal());
     }
 }

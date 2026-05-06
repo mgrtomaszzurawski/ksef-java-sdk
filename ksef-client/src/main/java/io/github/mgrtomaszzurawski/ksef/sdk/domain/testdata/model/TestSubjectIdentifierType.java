@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 
 /**
  * Type of subject identifier for test data limits in KSeF.
+ *
+ * @since 1.0.0
  */
 public enum TestSubjectIdentifierType {
 

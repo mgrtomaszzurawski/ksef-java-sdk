@@ -12,6 +12,8 @@ import org.jspecify.annotations.Nullable;
  * @param subjectIdentifierType type of subject identifier
  * @param maxEnrollments override for enrollment count limit (null = leave default)
  * @param maxCertificates override for active certificate limit (null = leave default)
+ *
+ * @since 1.0.0
  */
 public record TestSubjectLimitsRequest(
         TestSubjectIdentifierType subjectIdentifierType,

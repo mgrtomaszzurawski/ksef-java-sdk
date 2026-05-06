@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 /**
  * Type of buyer identifier.
+ *
+ * @since 1.0.0
  */
 public enum BuyerIdentifierType {
 

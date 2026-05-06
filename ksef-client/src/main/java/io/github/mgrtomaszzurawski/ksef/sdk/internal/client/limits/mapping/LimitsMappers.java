@@ -19,6 +19,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.In
 /**
  * Internal mappers from generated {@code *Raw} types to public limits
  * domain records. Lives in a non-exported package; consumers can't reach it.
+ *
+ * @since 1.0.0
  */
 public final class LimitsMappers {
 

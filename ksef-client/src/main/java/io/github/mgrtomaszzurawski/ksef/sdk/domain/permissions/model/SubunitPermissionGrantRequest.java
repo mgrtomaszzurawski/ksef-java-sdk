@@ -9,6 +9,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * SDK request for {@code PermissionClient.grantSubunit(...)}.
+ *
+ * @since 1.0.0
  */
 public record SubunitPermissionGrantRequest(
         PersonSubjectIdentifierType identifierType,

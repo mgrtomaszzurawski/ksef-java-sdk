@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 /**
  * Author identifier types in person permission queries.
+ *
+ * @since 1.0.0
  */
 public enum PersonAuthorIdentifierType {
     NIP,

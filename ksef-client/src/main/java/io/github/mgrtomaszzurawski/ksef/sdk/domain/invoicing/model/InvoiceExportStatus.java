@@ -14,6 +14,8 @@ import java.time.OffsetDateTime;
  * @param completedDate when the export completed (null if still processing)
  * @param packageExpirationDate when the download package expires
  * @param invoicePackage the downloadable package (null if not ready)
+ *
+ * @since 1.0.0
  */
 public record InvoiceExportStatus(
         StatusInfo status,

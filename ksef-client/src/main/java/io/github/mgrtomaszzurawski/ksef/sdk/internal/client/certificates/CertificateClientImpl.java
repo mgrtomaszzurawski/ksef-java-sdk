@@ -36,6 +36,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.mapping
 /**
  * Client for KSeF certificate management — enrollment, retrieval, querying,
  * revocation, and limits.
+ *
+ * @since 1.0.0
  */
 public final class CertificateClientImpl implements CertificateClient {
 
@@ -49,6 +51,8 @@ public final class CertificateClientImpl implements CertificateClient {
     private static final String PATH_ENROLLMENTS = ApiPaths.CERTIFICATES + "/enrollments";
     private static final String PATH_RETRIEVE = ApiPaths.CERTIFICATES + "/retrieve";
     private static final String PATH_QUERY = ApiPaths.CERTIFICATES + "/query";
+    /** Spec-defined max page size for certificate query endpoint. */
+    private static final int CERTIFICATE_QUERY_MAX_PAGE_SIZE = 250;
 
     private static final String SEGMENT_REVOKE = "/revoke";
 
@@ -63,11 +67,23 @@ public final class CertificateClientImpl implements CertificateClient {
     private static final String ERR_NULL_BUILDER = "builder is required";
     private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBERS = "certificateSerialNumbers is required";
     private static final String ERR_NULL_REVOCATION_REASON = "revocationReason is required";
+    private static final String WARN_TOKEN_AUTH_FOR_CERT_OP =
+            "Calling certificate operation {} on a token-authenticated session — KSeF restricts "
+                    + "/certificates/enrollments and /certificates/enrollments/data to certificate-based auth "
+                    + "(KsefCertificateCredentials / KsefPkcs12Credentials). The server will return a typed error.";
 
     private final HttpSupport http;
+    private final HttpRuntime runtime;
 
     public CertificateClientImpl(HttpRuntime runtime) {
+        this.runtime = runtime;
         this.http = new HttpSupport(runtime);
+    }
+
+    private void warnIfNotCertificateAuth(String operation) {
+        if (!runtime.isAuthenticatedViaCertificate()) {
+            LOGGER.warn(WARN_TOKEN_AUTH_FOR_CERT_OP, operation);
+        }
     }
 
     /**
@@ -92,6 +108,7 @@ public final class CertificateClientImpl implements CertificateClient {
     @Override
     public CertificateEnrollmentData getEnrollmentData() {
         LOGGER.debug(LOG_CALL, OP_GET_ENROLLMENT_DATA);
+        warnIfNotCertificateAuth(OP_GET_ENROLLMENT_DATA);
         String token = http.requireToken();
         CertificateEnrollmentDataResponseRaw rawValue = http.getAuthenticated(PATH_ENROLLMENT_DATA, token,
                 CertificateEnrollmentDataResponseRaw.class, OP_GET_ENROLLMENT_DATA);
@@ -107,6 +124,7 @@ public final class CertificateClientImpl implements CertificateClient {
     @Override
     public EnrollCertificateResult enroll(CertificateEnrollBuilder builder) {
         LOGGER.debug(LOG_CALL, OP_ENROLL);
+        warnIfNotCertificateAuth(OP_ENROLL);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         EnrollCertificateRequestRaw request = CertificatesMappers.toEnrollCertificateRequestRaw(builder.build());
         String token = http.requireToken();
@@ -196,5 +214,22 @@ public final class CertificateClientImpl implements CertificateClient {
         QueryCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY, CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()), token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);
         return CertificatesMappers.toCertificateQueryResult(rawValue);
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
+            streamCertificates(CertificateQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            String pagedPath = PATH_QUERY + "?pageOffset=" + pageOffset
+                    + "&pageSize=" + CERTIFICATE_QUERY_MAX_PAGE_SIZE;
+            QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(pagedPath,
+                    CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()),
+                    token, QueryCertificatesResponseRaw.class, OP_QUERY);
+            CertificateQueryResult page = CertificatesMappers.toCertificateQueryResult(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.certificates(), page.hasMore());
+        });
     }
 }

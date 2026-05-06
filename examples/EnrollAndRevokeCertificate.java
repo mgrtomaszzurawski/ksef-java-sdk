@@ -1,4 +1,4 @@
-//DEPS io.github.mgrtomaszzurawski:ksef-client:0.1.0
+//DEPS io.github.mgrtomaszzurawski:ksef-client:1.0.0
 //DEPS org.slf4j:slf4j-simple:2.0.16
 
 /*
@@ -50,7 +50,7 @@ public final class EnrollAndRevokeCertificate {
                 .build()) {
 
             client.authenticate();
-            System.out.println("XAdES authenticated as " + nip);
+            System.out.println("XAdES authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
             CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder
                     .create("Example certificate", KsefCertificateType.AUTHENTICATION, csrDer);

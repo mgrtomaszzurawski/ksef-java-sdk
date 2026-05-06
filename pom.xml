@@ -38,13 +38,15 @@
         <module>ksef-client</module>
         <module>ksef-demo</module>
         <module>ksef-examples</module>
+        <module>ksef-jpms-consumer</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2026-04-03T00:00:00Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-05-04T00:00:00Z</project.build.outputTimestamp>
         <gpg.plugin.version>3.2.7</gpg.plugin.version>
         <central.publishing.plugin.version>0.7.0</central.publishing.plugin.version>
+        <dependency.check.plugin.version>10.0.4</dependency.check.plugin.version>
     </properties>
 
     <!--
@@ -89,6 +91,37 @@
                         <configuration>
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>false</autoPublish>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+            OWASP dependency-check profile — manual run via
+            `mvn -Psecurity-scan dependency-check:check`. Not part of the
+            default verify cycle to keep CI fast; release engineer is
+            expected to run it before each tag and review the report.
+            Fails the build on CVSS ≥ 7 (HIGH/CRITICAL).
+        -->
+        <profile>
+            <id>security-scan</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>${dependency.check.plugin.version}</version>
+                        <configuration>
+                            <failBuildOnCVSS>7</failBuildOnCVSS>
+                            <skipTestScope>true</skipTestScope>
+                            <suppressionFiles>
+                                <suppressionFile>${project.basedir}/owasp-suppressions.xml</suppressionFile>
+                            </suppressionFiles>
+                            <formats>
+                                <format>HTML</format>
+                                <format>JSON</format>
+                            </formats>
                         </configuration>
                     </plugin>
                 </plugins>

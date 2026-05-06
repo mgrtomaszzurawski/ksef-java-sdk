@@ -15,6 +15,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
  * @param uniqueIdentifier unique identifier (optional)
  * @param organizationName organization name (optional)
  * @param organizationIdentifier organization identifier (optional)
+ *
+ * @since 1.0.0
  */
 public record CertificateEnrollmentData(
         String commonName,

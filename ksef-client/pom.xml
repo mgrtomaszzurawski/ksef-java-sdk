@@ -181,6 +181,25 @@
     </dependencies>
 
     <build>
+        <!--
+            Bundle FA(2)/FA(3) XSDs into the published jar so that
+            KsefXmlValidator can load them from the classpath at runtime.
+            JAXB plugin already reads them from ${project.basedir}/xsd/
+            for code generation; this <resources> entry copies the same
+            files into target/classes/xsd/ for runtime classpath access.
+        -->
+        <resources>
+            <resource>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>xsd/FA/schemat_FA(*)_*.xsd</include>
+                    <include>xsd/FA/bazowe/*.xsd</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
         <plugins>
             <!-- OpenAPI generator: REST API models from open-api.json -->
             <plugin>
@@ -202,6 +221,14 @@
                             <modelNameSuffix>Raw</modelNameSuffix>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
+                            <!--
+                                Build-avoidance: hash the input spec and skip
+                                regeneration when it has not changed. Saves
+                                ~90 seconds per incremental compile during
+                                development. `mvn clean` invalidates the hash
+                                marker, so a clean build still regenerates.
+                            -->
+                            <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <configOptions>
                                 <dateLibrary>java8</dateLibrary>
                                 <useJakartaEe>true</useJakartaEe>
@@ -439,6 +466,17 @@
                             <head>Implementation Note:</head>
                         </tag>
                     </tags>
+                    <!--
+                        Codex 2026-05-05 round-2 F3 — Maven Central javadoc-jar must
+                        document only the JPMS-exported public surface. Internal SDK
+                        plumbing (sdk.internal.*), generated OpenAPI client (client.*),
+                        and generated JAXB XML packages (xml.*) are implementation
+                        detail. Excluded here; the JavadocPackageGateTest
+                        regression-tests this list against actual generated output.
+                    -->
+                    <excludePackageNames>
+                        io.github.mgrtomaszzurawski.ksef.sdk.internal.*:io.github.mgrtomaszzurawski.ksef.client:io.github.mgrtomaszzurawski.ksef.client.*:io.github.mgrtomaszzurawski.ksef.xml.*
+                    </excludePackageNames>
                 </configuration>
                 <executions>
                     <execution>
@@ -516,12 +554,12 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.65</minimum>
+                                            <minimum>0.75</minimum>
                                         </limit>
                                         <limit>
                                             <counter>METHOD</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.70</minimum>
+                                            <minimum>0.80</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

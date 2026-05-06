@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
 
 /**
  * Usage type of a KSeF public key certificate.
+ *
+ * @since 1.0.0
  */
 public enum PublicKeyCertificateUsage {
 

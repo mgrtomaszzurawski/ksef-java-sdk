@@ -13,6 +13,8 @@ import java.time.OffsetDateTime;
  * @param requestDate when the enrollment was requested
  * @param status current enrollment status
  * @param certificateSerialNumber serial number of the enrolled certificate (null if pending)
+ *
+ * @since 1.0.0
  */
 public record CertificateEnrollmentStatus(
         OffsetDateTime requestDate,

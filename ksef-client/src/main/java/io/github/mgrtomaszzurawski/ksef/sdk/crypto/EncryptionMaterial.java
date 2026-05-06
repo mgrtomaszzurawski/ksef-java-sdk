@@ -27,6 +27,8 @@ import java.util.Objects;
  *
  * @param aesKey 32-byte AES-256 key (defensively cloned)
  * @param initVector 16-byte AES-CBC IV (defensively cloned)
+ *
+ * @since 1.0.0
  */
 public record EncryptionMaterial(byte[] aesKey, byte[] initVector) implements AutoCloseable {
 

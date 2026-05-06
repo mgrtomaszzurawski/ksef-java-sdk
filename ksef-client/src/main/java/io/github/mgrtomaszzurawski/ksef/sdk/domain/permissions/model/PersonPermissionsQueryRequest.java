@@ -10,6 +10,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * SDK request for {@code PermissionClient.queryPersons(...)}.
+ *
+ * @since 1.0.0
  */
 public record PersonPermissionsQueryRequest(
         PersonPermissionsQueryType queryType,

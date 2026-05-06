@@ -17,10 +17,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoServic
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
+import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -201,6 +206,53 @@ class KsefSessionTest {
         assertEquals(TEST_SESSION_REF, failure.referenceNumber());
     }
 
+    @Test
+    void validUntil_returnsValueWhenConstructedWithDeadline() {
+        // Codex 2026-05-05 F8a — validUntil should round-trip through the
+        // package-private constructor and timeToExpiry should compute
+        // duration against the supplied clock.
+        java.time.OffsetDateTime deadline = java.time.OffsetDateTime.parse("2026-04-18T13:00:00+02:00");
+        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor
+                .newOnlineSession(null, TEST_SESSION_REF, new byte[0], new byte[0], deadline);
+
+        assertEquals(deadline, session.validUntil().orElseThrow());
+        java.time.Clock fixed = java.time.Clock.fixed(
+                java.time.OffsetDateTime.parse("2026-04-18T12:00:00+02:00").toInstant(),
+                java.time.ZoneOffset.UTC);
+        assertEquals(java.time.Duration.ofHours(1),
+                session.timeToExpiry(fixed).orElseThrow());
+    }
+
+    @Test
+    void validUntil_emptyWhenLegacyConstructor() {
+        // Legacy 4-arg ctor (no validUntil) → accessor returns empty.
+        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor
+                .newOnlineSession(null, TEST_SESSION_REF, new byte[0], new byte[0]);
+        assertEquals(java.util.Optional.empty(), session.validUntil());
+        assertEquals(java.util.Optional.empty(), session.timeToExpiry(java.time.Clock.systemUTC()));
+    }
+
+    @Test
+    void sendOffline_postsOfflineModeTrueAndNoCorrectionHash(WireMockRuntimeInfo wmInfo) {
+        // Codex 2026-05-05 F1 — public offline send must reach the wire as
+        // offlineMode=true and MUST NOT carry hashOfCorrectedInvoice (that
+        // field is reserved for technical-correction, REQ-OFFLINE-004).
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(SEND_INVOICE_RESPONSE)));
+        stubCloseAndStatusOk();
+
+        try (KsefSession session = createSession(wmInfo)) {
+            session.sendOffline(TEST_INVOICE_XML);
+
+            verify(postRequestedFor(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
+                    .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true")))
+                    .withRequestBody(notMatching("(?s).*hashOfCorrectedInvoice.*")));
+        }
+    }
+
     private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {
         io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime runtime =
                 io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
@@ -209,7 +261,7 @@ class KsefSessionTest {
         SessionClient sessionClient = new SessionClient(runtime);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
-        return new KsefSession(sessionClient, TEST_SESSION_REF, aesKey, initVector);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF, aesKey, initVector);
     }
 
     private static void stubCloseAndStatusOk() {

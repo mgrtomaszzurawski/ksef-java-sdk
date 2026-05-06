@@ -13,6 +13,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
  *
  * @param accessToken the access token for API calls
  * @param refreshToken the refresh token for obtaining new access tokens
+ *
+ * @since 1.0.0
  */
 public record AuthenticationTokens(TokenInfo accessToken, TokenInfo refreshToken) {
 

@@ -9,6 +9,8 @@ import java.util.Objects;
 
 /**
  * SDK request for {@code PermissionClient.grantEntity(...)}.
+ *
+ * @since 1.0.0
  */
 public record EntityPermissionGrantRequest(
         String identifierValue,

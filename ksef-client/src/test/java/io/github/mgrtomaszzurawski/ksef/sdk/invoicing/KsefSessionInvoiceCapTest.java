@@ -137,7 +137,7 @@ class KsefSessionInvoiceCapTest {
         var runtime = io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
-        return new KsefSession(sessionClient, TEST_SESSION_REF,
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF,
                 CryptoService.generateAesKey(), CryptoService.generateIv());
     }
 

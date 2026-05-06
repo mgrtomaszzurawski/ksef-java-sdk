@@ -49,6 +49,10 @@ public record RunResult(
         return new RunResult(runner, operation, RunStatus.SKIP, 0, reason);
     }
 
+    public static RunResult skip(String runner, String operation, long durationMs, String reason) {
+        return new RunResult(runner, operation, RunStatus.SKIP, durationMs, reason);
+    }
+
     @Override
     public String toString() {
         String label = String.format("[%-4s] %s.%s", status, runner, operation);

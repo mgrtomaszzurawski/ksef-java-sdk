@@ -8,6 +8,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * Result of starting an invoice export job.
  *
  * @param referenceNumber export reference number for status polling
+ *
+ * @since 1.0.0
  */
 public record ExportInvoicesResult(String referenceNumber) {
 

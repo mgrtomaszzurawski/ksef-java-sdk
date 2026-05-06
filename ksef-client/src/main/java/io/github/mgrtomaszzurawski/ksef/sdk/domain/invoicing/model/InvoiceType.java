@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 /**
  * Type of invoice in KSeF.
+ *
+ * @since 1.0.0
  */
 public enum InvoiceType {
 

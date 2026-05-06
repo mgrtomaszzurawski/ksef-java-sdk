@@ -9,6 +9,8 @@ import java.io.Serial;
 /**
  * Base exception for all KSeF SDK errors.
  * All subclasses are unchecked (extend RuntimeException).
+ *
+ * @since 1.0.0
  */
 public class KsefException extends RuntimeException {
 
@@ -67,7 +69,10 @@ public class KsefException extends RuntimeException {
         if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
             return new KsefAuthException(message, cause, statusCode, responseBody);
         }
-        if (statusCode == HTTP_NOT_FOUND || statusCode == HTTP_GONE) {
+        if (statusCode == HTTP_GONE) {
+            return new KsefRetentionExpiredException(message, cause, statusCode, responseBody);
+        }
+        if (statusCode == HTTP_NOT_FOUND) {
             return new KsefNotFoundException(message, cause, statusCode, responseBody);
         }
         if (statusCode == HTTP_TOO_MANY_REQUESTS) {

@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 /**
  * Date field used as the basis for invoice query filters.
+ *
+ * @since 1.0.0
  */
 public enum InvoiceQueryDateType {
     INVOICING, PERMANENT_STORAGE, ISSUE

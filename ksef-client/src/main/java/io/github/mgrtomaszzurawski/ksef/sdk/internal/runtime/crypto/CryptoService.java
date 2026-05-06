@@ -36,6 +36,8 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * Cryptographic operations for KSeF API integration.
  * Handles AES encryption of invoices and RSA/ECDH key exchange.
+ *
+ * @since 1.0.0
  */
 public final class CryptoService {
 

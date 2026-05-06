@@ -171,7 +171,10 @@ class SessionClientTest {
     @Test
     void getInvoices_whenSessionHasInvoices_returnsInvoiceList(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices"))
+        // A.2.3 — getInvoices now appends ?pageSize=250 to support
+        // x-continuation-token-driven iteration; legacy single-page tests
+        // need to match the paginated URL.
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices?pageSize=250"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)

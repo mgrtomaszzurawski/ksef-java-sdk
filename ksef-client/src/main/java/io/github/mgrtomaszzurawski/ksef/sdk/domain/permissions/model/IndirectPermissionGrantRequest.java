@@ -10,6 +10,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * SDK request for {@code PermissionClient.grantIndirect(...)}.
+ *
+ * @since 1.0.0
  */
 public record IndirectPermissionGrantRequest(
         PersonSubjectIdentifierType identifierType,

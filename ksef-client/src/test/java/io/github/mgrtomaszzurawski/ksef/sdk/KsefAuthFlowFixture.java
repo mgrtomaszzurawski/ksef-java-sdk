@@ -171,8 +171,8 @@ public final class KsefAuthFlowFixture {
 
     private static String encodeCertAsPem(TestCertificates certs) {
         try {
-            byte[] der = certs.certificate().getEncoded();
-            return Base64.getEncoder().encodeToString(der);
+            byte[] derBytes = certs.certificate().getEncoded();
+            return Base64.getEncoder().encodeToString(derBytes);
         } catch (java.security.cert.CertificateEncodingException ex) {
             throw new IllegalStateException("Failed to encode test cert", ex);
         }

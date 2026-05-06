@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentMap;
  * that was already accepted, and never skips an invoice that wasn't.
  *
  * <p>Spec citation: ADR (planned) — checkpoint commit semantics.
+ *
+ * @since 1.0.0
  */
 public interface CheckpointStore {
 

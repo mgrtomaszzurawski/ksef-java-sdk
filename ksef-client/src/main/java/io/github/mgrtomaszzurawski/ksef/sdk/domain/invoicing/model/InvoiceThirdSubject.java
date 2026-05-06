@@ -11,6 +11,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * @param identifierValue identifier value
  * @param name subject name (may be null)
  * @param role role code of the third subject
+ *
+ * @since 1.0.0
  */
 public record InvoiceThirdSubject(
         ThirdSubjectIdentifierType identifierType,

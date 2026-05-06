@@ -97,7 +97,8 @@ class RecordsEqualsHashCodeTest {
         String rendered = new InvoiceQueryFilters(
                 InvoiceQuerySubjectType.SUBJECT1, InvoiceQueryDateType.INVOICING,
                 OffsetDateTime.now(), null, null, null, null,
-                InvoicingMode.ONLINE, null, null).toString();
+                InvoicingMode.ONLINE, null, null, false,
+                null, null, null, null, null).toString();
         assertTrue(rendered.contains(InvoiceQuerySubjectType.SUBJECT1.name()));
         assertTrue(rendered.contains(InvoicingMode.ONLINE.name()));
     }

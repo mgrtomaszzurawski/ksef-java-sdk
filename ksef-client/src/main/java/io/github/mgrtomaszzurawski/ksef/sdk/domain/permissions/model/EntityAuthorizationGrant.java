@@ -8,6 +8,8 @@ import java.time.OffsetDateTime;
 
 /**
  * An entity authorization grant from query results.
+ *
+ * @since 1.0.0
  */
 public record EntityAuthorizationGrant(
         String id,

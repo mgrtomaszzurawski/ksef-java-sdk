@@ -21,6 +21,7 @@
         <logback.version>1.5.6</logback.version>
         <jackson.version>2.18.2</jackson.version>
         <junit.version>5.11.4</junit.version>
+        <bouncycastle.version>1.80</bouncycastle.version>
         <exec.mainClass>io.github.mgrtomaszzurawski.ksef.sample.DemoApp</exec.mainClass>
     </properties>
 
@@ -53,6 +54,22 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- BouncyCastle — required by SelfSignedCerts utility for the
+             TEST-env auto-auth flow (X509v3CertificateBuilder, etc.).
+             The SDK module already pulls BC transitively for XAdES
+             signing; we declare it directly here so demo compile does
+             not depend on BC being a transitive of ksef-client. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
         </dependency>
     </dependencies>
 

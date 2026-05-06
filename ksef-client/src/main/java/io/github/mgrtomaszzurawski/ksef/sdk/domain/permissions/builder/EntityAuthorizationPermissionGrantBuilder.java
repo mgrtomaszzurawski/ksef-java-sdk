@@ -12,6 +12,8 @@ import java.util.Objects;
 /**
  * Builder for entity authorization permission grant requests.
  * <p>Required: identifier (NIP or PEPPOL_ID), permission type, description (5-256 chars), entityDetails.
+ *
+ * @since 1.0.0
  */
 public final class EntityAuthorizationPermissionGrantBuilder {
 

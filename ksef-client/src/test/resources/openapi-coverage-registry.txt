@@ -1,14 +1,25 @@
-# OpenAPI path coverage registry
+# OpenAPI path/operation coverage registry
 #
-# Each line is a path exercised by at least one WireMock contract test
-# in this test set. Comments after `#` and blank lines are ignored.
+# Each line is either a spec path or a (METHOD, path) operation tuple
+# exercised by at least one WireMock contract test. Comments after `#`
+# and blank lines are ignored.
 #
 # OpenApiPathCoverageTest reads `ksef-client/openapi/open-api.json` and
-# asserts every path appears here. Adding an endpoint to the SDK without
-# adding it here (and a corresponding test) fails the gate.
+# asserts every path AND every operation tuple appears here. Adding an
+# endpoint to the SDK without adding it here (and a corresponding test)
+# fails the gate.
 #
-# Format: one spec path per line, with placeholders intact (e.g.
-# /auth/sessions/{referenceNumber}). Do NOT prepend the /v2 prefix.
+# Format options (Codex round-9 fresh review M2):
+#   /tokens                                  # path-only entry — counts as covering ALL methods on /tokens
+#   POST /tokens                             # method-specific tuple — only POST /tokens
+#   GET /tokens/{referenceNumber}            # method-specific tuple
+#
+# Path-only entries are kept for backwards compatibility; new tests that
+# exercise only one HTTP method on a multi-method path SHOULD register
+# method-specific tuples so spec drift on a sibling method (e.g. a new
+# DELETE on a path that only had GET+POST tested) is detected.
+#
+# Do NOT prepend the /v2 prefix to paths.
 
 # Authentication
 /auth/challenge                                                 # AuthClientTest, KsefAuthFlowFixture, AuthAutoRefreshTest
@@ -29,7 +40,7 @@
 /sessions/online                                                # SessionClientTest, KsefSessionTest
 /sessions/online/{referenceNumber}/invoices                     # SessionClientTest, KsefSessionTest, KsefSessionWorkflowTest, KsefSessionInvoiceCapTest
 /sessions/online/{referenceNumber}/close                        # SessionClientTest, KsefSessionTest
-/sessions/batch                                                 # KsefBatchSessionTest
+/sessions/batch                                                 # KsefBatchSessionTest, KsefClientOpenBatchSessionTest
 /sessions/batch/{referenceNumber}/close                         # KsefBatchSessionTest, KsefBatchSessionUploadTest
 /sessions/{referenceNumber}                                     # SessionClientTest, KsefSessionTest, KsefSessionWorkflowTest
 /sessions/{referenceNumber}/invoices                            # SessionClientTest
@@ -76,8 +87,10 @@
 /permissions/query/eu-entities/grants                           # PermissionClientTest
 
 # Tokens
-/tokens                                                         # TokenClientTest
-/tokens/{referenceNumber}                                       # TokenClientTest
+GET /tokens                                                     # TokenClientTest
+POST /tokens                                                    # TokenClientTest
+GET /tokens/{referenceNumber}                                   # TokenClientTest
+DELETE /tokens/{referenceNumber}                                # TokenClientTest
 
 # Limits
 /limits/context                                                 # LimitsClientTest
@@ -98,7 +111,10 @@
 /testdata/attachment/revoke                                     # TestDataClientTest
 /testdata/context/block                                         # TestDataClientTest
 /testdata/context/unblock                                       # TestDataClientTest
-/testdata/limits/context/session                                # TestDataClientTest
-/testdata/limits/subject/certificate                            # TestDataClientTest
-/testdata/rate-limits                                           # TestDataClientTest
+POST /testdata/limits/context/session                           # TestDataClientTest
+DELETE /testdata/limits/context/session                         # TestDataClientTest
+POST /testdata/limits/subject/certificate                       # TestDataClientTest
+DELETE /testdata/limits/subject/certificate                     # TestDataClientTest
+POST /testdata/rate-limits                                      # TestDataClientTest
+DELETE /testdata/rate-limits                                    # TestDataClientTest
 /testdata/rate-limits/production                                # TestDataClientTest

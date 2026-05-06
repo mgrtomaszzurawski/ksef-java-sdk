@@ -10,6 +10,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;
 
 /**
  * Client for KSeF session and subject limit queries.
+ *
+ * @since 1.0.0
  */
 public interface LimitsClient {
 

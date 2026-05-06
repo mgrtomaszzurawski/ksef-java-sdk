@@ -33,8 +33,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRunti
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.net.http.HttpClient;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,13 +44,14 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.In
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
  * and exporting invoices.
+ *
+ * @since 1.0.0
  */
 public final class InvoiceClientImpl implements InvoiceClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceClientImpl.class);
     private static final String LOG_CALL = "→ {}";
     private static final String LOG_CALL_REF = "→ {} ref={}";
-    private static final String LOG_CALL_MAX = "→ {} maxResults={}";
 
     private static final String PATH_INVOICES_KSEF = ApiPaths.INVOICES + "/ksef/";
     private static final String PATH_QUERY_METADATA = ApiPaths.INVOICES + "/query/metadata";
@@ -67,8 +67,16 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String ERR_NULL_EXPORT = "exportBuilder must not be null";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
     private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
+    private static final String ERR_TRUNCATED_NO_CURSOR =
+            "streamMetadata: server returned isTruncated=true but no usable date cursor on the last record "
+                    + "for the selected dateType axis — cannot advance pagination safely";
     private static final String CERT_TYPE_X509 = "X.509";
-    private static final int DEFAULT_MAX_RESULTS = 10000;
+    /** Spec-defined maximum page size for {@code POST /invoices/query/metadata}. */
+    private static final int QUERY_METADATA_MAX_PAGE_SIZE = 250;
+    /** First page is offset 0 per OpenAPI. */
+    private static final int QUERY_METADATA_FIRST_PAGE_OFFSET = 0;
+    private static final String QUERY_PAGE_OFFSET_PARAM = "pageOffset";
+    private static final String QUERY_PAGE_SIZE_PARAM = "pageSize";
 
     private final HttpSupport http;
     private final SecurityClient securityClient;
@@ -111,63 +119,106 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     /**
-     * Query all invoice metadata matching the filters, automatically fetching
-     * subsequent pages until no more results are available or maxResults is reached.
-     * <p>
-     * Uses the permanentStorageHwmDate from each response as a cursor to
-     * narrow the date range for the next page. Default limit: 10,000 results.
+     * Stream every invoice metadata record matching {@code query},
+     * walking the spec's date-cursor + page-offset model lazily.
      *
-     * @param query the query builder with filter criteria
-     * @return all matching invoice metadata across all pages (up to default limit)
+     * <p>Per {@code pobieranie-faktur/pobieranie-faktur.md}:
+     * <ul>
+     *   <li>{@code hasMore=false} → stream completes.</li>
+     *   <li>{@code hasMore=true && isTruncated=false} → {@code pageOffset++}
+     *       on the same date range.</li>
+     *   <li>{@code hasMore=true && isTruncated=true} → narrow
+     *       {@code dateRange.from} to the last record's date for the
+     *       configured axis, reset {@code pageOffset = 0}.</li>
+     * </ul>
+     *
+     * <p>If 251+ records share the same axis value, the cursor stalls;
+     * we fall back to {@code pageOffset++} on the same range so the
+     * cluster can still drain server-side.
+     *
+     * <p>Throws {@link KsefException} when a truncated page lacks a
+     * usable date cursor — partial data here would silently lie about
+     * result completeness.
      */
     @Override
-    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query) {
-        return queryAllMetadata(query, DEFAULT_MAX_RESULTS);
-    }
-
-    /**
-     * Query invoice metadata with automatic pagination and explicit result limit.
-     *
-     * @param query the query builder with filter criteria
-     * @param maxResults maximum number of results to return (safety limit)
-     * @return matching invoice metadata across pages (up to maxResults)
-     */
-    @Override
-    public List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults) {
-        LOGGER.debug(LOG_CALL_MAX, OP_QUERY_METADATA, maxResults);
+    public java.util.stream.Stream<InvoiceMetadata> streamMetadata(InvoiceQueryBuilder query) {
+        LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build());
-        List<InvoiceMetadata> allInvoices = new ArrayList<>();
+        Iterator<InvoiceMetadata> iterator = new MetadataPageIterator(filters, query.build().dateType());
+        return java.util.stream.StreamSupport.stream(
+                java.util.Spliterators.spliteratorUnknownSize(iterator,
+                        java.util.Spliterator.ORDERED | java.util.Spliterator.NONNULL),
+                false);
+    }
 
-        while (true) {
-            InvoiceMetadataResult page = doQueryMetadata(filters);
-            allInvoices.addAll(page.invoices());
+    private final class MetadataPageIterator implements Iterator<InvoiceMetadata> {
 
-            if (allInvoices.size() >= maxResults) {
-                return List.copyOf(allInvoices.subList(0, maxResults));
-            }
+        private final InvoiceQueryFiltersRaw filters;
+        private final io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType;
+        private final java.util.Deque<InvoiceMetadata> buffer = new java.util.ArrayDeque<>();
+        private int pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
+        private java.time.OffsetDateTime previousCursor;
+        private boolean exhausted;
 
-            if (!page.hasMore() || page.permanentStorageHwmDate() == null) {
-                break;
-            }
-
-            // Advance cursor only — keep all caller-provided filters (ksefNumber,
-            // invoiceNumber, sellerNip, invoicingMode, isSelfInvoicing, hasAttachment,
-            // amount, currencyCodes, buyerIdentifier) intact between pages.
-            filters.getDateRange().from(page.permanentStorageHwmDate());
+        MetadataPageIterator(InvoiceQueryFiltersRaw filters,
+                              io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType) {
+            this.filters = filters;
+            this.dateType = dateType;
         }
 
-        return List.copyOf(allInvoices);
+        @Override
+        public boolean hasNext() {
+            if (!buffer.isEmpty()) {
+                return true;
+            }
+            while (!exhausted && buffer.isEmpty()) {
+                fetchOnePage();
+            }
+            return !buffer.isEmpty();
+        }
+
+        @Override
+        public InvoiceMetadata next() {
+            if (!hasNext()) {
+                throw new java.util.NoSuchElementException();
+            }
+            return buffer.poll();
+        }
+
+        private void fetchOnePage() {
+            InvoiceMetadataResult page = doQueryMetadata(filters, pageOffset, QUERY_METADATA_MAX_PAGE_SIZE);
+            buffer.addAll(page.invoices());
+            if (!page.hasMore()) {
+                exhausted = true;
+                return;
+            }
+            if (page.isTruncated()) {
+                java.time.OffsetDateTime cursor = lastRecordCursor(page, dateType);
+                if (cursor == null) {
+                    throw new KsefException(ERR_TRUNCATED_NO_CURSOR, null);
+                }
+                if (cursor.equals(previousCursor)) {
+                    pageOffset++;
+                } else {
+                    filters.getDateRange().from(cursor);
+                    pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
+                    previousCursor = cursor;
+                }
+            } else {
+                pageOffset++;
+            }
+        }
     }
 
     /**
-     * Start an invoice export job.
+     * Start an invoice export job — Tier-3 advanced API per ADR-021.
+     * Most consumers should use
+     * {@link #prepareExport(InvoiceQueryBuilder, boolean)}.
      *
      * @param exportBuilder the export builder with date range and filters
      * @return response with the export reference number for status polling
-     * @deprecated prefer {@link #prepareExport(InvoiceQueryBuilder, boolean)}
      */
-    @Deprecated(since = "0.1.0")
     @Override
     public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder) {
         LOGGER.debug(LOG_CALL, OP_EXPORT);
@@ -217,7 +268,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
         ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, rawRequest, token,
                 ExportInvoicesResponseRaw.class, OP_PREPARE_EXPORT);
         ExportInvoicesResult result = InvoicingMappers.toExportInvoicesResult(rawValue);
-        return new PreparedInvoiceExport(this, httpClient, result.referenceNumber(), aesKey, initVector);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(
+                this, httpClient, result.referenceNumber(), aesKey, initVector);
     }
 
     private static PublicKey parsePublicKey(PublicKeyCertificate certificate) {
@@ -231,9 +283,39 @@ public final class InvoiceClientImpl implements InvoiceClient {
         }
     }
 
+    /**
+     * Pull the cursor value for the truncation-restart case from the last
+     * record on the page, picking the date axis matching the filter's
+     * {@code dateType}. Returns {@code null} when the page contained no
+     * records (defensive — should not happen on a truncated page in
+     * practice).
+     */
+    private static java.time.OffsetDateTime lastRecordCursor(InvoiceMetadataResult page,
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType) {
+        if (page.invoices() == null || page.invoices().isEmpty()) {
+            return null;
+        }
+        InvoiceMetadata last = page.invoices().get(page.invoices().size() - 1);
+        return switch (dateType) {
+            case PERMANENT_STORAGE -> last.permanentStorageDate();
+            case INVOICING -> last.invoicingDate();
+            case ISSUE -> last.issueDate() == null ? null
+                    : last.issueDate().atStartOfDay(java.time.ZoneOffset.UTC).toOffsetDateTime();
+        };
+    }
+
     private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters) {
+        return doQueryMetadata(filters, QUERY_METADATA_FIRST_PAGE_OFFSET, QUERY_METADATA_MAX_PAGE_SIZE);
+    }
+
+    private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters,
+                                                    int pageOffset,
+                                                    int pageSize) {
         String token = http.requireToken();
-        QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_METADATA, filters, token,
+        String path = PATH_QUERY_METADATA
+                + "?" + QUERY_PAGE_OFFSET_PARAM + "=" + pageOffset
+                + "&" + QUERY_PAGE_SIZE_PARAM + "=" + pageSize;
+        QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(path, filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
         return InvoicingMappers.toInvoiceMetadataResult(rawValue);
     }

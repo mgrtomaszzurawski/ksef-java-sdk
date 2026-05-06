@@ -19,6 +19,8 @@ import java.util.List;
  * @param lastUseDate when the token was last used
  * @param status current lifecycle status
  * @param statusDetails additional status details
+ *
+ * @since 1.0.0
  */
 public record TokenDetail(
         String referenceNumber,

@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 /**
  * Permission types that can be granted to a person.
+ *
+ * @since 1.0.0
  */
 public enum PersonPermissionType {
     INVOICE_READ,

@@ -29,15 +29,18 @@ import java.util.Objects;
  * encrypted with a different key or IV, KSeF will reject the upload.
  *
  * <p>Most consumers should prefer the convenience overload
- * {@code openBatchSession(FormCode, List&lt;byte[]&gt;)} which builds and
- * encrypts the package internally — this manual entry point exists for
- * advanced flows that need streaming or external part preparation.
+ * {@code openBatchSession(FormCode, List&lt;byte[]&gt;, BatchSessionOptions)}
+ * which builds and encrypts the package internally — this manual entry
+ * point exists for advanced flows that need streaming or external part
+ * preparation.
  *
  * @param spec metadata describing the unencrypted batch file and the
  *             encrypted parts (sizes + SHA-256 hashes)
  * @param aesKey 32-byte AES-256 session key used to encrypt {@code partBytes}
  * @param initVector 16-byte AES-CBC IV used to encrypt {@code partBytes}
  * @param partBytes ciphertext of each part, in {@link BatchFileSpec.Part#ordinalNumber()} order
+ *
+ * @since 1.0.0
  */
 public record PreparedBatchPackage(BatchFileSpec spec,
                                    byte[] aesKey,
@@ -73,6 +76,8 @@ public record PreparedBatchPackage(BatchFileSpec spec,
         if (partBytes.size() != spec.parts().size()) {
             throw new IllegalArgumentException(ERR_PARTS_SIZE_MISMATCH);
         }
+        // Aggregate caps (50 parts, 5 GiB) are enforced by BatchFileSpec
+        // before this constructor is reachable — no duplicate check needed.
         aesKey = aesKey.clone();
         initVector = initVector.clone();
         partBytes = List.copyOf(partBytes);

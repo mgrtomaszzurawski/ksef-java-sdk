@@ -7,7 +7,9 @@ OpenAPI-first Java SDK for the Polish National e-Invoicing System ([KSeF](https:
 
 Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-docs) OpenAPI specification, with a hand-written ergonomic overlay that hides the protocol details (challenge-response auth, AES-256-CBC session encryption, XAdES-BASELINE-B signing, retry-with-backoff, batch upload + polling).
 
-> **Pre-release:** The SDK is at `0.1.0` and not yet published to Maven Central. Install locally with `mvn install` to use today.
+> **Status:** SDK has reached `1.0.0` source-tree readiness. Maven Central
+> publication is gated on a clean release-profile dry run; until the artifact
+> is staged on Central, install locally with `mvn install` to use it.
 
 ## Quick start
 
@@ -17,7 +19,7 @@ Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-do
 <dependency>
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-client</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -38,17 +40,22 @@ try (KsefClient client = KsefClient.builder(KsefEnvironment.TEST)
 
     client.authenticate();
 
-    try (KsefSession session = client.openSession(FormCode.FA2)) {
+    try (KsefSession session = client.openSession(FormCode.FA3)) {
         session.send(invoiceXml);
     }
 }
 ```
 
+> **Form-code per environment:** DEMO and PROD accept `FA(3)`, `FA_PEF(3)`,
+> `FA_KOR_PEF(3)` only. TEST additionally accepts `FA(2)` for backward
+> compatibility (`FormCode.FA2`). See `ksef-docs/srodowiska.md`.
+
 ### Batch invoice upload
 
 ```java
 List<byte[]> invoiceXmls = List.of(invoice1Xml, invoice2Xml, invoice3Xml);
-try (KsefBatchSession batch = client.openBatchSession(FormCode.FA2, invoiceXmls)) {
+try (KsefBatchSession batch = client.openBatchSession(
+        FormCode.FA3, invoiceXmls, BatchSessionOptions.online())) {
     batch.uploadParts();
     // close() returns when the server reaches a terminal state (UPO ready,
     // schema rejection, etc.); throws KsefSessionTerminalFailureException on
@@ -124,11 +131,11 @@ Plus session-level helpers on `KsefClient` itself:
 | XML invoice models | JAXB from XSD | JAXB from XSD (same approach) |
 | HTTP client | Single god-class `DefaultKsefClient` | Per-domain clients reached via `KsefClient.<feature>()` |
 | Retry | None | Configurable `RetryPolicy` with backoff + jitter |
-| Pagination | None | Date-cursor cursors with `queryAllMetadata`-style helpers |
+| Pagination | None | Lazy `Stream<T>` paginators (`streamMetadata`, `streamPersons`, ...) — AWS-SDK-style |
 | Exceptions | Basic `ApiException` | Typed hierarchy (`KsefAuthException`, `KsefServerException`, `KsefRateLimitException`, …) |
 | Build tool | Gradle | Maven |
 | Java version | 11 source, 21 toolchain | 17+ |
-| Distribution | GitHub Packages only | Maven Central (post-1.0) |
+| Distribution | GitHub Packages only | Maven Central (release-profile staging dry-run pending) |
 | JPMS | None | Named module with strict export boundaries |
 
 ## Sample app (`ksef-demo`)
@@ -153,7 +160,10 @@ Available modes (defined in `DemoMode`):
 - `READ_ONLY` — auth + listing operations (no writes)
 - `AUTH_SAFE` — auth + safe-write operations (no permission changes)
 - `FULL` — full lifecycle including session open/send/close
-- `CERTIFICATES` — certificate enrollment (consumes monthly cert quota)
+- `CLEANUP` — terminate any leftover sessions/permissions from prior runs
+
+Certificate enrollment runs are gated separately via `CertificateRunner` to
+avoid burning the monthly KSeF certificate quota on every demo execution.
 
 ## Build and test
 
@@ -192,15 +202,17 @@ See:
 
 ## License
 
-[AGPL-3.0-only](LICENSE.txt) — strong-copyleft license. Suitable for SaaS / internal-tool use; commercial closed-source integration requires a separate agreement. Solo-maintained SDK, tested against the KSeF demo environment; provided without warranty (see LICENSE).
+Project source code is [AGPL-3.0-only](LICENSE.txt) — strong-copyleft license. Suitable for SaaS / internal-tool use; commercial closed-source integration requires a separate agreement. Solo-maintained SDK, tested against the KSeF demo environment; provided without warranty (see LICENSE).
+
+Bundled official KSeF OpenAPI/XSD files (`ksef-client/openapi/open-api.json`, `ksef-client/xsd/**`) remain under their original MIT license — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Status
 
-- ✅ All 11 KSeF API domains covered (60+ live ops verified against demo env)
-- ✅ 391 unit + integration tests (WireMock-mocked HTTP, full transport coverage)
+- ✅ All 11 KSeF API domains covered (62+ live ops verified against demo env)
+- ✅ 500+ unit + integration tests (WireMock-mocked HTTP, full transport coverage)
 - ✅ JaCoCo coverage report generated (`mvn verify` → `target/site/jacoco/`)
-- 🚧 Per-builder method coverage gate (PLAN A.9 — gradual ratcheting in progress)
-- 🚧 JSpecify null-safety annotations (PLAN A.8)
-- 🚧 Maven Central first publish (post-Phase-9)
+- ✅ Per-builder method coverage gate green
+- 🚧 JSpecify null-safety annotations (ADR-017)
+- 🚧 Maven Central first publish (release-profile dry run pending)
 
 Project state and roadmap: [`context/PLAN-2026-04-03-2045-implementation-plan.md`](context/PLAN-2026-04-03-2045-implementation-plan.md).

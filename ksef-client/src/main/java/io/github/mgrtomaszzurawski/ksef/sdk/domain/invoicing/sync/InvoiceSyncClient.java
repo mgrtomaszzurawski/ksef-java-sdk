@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
@@ -44,8 +45,10 @@ import org.slf4j.LoggerFactory;
  *       with the cursor as {@code dateFrom};</li>
  *   <li>poll until terminal, download all parts, verify SHA-256, decrypt,
  *       unzip to {@code outputDirectory}/&lt;subject&gt;/window-&lt;n&gt;/;</li>
- *   <li>parse {@code _metadata.json} (array of invoice metadata) and
- *       dispatch each invoice through the {@link InvoiceSink};</li>
+ *   <li>parse {@code _metadata.json} as the spec-shaped object wrapper
+ *       {@code { "invoices": [...] }} (the bare-array shape produced by
+ *       earlier draft documentation is also tolerated for compatibility)
+ *       and dispatch each invoice through the {@link InvoiceSink};</li>
  *   <li>after all invoices in the package are accepted, persist the
  *       checkpoint via {@link InvoicePackage#continuationCursor()} —
  *       which honours {@code IsTruncated=true → LastPermanentStorageDate}
@@ -64,14 +67,28 @@ import org.slf4j.LoggerFactory;
  * once.
  *
  * <p>Spec citations: REQ-HWM-001..003, REQ-EXPORT-WINDOWING-001/002.
+ *
+ * @since 1.0.0
  */
 public final class InvoiceSyncClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceSyncClient.class);
     private static final int MAX_WINDOWS_PER_SUBJECT = 1_000;
+    /** Standard KSeF export ZIP entries are XML files. */
+    private static final String XML_EXTENSION = ".xml";
+    /** Common SDK / KSeF ZIP naming convention #1 — {@code faktura_N.xml}. */
+    private static final String FAKTURA_NAME_PREFIX = "faktura_";
+    /** Common SDK / KSeF ZIP naming convention #2 — {@code invoice-N.xml}. */
+    private static final String INVOICE_NAME_PREFIX = "invoice-";
+    /** Top-level field name in {@code _metadata.json} per KSeF spec (object wrapper). */
+    private static final String METADATA_INVOICES_FIELD = "invoices";
     private static final String ERR_NULL_PLAN = "plan must not be null";
     private static final String ERR_NULL_STORE = "checkpointStore must not be null";
     private static final String ERR_NULL_SINK = "sink must not be null";
+    private static final String ERR_METADATA_PARSE = "Failed to parse _metadata.json from export package";
+    private static final String ERR_METADATA_SHAPE = "_metadata.json must be either an array or an object with an 'invoices' array";
+    private static final String ERR_METADATA_MISSING = "Export package reports invoiceCount=%d but the decrypted package has no _metadata.json — refusing to advance the checkpoint (Codex round-9 fresh-review F3 fail-closed)";
+    private static final String ERR_METADATA_EMPTY = "Export package reports invoiceCount=%d but _metadata.json is empty — refusing to advance the checkpoint (Codex round-9 fresh-review F3 fail-closed)";
 
     private final InvoiceClient invoiceClient;
     private final ObjectMapper objectMapper;
@@ -115,12 +132,11 @@ public final class InvoiceSyncClient {
                 .map(SyncCheckpoint::cursor)
                 .orElse(plan.from());
 
-        Set<String> seenKsefNumbers = new HashSet<>();
+        SubjectSyncContext ctx = new SubjectSyncContext(plan, subjectType, store, sink, new HashSet<>());
         long processed = 0;
 
         for (int windowIndex = 0; windowIndex < MAX_WINDOWS_PER_SUBJECT; windowIndex++) {
-            WindowOutcome outcome = processOneWindow(plan, subjectType, store, sink,
-                    cursor, windowIndex, seenKsefNumbers);
+            WindowOutcome outcome = processOneWindow(ctx, cursor, windowIndex);
             processed += outcome.processedDelta();
             if (outcome.advancedCursor() == null) {
                 break;
@@ -131,14 +147,23 @@ public final class InvoiceSyncClient {
         return processed;
     }
 
-    private WindowOutcome processOneWindow(IncrementalSyncPlan plan,
-                                           InvoiceQuerySubjectType subjectType,
-                                           CheckpointStore store,
-                                           InvoiceSink sink,
+    /**
+     * Per-subject-type sync context — bundles the immutable parameters
+     * shared across all windows of one subject type so the per-window
+     * methods stay narrow.
+     */
+    private record SubjectSyncContext(IncrementalSyncPlan plan,
+                                      InvoiceQuerySubjectType subjectType,
+                                      CheckpointStore store,
+                                      InvoiceSink sink,
+                                      Set<String> seenKsefNumbers) { }
+
+    private WindowOutcome processOneWindow(SubjectSyncContext ctx,
                                            OffsetDateTime cursor,
-                                           int windowIndex,
-                                           Set<String> seenKsefNumbers) {
-        InvoiceQueryBuilder query = subjectQuery(subjectType, plan.dateType(), cursor);
+                                           int windowIndex) {
+        IncrementalSyncPlan plan = ctx.plan();
+        InvoiceQuerySubjectType subjectType = ctx.subjectType();
+        InvoiceQueryBuilder query = subjectQuery(subjectType, IncrementalSyncPlan.DATE_TYPE, cursor);
         if (plan.to() != null) {
             query.dateTo(plan.to());
         }
@@ -158,7 +183,19 @@ public final class InvoiceSyncClient {
 
             ExportedInvoiceDirectory dir = export.downloadAndDecryptTo(status, windowDir);
             List<InvoiceMetadata> metadatas = readMetadataJson(dir);
-            long dispatched = dispatchInvoices(metadatas, dir, plan.fullContent(), sink, seenKsefNumbers, subjectType);
+            // Codex round-9 fresh-review F3 — fail closed if KSeF reports a
+            // non-empty package but the decrypted directory is missing the
+            // metadata file (or it's empty). Otherwise the dispatch loop
+            // emits zero invoices and the checkpoint advances anyway,
+            // permanently skipping this window.
+            long reportedCount = pkg.invoiceCount();
+            if (dir.metadataJson() == null) {
+                throw new KsefException(String.format(Locale.ROOT, ERR_METADATA_MISSING, reportedCount), null);
+            }
+            if (metadatas.isEmpty()) {
+                throw new KsefException(String.format(Locale.ROOT, ERR_METADATA_EMPTY, reportedCount), null);
+            }
+            long dispatched = dispatchInvoices(ctx, metadatas, dir);
 
             // Commit-after-accept: only persist the checkpoint after every
             // invoice in this package was accepted by the sink. If the
@@ -168,7 +205,7 @@ public final class InvoiceSyncClient {
             OffsetDateTime nextCursor = pkg.continuationCursor();
             boolean truncated = Boolean.TRUE.equals(pkg.isTruncated());
             if (nextCursor != null && (cursor == null || !nextCursor.equals(cursor))) {
-                store.save(subjectType, new SyncCheckpoint(nextCursor, truncated));
+                ctx.store().save(subjectType, new SyncCheckpoint(nextCursor, truncated));
                 return WindowOutcome.advance(dispatched, nextCursor);
             }
             LOGGER.debug("[sync {} window {}] cursor did not advance — stop", subjectType, windowIndex);
@@ -178,21 +215,18 @@ public final class InvoiceSyncClient {
         }
     }
 
-    private long dispatchInvoices(List<InvoiceMetadata> metadatas,
-                                  ExportedInvoiceDirectory dir,
-                                  boolean fullContent,
-                                  InvoiceSink sink,
-                                  Set<String> seenKsefNumbers,
-                                  InvoiceQuerySubjectType subjectType) {
+    private long dispatchInvoices(SubjectSyncContext ctx,
+                                  List<InvoiceMetadata> metadatas,
+                                  ExportedInvoiceDirectory dir) {
         long dispatched = 0;
         for (InvoiceMetadata metadata : metadatas) {
-            KsefNumber typed = parsableUnseenKsefNumber(metadata, seenKsefNumbers, subjectType);
+            KsefNumber typed = parsableUnseenKsefNumber(metadata, ctx.seenKsefNumbers(), ctx.subjectType());
             if (typed == null) {
                 continue;
             }
-            Path xmlPath = fullContent ? matchInvoiceXml(dir, typed, (int) dispatched) : null;
-            sink.accept(typed, metadata, xmlPath);
-            seenKsefNumbers.add(metadata.ksefNumber());
+            Path xmlPath = ctx.plan().fullContent() ? matchInvoiceXml(dir, typed, (int) dispatched) : null;
+            ctx.sink().accept(typed, metadata, xmlPath);
+            ctx.seenKsefNumbers().add(metadata.ksefNumber());
             dispatched++;
         }
         return dispatched;
@@ -241,16 +275,30 @@ public final class InvoiceSyncClient {
         }
         try {
             byte[] bytes = Files.readAllBytes(metadataPath);
-            // _metadata.json per spec is a JSON array of InvoiceMetadata-shaped
-            // objects (the wire shape returned by /invoices/query/metadata,
-            // minus the pagination envelope). Parse as InvoiceMetadataRaw[]
-            // then map via the same mappers used by InvoiceClient.
-            InvoiceMetadataRaw[] rawArray = objectMapper.readValue(bytes, InvoiceMetadataRaw[].class);
-            return java.util.Arrays.stream(rawArray)
-                    .map(InvoicingMappers::toInvoiceMetadata)
-                    .toList();
+            // Codex H2: KSeF spec (export prepare endpoint description in
+            // open-api.json + ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md
+            // section "Plik _metadata.json") states the file is an object
+            // with an "invoices" array, e.g. {"invoices": [...]}. Earlier
+            // drafts of this SDK assumed a bare array — keep tolerating
+            // that shape so existing on-disk packages still parse.
+            JsonNode root = objectMapper.readTree(bytes);
+            JsonNode invoicesNode;
+            if (root.isArray()) {
+                invoicesNode = root;
+            } else if (root.isObject() && root.has(METADATA_INVOICES_FIELD)
+                    && root.get(METADATA_INVOICES_FIELD).isArray()) {
+                invoicesNode = root.get(METADATA_INVOICES_FIELD);
+            } else {
+                throw new KsefException(ERR_METADATA_SHAPE, null);
+            }
+            List<InvoiceMetadata> out = new java.util.ArrayList<>(invoicesNode.size());
+            for (JsonNode element : invoicesNode) {
+                InvoiceMetadataRaw raw = objectMapper.treeToValue(element, InvoiceMetadataRaw.class);
+                out.add(InvoicingMappers.toInvoiceMetadata(raw));
+            }
+            return List.copyOf(out);
         } catch (IOException ex) {
-            throw new KsefException("Failed to parse _metadata.json from export package", ex);
+            throw new KsefException(ERR_METADATA_PARSE, ex);
         }
     }
 
@@ -265,15 +313,15 @@ public final class InvoiceSyncClient {
      */
     private static Path matchInvoiceXml(ExportedInvoiceDirectory dir, KsefNumber typed, int ordinal) {
         Map<String, Path> all = dir.invoiceXmls();
-        Path byKsefNumber = all.get(typed.value() + ".xml");
+        Path byKsefNumber = all.get(typed.value() + XML_EXTENSION);
         if (byKsefNumber != null) {
             return byKsefNumber;
         }
-        Path byFaktura = all.get("faktura_" + (ordinal + 1) + ".xml");
+        Path byFaktura = all.get(FAKTURA_NAME_PREFIX + (ordinal + 1) + XML_EXTENSION);
         if (byFaktura != null) {
             return byFaktura;
         }
-        Path byInvoice = all.get("invoice-" + (ordinal + 1) + ".xml");
+        Path byInvoice = all.get(INVOICE_NAME_PREFIX + (ordinal + 1) + XML_EXTENSION);
         if (byInvoice != null) {
             return byInvoice;
         }
@@ -296,10 +344,16 @@ public final class InvoiceSyncClient {
         };
         // The builder implicitly assigns dateType from which "From" setter
         // we call (PERMANENT_STORAGE / INVOICING / ISSUE).
-        return switch (dateType) {
+        InvoiceQueryBuilder withDate = switch (dateType) {
             case PERMANENT_STORAGE -> builder.permanentStorageDateFrom(cursor);
             case INVOICING -> builder.invoicingDateFrom(cursor);
             case ISSUE -> builder.issueDateFrom(cursor);
         };
+        // Codex round-9 manual-validation A.1.1 — incremental-sync workflow
+        // mandates restrictToPermanentStorageHwmDate=true on every export
+        // (przyrostowe-pobieranie-faktur.md "Kluczowe znaczenie daty
+        // PermanentStorage"). The flag caps dateRange.to at the server-side
+        // HWM so consecutive windows never cross an unstable edge.
+        return withDate.restrictToPermanentStorageHwm();
     }
 }

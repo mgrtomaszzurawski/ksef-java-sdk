@@ -31,6 +31,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
@@ -71,6 +72,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import org.openapitools.jackson.nullable.JsonNullableModule;
@@ -93,11 +95,13 @@ import org.slf4j.LoggerFactory;
  *
  *     client.authenticate();
  *
- *     try (KsefSession session = client.openSession(FormCode.FA2)) {
+ *     try (KsefSession session = client.openSession(FormCode.FA3)) {
  *         session.send(invoiceXmlBytes);
  *     }
  * }
  * }</pre>
+ *
+ * @since 1.0.0
  */
 public final class KsefClient implements AutoCloseable {
 
@@ -108,6 +112,7 @@ public final class KsefClient implements AutoCloseable {
     private static final String ERR_FORM_CODE_NULL = "formCode must not be null";
     private static final String ERR_BATCH_PACKAGE_NULL = "preparedPackage must not be null";
     private static final String ERR_INVOICES_NULL = "invoices must not be null";
+    private static final String ERR_BATCH_OPTIONS_NULL = "options must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
     private static final String ERR_NO_CERT = "No certificate found with usage: ";
@@ -130,6 +135,11 @@ public final class KsefClient implements AutoCloseable {
     private static final int AUTH_POLL_DELAY_MS = 2000;
     private static final int AUTH_POLL_MAX_ATTEMPTS = 15;
     private static final int STATUS_CODE_OK = 200;
+    private static final int AUTH_STATUS_CODE_PROCESSING = 100;
+    private static final int AUTH_STATUS_CODE_VERIFYING_CERT = 450;
+    private static final String ERR_AUTH_FAILED_PREFIX = "KSeF authentication failed (code=";
+    private static final String ERR_AUTH_FAILED_SEPARATOR = ", description=";
+    private static final String ERR_AUTH_FAILED_SUFFIX = ")";
 
     private final KsefEnvironment environment;
     private final KsefCredentials credentials;
@@ -155,6 +165,7 @@ public final class KsefClient implements AutoCloseable {
     private final Map<PublicKeyCertificateUsage, PublicKey> publicKeyCache = new ConcurrentHashMap<>();
     private volatile boolean authenticated;
     private volatile boolean closed;
+    private volatile String lastChallengeClientIp;
 
     private KsefClient(Builder builder) {
         this.environment = builder.environment;
@@ -166,8 +177,10 @@ public final class KsefClient implements AutoCloseable {
         this.objectMapper = createObjectMapper();
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
-        this.runtime = new KsefHttpRuntime(environment, httpClient, objectMapper,
-                retryHandler, sessionContext, readTimeout, this::reauthenticate, this::ensureAuthenticated,
+        this.runtime = new KsefHttpRuntime(
+                new KsefHttpRuntime.Transport(environment, httpClient, objectMapper, retryHandler, readTimeout),
+                new KsefHttpRuntime.AuthHooks(sessionContext, this::reauthenticate, this::ensureAuthenticated,
+                        this::isCertificateBackedCredentials),
                 builder.featurePolicy);
         this.authClient = new AuthClient(this.runtime);
         this.securityClient = new SecurityClient(this.runtime);
@@ -180,6 +193,18 @@ public final class KsefClient implements AutoCloseable {
         this.rateLimitClient = new RateLimitClientImpl(this.runtime);
         this.testDataClient = new TestDataClientImpl(this.runtime);
         this.peppolClient = new PeppolClientImpl(this.runtime);
+        // Best-effort recovery — if a previous JVM crashed mid-batch, its
+        // encrypted part files are still in /tmp. Delete anything older than
+        // the orphan-age cutoff that matches the SDK's exact prefix.
+        // Run async on a daemon thread so a slow Files.list on a large /tmp
+        // does not block KsefClient construction.
+        Thread cleanupThread = new Thread(() ->
+                io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.purgeOrphans(
+                        null,
+                        io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.DEFAULT_ORPHAN_AGE),
+                "ksef-batch-temp-cleanup");
+        cleanupThread.setDaemon(true);
+        cleanupThread.start();
     }
 
     /**
@@ -222,7 +247,19 @@ public final class KsefClient implements AutoCloseable {
      *
      * <p>KSeF allows only one active online session per NIP at a time.
      *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * <p><strong>Cooldown after termination.</strong> Per
+     * {@code context/RCA/RCA-session-cooldown-consecutive-runs-2026-04-04-2105.md}:
+     * after a terminated online session, the server enforces a
+     * ~30–60 s cooldown for the same NIP. A new session opened too
+     * soon will return a reference number but reject the first
+     * {@code send(...)} with HTTP 415. The SDK translates that into
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException}
+     * with a {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#suggestedRetryAfter()}
+     * recommendation. Consumers should wait at least
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#TYPICAL_COOLDOWN}
+     * before reopening.
+     *
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @return an open session — use with try-with-resources
      */
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
@@ -230,6 +267,7 @@ public final class KsefClient implements AutoCloseable {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         ensureOpen();
         ensureAuthenticated();
+        formCode.assertAllowedOn(environment);
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
         byte[] aesKey = CryptoService.generateAesKey();
@@ -247,8 +285,34 @@ public final class KsefClient implements AutoCloseable {
 
         OnlineSession session = sessionClient.openOnline(request);
         LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
+        guardAgainstCooldown(session.referenceNumber());
 
-        return new KsefSession(sessionClient, session.referenceNumber(), aesKey, initVector);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(
+                sessionClient, session.referenceNumber(), aesKey, initVector, session.validUntil());
+    }
+
+    /**
+     * Codex 2026-05-05 #8b — proactively detect the post-termination
+     * cooldown window. KSeF returns a fresh session reference on
+     * {@code openOnline}, but the session can immediately enter status
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#COOLDOWN_STATUS_CODE 415}
+     * when reopened too soon after a previous termination for the same
+     * NIP. We catch that here and surface it as a typed exception
+     * instead of letting the caller hit it on first {@code send(...)}.
+     */
+    private void guardAgainstCooldown(String referenceNumber) {
+        var status = sessionClient.getStatus(referenceNumber);
+        if (status.status() != null
+                && io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException.isCooldownStatus(
+                        status.status().code())) {
+            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException(
+                    "openSession returned reference " + referenceNumber
+                            + " but immediately reports status 415 — server is in the post-termination"
+                            + " cooldown window for this NIP. Wait at least "
+                            + io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException
+                                    .TYPICAL_COOLDOWN
+                            + " before retrying.");
+        }
     }
 
     /**
@@ -263,19 +327,35 @@ public final class KsefClient implements AutoCloseable {
      * KSeF-side decryption failure.
      *
      * <p>For the common case where the SDK should build and encrypt the
-     * package itself, prefer {@link #openBatchSession(FormCode, List)}.
+     * package itself, prefer {@link #openBatchSession(FormCode, List, BatchSessionOptions)}.
      *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * <p><strong>Cleanup ownership:</strong> the SDK does not delete files or
+     * release buffers referenced by {@code preparedPackage} after the returned
+     * session is closed — they were not created by the SDK. The caller is
+     * responsible for cleaning up any temp files / large buffers they pass in.
+     * The auto-built overloads ({@link #openBatchSession(FormCode, List, BatchSessionOptions)}
+     * and {@link #openBatchSessionFromFiles(FormCode, List, BatchSessionOptions)})
+     * own their parts and clean up automatically.
+     *
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @param preparedPackage caller-prepared spec + key/IV + encrypted part bytes
+     * @param options batch session options (see {@link BatchSessionOptions})
      * @return an open batch session — use with try-with-resources
      */
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefBatchSession openBatchSession(FormCode formCode,
-                                                          PreparedBatchPackage preparedPackage) {
+                                                          PreparedBatchPackage preparedPackage,
+                                                          BatchSessionOptions options) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(preparedPackage, ERR_BATCH_PACKAGE_NULL);
+        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
+        // Codex round-9 manual validation A.4.2.3: batch sessions do not
+        // exhibit the post-termination 415 cooldown documented for online
+        // sessions (see context/RCA/RCA-session-cooldown-consecutive-runs-2026-04-04-2105.md).
+        // No guardAgainstCooldown call here.
         ensureOpen();
         ensureAuthenticated();
+        formCode.assertAllowedOn(environment);
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
         byte[] aesKey = preparedPackage.aesKey();
@@ -290,12 +370,14 @@ public final class KsefClient implements AutoCloseable {
                 .encryption(new EncryptionInfoRaw()
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(preparedPackage.spec()));
+                .batchFile(toBatchFileInfoRaw(preparedPackage.spec()))
+                .offlineMode(options.offlineMode());
 
         BatchSession session = sessionClient.openBatch(request);
         LOGGER.debug(LOG_OPENED_BATCH_SESSION, session.referenceNumber(), formCode);
 
-        return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(
+                sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), null);
     }
 
@@ -315,17 +397,24 @@ public final class KsefClient implements AutoCloseable {
      * {@link KsefBatchSession#uploadParts()} to push the encrypted bytes, then
      * {@link KsefBatchSession#close()} to finalise the session.
      *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA2})
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @param invoiceXmls non-empty list of raw invoice XML byte arrays
+     * @param options batch session options (see {@link BatchSessionOptions})
      * @return an open batch session pre-loaded with the encrypted part bytes
      */
     @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
     public synchronized KsefBatchSession openBatchSession(FormCode formCode,
-                                                          List<byte[]> invoiceXmls) {
+                                                          List<byte[]> invoiceXmls,
+                                                          BatchSessionOptions options) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(invoiceXmls, ERR_INVOICES_NULL);
+        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
+        // Codex round-9 manual validation A.4.2.3: batch cooldown asymmetry
+        // intentional — see openBatchSession(PreparedBatchPackage) overload
+        // for the rationale.
         ensureOpen();
         ensureAuthenticated();
+        formCode.assertAllowedOn(environment);
 
         PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
         byte[] aesKey = CryptoService.generateAesKey();
@@ -333,7 +422,7 @@ public final class KsefClient implements AutoCloseable {
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
 
         BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
-                invoiceXmls, aesKey, initVector);
+                invoiceXmls, aesKey, initVector, options.assembly());
 
         OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
                 .formCode(new FormCodeRaw()
@@ -343,13 +432,70 @@ public final class KsefClient implements AutoCloseable {
                 .encryption(new EncryptionInfoRaw()
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(pkg.spec()));
+                .batchFile(toBatchFileInfoRaw(pkg.spec()))
+                .offlineMode(options.offlineMode());
 
         BatchSession session = sessionClient.openBatch(request);
         LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,
                 session.referenceNumber(), invoiceXmls.size(), formCode);
 
-        return new KsefBatchSession(sessionClient, httpClient, session.referenceNumber(),
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(
+                sessionClient, httpClient, session.referenceNumber(),
+                session.partUploadRequests(), pkg);
+    }
+
+    /**
+     * File-streaming variant of {@link #openBatchSession(FormCode, List, BatchSessionOptions)}.
+     * Each invoice is read straight from disk into the batch ZIP rather than
+     * materialised as a {@code byte[]} in heap (Codex round-9
+     * manual-validation A.4.2). Use this for large batches — e.g. the spec
+     * cap of 10 000 invoices (REQ-SESS-41) — so peak heap stays bounded by
+     * the chunk-encryption buffer.
+     *
+     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
+     * @param invoiceFiles non-empty list of paths to invoice XML files
+     * @param options batch session options (see {@link BatchSessionOptions})
+     * @return an open batch session pre-loaded with the encrypted part bytes
+     */
+    @SuppressWarnings("java:S2629")
+    public synchronized KsefBatchSession openBatchSessionFromFiles(FormCode formCode,
+                                                                     List<java.nio.file.Path> invoiceFiles,
+                                                                     BatchSessionOptions options) {
+        Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
+        Objects.requireNonNull(invoiceFiles, ERR_INVOICES_NULL);
+        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
+        // Codex round-9 manual validation A.4.2.3: batch cooldown asymmetry
+        // intentional — see openBatchSession(PreparedBatchPackage) overload
+        // for the rationale.
+        ensureOpen();
+        ensureAuthenticated();
+        formCode.assertAllowedOn(environment);
+
+        PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
+        byte[] aesKey = CryptoService.generateAesKey();
+        byte[] initVector = CryptoService.generateIv();
+        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
+
+        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.buildFromFiles(
+                invoiceFiles, aesKey, initVector, options.assembly());
+
+        OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
+                .formCode(new FormCodeRaw()
+                        .systemCode(formCode.systemCode())
+                        .schemaVersion(formCode.schemaVersion())
+                        .value(formCode.value()))
+                .encryption(new EncryptionInfoRaw()
+                        .encryptedSymmetricKey(encryptedKey)
+                        .initializationVector(initVector))
+                .batchFile(toBatchFileInfoRaw(pkg.spec()))
+                .offlineMode(options.offlineMode());
+
+        BatchSession session = sessionClient.openBatch(request);
+        LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,
+                session.referenceNumber(), invoiceFiles.size(), formCode);
+
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(
+                sessionClient, httpClient, session.referenceNumber(),
                 session.partUploadRequests(), pkg);
     }
 
@@ -363,6 +509,7 @@ public final class KsefClient implements AutoCloseable {
         authClient.terminateCurrentSession();
         authenticated = false;
         publicKeyCache.clear();
+        lastChallengeClientIp = null;
         LOGGER.debug(LOG_TERMINATED);
     }
 
@@ -434,18 +581,27 @@ public final class KsefClient implements AutoCloseable {
 
     /**
      * Return the current bearer access token (the JWT the SDK injects in
-     * the {@code Authorization} header). Intended for advanced consumers
-     * that need to issue HTTP requests against KSeF outside the SDK's
-     * own transport plumbing (for example, probing test/diagnostic
-     * endpoints, or feeding tokens into a third-party HTTP framework).
+     * the {@code Authorization} header) — Tier-3 advanced API per
+     * ADR-021. Intended for consumers that need to issue HTTP requests
+     * against KSeF outside the SDK's own transport plumbing (for
+     * example, probing test/diagnostic endpoints, or feeding tokens
+     * into a third-party HTTP framework).
      *
-     * <p>Returns {@code null} when the client is not authenticated.
+     * <p>Returns an empty {@link Optional} when no token is available.
      * Triggers lazy authentication if needed.
+     *
+     * @apiNote Advanced. Most consumers should not need this — domain
+     *     clients ({@code client.invoices()}, {@code client.permissions()},
+     *     etc.) handle authentication internally.
+     *
+     * @return the active bearer token, or empty if the session has none
+     *
+     * @since 1.0.0
      */
-    public synchronized String bearerToken() {
+    public synchronized Optional<String> bearerToken() {
         ensureOpen();
         ensureAuthenticated();
-        return sessionContext.token();
+        return Optional.ofNullable(sessionContext.token());
     }
 
     /**
@@ -469,6 +625,7 @@ public final class KsefClient implements AutoCloseable {
         authenticated = false;
         publicKeyCache.clear();
         sessionContext.clear();
+        lastChallengeClientIp = null;
         authenticate();
         LOGGER.debug(LOG_REAUTHENTICATED);
     }
@@ -511,6 +668,23 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
+     * Stream sessions (online + batch) matching the filter, walking
+     * the {@code x-continuation-token} cursor returned by KSeF
+     * {@code GET /sessions} lazily. Caller controls memory pressure
+     * by limiting / collecting downstream.
+     *
+     * @param filter required filter (type, status, date ranges, exact ref)
+     * @return lazy stream of matching session summary items
+     */
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
+            streamSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
+        Objects.requireNonNull(filter, "filter must not be null");
+        ensureOpen();
+        ensureAuthenticated();
+        return sessionClient.streamSessions(filter);
+    }
+
+    /**
      * Access token management operations (generate, list, get status, revoke).
      */
     public TokenClient tokens() {
@@ -524,6 +698,30 @@ public final class KsefClient implements AutoCloseable {
     public PermissionClient permissions() {
         ensureOpen();
         return permissionClient;
+    }
+
+    /**
+     * The {@code clientIp} value reported by KSeF in the most recent
+     * {@code /auth/challenge} response, or {@code null} if no challenge
+     * has been requested yet on this client.
+     *
+     * <p>Use to autopin {@link io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy}
+     * for token authentication: read this after the first {@link #authenticate()}
+     * call, then build a fresh policy that whitelists exactly this IP and
+     * pass it via {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials}
+     * on subsequent authentications.
+     *
+     * <p>Provided per Codex round-9 manual validation AUTH-15 — the
+     * {@code requestChallenge()} response is internal-only by design,
+     * but the {@code clientIp} field it carries is operationally useful.
+     *
+     * @return the client IP from the latest challenge, or empty if no
+     *     challenge has been issued yet
+     *
+     * @since 1.0.0
+     */
+    public Optional<String> lastChallengeClientIp() {
+        return Optional.ofNullable(lastChallengeClientIp);
     }
 
     /**
@@ -572,8 +770,17 @@ public final class KsefClient implements AutoCloseable {
 
 
     @Override
-    public void close() {
+    public synchronized void close() {
         closed = true;
+        // Lifecycle hygiene (Codex round-9 F6) — clear cached public keys and
+        // bearer/refresh tokens so they are eligible for GC immediately rather
+        // than only when the KsefClient itself becomes unreachable. The
+        // close-flag check above already prevents any further protected calls;
+        // this just makes the secret material unreachable sooner.
+        publicKeyCache.clear();
+        sessionContext.clear();
+        authenticated = false;
+        lastChallengeClientIp = null;
     }
 
     public static Builder builder(KsefEnvironment environment) {
@@ -674,8 +881,10 @@ public final class KsefClient implements AutoCloseable {
     private void authenticateWithToken(KsefTokenCredentials credentials) {
         PublicKey tokenKey = getPublicKey(PublicKeyCertificateUsage.KSEF_TOKEN_ENCRYPTION);
         AuthenticationChallenge challenge = authClient.requestChallenge();
+        this.lastChallengeClientIp = challenge.clientIp();
         authClient.authenticateWithToken(challenge, credentials.ksefToken(),
-                credentials.identifier(), tokenKey);
+                credentials.identifier(), tokenKey,
+                credentials.authorizationPolicy().orElse(null));
         pollAuthStatus();
         authClient.redeemTokens();
     }
@@ -685,6 +894,7 @@ public final class KsefClient implements AutoCloseable {
                                              CertificateSubjectIdentifier subjectIdentifier,
                                              io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
+        this.lastChallengeClientIp = challenge.clientIp();
         authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier,
                 subjectIdentifier, signingOptions);
         pollAuthStatus();
@@ -701,14 +911,34 @@ public final class KsefClient implements AutoCloseable {
                 io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults());
     }
 
+    private boolean isCertificateBackedCredentials() {
+        return credentials instanceof KsefCertificateCredentials
+                || credentials instanceof KsefPkcs12Credentials;
+    }
+
     private void pollAuthStatus() {
         String refNumber = sessionContext.referenceNumber();
         for (int attempt = 0; attempt < AUTH_POLL_MAX_ATTEMPTS; attempt++) {
             sleep();
             AuthenticationStatus status = authClient.getStatus(refNumber);
-            if (status.status() != null && status.status().code() == STATUS_CODE_OK) {
+            if (status.status() == null) {
+                continue;
+            }
+            int code = status.status().code();
+            if (code == STATUS_CODE_OK) {
                 return;
             }
+            if (code == AUTH_STATUS_CODE_PROCESSING || code == AUTH_STATUS_CODE_VERIFYING_CERT) {
+                continue;
+            }
+            // Codex round-9 manual validation A.4.2.2: any other terminal
+            // status code (e.g. 400 — invalid signature, revoked cert, no
+            // permissions for context) is reported with the actual reason
+            // instead of being swallowed as a generic poll timeout.
+            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException(
+                    ERR_AUTH_FAILED_PREFIX + code + ERR_AUTH_FAILED_SEPARATOR
+                            + status.status().description() + ERR_AUTH_FAILED_SUFFIX,
+                    null, code, null);
         }
         throw new IllegalStateException(ERR_AUTH_TIMEOUT);
     }

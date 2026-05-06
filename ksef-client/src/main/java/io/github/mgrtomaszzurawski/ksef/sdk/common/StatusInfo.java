@@ -12,6 +12,8 @@ import java.util.List;
  * @param code numeric status code (e.g. 200 = success, 415 = session busy)
  * @param description human-readable status description
  * @param details optional additional detail messages
+ *
+ * @since 1.0.0
  */
 public record StatusInfo(int code, String description, List<String> details) {
 

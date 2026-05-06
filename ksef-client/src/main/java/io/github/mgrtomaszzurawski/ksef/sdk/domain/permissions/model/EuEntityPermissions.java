@@ -8,6 +8,8 @@ import java.util.List;
 
 /**
  * Result of querying EU entity permissions.
+ *
+ * @since 1.0.0
  */
 public record EuEntityPermissions(List<EuEntityPermission> permissions, boolean hasMore) {
 

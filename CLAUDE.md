@@ -5,8 +5,26 @@ This file provides guidance to Claude Code when working with code in this reposi
 ## What this is
 
 OpenAPI-first Java SDK for the Polish National e-Invoicing System (KSeF) REST API v2. Multi-module Maven project:
-- `ksef-client` — the SDK library (published to Maven Central)
+- `ksef-client` — the SDK library (target: Maven Central; **not yet published**)
 - `ksef-demo` — integration examples and smoke tests (not published)
+
+## Release status
+
+**Pre-1.0. No version has been published to Maven Central yet.** Current
+artefact version is `0.1.0-SNAPSHOT`. There is no consumer contract to
+preserve — the project has zero external dependents because the artefact
+has never been released.
+
+The work-in-progress branches consolidate breaking changes
+(removed/renamed types, changed record components, new required
+parameters) deliberately so that the eventual `1.0.0` cut is clean.
+Reviewers must NOT request back-compat shims, deprecated aliases, or
+overload bridges to "preserve" an API surface that has never shipped.
+SemVer pre-1.0 explicitly permits unrestricted breaking changes.
+
+When a review surfaces "breaking change" findings against the public API,
+treat them as informational confirmation that the breaking change
+landed — not as merge blockers.
 
 KSeF (Krajowy System e-Faktur) is a mandatory e-invoicing platform operated by the Polish Ministry of Finance. The API handles invoice submission, retrieval, session management, authentication via qualified signatures, and permissions management.
 
@@ -231,7 +249,7 @@ Builders enforce required fields and validate constraints discovered by the serv
 - Factory methods encode choices: `InvoiceQueryBuilder.seller()`, `OnlineSessionBuilder.fa2(key)`
 - Required fields fail-fast with `Objects.requireNonNull` or `IllegalStateException`
 - Server-side constraints replicated: description 5-256 chars, dateRange max 3 months, etc.
-- Builders return Raw request types (consumed by domain clients)
+- Builders return SDK domain records (e.g. `OnlineSessionOpenRequest`, `TokenGenerateRequest`); domain clients map records to `*Raw` internally via package-private mappers
 
 ### KSeF server error mechanism
 

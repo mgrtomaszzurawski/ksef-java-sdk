@@ -9,6 +9,8 @@ import java.util.Objects;
 
 /**
  * SDK request for {@code TestDataClient.grantPermissions(...)}.
+ *
+ * @since 1.0.0
  */
 public record TestPermissionsGrantRequest(
         String contextNip,

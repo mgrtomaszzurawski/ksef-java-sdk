@@ -8,6 +8,8 @@ import java.io.Serial;
 
 /**
  * Thrown on encryption or signing failures.
+ *
+ * @since 1.0.0
  */
 public class KsefCryptoException extends KsefException {
 

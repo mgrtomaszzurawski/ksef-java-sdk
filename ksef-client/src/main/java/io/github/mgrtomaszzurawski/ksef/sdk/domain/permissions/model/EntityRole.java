@@ -8,6 +8,8 @@ import java.time.OffsetDateTime;
 
 /**
  * An entity role entry from query results.
+ *
+ * @since 1.0.0
  */
 public record EntityRole(
         PermissionIdentifier parentEntityIdentifier,

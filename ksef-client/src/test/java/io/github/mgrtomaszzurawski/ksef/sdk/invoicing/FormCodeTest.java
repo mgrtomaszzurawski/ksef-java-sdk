@@ -4,8 +4,10 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -17,6 +19,7 @@ class FormCodeTest {
     private static final String SCHEMA_VERSION_FA = "1-0E";
     private static final String VALUE_FA = "FA";
     private static final String SYSTEM_CODE_PEF3 = "PEF (3)";
+    private static final String SYSTEM_CODE_PEF_KOR3 = "PEF_KOR (3)";
     private static final String SCHEMA_VERSION_PEF = "2-1";
     private static final String VALUE_PEF = "PEF";
 
@@ -105,5 +108,91 @@ class FormCodeTest {
 
         // then
         assertEquals(VALUE_FA, result);
+    }
+
+    @Test
+    void pef3_hasExpectedValues() {
+        // given
+        FormCode formCode = FormCode.PEF3;
+
+        // then
+        assertEquals(SYSTEM_CODE_PEF3, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_PEF, formCode.schemaVersion());
+        assertEquals(VALUE_PEF, formCode.value());
+    }
+
+    @Test
+    void pefKor3_hasExpectedValues() {
+        // given
+        FormCode formCode = FormCode.PEF_KOR3;
+
+        // then
+        assertEquals(SYSTEM_CODE_PEF_KOR3, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_PEF, formCode.schemaVersion());
+        assertEquals(VALUE_PEF, formCode.value());
+    }
+
+    @Test
+    void assertAllowedOn_fa2OnTest_doesNotThrow() {
+        // when / then
+        assertDoesNotThrow(() -> FormCode.FA2.assertAllowedOn(KsefEnvironment.TEST));
+    }
+
+    @Test
+    void assertAllowedOn_fa2OnDemo_throws() {
+        // when / then
+        assertThrows(IllegalArgumentException.class,
+                () -> FormCode.FA2.assertAllowedOn(KsefEnvironment.DEMO));
+    }
+
+    @Test
+    void assertAllowedOn_fa2OnProd_throws() {
+        // when / then
+        assertThrows(IllegalArgumentException.class,
+                () -> FormCode.FA2.assertAllowedOn(KsefEnvironment.PROD));
+    }
+
+    @Test
+    void assertAllowedOn_fa2OnPreprod_throws() {
+        // when / then
+        assertThrows(IllegalArgumentException.class,
+                () -> FormCode.FA2.assertAllowedOn(KsefEnvironment.PREPROD));
+    }
+
+    @Test
+    void assertAllowedOn_fa3OnAllEnvironments_doesNotThrow() {
+        // when / then
+        assertDoesNotThrow(() -> FormCode.FA3.assertAllowedOn(KsefEnvironment.TEST));
+        assertDoesNotThrow(() -> FormCode.FA3.assertAllowedOn(KsefEnvironment.DEMO));
+        assertDoesNotThrow(() -> FormCode.FA3.assertAllowedOn(KsefEnvironment.PROD));
+    }
+
+    @Test
+    void assertAllowedOn_pef3OnAllEnvironments_doesNotThrow() {
+        // when / then — PEF3 + PEF_KOR3 must be accepted on every environment
+        assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.TEST));
+        assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.DEMO));
+        assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.PREPROD));
+        assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.PROD));
+        assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.TEST));
+        assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.DEMO));
+        assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.PREPROD));
+        assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.PROD));
+    }
+
+    @Test
+    void assertAllowedOn_customCodeOnAnyEnv_doesNotThrow() {
+        // given
+        FormCode custom = FormCode.custom("CUSTOM (1)", "0-0X", "FA");
+
+        // when / then
+        assertDoesNotThrow(() -> custom.assertAllowedOn(KsefEnvironment.PROD));
+    }
+
+    @Test
+    void assertAllowedOn_nullEnvironment_throws() {
+        // when / then
+        assertThrows(NullPointerException.class,
+                () -> FormCode.FA2.assertAllowedOn(null));
     }
 }

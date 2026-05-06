@@ -159,7 +159,7 @@ class KsefSessionWorkflowTest {
     @Test
     void failedInvoices_returnsFailedList(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices/failed"))
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices/failed?pageSize=250"))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
@@ -250,7 +250,7 @@ class KsefSessionWorkflowTest {
         HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
-        return new KsefSession(sessionClient, TEST_SESSION_REF,
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF,
                 CryptoService.generateAesKey(), CryptoService.generateIv());
     }
 }

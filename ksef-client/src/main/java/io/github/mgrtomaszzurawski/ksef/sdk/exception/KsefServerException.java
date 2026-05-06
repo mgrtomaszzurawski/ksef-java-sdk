@@ -8,6 +8,8 @@ import java.io.Serial;
 
 /**
  * Thrown on HTTP 5xx server errors.
+ *
+ * @since 1.0.0
  */
 public class KsefServerException extends KsefException {
 

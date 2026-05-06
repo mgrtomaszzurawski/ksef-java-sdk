@@ -23,6 +23,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.mapping.Token
 
 /**
  * Client for KSeF API token management — generate, list, query status, and revoke tokens.
+ *
+ * @since 1.0.0
  */
 public final class TokenClientImpl implements TokenClient {
 
@@ -74,6 +76,26 @@ public final class TokenClientImpl implements TokenClient {
         QueryTokensResponseRaw rawValue = http.getAuthenticated(PATH_TOKENS, token,
                 QueryTokensResponseRaw.class, OP_LIST);
         return TokensMappers.toTokenList(rawValue);
+    }
+
+    /**
+     * Codex round-9 manual-validation A.4.1 — list all tokens, following
+     * {@code x-continuation-token} internally.
+     */
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens() {
+        LOGGER.debug(LOG_CALL, OP_LIST);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.cursorStream(continuationToken -> {
+            String accessToken = http.requireToken();
+            QueryTokensResponseRaw rawValue = continuationToken == null
+                    ? http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST)
+                    : http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST,
+                            io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
+                            continuationToken);
+            TokenList page = TokensMappers.toTokenList(rawValue);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.CursorPage<>(
+                    page.tokens(), page.continuationToken());
+        });
     }
 
     /**

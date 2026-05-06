@@ -27,6 +27,28 @@ import java.nio.file.Path;
  *
  * <p>Implementations need not be thread-safe — the orchestrator calls
  * the sink from a single thread.
+ *
+ * <p><strong>Idempotency contract.</strong> {@code accept(...)} may be
+ * invoked again with the same {@link KsefNumber} across:
+ * <ul>
+ *   <li>process restarts that resume from the last persisted checkpoint —
+ *       the sync window includes the last committed timestamp inclusive,
+ *       so any invoices the previous run delivered immediately before
+ *       failure are seen again on resume;</li>
+ *   <li>overlapping HWM windows when the server's
+ *       {@code permanentStorageHwmDate} oscillates by sub-second deltas
+ *       between consecutive runs;</li>
+ *   <li>caller-driven retries that re-invoke
+ *       {@link InvoiceSyncClient#sync} after a transient failure.</li>
+ * </ul>
+ *
+ * <p>Implementations <strong>must</strong> persist by {@code KsefNumber}
+ * idempotently — typically with the natural KSeF number as the
+ * primary/unique key on the destination store. The SDK deduplicates
+ * within a single sync run, but cross-run dedup is the sink's
+ * responsibility.
+ *
+ * @since 1.0.0
  */
 @FunctionalInterface
 public interface InvoiceSink {

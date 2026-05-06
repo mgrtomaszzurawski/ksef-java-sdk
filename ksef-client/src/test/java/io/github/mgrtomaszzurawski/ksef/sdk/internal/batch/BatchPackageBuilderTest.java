@@ -63,10 +63,10 @@ class BatchPackageBuilderTest {
      * Per KSeF spec: each part is independently encrypted. Decrypt each part separately,
      * concatenate the plaintext chunks → the original (unencrypted) ZIP.
      */
-    private static byte[] decryptAndConcat(List<Path> partFiles) throws Exception {
+    private static byte[] decryptAndConcat(BatchPackageBuilder.BatchPackage pkg) throws Exception {
         ByteArrayOutputStream concatenated = new ByteArrayOutputStream();
-        for (Path part : partFiles) {
-            byte[] encrypted = Files.readAllBytes(part);
+        for (int index = 0; index < pkg.parts().size(); index++) {
+            byte[] encrypted = pkg.readPartBytes(index);
             byte[] decrypted = CryptoService.decryptAes(encrypted, aesKey(), aesIv());
             concatenated.write(decrypted);
         }
@@ -107,10 +107,10 @@ class BatchPackageBuilderTest {
         try {
             assertEquals(1, batchPackage.spec().parts().size());
             assertEquals(FIRST_PART_ORDINAL, batchPackage.spec().parts().get(0).ordinalNumber());
-            assertEquals(1, batchPackage.partFiles().size());
+            assertEquals(1, batchPackage.parts().size());
 
             // fileSize/fileHash describe the unencrypted ZIP — recover it by decrypting
-            byte[] zipBytes = decryptAndConcat(batchPackage.partFiles());
+            byte[] zipBytes = decryptAndConcat(batchPackage);
             assertEquals(zipBytes.length, batchPackage.spec().fileSize());
             assertArrayEquals(sha256(zipBytes), batchPackage.spec().fileHash());
         } finally {
@@ -130,7 +130,7 @@ class BatchPackageBuilderTest {
 
         // then — decrypt each part, concat, parse as ZIP
         try {
-            byte[] zipBytes = decryptAndConcat(batchPackage.partFiles());
+            byte[] zipBytes = decryptAndConcat(batchPackage);
 
             Set<String> entryNames = new HashSet<>();
             List<byte[]> contents = new ArrayList<>();
@@ -170,7 +170,7 @@ class BatchPackageBuilderTest {
             }
 
             // decrypt each part and concat — should equal original unencrypted ZIP
-            byte[] zipBytes = decryptAndConcat(batchPackage.partFiles());
+            byte[] zipBytes = decryptAndConcat(batchPackage);
             assertEquals(batchPackage.spec().fileSize(), zipBytes.length);
             assertArrayEquals(sha256(zipBytes), batchPackage.spec().fileHash());
         } finally {
@@ -191,8 +191,8 @@ class BatchPackageBuilderTest {
 
         // then — each spec.parts().fileHash matches sha256(encrypted part file content)
         try {
-            for (int index = 0; index < batchPackage.partFiles().size(); index++) {
-                byte[] content = Files.readAllBytes(batchPackage.partFiles().get(index));
+            for (int index = 0; index < batchPackage.parts().size(); index++) {
+                byte[] content = batchPackage.readPartBytes(index);
                 byte[] expectedHash = sha256(content);
                 assertEquals(EXPECTED_HASH_BYTES, expectedHash.length);
                 assertArrayEquals(expectedHash, batchPackage.spec().parts().get(index).fileHash());
@@ -214,7 +214,7 @@ class BatchPackageBuilderTest {
 
         // then — fileHash describes the *unencrypted* ZIP (per KSeF spec)
         try {
-            byte[] zipBytes = decryptAndConcat(batchPackage.partFiles());
+            byte[] zipBytes = decryptAndConcat(batchPackage);
             assertArrayEquals(sha256(zipBytes), batchPackage.spec().fileHash());
             assertEquals(zipBytes.length, batchPackage.spec().fileSize());
         } finally {
@@ -250,16 +250,20 @@ class BatchPackageBuilderTest {
         byte[] invoice = INVOICE_ONE_XML.getBytes(StandardCharsets.UTF_8);
         BatchPackageBuilder.BatchPackage batchPackage = BatchPackageBuilder.build(
                 List.of(invoice), aesKey(), aesIv());
-        List<Path> partFiles = batchPackage.partFiles();
-        for (Path part : partFiles) {
-            assertTrue(Files.exists(part), "part file should exist before cleanup");
+        List<Path> partPaths = new ArrayList<>();
+        for (var part : batchPackage.parts()) {
+            assertTrue(part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart,
+                    "default mode is on-disk");
+            Path path = ((io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart) part).path();
+            partPaths.add(path);
+            assertTrue(Files.exists(path), "part file should exist before cleanup");
         }
 
         // when
         batchPackage.cleanup();
 
         // then
-        for (Path part : partFiles) {
+        for (Path part : partPaths) {
             assertFalse(Files.exists(part), "part file should be deleted after cleanup");
         }
     }

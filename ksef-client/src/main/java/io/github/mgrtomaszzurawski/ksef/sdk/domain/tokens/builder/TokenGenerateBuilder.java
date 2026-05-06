@@ -22,6 +22,8 @@ import java.util.Objects;
  *     .credentialsRead()
  *     .build();
  * }</pre>
+ *
+ * @since 1.0.0
  */
 public final class TokenGenerateBuilder {
 

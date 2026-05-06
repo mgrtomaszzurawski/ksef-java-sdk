@@ -123,7 +123,8 @@ public final class ValidationProbe {
             client.authenticate();
             LOGGER.info("Authenticated successfully");
 
-            String bearer = client.bearerToken();
+            String bearer = client.bearerToken()
+                    .orElseThrow(() -> new IllegalStateException("authenticate() succeeded but no bearer token in session"));
 
             ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
             probe.runAllProbes();

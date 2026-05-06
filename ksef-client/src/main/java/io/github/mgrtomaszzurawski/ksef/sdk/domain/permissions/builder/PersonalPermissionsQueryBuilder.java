@@ -14,6 +14,8 @@ import java.util.List;
 
 /**
  * Builder for personal permissions query requests. All fields are optional.
+ *
+ * @since 1.0.0
  */
 public final class PersonalPermissionsQueryBuilder {
 

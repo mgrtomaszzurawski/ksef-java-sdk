@@ -21,6 +21,8 @@ import java.util.Objects;
  * @param encryptedPartSize encrypted part size in bytes
  * @param encryptedPartHash encrypted part SHA-256 hash
  * @param expirationDate when the download URL expires
+ *
+ * @since 1.0.0
  */
 public record InvoicePackagePart(
         int ordinalNumber,

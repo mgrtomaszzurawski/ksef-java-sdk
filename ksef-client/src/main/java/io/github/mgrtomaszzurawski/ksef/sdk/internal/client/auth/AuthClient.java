@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenRefreshR
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthorizationPolicyRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InitTokenAuthenticationRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
@@ -40,6 +41,8 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
 /**
  * Client for KSeF authentication operations.
  * Supports XAdES signature-based and KSeF token-based authentication flows.
+ *
+ * @since 1.0.0
  */
 public final class AuthClient {
 
@@ -210,11 +213,23 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithToken(
             AuthenticationChallenge challenge,
             String ksefToken, KsefIdentifier identifier, PublicKey ksefPublicKey) {
+        return authenticateWithToken(challenge, ksefToken, identifier, ksefPublicKey, null);
+    }
+
+    /**
+     * Codex 2026-05-05 #7 / F6 — overload accepting a custom
+     * {@link AuthorizationPolicy} (IP allow-list with addresses, ranges,
+     * and CIDR masks). When {@code policy} is {@code null}, falls back to
+     * the legacy single-client-IP behaviour.
+     */
+    public AuthenticationInit authenticateWithToken(
+            AuthenticationChallenge challenge,
+            String ksefToken, KsefIdentifier identifier, PublicKey ksefPublicKey,
+            AuthorizationPolicy policy) {
         LOGGER.debug(LOG_CALL, OP_AUTH_TOKEN);
         Instant challengeTimestamp = Instant.ofEpochMilli(challenge.timestampMs());
         byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, challengeTimestamp, ksefPublicKey);
-        AllowedIpsRaw allowedIps = new AllowedIpsRaw()
-                .addIp4AddressesItem(challenge.clientIp());
+        AllowedIpsRaw allowedIps = toAllowedIpsRaw(policy, challenge.clientIp());
         InitTokenAuthenticationRequestRaw request = new InitTokenAuthenticationRequestRaw()
                 .challenge(challenge.challenge())
                 .contextIdentifier(new AuthenticationContextIdentifierRaw()
@@ -226,6 +241,23 @@ public final class AuthClient {
                 PATH_KSEF_TOKEN, request, AuthenticationInitResponseRaw.class, OP_AUTH_TOKEN);
         activateSession(response);
         return AuthenticationInit.from(response);
+    }
+
+    private static AllowedIpsRaw toAllowedIpsRaw(AuthorizationPolicy policy, String defaultClientIp) {
+        if (policy == null) {
+            return new AllowedIpsRaw().addIp4AddressesItem(defaultClientIp);
+        }
+        AllowedIpsRaw raw = new AllowedIpsRaw();
+        for (String addr : policy.ip4Addresses()) {
+            raw.addIp4AddressesItem(addr);
+        }
+        for (String range : policy.ip4Ranges()) {
+            raw.addIp4RangesItem(range);
+        }
+        for (String mask : policy.ip4Masks()) {
+            raw.addIp4MasksItem(mask);
+        }
+        return raw;
     }
 
     /**

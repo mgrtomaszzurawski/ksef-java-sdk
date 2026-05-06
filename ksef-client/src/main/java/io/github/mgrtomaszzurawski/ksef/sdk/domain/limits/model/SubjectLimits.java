@@ -9,6 +9,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
  *
  * @param maxEnrollments maximum number of enrollments allowed (null if unlimited)
  * @param maxCertificates maximum number of certificates allowed (null if unlimited)
+ *
+ * @since 1.0.0
  */
 public record SubjectLimits(Integer maxEnrollments, Integer maxCertificates) {
 

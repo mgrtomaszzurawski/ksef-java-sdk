@@ -11,6 +11,8 @@ import java.util.Objects;
 /**
  * Builder for KSeF test permissions revocation requests.
  * <p>Required: contextNip, authorizedIdentifier (type + value).
+ *
+ * @since 1.0.0
  */
 public final class TestPermissionsRevokeBuilder {
 

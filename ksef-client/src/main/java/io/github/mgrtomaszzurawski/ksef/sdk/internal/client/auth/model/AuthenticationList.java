@@ -12,6 +12,8 @@ import java.util.List;
  *
  * @param continuationToken token for fetching next page, null if no more results
  * @param items authentication session items
+ *
+ * @since 1.0.0
  */
 public record AuthenticationList(String continuationToken, List<AuthenticationListItem> items) {
 

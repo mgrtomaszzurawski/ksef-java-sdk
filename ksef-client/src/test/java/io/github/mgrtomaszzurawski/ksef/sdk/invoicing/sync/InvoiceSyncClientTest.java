@@ -213,7 +213,6 @@ class InvoiceSyncClientTest {
         return IncrementalSyncPlan.builder()
                 .from(START_CURSOR)
                 .subjectTypes(InvoiceQuerySubjectType.SUBJECT1)
-                .dateType(InvoiceQueryDateType.PERMANENT_STORAGE)
                 .outputDirectory(tempDir.resolve("output"))
                 .fullContent(false)
                 .build();
@@ -229,14 +228,17 @@ class InvoiceSyncClientTest {
     private static ExportedInvoiceDirectory metadataDir(Path windowDir, List<String> ksefNumbers) throws IOException {
         Files.createDirectories(windowDir);
         Path metadataPath = windowDir.resolve("_metadata.json");
-        StringBuilder json = new StringBuilder("[");
+        // Spec-shaped wrapper {"invoices": [...]}, per
+        // ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md and
+        // open-api.json export prepare endpoint description (Codex H2).
+        StringBuilder json = new StringBuilder("{\"invoices\":[");
         for (int index = 0; index < ksefNumbers.size(); index++) {
             if (index > 0) {
                 json.append(",");
             }
             json.append("{\"ksefNumber\":\"").append(ksefNumbers.get(index)).append("\"}");
         }
-        json.append("]");
+        json.append("]}");
         Files.writeString(metadataPath, json.toString());
         return new ExportedInvoiceDirectory(windowDir, metadataPath, java.util.Map.of());
     }

@@ -149,6 +149,30 @@ class FeaturePolicyHeadersTest {
     }
 
     @Test
+    void problemDetailsDisabled_omitsErrorFormatHeaderOnDelete(WireMockRuntimeInfo wmInfo) {
+        // given — opt-out of Problem Details, exercise DELETE path (Codex round-9 F8 —
+        // earlier rounds hardcoded the header on DELETE; the fix must hold).
+        String authSessionsCurrent = "/v2/auth/sessions/current";
+        stubFor(com.github.tomakehurst.wiremock.client.WireMock.delete(
+                com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo(authSessionsCurrent))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
+
+        FeaturePolicy noProblemDetails = FeaturePolicy.builder().problemDetails(false).build();
+        HttpRuntime runtime = activatedRuntime(wmInfo, noProblemDetails);
+        io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient authClient =
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient(runtime);
+
+        // when
+        authClient.terminateCurrentSession();
+
+        // then — DELETE must NOT carry X-Error-Format when policy says no
+        com.github.tomakehurst.wiremock.client.WireMock.verify(
+                com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor(
+                        com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo(authSessionsCurrent))
+                        .withHeader(X_ERROR_FORMAT, absent()));
+    }
+
+    @Test
     void problemDetailsDisabled_omitsErrorFormatHeader(WireMockRuntimeInfo wmInfo) {
         // given — opt-out of Problem Details
         stubFor(get(urlEqualTo(STATUS_PATH))
@@ -179,7 +203,19 @@ class FeaturePolicyHeadersTest {
     @Test
     void featurePolicy_rejectsNullUpoVersion() {
         org.junit.jupiter.api.Assertions.assertThrows(NullPointerException.class,
-                () -> new FeaturePolicy(null, true));
+                () -> new FeaturePolicy(null, true, false));
+    }
+
+    @Test
+    void enforceXadesCompliance_default_isFalse() {
+        FeaturePolicy fresh = FeaturePolicy.defaults();
+        org.junit.jupiter.api.Assertions.assertFalse(fresh.enforceXadesCompliance());
+    }
+
+    @Test
+    void enforceXadesCompliance_builderSetsTrue() {
+        FeaturePolicy strict = FeaturePolicy.builder().enforceXadesCompliance(true).build();
+        org.junit.jupiter.api.Assertions.assertTrue(strict.enforceXadesCompliance());
     }
 
     private static HttpRuntime activatedRuntime(WireMockRuntimeInfo wmInfo, FeaturePolicy featurePolicy) {

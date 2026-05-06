@@ -14,6 +14,8 @@ import java.util.List;
  * @param isTruncated whether the result set was truncated
  * @param permanentStorageHwmDate high-water-mark date for permanent storage
  * @param invoices list of invoice metadata
+ *
+ * @since 1.0.0
  */
 public record InvoiceMetadataResult(
         boolean hasMore,

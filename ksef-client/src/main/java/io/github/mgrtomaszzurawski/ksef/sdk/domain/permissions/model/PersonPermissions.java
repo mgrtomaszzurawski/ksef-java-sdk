@@ -11,6 +11,8 @@ import java.util.List;
  *
  * @param permissions list of person permissions
  * @param hasMore whether more results are available
+ *
+ * @since 1.0.0
  */
 public record PersonPermissions(List<PersonPermission> permissions, boolean hasMore) {
 

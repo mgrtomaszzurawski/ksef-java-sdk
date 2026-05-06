@@ -166,7 +166,7 @@ class KsefBatchSessionTest {
                 io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_BATCH_REF, java.time.OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
-        return new KsefBatchSession(sessionClient, TEST_BATCH_REF, List.of(samplePart()));
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(sessionClient, TEST_BATCH_REF, List.of(samplePart()));
     }
 
     private static PartUploadRequest samplePart() {

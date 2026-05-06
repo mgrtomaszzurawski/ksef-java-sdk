@@ -9,6 +9,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * SDK request for {@code PermissionClient.queryPersonal(...)}.
+ *
+ * @since 1.0.0
  */
 public record PersonalPermissionsQueryRequest(
         @Nullable PersonalContextIdentifierType contextType,

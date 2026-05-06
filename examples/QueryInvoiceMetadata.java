@@ -1,4 +1,4 @@
-//DEPS io.github.mgrtomaszzurawski:ksef-client:0.1.0
+//DEPS io.github.mgrtomaszzurawski:ksef-client:1.0.0
 //DEPS org.slf4j:slf4j-simple:2.0.16
 
 /*
@@ -7,8 +7,8 @@
  *
  * Example: paginate through every invoice metadata entry in a date range.
  *
- * The SDK's queryAllMetadata() walks all pages using permanentStorageHwmDate
- * as a date cursor — you don't need to manage pagination yourself.
+ * The SDK's streamMetadata() walks all pages using permanentStorageHwmDate
+ * as a date cursor lazily — pipe through .limit(N).toList() to bound memory.
  *
  * Required env vars:
  *   KSEF_TOKEN — pre-issued KSeF token
@@ -49,7 +49,9 @@ public final class QueryInvoiceMetadata {
                     .invoicingDateFrom(OffsetDateTime.now().minusDays(days))
                     .dateTo(OffsetDateTime.now());
 
-            List<InvoiceMetadata> all = client.invoices().queryAllMetadata(query, MAX_RESULTS);
+            List<InvoiceMetadata> all = client.invoices().streamMetadata(query)
+                    .limit(MAX_RESULTS)
+                    .toList();
             System.out.println("Found " + all.size() + " invoices in the last " + days + " days");
 
             for (InvoiceMetadata invoice : all) {

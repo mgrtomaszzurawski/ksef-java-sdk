@@ -8,6 +8,8 @@ import java.util.List;
 
 /**
  * Result of querying subordinate entity roles.
+ *
+ * @since 1.0.0
  */
 public record SubordinateEntityRoles(List<SubordinateEntityRole> roles, boolean hasMore) {
 

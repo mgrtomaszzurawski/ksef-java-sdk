@@ -163,7 +163,7 @@ class KsefBatchSessionUploadTest {
                 new PartUploadRequest(1, "PUT",
                         URI.create(wmInfo.getHttpBaseUrl() + UPLOAD_PATH_1), Map.of()));
         // Use the no-package constructor (the PreparedBatchPackage flow)
-        try (KsefBatchSession session = new KsefBatchSession(sessionClient, TEST_BATCH_REF, uploads)) {
+        try (KsefBatchSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(sessionClient, TEST_BATCH_REF, uploads)) {
 
             // when / then
             assertThrows(IllegalStateException.class, session::uploadParts);
@@ -272,8 +272,8 @@ class KsefBatchSessionUploadTest {
         runtime.sessionContext().activate(TEST_TOKEN, TEST_BATCH_REF, java.time.OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
         BatchPackageBuilder.BatchPackage pkg = new BatchPackageBuilder.BatchPackage(
-                stubBatchFileSpec(partFiles.size()), partFiles);
-        return new KsefBatchSession(sessionClient, HttpClient.newHttpClient(),
+                stubBatchFileSpec(partFiles.size()), wrapAsParts(partFiles));
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(sessionClient, HttpClient.newHttpClient(),
                 TEST_BATCH_REF, uploads, pkg, fakeClock);
     }
 
@@ -302,9 +302,32 @@ class KsefBatchSessionUploadTest {
         runtime.sessionContext().activate(TEST_TOKEN, TEST_BATCH_REF, OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
         BatchPackageBuilder.BatchPackage pkg = new BatchPackageBuilder.BatchPackage(
-                stubBatchFileSpec(partFiles.size()), partFiles);
-        return new KsefBatchSession(sessionClient, HttpClient.newHttpClient(),
+                stubBatchFileSpec(partFiles.size()), wrapAsParts(partFiles));
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(sessionClient, HttpClient.newHttpClient(),
                 TEST_BATCH_REF, uploads, pkg);
+    }
+
+    private static List<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart>
+            wrapAsParts(List<Path> partFiles) {
+        // Test fixture — use 0 for missing files so the upload code path still
+        // exercises the FileNotFoundException branch on missing-file tests.
+        List<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart> parts =
+                new java.util.ArrayList<>();
+        byte[] fakeHash = new byte[32];
+        int ordinal = 1;
+        for (Path path : partFiles) {
+            long size = 0L;
+            try {
+                if (Files.exists(path)) {
+                    size = Files.size(path);
+                }
+            } catch (java.io.IOException ignored) {
+                // best-effort sizing for fixtures
+            }
+            parts.add(new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart(
+                    ordinal++, size, fakeHash, path));
+        }
+        return parts;
     }
 
     private static io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec stubBatchFileSpec(int partCount) {

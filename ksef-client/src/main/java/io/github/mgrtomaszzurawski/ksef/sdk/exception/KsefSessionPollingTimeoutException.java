@@ -16,6 +16,8 @@ import java.util.Objects;
  * <p>Carries the session reference number and the last observed status code
  * so the caller can decide whether to wait longer, abandon, or retrieve UPO
  * out-of-band.
+ *
+ * @since 1.0.0
  */
 public final class KsefSessionPollingTimeoutException extends KsefException {
 

@@ -28,6 +28,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -112,8 +113,9 @@ class InvoiceClientTest {
 
     @Test
     void queryMetadata_whenFiltersMatch_returnsMetadataList(WireMockRuntimeInfo wmInfo) {
-        // given
-        stubFor(post(urlEqualTo(INVOICES_BASE + "/query/metadata"))
+        // given — A.1.2: queryMetadata now appends ?pageOffset=0&pageSize=250
+        // for spec-conformant single-page fetch.
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -134,17 +136,17 @@ class InvoiceClientTest {
     }
 
     @Test
-    void queryAllMetadata_whenSecondPageRequested_preservesAllFiltersBetweenPages(WireMockRuntimeInfo wmInfo) {
-        // given — page 1 carries hasMore=true + permanentStorageHwmDate cursor; page 2 closes the loop.
-        String hwmCursor = "2026-04-15T10:00:00.000Z";
+    void streamMetadata_whenSecondPageRequested_preservesAllFiltersBetweenPages(WireMockRuntimeInfo wmInfo) {
+        // given — A.1.2 spec algorithm:
+        //   hasMore=true && isTruncated=false → pageOffset++ (same dateRange).
+        // Page 1 stubs the in-flight state; page 2 closes the loop with hasMore=false.
         String pageOneBody = """
                 {
                   "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat"}],
                   "hasMore": true,
-                  "isTruncated": false,
-                  "permanentStorageHwmDate": "%s"
+                  "isTruncated": false
                 }
-                """.formatted(TEST_KSEF_NUMBER, hwmCursor);
+                """.formatted(TEST_KSEF_NUMBER);
         String pageTwoBody = """
                 {
                   "invoices": [],
@@ -152,7 +154,7 @@ class InvoiceClientTest {
                   "isTruncated": false
                 }
                 """;
-        stubFor(post(urlEqualTo(INVOICES_BASE + "/query/metadata"))
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
                 .inScenario("paginate")
                 .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
                 .willReturn(aResponse()
@@ -160,7 +162,7 @@ class InvoiceClientTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(pageOneBody))
                 .willSetStateTo("page2"));
-        stubFor(post(urlEqualTo(INVOICES_BASE + "/query/metadata"))
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
                 .inScenario("paginate")
                 .whenScenarioStateIs("page2")
                 .willReturn(aResponse()
@@ -177,11 +179,18 @@ class InvoiceClientTest {
                     .onlineOnly()
                     .selfInvoicing(true)
                     .hasAttachment(true);
-            ksef.invoices().queryAllMetadata(query);
+            ksef.invoices().streamMetadata(query).toList();
 
-            // then — both POSTs hit, page 2 body carries the same caller filters.
-            var requests = findAll(postRequestedFor(urlEqualTo(INVOICES_BASE + "/query/metadata")));
+            // then — both POSTs hit. Page 2 body carries the same caller filters,
+            // and the spec-conformant algorithm advanced pageOffset (not the
+            // dateRange) since isTruncated=false.
+            var requests = findAll(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata")));
             assertEquals(2, requests.size());
+            assertTrue(requests.get(0).getUrl().contains("pageOffset=0"),
+                    "page 1 should be pageOffset=0, was URL: " + requests.get(0).getUrl());
+            assertTrue(requests.get(1).getUrl().contains("pageOffset=1"),
+                    "page 2 must advance pageOffset (not dateRange) when isTruncated=false, was URL: "
+                            + requests.get(1).getUrl());
             String pageTwoRequestBody = requests.get(1).getBodyAsString();
             assertTrue(pageTwoRequestBody.contains(TEST_KSEF_NUMBER),
                     "page 2 must preserve ksefNumber filter, was: " + pageTwoRequestBody);
@@ -193,8 +202,93 @@ class InvoiceClientTest {
                     "page 2 must preserve isSelfInvoicing filter, was: " + pageTwoRequestBody);
             assertTrue(pageTwoRequestBody.contains("\"hasAttachment\":true"),
                     "page 2 must preserve hasAttachment filter, was: " + pageTwoRequestBody);
-            assertTrue(pageTwoRequestBody.contains(hwmCursor.substring(0, 10)),
-                    "page 2 must advance dateRange.from to HWM cursor, was: " + pageTwoRequestBody);
+        }
+    }
+
+    @Test
+    void streamMetadata_whenIsTruncated_resetsPageOffsetAndAdvancesDateRange(WireMockRuntimeInfo wmInfo) {
+        // given — A.1.2 spec algorithm:
+        //   hasMore=true && isTruncated=true → narrow dateRange.from to the
+        //                                     LAST RETURNED RECORD's date for
+        //                                     the chosen dateType axis +
+        //                                     reset pageOffset to 0.
+        String lastRecordDate = "2026-04-15T10:00:00Z";
+        String pageOneBody = """
+                {
+                  "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat", "invoicingDate": "%s"}],
+                  "hasMore": true,
+                  "isTruncated": true,
+                  "permanentStorageHwmDate": "2026-04-30T00:00:00Z"
+                }
+                """.formatted(TEST_KSEF_NUMBER, lastRecordDate);
+        String pageTwoBody = """
+                {
+                  "invoices": [],
+                  "hasMore": false,
+                  "isTruncated": false
+                }
+                """;
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
+                .inScenario("truncate")
+                .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(pageOneBody))
+                .willSetStateTo("page2"));
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
+                .inScenario("truncate")
+                .whenScenarioStateIs("page2")
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(pageTwoBody)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"));
+            ksef.invoices().streamMetadata(query).toList();
+
+            var requests = findAll(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata")));
+            assertEquals(2, requests.size());
+            assertTrue(requests.get(1).getUrl().contains("pageOffset=0"),
+                    "page 2 must reset pageOffset to 0 on truncation, was URL: " + requests.get(1).getUrl());
+            String pageTwoBodyOut = requests.get(1).getBodyAsString();
+            assertTrue(pageTwoBodyOut.contains(lastRecordDate.substring(0, 10)),
+                    "page 2 must advance dateRange.from to last-record date on truncation, was: " + pageTwoBodyOut);
+        }
+    }
+
+    @Test
+    void streamMetadata_truncatedNullCursor_throwsKsefException(WireMockRuntimeInfo wmInfo) {
+        // Codex 2026-05-05 F3 — server returns isTruncated=true but the last
+        // record on the page has no value on the date axis we picked
+        // (invoicingDate here, since the query filters by invoicingDateFrom).
+        // Spec doesn't envisage this state; under the new fail-fast contract
+        // streamMetadata throws instead of silently dropping pages.
+        String pageOneBody = """
+                {
+                  "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat"}],
+                  "hasMore": true,
+                  "isTruncated": true,
+                  "permanentStorageHwmDate": "2026-04-30T00:00:00Z"
+                }
+                """.formatted(TEST_KSEF_NUMBER);
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(pageOneBody)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"));
+            io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException thrown =
+                    org.junit.jupiter.api.Assertions.assertThrows(
+                            io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
+                            () -> ksef.invoices().streamMetadata(query).toList());
+            assertTrue(thrown.getMessage().contains("isTruncated"),
+                    "exception message must explain truncation, was: " + thrown.getMessage());
         }
     }
 

@@ -55,6 +55,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.mapping.
 /**
  * Client for KSeF permission management — granting, revoking, and querying permissions
  * for persons, entities, EU entities, subunits, and authorizations.
+ *
+ * @since 1.0.0
  */
 public final class PermissionClientImpl implements PermissionClient {
 
@@ -106,6 +108,11 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String OP_QUERY_EU_ENTITIES = "queryEuEntityPermissions";
 
     private static final String ERR_BUILDER_NULL = "builder must not be null";
+
+    /** Spec-defined max page size for permission query endpoints. */
+    private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 250;
+    private static final String PERMISSION_QUERY_PAGE_PARAMS = "?pageOffset=";
+    private static final String PERMISSION_QUERY_PAGE_SIZE_PARAM = "&pageSize=" + PERMISSION_QUERY_MAX_PAGE_SIZE;
 
     private final HttpSupport http;
 
@@ -419,5 +426,122 @@ public final class PermissionClientImpl implements PermissionClient {
                 PermissionsQueryRequestMappers.toEuEntityPermissionsQueryRequestRaw(builder.build()), token,
                 QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
         return PermissionsMappers.toEuEntityPermissions(rawValue);
+    }
+
+    // ======================== stream variants (Codex A.4.1 / F3) ========================
+    // Each returns a lazy Stream<T> that walks one page at a time using
+    // spec-max page size; callers bound memory via .limit(N) / .takeWhile(...).
+
+    private static String pagedPath(String basePath, int pageOffset) {
+        return basePath + PERMISSION_QUERY_PAGE_PARAMS + pageOffset + PERMISSION_QUERY_PAGE_SIZE_PARAM;
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission>
+            streamPersonal(PersonalPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            QueryPersonalPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_PERSONAL, pageOffset),
+                    PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(builder.build()),
+                    token, QueryPersonalPermissionsResponseRaw.class, OP_QUERY_PERSONAL);
+            PersonalPermissions page = PermissionsMappers.toPersonalPermissions(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.permissions(), page.hasMore());
+        });
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission>
+            streamPersons(PersonPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            QueryPersonPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_PERSONS, pageOffset),
+                    PermissionsQueryRequestMappers.toPersonPermissionsQueryRequestRaw(builder.build()),
+                    token, QueryPersonPermissionsResponseRaw.class, OP_QUERY_PERSONS);
+            PersonPermissions page = PermissionsMappers.toPersonPermissions(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.permissions(), page.hasMore());
+        });
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermission>
+            streamSubunits() {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            QuerySubunitPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_SUBUNITS, pageOffset),
+                    new SubunitPermissionsQueryRequestRaw(), token,
+                    QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
+            SubunitPermissions page = PermissionsMappers.toSubunitPermissions(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.permissions(), page.hasMore());
+        });
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission>
+            streamEntities() {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            QueryEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_ENTITIES, pageOffset),
+                    new EntityPermissionsQueryRequestRaw(), token,
+                    QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
+            EntityPermissions page = PermissionsMappers.toEntityPermissions(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.permissions(), page.hasMore());
+        });
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole>
+            streamSubordinateRoles() {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            QuerySubordinateEntityRolesResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_SUBORDINATE, pageOffset),
+                    new SubordinateEntityRolesQueryRequestRaw(), token,
+                    QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
+            SubordinateEntityRoles page = PermissionsMappers.toSubordinateEntityRoles(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.roles(), page.hasMore());
+        });
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationGrant>
+            streamAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            QueryEntityAuthorizationPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_AUTHORIZATIONS, pageOffset),
+                    PermissionsQueryRequestMappers.toEntityAuthorizationPermissionsQueryRequestRaw(builder.build()),
+                    token, QueryEntityAuthorizationPermissionsResponseRaw.class, OP_QUERY_AUTHORIZATIONS);
+            EntityAuthorizationPermissions page = PermissionsMappers.toEntityAuthorizationPermissions(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.authorizationGrants(), page.hasMore());
+        });
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission>
+            streamEuEntities(EuEntityPermissionsQueryBuilder builder) {
+        Objects.requireNonNull(builder, ERR_BUILDER_NULL);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            QueryEuEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(
+                    pagedPath(PATH_QUERY_EU_ENTITIES, pageOffset),
+                    PermissionsQueryRequestMappers.toEuEntityPermissionsQueryRequestRaw(builder.build()),
+                    token, QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
+            EuEntityPermissions page = PermissionsMappers.toEuEntityPermissions(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.permissions(), page.hasMore());
+        });
     }
 }

@@ -9,6 +9,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First public Maven Central release.
 
+### Polish pass — Codex / Claude Code v2 closure (2026-05-05)
+
+Closes the verified findings from the 2026-05-05 17:39 Codex review and
+the Claude Code v2 manual validation audit:
+
+- **F1 CRITICAL** — `OnlineSessionBuilder.fa2/fa3` was building wrong
+  FormCode triples (e.g. `("FA", "3", "FA (3)")` instead of canonical
+  `("FA (3)", "1-0E", "FA")`). Builder now delegates to the
+  `FormCode.FA2` / `FormCode.FA3` constants used by the main
+  `KsefClient.openSession(FormCode)` path. New
+  `fromFormCode(FormCode, PublicKey)` factory replaces the wrong
+  `custom(...)` overload.
+- **F2** — Added first-class `FormCode.PEF3` and `FormCode.PEF_KOR3`
+  constants; corrected `FormCode.custom(...)` Javadoc to show fields
+  in the canonical position order.
+- **FORM-1** — `KsefClient.openSession(...)` /
+  `openBatchSession*(...)` now preflight FormCode against the active
+  environment via `FormCode.assertAllowedOn(KsefEnvironment)`. FA(2)
+  on DEMO/PREPROD/PROD fails fast instead of reaching server-side
+  schema rejection.
+- **A.4.2.2** — `pollAuthStatus` now treats codes 100/450 as
+  in-progress, 200 as success, anything else as terminal failure
+  carrying the actual status code + description in
+  `KsefAuthException`. Previously every non-200 collapsed into a
+  generic poll timeout.
+- **A.4.2.1** — Added `FeaturePolicy.enforceXadesCompliance` opt-in
+  emitting `X-KSeF-Feature: enforce-xades-compliance` on
+  `/auth/xades-signature` and `/auth/ksef-token` (api-changelog v2.1.1).
+- **A.4.2.4 / FACT-VER-1** — `KsefXmlValidator` now exposes structured
+  `ValidationIssue` records with explicit `Severity` enum via
+  `validateDetailed(...)`. `validateOrThrow(...)` rejects only on
+  ERROR/FATAL, not on WARNING. New `checkRecommendedCharsets(byte[])`
+  preflights the W3C XML 1.0 banned codepoint set
+  (api-changelog v2.4.0, PRD effective 2026-07-16).
+- **A.4.1 LOG-1** — `UriRedaction.redactNipSegments(URI)` masks
+  10-digit decimal path segments before they hit DEBUG logs and
+  `KsefException.message`. Routes all `request.uri()` sites in
+  `HttpSupport` through the helper.
+- **RETRY-1** — Added `KsefRetentionExpiredException` (subtype of
+  `KsefNotFoundException`) for HTTP 410 Gone (KSeF retention policy
+  expiry, api-changelog v2.4.0). Source-compatible — existing
+  `catch (KsefNotFoundException ...)` still handles 410.
+- **SESS-B-5** — `PreparedBatchPackage` now validates the aggregate
+  KSeF caps (max 50 parts, max 5 GB pre-encryption file size) at
+  construction. New public constants `KsefLimits.MAX_BATCH_PARTS` and
+  `MAX_BATCH_TOTAL_BYTES`.
+- **CERT-9** — `CertificateClient.enroll(...)` and
+  `getEnrollmentData()` now log a WARN when invoked on a
+  token-authenticated session (KSeF restricts cert-domain ops to
+  certificate-based auth). The server-side typed error remains the
+  authoritative outcome — the WARN gives operators an early heads-up.
+- **AUTH-15** — `KsefClient.lastChallengeClientIp()` exposes the
+  `clientIp` reported by the most recent `/auth/challenge` so callers
+  can autopin `AuthorizationPolicy` on subsequent token
+  authentications.
+- **A.4.2.3** — Documented in the three batch openSession overloads
+  the intentional asymmetry vs online cooldown guard, citing the RCA
+  path.
+- **F3 / KsefLimits Javadoc** — Corrected the `KsefLimits` Javadoc to
+  state that only `InvoiceClient.queryAllMetadata(query, int maxResults)`
+  accepts a caller override; other `queryAll*` / `listAll` helpers
+  cap silently and the recommended pattern for exhaustive walks is
+  the paged variant with explicit `pageOffset`.
+- **ENV-1** — `KsefEnvironment.PREPROD` Javadoc clarifies it is not
+  listed in `srodowiska.md` and may not be reachable; `DEMO` is the
+  recommended pre-production target.
+
+### Source-incompatible record changes (1.0.0 stabilisation)
+
+- **`InvoiceQueryFilters`** — record component count grew from 10 to 16
+  (added: `restrictToPermanentStorageHwm`, `amount`, `buyerIdentifier`,
+  `currencyCodes`, `formType`, `invoiceTypes`). Source-incompatible only
+  for callers that constructed the record positionally; the canonical
+  path is `InvoiceQueryBuilder.build()`, which is updated.
+- **`IncrementalSyncPlan`** — `dateType` record component REMOVED
+  (HWM sync only works with `PERMANENT_STORAGE` per spec; an
+  arbitrary-axis setter was unsafe and is gone). The `dateType()`
+  accessor method survives as a constant-returning shim so existing
+  read-side callers still compile; positional constructor invocations
+  of the record will break.
+
 ### License decision
 
 - **AGPL-3.0-only retained** at 1.0.0 (per revised ADR-007). The original
@@ -16,6 +97,53 @@ First public Maven Central release.
   decision was reconsidered and deprecated. Free-rider protection is the
   primary driver. A README disclaimer covers solo-maintenance and warranty
   scope independently of the license choice.
+
+### Known server-side issues
+
+These are KSeF server behaviours empirically observed during pre-1.0
+validation that consumers will encounter at runtime. They are not SDK
+bugs and not always reflected in the upstream `ksef-docs` repository.
+The SDK either handles them transparently (where noted) or surfaces
+them as typed errors so the consumer can react.
+
+- **Online session cooldown after termination (~30-60 s).** Opening a
+  new online session for the same NIP within ~30 seconds of a previous
+  session's termination yields a session that opens with a reference
+  number but enters status 415 immediately and rejects invoice
+  submissions. SDK surfaces this via `KsefSessionCooldownException`
+  on `openSession(...)` for fast-fail clarity (auto-retry with backoff
+  is on the consumer's policy).
+- **Session status 415 is the normal "open" state during processing.**
+  After `close()`, the server returns 415 while batch validation is
+  still in flight; this is not a failure. SDK polls until terminal
+  inside `KsefSession.close()` / `KsefBatchSession.close()`.
+- **Authentication is asynchronous (status 450 transient).** After
+  posting `/auth/xades-signature` or `/auth/ksef-token`, the
+  `redeemTokens` call returns HTTP 450 until the server finishes
+  challenge processing. SDK polls `GET /auth/{ref}` internally before
+  redeem; consumers see only the final outcome.
+- **XAdES terminate requires prior token redeem.** Calling
+  `terminateAuth()` immediately after async XAdES authentication
+  (without `redeemTokens` between) returns HTTP 500. SDK guards this
+  with state tracking in `SessionContext`.
+- **Certificate serial number is not immediately available.**
+  `enroll()` accepts the CSR and returns a reference number, but the
+  certificate's serial number is populated asynchronously. Consumers
+  must poll `getEnrollmentStatus(ref)` until terminal. (See `*AndAwait`
+  helpers added in 1.0.)
+- **Certificate operations require certificate-based authentication.**
+  Token-based auth cannot reach the certificate enrollment endpoints.
+  Consumers must authenticate with `KsefCertificateCredentials` /
+  `KsefPkcs12Credentials` to use cert-domain APIs.
+- **`certificates/enrollments` returns HTTP 500 on invalid
+  `certificateType`.** Server crashes instead of returning a typed
+  validation error. SDK validates the enum upstream so this only fires
+  for callers bypassing the typed builder.
+- **Permissions: `subjectDetails` required despite spec saying
+  optional.** The `permissions/persons/grants` endpoint rejects
+  requests without `subjectDetails` even though the OpenAPI schema
+  marks it optional. SDK populates it from the subject identifier;
+  external callers using the raw types must include it.
 
 ### Step 1 — Process foundation (this release)
 
@@ -116,22 +244,25 @@ First public Maven Central release.
 ### Step 7 — Test seam policy
 
 - `KsefClient.activateSessionForTests(...)` and `KsefClientInternals`
-  remain in 1.0.0 with `@Deprecated(forRemoval = true)`. They are
-  documented for removal in 1.1.0 once the migration playbook
-  (`context/TESTKIT-MIGRATION-PLAYBOOK-2026-05-03-1850.md`) is
-  executed. The `PublicApiSurfaceTest` allow-list contains
-  `KsefClientInternals` as the only documented seam exception.
+  were removed during 1.0 stabilisation (commit `0d1c264`). Tests now
+  drive auth via the public `KsefAuthFlowFixture` WireMock harness;
+  no public test seam remains in the 1.0.0 surface.
 
 ### Step 8 — Release boundary
 
 - **`PublicApiSurfaceTest`** (Step 8 quality gate) asserts no
   `*Raw` types and no `sdk.internal.*` types leak through public
-  method signatures, constructors, or fields. Allow-list contains
-  only `KsefClientInternals` (test seam, scheduled for 1.1.0
-  removal).
+  method signatures, constructors, or fields. The previous
+  `KsefClientInternals` allow-list entry is gone — that class was
+  removed during 1.0 stabilisation, and the third Codex review
+  fresh-pass tightened the gate so no public constructor is allowed
+  to reference internal-package types either (construction now goes
+  through the non-exported
+  `sdk.internal.client.session.SessionHandleConstructor`).
 - Version bumped from `0.1.0` to `1.0.0` across root, ksef-client,
   ksef-demo, ksef-examples poms.
-- License switched to Apache-2.0 (per ADR-007).
+- License remains AGPL-3.0-only (per revised ADR-007 — the original
+  plan to switch to Apache-2.0 at v1.0 was deprecated).
 - Maven Central pom metadata (SCM, developers, description, license)
   already in place from earlier releases.
 
@@ -148,6 +279,91 @@ First public Maven Central release.
   zeroisation). Remaining ⚠️ items remain documented as test debt
   in the audit; cryptographic primitives are exercised through the
   public facade tests.
+
+### Final-stretch 1.0.0 fixes (2026-05-04 to 2026-05-05)
+
+Workflow-correctness blockers (Codex F1-F8 across two review rounds):
+
+- **`SendInvoiceCommand.Offline` + `KsefSession.sendOffline(byte[])`** —
+  public offline-mode invoice send (offline24 / offline-niedostępność /
+  awaryjny). Sets `offlineMode=true` on the wire without requiring
+  technical-correction semantics.
+- **`BatchSessionOptions(boolean offlineMode)`** — required parameter
+  on every batch-open public method (`openBatchSession` ×2,
+  `openBatchSessionFromFiles`). Static factories
+  `BatchSessionOptions.online()` / `.offline()`.
+- **`InvoiceClientImpl.queryAllMetadata` truncation algorithm** —
+  rewritten per spec (`przyrostowe-pobieranie-faktur.md`):
+  `pageOffset++` for `hasMore && !isTruncated`; reset `pageOffset` and
+  advance `dateRange.from` to last record's date for `isTruncated`.
+  Throws `KsefException` instead of silent partial data when the
+  truncated page lacks a usable cursor.
+- **`PermissionClient.queryAll*`, `TokenClient.listAll`,
+  `CertificateClient.queryAll`** — abstract on the interface;
+  compile-enforced full pagination contract.
+- **`KsefCryptoService.parsePrivateKey(byte[])` /
+  `parseCertificate(byte[])`** — public PEM/DER parsers (PKCS#8 +
+  X.509). Path overloads. Legacy PKCS#1 / SEC1 / encrypted PKCS#8
+  rejected with diagnostic pointing at `openssl pkcs8`.
+- **`AuthorizationPolicy(ip4Addresses, ip4Ranges, ip4Masks)`** — public
+  IP allow-list policy with full OpenAPI `AllowedIps` shape (max 10
+  per kind, regex-validated). Surfaced via
+  `KsefCredentials.authorizationPolicy()` default + 3-arg
+  `KsefTokenCredentials` canonical constructor. `AuthClient`
+  translates to `AllowedIpsRaw`.
+- **`KsefSession.validUntil()` / `KsefBatchSession.validUntil()` +
+  `timeToExpiry(Clock)`** — open-response `validUntil` retained on
+  the handle; `Optional<Duration>` helper for clock-relative remaining
+  budget.
+- **`KsefSessionCooldownException`** — typed exception for the
+  ~30-60 s post-termination cooldown observed during pre-1.0
+  validation. Public `TYPICAL_COOLDOWN`, `COOLDOWN_STATUS_CODE`,
+  `isCooldownStatus(int)` predicate, `suggestedRetryAfter()`.
+- **`SendInvoiceBuilder` payload-size guard** — fail-fast
+  `IllegalArgumentException` when invoiceXml exceeds the spec
+  3 MiB max-with-attachments limit; prevents needless encrypt-and-post
+  round-trips.
+- **`InvoiceClient.exportInvoices(InvoiceExportBuilder)`** — removed
+  `@Deprecated`, repositioned as Tier-3 advanced API per ADR-021.
+  Most consumers use `prepareExport(InvoiceQueryBuilder, boolean)`.
+
+Release-artefact polish:
+
+- **README.md** — `FormCode.FA2` → `FormCode.FA3` in both quickstart
+  samples; new "Form-code per environment" callout pointing at
+  `srodowiska.md` (DEMO/PROD: FA(3) only; TEST also accepts FA(2)).
+- **CHANGELOG.md:350** — `CERTIFICATES` → `CLEANUP` matching the
+  actual `DemoMode` enum.
+- **`InvoiceSink` Javadoc** — explicit cross-run idempotency contract:
+  `accept(...)` may receive the same `KsefNumber` again across
+  process restarts, overlapping HWM windows, or caller-driven retries;
+  implementations must persist by `KsefNumber` idempotently.
+- **`examples/IncrementalSync.java`** — new compile-checked example
+  demonstrating `InvoiceSyncClient.sync(...)` workflow.
+- **Maven Central artefact gate** — `maven-javadoc-plugin`
+  `excludePackageNames` covers `sdk.internal.*`, `client`, `client.*`,
+  `xml.*`. New `JavadocPackageGateTest` pins the documented surface
+  to JPMS exports.
+- **`@since 1.0.0`** on every public top-level type
+  (269 files mass-updated).
+- **SPDX-License-Identifier** on every `.java` (28 ksef-demo files
+  back-filled with the AGPL header tag).
+- **OWASP `dependency-check-maven`** plugin under new
+  `security-scan` Maven profile (manual run pre-release).
+
+Wire-shape regression coverage added:
+
+- `ManualValidationWireShapeTest` (6 tests): `restrictToPermanentStorageHwmDate`,
+  new query filters, sessions URL shape, permissions pagination,
+  truncation cursor.
+- `JavadocPackageGateTest` (2 tests): no internal/generated package
+  leakage; documented set == JPMS exports.
+- `KsefCryptoServiceTest` (4 new tests): PEM/DER parsers + legacy
+  rejection.
+- `AuthorizationPolicyTest` (7 tests): factories, validation matrix.
+- `SendInvoiceBuilderSizeGuardTest` (2 tests): at-limit, over-limit.
+- New offline-mode WireMock assertions in `KsefSessionTest` and
+  `KsefClientOpenBatchSessionTest`.
 
 ## [Unreleased]
 
@@ -330,7 +546,7 @@ First public Maven Central release.
   README "Logging" section).
 - 391 unit + integration tests across 33 test classes (WireMock-mocked HTTP).
 - Demo / live-validation harness: `ksef-demo` module with per-domain runners and
-  named modes (`AUTH_SAFE`, `READ_ONLY`, `FULL`, `CERTIFICATES`).
+  named modes (`AUTH_SAFE`, `READ_ONLY`, `FULL`, `CLEANUP`).
 - Maven Central release profile (`mvn deploy -Prelease`) — GPG signing +
   Sonatype Central Portal upload.
 
@@ -344,7 +560,9 @@ ADRs ([`ADR/`](ADR/)):
 - **ADR-004** — domain-specific clients (vs single god-class).
 - **ADR-005** — SDK overlay on generated code (immutable records as public API).
 - **ADR-006** — separate SDK and sample-app modules.
-- **ADR-007** — licence strategy (AGPL-3.0 pre-1.0 → Apache-2.0 at v1.0).
+- **ADR-007** — licence strategy (AGPL-3.0-only retained at 1.0.0 per
+  revised decision; the original plan to switch to Apache-2.0 was
+  deprecated).
 - **ADR-008** — API redesign: `KsefSession` / `KsefBatchSession` session
   abstractions.
 - **ADR-009** — demo app purpose shift to live-validation harness.
@@ -366,7 +584,4 @@ ADRs ([`ADR/`](ADR/)):
   ~139 builder methods need explicit unit tests before the gate is enabled.
 - JSpecify null-safety annotations on the public API are pending (PLAN A.8 /
   ADR-017).
-- License switch to Apache-2.0 lands at the v1.0 tag (ADR-007), not in this
-  pre-release.
-
 [Unreleased]: https://github.com/mgrtomaszzurawski/ksef-java-sdk/commits/develop

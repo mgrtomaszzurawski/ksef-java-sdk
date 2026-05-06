@@ -17,6 +17,8 @@ import java.time.Duration;
  * (transport, low-level) importing {@code KsefClient} (the high-level facade).
  * {@code KsefClient} implements this interface; {@code HttpSupport} depends
  * only on the abstraction.
+ *
+ * @since 1.0.0
  */
 public interface HttpRuntime {
 
@@ -57,4 +59,19 @@ public interface HttpRuntime {
      * Default {@link FeaturePolicy#defaults()} preserves pre-1.0 behavior.
      */
     FeaturePolicy featurePolicy();
+
+    /**
+     * Whether the active session was established with certificate-based
+     * authentication (XAdES via PKCS#12 or raw certificate). Certificate
+     * domain operations ({@code /certificates/enrollments},
+     * {@code /certificates/enrollments/data}) are server-side restricted
+     * to certificate-authenticated callers; this hook lets the SDK
+     * preflight before a token-authenticated caller hits a 403.
+     *
+     * <p>Default {@code true} so test runtimes and mocks (which never
+     * authenticate) do not spuriously fail the preflight.
+     */
+    default boolean isAuthenticatedViaCertificate() {
+        return true;
+    }
 }

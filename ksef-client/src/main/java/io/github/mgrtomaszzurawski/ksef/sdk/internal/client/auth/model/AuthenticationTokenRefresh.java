@@ -12,6 +12,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
  * Result of refreshing an access token.
  *
  * @param accessToken the new access token
+ *
+ * @since 1.0.0
  */
 public record AuthenticationTokenRefresh(TokenInfo accessToken) {
 

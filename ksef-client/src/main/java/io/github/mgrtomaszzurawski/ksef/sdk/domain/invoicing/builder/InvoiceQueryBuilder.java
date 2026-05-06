@@ -4,16 +4,26 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BuyerIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceFormType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryAmount;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryAmountType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryBuyerIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicingMode;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Objects;
 
 /**
  * Builder for invoice metadata query filters.
  * <p>Required fields: subjectType, dateType, dateFrom. Server enforces dateRange max 3 months.
+ *
+ * @since 1.0.0
  */
 public final class InvoiceQueryBuilder {
 
@@ -31,6 +41,12 @@ public final class InvoiceQueryBuilder {
     private InvoicingMode invoicingMode;
     private Boolean selfInvoicing;
     private Boolean hasAttachment;
+    private boolean restrictToPermanentStorageHwm;
+    private InvoiceQueryAmount amount;
+    private InvoiceQueryBuyerIdentifier buyerIdentifier;
+    private List<String> currencyCodes;
+    private InvoiceFormType formType;
+    private List<InvoiceType> invoiceTypes;
 
     private InvoiceQueryBuilder(InvoiceQuerySubjectType subjectType) {
         this.subjectType = subjectType;
@@ -114,6 +130,67 @@ public final class InvoiceQueryBuilder {
         return this;
     }
 
+    /**
+     * @apiNote Internal — set automatically by {@code InvoiceSyncClient} on
+     *     every export it opens. Caps the export's {@code dateRange.to} at
+     *     the server-side PermanentStorage HWM, per the incremental-retrieval
+     *     spec ({@code pobieranie-faktur/przyrostowe-pobieranie-faktur.md},
+     *     "Kluczowe znaczenie daty PermanentStorage"). Consumers do not
+     *     normally need to call this; one-shot {@code prepareExport(...)}
+     *     calls intentionally omit the flag so the server returns the full
+     *     requested range.
+     */
+    public InvoiceQueryBuilder restrictToPermanentStorageHwm() {
+        this.restrictToPermanentStorageHwm = true;
+        return this;
+    }
+
+    /**
+     * Filter by an inclusive amount range on the chosen monetary axis
+     * (gross / net / VAT). Mirrors OpenAPI {@code amount}.
+     */
+    public InvoiceQueryBuilder amount(InvoiceQueryAmountType type, BigDecimal from, BigDecimal to) {
+        this.amount = new InvoiceQueryAmount(type, from, to);
+        return this;
+    }
+
+    /**
+     * Filter by buyer identifier (kind + value). For
+     * {@link BuyerIdentifierType#NONE} the value is ignored. Mirrors
+     * OpenAPI {@code buyerIdentifier}.
+     */
+    public InvoiceQueryBuilder buyerIdentifier(BuyerIdentifierType type, String value) {
+        this.buyerIdentifier = new InvoiceQueryBuyerIdentifier(type, value);
+        return this;
+    }
+
+    /**
+     * Filter by ISO-4217 currency codes (e.g. {@code "PLN"}, {@code "EUR"}).
+     * Mirrors OpenAPI {@code currencyCodes}.
+     */
+    public InvoiceQueryBuilder currencyCodes(String... codes) {
+        this.currencyCodes = List.of(codes);
+        return this;
+    }
+
+    /**
+     * Filter by form type (FA / PEF / RR / FA_RR). Mirrors OpenAPI
+     * {@code formType}.
+     */
+    public InvoiceQueryBuilder formType(InvoiceFormType type) {
+        this.formType = type;
+        return this;
+    }
+
+    /**
+     * Filter by invoice types (Vat, Kor, KorPef, …). Mirrors OpenAPI
+     * {@code invoiceTypes}.
+     */
+    public InvoiceQueryBuilder invoiceTypes(InvoiceType... types) {
+        this.invoiceTypes = List.of(types);
+        return this;
+    }
+
     public InvoiceQueryBuilder toBuilder() {
         InvoiceQueryBuilder copy = new InvoiceQueryBuilder(this.subjectType);
         copy.dateType = this.dateType;
@@ -125,6 +202,12 @@ public final class InvoiceQueryBuilder {
         copy.invoicingMode = this.invoicingMode;
         copy.selfInvoicing = this.selfInvoicing;
         copy.hasAttachment = this.hasAttachment;
+        copy.restrictToPermanentStorageHwm = this.restrictToPermanentStorageHwm;
+        copy.amount = this.amount;
+        copy.buyerIdentifier = this.buyerIdentifier;
+        copy.currencyCodes = this.currencyCodes;
+        copy.formType = this.formType;
+        copy.invoiceTypes = this.invoiceTypes;
         return copy;
     }
 
@@ -138,6 +221,8 @@ public final class InvoiceQueryBuilder {
         return new InvoiceQueryFilters(
                 subjectType, dateType, truncatedFrom, truncatedTo,
                 ksefNumber, invoiceNumber, sellerNip,
-                invoicingMode, selfInvoicing, hasAttachment);
+                invoicingMode, selfInvoicing, hasAttachment,
+                restrictToPermanentStorageHwm,
+                amount, buyerIdentifier, currencyCodes, formType, invoiceTypes);
     }
 }

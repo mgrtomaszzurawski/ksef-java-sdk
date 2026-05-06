@@ -1,4 +1,4 @@
-//DEPS io.github.mgrtomaszzurawski:ksef-client:0.1.0
+//DEPS io.github.mgrtomaszzurawski:ksef-client:1.0.0
 //DEPS org.slf4j:slf4j-simple:2.0.16
 
 /*
@@ -41,9 +41,9 @@ public final class SendOnlineInvoice {
                 .build()) {
 
             client.authenticate();
-            System.out.println("Authenticated as " + nip);
+            System.out.println("Authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
-            try (KsefSession session = client.openSession(FormCode.FA2)) {
+            try (KsefSession session = client.openSession(FormCode.FA3)) {
                 System.out.println("Session opened: " + session.referenceNumber());
 
                 SendInvoiceResult result = session.send(invoiceXml);

@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 /**
  * Permission types supported by personal permission queries.
+ *
+ * @since 1.0.0
  */
 public enum PersonalPermissionType {
     INVOICE_READ,
