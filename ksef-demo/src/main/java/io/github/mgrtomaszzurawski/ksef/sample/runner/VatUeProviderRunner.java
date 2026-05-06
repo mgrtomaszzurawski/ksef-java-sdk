@@ -82,11 +82,17 @@ public final class VatUeProviderRunner implements DemoRunner {
     private static final Duration GRANT_AWAIT_TIMEOUT = Duration.ofSeconds(30);
     private static final String SHA_256 = "SHA-256";
     private static final String EU_ENTITY_NAME = "KSeF Java SDK Demo EU Entity";
-    private static final String EU_ENTITY_ADDRESS = "ul. Demo 1, 00-000 Demo City, EU";
+    /**
+     * Single demo address used for both EU entity and subject details — same
+     * fictitious physical location since the demo creates one self-signed
+     * EU entity that is also its own admin contact.
+     */
+    private static final String DEMO_ADDRESS = "ul. Demo 1, 00-000 Demo City, EU";
     private static final String SUBJECT_FULL_NAME = "EU Entity Admin";
-    private static final String SUBJECT_ADDRESS = "ul. Demo 1, 00-000 Demo City, EU";
     private static final String GRANT_DESCRIPTION = "VatUeProviderRunner — pre-register EU entity for NipVatUe-context auth";
     private static final int GRANT_SUCCESS_STATUS_CODE = 200;
+    /** Number of leading hex chars of the cert fingerprint to surface in result messages. */
+    private static final int FINGERPRINT_PREVIEW_LENGTH = 8;
 
     @Override
     public String name() { return NAME; }
@@ -124,15 +130,16 @@ public final class VatUeProviderRunner implements DemoRunner {
                     .contextNipVatUe(nipVatUe)
                     .description(GRANT_DESCRIPTION)
                     .euEntityName(EU_ENTITY_NAME)
-                    .subjectEntityByFingerprint(SUBJECT_FULL_NAME, SUBJECT_ADDRESS)
-                    .euEntityDetails(EU_ENTITY_NAME, EU_ENTITY_ADDRESS);
+                    .subjectEntityByFingerprint(SUBJECT_FULL_NAME, DEMO_ADDRESS)
+                    .euEntityDetails(EU_ENTITY_NAME, DEMO_ADDRESS);
             var status = context.client().permissions()
                     .grantEuEntityAdminAndAwait(builder, GRANT_AWAIT_TIMEOUT);
             int code = status.status() == null ? -1 : status.status().code();
-            String description = status.status() == null ? "" : String.valueOf(status.status().description());
+            String description = status.status() == null ? "" : status.status().description();
             if (code == GRANT_SUCCESS_STATUS_CODE) {
                 results.add(RunResult.ok(NAME, OP_GRANT + LABEL, elapsed(start),
-                        "nipVatUe=" + nipVatUe + " fingerprint=" + fingerprintHex.substring(0, 8) + "..."));
+                        "nipVatUe=" + nipVatUe + " fingerprint="
+                                + fingerprintHex.substring(0, FINGERPRINT_PREVIEW_LENGTH) + "..."));
                 return true;
             }
             results.add(RunResult.fail(NAME, OP_GRANT + LABEL, elapsed(start),

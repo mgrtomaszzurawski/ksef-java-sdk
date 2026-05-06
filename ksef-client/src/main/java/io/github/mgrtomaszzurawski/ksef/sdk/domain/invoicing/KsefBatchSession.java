@@ -15,11 +15,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpResponse;
+import java.util.regex.Pattern;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -108,6 +112,14 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String LOCALHOST_HOSTNAME = "localhost";
     private static final String ERR_INSECURE_UPLOAD_URL =
             "Refusing to upload batch part over non-HTTPS URL: ";
+    /**
+     * Matches IPv4 dotted-quad ({@code 1.2.3.4}) and IPv6 ({@code [::1]} or
+     * bare hex-colon forms) literals. Used to gate DNS resolution: only
+     * resolve when the host string is already an IP literal, never resolve
+     * arbitrary hostnames just to check if they happen to be loopback.
+     */
+    private static final Pattern IP_LITERAL_PATTERN = Pattern.compile(
+            "^(\\[?[0-9a-fA-F:]+\\]?|[0-9.]+)$");
 
     /**
      * URL is logged via {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction#redactQuery(java.net.URI)}
@@ -358,7 +370,7 @@ public final class KsefBatchSession implements AutoCloseable {
      * apply on the local interface and WireMock-based tests cannot
      * easily serve TLS.
      */
-    private static boolean isAcceptableUploadScheme(java.net.URI url) {
+    private static boolean isAcceptableUploadScheme(URI url) {
         String scheme = url.getScheme();
         if (scheme == null) {
             return false;
@@ -368,10 +380,17 @@ public final class KsefBatchSession implements AutoCloseable {
     }
 
     /**
-     * Loopback check via {@link java.net.InetAddress#isLoopbackAddress()}
-     * — covers both IPv4 (127.0.0.0/8) and IPv6 (::1) without literal IP
-     * patterns. Falls back to the {@code "localhost"} hostname check
-     * before resolving (DNS lookup is avoided for the literal string).
+     * Loopback check that never blocks on DNS:
+     * <ul>
+     *   <li>{@code "localhost"} (literal) — accepted via direct comparison.</li>
+     *   <li>IP literal (IPv4 dotted-quad or IPv6) — parsed via
+     *       {@link InetAddress#getByName(String)} which does NOT perform
+     *       DNS for IP literals (per the JDK Javadoc), then checked via
+     *       {@link InetAddress#isLoopbackAddress()}.</li>
+     *   <li>Any other hostname — rejected without resolving. Defends
+     *       against a malicious upload URL like {@code http://evil.example.com}
+     *       triggering an outbound DNS lookup on the upload thread.</li>
+     * </ul>
      */
     private static boolean isLoopbackHost(String host) {
         if (host == null) {
@@ -380,9 +399,12 @@ public final class KsefBatchSession implements AutoCloseable {
         if (LOCALHOST_HOSTNAME.equalsIgnoreCase(host)) {
             return true;
         }
+        if (!IP_LITERAL_PATTERN.matcher(host).matches()) {
+            return false;
+        }
         try {
-            return java.net.InetAddress.getByName(host).isLoopbackAddress();
-        } catch (java.net.UnknownHostException ignored) {
+            return InetAddress.getByName(host).isLoopbackAddress();
+        } catch (UnknownHostException ignored) {
             return false;
         }
     }
