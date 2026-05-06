@@ -10,8 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -70,22 +68,12 @@ public final class BatchTempCleanup {
             Duration.ofHours(1).toNanos();
 
     /**
-     * Single shared daemon-thread executor for constructor-time cleanup.
-     * Bounds concurrency to one regardless of how many {@code KsefClient}
-     * instances are constructed; daemon thread does not block JVM exit.
-     */
-    private static final ExecutorService AUTO_CLEANUP_EXECUTOR =
-            Executors.newSingleThreadExecutor(runnable -> {
-                Thread thread = new Thread(runnable, "ksef-batch-temp-cleanup");
-                thread.setDaemon(true);
-                return thread;
-            });
-
-    /**
      * Last-run nanoTime for the auto-cleanup throttle. {@code 0} means
      * never run yet.
      */
     private static final AtomicLong LAST_AUTO_CLEANUP_NANOS = new AtomicLong(0);
+
+    private static final String CLEANUP_THREAD_NAME = "ksef-batch-temp-cleanup";
 
     private BatchTempCleanup() { }
 
@@ -138,12 +126,23 @@ public final class BatchTempCleanup {
     }
 
     /**
-     * Schedule an auto-cleanup of {@code java.io.tmpdir} on the shared
-     * daemon executor, throttled to at most one run per
-     * {@link #AUTO_CLEANUP_THROTTLE_NANOS}. Called from
+     * Schedule an auto-cleanup of {@code java.io.tmpdir} on a fresh
+     * short-lived daemon thread, throttled by
+     * {@link #AUTO_CLEANUP_THROTTLE_NANOS} CAS. Called from
      * {@code KsefClient} constructor; safe to call from any number of
-     * concurrent constructors — only one will actually scan within the
-     * throttle window.
+     * concurrent constructors — the throttle ensures at most one
+     * spawn per window.
+     *
+     * <p><strong>Webapp-deployment note:</strong> a short-lived daemon
+     * thread is used (rather than a static {@link java.util.concurrent.ExecutorService})
+     * because static executors hold a hard reference to the thread
+     * factory's classloader, which would prevent webapp unloading on
+     * Tomcat/Jetty hot-redeploy. The daemon thread here exits as soon
+     * as {@code purgeOrphans} returns (typically &lt; 1 s); only the
+     * narrow window where a redeploy fires while the cleanup is
+     * mid-execution risks a transient classloader pin, and the throttle
+     * makes that probability extremely small (one cleanup per hour
+     * across the JVM).
      */
     public static void scheduleAutoCleanup() {
         long currentNanos = System.nanoTime();
@@ -154,6 +153,10 @@ public final class BatchTempCleanup {
         if (!LAST_AUTO_CLEANUP_NANOS.compareAndSet(previous, currentNanos)) {
             return;
         }
-        AUTO_CLEANUP_EXECUTOR.execute(() -> purgeOrphans(null, DEFAULT_ORPHAN_AGE));
+        Thread cleanupThread = new Thread(
+                () -> purgeOrphans(null, DEFAULT_ORPHAN_AGE),
+                CLEANUP_THREAD_NAME);
+        cleanupThread.setDaemon(true);
+        cleanupThread.start();
     }
 }

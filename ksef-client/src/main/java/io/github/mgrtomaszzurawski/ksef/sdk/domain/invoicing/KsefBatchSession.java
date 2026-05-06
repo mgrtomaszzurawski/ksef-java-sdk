@@ -60,6 +60,11 @@ import org.slf4j.LoggerFactory;
  *   <li>Call {@link #close()} to finalize and delete the temp files</li>
  * </ol>
  *
+ * <p><strong>Not thread-safe.</strong> Use one session instance per thread,
+ * or coordinate access externally. Concurrent {@code uploadParts()} +
+ * {@code close()} calls produce undefined ordering. {@link KsefClient}
+ * itself is thread-safe and supports concurrent batch session opens.
+ *
  * @see KsefClient#openBatchSession(FormCode,
  *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage,
  *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
@@ -113,16 +118,27 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String ERR_INSECURE_UPLOAD_URL =
             "Refusing to upload batch part over non-HTTPS URL: ";
     /**
-     * Matches IPv4 dotted-quad ({@code 1.2.3.4}) and IPv6 ({@code [::1]} or
-     * bare hex-colon forms) literals. Used to gate DNS resolution: only
-     * resolve when the host string is already an IP literal, never resolve
-     * arbitrary hostnames just to check if they happen to be loopback.
+     * Matches IPv4 dotted-quad and IPv6 hex-colon literals. Used to gate
+     * DNS resolution — only resolve when the host string is already an
+     * IP literal, never resolve arbitrary hostnames just to check if
+     * they happen to be loopback.
+     *
+     * <ul>
+     *   <li>IPv4 branch: exactly 4 dot-separated 1-3 digit octets. Stricter
+     *       than the trivial {@code [0-9.]+} which matched {@code "1"}
+     *       and {@code ".."}.</li>
+     *   <li>IPv6 branch: requires at least one colon. Stricter than the
+     *       trivial {@code [0-9a-fA-F:]+} which matched {@code "aabb"}
+     *       (a 4-char hex string the JDK would still feed to DNS,
+     *       allowing a hostile resolver to return {@code 127.0.0.1} and
+     *       smuggle a non-loopback URL past the loopback gate).</li>
+     * </ul>
      */
     private static final Pattern IP_LITERAL_PATTERN = Pattern.compile(
-            "^(\\[?[0-9a-fA-F:]+\\]?|[0-9.]+)$");
+            "^(?:(?:\\d{1,3}\\.){3}\\d{1,3}|\\[?[0-9a-fA-F]*:[0-9a-fA-F:]*\\]?)$");
 
     /**
-     * URL is logged via {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction#redactQuery(java.net.URI)}
+     * URL is logged via {@code UriRedaction.redactQuery(URI)} (internal helper)
      * — KSeF returns presigned upload URLs whose query parameters are
      * effectively short-lived bearer credentials (Codex H1).
      */
@@ -147,7 +163,7 @@ public final class KsefBatchSession implements AutoCloseable {
     private volatile boolean closed;
 
     /**
-     * Package-private — see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
+     * Package-private — see {@code SessionHandleConstructor} (internal bridge) class-level Javadoc
      * (Codex round-9 fresh review H3).
      */
     KsefBatchSession(SessionClient sessionClient, String referenceNumber,
@@ -156,7 +172,7 @@ public final class KsefBatchSession implements AutoCloseable {
     }
 
     /**
-     * Package-private — see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
+     * Package-private — see {@code SessionHandleConstructor} (internal bridge) class-level Javadoc
      * (Codex round-9 fresh review H3).
      */
     KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
@@ -167,7 +183,7 @@ public final class KsefBatchSession implements AutoCloseable {
 
     /**
      * Package-private — internal constructor with injectable nano-time source
-     * for upload-budget tests; see {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} class-level Javadoc
+     * for upload-budget tests; see {@code SessionHandleConstructor} (internal bridge) class-level Javadoc
      * for the construction policy (Codex round-9 fresh review H3).
      */
     KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,

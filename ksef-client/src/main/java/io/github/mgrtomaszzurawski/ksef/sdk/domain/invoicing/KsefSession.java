@@ -42,6 +42,12 @@ import org.slf4j.LoggerFactory;
  * <p>On {@link #close()}: sends close request to KSeF (retries on 415 "session busy"),
  * then polls until processing completes (status 200). UPO is available after close completes.
  *
+ * <p><strong>Not thread-safe.</strong> Use one session instance per thread,
+ * or coordinate access externally. Concurrent {@code send(...)} + {@code close()}
+ * calls produce undefined ordering — the {@code volatile closed} flag is not
+ * a memory barrier against in-flight HTTP requests. {@link KsefClient} itself
+ * is thread-safe and supports concurrent session opens.
+ *
  * @see KsefClient#openSession(FormCode)
  *
  * @since 1.0.0
@@ -94,7 +100,7 @@ public final class KsefSession implements AutoCloseable {
      * taking an internal-package type ({@link SessionClient}) leaks
      * construction details into the binary/Javadoc surface even though JPMS
      * makes the type unreachable from consumers. Construction now happens
-     * exclusively via the same-package {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor} bridge,
+     * exclusively via the same-package {@code SessionHandleConstructor} (internal bridge),
      * which is itself in the exported package but is the single named
      * entry-point and clearly documented as internal-only.
      */

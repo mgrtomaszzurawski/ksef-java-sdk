@@ -127,7 +127,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
      * @{@code @apiNote Internal} comment from drifting from reality. The
      * AES key and IV must come from the matching server-issued export
      * prepare response — passing arbitrary bytes here is undefined
-     * behaviour. Constructed via the same-package {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor}.
+     * behaviour. Constructed via the same-package {@code SessionHandleConstructor} (internal bridge).
      */
     PreparedInvoiceExport(InvoiceClient invoices,
                           HttpClient httpClient,
@@ -612,7 +612,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     }
 
     /**
-     * Delegate to shared {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction#redactQuery(URI)}
+     * Delegate to shared {@code UriRedaction.redactQuery(URI)} (internal helper)
      * so this class and {@code KsefBatchSession} share the same redaction policy
      * (Codex round-9 fresh review H1).
      */
