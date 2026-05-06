@@ -195,16 +195,12 @@ public final class KsefClient implements AutoCloseable {
         this.peppolClient = new PeppolClientImpl(this.runtime);
         // Best-effort recovery — if a previous JVM crashed mid-batch, its
         // encrypted part files are still in /tmp. Delete anything older than
-        // the orphan-age cutoff that matches the SDK's exact prefix.
-        // Run async on a daemon thread so a slow Files.list on a large /tmp
-        // does not block KsefClient construction.
-        Thread cleanupThread = new Thread(() ->
-                io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.purgeOrphans(
-                        null,
-                        io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.DEFAULT_ORPHAN_AGE),
-                "ksef-batch-temp-cleanup");
-        cleanupThread.setDaemon(true);
-        cleanupThread.start();
+        // the orphan-age cutoff that matches the SDK's exact prefix. Runs
+        // async on a single shared daemon thread (throttled to once per hour)
+        // so neither a slow Files.list on a large /tmp nor pathological
+        // KsefClient pooling produces thread/IO pressure.
+        io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup
+                .scheduleAutoCleanup();
     }
 
     /**
