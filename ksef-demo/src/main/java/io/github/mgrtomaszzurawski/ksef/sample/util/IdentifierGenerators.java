@@ -99,8 +99,24 @@ public final class IdentifierGenerators {
      * VIES); KSeF TEST env auto-creates the resulting VAT-UE context.
      */
     public static String generateRandomVatUe() {
+        return generateVatUeFor(generateRandomNip());
+    }
+
+    /**
+     * Generate a VAT-UE compound bound to the supplied Polish NIP. Use
+     * this variant when the compound must reference an existing/owner
+     * NIP context — e.g. when granting EU entity admin permissions
+     * where KSeF requires {@code TNipVatUE.{nip}} to match the
+     * caller's authentication NIP context (otherwise grant fails with
+     * code=410 "Podane identyfikatory są niezgodne lub pozostają w
+     * niewłaściwej relacji").
+     *
+     * @param polishNip the existing 10-digit Polish NIP to bind to
+     * @return {@code {polishNip}-DE{9 random digits}}
+     */
+    public static String generateVatUeFor(String polishNip) {
         StringBuilder builder = new StringBuilder();
-        builder.append(generateRandomNip());
+        builder.append(polishNip);
         builder.append('-');
         builder.append(VAT_UE_PREFIX);
         for (int i = 0; i < VAT_UE_DIGIT_COUNT; i++) {

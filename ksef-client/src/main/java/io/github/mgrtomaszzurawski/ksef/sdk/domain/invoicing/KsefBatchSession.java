@@ -15,11 +15,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpResponse;
+import java.util.regex.Pattern;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -104,8 +108,18 @@ public final class KsefBatchSession implements AutoCloseable {
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
     private static final String METHOD_PUT = "PUT";
     private static final String SCHEME_HTTPS = "https";
+    private static final String SCHEME_HTTP = "http";
+    private static final String LOCALHOST_HOSTNAME = "localhost";
     private static final String ERR_INSECURE_UPLOAD_URL =
             "Refusing to upload batch part over non-HTTPS URL: ";
+    /**
+     * Matches IPv4 dotted-quad ({@code 1.2.3.4}) and IPv6 ({@code [::1]} or
+     * bare hex-colon forms) literals. Used to gate DNS resolution: only
+     * resolve when the host string is already an IP literal, never resolve
+     * arbitrary hostnames just to check if they happen to be loopback.
+     */
+    private static final Pattern IP_LITERAL_PATTERN = Pattern.compile(
+            "^(\\[?[0-9a-fA-F:]+\\]?|[0-9.]+)$");
 
     /**
      * URL is logged via {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction#redactQuery(java.net.URI)}
@@ -290,8 +304,10 @@ public final class KsefBatchSession implements AutoCloseable {
         // Defense in depth: KSeF only ever returns HTTPS pre-signed URLs,
         // but assert it explicitly so a misbehaving/spoofed presigner
         // cannot trick the SDK into uploading ciphertext over plaintext.
-        if (upload.url().getScheme() == null
-                || !SCHEME_HTTPS.equalsIgnoreCase(upload.url().getScheme())) {
+        // Loopback (localhost / 127.x / [::1]) is accepted because the
+        // MITM threat does not apply on the local interface and WireMock-
+        // backed tests cannot serve TLS without per-test cert plumbing.
+        if (!isAcceptableUploadScheme(upload.url())) {
             throw new KsefException(
                     ERR_INSECURE_UPLOAD_URL
                             + io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.UriRedaction
@@ -311,7 +327,10 @@ public final class KsefBatchSession implements AutoCloseable {
             if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.OnDiskPart onDisk) {
                 publisher = BodyPublishers.ofFile(onDisk.path());
             } else if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart.InMemoryPart inMem) {
-                publisher = BodyPublishers.ofByteArray(inMem.bytes());
+                // Use openStream() instead of bytes() to avoid the defensive
+                // accessor clone — ByteArrayInputStream wraps the internal
+                // byte[] without copying and provides read-only access.
+                publisher = BodyPublishers.ofInputStream(inMem::openStream);
             } else {
                 throw new IllegalStateException("Unknown BatchPart subtype: " + part.getClass());
             }
@@ -340,6 +359,53 @@ public final class KsefBatchSession implements AutoCloseable {
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             throw new KsefNetworkException(ERR_UPLOAD_INTERRUPTED, interrupted);
+        }
+    }
+
+    /**
+     * Whether the supplied upload URL scheme is safe to PUT batch
+     * ciphertext to. Accepts HTTPS unconditionally; accepts HTTP only
+     * when the host is a loopback address ({@code localhost},
+     * {@code 127.x.x.x}, {@code [::1]}) — MITM threat model does not
+     * apply on the local interface and WireMock-based tests cannot
+     * easily serve TLS.
+     */
+    private static boolean isAcceptableUploadScheme(URI url) {
+        String scheme = url.getScheme();
+        if (scheme == null) {
+            return false;
+        }
+        return SCHEME_HTTPS.equalsIgnoreCase(scheme)
+                || (SCHEME_HTTP.equalsIgnoreCase(scheme) && isLoopbackHost(url.getHost()));
+    }
+
+    /**
+     * Loopback check that never blocks on DNS:
+     * <ul>
+     *   <li>{@code "localhost"} (literal) — accepted via direct comparison.</li>
+     *   <li>IP literal (IPv4 dotted-quad or IPv6) — parsed via
+     *       {@link InetAddress#getByName(String)} which does NOT perform
+     *       DNS for IP literals (per the JDK Javadoc), then checked via
+     *       {@link InetAddress#isLoopbackAddress()}.</li>
+     *   <li>Any other hostname — rejected without resolving. Defends
+     *       against a malicious upload URL like {@code http://evil.example.com}
+     *       triggering an outbound DNS lookup on the upload thread.</li>
+     * </ul>
+     */
+    private static boolean isLoopbackHost(String host) {
+        if (host == null) {
+            return false;
+        }
+        if (LOCALHOST_HOSTNAME.equalsIgnoreCase(host)) {
+            return true;
+        }
+        if (!IP_LITERAL_PATTERN.matcher(host).matches()) {
+            return false;
+        }
+        try {
+            return InetAddress.getByName(host).isLoopbackAddress();
+        } catch (UnknownHostException ignored) {
+            return false;
         }
     }
 

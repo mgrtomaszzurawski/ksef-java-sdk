@@ -198,7 +198,7 @@ What you'll see at `DEBUG`: HTTP method + URI, response status + elapsed ms, per
 
 See:
 - [`context/ARCHITECTURE.md`](context/ARCHITECTURE.md) — current package layout, encryption flow, JPMS boundaries
-- [`ADR/`](ADR/) — 16 architectural decision records covering generation strategy, package structure, single-entry-point design, encryption semantics, etc.
+- [`ADR/`](ADR/) — architectural decision records covering generation strategy, package structure, single-entry-point design, encryption semantics, batch assembly modes, transport-level URI redaction, JPMS public-API defense, XXE hardening, etc.
 
 ## License
 

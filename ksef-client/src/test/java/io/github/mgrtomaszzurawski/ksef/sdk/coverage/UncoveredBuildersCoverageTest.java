@@ -20,6 +20,7 @@ import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Codex 2026-05-05 plan #19 — JaCoCo method-coverage gate ≥ 1.00 on
@@ -72,7 +73,7 @@ class UncoveredBuildersCoverageTest {
         var filters = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder
                 .seller()
                 .permanentStorageDateFrom(FROM)
-                .permanentStorageDateTo(TO);
+                .dateTo(TO);
 
         // when
         InvoiceExportBuilder builder = InvoiceExportBuilder.create(realRsaKey())
@@ -159,7 +160,7 @@ class UncoveredBuildersCoverageTest {
         // when
         var request = SubunitPermissionGrantBuilder.forFingerprint(fingerprint)
                 .contextInternalId("ctx-1")
-                .description("desc")
+                .description("test description for subunit grant")
                 .personDetails("Jan", "Kowalski")
                 .build();
 
@@ -197,16 +198,21 @@ class UncoveredBuildersCoverageTest {
 
     @Test
     void ksefClientBuilder_connectTimeout_readTimeout_features() {
-        // given / when — exercise the three setters and confirm the builder
-        // build()s without throwing (the setters are simple stores; richer
-        // verification would require exposing internals not on public API)
+        // given — credentials are mandatory for build() per ADR-016; use a
+        // throw-away token-based pair so the build can complete.
+        var creds = new io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials(
+                "test-access-token",
+                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier.nip("1234567890"));
+
+        // when — exercise the three setters
         var builder = io.github.mgrtomaszzurawski.ksef.sdk.KsefClient
                 .builder(KsefEnvironment.TEST)
+                .credentials(creds)
                 .connectTimeout(java.time.Duration.ofSeconds(10))
                 .readTimeout(java.time.Duration.ofSeconds(30))
                 .features(io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy.defaults());
 
-        // then — chain returns same builder type, ready for build()
+        // then — build succeeds, environment round-trips
         assertNotNull(builder);
         try (var client = builder.build()) {
             assertNotNull(client);
