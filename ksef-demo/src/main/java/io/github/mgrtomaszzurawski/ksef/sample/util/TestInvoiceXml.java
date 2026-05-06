@@ -17,141 +17,126 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.util;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 /**
- * Generates minimal valid FA(3) invoice XML accepted by KSeF DEMO/PROD.
+ * Generates valid invoice XML for each {@link FormCode} variant the SDK
+ * supports. Templates live as classpath resources under
+ * {@code /invoice-templates/} and are filled with caller-supplied seller NIP
+ * plus current date / timestamp / unique invoice-number suffix.
  *
- * <p>Adapted from the official {@code CIRFMF/ksef-client-java}
- * {@code demo-web-app} sample template
- * ({@code resources/xml/invoices/sample/invoice-template_v3.xml}). DEMO
- * and PROD reject FA(2); demo runners therefore open sessions with
- * {@code FormCode.FA3} and feed the bytes produced here to
- * {@code session.send(...)}.
+ * <p>Variants:
+ * <ul>
+ *   <li>{@link FormCode#FA2} — KSeF FA(2) (legacy, accepted only on TEST env).</li>
+ *   <li>{@link FormCode#FA3} — KSeF FA(3) (current, accepted on TEST/DEMO/PROD).</li>
+ *   <li>{@link FormCode#PEF3} — UBL/Peppol-based PEF(3) public-procurement invoice.</li>
+ *   <li>{@link FormCode#PEF_KOR3} — PEF correction document.</li>
+ * </ul>
+ *
+ * <p>The PEF templates are adapted from the official
+ * {@code CIRFMF/ksef-client-java demo-web-app} samples.
  */
 public final class TestInvoiceXml {
 
-    private static final String FA3_NAMESPACE = "http://crd.gov.pl/wzor/2025/06/25/13775/";
-    private static final String ETD_NAMESPACE = "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/";
-    private static final String SCHEMA_VERSION = "1-0E";
-    private static final String SYSTEM_CODE = "FA (3)";
-    private static final String FORM_CODE_VALUE = "FA";
+    private static final String TEMPLATE_DIR = "/invoice-templates/";
+    private static final String TEMPLATE_FA2 = TEMPLATE_DIR + "fa2.xml";
+    private static final String TEMPLATE_FA3 = TEMPLATE_DIR + "fa3.xml";
+    private static final String TEMPLATE_PEF3 = TEMPLATE_DIR + "pef3.xml";
+    private static final String TEMPLATE_PEF_KOR3 = TEMPLATE_DIR + "pef_kor3.xml";
+
+    private static final String PH_SUPPLIER_NIP = "#supplier_nip#";
+    private static final String PH_BUYER_NIP = "#buyer_nip#";
+    private static final String PH_INVOICE_NUMBER = "#invoice_number#";
+    private static final String PH_ISSUE_DATE = "#issue_date#";
+    private static final String PH_DUE_DATE = "#due_date#";
+    private static final String PH_DATETIME = "#datetime#";
+    private static final String PH_BUYER_REFERENCE = "#buyer_reference#";
+    private static final String PH_IBAN = "#iban#";
+
+    private static final String DEFAULT_BUYER_NIP = "3861610227";
+    private static final String DEFAULT_BUYER_REFERENCE = "BR-DEMO";
+    private static final String DEFAULT_IBAN = "PL12345678901234567890123456";
     private static final String INVOICE_NUMBER_PREFIX = "SDK-DEMO-";
-    private static final String BUYER_NIP = "3861610227";
-    private static final String BUYER_NAME = "SDK Demo Buyer";
-    private static final String SELLER_NAME = "SDK Demo Seller";
-    private static final String ITEM_NAME = "SDK Demo Service";
-    private static final String CURRENCY = "PLN";
-    private static final String UNIT = "szt.";
-    private static final String VAT_RATE = "23";
-    private static final String NET_AMOUNT = "100.00";
-    private static final String VAT_AMOUNT = "23.00";
-    private static final String GROSS_AMOUNT = "123.00";
-    private static final String QUANTITY = "1";
-    private static final String NET_UNIT_PRICE = "100.00";
+    private static final String ERR_TEMPLATE_NOT_FOUND = "Invoice template not found on classpath: ";
+    private static final String ERR_UNKNOWN_FORM_CODE = "Unknown FormCode for fixture generation: ";
 
     private TestInvoiceXml() { }
 
     /**
-     * Generate a minimal valid FA(3) invoice XML.
+     * Generate invoice XML for the supplied {@link FormCode}.
      *
-     * @param sellerNip the seller's NIP (10 digits)
+     * @param formCode form code to render — must be one of FA2/FA3/PEF3/PEF_KOR3
+     * @param sellerNip 10-digit seller NIP
      * @return invoice XML bytes in UTF-8
      */
+    public static byte[] generate(FormCode formCode, String sellerNip) {
+        String templatePath = templateFor(formCode);
+        String template = loadTemplate(templatePath);
+        Map<String, String> placeholders = placeholders(sellerNip);
+        String filled = template;
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            filled = filled.replace(entry.getKey(), entry.getValue());
+        }
+        return filled.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /** @deprecated kept for callers that have not migrated to {@link #generate(FormCode, String)}. */
+    @Deprecated
     public static byte[] generate(String sellerNip) {
+        return generate(FormCode.FA3, sellerNip);
+    }
+
+    private static String templateFor(FormCode formCode) {
+        if (formCode.equals(FormCode.FA2)) {
+            return TEMPLATE_FA2;
+        }
+        if (formCode.equals(FormCode.FA3)) {
+            return TEMPLATE_FA3;
+        }
+        if (formCode.equals(FormCode.PEF3)) {
+            return TEMPLATE_PEF3;
+        }
+        if (formCode.equals(FormCode.PEF_KOR3)) {
+            return TEMPLATE_PEF_KOR3;
+        }
+        throw new IllegalArgumentException(ERR_UNKNOWN_FORM_CODE + formCode);
+    }
+
+    private static Map<String, String> placeholders(String sellerNip) {
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-        String generationTimestamp = OffsetDateTime.now(ZoneOffset.UTC)
+        String dueDate = LocalDate.now().plusDays(14).format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String datetime = OffsetDateTime.now(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
-        String invoiceNumber = INVOICE_NUMBER_PREFIX + System.currentTimeMillis();
-
-        String xml = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <Faktura xmlns="%s" xmlns:etd="%s">
-                  <Naglowek>
-                    <KodFormularza kodSystemowy="%s" wersjaSchemy="%s">%s</KodFormularza>
-                    <WariantFormularza>3</WariantFormularza>
-                    <DataWytworzeniaFa>%s</DataWytworzeniaFa>
-                    <SystemInfo>KSeF Java SDK Demo</SystemInfo>
-                  </Naglowek>
-                  <Podmiot1>
-                    <DaneIdentyfikacyjne>
-                      <NIP>%s</NIP>
-                      <Nazwa>%s</Nazwa>
-                    </DaneIdentyfikacyjne>
-                    <Adres>
-                      <KodKraju>PL</KodKraju>
-                      <AdresL1>ul. Testowa 1</AdresL1>
-                      <AdresL2>00-001 Warszawa</AdresL2>
-                    </Adres>
-                  </Podmiot1>
-                  <Podmiot2>
-                    <DaneIdentyfikacyjne>
-                      <NIP>%s</NIP>
-                      <Nazwa>%s</Nazwa>
-                    </DaneIdentyfikacyjne>
-                    <Adres>
-                      <KodKraju>PL</KodKraju>
-                      <AdresL1>ul. Kupiecka 2</AdresL1>
-                      <AdresL2>00-002 Warszawa</AdresL2>
-                    </Adres>
-                    <DaneKontaktowe>
-                      <Email>buyer@example.com</Email>
-                    </DaneKontaktowe>
-                    <JST>2</JST>
-                    <GV>2</GV>
-                  </Podmiot2>
-                  <Fa>
-                    <KodWaluty>%s</KodWaluty>
-                    <P_1>%s</P_1>
-                    <P_2>FA/%s</P_2>
-                    <P_6>%s</P_6>
-                    <P_13_1>%s</P_13_1>
-                    <P_14_1>%s</P_14_1>
-                    <P_15>%s</P_15>
-                    <Adnotacje>
-                      <P_16>2</P_16>
-                      <P_17>2</P_17>
-                      <P_18>2</P_18>
-                      <P_18A>2</P_18A>
-                      <Zwolnienie>
-                        <P_19N>1</P_19N>
-                      </Zwolnienie>
-                      <NoweSrodkiTransportu>
-                        <P_22N>1</P_22N>
-                      </NoweSrodkiTransportu>
-                      <P_23>2</P_23>
-                      <PMarzy>
-                        <P_PMarzyN>1</P_PMarzyN>
-                      </PMarzy>
-                    </Adnotacje>
-                    <RodzajFaktury>VAT</RodzajFaktury>
-                    <FaWiersz>
-                      <NrWierszaFa>1</NrWierszaFa>
-                      <P_7>%s</P_7>
-                      <P_8A>%s</P_8A>
-                      <P_8B>%s</P_8B>
-                      <P_9A>%s</P_9A>
-                      <P_11>%s</P_11>
-                      <P_12>%s</P_12>
-                    </FaWiersz>
-                  </Fa>
-                </Faktura>
-                """.formatted(
-                FA3_NAMESPACE, ETD_NAMESPACE,
-                SYSTEM_CODE, SCHEMA_VERSION, FORM_CODE_VALUE,
-                generationTimestamp,
-                sellerNip, SELLER_NAME,
-                BUYER_NIP, BUYER_NAME,
-                CURRENCY,
-                today, invoiceNumber, today,
-                NET_AMOUNT, VAT_AMOUNT, GROSS_AMOUNT,
-                ITEM_NAME, UNIT, QUANTITY, NET_UNIT_PRICE, NET_AMOUNT, VAT_RATE
+        String invoiceNumber = INVOICE_NUMBER_PREFIX + System.nanoTime();
+        return Map.of(
+                PH_SUPPLIER_NIP, sellerNip,
+                PH_BUYER_NIP, DEFAULT_BUYER_NIP,
+                PH_INVOICE_NUMBER, invoiceNumber,
+                PH_ISSUE_DATE, today,
+                PH_DUE_DATE, dueDate,
+                PH_DATETIME, datetime,
+                PH_BUYER_REFERENCE, DEFAULT_BUYER_REFERENCE,
+                PH_IBAN, DEFAULT_IBAN
         );
+    }
 
-        return xml.getBytes(StandardCharsets.UTF_8);
+    private static String loadTemplate(String resourcePath) {
+        try (InputStream stream = TestInvoiceXml.class.getResourceAsStream(resourcePath)) {
+            if (stream == null) {
+                throw new IllegalStateException(ERR_TEMPLATE_NOT_FOUND + resourcePath);
+            }
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException ioFailure) {
+            throw new UncheckedIOException(ERR_TEMPLATE_NOT_FOUND + resourcePath, ioFailure);
+        }
     }
 }

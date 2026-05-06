@@ -46,11 +46,17 @@ public final class FormCode {
     /** FA(3) — standard invoice, schema 1-0E. */
     public static final FormCode FA3 = new FormCode("FA (3)", "1-0E", "FA");
 
-    /** PEF(3) — public-procurement invoice, schema 2-1. */
-    public static final FormCode PEF3 = new FormCode("PEF (3)", "2-1", "PEF");
+    /**
+     * FA_PEF(3) — public-procurement invoice (UBL/Peppol), schema 2-1.
+     * Per {@code ksef-docs/srodowiska.md} accepted on TEST/DEMO/PROD.
+     */
+    public static final FormCode PEF3 = new FormCode("FA_PEF (3)", "2-1", "PEF");
 
-    /** PEF_KOR(3) — PEF correction invoice, schema 2-1. */
-    public static final FormCode PEF_KOR3 = new FormCode("PEF_KOR (3)", "2-1", "PEF");
+    /**
+     * FA_KOR_PEF(3) — PEF correction invoice, schema 2-1.
+     * Per {@code ksef-docs/srodowiska.md} accepted on TEST/DEMO/PROD.
+     */
+    public static final FormCode PEF_KOR3 = new FormCode("FA_KOR_PEF (3)", "2-1", "PEF");
 
     private final String systemCode;
     private final String schemaVersion;
