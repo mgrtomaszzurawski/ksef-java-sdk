@@ -36,7 +36,7 @@ They depend on the published artifact (or the local `1.0.0`
 |------|----------|
 | `SendOnlineInvoice.java` | Open online session, send one invoice, retrieve the UPO. |
 | `BatchInvoiceUpload.java` | Open batch session, upload pre-built parts, poll until processing completes. |
-| `QueryInvoiceMetadata.java` | Date-cursor pagination across all invoices in a date range using `queryAllMetadata`. |
+| `QueryInvoiceMetadata.java` | Lazy paginator across all invoices in a date range using `streamMetadata`. |
 | `GrantAndRevokePermission.java` | Grant a person permission, query the operation status, revoke. |
 | `EnrollAndRevokeCertificate.java` | Enroll a new certificate from a CSR, poll for the serial number, revoke. |
 | `Handle401Refresh.java` | Demonstrate auto re-authentication on token expiry. |

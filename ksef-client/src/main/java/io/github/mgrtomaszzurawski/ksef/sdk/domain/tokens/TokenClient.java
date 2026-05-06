@@ -26,11 +26,11 @@ public interface TokenClient {
     TokenList list();
 
     /**
-     * List every token, following the {@code x-continuation-token} cursor
-     * internally. Codex round-9 manual-validation A.4.1; abstract per Codex
-     * 2026-05-05 F4.
+     * Stream every token. Pages are fetched lazily, following the
+     * {@code x-continuation-token} cursor returned by the server.
+     * Caller controls memory by limiting / collecting downstream.
      */
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> listAll();
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens();
 
     TokenDetail getStatus(String referenceNumber);
     void revoke(String referenceNumber);

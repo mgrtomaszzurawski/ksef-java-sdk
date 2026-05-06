@@ -36,12 +36,13 @@ public interface CertificateClient {
     CertificateQueryResult query(CertificateQueryBuilder builder);
 
     /**
-     * Query all certificates matching the filter, walking pageOffset
-     * internally with spec-max page size. Codex round-9 manual-validation
-     * A.4.1; abstract per Codex 2026-05-05 F4.
+     * Stream all certificates matching the filter. Pages are fetched
+     * lazily via {@code pageOffset = 0, 1, 2, ...} until the server
+     * reports {@code hasMore == false}. Caller controls memory by
+     * limiting / collecting downstream.
      */
-    List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
-            queryAll(CertificateQueryBuilder builder);
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
+            streamCertificates(CertificateQueryBuilder builder);
 
     /**
      * Codex 2026-05-05 #10 / F7 — enroll a certificate and poll

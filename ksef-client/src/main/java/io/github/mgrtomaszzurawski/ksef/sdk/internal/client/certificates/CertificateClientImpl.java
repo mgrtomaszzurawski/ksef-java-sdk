@@ -217,13 +217,10 @@ public final class CertificateClientImpl implements CertificateClient {
     }
 
     @Override
-    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
-            queryAll(CertificateQueryBuilder builder) {
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
+            streamCertificates(CertificateQueryBuilder builder) {
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem> all =
-                new java.util.ArrayList<>();
-        int pageOffset = 0;
-        while (true) {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
             String token = http.requireToken();
             String pagedPath = PATH_QUERY + "?pageOffset=" + pageOffset
                     + "&pageSize=" + CERTIFICATE_QUERY_MAX_PAGE_SIZE;
@@ -231,15 +228,8 @@ public final class CertificateClientImpl implements CertificateClient {
                     CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()),
                     token, QueryCertificatesResponseRaw.class, OP_QUERY);
             CertificateQueryResult page = CertificatesMappers.toCertificateQueryResult(raw);
-            all.addAll(page.certificates());
-            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
-                return java.util.List.copyOf(all.subList(0,
-                        io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
-            }
-            if (!page.hasMore()) {
-                return java.util.List.copyOf(all);
-            }
-            pageOffset++;
-        }
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.certificates(), page.hasMore());
+        });
     }
 }

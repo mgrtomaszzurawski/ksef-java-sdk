@@ -131,7 +131,7 @@ Plus session-level helpers on `KsefClient` itself:
 | XML invoice models | JAXB from XSD | JAXB from XSD (same approach) |
 | HTTP client | Single god-class `DefaultKsefClient` | Per-domain clients reached via `KsefClient.<feature>()` |
 | Retry | None | Configurable `RetryPolicy` with backoff + jitter |
-| Pagination | None | Date-cursor cursors with `queryAllMetadata`-style helpers |
+| Pagination | None | Lazy `Stream<T>` paginators (`streamMetadata`, `streamPersons`, ...) — AWS-SDK-style |
 | Exceptions | Basic `ApiException` | Typed hierarchy (`KsefAuthException`, `KsefServerException`, `KsefRateLimitException`, …) |
 | Build tool | Gradle | Maven |
 | Java version | 11 source, 21 toolchain | 17+ |

@@ -20,7 +20,6 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpResponse;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -177,7 +176,7 @@ public final class KsefBatchSession implements AutoCloseable {
         this.referenceNumber = referenceNumber;
         this.partUploadRequests = List.copyOf(partUploadRequests);
         if (batchPackage != null
-                && batchPackage.partFiles().size() != partUploadRequests.size()) {
+                && batchPackage.parts().size() != partUploadRequests.size()) {
             throw new IllegalArgumentException(ERR_PART_COUNT_MISMATCH);
         }
         this.batchPackage = batchPackage;
@@ -263,7 +262,7 @@ public final class KsefBatchSession implements AutoCloseable {
         if (batchPackage == null || httpClient == null) {
             throw new IllegalStateException(ERR_NO_PARTS);
         }
-        List<Path> partFiles = batchPackage.partFiles();
+        List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart> partFiles = batchPackage.parts();
         // REQ-SESS-13: KSeF gives 20 minutes per part (cumulative across parts)
         // for the entire upload. Track elapsed time and fail-fast if the
         // budget is about to be exceeded; this surfaces a clean SDK error
@@ -283,15 +282,24 @@ public final class KsefBatchSession implements AutoCloseable {
         }
     }
 
-    private void uploadSinglePart(PartUploadRequest upload, Path partFile) {
+    private void uploadSinglePart(PartUploadRequest upload,
+                                  io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart part) {
         HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url());
         String method = upload.method() != null ? upload.method() : METHOD_PUT;
+        HttpRequest.BodyPublisher publisher;
         try {
-            builder.method(method, BodyPublishers.ofFile(partFile));
+            if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart.OnDiskPart onDisk) {
+                publisher = BodyPublishers.ofFile(onDisk.path());
+            } else if (part instanceof io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchPart.InMemoryPart inMem) {
+                publisher = BodyPublishers.ofByteArray(inMem.bytes());
+            } else {
+                throw new IllegalStateException("Unknown BatchPart subtype: " + part.getClass());
+            }
         } catch (java.io.FileNotFoundException missingFile) {
             throw new KsefNetworkException(
                     String.format(ERR_UPLOAD_IO, upload.ordinalNumber()), missingFile);
         }
+        builder.method(method, publisher);
         Map<String, String> headers = upload.headers() != null ? upload.headers() : Map.of();
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             builder.header(entry.getKey(), entry.getValue());

@@ -137,9 +137,9 @@ class ManualValidationWireShapeTest {
             SessionsQueryFilter filter = SessionsQueryFilter.forOnline()
                     .statuses(100, 200)
                     .build();
-            List<SessionListItem> result = client.queryAllSessions(filter);
+            List<SessionListItem> result = client.streamSessions(filter).toList();
 
-            assertNotNull(result, "querySessions returns empty list, not null, on no results");
+            assertNotNull(result, "streamSessions returns empty list, not null, on no results");
             verify(getRequestedFor(urlPathEqualTo(SESSIONS_PATH))
                     .withQueryParam("sessionType", equalTo("Online"))
                     .withQueryParam("pageSize", matching("\\d+"))
@@ -156,8 +156,8 @@ class ManualValidationWireShapeTest {
     }
 
     @Test
-    void permissionsQueryAllPersonal_walksPageOffsetUntilHasMoreFalse(WireMockRuntimeInfo wmInfo) {
-        // A.4.1 — queryAllPersonal must follow pageOffset until hasMore=false.
+    void permissionsStreamPersonal_walksPageOffsetUntilHasMoreFalse(WireMockRuntimeInfo wmInfo) {
+        // A.4.1 — streamPersonal must follow pageOffset until hasMore=false.
         // Stub two pages: page 0 returns hasMore=true; page 1 returns
         // hasMore=false. Verify both requests went out with the spec-max
         // pageSize=250 and pageOffset advanced.
@@ -182,11 +182,11 @@ class ManualValidationWireShapeTest {
                         .withBody(EMPTY_PERMISSIONS_RESPONSE)));
 
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
-            client.permissions().queryAllPersonal(
-                    io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalPermissionsQueryBuilder.create());
+            client.permissions().streamPersonal(
+                    io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalPermissionsQueryBuilder.create()).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(PERMISSIONS_PERSONAL_PATH)));
-            assertEquals(2, requests.size(), "queryAllPersonal must fetch both pages");
+            assertEquals(2, requests.size(), "streamPersonal must fetch both pages");
             assertTrue(requests.get(0).getUrl().contains("pageSize=250"),
                     "page 0 should use spec-max pageSize=250, was: " + requests.get(0).getUrl());
             assertTrue(requests.get(1).getUrl().contains("pageOffset=1"),
@@ -195,7 +195,7 @@ class ManualValidationWireShapeTest {
     }
 
     @Test
-    void queryAllMetadata_truncatedBranch_advancesDateRangeToLastRecordDate(WireMockRuntimeInfo wmInfo) {
+    void streamMetadata_truncatedBranch_advancesDateRangeToLastRecordDate(WireMockRuntimeInfo wmInfo) {
         // A.1.2 + reviewer CRITICAL — on isTruncated=true the algorithm
         // must restart paging from the LAST record's date, not from
         // permanentStorageHwmDate (which is constant for the query).
@@ -234,7 +234,7 @@ class ManualValidationWireShapeTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .permanentStorageDateFrom(OffsetDateTime.parse("2026-04-01T00:00:00Z"));
-            client.invoices().queryAllMetadata(query);
+            client.invoices().streamMetadata(query).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(QUERY_METADATA_PATH)));
             assertEquals(2, requests.size());

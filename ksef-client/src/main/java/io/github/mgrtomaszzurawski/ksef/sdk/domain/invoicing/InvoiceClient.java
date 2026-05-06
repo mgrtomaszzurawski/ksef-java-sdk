@@ -12,7 +12,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoice
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
-import java.util.List;
 
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
@@ -38,8 +37,15 @@ public interface InvoiceClient {
     }
 
     InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query);
-    List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query);
-    List<InvoiceMetadata> queryAllMetadata(InvoiceQueryBuilder query, int maxResults);
+
+    /**
+     * Stream every invoice metadata record matching the filter, walking
+     * the date-cursor + page-offset model used by KSeF's
+     * {@code POST /invoices/query/metadata}. Pages are fetched lazily;
+     * caller controls memory pressure by limiting / collecting
+     * downstream.
+     */
+    java.util.stream.Stream<InvoiceMetadata> streamMetadata(InvoiceQueryBuilder query);
 
     /**
      * Low-level "start export" entry point — Tier-3 advanced API per

@@ -192,6 +192,12 @@ public final class KsefClient implements AutoCloseable {
         this.rateLimitClient = new RateLimitClientImpl(this.runtime);
         this.testDataClient = new TestDataClientImpl(this.runtime);
         this.peppolClient = new PeppolClientImpl(this.runtime);
+        // Best-effort recovery — if a previous JVM crashed mid-batch, its
+        // encrypted part files are still in /tmp. Delete anything older than
+        // the orphan-age cutoff that matches the SDK's exact prefix.
+        io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.purgeOrphans(
+                null,
+                io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup.DEFAULT_ORPHAN_AGE);
     }
 
     /**
@@ -401,7 +407,7 @@ public final class KsefClient implements AutoCloseable {
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
 
         BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
-                invoiceXmls, aesKey, initVector);
+                invoiceXmls, aesKey, initVector, options.assembly());
 
         OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
                 .formCode(new FormCodeRaw()
@@ -456,7 +462,7 @@ public final class KsefClient implements AutoCloseable {
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
 
         BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.buildFromFiles(
-                invoiceFiles, aesKey, initVector);
+                invoiceFiles, aesKey, initVector, options.assembly());
 
         OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
                 .formCode(new FormCodeRaw()
@@ -641,20 +647,20 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * List sessions (online + batch) matching the filter, with internal
-     * cursor iteration. Codex round-9 manual-validation A.2.4 — exposes
-     * {@code GET /sessions} which previously had no public typed entry
-     * point. Authenticates lazily.
+     * Stream sessions (online + batch) matching the filter, walking
+     * the {@code x-continuation-token} cursor returned by KSeF
+     * {@code GET /sessions} lazily. Caller controls memory pressure
+     * by limiting / collecting downstream.
      *
-     * @param filter optional filter (type, status, date ranges, exact ref)
-     * @return all matching session summary items
+     * @param filter required filter (type, status, date ranges, exact ref)
+     * @return lazy stream of matching session summary items
      */
-    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
-            queryAllSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
+            streamSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
         Objects.requireNonNull(filter, "filter must not be null");
         ensureOpen();
         ensureAuthenticated();
-        return sessionClient.queryAllSessions(filter);
+        return sessionClient.streamSessions(filter);
     }
 
     /**

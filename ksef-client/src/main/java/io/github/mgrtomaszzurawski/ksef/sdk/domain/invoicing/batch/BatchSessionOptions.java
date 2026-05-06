@@ -4,40 +4,53 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
 
+import java.util.Objects;
+
 /**
- * Options for opening a KSeF batch session. Codex 2026-05-05 F2.
- *
- * <p>Currently exposes only {@code offlineMode}; the record shape is
- * forward-compatible for future flags (e.g. server-side timeouts,
- * retry policy).
+ * Options for opening a KSeF batch session.
  *
  * <p>{@code offlineMode} controls the {@code offlineMode} field on
  * {@code POST /sessions/batch}. Set {@code true} when the batch's
  * invoices were issued during one of KSeF's offline windows
  * (offline24, offline-niedostępność, awaryjny — see
- * {@code ksef-docs/tryby-offline.md}). All three sub-modes share the
- * same wire field — the legal sub-mode distinction is statutory and
- * affects only the deadline for delivery to KSeF, not the request
- * shape.
+ * {@code ksef-docs/tryby-offline.md}).
  *
- * <p>Use the static factories {@link #online()} and {@link #offline()}
- * for clear call sites:
+ * <p>{@code assembly} selects how the SDK builds + encrypts batch
+ * parts before upload — either streaming to a temp directory
+ * ({@link BatchAssemblyMode#onDisk()} / {@link BatchAssemblyMode#onDisk(java.nio.file.Path)})
+ * or in-heap with a byte cap ({@link BatchAssemblyMode#inMemory(long)}).
+ *
+ * <p>Use the static factories {@link #online()} / {@link #offline()}
+ * for clear call sites with default disk-assembly, or build a custom
+ * combination via the canonical constructor:
  * <pre>{@code
- * client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.online());
- * client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.offline());
+ * BatchSessionOptions opts = new BatchSessionOptions(
+ *         false,
+ *         BatchAssemblyMode.inMemory(500_000_000));
  * }</pre>
  *
  * @since 1.0.0
  */
-public record BatchSessionOptions(boolean offlineMode) {
+public record BatchSessionOptions(boolean offlineMode, BatchAssemblyMode assembly) {
 
-    /** Default options — {@code offlineMode=false}. */
-    public static BatchSessionOptions online() {
-        return new BatchSessionOptions(false);
+    private static final String ERR_NULL_ASSEMBLY = "assembly must not be null";
+
+    public BatchSessionOptions {
+        Objects.requireNonNull(assembly, ERR_NULL_ASSEMBLY);
     }
 
-    /** Offline batch ({@code offlineMode=true}). */
+    /** Default options — online batch, on-disk assembly to {@code java.io.tmpdir}. */
+    public static BatchSessionOptions online() {
+        return new BatchSessionOptions(false, BatchAssemblyMode.onDisk());
+    }
+
+    /** Offline batch ({@code offlineMode=true}), on-disk assembly to {@code java.io.tmpdir}. */
     public static BatchSessionOptions offline() {
-        return new BatchSessionOptions(true);
+        return new BatchSessionOptions(true, BatchAssemblyMode.onDisk());
+    }
+
+    /** Return a copy with the supplied {@link BatchAssemblyMode}. */
+    public BatchSessionOptions withAssembly(BatchAssemblyMode mode) {
+        return new BatchSessionOptions(offlineMode, mode);
     }
 }

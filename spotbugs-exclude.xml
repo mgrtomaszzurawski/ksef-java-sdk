@@ -21,6 +21,14 @@
         <Class name="io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefHttpRuntime"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
+    <!-- PagedSpliterator.{Page,CursorPage} are internal records that briefly
+         hold a List of records returned by a server page fetch. The list is
+         consumed once by the spliterator's buffer and never escapes the SDK.
+         Defensive copy on every page (potentially 10K+ pages) would be wasteful. -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.internal\.runtime\.pagination\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
     <!-- Java records with mutable fields (List, byte[], Map, X509Certificate, PrivateKey, char[]).
          Records are immutable by intent — the JVM guarantees no setter methods.
          SpotBugs flags the auto-generated accessor as "exposing mutable state"

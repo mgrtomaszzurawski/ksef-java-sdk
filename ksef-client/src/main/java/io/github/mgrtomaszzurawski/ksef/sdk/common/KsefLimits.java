@@ -9,32 +9,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
  * consumers can reason about page sizes, payload caps, and operation
  * budgets without hard-coding values.
  *
- * <p>Every full-pagination helper ({@code queryAll*}, {@code listAll},
- * {@code queryAllSessions}) caps the returned list at
- * {@link #DEFAULT_QUERY_RESULT_LIMIT} as a safety against unbounded
- * heap growth on large subjects. The cap is reached silently — the
- * caller receives the truncated list and cannot detect drop versus
- * exhaustive walk by inspecting the result alone.
- *
- * <p>Currently only
- * {@code InvoiceClient.queryAllMetadata(query, int maxResults)} accepts
- * a caller-supplied override. For other helpers, the recommended
- * pattern when an exhaustive walk is required is to call the paged
- * variant ({@code query(...)} / {@code list(...)}) directly with an
- * explicit {@code pageOffset} loop.
+ * <p>Pagination is exposed via lazy {@link java.util.stream.Stream}
+ * paginators ({@code streamMetadata}, {@code streamPersons},
+ * {@code streamCertificates}, {@code streamTokens},
+ * {@code streamSessions}, ...). The SDK never imposes an upper bound
+ * on stream length — caller controls memory by piping through
+ * {@code .limit(N)} or {@code .toList()} as appropriate. Equivalent
+ * in spirit to AWS SDK V2 paginators.
  *
  * @since 1.0.0
  */
 public final class KsefLimits {
-
-    /**
-     * Default ceiling on records returned by full-pagination helpers
-     * when the caller does not supply an explicit {@code maxResults}.
-     * Mirrors the spec single-session invoice cap (REQ-SESS-41) so the
-     * default is generous enough for 99 % of consumer use cases while
-     * preventing accidental whole-database pulls.
-     */
-    public static final int DEFAULT_QUERY_RESULT_LIMIT = 10_000;
 
     /** KSeF spec maximum size for one invoice (incl. attachments). */
     public static final int MAX_INVOICE_BYTES = 3 * 1024 * 1024;

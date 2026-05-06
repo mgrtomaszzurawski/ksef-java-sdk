@@ -96,32 +96,24 @@ public final class SessionClient {
     }
 
     /**
-     * List sessions matching the given filter, with internal cursor iteration.
-     * Codex round-9 manual-validation A.2.4 — previously the
-     * {@code GET /sessions} listing was reachable in OpenAPI but not in code.
+     * Stream sessions matching the given filter, lazily walking the
+     * {@code x-continuation-token} cursor returned by KSeF
+     * {@code GET /sessions}. Caller controls memory by limiting /
+     * collecting downstream.
      */
-    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
-            queryAllSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
-        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem> all =
-                new java.util.ArrayList<>();
-        String continuationToken = null;
-        while (true) {
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
+            streamSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.cursorStream(continuationToken -> {
             io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw raw = querySessionsPage(filter, continuationToken);
+            java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem> items = new java.util.ArrayList<>();
             if (raw.getSessions() != null) {
                 for (io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseItemRaw item : raw.getSessions()) {
-                    all.add(toSessionListItem(item));
+                    items.add(toSessionListItem(item));
                 }
             }
-            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
-                return java.util.List.copyOf(all.subList(0,
-                        io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
-            }
-            String next = raw.getContinuationToken();
-            if (next == null || next.isEmpty()) {
-                return java.util.List.copyOf(all);
-            }
-            continuationToken = next;
-        }
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.CursorPage<>(
+                    items, raw.getContinuationToken());
+        });
     }
 
     @SuppressWarnings("PMD.ConsecutiveAppendsShouldReuse")
@@ -310,6 +302,9 @@ public final class SessionClient {
     }
 
     private java.util.List<SessionInvoiceStatus> collectAllPages(String referenceNumber, boolean failedOnly) {
+        // Bounded by spec: KsefLimits.MAX_SESSION_INVOICES (REQ-SESS-41) is the
+        // server-side cap on invoices per session, so the cursor-walk
+        // necessarily terminates within that bound. No silent SDK-side cap.
         java.util.List<SessionInvoiceStatus> all = new java.util.ArrayList<>();
         String continuationToken = null;
         while (true) {
@@ -317,10 +312,6 @@ public final class SessionClient {
                     ? getFailedInvoicesPage(referenceNumber, continuationToken)
                     : getInvoicesPage(referenceNumber, continuationToken);
             all.addAll(page.invoices());
-            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
-                return java.util.List.copyOf(all.subList(0,
-                        io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
-            }
             String next = page.continuationToken();
             if (next == null || next.isEmpty()) {
                 return java.util.List.copyOf(all);

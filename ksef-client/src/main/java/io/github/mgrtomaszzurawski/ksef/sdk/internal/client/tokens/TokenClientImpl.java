@@ -83,12 +83,9 @@ public final class TokenClientImpl implements TokenClient {
      * {@code x-continuation-token} internally.
      */
     @Override
-    public java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> listAll() {
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens() {
         LOGGER.debug(LOG_CALL, OP_LIST);
-        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> all =
-                new java.util.ArrayList<>();
-        String continuationToken = null;
-        while (true) {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.cursorStream(continuationToken -> {
             String accessToken = http.requireToken();
             QueryTokensResponseRaw rawValue = continuationToken == null
                     ? http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST)
@@ -96,17 +93,9 @@ public final class TokenClientImpl implements TokenClient {
                             io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
                             continuationToken);
             TokenList page = TokensMappers.toTokenList(rawValue);
-            all.addAll(page.tokens());
-            if (all.size() >= io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT) {
-                return java.util.List.copyOf(all.subList(0,
-                        io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.DEFAULT_QUERY_RESULT_LIMIT));
-            }
-            String next = page.continuationToken();
-            if (next == null || next.isEmpty()) {
-                return java.util.List.copyOf(all);
-            }
-            continuationToken = next;
-        }
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.CursorPage<>(
+                    page.tokens(), page.continuationToken());
+        });
     }
 
     /**

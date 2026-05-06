@@ -136,7 +136,7 @@ class InvoiceClientTest {
     }
 
     @Test
-    void queryAllMetadata_whenSecondPageRequested_preservesAllFiltersBetweenPages(WireMockRuntimeInfo wmInfo) {
+    void streamMetadata_whenSecondPageRequested_preservesAllFiltersBetweenPages(WireMockRuntimeInfo wmInfo) {
         // given — A.1.2 spec algorithm:
         //   hasMore=true && isTruncated=false → pageOffset++ (same dateRange).
         // Page 1 stubs the in-flight state; page 2 closes the loop with hasMore=false.
@@ -179,7 +179,7 @@ class InvoiceClientTest {
                     .onlineOnly()
                     .selfInvoicing(true)
                     .hasAttachment(true);
-            ksef.invoices().queryAllMetadata(query);
+            ksef.invoices().streamMetadata(query).toList();
 
             // then — both POSTs hit. Page 2 body carries the same caller filters,
             // and the spec-conformant algorithm advanced pageOffset (not the
@@ -206,7 +206,7 @@ class InvoiceClientTest {
     }
 
     @Test
-    void queryAllMetadata_whenIsTruncated_resetsPageOffsetAndAdvancesDateRange(WireMockRuntimeInfo wmInfo) {
+    void streamMetadata_whenIsTruncated_resetsPageOffsetAndAdvancesDateRange(WireMockRuntimeInfo wmInfo) {
         // given — A.1.2 spec algorithm:
         //   hasMore=true && isTruncated=true → narrow dateRange.from to the
         //                                     LAST RETURNED RECORD's date for
@@ -247,7 +247,7 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"));
-            ksef.invoices().queryAllMetadata(query);
+            ksef.invoices().streamMetadata(query).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata")));
             assertEquals(2, requests.size());
@@ -260,12 +260,12 @@ class InvoiceClientTest {
     }
 
     @Test
-    void queryAllMetadata_truncatedNullCursor_throwsKsefException(WireMockRuntimeInfo wmInfo) {
+    void streamMetadata_truncatedNullCursor_throwsKsefException(WireMockRuntimeInfo wmInfo) {
         // Codex 2026-05-05 F3 — server returns isTruncated=true but the last
         // record on the page has no value on the date axis we picked
         // (invoicingDate here, since the query filters by invoicingDateFrom).
         // Spec doesn't envisage this state; under the new fail-fast contract
-        // queryAllMetadata throws instead of silently dropping pages.
+        // streamMetadata throws instead of silently dropping pages.
         String pageOneBody = """
                 {
                   "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat"}],
@@ -286,7 +286,7 @@ class InvoiceClientTest {
             io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException thrown =
                     org.junit.jupiter.api.Assertions.assertThrows(
                             io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
-                            () -> ksef.invoices().queryAllMetadata(query));
+                            () -> ksef.invoices().streamMetadata(query).toList());
             assertTrue(thrown.getMessage().contains("isTruncated"),
                     "exception message must explain truncation, was: " + thrown.getMessage());
         }

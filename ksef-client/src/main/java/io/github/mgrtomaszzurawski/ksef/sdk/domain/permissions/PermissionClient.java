@@ -56,26 +56,27 @@ public interface PermissionClient {
     EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
     EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder);
 
-    // Codex 2026-05-05 F4 — queryAll* are now abstract. Each walks
-    // pageOffset internally with spec-max page size and returns one flat
-    // list. Method names promise full pagination, so the contract is
-    // compile-enforced (no silent first-page-only fallback). Pre-1.0 we
-    // accept the source-compat break: nothing has been published to
-    // Maven Central, so there are no external implementors to break.
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission>
-            queryAllPersonal(PersonalPermissionsQueryBuilder builder);
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission>
-            queryAllPersons(PersonPermissionsQueryBuilder builder);
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermission>
-            queryAllSubunits();
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission>
-            queryAllEntities();
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole>
-            queryAllSubordinateRoles();
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationGrant>
-            queryAllAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
-    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission>
-            queryAllEuEntities(EuEntityPermissionsQueryBuilder builder);
+    // Stream-based paginators (AWS-SDK-style). Each lazily walks
+    // pageOffset = 0, 1, 2, ... until the server reports hasMore=false,
+    // yielding one record at a time. The SDK never materialises the full
+    // result set — memory pressure is bounded by what the caller pulls
+    // from the stream. For a hard cap, pipe through {@code .limit(N)};
+    // for a snapshot list, pipe through {@code .toList()}.
+
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission>
+            streamPersonal(PersonalPermissionsQueryBuilder builder);
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission>
+            streamPersons(PersonPermissionsQueryBuilder builder);
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermission>
+            streamSubunits();
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission>
+            streamEntities();
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole>
+            streamSubordinateRoles();
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationGrant>
+            streamAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission>
+            streamEuEntities(EuEntityPermissionsQueryBuilder builder);
 
     // Codex 2026-05-05 #10 / F7 — *AndAwait helpers. Each issues the
     // grant operation, polls getOperationStatus(reference) until the
