@@ -24,8 +24,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
@@ -61,6 +63,8 @@ class KsefBatchSessionUploadTest {
     private static final String CUSTOM_HEADER = "x-amz-content-sha256";
     private static final String CUSTOM_HEADER_VALUE = "abc123";
     private static final byte[] PART_CONTENT = "encrypted-part-bytes".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    /** SHA-256 hash length in bytes — matches the project-wide constant pattern. */
+    private static final int SHA_256_BYTES = 32;
 
     @Test
     void uploadParts_putsBytesToEachPresignedUrlWithoutBearer(WireMockRuntimeInfo wmInfo, @TempDir Path tempDir) throws Exception {
@@ -296,6 +300,7 @@ class KsefBatchSessionUploadTest {
                             session::uploadParts);
             assertTrue(ex.getMessage().contains("non-HTTPS"),
                     "Error must explain HTTPS requirement; got: " + ex.getMessage());
+            verify(exactly(0), putRequestedFor(anyUrl()));
         }
     }
 
@@ -313,8 +318,12 @@ class KsefBatchSessionUploadTest {
 
         try (KsefBatchSession session = createSession(wmInfo, uploads, List.of(partFile))) {
             // when / then
-            assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
-                    session::uploadParts);
+            io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException ex =
+                    assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
+                            session::uploadParts);
+            assertTrue(ex.getMessage().contains("non-HTTPS"),
+                    "Error must explain HTTPS requirement; got: " + ex.getMessage());
+            verify(exactly(0), putRequestedFor(anyUrl()));
         }
     }
 
@@ -347,7 +356,7 @@ class KsefBatchSessionUploadTest {
         // use BodyPublishers.ofInputStream(part::openStream) and the bytes
         // must arrive at the presigned endpoint.
         byte[] cipherBytes = "in-memory-cipher".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        byte[] hash = new byte[32];
+        byte[] hash = new byte[SHA_256_BYTES];
         var inMemPart = new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch
                 .BatchPart.InMemoryPart(1, hash, cipherBytes);
 
@@ -434,7 +443,7 @@ class KsefBatchSessionUploadTest {
         // exercises the FileNotFoundException branch on missing-file tests.
         List<io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart> parts =
                 new java.util.ArrayList<>();
-        byte[] fakeHash = new byte[32];
+        byte[] fakeHash = new byte[SHA_256_BYTES];
         int ordinal = 1;
         for (Path path : partFiles) {
             long size = 0L;
@@ -456,7 +465,7 @@ class KsefBatchSessionUploadTest {
         // only the part count matters for the constructor's count-mismatch guard.
         List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec.Part> parts =
                 new java.util.ArrayList<>();
-        byte[] fakeHash = new byte[32];
+        byte[] fakeHash = new byte[SHA_256_BYTES];
         for (int index = 1; index <= partCount; index++) {
             parts.add(new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec.Part(
                     index, PART_CONTENT.length, fakeHash));
