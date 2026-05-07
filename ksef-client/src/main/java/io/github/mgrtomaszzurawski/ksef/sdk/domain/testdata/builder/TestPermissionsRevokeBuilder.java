@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataAuthorizedIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF test permissions revocation requests.
@@ -23,8 +24,8 @@ public final class TestPermissionsRevokeBuilder {
     private static final String ERR_NULL_FINGERPRINT = "fingerprint is required";
 
     private final String contextNip;
-    private TestDataAuthorizedIdentifierType authorizedType;
-    private String authorizedValue;
+    private @Nullable TestDataAuthorizedIdentifierType authorizedType;
+    private @Nullable String authorizedValue;
 
     private TestPermissionsRevokeBuilder(String contextNip) {
         this.contextNip = Objects.requireNonNull(contextNip, ERR_NULL_CONTEXT_NIP);

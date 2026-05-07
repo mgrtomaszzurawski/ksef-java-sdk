@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest;
 import java.time.OffsetDateTime;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF test person creation requests.
@@ -33,8 +34,8 @@ public final class TestPersonCreateBuilder {
     private final String pesel;
     private final boolean isBailiff;
     private final String description;
-    private Boolean isDeceased;
-    private OffsetDateTime createdDate;
+    private @Nullable Boolean isDeceased;
+    private @Nullable OffsetDateTime createdDate;
 
     private TestPersonCreateBuilder(String nip, String pesel, boolean isBailiff, String description) {
         this.nip = Objects.requireNonNull(nip, ERR_NULL_NIP);

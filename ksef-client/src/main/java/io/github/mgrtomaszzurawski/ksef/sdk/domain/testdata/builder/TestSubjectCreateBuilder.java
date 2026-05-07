@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF test subject creation requests.
@@ -30,7 +31,7 @@ public final class TestSubjectCreateBuilder {
     private final TestSubjectType subjectType;
     private final String description;
     private final List<TestSubunit> subunits = new ArrayList<>();
-    private OffsetDateTime createdDate;
+    private @Nullable OffsetDateTime createdDate;
 
     private TestSubjectCreateBuilder(String subjectNip, TestSubjectType subjectType, String description) {
         this.subjectNip = Objects.requireNonNull(subjectNip, ERR_NULL_SUBJECT_NIP);

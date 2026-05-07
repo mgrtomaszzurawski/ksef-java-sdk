@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Plan for an {@link InvoiceSyncClient#sync} call.
@@ -72,14 +73,14 @@ public record IncrementalSyncPlan(
 
     public static final class Builder {
 
-        private OffsetDateTime from;
-        private OffsetDateTime to;
+        private @Nullable OffsetDateTime from;
+        private @Nullable OffsetDateTime to;
         private List<InvoiceQuerySubjectType> subjectTypes = List.of(
                 InvoiceQuerySubjectType.SUBJECT1,
                 InvoiceQuerySubjectType.SUBJECT2,
                 InvoiceQuerySubjectType.SUBJECT3,
                 InvoiceQuerySubjectType.SUBJECT_AUTHORIZED);
-        private Path outputDirectory;
+        private @Nullable Path outputDirectory;
         private boolean fullContent = true;
 
         private Builder() { }

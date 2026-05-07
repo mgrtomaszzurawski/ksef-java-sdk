@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubje
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitContextIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissionGrantRequest;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for subunit permission grant requests.
@@ -34,12 +35,12 @@ public final class SubunitPermissionGrantBuilder {
 
     private final PersonSubjectIdentifierType identifierType;
     private final String identifierValue;
-    private SubunitContextIdentifierType contextType;
-    private String contextValue;
-    private String description;
-    private String firstName;
-    private String lastName;
-    private String subunitName;
+    private @Nullable SubunitContextIdentifierType contextType;
+    private @Nullable String contextValue;
+    private @Nullable String description;
+    private @Nullable String firstName;
+    private @Nullable String lastName;
+    private @Nullable String subunitName;
 
     private SubunitPermissionGrantBuilder(PersonSubjectIdentifierType type, String value) {
         this.identifierType = type;

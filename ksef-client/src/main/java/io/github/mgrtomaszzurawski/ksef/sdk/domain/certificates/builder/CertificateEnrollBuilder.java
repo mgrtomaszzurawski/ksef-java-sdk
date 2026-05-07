@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import java.time.OffsetDateTime;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF certificate enrollment requests.
@@ -32,7 +33,7 @@ public final class CertificateEnrollBuilder {
     private final String certificateName;
     private final KsefCertificateType certificateType;
     private final byte[] csr;
-    private OffsetDateTime validFrom;
+    private @Nullable OffsetDateTime validFrom;
 
     private CertificateEnrollBuilder(String certificateName, KsefCertificateType certificateType, byte[] csr) {
         this.certificateName = Objects.requireNonNull(certificateName, ERR_NULL_CERTIFICATE_NAME);

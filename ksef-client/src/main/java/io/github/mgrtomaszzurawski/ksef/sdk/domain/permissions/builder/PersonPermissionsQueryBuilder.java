@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalTar
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for person permissions query requests.
@@ -27,16 +28,16 @@ public final class PersonPermissionsQueryBuilder {
     private static final String ERR_QUERY_TYPE_REQUIRED = "queryType is required — use .permissionsInCurrentContext() or .permissionsGrantedInCurrentContext()";
 
     private final PersonPermissionsQueryType queryType;
-    private PersonAuthorIdentifierType authorType;
-    private String authorValue;
-    private PersonSubjectIdentifierType authorizedType;
-    private String authorizedValue;
-    private PersonalContextIdentifierType contextType;
-    private String contextValue;
-    private PersonalTargetIdentifierType targetType;
-    private String targetValue;
+    private @Nullable PersonAuthorIdentifierType authorType;
+    private @Nullable String authorValue;
+    private @Nullable PersonSubjectIdentifierType authorizedType;
+    private @Nullable String authorizedValue;
+    private @Nullable PersonalContextIdentifierType contextType;
+    private @Nullable String contextValue;
+    private @Nullable PersonalTargetIdentifierType targetType;
+    private @Nullable String targetValue;
     private final List<PersonPermissionType> permissionTypes = new ArrayList<>();
-    private PermissionState permissionState;
+    private @Nullable PermissionState permissionState;
 
     private PersonPermissionsQueryBuilder(PersonPermissionsQueryType queryType) {
         this.queryType = Objects.requireNonNull(queryType, ERR_QUERY_TYPE_REQUIRED);

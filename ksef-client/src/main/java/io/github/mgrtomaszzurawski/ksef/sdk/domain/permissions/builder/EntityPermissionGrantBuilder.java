@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermi
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for entity permission grant requests.
@@ -30,8 +31,8 @@ public final class EntityPermissionGrantBuilder {
     private static final String ERR_NULL_FULL_NAME = "fullName is required";
 
     private final String identifierValue;
-    private String description;
-    private String fullName;
+    private @Nullable String description;
+    private @Nullable String fullName;
     private final List<EntityPermissionEntry> permissions = new ArrayList<>();
 
     private EntityPermissionGrantBuilder(String nip) {

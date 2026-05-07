@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAutho
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for entity authorization permissions query requests.
@@ -23,9 +24,9 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
     private static final String ERR_QUERY_TYPE_REQUIRED = "queryType is required — use .granted() or .received()";
 
     private final AuthorizationQueryType queryType;
-    private String authorizingNip;
-    private EntityAuthorizationIdentifierType authorizedType;
-    private String authorizedValue;
+    private @Nullable String authorizingNip;
+    private @Nullable EntityAuthorizationIdentifierType authorizedType;
+    private @Nullable String authorizedValue;
     private final List<EntityAuthorizationPermissionType> permissionTypes = new ArrayList<>();
 
     private EntityAuthorizationPermissionsQueryBuilder(AuthorizationQueryType queryType) {

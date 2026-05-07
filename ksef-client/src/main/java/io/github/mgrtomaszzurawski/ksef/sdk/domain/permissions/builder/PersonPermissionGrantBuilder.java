@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubje
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for person permission grant requests.
@@ -33,9 +34,9 @@ public final class PersonPermissionGrantBuilder {
 
     private final PersonSubjectIdentifierType identifierType;
     private final String identifierValue;
-    private String description;
-    private String firstName;
-    private String lastName;
+    private @Nullable String description;
+    private @Nullable String firstName;
+    private @Nullable String lastName;
     private final List<PersonPermissionType> permissions = new ArrayList<>();
 
     private PersonPermissionGrantBuilder(PersonSubjectIdentifierType type, String value) {

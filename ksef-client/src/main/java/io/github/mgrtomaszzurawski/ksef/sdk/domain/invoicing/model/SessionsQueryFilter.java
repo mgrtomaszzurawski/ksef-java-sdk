@@ -65,14 +65,14 @@ public record SessionsQueryFilter(
 
     public static final class Builder {
         private final KsefSessionType sessionType;
-        private String referenceNumber;
-        private OffsetDateTime dateCreatedFrom;
-        private OffsetDateTime dateCreatedTo;
-        private OffsetDateTime dateClosedFrom;
-        private OffsetDateTime dateClosedTo;
-        private OffsetDateTime dateModifiedFrom;
-        private OffsetDateTime dateModifiedTo;
-        private List<Integer> statuses;
+        private @Nullable String referenceNumber;
+        private @Nullable OffsetDateTime dateCreatedFrom;
+        private @Nullable OffsetDateTime dateCreatedTo;
+        private @Nullable OffsetDateTime dateClosedFrom;
+        private @Nullable OffsetDateTime dateClosedTo;
+        private @Nullable OffsetDateTime dateModifiedFrom;
+        private @Nullable OffsetDateTime dateModifiedTo;
+        private @Nullable List<Integer> statuses;
 
         private Builder(KsefSessionType sessionType) {
             this.sessionType = java.util.Objects.requireNonNull(sessionType, ERR_SESSION_TYPE_NULL);

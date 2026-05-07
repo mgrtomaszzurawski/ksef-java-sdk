@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubje
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for indirect permission grant requests (through an intermediary entity).
@@ -36,11 +37,11 @@ public final class IndirectPermissionGrantBuilder {
 
     private final PersonSubjectIdentifierType identifierType;
     private final String identifierValue;
-    private String description;
-    private String firstName;
-    private String lastName;
-    private IndirectTargetIdentifierType targetType;
-    private String targetValue;
+    private @Nullable String description;
+    private @Nullable String firstName;
+    private @Nullable String lastName;
+    private @Nullable IndirectTargetIdentifierType targetType;
+    private @Nullable String targetValue;
     private final List<IndirectPermissionType> permissions = new ArrayList<>();
 
     private IndirectPermissionGrantBuilder(PersonSubjectIdentifierType type, String value) {

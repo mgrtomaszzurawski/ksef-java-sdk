@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPer
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for EU entity permission grant requests.
@@ -30,9 +31,9 @@ public final class EuEntityPermissionGrantBuilder {
     private static final String ERR_NULL_SUBJECT_ADDRESS = "subject address is required";
 
     private final String fingerprintValue;
-    private String description;
-    private String subjectFullName;
-    private String subjectAddress;
+    private @Nullable String description;
+    private @Nullable String subjectFullName;
+    private @Nullable String subjectAddress;
     private final List<EuEntityPermissionType> permissions = new ArrayList<>();
 
     private EuEntityPermissionGrantBuilder(String fingerprint) {

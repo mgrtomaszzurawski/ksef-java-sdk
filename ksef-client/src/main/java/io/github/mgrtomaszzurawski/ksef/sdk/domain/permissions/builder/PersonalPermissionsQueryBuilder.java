@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPer
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalTargetIdentifierType;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for personal permissions query requests. All fields are optional.
@@ -19,12 +20,12 @@ import java.util.List;
  */
 public final class PersonalPermissionsQueryBuilder {
 
-    private PersonalContextIdentifierType contextType;
-    private String contextValue;
-    private PersonalTargetIdentifierType targetType;
-    private String targetValue;
+    private @Nullable PersonalContextIdentifierType contextType;
+    private @Nullable String contextValue;
+    private @Nullable PersonalTargetIdentifierType targetType;
+    private @Nullable String targetValue;
     private final List<PersonalPermissionType> permissionTypes = new ArrayList<>();
-    private PermissionState permissionState;
+    private @Nullable PermissionState permissionState;
 
     private PersonalPermissionsQueryBuilder() { }
 
