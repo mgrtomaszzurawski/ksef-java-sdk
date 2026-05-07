@@ -14,6 +14,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.http.HttpClient;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Internal construction bridge for {@link KsefSession}, {@link KsefBatchSession},
@@ -150,10 +151,10 @@ public final class SessionHandleConstructor {
      * @apiNote Internal — see class-level Javadoc.
      */
     public static KsefBatchSession newBatchSession(SessionClient sessionClient,
-                                                    HttpClient httpClient,
+                                                    @Nullable HttpClient httpClient,
                                                     String referenceNumber,
                                                     List<PartUploadRequest> partUploadRequests,
-                                                    BatchPackageBuilder.BatchPackage batchPackage) {
+                                                    BatchPackageBuilder.@Nullable BatchPackage batchPackage) {
         return invoke(BATCH_SESSION_CTOR_5_ARG, sessionClient, httpClient,
                 referenceNumber, partUploadRequests, batchPackage);
     }
@@ -163,11 +164,11 @@ public final class SessionHandleConstructor {
      *     {@code validUntil} into the handle.
      */
     public static KsefBatchSession newBatchSession(SessionClient sessionClient,
-                                                    HttpClient httpClient,
+                                                    @Nullable HttpClient httpClient,
                                                     String referenceNumber,
                                                     List<PartUploadRequest> partUploadRequests,
-                                                    BatchPackageBuilder.BatchPackage batchPackage,
-                                                    java.time.OffsetDateTime validUntil) {
+                                                    BatchPackageBuilder.@Nullable BatchPackage batchPackage,
+                                                    java.time.@Nullable OffsetDateTime validUntil) {
         return invoke(BATCH_SESSION_CTOR_7_ARG_VALID_UNTIL, sessionClient, httpClient,
                 referenceNumber, partUploadRequests, batchPackage, (java.util.function.LongSupplier) System::nanoTime, validUntil);
     }
@@ -177,10 +178,10 @@ public final class SessionHandleConstructor {
      * upload-budget tests; see class-level Javadoc.
      */
     public static KsefBatchSession newBatchSession(SessionClient sessionClient,
-                                                    HttpClient httpClient,
+                                                    @Nullable HttpClient httpClient,
                                                     String referenceNumber,
                                                     List<PartUploadRequest> partUploadRequests,
-                                                    BatchPackageBuilder.BatchPackage batchPackage,
+                                                    BatchPackageBuilder.@Nullable BatchPackage batchPackage,
                                                     java.util.function.LongSupplier nanoTimeSource) {
         return invoke(BATCH_SESSION_CTOR_6_ARG, sessionClient, httpClient,
                 referenceNumber, partUploadRequests, batchPackage, nanoTimeSource);
@@ -197,7 +198,7 @@ public final class SessionHandleConstructor {
         return invoke(PREPARED_EXPORT_CTOR, invoices, httpClient, referenceNumber, aesKey, initVector);
     }
 
-    private static <T> T invoke(Constructor<T> ctor, Object... args) {
+    private static <T> T invoke(Constructor<T> ctor, @Nullable Object... args) {
         try {
             return ctor.newInstance(args);
         } catch (InstantiationException | IllegalAccessException ex) {

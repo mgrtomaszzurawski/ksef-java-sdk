@@ -151,10 +151,10 @@ public final class KsefBatchSession implements AutoCloseable {
             "Batch session {} reached terminal failure state — code={} description={}";
 
     private final SessionClient sessionClient;
-    private final HttpClient httpClient;
+    private final @Nullable HttpClient httpClient;
     private final String referenceNumber;
     private final List<PartUploadRequest> partUploadRequests;
-    private final BatchPackageBuilder.BatchPackage batchPackage;
+    private final BatchPackageBuilder.@Nullable BatchPackage batchPackage;
     private final java.util.function.LongSupplier nanoTimeSource;
     @Nullable private final OffsetDateTime validUntil;
     private volatile boolean closed;
@@ -172,9 +172,9 @@ public final class KsefBatchSession implements AutoCloseable {
      * Package-private — see {@code SessionHandleConstructor} (internal bridge) class-level Javadoc
      * (Codex round-9 fresh review H3).
      */
-    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, @Nullable HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
-                     BatchPackageBuilder.BatchPackage batchPackage) {
+                     BatchPackageBuilder.@Nullable BatchPackage batchPackage) {
         this(sessionClient, httpClient, referenceNumber, partUploadRequests, batchPackage, System::nanoTime);
     }
 
@@ -183,9 +183,9 @@ public final class KsefBatchSession implements AutoCloseable {
      * for upload-budget tests; see {@code SessionHandleConstructor} (internal bridge) class-level Javadoc
      * for the construction policy (Codex round-9 fresh review H3).
      */
-    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, @Nullable HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
-                     BatchPackageBuilder.BatchPackage batchPackage,
+                     BatchPackageBuilder.@Nullable BatchPackage batchPackage,
                      java.util.function.LongSupplier nanoTimeSource) {
         this(sessionClient, httpClient, referenceNumber, partUploadRequests, batchPackage,
                 nanoTimeSource, null);
@@ -196,9 +196,9 @@ public final class KsefBatchSession implements AutoCloseable {
      * (Codex 2026-05-05 F8a). The other ctors delegate here with
      * {@code validUntil=null}.
      */
-    KsefBatchSession(SessionClient sessionClient, HttpClient httpClient, String referenceNumber,
+    KsefBatchSession(SessionClient sessionClient, @Nullable HttpClient httpClient, String referenceNumber,
                      List<PartUploadRequest> partUploadRequests,
-                     BatchPackageBuilder.BatchPackage batchPackage,
+                     BatchPackageBuilder.@Nullable BatchPackage batchPackage,
                      java.util.function.LongSupplier nanoTimeSource,
                      @Nullable OffsetDateTime validUntil) {
         this.sessionClient = sessionClient;
@@ -578,7 +578,7 @@ public final class KsefBatchSession implements AutoCloseable {
         throw new KsefSessionPollingTimeoutException(referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
-    private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {
+    private @Nullable Integer logStatusTransition(@Nullable Integer lastCode, @Nullable Integer code, int attempt) {
         if (code != null && !code.equals(lastCode)) {
             LOGGER.debug(LOG_STATUS_TRANSITION, referenceNumber, lastCode, code, attempt + 1);
             return code;

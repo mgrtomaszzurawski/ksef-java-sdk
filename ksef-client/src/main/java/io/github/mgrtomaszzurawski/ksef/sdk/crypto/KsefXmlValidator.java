@@ -20,6 +20,7 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
+import org.jspecify.annotations.Nullable;
 import org.xml.sax.SAXException;
 
 /**
@@ -100,7 +101,7 @@ public final class KsefXmlValidator {
      *                 when not available
      * @param message  human-readable message from the parser
      */
-    public record ValidationIssue(Severity severity, int line, int column, String message) {
+    public record ValidationIssue(Severity severity, int line, int column, @Nullable String message) {
 
         @Override
         public String toString() {
@@ -280,8 +281,8 @@ public final class KsefXmlValidator {
 
         @Override
         @SuppressWarnings("PMD.UseObjectForClearerAPI") // signature fixed by W3C LSResourceResolver interface
-        public org.w3c.dom.ls.LSInput resolveResource(String type, String namespaceURI, String publicId,
-                                                       String systemId, String baseURI) {
+        public org.w3c.dom.ls.@Nullable LSInput resolveResource(@Nullable String type, @Nullable String namespaceURI, @Nullable String publicId,
+                                                       @Nullable String systemId, @Nullable String baseURI) {
             if (systemId == null) {
                 return null;
             }
@@ -298,32 +299,32 @@ public final class KsefXmlValidator {
 
     private static final class ClasspathLsInput implements org.w3c.dom.ls.LSInput {
 
-        private final String systemId;
-        private final String publicId;
-        private final String baseURI;
+        private final @Nullable String systemId;
+        private final @Nullable String publicId;
+        private final @Nullable String baseURI;
         private final InputStream byteStream;
 
-        ClasspathLsInput(String systemId, String publicId, String baseURI, InputStream byteStream) {
+        ClasspathLsInput(@Nullable String systemId, @Nullable String publicId, @Nullable String baseURI, InputStream byteStream) {
             this.systemId = systemId;
             this.publicId = publicId;
             this.baseURI = baseURI;
             this.byteStream = byteStream;
         }
 
-        @Override public java.io.Reader getCharacterStream() { return null; }
-        @Override public void setCharacterStream(java.io.Reader characterStream) { /* unused */ }
+        @Override public java.io.@Nullable Reader getCharacterStream() { return null; }
+        @Override public void setCharacterStream(java.io.@Nullable Reader characterStream) { /* unused */ }
         @Override public InputStream getByteStream() { return byteStream; }
-        @Override public void setByteStream(InputStream stream) { /* unused */ }
-        @Override public String getStringData() { return null; }
-        @Override public void setStringData(String stringData) { /* unused */ }
-        @Override public String getSystemId() { return systemId; }
-        @Override public void setSystemId(String value) { /* unused */ }
-        @Override public String getPublicId() { return publicId; }
-        @Override public void setPublicId(String value) { /* unused */ }
-        @Override public String getBaseURI() { return baseURI; }
-        @Override public void setBaseURI(String value) { /* unused */ }
-        @Override public String getEncoding() { return null; }
-        @Override public void setEncoding(String value) { /* unused */ }
+        @Override public void setByteStream(@Nullable InputStream stream) { /* unused */ }
+        @Override public @Nullable String getStringData() { return null; }
+        @Override public void setStringData(@Nullable String stringData) { /* unused */ }
+        @Override public @Nullable String getSystemId() { return systemId; }
+        @Override public void setSystemId(@Nullable String value) { /* unused */ }
+        @Override public @Nullable String getPublicId() { return publicId; }
+        @Override public void setPublicId(@Nullable String value) { /* unused */ }
+        @Override public @Nullable String getBaseURI() { return baseURI; }
+        @Override public void setBaseURI(@Nullable String value) { /* unused */ }
+        @Override public @Nullable String getEncoding() { return null; }
+        @Override public void setEncoding(@Nullable String value) { /* unused */ }
         @Override public boolean getCertifiedText() { return false; }
         @Override public void setCertifiedText(boolean value) { /* unused */ }
     }

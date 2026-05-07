@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationListItemRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An authentication session in the session list.
@@ -26,12 +27,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
 public record AuthenticationListItem(
         String referenceNumber,
         OffsetDateTime startDate,
-        AuthenticationMethodInfo authenticationMethodInfo,
+        @Nullable AuthenticationMethodInfo authenticationMethodInfo,
         StatusInfo status,
-        Boolean tokenRedeemed,
-        OffsetDateTime lastTokenRefreshDate,
-        OffsetDateTime refreshTokenValidUntil,
-        Boolean current) {
+        @Nullable Boolean tokenRedeemed,
+        @Nullable OffsetDateTime lastTokenRefreshDate,
+        @Nullable OffsetDateTime refreshTokenValidUntil,
+        @Nullable Boolean current) {
 
     public static AuthenticationListItem from(AuthenticationListItemRaw rawValue) {
         return new AuthenticationListItem(

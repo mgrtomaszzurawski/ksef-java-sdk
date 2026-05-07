@@ -42,7 +42,7 @@ public final class RetryHandler {
      * Execute a supplier with retry logic, returning a value.
      */
     public <T> T execute(ApiCall<T> call, String operationName) {
-        return doExecute(call, operationName, false);
+        return java.util.Objects.requireNonNull(doExecute(call, operationName, false));
     }
 
     /**
@@ -50,7 +50,7 @@ public final class RetryHandler {
      * POST retry is controlled by {@link RetryPolicy#retryPost()}.
      */
     public <T> T executePost(ApiCall<T> call, String operationName) {
-        return doExecute(call, operationName, true);
+        return java.util.Objects.requireNonNull(doExecute(call, operationName, true));
     }
 
     /**
@@ -60,10 +60,13 @@ public final class RetryHandler {
      * {@link RetryPolicy#retryPost()} is honored.
      */
     public void run(ApiRunnable call, String operationName) {
-        doExecute(() -> {
+        // Wrap as a Boolean-returning ApiCall so the @NonNull return contract
+        // of doExecute is preserved. The Boolean value is discarded.
+        ApiCall<Boolean> wrapped = () -> {
             call.run();
-            return null;
-        }, operationName, false);
+            return Boolean.TRUE;
+        };
+        doExecute(wrapped, operationName, false);
     }
 
     /**
@@ -73,13 +76,14 @@ public final class RetryHandler {
      * retried when the consumer explicitly disables POST retry.
      */
     public void runPost(ApiRunnable call, String operationName) {
-        doExecute(() -> {
+        ApiCall<Boolean> wrapped = () -> {
             call.run();
-            return null;
-        }, operationName, true);
+            return Boolean.TRUE;
+        };
+        doExecute(wrapped, operationName, true);
     }
 
-    private <T> T doExecute(ApiCall<T> call, String operationName, boolean isPost) {
+    private <T> @Nullable T doExecute(ApiCall<T> call, String operationName, boolean isPost) {
         if (!policy.enabled() || (isPost && !policy.retryPost())) {
             return callOnce(call, operationName);
         }
@@ -114,7 +118,7 @@ public final class RetryHandler {
     }
 
     private record AttemptResult<T>(@Nullable T value, @Nullable KsefException exception, boolean terminal, boolean success) {
-        static <T> AttemptResult<T> success(T value) {
+        static <T> AttemptResult<T> success(@Nullable T value) {
             return new AttemptResult<>(value, null, false, true);
         }
 
@@ -133,7 +137,7 @@ public final class RetryHandler {
         return exception instanceof KsefNetworkException;
     }
 
-    private <T> T callOnce(ApiCall<T> call, String operationName) {
+    private <T> @Nullable T callOnce(ApiCall<T> call, String operationName) {
         try {
             return call.execute();
         } catch (IOException exception) {
@@ -141,7 +145,7 @@ public final class RetryHandler {
         }
     }
 
-    private void sleepBeforeRetry(int attempt, String operationName, KsefException lastException) {
+    private void sleepBeforeRetry(int attempt, String operationName, @Nullable KsefException lastException) {
         long jitteredMillis = computeBackoffMillis(attempt, lastException);
         LOGGER.warn(LOG_RETRY, attempt, policy.maxAttempts(), jitteredMillis, operationName);
         try {
@@ -152,8 +156,8 @@ public final class RetryHandler {
         }
     }
 
-    private long computeBackoffMillis(int attempt, KsefException lastException) {
-        Long serverHint = retryAfterSeconds(lastException);
+    private long computeBackoffMillis(int attempt, @Nullable KsefException lastException) {
+        @Nullable Long serverHint = retryAfterSeconds(lastException);
         if (serverHint != null) {
             long capped = Math.min(serverHint, policy.maxRetryAfterSeconds());
             return capped * MILLIS_PER_SECOND;
@@ -162,7 +166,7 @@ public final class RetryHandler {
         return ThreadLocalRandom.current().nextLong(baseMillis / JITTER_DIVISOR, baseMillis + 1);
     }
 
-    private static @Nullable Long retryAfterSeconds(KsefException exception) {
+    private static @Nullable Long retryAfterSeconds(@Nullable KsefException exception) {
         if (exception instanceof KsefRateLimitException rateLimit) {
             return rateLimit.retryAfterSeconds();
         }

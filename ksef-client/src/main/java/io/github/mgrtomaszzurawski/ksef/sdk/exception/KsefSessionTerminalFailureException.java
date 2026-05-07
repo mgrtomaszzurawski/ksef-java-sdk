@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 import java.io.Serial;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown when a KSeF online or batch session reaches a terminal status code
@@ -30,11 +31,11 @@ public final class KsefSessionTerminalFailureException extends KsefException {
 
     private final String referenceNumber;
     private final int code;
-    private final String description;
+    private final @Nullable String description;
     private final List<String> details;
 
     public KsefSessionTerminalFailureException(String referenceNumber, int code,
-                                               String description, List<String> details) {
+                                               @Nullable String description, @Nullable List<String> details) {
         super(formatMessage(referenceNumber, code, description), code, null);
         this.referenceNumber = Objects.requireNonNull(referenceNumber, "referenceNumber");
         this.code = code;
@@ -50,7 +51,7 @@ public final class KsefSessionTerminalFailureException extends KsefException {
         return code;
     }
 
-    public String description() {
+    public @Nullable String description() {
         return description;
     }
 
@@ -58,7 +59,7 @@ public final class KsefSessionTerminalFailureException extends KsefException {
         return details;
     }
 
-    private static String formatMessage(String referenceNumber, int code, String description) {
+    private static String formatMessage(String referenceNumber, int code, @Nullable String description) {
         return String.format(MESSAGE_TEMPLATE, referenceNumber, code, description);
     }
 }
