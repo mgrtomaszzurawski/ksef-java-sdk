@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Single-pass stream-through builder: invoice bytes → ZIP → SHA-256
@@ -241,7 +242,7 @@ public final class BatchPackageBuilder {
     private static final class ChunkSink extends OutputStream {
 
         private final int chunkBufferSize;
-        private byte[] chunkBuffer;
+        private byte @Nullable [] chunkBuffer;
         private final byte[] aesKey;
         private final byte[] initVector;
         private final BatchAssemblyMode mode;

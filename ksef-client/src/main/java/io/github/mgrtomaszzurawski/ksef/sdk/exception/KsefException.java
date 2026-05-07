@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.io.Serial;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Base exception for all KSeF SDK errors.
@@ -25,21 +26,21 @@ public class KsefException extends RuntimeException {
     private static final int HTTP_SERVER_ERROR_MIN = 500;
 
     private final int statusCode;
-    private final String responseBody;
+    private final @Nullable String responseBody;
 
-    public KsefException(String message, Throwable cause, int statusCode, String responseBody) {
+    public KsefException(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody) {
         super(message, cause);
         this.statusCode = statusCode;
         this.responseBody = responseBody;
     }
 
-    public KsefException(String message, int statusCode, String responseBody) {
+    public KsefException(String message, int statusCode, @Nullable String responseBody) {
         super(message);
         this.statusCode = statusCode;
         this.responseBody = responseBody;
     }
 
-    public KsefException(String message, Throwable cause) {
+    public KsefException(String message, @Nullable Throwable cause) {
         super(message, cause);
         this.statusCode = 0;
         this.responseBody = null;
@@ -49,14 +50,14 @@ public class KsefException extends RuntimeException {
         return statusCode;
     }
 
-    public String responseBody() {
+    public @Nullable String responseBody() {
         return responseBody;
     }
 
     /**
      * Factory method that maps HTTP status codes to typed exception subclasses.
      */
-    public static KsefException of(String message, Throwable cause, int statusCode, String responseBody) {
+    public static KsefException of(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody) {
         return of(message, cause, statusCode, responseBody, null);
     }
 
@@ -64,8 +65,8 @@ public class KsefException extends RuntimeException {
      * Factory method that maps HTTP status codes to typed exception subclasses,
      * preserving the server-supplied {@code Retry-After} hint on 429 responses.
      */
-    public static KsefException of(String message, Throwable cause, int statusCode,
-                                   String responseBody, Long retryAfterSeconds) {
+    public static KsefException of(String message, @Nullable Throwable cause, int statusCode,
+                                   @Nullable String responseBody, @Nullable Long retryAfterSeconds) {
         if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
             return new KsefAuthException(message, cause, statusCode, responseBody);
         }
