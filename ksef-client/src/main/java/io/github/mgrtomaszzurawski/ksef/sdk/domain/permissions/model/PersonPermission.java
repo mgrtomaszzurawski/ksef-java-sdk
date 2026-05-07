@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A person permission entry from query results.
@@ -25,13 +26,13 @@ import java.time.OffsetDateTime;
 public record PersonPermission(
         String id,
         PermissionIdentifier authorizedIdentifier,
-        PermissionIdentifier contextIdentifier,
-        PermissionIdentifier targetIdentifier,
+        @Nullable PermissionIdentifier contextIdentifier,
+        @Nullable PermissionIdentifier targetIdentifier,
         PermissionIdentifier authorIdentifier,
         String permissionScope,
         String description,
         String permissionState,
         OffsetDateTime startDate,
-        Boolean canDelegate) {
+        @Nullable Boolean canDelegate) {
 
 }

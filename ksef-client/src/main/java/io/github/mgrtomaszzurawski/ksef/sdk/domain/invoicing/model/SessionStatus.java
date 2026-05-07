@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Status of a KSeF session (online or batch).
@@ -25,10 +26,10 @@ public record SessionStatus(
         StatusInfo status,
         OffsetDateTime dateCreated,
         OffsetDateTime dateUpdated,
-        OffsetDateTime validUntil,
-        UpoInfo upo,
-        Integer invoiceCount,
-        Integer successfulInvoiceCount,
-        Integer failedInvoiceCount) {
+        @Nullable OffsetDateTime validUntil,
+        @Nullable UpoInfo upo,
+        @Nullable Integer invoiceCount,
+        @Nullable Integer successfulInvoiceCount,
+        @Nullable Integer failedInvoiceCount) {
 
 }

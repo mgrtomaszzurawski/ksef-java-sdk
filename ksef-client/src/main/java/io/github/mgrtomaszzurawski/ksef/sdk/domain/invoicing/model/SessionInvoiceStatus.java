@@ -8,6 +8,7 @@ import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Status of an invoice within a session.
@@ -31,17 +32,17 @@ import java.util.Objects;
 public record SessionInvoiceStatus(
         int ordinalNumber,
         String invoiceNumber,
-        String ksefNumber,
+        @Nullable String ksefNumber,
         String referenceNumber,
-        byte[] invoiceHash,
-        String invoiceFileName,
+        byte @Nullable [] invoiceHash,
+        @Nullable String invoiceFileName,
         OffsetDateTime acquisitionDate,
         OffsetDateTime invoicingDate,
-        OffsetDateTime permanentStorageDate,
-        URI upoDownloadUrl,
-        OffsetDateTime upoDownloadUrlExpirationDate,
-        InvoicingMode invoicingMode,
-        InvoiceStatusInfo status) {
+        @Nullable OffsetDateTime permanentStorageDate,
+        @Nullable URI upoDownloadUrl,
+        @Nullable OffsetDateTime upoDownloadUrlExpirationDate,
+        @Nullable InvoicingMode invoicingMode,
+        @Nullable InvoiceStatusInfo status) {
 
     @Override
     public boolean equals(Object o) {

@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Status of an invoice export job.
@@ -19,8 +20,8 @@ import java.time.OffsetDateTime;
  */
 public record InvoiceExportStatus(
         StatusInfo status,
-        OffsetDateTime completedDate,
-        OffsetDateTime packageExpirationDate,
-        InvoicePackage invoicePackage) {
+        @Nullable OffsetDateTime completedDate,
+        @Nullable OffsetDateTime packageExpirationDate,
+        @Nullable InvoicePackage invoicePackage) {
 
 }

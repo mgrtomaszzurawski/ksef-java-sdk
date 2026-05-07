@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Invoice metadata from a query result.
@@ -43,19 +44,19 @@ public record InvoiceMetadata(
         OffsetDateTime invoicingDate,
         OffsetDateTime acquisitionDate,
         OffsetDateTime permanentStorageDate,
-        InvoiceSeller seller,
-        InvoiceBuyer buyer,
-        Double netAmount,
-        Double grossAmount,
-        Double vatAmount,
-        String currency,
-        InvoicingMode invoicingMode,
-        InvoiceType invoiceType,
-        FormCodeInfo formCode,
-        Boolean selfInvoicing,
-        Boolean hasAttachment,
-        byte[] invoiceHash,
-        byte[] hashOfCorrectedInvoice,
+        @Nullable InvoiceSeller seller,
+        @Nullable InvoiceBuyer buyer,
+        @Nullable Double netAmount,
+        @Nullable Double grossAmount,
+        @Nullable Double vatAmount,
+        @Nullable String currency,
+        @Nullable InvoicingMode invoicingMode,
+        @Nullable InvoiceType invoiceType,
+        @Nullable FormCodeInfo formCode,
+        @Nullable Boolean selfInvoicing,
+        @Nullable Boolean hasAttachment,
+        byte @Nullable [] invoiceHash,
+        byte @Nullable [] hashOfCorrectedInvoice,
         List<InvoiceThirdSubject> thirdSubjects) {
 
     public InvoiceMetadata {
@@ -65,12 +66,12 @@ public record InvoiceMetadata(
     }
 
     @Override
-    public byte[] invoiceHash() {
+    public byte @Nullable [] invoiceHash() {
         return invoiceHash == null ? null : invoiceHash.clone();
     }
 
     @Override
-    public byte[] hashOfCorrectedInvoice() {
+    public byte @Nullable [] hashOfCorrectedInvoice() {
         return hashOfCorrectedInvoice == null ? null : hashOfCorrectedInvoice.clone();
     }
 

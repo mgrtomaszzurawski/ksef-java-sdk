@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Effective subject limits for enrollment and certificates.
  *
@@ -12,6 +14,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
  *
  * @since 1.0.0
  */
-public record SubjectLimits(Integer maxEnrollments, Integer maxCertificates) {
+public record SubjectLimits(@Nullable Integer maxEnrollments, @Nullable Integer maxCertificates) {
 
 }
