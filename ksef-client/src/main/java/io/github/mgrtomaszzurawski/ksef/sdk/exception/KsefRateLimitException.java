@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.io.Serial;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown on HTTP 429 (Too Many Requests).
@@ -18,14 +19,14 @@ public class KsefRateLimitException extends KsefException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private final Long retryAfterSeconds;
+    private final @Nullable Long retryAfterSeconds;
 
-    public KsefRateLimitException(String message, Throwable cause, int statusCode, String responseBody) {
+    public KsefRateLimitException(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody) {
         this(message, cause, statusCode, responseBody, null);
     }
 
-    public KsefRateLimitException(String message, Throwable cause, int statusCode, String responseBody,
-                                  Long retryAfterSeconds) {
+    public KsefRateLimitException(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody,
+                                  @Nullable Long retryAfterSeconds) {
         super(message, cause, statusCode, responseBody);
         this.retryAfterSeconds = retryAfterSeconds;
     }
@@ -34,7 +35,7 @@ public class KsefRateLimitException extends KsefException {
      * Server-suggested wait, in seconds, before retrying. {@code null} when the
      * server did not include a {@code Retry-After} header.
      */
-    public Long retryAfterSeconds() {
+    public @Nullable Long retryAfterSeconds() {
         return retryAfterSeconds;
     }
 }

@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.io.Serial;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown on I/O errors, timeouts, and connection failures.
@@ -17,7 +18,7 @@ public class KsefNetworkException extends KsefException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public KsefNetworkException(String message, Throwable cause) {
+    public KsefNetworkException(String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 }

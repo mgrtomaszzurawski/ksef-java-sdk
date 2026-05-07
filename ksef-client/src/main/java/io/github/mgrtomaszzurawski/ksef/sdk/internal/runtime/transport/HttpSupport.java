@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -371,7 +372,7 @@ public final class HttpSupport {
         }
     }
 
-    private static String featureHeaderValue(
+    private static @Nullable String featureHeaderValue(
             io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy policy,
             String path) {
         if (policy.upoVersion() == io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion.V4_3
@@ -452,7 +453,7 @@ public final class HttpSupport {
      * this helper also tolerates an HTTP-date by returning {@code null} when
      * the value cannot be read as a non-negative integer.
      */
-    private static Long parseRetryAfterSeconds(HttpResponse<?> response) {
+    private static @Nullable Long parseRetryAfterSeconds(HttpResponse<?> response) {
         return response.headers().firstValue(RETRY_AFTER_HEADER)
                 .flatMap(HttpSupport::parseRetryAfterValue)
                 .orElse(null);

@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.io.Serial;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown on HTTP 401 (Unauthorized) or 403 (Forbidden).
@@ -17,7 +18,7 @@ public class KsefAuthException extends KsefException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public KsefAuthException(String message, Throwable cause, int statusCode, String responseBody) {
+    public KsefAuthException(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody) {
         super(message, cause, statusCode, responseBody);
     }
 }
