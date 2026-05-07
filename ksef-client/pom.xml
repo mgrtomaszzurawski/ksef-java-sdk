@@ -49,6 +49,13 @@
         <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
         <source.plugin.version>3.3.1</source.plugin.version>
         <javadoc.plugin.version>3.11.2</javadoc.plugin.version>
+        <!--
+            ErrorProne 2.31.0 is the last release supporting JDK 17 as the
+            javac runtime. 2.32.0+ uses sealed-class APIs that require
+            JDK 21. NullAway 0.11.0 is the matching pair.
+        -->
+        <errorprone.version>2.31.0</errorprone.version>
+        <nullaway.version>0.11.0</nullaway.version>
 
         <!-- OpenAPI generator config -->
         <openapi.spec>${project.basedir}/openapi/open-api.json</openapi.spec>
@@ -198,6 +205,20 @@
             </resource>
             <resource>
                 <directory>src/main/resources</directory>
+            </resource>
+            <!--
+                Ship LICENSE.txt + THIRD-PARTY-NOTICES.md inside the JAR
+                under META-INF/ so consumers receive them with the binary
+                distribution. Required for AGPL-3.0 §5(a), Apache 2.0 §4.4
+                (Jackson/ZXing/JSpecify NOTICE), LGPL 2.1 (EU DSS).
+            -->
+            <resource>
+                <directory>${project.basedir}/..</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>LICENSE.txt</include>
+                    <include>THIRD-PARTY-NOTICES.md</include>
+                </includes>
             </resource>
         </resources>
         <plugins>
@@ -570,5 +591,66 @@
             </plugin>
         </plugins>
     </build>
+
+    <!--
+        nullaway-audit profile — opt-in NullAway + ErrorProne enforcement
+        of JSpecify @NullMarked package defaults across sdk.* code.
+        Severity is WARN: violations print to stdout but do not fail the
+        build, so a one-time audit produces a complete list. Switch to
+        ERROR via -Dnullaway.severity=ERROR once violations are fixed.
+        Activation: `mvn -Pnullaway-audit compile -pl ksef-client`.
+    -->
+    <profiles>
+        <profile>
+            <id>nullaway-audit</id>
+            <properties>
+                <nullaway.severity>WARN</nullaway.severity>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${compiler.plugin.version}</version>
+                        <configuration>
+                            <release>${java.version}</release>
+                            <encoding>UTF-8</encoding>
+                            <showWarnings>true</showWarnings>
+                            <fork>true</fork>
+                            <verbose>true</verbose>
+                            <compilerArgs>
+                                <arg>-XDcompilePolicy=simple</arg>
+                                <arg>--should-stop=ifError=FLOW</arg>
+                                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:${nullaway.severity} -XepOpt:NullAway:AnnotatedPackages=io.github.mgrtomaszzurawski.ksef.sdk -XepOpt:NullAway:JSpecifyMode=true</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
+                                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
+                                <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+                                <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+                            </compilerArgs>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>com.google.errorprone</groupId>
+                                    <artifactId>error_prone_core</artifactId>
+                                    <version>${errorprone.version}</version>
+                                </path>
+                                <path>
+                                    <groupId>com.uber.nullaway</groupId>
+                                    <artifactId>nullaway</artifactId>
+                                    <version>${nullaway.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

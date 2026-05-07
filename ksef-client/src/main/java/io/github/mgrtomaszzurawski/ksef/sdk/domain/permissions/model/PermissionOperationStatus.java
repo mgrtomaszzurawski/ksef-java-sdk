@@ -5,14 +5,15 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Status of a permission operation.
  *
- * @param status current operation status
+ * @param status current operation status (null when server omits status block)
  *
  * @since 1.0.0
  */
-public record PermissionOperationStatus(StatusInfo status) {
+public record PermissionOperationStatus(@Nullable StatusInfo status) {
 
 }

@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPer
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityQueryPermissionType;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for EU entity permissions query requests. All fields are optional.
@@ -16,8 +17,8 @@ import java.util.List;
  */
 public final class EuEntityPermissionsQueryBuilder {
 
-    private String vatUeIdentifier;
-    private String authorizedFingerprintIdentifier;
+    private @Nullable String vatUeIdentifier;
+    private @Nullable String authorizedFingerprintIdentifier;
     private final List<EuEntityQueryPermissionType> permissionTypes = new ArrayList<>();
 
     private EuEntityPermissionsQueryBuilder() { }

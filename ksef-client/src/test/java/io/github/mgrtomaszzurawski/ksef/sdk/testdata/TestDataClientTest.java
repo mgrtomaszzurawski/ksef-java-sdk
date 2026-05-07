@@ -362,7 +362,7 @@ class TestDataClientTest {
     }
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {
-        return KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
+        return KsefClient.builder().environment(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials("test-token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();

@@ -14,6 +14,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Lazy spliterator that walks KSeF list/query pagination and exposes
@@ -82,7 +83,7 @@ public final class PagedSpliterator {
      * receive the {@link CursorPage#nextCursor()} returned by the
      * previous call. Iteration stops when {@code nextCursor() == null}.
      */
-    public static <T> Stream<T> cursorStream(Function<String, CursorPage<T>> fetchPage) {
+    public static <T> Stream<T> cursorStream(Function<@Nullable String, CursorPage<T>> fetchPage) {
         Objects.requireNonNull(fetchPage, "fetchPage must not be null");
         return StreamSupport.stream(new CursorBasedSpliterator<>(fetchPage), false);
     }
@@ -135,7 +136,7 @@ public final class PagedSpliterator {
         // a Spliterator returning null from trySplit means single-thread.
         @Override
         @SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract") // canonical non-splittable Spliterator returns null, not abstract
-        public final Spliterator<T> trySplit() {
+        public final @Nullable Spliterator<T> trySplit() {
             return null;
         }
 
@@ -185,10 +186,10 @@ public final class PagedSpliterator {
 
     private static final class CursorBasedSpliterator<T> extends BaseSpliterator<T> {
 
-        private final Function<String, CursorPage<T>> fetchPage;
-        private String nextCursor;
+        private final Function<@Nullable String, CursorPage<T>> fetchPage;
+        private @Nullable String nextCursor;
 
-        CursorBasedSpliterator(Function<String, CursorPage<T>> fetchPage) {
+        CursorBasedSpliterator(Function<@Nullable String, CursorPage<T>> fetchPage) {
             this.fetchPage = fetchPage;
         }
 

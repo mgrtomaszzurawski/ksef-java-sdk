@@ -24,6 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
@@ -119,7 +120,7 @@ public final class SessionClient {
     @SuppressWarnings("PMD.ConsecutiveAppendsShouldReuse")
     private io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw querySessionsPage(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter,
-            String continuationToken) {
+            @Nullable String continuationToken) {
         LOGGER.debug(LOG_CALL, OP_QUERY_SESSIONS);
         String token = http.requireToken();
         StringBuilder path = new StringBuilder(ApiPaths.SESSIONS).append(QUERY_PAGE_SIZE).append(SESSION_INVOICES_PAGE_SIZE);
@@ -151,7 +152,7 @@ public final class SessionClient {
                         HEADER_CONTINUATION_TOKEN, continuationToken);
     }
 
-    private static void appendDateParam(StringBuilder path, String name, java.time.OffsetDateTime value) {
+    private static void appendDateParam(StringBuilder path, String name, java.time.@Nullable OffsetDateTime value) {
         if (value != null) {
             path.append(QUERY_PARAM_SEPARATOR).append(name).append(QUERY_PARAM_EQUALS)
                     .append(java.net.URLEncoder.encode(value.toString(), java.nio.charset.StandardCharsets.UTF_8));
@@ -273,7 +274,7 @@ public final class SessionClient {
      * previous page (Codex round-9 manual-validation A.2.3). The token is
      * forwarded in the {@code x-continuation-token} request header per spec.
      */
-    public SessionInvoices getInvoicesPage(String referenceNumber, String continuationToken) {
+    public SessionInvoices getInvoicesPage(String referenceNumber, @Nullable String continuationToken) {
         LOGGER.debug(LOG_CALL_REF, OP_GET_INVOICES, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = http.requireToken();
@@ -348,7 +349,7 @@ public final class SessionClient {
         return getFailedInvoicesPage(referenceNumber, null);
     }
 
-    public SessionInvoices getFailedInvoicesPage(String referenceNumber, String continuationToken) {
+    public SessionInvoices getFailedInvoicesPage(String referenceNumber, @Nullable String continuationToken) {
         LOGGER.debug(LOG_CALL_REF, OP_GET_FAILED, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = http.requireToken();

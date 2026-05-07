@@ -20,6 +20,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Internal mappers from generated {@code *Raw} types to public tokens
@@ -99,7 +100,7 @@ public final class TokensMappers {
                 rawValue.getStatusDetails() != null ? List.copyOf(rawValue.getStatusDetails()) : List.of());
     }
 
-    public static TokenPermissionType toTokenPermissionType(TokenPermissionTypeRaw rawValue) {
+    public static @Nullable TokenPermissionType toTokenPermissionType(@Nullable TokenPermissionTypeRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -114,7 +115,7 @@ public final class TokensMappers {
         };
     }
 
-    public static TokenStatus toTokenStatus(AuthenticationTokenStatusRaw rawValue) {
+    public static @Nullable TokenStatus toTokenStatus(@Nullable AuthenticationTokenStatusRaw rawValue) {
         if (rawValue == null) {
             return null;
         }

@@ -8,6 +8,7 @@ import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A downloadable part of an invoice export package.
@@ -27,13 +28,13 @@ import java.util.Objects;
 public record InvoicePackagePart(
         int ordinalNumber,
         String partName,
-        String method,
+        @Nullable String method,
         URI url,
-        Long partSize,
-        byte[] partHash,
-        Long encryptedPartSize,
-        byte[] encryptedPartHash,
-        OffsetDateTime expirationDate) {
+        @Nullable Long partSize,
+        byte @Nullable [] partHash,
+        @Nullable Long encryptedPartSize,
+        byte @Nullable [] encryptedPartHash,
+        @Nullable OffsetDateTime expirationDate) {
 
     public InvoicePackagePart {
         partHash = partHash == null ? null : partHash.clone();
@@ -41,12 +42,12 @@ public record InvoicePackagePart(
     }
 
     @Override
-    public byte[] partHash() {
+    public byte @Nullable [] partHash() {
         return partHash == null ? null : partHash.clone();
     }
 
     @Override
-    public byte[] encryptedPartHash() {
+    public byte @Nullable [] encryptedPartHash() {
         return encryptedPartHash == null ? null : encryptedPartHash.clone();
     }
 

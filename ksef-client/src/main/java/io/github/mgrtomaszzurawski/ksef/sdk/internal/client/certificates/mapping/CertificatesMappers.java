@@ -34,6 +34,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCe
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrievedCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Internal mappers from generated {@code *Raw} types to public certificates
@@ -95,7 +96,7 @@ public final class CertificatesMappers {
                 rawValue.getCertificateSerialNumber());
     }
 
-    public static CertificateLimit toCertificateLimit(CertificateLimitRaw rawValue) {
+    public static @Nullable CertificateLimit toCertificateLimit(@Nullable CertificateLimitRaw rawValue) {
         if (rawValue == null) {
             return null;
         }

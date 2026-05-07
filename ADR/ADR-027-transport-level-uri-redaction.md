@@ -48,7 +48,7 @@ Call sites that route through it:
 - `KsefException` subclasses that include the URI in `getMessage()`.
 
 Static analysis enforces it. A custom PMD rule would be ideal; in
-the absence of one, Codex review and a `Grep` for raw `request.uri()`
+the absence of one, code review and a `grep` for raw `request.uri()`
 in log/exception code paths catches drift. New transport-touching
 code MUST route through `UriRedaction` from the first commit.
 

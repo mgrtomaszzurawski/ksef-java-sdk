@@ -83,7 +83,6 @@ public final class TestDataRunner implements DemoRunner {
 
     private static final String ENV_DEMO = "api-demo";
     private static final String ENV_TEST = "test";
-    private static final String ENV_PREPROD = "preprod";
 
     private static final String SUBJECT_DESCRIPTION = "SDK Demo test subject - will be removed";
     private static final String PERSON_DESCRIPTION = "SDK Demo test person - will be removed";
@@ -398,7 +397,7 @@ public final class TestDataRunner implements DemoRunner {
             return false;
         }
         String lower = environment.toLowerCase(Locale.ROOT);
-        return lower.contains(ENV_DEMO) || lower.contains(ENV_TEST) || lower.contains(ENV_PREPROD);
+        return lower.contains(ENV_DEMO) || lower.contains(ENV_TEST);
     }
 
     /**

@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSessionLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSessionLimits;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Effective context limits for online and batch sessions.
@@ -15,6 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession
  *
  * @since 1.0.0
  */
-public record ContextLimits(OnlineSessionLimits onlineSession, BatchSessionLimits batchSession) {
+public record ContextLimits(@Nullable OnlineSessionLimits onlineSession, @Nullable BatchSessionLimits batchSession) {
 
 }

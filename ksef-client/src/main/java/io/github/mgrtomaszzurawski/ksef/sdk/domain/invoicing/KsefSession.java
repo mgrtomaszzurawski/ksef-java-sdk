@@ -412,7 +412,7 @@ public final class KsefSession implements AutoCloseable {
         throw new KsefSessionPollingTimeoutException(referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
-    private Integer logStatusTransition(Integer lastCode, Integer code, int attempt) {
+    private @Nullable Integer logStatusTransition(@Nullable Integer lastCode, @Nullable Integer code, int attempt) {
         if (code != null && !code.equals(lastCode)) {
             LOGGER.debug(LOG_STATUS_TRANSITION, referenceNumber, lastCode, code, attempt + 1);
             return code;

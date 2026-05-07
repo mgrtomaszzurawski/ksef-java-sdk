@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import java.nio.file.Path;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Consumer-implemented sink that receives each invoice during
@@ -62,5 +63,5 @@ public interface InvoiceSink {
      *     {@code null} when the SDK could not match an XML file to this
      *     metadata entry
      */
-    void accept(KsefNumber ksefNumber, InvoiceMetadata metadata, Path xmlPath);
+    void accept(KsefNumber ksefNumber, InvoiceMetadata metadata, @Nullable Path xmlPath);
 }

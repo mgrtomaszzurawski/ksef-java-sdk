@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF certificate query requests. All fields are optional filters.
@@ -16,11 +17,11 @@ import java.time.OffsetDateTime;
  */
 public final class CertificateQueryBuilder {
 
-    private String serialNumber;
-    private String name;
-    private KsefCertificateType type;
-    private CertificateStatus status;
-    private OffsetDateTime expiresAfter;
+    private @Nullable String serialNumber;
+    private @Nullable String name;
+    private @Nullable KsefCertificateType type;
+    private @Nullable CertificateStatus status;
+    private @Nullable OffsetDateTime expiresAfter;
 
     private CertificateQueryBuilder() { }
 

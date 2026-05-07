@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationMethodInfoRaw;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Detailed information about the authentication method.
@@ -16,11 +17,11 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationMethodInfoRaw
  * @since 1.0.0
  */
 public record AuthenticationMethodInfo(
-        AuthenticationMethodCategory category,
-        String code,
-        String displayName) {
+        @Nullable AuthenticationMethodCategory category,
+        @Nullable String code,
+        @Nullable String displayName) {
 
-    public static AuthenticationMethodInfo from(AuthenticationMethodInfoRaw raw) {
+    public static @Nullable AuthenticationMethodInfo from(@Nullable AuthenticationMethodInfoRaw raw) {
         if (raw == null) {
             return null;
         }

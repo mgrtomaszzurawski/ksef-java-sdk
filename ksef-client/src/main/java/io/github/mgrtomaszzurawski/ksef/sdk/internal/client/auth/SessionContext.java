@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth;
 
 import java.time.OffsetDateTime;
 import java.util.concurrent.atomic.AtomicReference;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thread-safe holder for KSeF session state.
@@ -60,7 +61,7 @@ public final class SessionContext {
      * Refresh token captured from the last redeem-tokens response, or
      * {@code null} when no refresh token is available.
      */
-    public String refreshToken() {
+    public @Nullable String refreshToken() {
         SessionState current = state.get();
         return current == null ? null : current.refreshToken();
     }
@@ -115,6 +116,6 @@ public final class SessionContext {
     private record SessionState(String token,
                                 String referenceNumber,
                                 OffsetDateTime expiry,
-                                String refreshToken) {
+                                @Nullable String refreshToken) {
     }
 }

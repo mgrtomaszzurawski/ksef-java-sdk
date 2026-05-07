@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.io.Serial;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown by {@code KsefSession.close()} / {@code KsefBatchSession.close()}
@@ -30,10 +31,10 @@ public final class KsefSessionPollingTimeoutException extends KsefException {
 
     private final String referenceNumber;
     private final int attempts;
-    private final Integer lastObservedStatusCode;
+    private final @Nullable Integer lastObservedStatusCode;
 
     public KsefSessionPollingTimeoutException(String referenceNumber, int attempts,
-                                              Integer lastObservedStatusCode) {
+                                              @Nullable Integer lastObservedStatusCode) {
         super(formatMessage(referenceNumber, attempts, lastObservedStatusCode), (Throwable) null);
         this.referenceNumber = Objects.requireNonNull(referenceNumber, "referenceNumber");
         this.attempts = attempts;
@@ -48,12 +49,12 @@ public final class KsefSessionPollingTimeoutException extends KsefException {
         return attempts;
     }
 
-    public Integer lastObservedStatusCode() {
+    public @Nullable Integer lastObservedStatusCode() {
         return lastObservedStatusCode;
     }
 
     private static String formatMessage(String referenceNumber, int attempts,
-                                        Integer lastObservedStatusCode) {
+                                        @Nullable Integer lastObservedStatusCode) {
         String code = lastObservedStatusCode == null ? NO_STATUS_OBSERVED : String.valueOf(lastObservedStatusCode);
         return String.format(MESSAGE_TEMPLATE, referenceNumber, attempts, code);
     }

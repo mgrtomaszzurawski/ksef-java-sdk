@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestRateLimitValues;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestRateLimitsRequest;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF test rate limits override requests.
@@ -17,18 +18,18 @@ public final class TestRateLimitsBuilder {
 
     private static final String ERR_NO_LIMITS_SET = "at least one rate limit category must be set";
 
-    private TestRateLimitValues onlineSession;
-    private TestRateLimitValues batchSession;
-    private TestRateLimitValues invoiceSend;
-    private TestRateLimitValues invoiceStatus;
-    private TestRateLimitValues sessionList;
-    private TestRateLimitValues sessionInvoiceList;
-    private TestRateLimitValues sessionMisc;
-    private TestRateLimitValues invoiceMetadata;
-    private TestRateLimitValues invoiceExport;
-    private TestRateLimitValues invoiceExportStatus;
-    private TestRateLimitValues invoiceDownload;
-    private TestRateLimitValues other;
+    private @Nullable TestRateLimitValues onlineSession;
+    private @Nullable TestRateLimitValues batchSession;
+    private @Nullable TestRateLimitValues invoiceSend;
+    private @Nullable TestRateLimitValues invoiceStatus;
+    private @Nullable TestRateLimitValues sessionList;
+    private @Nullable TestRateLimitValues sessionInvoiceList;
+    private @Nullable TestRateLimitValues sessionMisc;
+    private @Nullable TestRateLimitValues invoiceMetadata;
+    private @Nullable TestRateLimitValues invoiceExport;
+    private @Nullable TestRateLimitValues invoiceExportStatus;
+    private @Nullable TestRateLimitValues invoiceDownload;
+    private @Nullable TestRateLimitValues other;
 
     private TestRateLimitsBuilder() { }
 

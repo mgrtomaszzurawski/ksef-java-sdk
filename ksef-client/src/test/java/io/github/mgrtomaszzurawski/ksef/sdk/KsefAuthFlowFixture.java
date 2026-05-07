@@ -84,7 +84,7 @@ public final class KsefAuthFlowFixture {
             throw new IllegalStateException("Failed to generate test RSA keypair for auth fixture", ex);
         }
         stubAllAuthEndpoints(accessToken, certs);
-        return KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
+        return KsefClient.builder().environment(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(DEFAULT_TEST_KSEF_TOKEN, nip))
                 .retryPolicy(retryPolicy)
                 .build();

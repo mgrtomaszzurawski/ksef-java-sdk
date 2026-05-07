@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermission
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF test permissions grant requests.
@@ -38,8 +39,8 @@ public final class TestPermissionsGrantBuilder {
     private static final String DESC_SUBUNIT_MANAGE = "SubunitManage";
 
     private final String contextNip;
-    private TestDataAuthorizedIdentifierType authorizedType;
-    private String authorizedValue;
+    private @Nullable TestDataAuthorizedIdentifierType authorizedType;
+    private @Nullable String authorizedValue;
     private final List<TestDataPermission> permissions = new ArrayList<>();
 
     private TestPermissionsGrantBuilder(String contextNip) {

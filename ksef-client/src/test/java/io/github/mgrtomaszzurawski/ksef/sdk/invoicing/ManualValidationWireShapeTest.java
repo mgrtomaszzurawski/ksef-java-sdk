@@ -106,7 +106,7 @@ class ManualValidationWireShapeTest {
                     .currencyCodes("PLN", "EUR")
                     .formType(InvoiceFormType.FA)
                     .invoiceTypes(InvoiceType.VAT, InvoiceType.KOR);
-            client.invoices().queryMetadata(query);
+            client.invoices().queryInvoicesByMetadata(query);
 
             verify(postRequestedFor(urlPathEqualTo(QUERY_METADATA_PATH))
                     .withRequestBody(matchingJsonPath("$.amount.type", equalTo("Brutto")))
@@ -234,7 +234,7 @@ class ManualValidationWireShapeTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .permanentStorageDateFrom(OffsetDateTime.parse("2026-04-01T00:00:00Z"));
-            client.invoices().streamMetadata(query).toList();
+            client.invoices().streamInvoicesByMetadata(query).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(QUERY_METADATA_PATH)));
             assertEquals(2, requests.size());

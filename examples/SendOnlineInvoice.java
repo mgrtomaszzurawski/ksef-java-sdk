@@ -5,16 +5,20 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Example: open an online KSeF session, send a single invoice, retrieve the UPO.
+ * Reference code (not a runnable script): adapt to your application.
  *
- * Required env vars:
+ * What this shows:
+ *   Open an online KSeF session, send a single invoice, retrieve the UPO.
+ *
+ * Side effects on KSeF:
+ *   Files a real legally-binding invoice. Do not run against PROD without
+ *   understanding the consequences.
+ *
+ * Inputs the snippet expects (read from env vars when run as-is):
  *   KSEF_TOKEN        — pre-issued KSeF token
  *   KSEF_NIP          — taxpayer NIP (10 digits)
- *   KSEF_INVOICE_XML  — path to a FA(3) invoice XML file (FormCode.FA2 is
- *                       only valid on TEST environment for back-compat)
- *
- * Optional:
- *   KSEF_ENV          — TEST | DEMO | PREPROD | PROD (default: TEST)
+ *   KSEF_INVOICE_XML  — path to a FA(3) invoice XML file
+ *   KSEF_ENV          — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -37,7 +41,7 @@ public final class SendOnlineInvoice {
 
         byte[] invoiceXml = Files.readAllBytes(invoicePath);
 
-        try (KsefClient client = KsefClient.builder(environment)
+        try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
@@ -74,7 +78,6 @@ public final class SendOnlineInvoice {
         return switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
             case "DEMO" -> KsefEnvironment.DEMO;
-            case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> KsefEnvironment.custom(envName);
         };

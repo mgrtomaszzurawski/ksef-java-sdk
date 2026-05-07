@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.RateLimitValues;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Internal mappers from generated {@code *Raw} types to public limits
@@ -48,7 +49,7 @@ public final class LimitsMappers {
                 InvoicingMappers.toBatchSessionLimits(rawValue.getBatchSession()));
     }
 
-    public static RateLimitValues toRateLimitValues(EffectiveApiRateLimitValuesRaw rawValue) {
+    public static @Nullable RateLimitValues toRateLimitValues(@Nullable EffectiveApiRateLimitValuesRaw rawValue) {
         if (rawValue == null) {
             return null;
         }

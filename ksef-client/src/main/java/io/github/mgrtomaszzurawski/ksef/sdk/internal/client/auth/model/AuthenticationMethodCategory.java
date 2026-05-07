@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationMethodCategoryRaw;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Category of authentication method used in KSeF.
@@ -18,7 +19,7 @@ public enum AuthenticationMethodCategory {
     TOKEN,
     OTHER;
 
-    public static AuthenticationMethodCategory from(AuthenticationMethodCategoryRaw raw) {
+    public static @Nullable AuthenticationMethodCategory from(@Nullable AuthenticationMethodCategoryRaw raw) {
         if (raw == null) {
             return null;
         }

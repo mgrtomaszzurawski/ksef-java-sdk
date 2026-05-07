@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Public auth-session DTO — single entry returned by
@@ -39,10 +40,10 @@ import java.time.OffsetDateTime;
 public record AuthSession(
         String referenceNumber,
         OffsetDateTime startDate,
-        String authenticationMethod,
-        StatusInfo status,
+        @Nullable String authenticationMethod,
+        @Nullable StatusInfo status,
         boolean tokenRedeemed,
-        OffsetDateTime lastTokenRefreshDate,
-        OffsetDateTime refreshTokenValidUntil,
+        @Nullable OffsetDateTime lastTokenRefreshDate,
+        @Nullable OffsetDateTime refreshTokenValidUntil,
         boolean current) {
 }

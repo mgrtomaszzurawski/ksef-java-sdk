@@ -111,7 +111,7 @@ public final class PeppolProviderRunner implements DemoRunner {
         SelfSignedCerts.GeneratedCertificate cert = SelfSignedCerts.forPeppolId(peppolId);
         KsefCertificateCredentials creds = new KsefCertificateCredentials(
                 cert.certificate(), cert.privateKey(), KsefIdentifier.peppolId(peppolId));
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(envUrl))
+        try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(envUrl))
                 .credentials(creds)
                 .retryPolicy(io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy.builder().build())
                 .build()) {
@@ -167,7 +167,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                 cert.certificate(), cert.privateKey(), KsefIdentifier.peppolId(peppolId));
 
         String invoiceRef = null;
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(context.environment()))
+        try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(context.environment()))
                 .credentials(creds)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {

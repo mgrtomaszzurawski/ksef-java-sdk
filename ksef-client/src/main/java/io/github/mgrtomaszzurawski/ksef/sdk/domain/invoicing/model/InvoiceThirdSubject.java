@@ -4,20 +4,22 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Third subject (mediator, representative) on an invoice.
  *
- * @param identifierType type of identifier
- * @param identifierValue identifier value
- * @param name subject name (may be null)
- * @param role role code of the third subject
+ * @param identifierType type of identifier (null when no identifier was supplied)
+ * @param identifierValue identifier value (null when no identifier)
+ * @param name subject name (null when not provided)
+ * @param role role code of the third subject (null when not provided)
  *
  * @since 1.0.0
  */
 public record InvoiceThirdSubject(
-        ThirdSubjectIdentifierType identifierType,
-        String identifierValue,
-        String name,
-        Integer role) {
+        @Nullable ThirdSubjectIdentifierType identifierType,
+        @Nullable String identifierValue,
+        @Nullable String name,
+        @Nullable Integer role) {
 
 }

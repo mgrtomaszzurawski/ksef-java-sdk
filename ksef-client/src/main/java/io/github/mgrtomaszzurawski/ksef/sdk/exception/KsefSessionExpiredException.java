@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.io.Serial;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown when a KSeF session has expired or been terminated.
@@ -18,7 +19,7 @@ public class KsefSessionExpiredException extends KsefAuthException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public KsefSessionExpiredException(String message, Throwable cause, int statusCode, String responseBody) {
+    public KsefSessionExpiredException(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody) {
         super(message, cause, statusCode, responseBody);
     }
 }

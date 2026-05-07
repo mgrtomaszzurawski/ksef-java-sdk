@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Effective API rate limits for all operation types.
  *
@@ -23,17 +25,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
  * @since 1.0.0
  */
 public record ApiRateLimits(
-        RateLimitValues onlineSession,
-        RateLimitValues batchSession,
-        RateLimitValues invoiceSend,
-        RateLimitValues invoiceStatus,
-        RateLimitValues sessionList,
-        RateLimitValues sessionInvoiceList,
-        RateLimitValues sessionMisc,
-        RateLimitValues invoiceMetadata,
-        RateLimitValues invoiceExport,
-        RateLimitValues invoiceExportStatus,
-        RateLimitValues invoiceDownload,
-        RateLimitValues other) {
+        @Nullable RateLimitValues onlineSession,
+        @Nullable RateLimitValues batchSession,
+        @Nullable RateLimitValues invoiceSend,
+        @Nullable RateLimitValues invoiceStatus,
+        @Nullable RateLimitValues sessionList,
+        @Nullable RateLimitValues sessionInvoiceList,
+        @Nullable RateLimitValues sessionMisc,
+        @Nullable RateLimitValues invoiceMetadata,
+        @Nullable RateLimitValues invoiceExport,
+        @Nullable RateLimitValues invoiceExportStatus,
+        @Nullable RateLimitValues invoiceDownload,
+        @Nullable RateLimitValues other) {
 
 }

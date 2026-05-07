@@ -31,7 +31,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 
 byte[] invoiceXml = ...;
 
-try (KsefClient client = KsefClient.builder(KsefEnvironment.TEST)
+try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.TEST)
         .credentials(new KsefTokenCredentials("your-ksef-token", "1234567890"))
         .build()) {
     client.authenticate();
@@ -81,7 +81,6 @@ plain `String` for ergonomics.
 ```java
 KsefEnvironment.TEST                            // https://api-test.ksef.mf.gov.pl
 KsefEnvironment.DEMO                            // https://api-demo.ksef.mf.gov.pl
-KsefEnvironment.PREPROD                         // https://api-preprod.ksef.mf.gov.pl
 KsefEnvironment.PROD                            // https://api.ksef.mf.gov.pl
 KsefEnvironment.custom("https://...")           // self-hosted / staging
 ```
@@ -113,7 +112,7 @@ authentication flow under the hood.
 ## Builder options
 
 ```java
-KsefClient.builder(KsefEnvironment.TEST)
+KsefClient.builder().environment(KsefEnvironment.TEST)
         .credentials(...)
         .connectTimeout(Duration.ofSeconds(10))    // TCP connect
         .readTimeout(Duration.ofSeconds(30))        // per-request response wait

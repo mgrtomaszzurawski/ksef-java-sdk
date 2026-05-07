@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for invoice metadata query filters.
@@ -33,20 +34,20 @@ public final class InvoiceQueryBuilder {
 
     private final InvoiceQuerySubjectType subjectType;
     private InvoiceQueryDateType dateType = InvoiceQueryDateType.INVOICING;
-    private OffsetDateTime dateFrom;
-    private OffsetDateTime dateTo;
-    private String ksefNumber;
-    private String invoiceNumber;
-    private String sellerNip;
-    private InvoicingMode invoicingMode;
-    private Boolean selfInvoicing;
-    private Boolean hasAttachment;
+    private @Nullable OffsetDateTime dateFrom;
+    private @Nullable OffsetDateTime dateTo;
+    private @Nullable String ksefNumber;
+    private @Nullable String invoiceNumber;
+    private @Nullable String sellerNip;
+    private @Nullable InvoicingMode invoicingMode;
+    private @Nullable Boolean selfInvoicing;
+    private @Nullable Boolean hasAttachment;
     private boolean restrictToPermanentStorageHwm;
-    private InvoiceQueryAmount amount;
-    private InvoiceQueryBuyerIdentifier buyerIdentifier;
-    private List<String> currencyCodes;
-    private InvoiceFormType formType;
-    private List<InvoiceType> invoiceTypes;
+    private @Nullable InvoiceQueryAmount amount;
+    private @Nullable InvoiceQueryBuyerIdentifier buyerIdentifier;
+    private @Nullable List<String> currencyCodes;
+    private @Nullable InvoiceFormType formType;
+    private @Nullable List<InvoiceType> invoiceTypes;
 
     private InvoiceQueryBuilder(InvoiceQuerySubjectType subjectType) {
         this.subjectType = subjectType;

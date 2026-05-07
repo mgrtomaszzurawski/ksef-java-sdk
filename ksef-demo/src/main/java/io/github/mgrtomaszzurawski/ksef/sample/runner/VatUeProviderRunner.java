@@ -160,7 +160,7 @@ public final class VatUeProviderRunner implements DemoRunner {
                 euCert.certificate(), euCert.privateKey(),
                 KsefIdentifier.nipVatUe(nipVatUe),
                 CertificateSubjectIdentifier.fingerprint(fingerprintHex));
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(context.environment()))
+        try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(context.environment()))
                 .credentials(creds)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {

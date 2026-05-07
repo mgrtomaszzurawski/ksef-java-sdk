@@ -5,19 +5,22 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Example: enroll a new certificate from a CSR, poll until the serial appears,
- * then revoke. Burns one cert quota slot per run (max 12/month, max 6 active).
+ * Reference code (not a runnable script): adapt to your application.
  *
- * Authentication uses XAdES because cert-management endpoints reject token-only auth.
+ * What this shows:
+ *   Enroll a new certificate from a CSR, poll until the serial appears, then
+ *   revoke. Authentication uses XAdES because cert-management endpoints reject
+ *   token-only auth.
  *
- * Required env vars:
+ * Side effects on KSeF:
+ *   Burns one cert quota slot per run (max 12/month, max 6 active per taxpayer).
+ *
+ * Inputs the snippet expects (read from env vars when run as-is):
  *   KSEF_P12_FILE     — path to PKCS#12 keystore
  *   KSEF_P12_PASSWORD — keystore password
  *   KSEF_NIP          — taxpayer NIP (10 digits)
- *   KSEF_CSR_DER      — path to a PKCS#10 CSR in DER format (build one with openssl req)
- *
- * Optional:
- *   KSEF_ENV          — TEST | DEMO | PREPROD | PROD (default: TEST)
+ *   KSEF_CSR_DER      — path to a PKCS#10 CSR in DER format
+ *   KSEF_ENV          — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -45,7 +48,7 @@ public final class EnrollAndRevokeCertificate {
 
         byte[] csrDer = Files.readAllBytes(csrPath);
 
-        try (KsefClient client = KsefClient.builder(environment)
+        try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefPkcs12Credentials(p12Path, p12Password, nip))
                 .build()) {
 
@@ -102,7 +105,6 @@ public final class EnrollAndRevokeCertificate {
         return switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
             case "DEMO" -> KsefEnvironment.DEMO;
-            case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> KsefEnvironment.custom(envName);
         };

@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An entity role entry from query results.
@@ -12,7 +13,7 @@ import java.time.OffsetDateTime;
  * @since 1.0.0
  */
 public record EntityRole(
-        PermissionIdentifier parentEntityIdentifier,
+        @Nullable PermissionIdentifier parentEntityIdentifier,
         String role,
         String description,
         OffsetDateTime startDate) {

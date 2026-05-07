@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * List of invoices within a session.
@@ -14,6 +15,6 @@ import java.util.List;
  *
  * @since 1.0.0
  */
-public record SessionInvoices(String continuationToken, List<SessionInvoiceStatus> invoices) {
+public record SessionInvoices(@Nullable String continuationToken, List<SessionInvoiceStatus> invoices) {
 
 }

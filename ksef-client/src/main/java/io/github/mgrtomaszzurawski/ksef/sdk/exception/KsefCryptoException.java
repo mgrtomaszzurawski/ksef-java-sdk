@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.io.Serial;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown on encryption or signing failures.
@@ -16,7 +17,7 @@ public class KsefCryptoException extends KsefException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public KsefCryptoException(String message, Throwable cause) {
+    public KsefCryptoException(String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 }

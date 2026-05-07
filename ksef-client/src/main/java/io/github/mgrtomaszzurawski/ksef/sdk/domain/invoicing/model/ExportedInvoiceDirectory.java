@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * File-backed result of
@@ -28,7 +29,7 @@ import java.util.Objects;
  */
 public record ExportedInvoiceDirectory(
         Path outputDirectory,
-        Path metadataJson,
+        @Nullable Path metadataJson,
         Map<String, Path> invoiceXmls) {
 
     private static final String ERR_NULL_DIR = "outputDirectory must not be null";
@@ -50,7 +51,7 @@ public record ExportedInvoiceDirectory(
     /**
      * On-disk path for the named invoice XML, or {@code null} if absent.
      */
-    public Path invoiceXml(String fileName) {
+    public @Nullable Path invoiceXml(String fileName) {
         return invoiceXmls.get(fileName);
     }
 }

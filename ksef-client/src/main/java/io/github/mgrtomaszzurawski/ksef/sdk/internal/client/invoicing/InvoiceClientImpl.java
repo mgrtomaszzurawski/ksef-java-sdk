@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingRequestMappers;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
@@ -68,7 +69,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
     private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
     private static final String ERR_TRUNCATED_NO_CURSOR =
-            "streamMetadata: server returned isTruncated=true but no usable date cursor on the last record "
+            "streamInvoicesByMetadata: server returned isTruncated=true but no usable date cursor on the last record "
                     + "for the selected dateType axis — cannot advance pagination safely";
     private static final String CERT_TYPE_X509 = "X.509";
     /** Spec-defined maximum page size for {@code POST /invoices/query/metadata}. */
@@ -112,7 +113,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      * @return paginated list of invoice metadata
      */
     @Override
-    public InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query) {
+    public InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryBuilder query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         return doQueryMetadata(InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build()));
@@ -141,7 +142,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      * result completeness.
      */
     @Override
-    public java.util.stream.Stream<InvoiceMetadata> streamMetadata(InvoiceQueryBuilder query) {
+    public java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryBuilder query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build());
@@ -158,7 +159,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
         private final io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType;
         private final java.util.Deque<InvoiceMetadata> buffer = new java.util.ArrayDeque<>();
         private int pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
-        private java.time.OffsetDateTime previousCursor;
+        private java.time.@Nullable OffsetDateTime previousCursor;
         private boolean exhausted;
 
         MetadataPageIterator(InvoiceQueryFiltersRaw filters,
@@ -290,7 +291,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      * records (defensive — should not happen on a truncated page in
      * practice).
      */
-    private static java.time.OffsetDateTime lastRecordCursor(InvoiceMetadataResult page,
+    private static java.time.@Nullable OffsetDateTime lastRecordCursor(InvoiceMetadataResult page,
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType) {
         if (page.invoices() == null || page.invoices().isEmpty()) {
             return null;

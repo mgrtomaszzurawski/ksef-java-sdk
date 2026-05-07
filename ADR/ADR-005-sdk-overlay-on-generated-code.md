@@ -6,7 +6,7 @@
 
 ## Context
 
-Same pattern as NoviCloud SDK (NoviCloud ADR-005). Generated code from OpenAPI is functional but not ergonomic: mutable POJOs, no validation, no retry, no session awareness, no exception mapping.
+Generated code from OpenAPI is functional but not ergonomic: mutable POJOs, no validation, no retry, no session awareness, no exception mapping.
 
 ## Decision
 
@@ -28,12 +28,12 @@ Consumers never import from `client.*` packages.
 - JPMS module-info.java does NOT export `client.*` packages
 - Mapping code (`from()` factories) must be maintained when spec changes — but this is mechanical and verifiable with tests
 
-## Differences from NoviCloud
+## Scope
 
-NoviCloud had 18 CRUD endpoints with uniform structure. KSeF has:
+KSeF has:
 - Complex auth flows (multi-step challenge-response)
 - Session lifecycle (open → operate → close)
 - Encryption (crypto wrapping of invoice payloads)
 - Heterogeneous operations (not just CRUD)
 
-The overlay will be thicker and more varied than NoviCloud's uniform Client+Builder triplet.
+The overlay is therefore thicker and more varied than a uniform Client+Builder triplet would be.

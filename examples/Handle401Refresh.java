@@ -5,19 +5,21 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Example: demonstrate the SDK's automatic re-authentication on HTTP 401.
+ * Reference code (not a runnable script): adapt to your application.
  *
- * The SDK transparently re-authenticates when the access token expires —
- * the consumer doesn't need to wrap calls in try/catch for token refresh.
- * This example forcibly invalidates the session and shows that the next
- * call still succeeds.
+ * What this shows:
+ *   The SDK transparently re-authenticates when the access token expires —
+ *   the consumer doesn't need to wrap calls in try/catch for token refresh.
+ *   The snippet forcibly invalidates the session and shows that the next
+ *   call still succeeds.
  *
- * Required env vars:
+ * Side effects on KSeF:
+ *   Performs auth + a read-only call.
+ *
+ * Inputs the snippet expects (read from env vars when run as-is):
  *   KSEF_TOKEN — pre-issued KSeF token
  *   KSEF_NIP   — taxpayer NIP (10 digits)
- *
- * Optional:
- *   KSEF_ENV   — TEST | DEMO | PREPROD | PROD (default: TEST)
+ *   KSEF_ENV   — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -33,7 +35,7 @@ public final class Handle401Refresh {
         String nip = requireEnv("KSEF_NIP");
         KsefEnvironment environment = resolveEnv(System.getenv("KSEF_ENV"));
 
-        try (KsefClient client = KsefClient.builder(environment)
+        try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
@@ -74,7 +76,6 @@ public final class Handle401Refresh {
         return switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
             case "DEMO" -> KsefEnvironment.DEMO;
-            case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> KsefEnvironment.custom(envName);
         };

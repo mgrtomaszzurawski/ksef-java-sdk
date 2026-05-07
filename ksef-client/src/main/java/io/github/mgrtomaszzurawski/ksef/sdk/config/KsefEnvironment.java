@@ -12,7 +12,6 @@ public final class KsefEnvironment {
 
     private static final String TEST_URL = "https://api-test.ksef.mf.gov.pl/v2";
     private static final String DEMO_URL = "https://api-demo.ksef.mf.gov.pl/v2";
-    private static final String PREPROD_URL = "https://api-preprod.ksef.mf.gov.pl/v2";
     private static final String PROD_URL = "https://api.ksef.mf.gov.pl/v2";
     private static final String NULL_URL_MESSAGE = "baseUrl must not be null";
     private static final String INVALID_SCHEME_MESSAGE = "baseUrl must start with http:// or https://";
@@ -23,14 +22,6 @@ public final class KsefEnvironment {
     public static final KsefEnvironment TEST = new KsefEnvironment(TEST_URL);
     /** DEMO environment — pre-production preview; rejects FA(2). */
     public static final KsefEnvironment DEMO = new KsefEnvironment(DEMO_URL);
-    /**
-     * PREPROD host (api-preprod). Not listed in
-     * {@code ksef-docs/srodowiska.md} (which documents only TEST, DEMO,
-     * and PROD). Provided for completeness against historical KSeF
-     * deployments — the host may not be reachable at all times. Prefer
-     * {@link #DEMO} for pre-production validation.
-     */
-    public static final KsefEnvironment PREPROD = new KsefEnvironment(PREPROD_URL);
     /** PROD environment — production KSeF; rejects FA(2). */
     public static final KsefEnvironment PROD = new KsefEnvironment(PROD_URL);
 

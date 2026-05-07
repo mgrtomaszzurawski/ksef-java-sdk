@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
 
 import java.nio.file.Path;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Where the SDK should assemble + encrypt batch parts before they get
@@ -69,7 +70,7 @@ public sealed interface BatchAssemblyMode {
      * Stream parts to disk. {@code tempDirectory == null} means
      * {@code java.io.tmpdir}.
      */
-    record OnDisk(Path tempDirectory) implements BatchAssemblyMode { }
+    record OnDisk(@Nullable Path tempDirectory) implements BatchAssemblyMode { }
 
     /** Hold parts in heap, fail-fast at {@code maxBytes}. */
     record InMemory(long maxBytes) implements BatchAssemblyMode {

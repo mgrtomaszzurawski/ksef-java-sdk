@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with code in this repository.
+Repository conventions and architecture notes for assistants working on this codebase.
 
 ## What this is
 
@@ -259,7 +259,7 @@ Server (.NET backend) returns structured validation errors:
 - **exceptionCode 21001** — JSON parsing (wrong types, invalid enums)
 - Server validates all fields in one pass, returns all errors at once
 - Unknown fields silently ignored
-- Full documentation in `context/validation/`
+- Public-facing summary in `KNOWN-SERVER-BEHAVIORS.md` (root-level)
 
 ## Test patterns
 
@@ -302,7 +302,7 @@ Server (.NET backend) returns structured validation errors:
 - `certificates/enrollments` crashes on invalid certificateType (server bug)
 - `subjectDetails` required for permission grants despite spec saying optional
 - `pageSize` not validated on permission query endpoints
-- Full findings in `context/validation/` and `context/RCA/`
+- See `KNOWN-SERVER-BEHAVIORS.md` for the curated public list
 
 ## ADRs
 
@@ -322,13 +322,3 @@ Architectural decisions in `ADR/`. Consult before making changes.
 **Official SDK comparison:** The official CIRFMF/ksef-client-java SDK has 276 hand-written model classes (NOT generated from their own OpenAPI spec), a single god-class client, no retry, no pagination abstraction. This project generates from specs instead of wrapping the official SDK.
 
 **Test environment:** `https://api-demo.ksef.mf.gov.pl` — KSeF demo environment. Credentials in gitignored `ksef-credentials.properties`.
-
-**NoviCloud reference:** `/workspace/novicloud-client-java/` — reference SDK with similar patterns (adapted, not copied).
-
-**Implementation plan:** `context/PLAN-2026-04-03-2045-implementation-plan.md` — phases 0-9 with current status.
-
-**Session reports:** `context/REPORT-*.md` — detailed reports from each development session with decisions, missteps, and findings.
-
-**Validation probe results:** `context/validation/` — per-endpoint server validation behavior documentation.
-
-**RCA documents:** `context/RCA/` — root cause analysis for every bug found during development/testing.

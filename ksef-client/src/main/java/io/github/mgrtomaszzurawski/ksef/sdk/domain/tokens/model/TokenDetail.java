@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Detailed information about a KSeF API token.
@@ -29,8 +30,8 @@ public record TokenDetail(
         String description,
         List<TokenPermissionType> requestedPermissions,
         OffsetDateTime dateCreated,
-        OffsetDateTime lastUseDate,
-        TokenStatus status,
+        @Nullable OffsetDateTime lastUseDate,
+        @Nullable TokenStatus status,
         List<String> statusDetails) {
 
 }

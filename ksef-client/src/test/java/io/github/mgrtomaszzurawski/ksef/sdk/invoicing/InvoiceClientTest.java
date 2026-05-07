@@ -113,7 +113,7 @@ class InvoiceClientTest {
 
     @Test
     void queryMetadata_whenFiltersMatch_returnsMetadataList(WireMockRuntimeInfo wmInfo) {
-        // given — A.1.2: queryMetadata now appends ?pageOffset=0&pageSize=250
+        // given — A.1.2: queryInvoicesByMetadata now appends ?pageOffset=0&pageSize=250
         // for spec-conformant single-page fetch.
         stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
@@ -127,7 +127,7 @@ class InvoiceClientTest {
             // when
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1));
-            InvoiceMetadataResult response = ksef.invoices().queryMetadata(query);
+            InvoiceMetadataResult response = ksef.invoices().queryInvoicesByMetadata(query);
 
             // then
             assertEquals(1, response.invoices().size());
@@ -179,7 +179,7 @@ class InvoiceClientTest {
                     .onlineOnly()
                     .selfInvoicing(true)
                     .hasAttachment(true);
-            ksef.invoices().streamMetadata(query).toList();
+            ksef.invoices().streamInvoicesByMetadata(query).toList();
 
             // then — both POSTs hit. Page 2 body carries the same caller filters,
             // and the spec-conformant algorithm advanced pageOffset (not the
@@ -247,7 +247,7 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"));
-            ksef.invoices().streamMetadata(query).toList();
+            ksef.invoices().streamInvoicesByMetadata(query).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata")));
             assertEquals(2, requests.size());
@@ -265,7 +265,7 @@ class InvoiceClientTest {
         // record on the page has no value on the date axis we picked
         // (invoicingDate here, since the query filters by invoicingDateFrom).
         // Spec doesn't envisage this state; under the new fail-fast contract
-        // streamMetadata throws instead of silently dropping pages.
+        // streamInvoicesByMetadata throws instead of silently dropping pages.
         String pageOneBody = """
                 {
                   "invoices": [{"ksefNumber": "%s", "invoiceType": "Vat"}],
@@ -286,7 +286,7 @@ class InvoiceClientTest {
             io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException thrown =
                     org.junit.jupiter.api.Assertions.assertThrows(
                             io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
-                            () -> ksef.invoices().streamMetadata(query).toList());
+                            () -> ksef.invoices().streamInvoicesByMetadata(query).toList());
             assertTrue(thrown.getMessage().contains("isTruncated"),
                     "exception message must explain truncation, was: " + thrown.getMessage());
         }
@@ -369,7 +369,7 @@ class InvoiceClientTest {
         stubFor(get(urlEqualTo("/v2/security/public-key-certificates"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody(EMPTY_JSON)));
 
-        try (KsefClient ksef = KsefClient.builder(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
+        try (KsefClient ksef = KsefClient.builder().environment(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
                 .credentials(new KsefTokenCredentials(TEST_KSEF_TOKEN, TEST_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build()) {

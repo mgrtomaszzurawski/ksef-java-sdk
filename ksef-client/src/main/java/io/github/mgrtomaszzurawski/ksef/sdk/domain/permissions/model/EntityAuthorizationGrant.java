@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An entity authorization grant from query results.
@@ -13,7 +14,7 @@ import java.time.OffsetDateTime;
  */
 public record EntityAuthorizationGrant(
         String id,
-        PermissionIdentifier authorIdentifier,
+        @Nullable PermissionIdentifier authorIdentifier,
         PermissionIdentifier authorizedEntityIdentifier,
         PermissionIdentifier authorizingEntityIdentifier,
         String authorizationScope,

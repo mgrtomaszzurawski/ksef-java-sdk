@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryF
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.security.PublicKey;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for invoice export requests. Generates a fresh AES key and IV per
@@ -24,7 +25,7 @@ public final class InvoiceExportBuilder {
     private static final String ERR_NULL_FILTERS = "filters are required — use .filters() before .build()";
 
     private final PublicKey ksefPublicKey;
-    private InvoiceQueryFilters filters;
+    private @Nullable InvoiceQueryFilters filters;
     private boolean onlyMetadata;
 
     private InvoiceExportBuilder(PublicKey ksefPublicKey) {

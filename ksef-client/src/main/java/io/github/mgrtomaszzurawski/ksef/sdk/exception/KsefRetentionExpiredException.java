@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.io.Serial;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown on HTTP 410 (Gone) — the requested asynchronous result was
@@ -27,7 +28,7 @@ public class KsefRetentionExpiredException extends KsefNotFoundException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public KsefRetentionExpiredException(String message, Throwable cause, int statusCode, String responseBody) {
+    public KsefRetentionExpiredException(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody) {
         super(message, cause, statusCode, responseBody);
     }
 }

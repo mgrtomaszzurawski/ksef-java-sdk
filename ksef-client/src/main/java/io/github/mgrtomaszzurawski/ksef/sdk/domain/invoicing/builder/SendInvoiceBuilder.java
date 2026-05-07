@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoServic
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for sending an invoice within an open session.
@@ -45,7 +46,7 @@ public final class SendInvoiceBuilder {
     private final byte[] aesKey;
     private final byte[] initVector;
     private boolean offlineMode;
-    private byte[] hashOfCorrectedInvoice;
+    private byte @Nullable [] hashOfCorrectedInvoice;
 
     private SendInvoiceBuilder(byte[] invoiceContent, byte[] aesKey, byte[] initVector) {
         this.invoiceContent = Objects.requireNonNull(invoiceContent, ERR_NULL_INVOICE_CONTENT);

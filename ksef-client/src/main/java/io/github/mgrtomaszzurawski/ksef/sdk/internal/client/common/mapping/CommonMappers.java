@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Internal mappers from generated {@code *Raw} types to public common
@@ -33,7 +34,7 @@ public final class CommonMappers {
                 mappedUsage);
     }
 
-    public static PublicKeyCertificateUsage toPublicKeyCertificateUsage(PublicKeyCertificateUsageRaw rawValue) {
+    public static @Nullable PublicKeyCertificateUsage toPublicKeyCertificateUsage(@Nullable PublicKeyCertificateUsageRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -43,7 +44,7 @@ public final class CommonMappers {
         };
     }
 
-    public static StatusInfo toStatusInfo(StatusInfoRaw rawValue) {
+    public static @Nullable StatusInfo toStatusInfo(@Nullable StatusInfoRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -53,7 +54,7 @@ public final class CommonMappers {
                 rawValue.getDetails() != null ? List.copyOf(rawValue.getDetails()) : List.of());
     }
 
-    public static TokenInfo toTokenInfo(TokenInfoRaw rawValue) {
+    public static @Nullable TokenInfo toTokenInfo(@Nullable TokenInfoRaw rawValue) {
         if (rawValue == null) {
             return null;
         }

@@ -122,7 +122,6 @@ public final class FormCode {
             return;
         }
         if (environment.equals(KsefEnvironment.DEMO)
-                || environment.equals(KsefEnvironment.PREPROD)
                 || environment.equals(KsefEnvironment.PROD)) {
             throw new IllegalArgumentException(ERR_FA2_NOT_ALLOWED);
         }

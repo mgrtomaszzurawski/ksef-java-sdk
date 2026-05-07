@@ -34,6 +34,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
@@ -225,7 +226,7 @@ public final class AuthClient {
     public AuthenticationInit authenticateWithToken(
             AuthenticationChallenge challenge,
             String ksefToken, KsefIdentifier identifier, PublicKey ksefPublicKey,
-            AuthorizationPolicy policy) {
+            @Nullable AuthorizationPolicy policy) {
         LOGGER.debug(LOG_CALL, OP_AUTH_TOKEN);
         Instant challengeTimestamp = Instant.ofEpochMilli(challenge.timestampMs());
         byte[] encryptedToken = CryptoService.encryptKsefToken(ksefToken, challengeTimestamp, ksefPublicKey);
@@ -243,7 +244,7 @@ public final class AuthClient {
         return AuthenticationInit.from(response);
     }
 
-    private static AllowedIpsRaw toAllowedIpsRaw(AuthorizationPolicy policy, String defaultClientIp) {
+    private static AllowedIpsRaw toAllowedIpsRaw(@Nullable AuthorizationPolicy policy, @Nullable String defaultClientIp) {
         if (policy == null) {
             return new AllowedIpsRaw().addIp4AddressesItem(defaultClientIp);
         }

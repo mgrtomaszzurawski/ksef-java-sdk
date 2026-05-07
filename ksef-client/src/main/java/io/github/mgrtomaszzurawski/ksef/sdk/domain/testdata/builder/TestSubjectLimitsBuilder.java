@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectLimitsRequest;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF test subject certificate limits override requests.
@@ -19,8 +20,8 @@ public final class TestSubjectLimitsBuilder {
     private static final String ERR_NULL_SUBJECT_IDENTIFIER_TYPE = "subjectIdentifierType is required";
 
     private final TestSubjectIdentifierType subjectIdentifierType;
-    private Integer maxEnrollments;
-    private Integer maxCertificates;
+    private @Nullable Integer maxEnrollments;
+    private @Nullable Integer maxCertificates;
 
     private TestSubjectLimitsBuilder(TestSubjectIdentifierType subjectIdentifierType) {
         this.subjectIdentifierType = Objects.requireNonNull(subjectIdentifierType, ERR_NULL_SUBJECT_IDENTIFIER_TYPE);

@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +84,7 @@ public final class BatchTempCleanup {
      * SDK's batch part prefix that are older than {@code minAge}, and
      * delete them. Does not recurse into subdirectories.
      */
-    public static void purgeOrphans(Path tempDirectory, Duration minAge) {
+    public static void purgeOrphans(@Nullable Path tempDirectory, Duration minAge) {
         Path target = tempDirectory != null
                 ? tempDirectory
                 : Path.of(System.getProperty("java.io.tmpdir"));

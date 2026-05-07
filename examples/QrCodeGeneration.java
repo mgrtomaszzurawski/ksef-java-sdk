@@ -5,31 +5,28 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Example: build a KSeF KOD I (online invoice) verification QR code.
+ * Reference code (not a runnable script): adapt to your application.
  *
- * KOD I encodes a URL of the shape:
- *   https://qr-{env}.ksef.mf.gov.pl/invoice/{NIP}/{DD-MM-YYYY}/{base64UrlSha256}
+ * What this shows:
+ *   Build a KSeF KOD I (online invoice) verification QR code. KOD I encodes
+ *   a URL of the shape:
+ *     https://qr-{env}.ksef.mf.gov.pl/invoice/{NIP}/{DD-MM-YYYY}/{base64UrlSha256}
+ *   The QR contains the URL only; the visual label below the QR is either
+ *   the KSeF number assigned by the system, or "OFFLINE" before assignment.
  *
- * The QR contains the URL only; the visual label below the QR is either the
- * KSeF number assigned by the system, or "OFFLINE" before assignment.
- *
- * No API call, no authentication. Pure URL/QR construction.
+ * Side effects on KSeF:
+ *   None. Pure URL/QR construction — no API call, no authentication.
  *
  * Spec: ksef-docs/kody-qr.md, REQ-QR-04 .. REQ-QR-07.
  *
- * Required positional args:
+ * Inputs the snippet expects (positional args when run as-is):
  *   args[0] — invoice XML file path (used to compute SHA-256)
  *   args[1] — seller NIP (10 digits)
  *   args[2] — invoice issue date in ISO format YYYY-MM-DD
  *   args[3] — output PNG file path (e.g. qrcode.png)
- *
- * Optional positional arg:
- *   args[4] — KSeF number (35 chars) for the visual label below the QR.
- *             If absent, the label is "OFFLINE".
- *
- * Optional env var:
- *   KSEF_QR_ENV — TEST | DEMO | PROD (default: TEST). Selects the qr-host
- *                 the URL points to.
+ *   args[4] — KSeF number (35 chars) for the visual label (optional;
+ *             absent → label "OFFLINE")
+ *   KSEF_QR_ENV — TEST | DEMO | PROD env var (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;

@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLimitsRequest;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for KSeF test session limits override requests.
@@ -18,8 +19,8 @@ public final class TestSessionLimitsBuilder {
     private static final String ERR_ONLINE_REQUIRED = "onlineSession limits are required";
     private static final String ERR_BATCH_REQUIRED = "batchSession limits are required";
 
-    private TestSessionLimits onlineSession;
-    private TestSessionLimits batchSession;
+    private @Nullable TestSessionLimits onlineSession;
+    private @Nullable TestSessionLimits batchSession;
 
     private TestSessionLimitsBuilder() { }
 

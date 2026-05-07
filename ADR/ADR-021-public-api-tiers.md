@@ -11,7 +11,7 @@ The SDK exposes two kinds of public API today:
   `PreparedInvoiceExport`, `KsefVerificationLinks`. Hide protocol details:
   encryption, hashing, polling, decryption, URL canonicalization. Consumer
   calls `session.send(xml)` and the SDK does the rest.
-- **Endpoint APIs** — `InvoiceClient.queryMetadata(...)`,
+- **Endpoint APIs** — `InvoiceClient.queryInvoicesByMetadata(...)`,
   `PermissionClient.grantPerson(...)`, `TokenClient.list(...)`. Mirror the
   REST endpoints. Consumer assembles a request via builder, gets a typed
   response.
@@ -38,7 +38,7 @@ The 1.0.0 SDK has two tiers. There is no third.
 - **Tier 2 — Domain endpoint API.** Endpoint-shaped methods on domain
   clients. Used when the workflow API doesn't fit (custom polling cadence,
   partial flows, building blocks for a custom orchestrator). Examples:
-  - `client.invoices().queryMetadata(filter)`
+  - `client.invoices().queryInvoicesByMetadata(filter)`
   - `client.permissions().grantPerson(builder)`
   - `client.tokens().getStatus(refNumber)`
 

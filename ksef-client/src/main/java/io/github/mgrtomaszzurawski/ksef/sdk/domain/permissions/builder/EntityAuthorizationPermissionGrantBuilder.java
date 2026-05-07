@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAutho
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionType;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for entity authorization permission grant requests.
@@ -29,9 +30,9 @@ public final class EntityAuthorizationPermissionGrantBuilder {
 
     private final EntityAuthorizationIdentifierType identifierType;
     private final String identifierValue;
-    private String description;
-    private String fullName;
-    private EntityAuthorizationPermissionType permission;
+    private @Nullable String description;
+    private @Nullable String fullName;
+    private @Nullable EntityAuthorizationPermissionType permission;
 
     private EntityAuthorizationPermissionGrantBuilder(EntityAuthorizationIdentifierType type, String value) {
         this.identifierType = type;

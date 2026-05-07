@@ -104,8 +104,8 @@ Its functionality is absorbed: `authenticateWithToken()` → `KsefClient.authent
 - Batch sessions (`SessionClient.openBatch()`) not exposed in this redesign — different
   mechanism (ZIP upload), rarely used. Can be added later as `KsefBatchSession`.
 
-## Reference
+## Notes
 
-- NoviCloud SDK pattern: `NoviCloudClient.builder().build(user, pass)` with transparent auth
-- KSeF differs: auth is multi-step challenge-response (not transparent Basic Auth), sessions
-  have crypto state. Hence explicit `authenticate()` (lazy) + `KsefSession` (scoped).
+KSeF auth is multi-step challenge-response (not transparent Basic Auth), and sessions
+hold crypto state. Hence explicit `authenticate()` (lazy) + `KsefSession` (scoped) instead
+of a transparent-auth builder.

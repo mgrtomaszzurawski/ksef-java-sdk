@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Single-pass stream-through builder: invoice bytes → ZIP → SHA-256
@@ -241,7 +242,7 @@ public final class BatchPackageBuilder {
     private static final class ChunkSink extends OutputStream {
 
         private final int chunkBufferSize;
-        private byte[] chunkBuffer;
+        private byte @Nullable [] chunkBuffer;
         private final byte[] aesKey;
         private final byte[] initVector;
         private final BatchAssemblyMode mode;
@@ -271,10 +272,13 @@ public final class BatchPackageBuilder {
             this.mode = mode;
         }
 
-        private void ensureChunkBuffer() {
-            if (chunkBuffer == null) {
-                chunkBuffer = new byte[chunkBufferSize];
+        private byte[] ensureChunkBuffer() {
+            byte[] buffer = chunkBuffer;
+            if (buffer == null) {
+                buffer = new byte[chunkBufferSize];
+                chunkBuffer = buffer;
             }
+            return buffer;
         }
 
         @Override
@@ -285,18 +289,18 @@ public final class BatchPackageBuilder {
 
         @Override
         public void write(byte[] buffer, int offset, int length) throws IOException {
-            ensureChunkBuffer();
+            byte[] activeBuffer = ensureChunkBuffer();
             int remaining = length;
             int from = offset;
             while (remaining > 0) {
-                int free = chunkBuffer.length - chunkLen;
+                int free = activeBuffer.length - chunkLen;
                 int copy = Math.min(free, remaining);
-                System.arraycopy(buffer, from, chunkBuffer, chunkLen, copy);
+                System.arraycopy(buffer, from, activeBuffer, chunkLen, copy);
                 chunkLen += copy;
                 totalRawBytes += copy;
                 from += copy;
                 remaining -= copy;
-                if (chunkLen == chunkBuffer.length) {
+                if (chunkLen == activeBuffer.length) {
                     emitChunk();
                 }
             }
@@ -309,9 +313,10 @@ public final class BatchPackageBuilder {
         }
 
         private void emitChunk() throws IOException {
-            byte[] plaintext = chunkLen == chunkBuffer.length
-                    ? chunkBuffer
-                    : Arrays.copyOf(chunkBuffer, chunkLen);
+            byte[] activeBuffer = ensureChunkBuffer();
+            byte[] plaintext = chunkLen == activeBuffer.length
+                    ? activeBuffer
+                    : Arrays.copyOf(activeBuffer, chunkLen);
             byte[] ciphertext = CryptoService.encryptAes(plaintext, aesKey, initVector);
             byte[] partHash = hashOf(ciphertext);
             BatchPart part;
@@ -358,7 +363,7 @@ public final class BatchPackageBuilder {
          * defense-in-depth: prevent accidental disclosure on multi-user hosts.
          * Falls back to default permissions on non-POSIX filesystems (Windows).
          */
-        private static Path createOwnerOnlyTempFile(Path tempDirectory) throws IOException {
+        private static Path createOwnerOnlyTempFile(@Nullable Path tempDirectory) throws IOException {
             try {
                 java.nio.file.attribute.FileAttribute<?> ownerOnly =
                         java.nio.file.attribute.PosixFilePermissions.asFileAttribute(

@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationOperationStat
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Status of an authentication operation.
@@ -23,11 +24,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.Commo
  */
 public record AuthenticationStatus(
         OffsetDateTime startDate,
-        AuthenticationMethodInfo authenticationMethodInfo,
-        StatusInfo status,
-        Boolean tokenRedeemed,
-        OffsetDateTime lastTokenRefreshDate,
-        OffsetDateTime refreshTokenValidUntil) {
+        @Nullable AuthenticationMethodInfo authenticationMethodInfo,
+        @Nullable StatusInfo status,
+        @Nullable Boolean tokenRedeemed,
+        @Nullable OffsetDateTime lastTokenRefreshDate,
+        @Nullable OffsetDateTime refreshTokenValidUntil) {
 
     public static AuthenticationStatus from(AuthenticationOperationStatusResponseRaw rawValue) {
         return new AuthenticationStatus(

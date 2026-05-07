@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityAdminPermissionGrantRequest;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Builder for EU entity administration permission grant requests.
@@ -34,13 +35,13 @@ public final class EuEntityAdminPermissionGrantBuilder {
     private static final String ERR_NULL_EU_ENTITY_ADDRESS = "EU entity address is required";
 
     private final String fingerprintValue;
-    private String contextValue;
-    private String description;
-    private String euEntityName;
-    private String subjectFullName;
-    private String subjectAddress;
-    private String euEntityFullName;
-    private String euEntityAddress;
+    private @Nullable String contextValue;
+    private @Nullable String description;
+    private @Nullable String euEntityName;
+    private @Nullable String subjectFullName;
+    private @Nullable String subjectAddress;
+    private @Nullable String euEntityFullName;
+    private @Nullable String euEntityAddress;
 
     private EuEntityAdminPermissionGrantBuilder(String fingerprint) {
         this.fingerprintValue = Objects.requireNonNull(fingerprint, ERR_NULL_FINGERPRINT);
@@ -100,10 +101,10 @@ public final class EuEntityAdminPermissionGrantBuilder {
         if (euEntityName == null) {
             throw new IllegalStateException(ERR_EU_ENTITY_NAME_REQUIRED);
         }
-        if (subjectFullName == null) {
+        if (subjectFullName == null || subjectAddress == null) {
             throw new IllegalStateException(ERR_SUBJECT_DETAILS_REQUIRED);
         }
-        if (euEntityFullName == null) {
+        if (euEntityFullName == null || euEntityAddress == null) {
             throw new IllegalStateException(ERR_EU_ENTITY_DETAILS_REQUIRED);
         }
         return new EuEntityAdminPermissionGrantRequest(fingerprintValue, contextValue, description,

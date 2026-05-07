@@ -31,9 +31,9 @@ must sign. The consumer signs with their own crypto stack
 (JCA `Signature`, HSM, external signing service, etc.) and passes the
 signature into `buildCertificateVerificationUrl(..., signature)`.
 
-A round of cross-agent design discussion proposed adding a `KOD II` signing
-convenience that owns a `PrivateKey` and performs the signing internally. That raised a concern about whether such a
-convenience contradicts the PKI-neutral stance.
+A design discussion proposed adding a `KOD II` signing convenience that owns
+a `PrivateKey` and performs the signing internally. That raised a concern about
+whether such a convenience contradicts the PKI-neutral stance.
 
 ## Decision
 

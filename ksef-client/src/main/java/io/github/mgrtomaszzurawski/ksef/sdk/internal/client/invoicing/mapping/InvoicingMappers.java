@@ -59,6 +59,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoPage;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Internal mappers from generated {@code *Raw} types to public invoicing
@@ -75,7 +76,7 @@ public final class InvoicingMappers {
         return new BatchSession(rawValue.getReferenceNumber(), parts);
     }
 
-    public static BatchSessionLimits toBatchSessionLimits(BatchSessionEffectiveContextLimitsRaw rawValue) {
+    public static @Nullable BatchSessionLimits toBatchSessionLimits(@Nullable BatchSessionEffectiveContextLimitsRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -85,7 +86,7 @@ public final class InvoicingMappers {
                 rawValue.getMaxInvoices());
     }
 
-    public static BuyerIdentifierType toBuyerIdentifierType(BuyerIdentifierTypeRaw rawValue) {
+    public static @Nullable BuyerIdentifierType toBuyerIdentifierType(@Nullable BuyerIdentifierTypeRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -101,14 +102,14 @@ public final class InvoicingMappers {
         return new ExportInvoicesResult(rawValue.getReferenceNumber());
     }
 
-    public static FormCodeInfo toFormCodeInfo(FormCodeRaw rawValue) {
+    public static @Nullable FormCodeInfo toFormCodeInfo(@Nullable FormCodeRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
         return new FormCodeInfo(rawValue.getSystemCode(), rawValue.getSchemaVersion(), rawValue.getValue());
     }
 
-    public static InvoiceBuyer toInvoiceBuyer(InvoiceMetadataBuyerRaw rawValue) {
+    public static @Nullable InvoiceBuyer toInvoiceBuyer(@Nullable InvoiceMetadataBuyerRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -165,7 +166,7 @@ public final class InvoicingMappers {
                 mapped);
     }
 
-    public static InvoicePackage toInvoicePackage(InvoicePackageRaw rawValue) {
+    public static @Nullable InvoicePackage toInvoicePackage(@Nullable InvoicePackageRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -194,14 +195,14 @@ public final class InvoicingMappers {
                 rawValue.getExpirationDate());
     }
 
-    public static InvoiceSeller toInvoiceSeller(InvoiceMetadataSellerRaw rawValue) {
+    public static @Nullable InvoiceSeller toInvoiceSeller(@Nullable InvoiceMetadataSellerRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
         return new InvoiceSeller(rawValue.getNip(), rawValue.getName());
     }
 
-    public static InvoiceStatusInfo toInvoiceStatusInfo(InvoiceStatusInfoRaw rawValue) {
+    public static @Nullable InvoiceStatusInfo toInvoiceStatusInfo(@Nullable InvoiceStatusInfoRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -222,7 +223,7 @@ public final class InvoicingMappers {
         return new InvoiceThirdSubject(idType, idValue, rawValue.getName(), rawValue.getRole());
     }
 
-    public static InvoiceType toInvoiceType(InvoiceTypeRaw rawValue) {
+    public static @Nullable InvoiceType toInvoiceType(@Nullable InvoiceTypeRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -242,7 +243,7 @@ public final class InvoicingMappers {
         };
     }
 
-    public static InvoicingMode toInvoicingMode(InvoicingModeRaw rawValue) {
+    public static @Nullable InvoicingMode toInvoicingMode(@Nullable InvoicingModeRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -256,7 +257,7 @@ public final class InvoicingMappers {
         return new OnlineSession(rawValue.getReferenceNumber(), rawValue.getValidUntil());
     }
 
-    public static OnlineSessionLimits toOnlineSessionLimits(OnlineSessionEffectiveContextLimitsRaw rawValue) {
+    public static @Nullable OnlineSessionLimits toOnlineSessionLimits(@Nullable OnlineSessionEffectiveContextLimitsRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -312,7 +313,7 @@ public final class InvoicingMappers {
                 rawValue.getFailedInvoiceCount());
     }
 
-    public static ThirdSubjectIdentifierType toThirdSubjectIdentifierType(ThirdSubjectIdentifierTypeRaw rawValue) {
+    public static @Nullable ThirdSubjectIdentifierType toThirdSubjectIdentifierType(@Nullable ThirdSubjectIdentifierTypeRaw rawValue) {
         if (rawValue == null) {
             return null;
         }
@@ -325,7 +326,7 @@ public final class InvoicingMappers {
         };
     }
 
-    public static UpoInfo toUpoInfo(UpoResponseRaw rawValue) {
+    public static @Nullable UpoInfo toUpoInfo(@Nullable UpoResponseRaw rawValue) {
         if (rawValue == null) {
             return null;
         }

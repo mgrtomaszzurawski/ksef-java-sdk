@@ -206,7 +206,8 @@ class UncoveredBuildersCoverageTest {
 
         // when — exercise the three setters
         var builder = io.github.mgrtomaszzurawski.ksef.sdk.KsefClient
-                .builder(KsefEnvironment.TEST)
+                .builder()
+                .environment(KsefEnvironment.TEST)
                 .credentials(creds)
                 .connectTimeout(java.time.Duration.ofSeconds(10))
                 .readTimeout(java.time.Duration.ofSeconds(30))
