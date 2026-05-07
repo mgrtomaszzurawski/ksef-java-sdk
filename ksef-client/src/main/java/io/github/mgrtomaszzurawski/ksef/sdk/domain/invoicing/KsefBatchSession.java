@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
@@ -45,17 +46,16 @@ import org.slf4j.LoggerFactory;
  * <p>Batch session flow (manual variant):
  * <ol>
  *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode,
- *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage,
- *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)}</li>
+ *       PreparedBatchPackage, BatchSessionOptions)}</li>
  *   <li>Upload encrypted ZIP parts to the URLs from {@link #partUploadRequests()}</li>
  *   <li>Call {@link #close()} (or use try-with-resources) to finalize</li>
  * </ol>
  *
  * <p>Batch session flow (automated variant):
  * <ol>
- *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode, java.util.List,
- *       io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)}
- *       — the SDK builds the encrypted ZIP and computes hashes using temp files</li>
+ *   <li>Open batch session via {@link KsefClient#openBatchSession(FormCode,
+ *       java.util.List, BatchSessionOptions)} — the SDK builds the
+ *       encrypted ZIP and computes hashes using temp files</li>
  *   <li>Call {@link #uploadParts()} to push every encrypted part file to its URL</li>
  *   <li>Call {@link #close()} to finalize and delete the temp files</li>
  * </ol>
@@ -65,11 +65,8 @@ import org.slf4j.LoggerFactory;
  * {@code close()} calls produce undefined ordering. {@link KsefClient}
  * itself is thread-safe and supports concurrent batch session opens.
  *
- * @see KsefClient#openBatchSession(FormCode,
- *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage,
- *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
- * @see KsefClient#openBatchSession(FormCode, java.util.List,
- *      io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions)
+ * @see KsefClient#openBatchSession(FormCode, PreparedBatchPackage, BatchSessionOptions)
+ * @see KsefClient#openBatchSession(FormCode, java.util.List, BatchSessionOptions)
  *
  * @since 1.0.0
  */
@@ -288,8 +285,15 @@ public final class KsefBatchSession implements AutoCloseable {
      * open-session response (typically {@code PUT}). Any non-2xx response aborts the
      * upload and is wrapped in {@link KsefNetworkException}.
      *
+     * <p><strong>Cumulative upload budget (REQ-SESS-13):</strong> the total
+     * upload duration is capped at 20 minutes per part. Slow uplinks or
+     * very large multi-part batches that exceed the budget receive a
+     * {@link KsefNetworkException} mid-upload — pre-size the batch
+     * accordingly.
+     *
      * @throws IllegalStateException if the session has no part files attached
-     * @throws KsefNetworkException if any upload fails or the network is interrupted
+     * @throws KsefNetworkException if any upload fails, the network is
+     *     interrupted, or the cumulative budget is exhausted
      */
     public void uploadParts() {
         if (batchPackage == null || httpClient == null) {
@@ -508,6 +512,12 @@ public final class KsefBatchSession implements AutoCloseable {
      *
      * <p>This method is idempotent — calling it on an already-closed session is a no-op.
      * It is called automatically when using try-with-resources.
+     *
+     * <p><strong>Polling timeout:</strong> {@code close()} polls the
+     * server every 3 seconds for up to 5 minutes (100 attempts) waiting
+     * for terminal status. If the server does not reach a terminal state
+     * in that window, this method throws
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException}.
      */
     @Override
     public void close() {

@@ -38,7 +38,7 @@ public record SendInvoiceRequest(
         hashOfCorrectedInvoice = hashOfCorrectedInvoice == null ? null : hashOfCorrectedInvoice.clone();
     }
 
-    /** Backwards-compatible 6-arg constructor — defaults {@code hashOfCorrectedInvoice} to {@code null}. */
+    /** Convenience 6-arg constructor — defaults {@code hashOfCorrectedInvoice} to {@code null}. */
     public SendInvoiceRequest(byte[] invoiceHash, long invoiceSize,
                               byte[] encryptedInvoiceHash, long encryptedInvoiceSize,
                               byte[] encryptedInvoiceContent, boolean offlineMode) {

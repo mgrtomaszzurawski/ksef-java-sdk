@@ -50,6 +50,9 @@ public final class EnrollAndRevokeCertificate {
                 .build()) {
 
             client.authenticate();
+            // After authentication the password buffer is no longer
+            // needed; zero it so a heap dump cannot recover it.
+            java.util.Arrays.fill(p12Password, '\0');
             System.out.println("XAdES authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
             CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder
@@ -67,6 +70,8 @@ public final class EnrollAndRevokeCertificate {
 
             client.certificates().revoke(serial);
             System.out.println("Certificate revoked");
+        } finally {
+            java.util.Arrays.fill(p12Password, '\0');
         }
     }
 

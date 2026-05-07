@@ -493,8 +493,9 @@ Wire-shape regression coverage added:
   cert — see [ADR-011](ADR/ADR-011-batch-encryption-and-polling-semantics.md).
 - Authentication flows: KSeF token (RSA-encrypted), XAdES-BASELINE-B signature
   (PKCS#12 keystore or raw certificate + private key).
-- Configurable retry: `RetryPolicy` with exponential backoff + full jitter, on
-  5xx and 429 responses.
+- Configurable retry: `RetryPolicy` with exponential backoff and
+  randomized jitter (`ThreadLocalRandom`-driven, narrowed to
+  `[base/2, base]`), retried on 5xx and 429 responses.
 - Date-cursor pagination helper: `InvoiceClient.streamMetadata(...)` walks all
   pages using `permanentStorageHwmDate` as cursor.
 - Typed exception hierarchy: `KsefAuthException`, `KsefServerException`,

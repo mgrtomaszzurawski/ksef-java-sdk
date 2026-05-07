@@ -18,7 +18,8 @@ They depend on the published artifact (or the local `1.0.0`
    # JBang (auto-resolves dependencies from //DEPS)
    jbang examples/SendOnlineInvoice.java
 
-   # Or compile manually
+   # Or compile manually (POSIX shell — for Windows use a temp-file
+   # variant of -Dmdep.outputFile rather than /dev/stdout)
    CLASSPATH=$(mvn -q dependency:build-classpath -pl ksef-client \
        -DincludeScope=runtime -Dmdep.outputFile=/dev/stdout)
    javac -cp "$CLASSPATH:ksef-client/target/ksef-client-1.0.0.jar" \

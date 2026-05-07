@@ -532,9 +532,9 @@
                     <!--
                         Coverage gate for the SDK overlay. Generated *Raw and JAXB
                         XML model classes are excluded — only hand-written sdk.*
-                        code is gated. Threshold INSTRUCTION 0.65 reflects current
-                        baseline; the 0.2.0 plan raises it to 1.00 method coverage
-                        after the missing-builder-test backlog is closed.
+                        code is gated. The per-builder 100% method-coverage gate
+                        is tracked separately and intentionally not enforced here
+                        until the missing-builder-test backlog is closed.
                     -->
                     <execution>
                         <id>jacoco-check</id>

@@ -4,9 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.github.mgrtomaszzurawski</groupId>
+    <parent>
+        <groupId>io.github.mgrtomaszzurawski</groupId>
+        <artifactId>ksef-java-sdk</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
     <artifactId>ksef-demo</artifactId>
-    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>KSeF Demo App</name>

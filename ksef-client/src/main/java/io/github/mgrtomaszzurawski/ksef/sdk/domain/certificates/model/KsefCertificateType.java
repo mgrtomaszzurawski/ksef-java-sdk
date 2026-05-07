@@ -11,7 +11,18 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
  */
 public enum KsefCertificateType {
 
+    /**
+     * Certificate used for KSeF online-session authentication (XAdES
+     * signature on the auth challenge). Issued via
+     * {@code certificates/enrollments}; valid for the auth flow only.
+     */
     AUTHENTICATION,
+
+    /**
+     * Certificate used for the KOD II offline-invoice signing scheme
+     * (offline invoice mode + verification QR code). Issued via the
+     * same enrollment endpoint with this type code.
+     */
     OFFLINE;
 
 }

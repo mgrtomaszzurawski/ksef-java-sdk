@@ -98,7 +98,7 @@ public record KsefCertificateCredentials(
     }
 
     /**
-     * Backwards-compatible constructor — accepts a plain NIP string with
+     * Convenience constructor — accepts a plain NIP string with
      * default subject identifier strategy and default signing options.
      */
     public KsefCertificateCredentials(X509Certificate certificate, PrivateKey privateKey, String nip) {

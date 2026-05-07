@@ -25,6 +25,7 @@
  *     (process restarts, overlapping windows) — implementations MUST
  *     persist by KsefNumber idempotently.
  */
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -84,7 +85,7 @@ public final class IncrementalSync {
             // again — your downstream store should upsert by KSeF number.
             InvoiceSyncClient sync = new InvoiceSyncClient(
                     client.invoices(),
-                    new com.fasterxml.jackson.databind.ObjectMapper());
+                    new ObjectMapper());
 
             SyncResult result = sync.sync(plan, checkpointStore, (ksefNumber, metadata, xmlPath) -> {
                 System.out.println("Got " + ksefNumber.value()
