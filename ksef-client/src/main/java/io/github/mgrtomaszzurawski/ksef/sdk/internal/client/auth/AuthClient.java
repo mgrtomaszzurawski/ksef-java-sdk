@@ -244,7 +244,7 @@ public final class AuthClient {
         return AuthenticationInit.from(response);
     }
 
-    private static AllowedIpsRaw toAllowedIpsRaw(AuthorizationPolicy policy, String defaultClientIp) {
+    private static AllowedIpsRaw toAllowedIpsRaw(@Nullable AuthorizationPolicy policy, @Nullable String defaultClientIp) {
         if (policy == null) {
             return new AllowedIpsRaw().addIp4AddressesItem(defaultClientIp);
         }

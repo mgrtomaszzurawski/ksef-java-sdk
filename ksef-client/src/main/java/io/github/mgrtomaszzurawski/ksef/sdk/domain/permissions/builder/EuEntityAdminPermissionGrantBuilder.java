@@ -101,10 +101,10 @@ public final class EuEntityAdminPermissionGrantBuilder {
         if (euEntityName == null) {
             throw new IllegalStateException(ERR_EU_ENTITY_NAME_REQUIRED);
         }
-        if (subjectFullName == null) {
+        if (subjectFullName == null || subjectAddress == null) {
             throw new IllegalStateException(ERR_SUBJECT_DETAILS_REQUIRED);
         }
-        if (euEntityFullName == null) {
+        if (euEntityFullName == null || euEntityAddress == null) {
             throw new IllegalStateException(ERR_EU_ENTITY_DETAILS_REQUIRED);
         }
         return new EuEntityAdminPermissionGrantRequest(fingerprintValue, contextValue, description,

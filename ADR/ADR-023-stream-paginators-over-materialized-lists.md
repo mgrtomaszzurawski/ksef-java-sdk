@@ -8,14 +8,14 @@ Status: Accepted
 KSeF query and list endpoints are paginated. The 0.x SDK exposed every
 paginated endpoint twice:
 
-- a low-level method returning a single page (`queryMetadata(builder, pageOffset)`),
-- a high-level convenience returning the full result set (`queryAllMetadata(builder)`).
+- a low-level method returning a single page (`queryInvoicesByMetadata(builder, pageOffset)`),
+- a high-level convenience returning the full result set as a `List<T>`.
 
 The convenience methods walked pages internally and returned `List<T>`.
 Two problems emerged from production-shaped use:
 
 1. **Silent truncation.** A defensive cap of `DEFAULT_QUERY_RESULT_LIMIT = 10_000`
-   was applied to every `queryAll*` / `listAll`. Callers querying a large
+   was applied to every full-result helper. Callers querying a large
    range silently got only the first 10k records with no error and no
    indication that more existed. Documented as "fix by Javadoc" in an
    earlier round; the documentation note did not survive contact with
@@ -25,12 +25,11 @@ Two problems emerged from production-shaped use:
    needed the first N matched (`for invoice in invoices` then `break`)
    paid the cost of fetching every page anyway.
 
-A follow-up audit proposed adding 10 `maxResults` overloads
-(`queryAllMetadata(builder, int maxResults)`) on the materialized
-helpers. That addresses #1 partially (caller can opt into a non-default
-cap) but leaves the zero-arg variant silently truncating, requires the
-sentinel `Integer.MAX_VALUE` to mean "unbounded" (a code smell), and
-does nothing for #2.
+A follow-up audit proposed adding `maxResults` overloads on the
+materialized helpers. That addresses #1 partially (caller can opt into
+a non-default cap) but leaves the zero-arg variant silently truncating,
+requires the sentinel `Integer.MAX_VALUE` to mean "unbounded" (a code
+smell), and does nothing for #2.
 
 ## Decision
 
@@ -55,7 +54,7 @@ Callers bound memory and work explicitly:
 
 ```java
 List<InvoiceMetadata> first100 = client.invoices()
-        .streamMetadata(query)
+        .streamInvoicesByMetadata(query)
         .limit(100)
         .toList();
 ```

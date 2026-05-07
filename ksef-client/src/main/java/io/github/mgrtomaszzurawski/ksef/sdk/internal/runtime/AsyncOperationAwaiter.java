@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Internal poll-until-terminal helper used by the public
@@ -65,9 +66,9 @@ public final class AsyncOperationAwaiter {
     public record Config<S>(String operationName,
                              Supplier<S> statusFetcher,
                              Function<S, Boolean> isTerminal,
-                             Function<S, Object> statusCodeOf,
+                             @Nullable Function<S, @Nullable Object> statusCodeOf,
                              Duration timeout,
-                             Duration pollInterval) {
+                             @Nullable Duration pollInterval) {
         public Config {
             Objects.requireNonNull(operationName, "operationName must not be null");
             Objects.requireNonNull(statusFetcher, "statusFetcher must not be null");

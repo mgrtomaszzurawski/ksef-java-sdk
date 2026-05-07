@@ -363,7 +363,7 @@ public final class BatchPackageBuilder {
          * defense-in-depth: prevent accidental disclosure on multi-user hosts.
          * Falls back to default permissions on non-POSIX filesystems (Windows).
          */
-        private static Path createOwnerOnlyTempFile(Path tempDirectory) throws IOException {
+        private static Path createOwnerOnlyTempFile(@Nullable Path tempDirectory) throws IOException {
             try {
                 java.nio.file.attribute.FileAttribute<?> ownerOnly =
                         java.nio.file.attribute.PosixFilePermissions.asFileAttribute(

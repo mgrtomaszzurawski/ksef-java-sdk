@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 import java.util.Arrays;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * SDK request payload for {@code SessionClient.sendInvoice(...)}.
@@ -26,7 +27,7 @@ public record SendInvoiceRequest(
         long encryptedInvoiceSize,
         byte[] encryptedInvoiceContent,
         boolean offlineMode,
-        byte[] hashOfCorrectedInvoice) {
+        byte @Nullable [] hashOfCorrectedInvoice) {
 
     public SendInvoiceRequest {
         Objects.requireNonNull(invoiceHash, "invoiceHash");
@@ -56,7 +57,7 @@ public record SendInvoiceRequest(
     public byte[] encryptedInvoiceContent() { return encryptedInvoiceContent.clone(); }
 
     @Override
-    public byte[] hashOfCorrectedInvoice() {
+    public byte @Nullable [] hashOfCorrectedInvoice() {
         return hashOfCorrectedInvoice == null ? null : hashOfCorrectedInvoice.clone();
     }
 

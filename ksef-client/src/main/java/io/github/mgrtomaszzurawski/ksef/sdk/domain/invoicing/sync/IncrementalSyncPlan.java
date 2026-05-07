@@ -44,7 +44,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record IncrementalSyncPlan(
         OffsetDateTime from,
-        OffsetDateTime to,
+        @Nullable OffsetDateTime to,
         List<InvoiceQuerySubjectType> subjectTypes,
         Path outputDirectory,
         boolean fullContent) {
@@ -111,7 +111,12 @@ public record IncrementalSyncPlan(
         }
 
         public IncrementalSyncPlan build() {
-            return new IncrementalSyncPlan(from, to, subjectTypes, outputDirectory, fullContent);
+            return new IncrementalSyncPlan(
+                    Objects.requireNonNull(from, ERR_NULL_FROM),
+                    to,
+                    subjectTypes,
+                    Objects.requireNonNull(outputDirectory, ERR_NULL_OUTPUT_DIR),
+                    fullContent);
         }
     }
 }

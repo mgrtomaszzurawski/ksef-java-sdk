@@ -364,7 +364,9 @@ public final class KsefBatchSession implements AutoCloseable {
             builder.header(entry.getKey(), entry.getValue());
         }
         try {
-            HttpResponse<Void> response = httpClient.send(builder.build(), BodyHandlers.discarding());
+            // uploadParts() validated httpClient != null before reaching here.
+            HttpClient client = Objects.requireNonNull(httpClient, "httpClient must be set before uploadParts");
+            HttpResponse<Void> response = client.send(builder.build(), BodyHandlers.discarding());
             if (response.statusCode() < HTTP_STATUS_LOWER_BOUND_OK
                     || response.statusCode() >= HTTP_STATUS_UPPER_BOUND_OK) {
                 throw new KsefNetworkException(

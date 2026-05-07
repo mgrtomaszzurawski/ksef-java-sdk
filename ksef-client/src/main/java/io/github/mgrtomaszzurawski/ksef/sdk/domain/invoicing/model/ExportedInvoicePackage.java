@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Decrypted, unzipped contents of an invoice export package.
@@ -19,7 +20,7 @@ import java.util.Objects;
  *
  * @since 1.0.0
  */
-public record ExportedInvoicePackage(byte[] metadataJson, Map<String, byte[]> invoiceXmls) {
+public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String, byte[]> invoiceXmls) {
 
     public ExportedInvoicePackage {
         metadataJson = metadataJson == null ? null : metadataJson.clone();
@@ -27,7 +28,7 @@ public record ExportedInvoicePackage(byte[] metadataJson, Map<String, byte[]> in
     }
 
     @Override
-    public byte[] metadataJson() {
+    public byte @Nullable [] metadataJson() {
         return metadataJson == null ? null : metadataJson.clone();
     }
 
@@ -40,7 +41,7 @@ public record ExportedInvoicePackage(byte[] metadataJson, Map<String, byte[]> in
      * Convenience accessor returning the invoice XML bytes for the given file
      * name, or {@code null} when the package does not contain that entry.
      */
-    public byte[] invoiceXml(String fileName) {
+    public byte @Nullable [] invoiceXml(String fileName) {
         byte[] bytes = invoiceXmls.get(fileName);
         return bytes == null ? null : bytes.clone();
     }

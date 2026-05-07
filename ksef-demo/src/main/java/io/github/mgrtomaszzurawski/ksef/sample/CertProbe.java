@@ -82,7 +82,7 @@ public final class CertProbe {
                 properties.certPassword().toCharArray(),
                 properties.nipIdentifier());
 
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(properties.environment()))
+        try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(properties.environment()))
                 .credentials(credentials).build()) {
             client.authenticate();
             run(client);

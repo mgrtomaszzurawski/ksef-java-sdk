@@ -103,7 +103,7 @@ public final class SubunitPermissionGrantBuilder {
         if (description.length() < DESCRIPTION_MIN_LENGTH || description.length() > DESCRIPTION_MAX_LENGTH) {
             throw new IllegalStateException(ERR_DESCRIPTION_LENGTH);
         }
-        if (contextType == null) {
+        if (contextType == null || contextValue == null) {
             throw new IllegalStateException(ERR_CONTEXT_REQUIRED);
         }
         if (firstName == null || lastName == null) {

@@ -90,7 +90,8 @@ import org.slf4j.LoggerFactory;
  * <pre>{@code
  * KsefCredentials credentials = new KsefTokenCredentials("my-token", "1234567890");
  *
- * try (KsefClient client = KsefClient.builder(KsefEnvironment.TEST)
+ * try (KsefClient client = KsefClient.builder()
+ *         .environment(KsefEnvironment.TEST)
  *         .credentials(credentials)
  *         .build()) {
  *
@@ -169,10 +170,10 @@ public final class KsefClient implements AutoCloseable {
     private volatile @Nullable String lastChallengeClientIp;
 
     private KsefClient(Builder builder) {
-        this.environment = builder.environment;
-        // Builder.build() validates credentials non-null before invoking
-        // this constructor, so requireNonNull here is a NullAway hint
-        // rather than a guard against a real null.
+        // Builder.build() validates environment + credentials non-null before
+        // invoking this constructor, so requireNonNull here is a NullAway
+        // hint rather than a guard against a real null.
+        this.environment = Objects.requireNonNull(builder.environment, ERR_ENVIRONMENT_NULL);
         this.credentials = Objects.requireNonNull(builder.credentials, ERR_CREDENTIALS_NULL);
         this.readTimeout = builder.readTimeout;
         this.httpClient = HttpClient.newBuilder()
@@ -780,24 +781,31 @@ public final class KsefClient implements AutoCloseable {
         lastChallengeClientIp = null;
     }
 
-    public static Builder builder(KsefEnvironment environment) {
-        if (environment == null) {
-            throw new IllegalArgumentException(ERR_ENVIRONMENT_NULL);
-        }
-        return new Builder(environment);
+    public static Builder builder() {
+        return new Builder();
     }
 
     public static final class Builder {
 
-        private final KsefEnvironment environment;
+        private @Nullable KsefEnvironment environment;
         private @Nullable KsefCredentials credentials;
         private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
         private Duration readTimeout = DEFAULT_READ_TIMEOUT;
         private RetryPolicy retryPolicy = RetryPolicy.builder().build();
         private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
 
-        private Builder(KsefEnvironment environment) {
+        private Builder() { }
+
+        /**
+         * Set the target KSeF API environment. Required.
+         *
+         * @param environment one of {@link KsefEnvironment#TEST}, {@link KsefEnvironment#DEMO},
+         *                    {@link KsefEnvironment#PROD}, or {@link KsefEnvironment#custom(String)}
+         * @return this builder
+         */
+        public Builder environment(KsefEnvironment environment) {
             this.environment = environment;
+            return this;
         }
 
         /**
@@ -847,6 +855,7 @@ public final class KsefClient implements AutoCloseable {
         }
 
         public KsefClient build() {
+            Objects.requireNonNull(environment, ERR_ENVIRONMENT_NULL);
             Objects.requireNonNull(credentials, ERR_CREDENTIALS_NULL);
             return new KsefClient(this);
         }

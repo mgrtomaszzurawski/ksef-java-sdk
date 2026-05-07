@@ -5,18 +5,22 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Example: paginate through every invoice metadata entry in a date range.
+ * Reference code (not a runnable script): adapt to your application.
  *
- * The SDK's streamMetadata() walks all pages using permanentStorageHwmDate
- * as a date cursor lazily — pipe through .limit(N).toList() to bound memory.
+ * What this shows:
+ *   Paginate through every invoice metadata entry in a date range. The
+ *   SDK's streamInvoicesByMetadata() walks all pages using permanentStorageHwmDate
+ *   as a date cursor lazily — pipe through .limit(N).toList() to bound
+ *   memory.
  *
- * Required env vars:
+ * Side effects on KSeF:
+ *   Read-only.
+ *
+ * Inputs the snippet expects (read from env vars when run as-is):
  *   KSEF_TOKEN — pre-issued KSeF token
  *   KSEF_NIP   — taxpayer NIP (10 digits)
- *
- * Optional:
- *   KSEF_ENV   — TEST | DEMO | PREPROD | PROD (default: TEST)
- *   KSEF_DAYS  — how many days back to query (default: 30)
+ *   KSEF_ENV   — TEST | DEMO | PROD (optional, default: TEST)
+ *   KSEF_DAYS  — how many days back to query (optional, default: 30)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -39,7 +43,7 @@ public final class QueryInvoiceMetadata {
         KsefEnvironment environment = resolveEnv(System.getenv("KSEF_ENV"));
         int days = parseInt(System.getenv("KSEF_DAYS"), DEFAULT_DAYS);
 
-        try (KsefClient client = KsefClient.builder(environment)
+        try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
@@ -49,7 +53,7 @@ public final class QueryInvoiceMetadata {
                     .invoicingDateFrom(OffsetDateTime.now().minusDays(days))
                     .dateTo(OffsetDateTime.now());
 
-            List<InvoiceMetadata> all = client.invoices().streamMetadata(query)
+            List<InvoiceMetadata> all = client.invoices().streamInvoicesByMetadata(query)
                     .limit(MAX_RESULTS)
                     .toList();
             System.out.println("Found " + all.size() + " invoices in the last " + days + " days");
@@ -83,7 +87,6 @@ public final class QueryInvoiceMetadata {
         return switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
             case "DEMO" -> KsefEnvironment.DEMO;
-            case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> KsefEnvironment.custom(envName);
         };

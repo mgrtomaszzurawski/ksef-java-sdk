@@ -82,7 +82,7 @@ public final class EuEntityPermissionGrantBuilder {
         if (permissions.isEmpty()) {
             throw new IllegalStateException(ERR_PERMISSIONS_EMPTY);
         }
-        if (subjectFullName == null) {
+        if (subjectFullName == null || subjectAddress == null) {
             throw new IllegalStateException(ERR_SUBJECT_DETAILS_REQUIRED);
         }
         return new EuEntityPermissionGrantRequest(fingerprintValue, description, subjectFullName, subjectAddress, permissions);

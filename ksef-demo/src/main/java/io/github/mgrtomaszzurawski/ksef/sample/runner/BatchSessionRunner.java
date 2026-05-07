@@ -72,7 +72,6 @@ public final class BatchSessionRunner implements DemoRunner {
 
     private static final String HOST_FRAGMENT_TEST = "api-test.";
     private static final String HOST_FRAGMENT_DEMO = "api-demo.";
-    private static final String HOST_FRAGMENT_PREPROD = "api-preprod.";
     private static final String HOST_PREFIX_PROD = "https://api.ksef.mf.gov.pl";
 
     private static final List<FormCode> FORM_CODES = List.of(
@@ -172,9 +171,6 @@ public final class BatchSessionRunner implements DemoRunner {
         }
         if (envUrl.contains(HOST_FRAGMENT_DEMO)) {
             return KsefEnvironment.DEMO;
-        }
-        if (envUrl.contains(HOST_FRAGMENT_PREPROD)) {
-            return KsefEnvironment.PREPROD;
         }
         if (envUrl.startsWith(HOST_PREFIX_PROD)) {
             return KsefEnvironment.PROD;

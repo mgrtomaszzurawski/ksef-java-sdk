@@ -5,7 +5,7 @@ Status: Accepted
 
 ## Context
 
-Eight rounds of post-hoc Codex review surfaced spec gaps the SDK had
+Multiple rounds of post-hoc spec review surfaced gaps the SDK had
 shipped. Each round read `ksef-docs/` markdown files we didn't read
 before writing the corresponding code, and found cases where:
 
@@ -82,7 +82,7 @@ A change is **not** spec-touching if it modifies:
 
 ## Consequences
 
-- PR review bandwidth shifts from "did Codex find a spec violation we
+- PR review bandwidth shifts from "did review find a spec violation we
   missed?" to "does this PR's spec citation match the change?". Reviewer
   can verify by clicking the REQ-ID link to the audit and reading the
   spec citation.
@@ -97,12 +97,13 @@ A change is **not** spec-touching if it modifies:
 ## Rejected alternatives
 
 1. **Trust developers to read the spec without process.** Rejected
-   because eight review rounds prove this doesn't work in practice. The
+   because repeated review rounds prove this doesn't work in practice. The
    spec is too large; without forcing function, contributors skip the
    relevant section.
-2. **Run Codex on every PR.** Rejected because it's the same retroactive
-   pattern at higher cost. Codex finds violations after they're written;
-   the cure is to write fewer violations, not detect more.
+2. **Lean on retroactive review tooling on every PR.** Rejected because
+   it's the same retroactive pattern at higher cost. Retroactive review
+   finds violations after they're written; the cure is to write fewer
+   violations, not detect more.
 3. **Generate REQ-IDs automatically from spec.** Rejected because the
    spec is in Polish prose, not structured data. Mechanical extraction
    loses the "what does the SDK actually need to do" judgment that the

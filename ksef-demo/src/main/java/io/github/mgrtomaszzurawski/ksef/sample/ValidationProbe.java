@@ -117,7 +117,7 @@ public final class ValidationProbe {
         LOGGER.info("Environment: {}", ksefUrl);
         LOGGER.debug("NIP: {}", nipIdentifier);
 
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(ksefUrl))
+        try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(ksefUrl))
                 .credentials(new KsefTokenCredentials(ksefToken, nipIdentifier))
                 .build()) {
             client.authenticate();

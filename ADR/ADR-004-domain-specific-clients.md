@@ -18,7 +18,7 @@ One client class per API domain. A top-level `KsefClient` (or `KsefSdk`) provide
 KsefClient ksef = KsefClient.builder()...build();
 ksef.auth().challenge(nip);
 ksef.sessions().openOnline(request);
-ksef.invoices().queryMetadata(filters);
+ksef.invoices().queryInvoicesByMetadata(filters);
 ksef.permissions().grantPerson(request);
 ```
 

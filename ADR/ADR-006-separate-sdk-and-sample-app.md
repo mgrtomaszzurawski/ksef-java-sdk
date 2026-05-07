@@ -6,7 +6,7 @@
 
 ## Context
 
-Same rationale as NoviCloud ADR-001. SDK library must have clean dependency footprint. Demo/sample code must not pollute the published artifact.
+SDK library must have clean dependency footprint. Demo/sample code must not pollute the published artifact.
 
 ## Decision
 

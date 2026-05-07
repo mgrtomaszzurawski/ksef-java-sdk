@@ -36,7 +36,7 @@ public interface InvoiceClient {
         return getByKsefNumber(KsefNumber.parse(ksefNumber));
     }
 
-    InvoiceMetadataResult queryMetadata(InvoiceQueryBuilder query);
+    InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryBuilder query);
 
     /**
      * Stream every invoice metadata record matching the filter, walking
@@ -45,7 +45,7 @@ public interface InvoiceClient {
      * caller controls memory pressure by limiting / collecting
      * downstream.
      */
-    java.util.stream.Stream<InvoiceMetadata> streamMetadata(InvoiceQueryBuilder query);
+    java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryBuilder query);
 
     /**
      * Low-level "start export" entry point — Tier-3 advanced API per

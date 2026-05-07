@@ -11,6 +11,55 @@ Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-do
 > publication is gated on a clean release-profile dry run; until the artifact
 > is staged on Central, install locally with `mvn install` to use it.
 
+## What you can do
+
+- Send invoices online, one at a time (`KsefSession`)
+- Send invoices in batch via async ZIP packages (`KsefBatchSession`)
+- Query invoice metadata + filter, lazily paginated
+  (`streamInvoicesByMetadata`)
+- Download invoice content + UPO by KSeF number
+- Incremental sync of newly-permanently-stored invoices using a HWM
+  cursor (`InvoiceSyncClient`)
+- Manage permissions, KSeF tokens, certificates (enrol / revoke / query)
+- Generate KOD I + KOD II invoice-verification QR codes
+- Authenticate as: NIP / EU-entity (VAT-UE) / Peppol provider / sub-unit
+  via tokens, raw certificates, or PKCS#12 keystores (XAdES-BASELINE-B)
+
+See the working examples in [`examples/`](examples/) — read them, adapt
+them, do not run them blindly against PROD (several have destructive
+side effects on KSeF).
+
+## Table of contents
+
+- [Repository structure](#repository-structure)
+- [Quick start](#quick-start)
+  - [Send an invoice](#send-an-invoice)
+  - [Batch invoice upload](#batch-invoice-upload)
+  - [Authentication options](#authentication-options)
+- [Environment configuration](#environment-configuration)
+- [Domain operations](#domain-operations)
+- [Examples](#examples)
+- [How this compares to the official SDK](#how-this-compares-to-the-official-sdk)
+- [Sample app (`ksef-demo`)](#sample-app-ksef-demo)
+- [Known KSeF gotchas](#known-ksef-gotchas)
+- [Logging](#logging)
+- [Architecture](#architecture)
+- [License](#license)
+- [Status](#status)
+
+## Repository structure
+
+This repo is a Maven multi-module reactor. Only one module ships:
+
+| Module | Role | Published? |
+|---|---|---|
+| `ksef-client` | The SDK library — the only module consumers depend on | ✅ Maven Central |
+| `ksef-demo` | Live-validation demo runner against KSeF DEMO/TEST environments | ❌ dev-only |
+| `ksef-examples` | Compile-gate for the JBang-style scripts in `examples/`; ensures example code tracks the public API | ❌ dev-only |
+| `ksef-jpms-consumer` | Compile-gate proving a JPMS named-module consumer can use the SDK without seeing `internal/*` packages (per ADR-028) | ❌ dev-only |
+
+Consumers depend on `ksef-client` only; the other three modules exist to keep the SDK honest during development and never ship to Maven Central.
+
 ## Quick start
 
 ### Maven
@@ -34,7 +83,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 
 byte[] invoiceXml = ...; // your FA(3) invoice
 
-try (KsefClient client = KsefClient.builder(KsefEnvironment.TEST)
+try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.TEST)
         .credentials(new KsefTokenCredentials("your-ksef-token", "1234567890"))
         .build()) {
 
@@ -79,23 +128,53 @@ new KsefPkcs12Credentials(Path.of("cert.p12"), "passphrase".toCharArray(), nip);
 new KsefCertificateCredentials(x509Cert, privateKey, nip);
 ```
 
+`client.authenticate()` blocks while the SDK runs the challenge-response
+flow. It can throw `KsefAuthException` (bad token / signature),
+`KsefServerException` (5xx during challenge or redeem), or
+`KsefNetworkException` (TLS / IO). Wrap calls accordingly when you have
+a clear recovery path; otherwise let the exception propagate so the
+caller (CLI, request handler, scheduled job) sees a typed failure.
+
+### EU-entity (VAT-UE) authentication
+
+EU entities authenticate with a self-signed X.509 certificate whose
+subject CN matches the desired `NipVatUe` identifier. Use
+`KsefCertificateCredentials` with a `NipVatUe`-context
+`KsefIdentifier`; the SDK's XAdES auth flow handles the rest. The
+EU-entity permission grant builders
+(`EuEntityPermissionGrantBuilder`, `EuEntityAdminPermissionGrantBuilder`)
+require a NipVatUe-context credentials chain and refuse to operate
+under a NIP-context token.
+
 ## Environment configuration
 
 | Environment | URL |
 |-------------|-----|
 | `KsefEnvironment.TEST` | `https://api-test.ksef.mf.gov.pl/v2` |
 | `KsefEnvironment.DEMO` | `https://api-demo.ksef.mf.gov.pl/v2` |
-| `KsefEnvironment.PREPROD` | `https://api-preprod.ksef.mf.gov.pl/v2` |
 | `KsefEnvironment.PROD` | `https://api.ksef.mf.gov.pl/v2` |
 | `KsefEnvironment.custom(url)` | Self-hosted / staging |
 
-Builder options:
+### Builder contract
+
+| Setter | Required? | Default if optional |
+|---|---|---|
+| `.environment(KsefEnvironment)` | **required** | – |
+| `.credentials(KsefCredentials)` | **required** | – |
+| `.connectTimeout(Duration)` | optional | 10 s |
+| `.readTimeout(Duration)` | optional | 30 s |
+| `.retryPolicy(RetryPolicy)` | optional | `enabled=true`, `maxAttempts=3`, `EXPONENTIAL` backoff, `retryOn5xx=true`, `retryOn429=true`, `retryPost=false`, `maxRetryAfterSeconds=60` |
+| `.features(FeaturePolicy)` | optional | `UpoVersion.DEFAULT`, `problemDetails=true`, `xadesStrict=false` |
+
+`build()` throws `NullPointerException` if `environment` or
+`credentials` is missing.
 
 ```java
-KsefClient.builder(KsefEnvironment.TEST)
-    .credentials(...)
+KsefClient.builder()
+    .environment(KsefEnvironment.TEST)
+    .credentials(new KsefTokenCredentials(token, nip))
     .connectTimeout(Duration.ofSeconds(10))   // TCP connect
-    .readTimeout(Duration.ofSeconds(30))       // per-request response wait
+    .readTimeout(Duration.ofSeconds(30))      // per-request response wait
     .retryPolicy(RetryPolicy.builder()
             .maxAttempts(3)
             .backoffStrategy(RetryPolicy.BackoffStrategy.EXPONENTIAL)
@@ -104,6 +183,16 @@ KsefClient.builder(KsefEnvironment.TEST)
             .build())
     .build();
 ```
+
+`RetryPolicy` defaults to `retryPost=false` — POST requests are NOT
+retried automatically, since most KSeF write endpoints are not
+idempotent. Override with `.retryPost(true)` only for endpoints you
+know to be idempotent.
+
+`FeaturePolicy` defaults to `xadesStrict=false` — KSeF accepts a
+broader range of XAdES profiles than `BASELINE-B` strict. Switch to
+`enforceXadesCompliance(true)` if your cert chain has been validated
+against the strict profile and you want server-side enforcement.
 
 ## Domain operations
 
@@ -122,6 +211,36 @@ Plus session-level helpers on `KsefClient` itself:
 
 - `client.authenticate()` / `client.reauthenticate()` / `client.terminateAuth()`
 - `client.openSession(FormCode)` / `client.openBatchSession(...)`
+- `client.invoiceSync(IncrementalSyncPlan, CheckpointStore, InvoiceSink)` —
+  HWM-based incremental sync with content download and per-invoice sink
+- `client.streamSessions(filter)` — paginate online + batch sessions
+- `client.listAuthSessions()` / `client.terminateAuthSession(ref)` /
+  `client.refreshAuthToken()`
+- `client.publicKeyCertificates()` — fetch KSeF symmetric-key + token
+  encryption public keys
+- `client.lastChallengeClientIp()` — IP returned by `/auth/challenge`,
+  input to `AuthorizationPolicy` IP-pinning
+
+## Examples
+
+The [`examples/`](examples/) directory has eight standalone
+`.java` files showing the most common KSeF SDK use cases. They are
+**reference code, not runnable scripts** — read them, adapt them. Each
+file's header docstring states *what it shows*, the *side effects on
+KSeF*, and the *inputs the snippet expects*.
+
+| File | Shows |
+|---|---|
+| [`SendOnlineInvoice.java`](examples/SendOnlineInvoice.java) | Online session, send one invoice, retrieve UPO |
+| [`BatchInvoiceUpload.java`](examples/BatchInvoiceUpload.java) | Batch session, upload pre-built parts, poll until terminal |
+| [`QueryInvoiceMetadata.java`](examples/QueryInvoiceMetadata.java) | Lazy paginator across a date range using `streamInvoicesByMetadata` |
+| [`IncrementalSync.java`](examples/IncrementalSync.java) | HWM-based incremental sync with checkpoint persistence |
+| [`GrantAndRevokePermission.java`](examples/GrantAndRevokePermission.java) | Grant / query / revoke a person permission |
+| [`EnrollAndRevokeCertificate.java`](examples/EnrollAndRevokeCertificate.java) | Enrol from CSR, poll for serial, revoke |
+| [`Handle401Refresh.java`](examples/Handle401Refresh.java) | Auto re-auth on token expiry |
+| [`QrCodeGeneration.java`](examples/QrCodeGeneration.java) | KOD I verification QR code (no API call) |
+
+See [`examples/README.md`](examples/README.md) for the full list and notes.
 
 ## How this compares to the official SDK
 
@@ -131,7 +250,7 @@ Plus session-level helpers on `KsefClient` itself:
 | XML invoice models | JAXB from XSD | JAXB from XSD (same approach) |
 | HTTP client | Single god-class `DefaultKsefClient` | Per-domain clients reached via `KsefClient.<feature>()` |
 | Retry | None | Configurable `RetryPolicy` with backoff + jitter |
-| Pagination | None | Lazy `Stream<T>` paginators (`streamMetadata`, `streamPersons`, ...) — AWS-SDK-style |
+| Pagination | None | Lazy `Stream<T>` paginators (`streamInvoicesByMetadata`, `streamPersons`, ...) — AWS-SDK-style |
 | Exceptions | Basic `ApiException` | Typed hierarchy (`KsefAuthException`, `KsefServerException`, `KsefRateLimitException`, …) |
 | Build tool | Gradle | Maven |
 | Java version | 11 source, 21 toolchain | 17+ |
@@ -140,43 +259,20 @@ Plus session-level helpers on `KsefClient` itself:
 
 ## Sample app (`ksef-demo`)
 
-Live-validation harness that exercises the SDK against the KSeF demo
-environment. Each runner reports per-operation results.
+The SDK ships with a live-validation runner under
+[`ksef-demo/`](ksef-demo/) that exercises every domain against the KSeF
+demo and test environments. Modes, credentials properties, certificate
+quota gating, and troubleshooting are documented in
+[`ksef-demo/README.md`](ksef-demo/README.md).
 
-```bash
-# Configure ksef-credentials.properties at repo root:
-#   ksef.environment=https://api-test.ksef.mf.gov.pl
-#   ksef.token=YOUR_TOKEN
-#   ksef.nip=1234567890
+## Known KSeF gotchas
 
-# Build the SDK locally first:
-mvn install -pl ksef-client -DskipTests
-
-# Run a demo mode:
-mvn exec:java -pl ksef-demo -Ddemo.mode=AUTH_SAFE
-```
-
-Available modes (defined in `DemoMode`):
-- `READ_ONLY` — auth + listing operations (no writes)
-- `AUTH_SAFE` — auth + safe-write operations (no permission changes)
-- `FULL` — full lifecycle including session open/send/close
-- `CLEANUP` — terminate any leftover sessions/permissions from prior runs
-
-Certificate enrollment runs are gated separately via `CertificateRunner` to
-avoid burning the monthly KSeF certificate quota on every demo execution.
-
-## Build and test
-
-```bash
-# Build SDK + run all tests (no live KSeF access needed)
-mvn clean verify -Dmaven.javadoc.skip=true
-
-# Static analysis (must pass with 0 violations)
-mvn spotbugs:check pmd:check checkstyle:check -pl ksef-client
-
-# Coverage report
-mvn verify -pl ksef-client  # produces target/site/jacoco/index.html
-```
+KSeF has a few server behaviours that diverge from spec or are
+worth knowing when integrating: session cooldown after termination,
+asynchronous authentication, certificate quota, retention expiry as
+HTTP 410, etc. The SDK either handles them transparently or surfaces
+them as typed exceptions — the curated list lives in
+[`KNOWN-SERVER-BEHAVIORS.md`](KNOWN-SERVER-BEHAVIORS.md).
 
 ## Logging
 
@@ -212,4 +308,5 @@ Bundled official KSeF OpenAPI/XSD files (`ksef-client/openapi/open-api.json`, `k
 - 🚧 JSpecify null-safety annotations (ADR-017)
 - 🚧 Maven Central first publish (release-profile dry run pending)
 
-Project state and roadmap is tracked in this `CHANGELOG.md` and the `ADR/` set.
+- Release history: [`CHANGELOG.md`](CHANGELOG.md)
+- Architectural decisions: [`ADR/`](ADR/)

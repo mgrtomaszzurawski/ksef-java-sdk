@@ -206,6 +206,20 @@
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
+            <!--
+                Ship LICENSE.txt + THIRD-PARTY-NOTICES.md inside the JAR
+                under META-INF/ so consumers receive them with the binary
+                distribution. Required for AGPL-3.0 §5(a), Apache 2.0 §4.4
+                (Jackson/ZXing/JSpecify NOTICE), LGPL 2.1 (EU DSS).
+            -->
+            <resource>
+                <directory>${project.basedir}/..</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>LICENSE.txt</include>
+                    <include>THIRD-PARTY-NOTICES.md</include>
+                </includes>
+            </resource>
         </resources>
         <plugins>
             <!-- OpenAPI generator: REST API models from open-api.json -->

@@ -41,10 +41,9 @@ User pushback at the start of this session:
    confusing: same domain, two different sub-packages, no rule for which goes
    where.
 
-NoviCloud SDK uses `resources/<domain>/` for domain clients, but that pattern
-fits CRUD resources, not the KSeF set of cross-cutting *functionalities*
-(permissions, certificates, tokens, sessions, etc.). The decision below
-adopts the spirit of NoviCloud's grouping while renaming it.
+A `resources/<domain>/` layout fits uniform CRUD resources, but KSeF is a set of
+cross-cutting *functionalities* (permissions, certificates, tokens, sessions, etc.)
+rather than a flat resource list. The decision below groups by functionality bucket.
 
 ## Decision
 
@@ -164,8 +163,6 @@ but JPMS prevents consumer reach.
   in `internal/runtime/transport/`)
 - ADR-014 — `ApiPaths` centralisation (uses the `internal/runtime/transport/`
   bucket)
-- NoviCloud SDK `resources/<domain>/` pattern — inspiration, adapted to
-  KSeF's functionality-not-resource shape
 
 ---
 

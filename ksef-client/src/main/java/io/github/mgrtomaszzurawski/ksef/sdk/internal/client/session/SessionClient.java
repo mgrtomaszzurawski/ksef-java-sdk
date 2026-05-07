@@ -120,7 +120,7 @@ public final class SessionClient {
     @SuppressWarnings("PMD.ConsecutiveAppendsShouldReuse")
     private io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw querySessionsPage(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter,
-            String continuationToken) {
+            @Nullable String continuationToken) {
         LOGGER.debug(LOG_CALL, OP_QUERY_SESSIONS);
         String token = http.requireToken();
         StringBuilder path = new StringBuilder(ApiPaths.SESSIONS).append(QUERY_PAGE_SIZE).append(SESSION_INVOICES_PAGE_SIZE);

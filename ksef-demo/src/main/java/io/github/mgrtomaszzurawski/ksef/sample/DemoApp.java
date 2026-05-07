@@ -126,7 +126,7 @@ public final class DemoApp {
 
     private static RunReport runPass(PassConfig config) {
         LOGGER.info("Running {} pass against {}", config.label(), config.envUrl());
-        try (KsefClient client = KsefClient.builder(KsefEnvironment.custom(config.envUrl()))
+        try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(config.envUrl()))
                 .credentials(config.credentials())
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {

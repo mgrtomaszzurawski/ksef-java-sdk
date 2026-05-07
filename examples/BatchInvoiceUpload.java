@@ -5,21 +5,24 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Example: open a batch session, upload pre-built parts, close, poll until terminal.
+ * Reference code (not a runnable script): adapt to your application.
  *
- * Required env vars:
+ * What this shows:
+ *   Open a batch session, upload pre-built parts, close, poll until terminal.
+ *   The SDK builds the encrypted ZIP from your raw XMLs, splits it into part files,
+ *   computes hashes, and gives you the upload URLs. {@code uploadParts()} HTTP-PUTs
+ *   each part. {@code close()} signals to KSeF that the upload is done and polls
+ *   status until it's terminal.
+ *
+ * Side effects on KSeF:
+ *   Files real legally-binding invoices in batch. Do not run against PROD without
+ *   understanding the consequences.
+ *
+ * Inputs the snippet expects (read from env vars when run as-is):
  *   KSEF_TOKEN        — pre-issued KSeF token
  *   KSEF_NIP          — taxpayer NIP (10 digits)
- *   KSEF_INVOICE_XML  — path to one FA(3) invoice XML; the example wraps it in a single-invoice batch
- *                       (FormCode.FA2 is only valid on TEST environment for back-compat)
- *
- * Optional:
- *   KSEF_ENV          — TEST | DEMO | PREPROD | PROD (default: TEST)
- *
- * The SDK builds the encrypted ZIP from your raw XMLs, splits it into part files,
- * computes hashes, and gives you the upload URLs. {@code uploadParts()} HTTP-PUTs
- * each part. {@code close()} signals to KSeF that the upload is done and polls
- * status until it's terminal.
+ *   KSEF_INVOICE_XML  — path to one FA(3) invoice XML
+ *   KSEF_ENV          — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -45,7 +48,7 @@ public final class BatchInvoiceUpload {
         byte[] invoiceXml = Files.readAllBytes(invoicePath);
         List<byte[]> invoices = List.of(invoiceXml);
 
-        try (KsefClient client = KsefClient.builder(environment)
+        try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
@@ -83,7 +86,6 @@ public final class BatchInvoiceUpload {
         return switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
             case "DEMO" -> KsefEnvironment.DEMO;
-            case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> KsefEnvironment.custom(envName);
         };

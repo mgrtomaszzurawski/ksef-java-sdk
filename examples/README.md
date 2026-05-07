@@ -1,35 +1,15 @@
 # Examples
 
-Copy-paste-runnable examples covering the most common KSeF SDK use cases.
+These are **reference code, not runnable scripts** — they show how each
+SDK feature is wired. Adapt them to your application context. Do not run
+them blindly against PROD; several examples have destructive side effects
+on KSeF (filing real legally-binding invoices, granting/revoking
+permissions, burning cert quota).
 
-Each example is a single self-contained `.java` file with a `main()` method.
-They depend on the published artifact (or the local `1.0.0`
-`mvn install` you already use for `ksef-demo`).
-
-## How to run
-
-1. Make sure the SDK is in your local Maven repo:
-   ```bash
-   mvn install -pl ksef-client -DskipTests
-   ```
-2. Compile and run an example with the SDK on the classpath. The simplest way
-   is JBang or Maven exec:
-   ```bash
-   # JBang (auto-resolves dependencies from //DEPS)
-   jbang examples/SendOnlineInvoice.java
-
-   # Or compile manually (POSIX shell — for Windows use a temp-file
-   # variant of -Dmdep.outputFile rather than /dev/stdout)
-   CLASSPATH=$(mvn -q dependency:build-classpath -pl ksef-client \
-       -DincludeScope=runtime -Dmdep.outputFile=/dev/stdout)
-   javac -cp "$CLASSPATH:ksef-client/target/ksef-client-1.0.0.jar" \
-         examples/SendOnlineInvoice.java
-   java -cp "$CLASSPATH:ksef-client/target/ksef-client-1.0.0.jar:examples" \
-        SendOnlineInvoice
-   ```
-3. Each example reads credentials from environment variables: `KSEF_TOKEN`,
-   `KSEF_NIP`. The `SendOnlineInvoice` and `BatchInvoiceUpload` examples also
-   need a path to a sample invoice XML (`KSEF_INVOICE_XML`).
+Each example is a single self-contained `.java` file with a `main()`
+method. The header docstring on every file lists *what it shows*, the
+*side effects on KSeF*, and the *inputs the snippet expects* when run
+as-is.
 
 ## Available examples
 
@@ -37,7 +17,7 @@ They depend on the published artifact (or the local `1.0.0`
 |------|----------|
 | `SendOnlineInvoice.java` | Open online session, send one invoice, retrieve the UPO. |
 | `BatchInvoiceUpload.java` | Open batch session, upload pre-built parts, poll until processing completes. |
-| `QueryInvoiceMetadata.java` | Lazy paginator across all invoices in a date range using `streamMetadata`. |
+| `QueryInvoiceMetadata.java` | Lazy paginator across all invoices in a date range using `streamInvoicesByMetadata`. |
 | `GrantAndRevokePermission.java` | Grant a person permission, query the operation status, revoke. |
 | `EnrollAndRevokeCertificate.java` | Enroll a new certificate from a CSR, poll for the serial number, revoke. |
 | `Handle401Refresh.java` | Demonstrate auto re-authentication on token expiry. |
@@ -46,12 +26,14 @@ They depend on the published artifact (or the local `1.0.0`
 
 ## Notes
 
-- Examples use the `KsefEnvironment.TEST` URL by default. Override via
-  `KSEF_ENV` env var (`TEST`, `PREPROD`, `PROD`, or any custom URL — the demo
+- Examples target `KsefEnvironment.TEST` by default. Override via
+  `KSEF_ENV` (`TEST`, `DEMO`, `PROD`, or any custom URL — the demo
   environment is `https://api-demo.ksef.mf.gov.pl`).
 - Examples log via SLF4J. The default backend is `slf4j-simple` if your
   classpath has it; otherwise no output. See the root README's "Logging"
   section for backend setup.
-- Examples are intentionally minimal — they don't handle every error path or
-  use a logging framework. They are starting points, not production
+- Examples are intentionally minimal — they don't handle every error path
+  or use a logging framework. They are starting points, not production
   templates. For a full integration harness see [`ksef-demo/`](../ksef-demo/).
+- The `ksef-examples` Maven module compile-checks every file against the
+  published API to prevent silent drift; running examples is up to you.

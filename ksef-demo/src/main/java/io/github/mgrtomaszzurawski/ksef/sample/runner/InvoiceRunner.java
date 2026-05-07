@@ -43,21 +43,21 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  * Runner for InvoiceClient operations.
  *
  * <p>All operations run in both AUTH_SAFE and FULL modes — they're either
- * read-only (queryMetadata, getExportStatus, getByKsefNumber) or start a
+ * read-only (queryInvoicesByMetadata, getExportStatus, getByKsefNumber) or start a
  * non-destructive read-side job (exportInvoices). In AUTH_SAFE mode
- * getByKsefNumber falls back to the first invoice from queryMetadata
+ * getByKsefNumber falls back to the first invoice from queryInvoicesByMetadata
  * when the FULL-mode SessionRunner did not populate a KSeF number.</p>
  */
 public final class InvoiceRunner implements DemoRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceRunner.class);
     private static final String NAME = "invoice";
-    private static final String OP_QUERY_METADATA = "queryMetadata";
+    private static final String OP_QUERY_METADATA = "queryInvoicesByMetadata";
     private static final String OP_EXPORT = "exportInvoices";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
     private static final String OP_GET_BY_KSEF = "getByKsefNumber";
     private static final String SKIP_NO_KSEF_NUMBER =
-            "no KSeF number available — queryMetadata returned empty and no FULL-mode ref in context";
+            "no KSeF number available — queryInvoicesByMetadata returned empty and no FULL-mode ref in context";
     private static final String SKIP_NO_EXPORT_REF = "export not started";
     private static final int EXPORT_STATUS_OK = 200;
     private static final int EXPORT_POLL_MAX_DELAY_MS = 10000;
@@ -107,11 +107,11 @@ public final class InvoiceRunner implements DemoRunner {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(from);
 
-            InvoiceMetadataResult response = context.client().invoices().queryMetadata(query);
+            InvoiceMetadataResult response = context.client().invoices().queryInvoicesByMetadata(query);
             int count = response.invoices() != null ? response.invoices().size() : 0;
             boolean hasMore = response.hasMore();
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("[{}] queryMetadata: {} invoices, hasMore={}", NAME, count, hasMore);
+                LOGGER.info("[{}] queryInvoicesByMetadata: {} invoices, hasMore={}", NAME, count, hasMore);
             }
             results.add(RunResult.ok(NAME, OP_QUERY_METADATA, elapsed(start),
                     count + " invoices, hasMore=" + hasMore));

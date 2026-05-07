@@ -5,18 +5,23 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Example: incremental invoice sync — pull every newly-permanently-stored
- * invoice for a NIP since the last run, decrypt to disk, hand each off to
- * a sink for downstream processing.
+ * Reference code (not a runnable script): adapt to your application.
  *
- * Required env vars:
- *   KSEF_TOKEN  — pre-issued KSeF token
- *   KSEF_NIP    — taxpayer NIP (10 digits)
+ * What this shows:
+ *   Incremental invoice sync — pull every newly-permanently-stored invoice
+ *   for a NIP since the last run, decrypt to disk, hand each off to a sink
+ *   for downstream processing.
  *
- * Optional:
- *   KSEF_ENV       — TEST | DEMO | PREPROD | PROD (default: TEST)
- *   KSEF_OUT_DIR   — directory for decrypted invoice XMLs and the
- *                    on-disk checkpoint file (default: ./ksef-sync)
+ * Side effects on KSeF:
+ *   Read-only (queryInvoicesByMetadata + export). Writes decrypted XMLs to the local
+ *   output directory.
+ *
+ * Inputs the snippet expects (read from env vars when run as-is):
+ *   KSEF_TOKEN     — pre-issued KSeF token
+ *   KSEF_NIP       — taxpayer NIP (10 digits)
+ *   KSEF_ENV       — TEST | DEMO | PROD (optional, default: TEST)
+ *   KSEF_OUT_DIR   — output directory for decrypted XMLs + the on-disk
+ *                    checkpoint file (optional, default: ./ksef-sync)
  *
  * Sync semantics (see ksef-docs/przyrostowe-pobieranie-faktury.md):
  *   - cursor = permanentStorageHwmDate (PermanentStorage axis)
@@ -52,12 +57,11 @@ public final class IncrementalSync {
         KsefEnvironment environment = switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
             case "DEMO" -> KsefEnvironment.DEMO;
-            case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> throw new IllegalArgumentException("Unknown KSEF_ENV: " + envName);
         };
 
-        try (KsefClient client = KsefClient.builder(environment)
+        try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
@@ -91,7 +95,7 @@ public final class IncrementalSync {
                 System.out.println("Got " + ksefNumber.value()
                         + " issued=" + metadata.issueDate()
                         + " xml=" + (xmlPath == null ? "<no XML>" : xmlPath));
-                // TODO: insert into your downstream store keyed by ksefNumber.
+                // adapt: store ksefNumber + xmlPath in your DB / queue / FS
             });
 
             System.out.println("Sync done: " + result.totalProcessed()

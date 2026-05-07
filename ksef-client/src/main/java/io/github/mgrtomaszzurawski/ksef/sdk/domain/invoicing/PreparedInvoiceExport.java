@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -419,7 +420,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
      * Throw {@link KsefException} if {@code expected} is non-null and does not
      * equal the freshly-{@code .digest()}-ed accumulator.
      */
-    private static void verifyHashOrThrow(byte[] expected, java.security.MessageDigest actualDigest, int ordinal) {
+    private static void verifyHashOrThrow(byte @Nullable [] expected, java.security.MessageDigest actualDigest, int ordinal) {
         if (expected == null) {
             return;
         }
@@ -653,7 +654,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
 
     private static ExportedInvoicePackage unzipPackage(byte[] zipBytes) {
         Map<String, byte[]> invoiceXmls = new HashMap<>();
-        byte[] metadataJson = null;
+        byte @Nullable [] metadataJson = null;
         long totalBytes = 0L;
         int entryCount = 0;
         try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {

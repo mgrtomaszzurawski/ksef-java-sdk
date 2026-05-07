@@ -13,7 +13,7 @@ Need to choose minimum Java version. Options considered:
 
 ## Decision
 
-Target Java 17 as minimum. Same baseline as NoviCloud SDK (proven to work with this toolchain).
+Target Java 17 as minimum.
 
 ## Consequences
 

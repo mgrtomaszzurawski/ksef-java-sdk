@@ -41,7 +41,7 @@ public record AuthSession(
         String referenceNumber,
         OffsetDateTime startDate,
         @Nullable String authenticationMethod,
-        StatusInfo status,
+        @Nullable StatusInfo status,
         boolean tokenRedeemed,
         @Nullable OffsetDateTime lastTokenRefreshDate,
         @Nullable OffsetDateTime refreshTokenValidUntil,

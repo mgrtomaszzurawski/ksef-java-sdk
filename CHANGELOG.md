@@ -12,12 +12,11 @@ artefact has not been staged or published yet; the dependency snippets
 in the README show the coordinates that will resolve once Central
 publication completes.
 
-### Polish pass — Codex / Claude Code v2 closure (2026-05-05)
+### Polish pass (2026-05-05)
 
-Closes the verified findings from the 2026-05-05 17:39 Codex review and
-the Claude Code v2 manual validation audit:
+Pre-1.0 stabilisation cleanups:
 
-- **F1 CRITICAL** — `OnlineSessionBuilder.fa2/fa3` was building wrong
+- **`OnlineSessionBuilder.fa2/fa3` form-code fix.** The builder was building wrong
   FormCode triples (e.g. `("FA", "3", "FA (3)")` instead of canonical
   `("FA (3)", "1-0E", "FA")`). Builder now delegates to the
   `FormCode.FA2` / `FormCode.FA3` constants used by the main
@@ -30,7 +29,7 @@ the Claude Code v2 manual validation audit:
 - **FORM-1** — `KsefClient.openSession(...)` /
   `openBatchSession*(...)` now preflight FormCode against the active
   environment via `FormCode.assertAllowedOn(KsefEnvironment)`. FA(2)
-  on DEMO/PREPROD/PROD fails fast instead of reaching server-side
+  on DEMO/PROD fails fast instead of reaching server-side
   schema rejection.
 - **A.4.2.2** — `pollAuthStatus` now treats codes 100/450 as
   in-progress, 200 as success, anything else as terminal failure
@@ -71,14 +70,15 @@ the Claude Code v2 manual validation audit:
   the intentional asymmetry vs online cooldown guard, citing the RCA
   path.
 - **F3 / KsefLimits Javadoc** — Corrected the `KsefLimits` Javadoc to
-  describe the actual paginating helpers: `InvoiceClient.streamMetadata`
+  describe the actual paginating helpers: `InvoiceClient.streamInvoicesByMetadata`
   and the per-domain `stream*` paginators on `PermissionClient`,
   `TokenClient`, `CertificateClient`. Snapshot helpers (`query*`) cap
   at the server `pageSize` and require explicit cursor walks to exhaust
   larger result sets.
-- **ENV-1** — `KsefEnvironment.PREPROD` Javadoc clarifies it is not
-  listed in `srodowiska.md` and may not be reachable; `DEMO` is the
-  recommended pre-production target.
+- **`KsefEnvironment.PREPROD` removed.** The `srodowiska.md` spec lists
+  only TEST, DEMO, and PROD as canonical environments — `DEMO` is the
+  pre-production target. Custom hosts (proxies, staging) remain available
+  via `KsefEnvironment.custom(url)`.
 
 ### Source-incompatible record changes (1.0.0 stabilisation)
 
@@ -160,11 +160,11 @@ them as typed errors so the consumer can react.
   - **ADR-021** — Public API tiers: Tier 1 workflow, Tier 2 endpoint, no
     Tier 3.
   - **ADR-022** — REQ-ID citation discipline: every spec-touching change
-    cites a REQ-ID from `context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md`.
+    cites a REQ-ID from the internal spec-conformance audit.
 - `.github/PULL_REQUEST_TEMPLATE.md` enforces REQ-ID citation per ADR-022.
 - New `ksef-examples` Maven module compiles all loose JBang-style scripts in
-  `examples/` as part of `mvn verify`. Closes Codex round-7 finding A8
-  (broken `QrCodeGeneration.java` no longer possible to drift undetected).
+  `examples/` as part of `mvn verify`, so example code can no longer drift
+  out of sync with the public API (e.g. broken `QrCodeGeneration.java`).
 
 ### Step 2 — Foundational types
 
@@ -218,7 +218,7 @@ them as typed errors so the consumer can react.
   `ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md:258-264`.
 - **`KsefSession.shouldUseOfflineMode(LocalDate, LocalDate)`**
   (REQ-OFFLINE-002). Calendar-day comparison helper.
-- **QR label clipping fix** (Codex round-7 F2). Canvas now sized to
+- **QR label clipping fix.** Canvas now sized to
   `max(qrWidth, labelWidth + 2*padding)` so 35-character KSeF numbers
   (per `numer-ksef.md:3`) no longer clip.
 
@@ -258,8 +258,8 @@ them as typed errors so the consumer can react.
   `*Raw` types and no `sdk.internal.*` types leak through public
   method signatures, constructors, or fields. The previous
   `KsefClientInternals` allow-list entry is gone — that class was
-  removed during 1.0 stabilisation, and the third Codex review
-  fresh-pass tightened the gate so no public constructor is allowed
+  removed during 1.0 stabilisation, and a later review pass tightened
+  the gate so no public constructor is allowed
   to reference internal-package types either (construction now goes
   through the non-exported
   `sdk.internal.client.session.SessionHandleConstructor`).
@@ -276,8 +276,8 @@ them as typed errors so the consumer can react.
   REQ-SESS-18/19/20 (KSeF number CRC-8), REQ-AUTH-033 (cert
   fingerprint), REQ-HWM-002 (truncation cursor), REQ-EXPORT-WINDOWING-002
   (subject-type iteration via InvoiceSyncClient),
-  REQ-OFFLINE-002 (auto-offline detection helper), QR-A8 (broken
-  example), Codex round-7 F2 (QR label clipping).
+  REQ-OFFLINE-002 (auto-offline detection helper), example
+  compile-gate, QR label clipping fix.
 - Audit ⚠️ items: most internal cryptographic primitives now
   exercised by `KsefCryptoServiceTest` (round-trip, stream, CSR,
   zeroisation). Remaining ⚠️ items remain documented as test debt
@@ -286,7 +286,7 @@ them as typed errors so the consumer can react.
 
 ### Final-stretch 1.0.0 fixes (2026-05-04 to 2026-05-05)
 
-Workflow-correctness blockers (Codex F1-F8 across two review rounds):
+Workflow-correctness blockers caught in pre-stabilisation review:
 
 - **`SendInvoiceCommand.Offline` + `KsefSession.sendOffline(byte[])`** —
   public offline-mode invoice send (offline24 / offline-niedostępność /
@@ -296,7 +296,7 @@ Workflow-correctness blockers (Codex F1-F8 across two review rounds):
   on every batch-open public method (`openBatchSession` ×2,
   `openBatchSessionFromFiles`). Static factories
   `BatchSessionOptions.online()` / `.offline()`.
-- **`InvoiceClientImpl.streamMetadata` truncation algorithm** —
+- **`InvoiceClientImpl.streamInvoicesByMetadata` truncation algorithm** —
   rewritten per spec (`przyrostowe-pobieranie-faktur.md`):
   `pageOffset++` for `hasMore && !isTruncated`; reset `pageOffset` and
   advance `dateRange.from` to last record's date for `isTruncated`.
@@ -369,7 +369,7 @@ Wire-shape regression coverage added:
 - New offline-mode WireMock assertions in `KsefSessionTest` and
   `KsefClientOpenBatchSessionTest`.
 
-### Added (Codex round 9 — pre-stabilisation)
+### Added (pre-stabilisation pass)
 
 - `PreparedInvoiceExport` — public handle returned from
   `client.invoices().prepareExport(...)` that retains the AES key + IV used
@@ -418,9 +418,9 @@ Wire-shape regression coverage added:
   three permitted formats (RFC 1123, RFC 850, asctime); past dates collapse
   to immediate retry.
 
-### Changed (Codex round 9 — pre-stabilisation)
+### Changed (pre-stabilisation pass)
 
-- `InvoiceClient.streamMetadata` no longer drops caller-supplied filters
+- `InvoiceClient.streamInvoicesByMetadata` no longer drops caller-supplied filters
   (`ksefNumber`, `invoiceNumber`, `sellerNip`, `invoicingMode`,
   `isSelfInvoicing`, `hasAttachment`, `amount`, `currencyCodes`,
   `buyerIdentifier`) between pages. Cursor advances by mutating
@@ -457,7 +457,7 @@ Wire-shape regression coverage added:
   permission operations, retention/410 Gone responses, optional Problem Details
   format, increased rate limits.
 
-### Removed (Codex round 9 — pre-stabilisation)
+### Removed (pre-stabilisation pass)
 
 - `KsefClient.runtime()` removed from the public API. Replaced by
   package-private `internalRuntime()`. (Final 1.0.0 stabilisation also
@@ -496,7 +496,7 @@ Wire-shape regression coverage added:
 - Configurable retry: `RetryPolicy` with exponential backoff and
   randomized jitter (`ThreadLocalRandom`-driven, narrowed to
   `[base/2, base]`), retried on 5xx and 429 responses.
-- Date-cursor pagination helper: `InvoiceClient.streamMetadata(...)` walks all
+- Date-cursor pagination helper: `InvoiceClient.streamInvoicesByMetadata(...)` walks all
   pages using `permanentStorageHwmDate` as cursor.
 - Typed exception hierarchy: `KsefAuthException`, `KsefServerException`,
   `KsefRateLimitException`, `KsefNotFoundException`,
@@ -547,14 +547,24 @@ ADRs ([`ADR/`](ADR/)):
 - **ADR-014** — `ApiPaths` centralisation.
 - **ADR-015** — trust the spec on `@Nonnull` fields, carve-out via RCA.
 - **ADR-016** — `KsefClient` is the only entry point.
+- **ADR-017** — JSpecify null-safety annotations on the public API.
+- **ADR-018** — `*Raw` types on internal bridge methods.
+- **ADR-019** — KOD II signing scheme: PKI-neutral plus owns-key convenience.
+- **ADR-020** — testkit philosophy.
+- **ADR-021** — public API tiers (Tier-1 workflow / Tier-2 endpoint / Tier-3 advanced).
+- **ADR-022** — REQ-ID citation discipline for spec-touching changes.
+- **ADR-023** — `Stream<T>` paginators replace materialized `queryAll*` / `listAll`.
+- **ADR-024** — cross-package construction via reflective bridge.
+- **ADR-025** — batch assembly mode and temp-file hygiene.
+- **ADR-026** — AES key zeroisation on close.
+- **ADR-027** — transport-level URI redaction.
+- **ADR-028** — JPMS public-API defence gates.
+- **ADR-029** — XXE hardening on XML validator.
 
 ### Known limitations
 
 - `HttpClient` lifecycle: the JDK 17 baseline cannot call `HttpClient.close()`
   (added in JDK 21). The shared `HttpClient` is left to JVM cleanup. Will be
   addressed when the JDK baseline is bumped.
-- Per-builder method coverage gate (PLAN A.9) is not at 1.00 yet —
-  ~139 builder methods need explicit unit tests before the gate is enabled.
-- JSpecify null-safety annotations on the public API are pending (PLAN A.8 /
-  ADR-017).
+
 [1.0.0]: https://github.com/mgrtomaszzurawski/ksef-java-sdk/commits/develop

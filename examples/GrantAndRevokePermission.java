@@ -5,16 +5,20 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Example: grant a person InvoiceRead permission, query the operation status,
- * then revoke the permission.
+ * Reference code (not a runnable script): adapt to your application.
  *
- * Required env vars:
+ * What this shows:
+ *   Grant a person InvoiceRead permission, query the operation status, then
+ *   revoke the permission.
+ *
+ * Side effects on KSeF:
+ *   Modifies entity permissions on the granting taxpayer's account.
+ *
+ * Inputs the snippet expects (read from env vars when run as-is):
  *   KSEF_TOKEN  — pre-issued KSeF token
  *   KSEF_NIP    — granting taxpayer NIP (10 digits)
  *   KSEF_PESEL  — PESEL of the person receiving the permission (11 digits)
- *
- * Optional:
- *   KSEF_ENV    — TEST | DEMO | PREPROD | PROD (default: TEST)
+ *   KSEF_ENV    — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -33,7 +37,7 @@ public final class GrantAndRevokePermission {
         String pesel = requireEnv("KSEF_PESEL");
         KsefEnvironment environment = resolveEnv(System.getenv("KSEF_ENV"));
 
-        try (KsefClient client = KsefClient.builder(environment)
+        try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
@@ -80,7 +84,6 @@ public final class GrantAndRevokePermission {
         return switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
             case "DEMO" -> KsefEnvironment.DEMO;
-            case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> KsefEnvironment.custom(envName);
         };

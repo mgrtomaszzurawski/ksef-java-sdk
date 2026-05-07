@@ -170,7 +170,8 @@ public final class SessionHandleConstructor {
                                                     BatchPackageBuilder.@Nullable BatchPackage batchPackage,
                                                     java.time.@Nullable OffsetDateTime validUntil) {
         return invoke(BATCH_SESSION_CTOR_7_ARG_VALID_UNTIL, sessionClient, httpClient,
-                referenceNumber, partUploadRequests, batchPackage, (java.util.function.LongSupplier) System::nanoTime, validUntil);
+                referenceNumber, partUploadRequests, batchPackage,
+                (java.util.function.LongSupplier) System::nanoTime, validUntil);
     }
 
     /**

@@ -59,8 +59,8 @@ import java.util.List;
  * SDK change moves a returned type into {@code sdk.internal.*} or
  * {@code client.model.*Raw}, this module fails to build — a regression
  * the reflection-based {@code PublicApiSurfaceTest} cannot catch on its
- * own (e.g. the {@code AuthSession} JPMS-export gap in commit
- * {@code 0d1c264} that Codex flagged as F1).
+ * own (e.g. an earlier {@code AuthSession} JPMS-export gap that the
+ * reflection-only check did not catch).
  */
 public final class JpmsConsumerCompileFixture {
 
@@ -94,7 +94,7 @@ public final class JpmsConsumerCompileFixture {
                 FileMetadata.class,
                 CsrRequest.class,
                 CsrResult.class,
-                // sdk.domain.authentication.model — Codex F1 was missing this export
+                // sdk.domain.authentication.model — verify exported (gap caught earlier)
                 AuthSession.class,
                 // sdk.domain.invoicing + builder + batch + qrcode + sync
                 FormCode.class,
@@ -126,7 +126,7 @@ public final class JpmsConsumerCompileFixture {
      */
     @SuppressWarnings("unused")
     public static void referencePublicMethods() {
-        KsefClient.Builder builder = KsefClient.builder(KsefEnvironment.DEMO)
+        KsefClient.Builder builder = KsefClient.builder().environment(KsefEnvironment.DEMO)
                 .credentials(new KsefTokenCredentials("token", "1234567890"))
                 .retryPolicy(RetryPolicy.builder().build())
                 .features(FeaturePolicy.defaults());

@@ -153,13 +153,6 @@ class FormCodeTest {
     }
 
     @Test
-    void assertAllowedOn_fa2OnPreprod_throws() {
-        // when / then
-        assertThrows(IllegalArgumentException.class,
-                () -> FormCode.FA2.assertAllowedOn(KsefEnvironment.PREPROD));
-    }
-
-    @Test
     void assertAllowedOn_fa3OnAllEnvironments_doesNotThrow() {
         // when / then
         assertDoesNotThrow(() -> FormCode.FA3.assertAllowedOn(KsefEnvironment.TEST));
@@ -172,11 +165,9 @@ class FormCodeTest {
         // when / then — PEF3 + PEF_KOR3 must be accepted on every environment
         assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.TEST));
         assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.DEMO));
-        assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.PREPROD));
         assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.PROD));
         assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.TEST));
         assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.DEMO));
-        assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.PREPROD));
         assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.PROD));
     }
 

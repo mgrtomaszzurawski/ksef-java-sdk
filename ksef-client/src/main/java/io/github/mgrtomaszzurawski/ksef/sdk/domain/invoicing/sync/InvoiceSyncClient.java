@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -243,7 +244,7 @@ public final class InvoiceSyncClient {
      * already seen, or malformed). Logs a warning for malformed numbers
      * so the operator notices server-side data quality issues.
      */
-    private KsefNumber parsableUnseenKsefNumber(InvoiceMetadata metadata,
+    private @Nullable KsefNumber parsableUnseenKsefNumber(InvoiceMetadata metadata,
                                                  Set<String> seenKsefNumbers,
                                                  InvoiceQuerySubjectType subjectType) {
         String raw = metadata.ksefNumber();
@@ -263,7 +264,7 @@ public final class InvoiceSyncClient {
      * is {@code null} when the loop should stop (empty package or
      * non-advancing cursor).
      */
-    private record WindowOutcome(long processedDelta, OffsetDateTime advancedCursor) {
+    private record WindowOutcome(long processedDelta, @Nullable OffsetDateTime advancedCursor) {
         static WindowOutcome advance(long delta, OffsetDateTime cursor) {
             return new WindowOutcome(delta, cursor);
         }
@@ -316,7 +317,7 @@ public final class InvoiceSyncClient {
      * Falls back to the n-th .xml file in stable lexical order if no name
      * matches. Returns {@code null} if no XML files are present.
      */
-    private static Path matchInvoiceXml(ExportedInvoiceDirectory dir, KsefNumber typed, int ordinal) {
+    private static @Nullable Path matchInvoiceXml(ExportedInvoiceDirectory dir, KsefNumber typed, int ordinal) {
         Map<String, Path> all = dir.invoiceXmls();
         Path byKsefNumber = all.get(typed.value() + XML_EXTENSION);
         if (byKsefNumber != null) {
