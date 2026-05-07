@@ -35,7 +35,7 @@ public final class TokensMappers {
     public static GenerateTokenRequestRaw toGenerateTokenRequestRaw(TokenGenerateRequest request) {
         GenerateTokenRequestRaw rawValue = new GenerateTokenRequestRaw();
         rawValue.setDescription(request.description());
-        java.util.List<TokenPermissionTypeRaw> permissions = new java.util.ArrayList<>(request.permissions().size());
+        List<TokenPermissionTypeRaw> permissions = new java.util.ArrayList<>(request.permissions().size());
         for (TokenPermissionType type : request.permissions()) {
             permissions.add(toTokenPermissionTypeRaw(type));
         }
@@ -73,7 +73,7 @@ public final class TokensMappers {
                 perms,
                 rawValue.getDateCreated(),
                 rawValue.getLastUseDate(),
-                TokensMappers.toTokenStatus(rawValue.getStatus()),
+                toTokenStatus(rawValue.getStatus()),
                 rawValue.getStatusDetails() != null ? List.copyOf(rawValue.getStatusDetails()) : List.of());
     }
 
@@ -96,7 +96,7 @@ public final class TokensMappers {
                 perms,
                 rawValue.getDateCreated(),
                 rawValue.getLastUseDate(),
-                TokensMappers.toTokenStatus(rawValue.getStatus()),
+                toTokenStatus(rawValue.getStatus()),
                 rawValue.getStatusDetails() != null ? List.copyOf(rawValue.getStatusDetails()) : List.of());
     }
 

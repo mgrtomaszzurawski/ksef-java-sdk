@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Status:** Accepted
-**Last verified:** 2026-05-02
+**Last verified:** 2026-05-07
 **Trigger:** PR #27 SonarQube/IDE inspection wave. `HttpSupport`
 (`internal/runtime/transport/`) imported `KsefClient` (the top-level facade)
 to read its base URL, HTTP client, retry handler, session context, object

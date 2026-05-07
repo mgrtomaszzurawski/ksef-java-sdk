@@ -32,11 +32,11 @@ public final class PermissionsRequestMappers {
         var subjectId = new io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierRaw()
                 .type(toIndirectSubjectIdentifierTypeRaw(request.identifierType()))
                 .value(request.identifierValue());
-        var personDetails = new io.github.mgrtomaszzurawski.ksef.client.model.PersonDetailsRaw()
+        var personDetails = new PersonDetailsRaw()
                 .firstName(request.firstName())
                 .lastName(request.lastName());
-        var subjectDetails = new io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsRaw()
-                .subjectDetailsType(io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
+        var subjectDetails = new PersonPermissionSubjectDetailsRaw()
+                .subjectDetailsType(PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
                 .personById(personDetails);
         var perms = new ArrayList<io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionTypeRaw>(request.permissions().size());
         for (var type : request.permissions()) {
@@ -59,7 +59,7 @@ public final class PermissionsRequestMappers {
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw toIndirectSubjectIdentifierTypeRaw(
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubjectIdentifierType value) {
+            PersonSubjectIdentifierType value) {
         return switch (value) {
             case NIP -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw.NIP;
             case PESEL -> io.github.mgrtomaszzurawski.ksef.client.model.IndirectPermissionsSubjectIdentifierTypeRaw.PESEL;
@@ -119,11 +119,11 @@ public final class PermissionsRequestMappers {
         var contextId = new io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsContextIdentifierRaw()
                 .type(toSubunitContextIdentifierTypeRaw(request.contextType()))
                 .value(request.contextValue());
-        var personDetails = new io.github.mgrtomaszzurawski.ksef.client.model.PersonDetailsRaw()
+        var personDetails = new PersonDetailsRaw()
                 .firstName(request.firstName())
                 .lastName(request.lastName());
-        var subjectDetails = new io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsRaw()
-                .subjectDetailsType(io.github.mgrtomaszzurawski.ksef.client.model.PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
+        var subjectDetails = new PersonPermissionSubjectDetailsRaw()
+                .subjectDetailsType(PersonPermissionSubjectDetailsTypeRaw.PERSON_BY_IDENTIFIER)
                 .personById(personDetails);
         var rawValue = new io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsGrantRequestRaw();
         rawValue.setSubjectIdentifier(subjectId);
@@ -137,7 +137,7 @@ public final class PermissionsRequestMappers {
     }
 
     public static io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsSubjectIdentifierTypeRaw toSubunitSubjectIdentifierTypeRaw(
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubjectIdentifierType value) {
+            PersonSubjectIdentifierType value) {
         return switch (value) {
             case NIP -> io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsSubjectIdentifierTypeRaw.NIP;
             case PESEL -> io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsSubjectIdentifierTypeRaw.PESEL;

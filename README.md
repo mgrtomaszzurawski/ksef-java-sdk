@@ -239,6 +239,7 @@ KSeF*, and the *inputs the snippet expects*.
 | [`EnrollAndRevokeCertificate.java`](examples/EnrollAndRevokeCertificate.java) | Enrol from CSR, poll for serial, revoke |
 | [`Handle401Refresh.java`](examples/Handle401Refresh.java) | Auto re-auth on token expiry |
 | [`QrCodeGeneration.java`](examples/QrCodeGeneration.java) | KOD I verification QR code (no API call) |
+| [`QrCertificateGeneration.java`](examples/QrCertificateGeneration.java) | KOD II offline-certificate verification QR with PKCS#12 signing (per ADR-019) |
 
 See [`examples/README.md`](examples/README.md) for the full list and notes.
 
@@ -289,6 +290,34 @@ The SDK uses SLF4J. No logging backend is bundled — your application picks the
 ```
 
 What you'll see at `DEBUG`: HTTP method + URI, response status + elapsed ms, per-domain operation entry. Bodies are never logged (they carry NIPs, PESELs, JWT tokens, AES keys, full invoice XML — `RODO` violation if leaked).
+
+## Concurrency and rate limits
+
+`KsefClient` is thread-safe — one instance can serve N concurrent threads. The underlying JDK `HttpClient` pools connections; `SessionContext` uses `volatile` + `synchronized` on mutations.
+
+KSeF rate limits are **per (context + IP)** — multiple JVMs / pods on different IPs are billed independently. Current per-operation limits (e.g. 8 req/s for `/invoices/exports`, 16 req/s for `/invoices/query/metadata`) are returned by:
+
+```java
+ApiRateLimits limits = client.rateLimits().getRateLimits();
+// limits.invoiceMetadata().perSecond() etc.
+```
+
+The SDK reacts to HTTP 429 + `Retry-After` automatically (`RetryPolicy.retryOn429=true` default, exponential backoff with jitter). It does **not** proactively throttle outbound requests — a producer firing thousands of parallel calls (e.g. `parallelStream()` over a large filter) will hit 429s and retry-storm before reaching the per-second limit.
+
+For high-concurrency producers, throttle at the call site:
+
+```java
+Semaphore slot = new Semaphore(8);  // ~match invoiceMetadata.perSecond
+client.invoices().streamInvoicesByMetadata(filter)
+    .parallel()
+    .forEach(invoice -> {
+        slot.acquireUninterruptibly();
+        try { processInvoice(invoice); }
+        finally { slot.release(); }
+    });
+```
+
+For `InvoiceSyncClient` incremental sync: spec recommends a **15 minute interval** between runs (`przyrostowe-pobieranie-faktur.md`) — schedule via cron / queue worker, not a tight loop.
 
 ## Architecture
 

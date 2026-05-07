@@ -96,60 +96,60 @@ public interface PermissionClient {
     // the terminal status. Throws KsefAsyncTimeoutException on timeout.
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             grantPersonAndAwait(PersonPermissionGrantBuilder builder, java.time.Duration timeout) {
         return awaitOperationTerminal(grantPerson(builder).referenceNumber(), timeout, "grantPerson");
     }
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             grantEntityAndAwait(EntityPermissionGrantBuilder builder, java.time.Duration timeout) {
         return awaitOperationTerminal(grantEntity(builder).referenceNumber(), timeout, "grantEntity");
     }
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             grantAuthorizationAndAwait(EntityAuthorizationPermissionGrantBuilder builder, java.time.Duration timeout) {
         return awaitOperationTerminal(grantAuthorization(builder).referenceNumber(), timeout, "grantAuthorization");
     }
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             grantSubunitAndAwait(SubunitPermissionGrantBuilder builder, java.time.Duration timeout) {
         return awaitOperationTerminal(grantSubunit(builder).referenceNumber(), timeout, "grantSubunit");
     }
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             grantEuEntityAndAwait(EuEntityPermissionGrantBuilder builder, java.time.Duration timeout) {
         return awaitOperationTerminal(grantEuEntity(builder).referenceNumber(), timeout, "grantEuEntity");
     }
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             grantIndirectAndAwait(IndirectPermissionGrantBuilder builder, java.time.Duration timeout) {
         return awaitOperationTerminal(grantIndirect(builder).referenceNumber(), timeout, "grantIndirect");
     }
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             grantEuEntityAdminAndAwait(EuEntityAdminPermissionGrantBuilder builder, java.time.Duration timeout) {
         return awaitOperationTerminal(grantEuEntityAdmin(builder).referenceNumber(), timeout, "grantEuEntityAdmin");
     }
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             revokeCommonAndAwait(String permissionId, java.time.Duration timeout) {
         return awaitOperationTerminal(revokeCommon(permissionId).referenceNumber(), timeout, "revokeCommon");
     }
 
     /** @since 1.0.0 */
-    default io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    default PermissionOperationStatus
             revokeAuthorizationAndAwait(String permissionId, java.time.Duration timeout) {
         return awaitOperationTerminal(revokeAuthorization(permissionId).referenceNumber(), timeout, "revokeAuthorization");
     }
 
-    private io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus
+    private PermissionOperationStatus
             awaitOperationTerminal(String referenceNumber, java.time.Duration timeout, String opName) {
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.Config<>(

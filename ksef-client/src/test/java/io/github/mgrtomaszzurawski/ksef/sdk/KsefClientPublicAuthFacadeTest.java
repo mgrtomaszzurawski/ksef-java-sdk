@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Covers:
  * <ul>
- *   <li>{@link KsefClient#listAuthSessions()} — maps the
+ *   <li>{@link KsefClient#streamAuthSessions()} — maps the
  *       {@code /v2/auth/sessions} body into {@link AuthSession} records.</li>
  *   <li>{@link KsefClient#terminateAuthSession(String)} — DELETE on
  *       {@code /v2/auth/sessions/{referenceNumber}}.</li>
@@ -86,7 +86,7 @@ class KsefClientPublicAuthFacadeTest {
             """;
 
     @Test
-    void listAuthSessions_mapsResponseIntoAuthSessionRecords(WireMockRuntimeInfo wmInfo) {
+    void streamAuthSessions_mapsResponseIntoAuthSessionRecords(WireMockRuntimeInfo wmInfo) {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             // given — assign priority 1 (lowest = highest WireMock precedence) so
             // this exact-URL stub overrides the fixture's catch-all
@@ -99,7 +99,7 @@ class KsefClientPublicAuthFacadeTest {
                             .withBody(SESSIONS_LIST_RESPONSE)));
 
             // when
-            List<AuthSession> sessions = client.listAuthSessions();
+            List<AuthSession> sessions = client.streamAuthSessions().toList();
 
             // then — at minimum the size + reference numbers must round-trip.
             // current()/tokenRedeemed() pass through the OpenAPI raw model setters

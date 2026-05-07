@@ -443,7 +443,7 @@ public final class BatchPackageBuilder {
          * for unit-test assertions on small fixture parts; do not call it
          * from production code paths against real 100 MiB parts.
          */
-        public byte[] readPartBytes(int index) throws java.io.IOException {
+        public byte[] readPartBytes(int index) throws IOException {
             BatchPart part = parts.get(index);
             if (part instanceof BatchPart.OnDiskPart onDisk) {
                 return Files.readAllBytes(onDisk.path());

@@ -19,11 +19,8 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
 import java.time.OffsetDateTime;
@@ -62,10 +59,6 @@ public final class InvoiceRunner implements DemoRunner {
     private static final int EXPORT_STATUS_OK = 200;
     private static final int EXPORT_POLL_MAX_DELAY_MS = 10000;
     private static final int QUERY_DATE_RANGE_DAYS = 30;
-    private static final String ERR_NO_ENCRYPTION_CERT = "No SymmetricKeyEncryption certificate found";
-    private static final String CERT_TYPE_X509 = "X.509";
-    private static final String ERR_KEY_EXTRACT = "Failed to extract public key";
-
     @Override
     public String name() { return NAME; }
 
@@ -129,38 +122,20 @@ public final class InvoiceRunner implements DemoRunner {
                     .truncatedTo(ChronoUnit.SECONDS)
                     .minusDays(QUERY_DATE_RANGE_DAYS);
 
-            java.security.PublicKey encKey = extractEncryptionKey(context);
-
-            InvoiceExportBuilder exportBuilder = InvoiceExportBuilder.create(encKey)
-                    .filters(InvoiceQueryBuilder.seller().invoicingDateFrom(from))
-                    .metadataOnly();
-
-            ExportInvoicesResult response = context.client().invoices().exportInvoices(exportBuilder);
-            String refNum = response.referenceNumber();
-            LOGGER.info("[{}] export started, ref={}", NAME, refNum);
-            context.state().setExportReferenceNumber(refNum);
-            results.add(RunResult.ok(NAME, OP_EXPORT, elapsed(start), "ref=" + refNum));
-            return refNum;
+            // prepareExport handles symmetric-key fetch, AES-key generation, and
+            // package-decrypt material retention; demo only needs the reference
+            // number to drive status polling. fullContent=false → metadata only.
+            try (PreparedInvoiceExport export = context.client().invoices().prepareExport(
+                    InvoiceQueryBuilder.seller().invoicingDateFrom(from), false)) {
+                String refNum = export.referenceNumber();
+                LOGGER.info("[{}] export started, ref={}", NAME, refNum);
+                context.state().setExportReferenceNumber(refNum);
+                results.add(RunResult.ok(NAME, OP_EXPORT, elapsed(start), "ref=" + refNum));
+                return refNum;
+            }
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_EXPORT, elapsed(start), errorMessage(exception)));
             return null;
-        }
-    }
-
-    private static java.security.PublicKey extractEncryptionKey(DemoContext context) {
-        PublicKeyCertificate certificate = context.client().publicKeyCertificates().stream()
-                .filter(cert -> cert.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(ERR_NO_ENCRYPTION_CERT));
-        try {
-            java.security.cert.CertificateFactory factory =
-                    java.security.cert.CertificateFactory.getInstance(CERT_TYPE_X509);
-            java.security.cert.X509Certificate x509 =
-                    (java.security.cert.X509Certificate) factory.generateCertificate(
-                            new java.io.ByteArrayInputStream(certificate.certificate()));
-            return x509.getPublicKey();
-        } catch (Exception keyExtractFailure) {
-            throw new IllegalStateException(ERR_KEY_EXTRACT, keyExtractFailure);
         }
     }
 

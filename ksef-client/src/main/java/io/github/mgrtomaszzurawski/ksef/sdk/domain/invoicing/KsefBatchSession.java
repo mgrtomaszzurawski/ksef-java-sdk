@@ -495,16 +495,16 @@ public final class KsefBatchSession implements AutoCloseable {
      * {@code KsefSession.bulkUpos()} — see Javadoc there for spec context
      * (Codex round-9 manual-validation A.2.1).
      */
-    public java.util.List<byte[]> bulkUpos() {
+    public List<byte[]> bulkUpos() {
         SessionStatus current = sessionClient.getStatus(referenceNumber);
         if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
-            return java.util.List.of();
+            return List.of();
         }
-        java.util.List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
+        List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
         for (var page : current.upo().pages()) {
             pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
         }
-        return java.util.List.copyOf(pages);
+        return List.copyOf(pages);
     }
 
     /**

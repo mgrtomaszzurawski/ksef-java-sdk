@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Status:** Accepted
-**Last verified:** 2026-05-02
+**Last verified:** 2026-05-07
 **Trigger:** PR #25, #26, dev commit `59d3703`. The pre-Phase-9 state had 27
 files at the `sdk/` package root, 90 records flat in `sdk/model/`, 25 builders
 flat in `sdk/model/builder/` — file count, not semantics, was the de-facto rule

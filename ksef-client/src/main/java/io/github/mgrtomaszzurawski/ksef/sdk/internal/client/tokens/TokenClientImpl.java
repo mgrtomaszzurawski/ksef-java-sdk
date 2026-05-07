@@ -76,28 +76,6 @@ public final class TokenClientImpl implements TokenClient {
         return TokensMappers.toGenerateTokenResult(rawValue);
     }
 
-    /**
-     * List all tokens for the current subject.
-     *
-     * @return response with the list of tokens
-     */
-    @Override
-    public TokenList list() {
-        LOGGER.debug(LOG_CALL, OP_LIST);
-        String token = http.requireToken();
-        QueryTokensResponseRaw rawValue = http.getAuthenticated(PATH_TOKENS, token,
-                QueryTokensResponseRaw.class, OP_LIST);
-        return TokensMappers.toTokenList(rawValue);
-    }
-
-    /**
-     * List all tokens, following {@code x-continuation-token} internally.
-     */
-    @Override
-    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens() {
-        return streamTokens(TokenQueryBuilder.create());
-    }
-
     @Override
     public TokenList list(TokenQueryBuilder filter) {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);

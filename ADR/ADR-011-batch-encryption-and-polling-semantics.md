@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-30
 **Status:** Accepted
-**Last verified:** 2026-05-02
+**Last verified:** 2026-05-07
 **Trigger:** Live KSeF demo run (PR #21) revealed two architectural misunderstandings.
 
 ## Context

@@ -29,18 +29,18 @@ public final class LimitsMappers {
 
     public static ApiRateLimits toApiRateLimits(EffectiveApiRateLimitsRaw rawValue) {
         return new ApiRateLimits(
-                LimitsMappers.toRateLimitValues(rawValue.getOnlineSession()),
-                LimitsMappers.toRateLimitValues(rawValue.getBatchSession()),
-                LimitsMappers.toRateLimitValues(rawValue.getInvoiceSend()),
-                LimitsMappers.toRateLimitValues(rawValue.getInvoiceStatus()),
-                LimitsMappers.toRateLimitValues(rawValue.getSessionList()),
-                LimitsMappers.toRateLimitValues(rawValue.getSessionInvoiceList()),
-                LimitsMappers.toRateLimitValues(rawValue.getSessionMisc()),
-                LimitsMappers.toRateLimitValues(rawValue.getInvoiceMetadata()),
-                LimitsMappers.toRateLimitValues(rawValue.getInvoiceExport()),
-                LimitsMappers.toRateLimitValues(rawValue.getInvoiceExportStatus()),
-                LimitsMappers.toRateLimitValues(rawValue.getInvoiceDownload()),
-                LimitsMappers.toRateLimitValues(rawValue.getOther()));
+                toRateLimitValues(rawValue.getOnlineSession()),
+                toRateLimitValues(rawValue.getBatchSession()),
+                toRateLimitValues(rawValue.getInvoiceSend()),
+                toRateLimitValues(rawValue.getInvoiceStatus()),
+                toRateLimitValues(rawValue.getSessionList()),
+                toRateLimitValues(rawValue.getSessionInvoiceList()),
+                toRateLimitValues(rawValue.getSessionMisc()),
+                toRateLimitValues(rawValue.getInvoiceMetadata()),
+                toRateLimitValues(rawValue.getInvoiceExport()),
+                toRateLimitValues(rawValue.getInvoiceExportStatus()),
+                toRateLimitValues(rawValue.getInvoiceDownload()),
+                toRateLimitValues(rawValue.getOther()));
     }
 
     public static ContextLimits toContextLimits(EffectiveContextLimitsRaw rawValue) {

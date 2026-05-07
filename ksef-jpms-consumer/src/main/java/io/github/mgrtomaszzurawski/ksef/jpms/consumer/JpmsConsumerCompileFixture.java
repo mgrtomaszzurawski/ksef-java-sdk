@@ -162,11 +162,11 @@ public final class JpmsConsumerCompileFixture {
             throw new IllegalStateException("input was null");
         }
 
-        // Reference List<AuthSession> as a public return shape.
-        java.util.function.Function<KsefClient, List<AuthSession>> listSessions =
-                KsefClient::listAuthSessions;
-        if (listSessions == null) {
-            throw new IllegalStateException("listSessions was null");
+        // Reference Stream<AuthSession> as a public return shape.
+        java.util.function.Function<KsefClient, java.util.stream.Stream<AuthSession>> streamSessions =
+                KsefClient::streamAuthSessions;
+        if (streamSessions == null) {
+            throw new IllegalStateException("streamSessions was null");
         }
 
         // Builder + KsefIdentifier + cred types compile-checked

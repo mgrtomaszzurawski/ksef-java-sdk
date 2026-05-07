@@ -391,8 +391,8 @@ public final class PreparedInvoiceExport implements AutoCloseable {
 
     private void decryptAndVerifyToFile(InvoicePackagePart part, Path encryptedTemp, Path plaintextTemp) {
         try {
-            java.security.MessageDigest encryptedDigest = java.security.MessageDigest.getInstance(SHA_256);
-            java.security.MessageDigest plaintextDigest = java.security.MessageDigest.getInstance(SHA_256);
+            MessageDigest encryptedDigest = MessageDigest.getInstance(SHA_256);
+            MessageDigest plaintextDigest = MessageDigest.getInstance(SHA_256);
             javax.crypto.Cipher cipher = CryptoService.newAesDecryptCipher(aesKey, initVector);
             try (java.io.InputStream encrypted = Files.newInputStream(encryptedTemp);
                  java.security.DigestInputStream digestEncrypted =
@@ -409,7 +409,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
                 LOGGER.debug(LOG_VERIFY, referenceNumber, part.ordinalNumber());
             }
             verifyHashOrThrow(part.partHash(), plaintextDigest, part.ordinalNumber());
-        } catch (java.security.NoSuchAlgorithmException missingAlgorithm) {
+        } catch (NoSuchAlgorithmException missingAlgorithm) {
             throw new KsefException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
         } catch (IOException ioFailure) {
             throw new KsefException(ERR_ZIP_FAILED, ioFailure);
@@ -420,14 +420,14 @@ public final class PreparedInvoiceExport implements AutoCloseable {
      * Throw {@link KsefException} if {@code expected} is non-null and does not
      * equal the freshly-{@code .digest()}-ed accumulator.
      */
-    private static void verifyHashOrThrow(byte @Nullable [] expected, java.security.MessageDigest actualDigest, int ordinal) {
+    private static void verifyHashOrThrow(byte @Nullable [] expected, MessageDigest actualDigest, int ordinal) {
         if (expected == null) {
             return;
         }
         byte[] actual = actualDigest.digest();
         if (!java.util.Arrays.equals(expected, actual)) {
             throw new KsefException(
-                    String.format(java.util.Locale.ROOT, ERR_HASH_MISMATCH, ordinal),
+                    String.format(Locale.ROOT, ERR_HASH_MISMATCH, ordinal),
                     null);
         }
     }

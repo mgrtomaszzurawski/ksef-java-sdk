@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryD
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicingMode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -26,6 +27,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
+@SuppressWarnings("PMD.TooManyFields")  // 16 fields = the spec's full filter set; splitting would just hide the spec parity.
 public final class InvoiceQueryBuilder {
 
     private static final int MAX_DATE_RANGE_MONTHS = 3;
@@ -48,6 +50,7 @@ public final class InvoiceQueryBuilder {
     private @Nullable List<String> currencyCodes;
     private @Nullable InvoiceFormType formType;
     private @Nullable List<InvoiceType> invoiceTypes;
+    private @Nullable SortOrder sortOrder;
 
     private InvoiceQueryBuilder(InvoiceQuerySubjectType subjectType) {
         this.subjectType = subjectType;
@@ -192,6 +195,21 @@ public final class InvoiceQueryBuilder {
         return this;
     }
 
+    /**
+     * Set the result sort order for the {@code POST /invoices/query/metadata}
+     * call. Maps to the spec's {@code sortOrder} query parameter; default
+     * (when not set) is {@link SortOrder#ASC} per spec.
+     */
+    public InvoiceQueryBuilder sortOrder(SortOrder sortOrder) {
+        this.sortOrder = Objects.requireNonNull(sortOrder, "sortOrder");
+        return this;
+    }
+
+    /** @return configured sort order, or {@code null} if not set (server defaults to {@code Asc}). */
+    public @Nullable SortOrder sortOrderValue() {
+        return sortOrder;
+    }
+
     public InvoiceQueryBuilder toBuilder() {
         InvoiceQueryBuilder copy = new InvoiceQueryBuilder(this.subjectType);
         copy.dateType = this.dateType;
@@ -209,6 +227,7 @@ public final class InvoiceQueryBuilder {
         copy.currencyCodes = this.currencyCodes;
         copy.formType = this.formType;
         copy.invoiceTypes = this.invoiceTypes;
+        copy.sortOrder = this.sortOrder;
         return copy;
     }
 

@@ -3,6 +3,7 @@
 Date: 2026-05-02 (originally deferred plan)
 Amended: 2026-05-05 (closure verified for 1.0.0)
 Status: Accepted — resolved historical
+Last verified: 2026-05-07
 
 ## Context
 

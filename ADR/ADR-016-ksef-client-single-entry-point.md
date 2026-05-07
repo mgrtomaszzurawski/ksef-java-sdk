@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-02
 **Status:** Accepted
-**Last verified:** 2026-05-02
+**Last verified:** 2026-05-07
 **Trigger:** USER-REVIEW-REMARKS findings #3 and #5. Three independent
 leaks let consumers bypass the `KsefClient` facade:
 

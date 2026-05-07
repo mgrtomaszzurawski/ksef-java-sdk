@@ -116,7 +116,7 @@ public final class InvoicingMappers {
         BuyerIdentifierType idType = null;
         String idValue = null;
         if (rawValue.getIdentifier() != null) {
-            idType = InvoicingMappers.toBuyerIdentifierType(rawValue.getIdentifier().getType());
+            idType = toBuyerIdentifierType(rawValue.getIdentifier().getType());
             idValue = rawValue.getIdentifier().getValue();
         }
         return new InvoiceBuyer(idType, idValue, rawValue.getName());
@@ -127,7 +127,7 @@ public final class InvoicingMappers {
                 CommonMappers.toStatusInfo(rawValue.getStatus()),
                 rawValue.getCompletedDate(),
                 rawValue.getPackageExpirationDate(),
-                InvoicingMappers.toInvoicePackage(rawValue.getPackage()));
+                toInvoicePackage(rawValue.getPackage()));
     }
 
     public static InvoiceMetadata toInvoiceMetadata(InvoiceMetadataRaw rawValue) {
@@ -141,15 +141,15 @@ public final class InvoicingMappers {
                 rawValue.getInvoicingDate(),
                 rawValue.getAcquisitionDate(),
                 rawValue.getPermanentStorageDate(),
-                InvoicingMappers.toInvoiceSeller(rawValue.getSeller()),
-                InvoicingMappers.toInvoiceBuyer(rawValue.getBuyer()),
+                toInvoiceSeller(rawValue.getSeller()),
+                toInvoiceBuyer(rawValue.getBuyer()),
                 rawValue.getNetAmount(),
                 rawValue.getGrossAmount(),
                 rawValue.getVatAmount(),
                 rawValue.getCurrency(),
-                InvoicingMappers.toInvoicingMode(rawValue.getInvoicingMode()),
-                InvoicingMappers.toInvoiceType(rawValue.getInvoiceType()),
-                InvoicingMappers.toFormCodeInfo(rawValue.getFormCode()),
+                toInvoicingMode(rawValue.getInvoicingMode()),
+                toInvoiceType(rawValue.getInvoiceType()),
+                toFormCodeInfo(rawValue.getFormCode()),
                 rawValue.getIsSelfInvoicing(),
                 rawValue.getHasAttachment(),
                 rawValue.getInvoiceHash(),
@@ -217,7 +217,7 @@ public final class InvoicingMappers {
         ThirdSubjectIdentifierType idType = null;
         String idValue = null;
         if (rawValue.getIdentifier() != null) {
-            idType = InvoicingMappers.toThirdSubjectIdentifierType(rawValue.getIdentifier().getType());
+            idType = toThirdSubjectIdentifierType(rawValue.getIdentifier().getType());
             idValue = rawValue.getIdentifier().getValue();
         }
         return new InvoiceThirdSubject(idType, idValue, rawValue.getName(), rawValue.getRole());
@@ -297,8 +297,8 @@ public final class InvoicingMappers {
                 rawValue.getPermanentStorageDate(),
                 rawValue.getUpoDownloadUrl(),
                 rawValue.getUpoDownloadUrlExpirationDate(),
-                InvoicingMappers.toInvoicingMode(rawValue.getInvoicingMode()),
-                InvoicingMappers.toInvoiceStatusInfo(rawValue.getStatus()));
+                toInvoicingMode(rawValue.getInvoicingMode()),
+                toInvoiceStatusInfo(rawValue.getStatus()));
     }
 
     public static SessionStatus toSessionStatus(SessionStatusResponseRaw rawValue) {
@@ -307,7 +307,7 @@ public final class InvoicingMappers {
                 rawValue.getDateCreated(),
                 rawValue.getDateUpdated(),
                 rawValue.getValidUntil(),
-                InvoicingMappers.toUpoInfo(rawValue.getUpo()),
+                toUpoInfo(rawValue.getUpo()),
                 rawValue.getInvoiceCount(),
                 rawValue.getSuccessfulInvoiceCount(),
                 rawValue.getFailedInvoiceCount());

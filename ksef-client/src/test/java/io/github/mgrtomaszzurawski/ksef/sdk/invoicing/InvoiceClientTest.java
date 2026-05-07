@@ -10,14 +10,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -29,6 +25,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -293,31 +290,6 @@ class InvoiceClientTest {
     }
 
     @Test
-    void exportInvoices_whenRequested_returnsExportReference(WireMockRuntimeInfo wmInfo) throws Exception {
-        // given
-        stubFor(post(urlEqualTo(PATH_EXPORTS))
-                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(EXPORT_RESPONSE)));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            // when
-            InvoiceExportBuilder exportBuilder = InvoiceExportBuilder.create(
-                            TestCertificates.generateRsa().certificate().getPublicKey())
-                    .filters(InvoiceQueryBuilder.seller()
-                            .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1)))
-                    .metadataOnly();
-            ExportInvoicesResult response = ksef.invoices().exportInvoices(exportBuilder);
-
-            // then
-            assertEquals(TEST_EXPORT_REF, response.referenceNumber());
-        }
-    }
-
-    @Test
     void getExportStatus_whenExportCompleted_returnsCompletedStatus(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo(PATH_EXPORTS + "/" + TEST_EXPORT_REF))
@@ -337,25 +309,6 @@ class InvoiceClientTest {
         }
     }
 
-    @Test
-    void exportInvoices_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) throws Exception {
-        // given
-        stubFor(post(urlEqualTo(PATH_EXPORTS))
-                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody(EMPTY_JSON)));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            InvoiceExportBuilder exportBuilder = InvoiceExportBuilder.create(
-                            TestCertificates.generateRsa().certificate().getPublicKey())
-                    .filters(InvoiceQueryBuilder.seller()
-                            .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1)))
-                    .metadataOnly();
-
-            // then
-            var invoices = ksef.invoices();
-
-            assertThrows(KsefServerException.class, () -> invoices.exportInvoices(exportBuilder));
-        }
-    }
 
     @Test
     void getByKsefNumber_whenNoPriorAuthenticate_proactivelyTriggersAuthFlow(WireMockRuntimeInfo wmInfo) {
@@ -390,6 +343,53 @@ class InvoiceClientTest {
                     .getRequestedFor(urlEqualTo(INVOICES_BASE + "/ksef/" + TEST_KSEF_NUMBER)));
             assertEquals(0, domainRequests.size(),
                     "no protected domain request must escape before auth completes, got: " + domainRequests.size());
+        }
+    }
+
+    @Test
+    void queryInvoicesByMetadata_whenSortOrderDesc_appendsSortOrderQueryParam(WireMockRuntimeInfo wmInfo) {
+        // given — sortOrder=Desc must be appended to the URL query string.
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
+                .withQueryParam("sortOrder", equalTo("Desc"))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(QUERY_METADATA_RESPONSE)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            // when
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1))
+                    .sortOrder(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder.DESC);
+            InvoiceMetadataResult response = ksef.invoices().queryInvoicesByMetadata(query);
+
+            // then
+            assertEquals(1, response.invoices().size());
+            verify(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
+                    .withQueryParam("sortOrder", equalTo("Desc")));
+        }
+    }
+
+    @Test
+    void queryInvoicesByMetadata_whenSortOrderAsc_appendsSortOrderQueryParam(WireMockRuntimeInfo wmInfo) {
+        // given
+        stubFor(post(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
+                .withQueryParam("sortOrder", equalTo("Asc"))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(QUERY_METADATA_RESPONSE)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            // when
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1))
+                    .sortOrder(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder.ASC);
+            ksef.invoices().queryInvoicesByMetadata(query);
+
+            // then
+            verify(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))
+                    .withQueryParam("sortOrder", equalTo("Asc")));
         }
     }
 

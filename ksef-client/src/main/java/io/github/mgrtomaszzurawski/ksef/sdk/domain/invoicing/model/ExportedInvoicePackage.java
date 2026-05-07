@@ -4,6 +4,16 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,6 +71,49 @@ public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String,
         return List.copyOf(invoiceXmls.keySet());
     }
 
+    /**
+     * Parse {@code _metadata.json} into typed
+     * {@link InvoiceMetadata} records. Per spec
+     * {@code pobieranie-faktur/pobieranie-faktur.md}, the file contains
+     * a top-level object with property {@code invoices} (an array of
+     * {@code InvoiceMetadata} elements identical to the response of
+     * {@code POST /invoices/query/metadata}).
+     *
+     * @return parsed list, or empty list when the export was
+     *         {@code metadataOnly=false} and no metadata file was emitted
+     *         (older API behaviour, before retention 27.10.2025)
+     * @throws KsefException if the JSON is malformed
+     *
+     * @since 1.0.0
+     */
+    public List<InvoiceMetadata> invoiceMetadataList() {
+        if (metadataJson == null || metadataJson.length == 0) {
+            return List.of();
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            JsonNode root = mapper.readTree(metadataJson);
+            JsonNode invoicesNode = root.get("invoices");
+            if (invoicesNode == null || !invoicesNode.isArray()) {
+                return List.of();
+            }
+            InvoiceMetadataRaw[] rawArray = mapper.treeToValue(invoicesNode, InvoiceMetadataRaw[].class);
+            return Arrays.stream(rawArray)
+                    .map(InvoicingMappers::toInvoiceMetadata)
+                    .toList();
+        } catch (JsonProcessingException jsonFailure) {
+            throw new KsefException(
+                    "Failed to parse _metadata.json from export package: " + jsonFailure.getMessage(),
+                    jsonFailure);
+        } catch (IOException ioFailure) {
+            throw new KsefException(
+                    "Failed to read _metadata.json from export package: " + ioFailure.getMessage(),
+                    ioFailure);
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -69,13 +122,13 @@ public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String,
         if (!(o instanceof ExportedInvoicePackage other)) {
             return false;
         }
-        return java.util.Arrays.equals(metadataJson, other.metadataJson)
+        return Arrays.equals(metadataJson, other.metadataJson)
                 && byteMapsEqual(invoiceXmls, other.invoiceXmls);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(java.util.Arrays.hashCode(metadataJson), byteMapHashCode(invoiceXmls));
+        return Objects.hash(Arrays.hashCode(metadataJson), byteMapHashCode(invoiceXmls));
     }
 
     private static boolean byteMapsEqual(Map<String, byte[]> left, Map<String, byte[]> right) {
@@ -87,7 +140,7 @@ public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String,
             if (otherValue == null && !right.containsKey(entry.getKey())) {
                 return false;
             }
-            if (!java.util.Arrays.equals(entry.getValue(), otherValue)) {
+            if (!Arrays.equals(entry.getValue(), otherValue)) {
                 return false;
             }
         }
@@ -97,7 +150,7 @@ public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String,
     private static int byteMapHashCode(Map<String, byte[]> source) {
         int result = 0;
         for (Map.Entry<String, byte[]> entry : source.entrySet()) {
-            result += entry.getKey().hashCode() ^ java.util.Arrays.hashCode(entry.getValue());
+            result += entry.getKey().hashCode() ^ Arrays.hashCode(entry.getValue());
         }
         return result;
     }

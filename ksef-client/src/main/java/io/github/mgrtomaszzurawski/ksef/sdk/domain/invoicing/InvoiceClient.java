@@ -6,9 +6,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -46,24 +44,6 @@ public interface InvoiceClient {
      * downstream.
      */
     java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryBuilder query);
-
-    /**
-     * Low-level "start export" entry point — Tier-3 advanced API per
-     * ADR-021. Caller manages the KSeF symmetric-key public-key fetch,
-     * AES key + IV generation, and key retention out-of-band so the
-     * returned export package can be decrypted later.
-     *
-     * <p>Most consumers should use
-     * {@link #prepareExport(InvoiceQueryBuilder, boolean)} instead — it
-     * retains the AES key + IV inside a {@link PreparedInvoiceExport}
-     * handle and exposes the full poll/download/decrypt workflow with
-     * automatic crypto material zeroisation on close.
-     *
-     * @apiNote Advanced. Use {@code prepareExport(...)} unless you have
-     *     a specific reason to manage the symmetric key material yourself
-     *     (e.g. integration with an external HSM).
-     */
-    ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder);
 
     InvoiceExportStatus getExportStatus(String referenceNumber);
 

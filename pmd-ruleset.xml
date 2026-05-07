@@ -37,8 +37,6 @@
         <exclude name="UseUnderscoresInNumericLiterals"/>
         <!-- Style preference; switch with two cases is fine. -->
         <exclude name="TooFewBranchesForSwitch"/>
-        <!-- Generated import refs sometimes require fully-qualified names to disambiguate. -->
-        <exclude name="UnnecessaryFullyQualifiedName"/>
         <!-- LinguisticNaming flags semantic naming we use intentionally (e.g. 'is...' returning enums). -->
         <exclude name="LinguisticNaming"/>
     </rule>
@@ -158,6 +156,7 @@
     and not(@Name = ('raw','nip','NIP','VAT','id','pkg','url','in','out','obj','o',
                      'csr','zip','upo','der','seq','key','iv','crc',
                      'FA','FA2','FA3','PEF','RR','ROZ','KOR','JST','ZAL','UPR',
+                     'ASC','DESC',
                      'i','j','k','x','y','b','r','s','ch','cp','to','off','len',
                      'dir','all','rsa','ec','qrX','p','e','ex'))
     and not(ancestor::ForStatement)
