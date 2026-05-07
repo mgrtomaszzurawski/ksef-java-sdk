@@ -21,10 +21,19 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
  */
 public final class KsefLimits {
 
-    /** KSeF spec maximum size for one invoice (incl. attachments). */
+    /**
+     * KSeF spec maximum size for one invoice including attachments — 3 MiB
+     * ({@code 3 * 1024 * 1024 = 3_145_728} bytes). The spec text says "3 MB"
+     * but the server enforces the binary value; using 3 × 10⁶ here would
+     * leave 145 KiB of headroom unused.
+     */
     public static final int MAX_INVOICE_BYTES = 3 * 1024 * 1024;
 
-    /** KSeF spec maximum size for one batch upload part (pre-encryption). */
+    /**
+     * KSeF spec maximum size for one batch upload part (pre-encryption) —
+     * 100 MiB ({@code 100 * 1024 * 1024} bytes). See
+     * {@link #MAX_INVOICE_BYTES} for the MB / MiB distinction.
+     */
     public static final long MAX_BATCH_PART_BYTES = 100L * 1024 * 1024;
 
     /** REQ-SESS-41 — KSeF caps a single session at 10 000 invoices. */

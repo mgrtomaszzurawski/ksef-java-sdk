@@ -22,6 +22,8 @@ public final class CertificateQueryBuilder {
     private @Nullable KsefCertificateType type;
     private @Nullable CertificateStatus status;
     private @Nullable OffsetDateTime expiresAfter;
+    private @Nullable Integer pageOffset;
+    private @Nullable Integer pageSize;
 
     private CertificateQueryBuilder() { }
 
@@ -35,6 +37,23 @@ public final class CertificateQueryBuilder {
     public CertificateQueryBuilder status(CertificateStatus status) { this.status = status; return this; }
     public CertificateQueryBuilder expiresAfter(OffsetDateTime expiresAfter) { this.expiresAfter = expiresAfter; return this; }
 
+    /**
+     * Set the page offset (0-based) for the snapshot {@code query()}
+     * call. Ignored by {@code streamCertificates(...)} which manages
+     * paging internally.
+     */
+    public CertificateQueryBuilder pageOffset(int pageOffset) { this.pageOffset = pageOffset; return this; }
+
+    /**
+     * Set the page size for both {@code query()} and the per-page fetch
+     * inside {@code streamCertificates(...)}.
+     */
+    public CertificateQueryBuilder pageSize(int pageSize) { this.pageSize = pageSize; return this; }
+
+    public @Nullable Integer pageOffsetValue() { return pageOffset; }
+
+    public @Nullable Integer pageSizeValue() { return pageSize; }
+
     public CertificateQueryBuilder toBuilder() {
         CertificateQueryBuilder copy = new CertificateQueryBuilder();
         copy.serialNumber = this.serialNumber;
@@ -42,6 +61,8 @@ public final class CertificateQueryBuilder {
         copy.type = this.type;
         copy.status = this.status;
         copy.expiresAfter = this.expiresAfter;
+        copy.pageOffset = this.pageOffset;
+        copy.pageSize = this.pageSize;
         return copy;
     }
 
