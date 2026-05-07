@@ -187,6 +187,32 @@ class CryptoServiceTest {
     }
 
     @Test
+    void encryptKsefToken_whenEcPublicKey_routesThroughEcdhAndProducesEnvelope() throws Exception {
+        // given — KSeF spec allows EC public keys for token encryption (per
+        // CryptoService.encryptWithPublicKey dispatch). The full
+        // encryptKsefToken pipeline must serialize "{token}|{timestampMs}",
+        // route through encryptEcdh, and produce a non-empty envelope.
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(EC_ALGORITHM);
+        keyPairGen.initialize(EC_KEY_SIZE);
+        KeyPair keyPair = keyPairGen.generateKeyPair();
+        Instant timestamp = Instant.now();
+        int minTokenPayloadBytes = (KSEF_TOKEN + "|" + timestamp.toEpochMilli()).getBytes().length;
+
+        // when
+        byte[] encrypted = CryptoService.encryptKsefToken(KSEF_TOKEN, timestamp, keyPair.getPublic());
+
+        // then — ECDH envelope = ephemeralPubEncoded (~91 B SubjectPublicKeyInfo)
+        // + 12-byte GCM nonce + ciphertext (>= plaintext) + 16-byte GCM tag.
+        // It MUST be larger than the plain token+timestamp payload and MUST NOT
+        // equal RSA block size (would mean it took the RSA branch by mistake).
+        int rsaBlockSize = RSA_KEY_SIZE / 8;
+        assertTrue(encrypted.length > minTokenPayloadBytes,
+                "EC envelope must be larger than the plain token payload");
+        assertNotEquals(rsaBlockSize, encrypted.length,
+                "EC envelope must not equal RSA block size — would indicate dispatch picked the wrong branch");
+    }
+
+    @Test
     void sha256Base64_whenKnownInput_producesExpectedHash() {
         // given — SHA-256("Hello KSeF invoice content") = known value
         // echo -n "Hello KSeF invoice content" | sha256sum | xxd -r -p | base64
