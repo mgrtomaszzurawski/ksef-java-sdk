@@ -67,6 +67,10 @@ public final class CertificateClientImpl implements CertificateClient {
     private static final String ERR_NULL_BUILDER = "builder is required";
     private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBERS = "certificateSerialNumbers is required";
     private static final String ERR_NULL_REVOCATION_REASON = "revocationReason is required";
+
+    private static final String PARAM_PAGE_OFFSET_PREFIX = "?pageOffset=";
+    private static final String PARAM_PAGE_SIZE_PREFIX = "?pageSize=";
+    private static final String PARAM_PAGE_SIZE_AFTER_FIRST = "&pageSize=";
     private static final String WARN_TOKEN_AUTH_FOR_CERT_OP =
             "Calling certificate operation {} on a token-authenticated session — KSeF restricts "
                     + "/certificates/enrollments and /certificates/enrollments/data to certificate-based auth "
@@ -211,7 +215,9 @@ public final class CertificateClientImpl implements CertificateClient {
         LOGGER.debug(LOG_CALL, OP_QUERY);
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
         String token = http.requireToken();
-        QueryCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY, CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()), token,
+        String path = appendPaging(PATH_QUERY, builder.pageOffsetValue(), builder.pageSizeValue());
+        QueryCertificatesResponseRaw rawValue = http.postJsonAuthenticated(path,
+                CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()), token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);
         return CertificatesMappers.toCertificateQueryResult(rawValue);
     }
@@ -220,10 +226,12 @@ public final class CertificateClientImpl implements CertificateClient {
     public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
             streamCertificates(CertificateQueryBuilder builder) {
         Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        int effectivePageSize = builder.pageSizeValue() == null
+                ? CERTIFICATE_QUERY_MAX_PAGE_SIZE : builder.pageSizeValue();
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
             String token = http.requireToken();
             String pagedPath = PATH_QUERY + "?pageOffset=" + pageOffset
-                    + "&pageSize=" + CERTIFICATE_QUERY_MAX_PAGE_SIZE;
+                    + "&pageSize=" + effectivePageSize;
             QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(pagedPath,
                     CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()),
                     token, QueryCertificatesResponseRaw.class, OP_QUERY);
@@ -231,5 +239,24 @@ public final class CertificateClientImpl implements CertificateClient {
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
                     page.certificates(), page.hasMore());
         });
+    }
+
+    /** Build {@code ?pageOffset=...&pageSize=...} query string fragments only when present. */
+    private static String appendPaging(String basePath,
+                                       @org.jspecify.annotations.Nullable Integer pageOffset,
+                                       @org.jspecify.annotations.Nullable Integer pageSize) {
+        if (pageOffset == null && pageSize == null) {
+            return basePath;
+        }
+        StringBuilder query = new StringBuilder(basePath);
+        boolean first = true;
+        if (pageOffset != null) {
+            query.append(PARAM_PAGE_OFFSET_PREFIX).append(pageOffset);
+            first = false;
+        }
+        if (pageSize != null) {
+            query.append(first ? PARAM_PAGE_SIZE_PREFIX : PARAM_PAGE_SIZE_AFTER_FIRST).append(pageSize);
+        }
+        return query.toString();
     }
 }

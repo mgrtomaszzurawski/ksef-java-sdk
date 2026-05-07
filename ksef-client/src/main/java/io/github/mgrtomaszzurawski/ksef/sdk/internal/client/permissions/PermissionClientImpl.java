@@ -17,14 +17,24 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryPersonPermissionsRespo
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryPersonalPermissionsResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubordinateEntityRolesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QuerySubunitPermissionsResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsContextIdentifierRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsContextIdentifierTypeRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsSubordinateEntityIdentifierRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsSubordinateEntityIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubordinateEntityRolesQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsQueryRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsSubunitIdentifierRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.SubunitPermissionsSubunitIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityAdminPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityRolesQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubordinateEntityRolesQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.IndirectPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPermissionsQueryBuilder;
@@ -108,11 +118,16 @@ public final class PermissionClientImpl implements PermissionClient {
     private static final String OP_QUERY_EU_ENTITIES = "queryEuEntityPermissions";
 
     private static final String ERR_BUILDER_NULL = "builder must not be null";
+    private static final String ERR_NULL_FILTER = "filter must not be null";
 
     /** Spec-defined max page size for permission query endpoints. */
     private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 250;
     private static final String PERMISSION_QUERY_PAGE_PARAMS = "?pageOffset=";
     private static final String PERMISSION_QUERY_PAGE_SIZE_PARAM = "&pageSize=" + PERMISSION_QUERY_MAX_PAGE_SIZE;
+    private static final String QUERY_PARAM_SEPARATOR_FIRST = "?";
+    private static final String QUERY_PARAM_SEPARATOR = "&";
+    private static final String PARAM_PAGE_OFFSET = "pageOffset=";
+    private static final String PARAM_PAGE_SIZE = "pageSize=";
 
     private final HttpSupport http;
 
@@ -342,11 +357,26 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public SubunitPermissions querySubunits() {
+        return querySubunits(SubunitPermissionsQueryBuilder.create());
+    }
+
+    @Override
+    public SubunitPermissions querySubunits(SubunitPermissionsQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_QUERY_SUBUNITS);
         String token = http.requireToken();
-        QuerySubunitPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_SUBUNITS,
-                new SubunitPermissionsQueryRequestRaw(), token,
-                QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
+        SubunitPermissionsQueryRequestRaw body = new SubunitPermissionsQueryRequestRaw();
+        if (filter.subunitIdentifierType() != null && filter.subunitIdentifierValue() != null) {
+            SubunitPermissionsSubunitIdentifierRaw id = new SubunitPermissionsSubunitIdentifierRaw();
+            id.setType(filter.subunitIdentifierType() == SubunitPermissionsQueryBuilder.SubunitIdentifierType.NIP
+                    ? SubunitPermissionsSubunitIdentifierTypeRaw.NIP
+                    : SubunitPermissionsSubunitIdentifierTypeRaw.INTERNAL_ID);
+            id.setValue(filter.subunitIdentifierValue());
+            body.subunitIdentifier(id);
+        }
+        String path = appendPaging(PATH_QUERY_SUBUNITS, filter.pageOffsetValue(), filter.pageSizeValue());
+        QuerySubunitPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
+                body, token, QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
         return PermissionsMappers.toSubunitPermissions(rawValue);
     }
 
@@ -357,11 +387,26 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public EntityPermissions queryEntities() {
+        return queryEntities(EntityPermissionsQueryBuilder.create());
+    }
+
+    @Override
+    public EntityPermissions queryEntities(EntityPermissionsQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_QUERY_ENTITIES);
         String token = http.requireToken();
-        QueryEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_ENTITIES,
-                new EntityPermissionsQueryRequestRaw(), token,
-                QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
+        EntityPermissionsQueryRequestRaw body = new EntityPermissionsQueryRequestRaw();
+        if (filter.contextIdentifierType() != null && filter.contextIdentifierValue() != null) {
+            EntityPermissionsContextIdentifierRaw id = new EntityPermissionsContextIdentifierRaw();
+            id.setType(filter.contextIdentifierType() == EntityPermissionsQueryBuilder.ContextIdentifierType.NIP
+                    ? EntityPermissionsContextIdentifierTypeRaw.NIP
+                    : EntityPermissionsContextIdentifierTypeRaw.INTERNAL_ID);
+            id.setValue(filter.contextIdentifierValue());
+            body.contextIdentifier(id);
+        }
+        String path = appendPaging(PATH_QUERY_ENTITIES, filter.pageOffsetValue(), filter.pageSizeValue());
+        QueryEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
+                body, token, QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
         return PermissionsMappers.toEntityPermissions(rawValue);
     }
 
@@ -372,9 +417,16 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public EntityRoles queryEntityRoles() {
+        return queryEntityRoles(EntityRolesQueryBuilder.create());
+    }
+
+    @Override
+    public EntityRoles queryEntityRoles(EntityRolesQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_QUERY_ENTITY_ROLES);
         String token = http.requireToken();
-        QueryEntityRolesResponseRaw rawValue = http.getAuthenticated(PATH_QUERY_ENTITY_ROLES, token,
+        String path = appendPaging(PATH_QUERY_ENTITY_ROLES, filter.pageOffsetValue(), filter.pageSizeValue());
+        QueryEntityRolesResponseRaw rawValue = http.getAuthenticated(path, token,
                 QueryEntityRolesResponseRaw.class, OP_QUERY_ENTITY_ROLES);
         return PermissionsMappers.toEntityRoles(rawValue);
     }
@@ -386,11 +438,24 @@ public final class PermissionClientImpl implements PermissionClient {
      */
     @Override
     public SubordinateEntityRoles querySubordinateRoles() {
+        return querySubordinateRoles(SubordinateEntityRolesQueryBuilder.create());
+    }
+
+    @Override
+    public SubordinateEntityRoles querySubordinateRoles(SubordinateEntityRolesQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_QUERY_SUBORDINATE);
         String token = http.requireToken();
-        QuerySubordinateEntityRolesResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_SUBORDINATE,
-                new SubordinateEntityRolesQueryRequestRaw(), token,
-                QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
+        SubordinateEntityRolesQueryRequestRaw body = new SubordinateEntityRolesQueryRequestRaw();
+        if (filter.subordinateEntityNipValue() != null) {
+            EntityPermissionsSubordinateEntityIdentifierRaw id = new EntityPermissionsSubordinateEntityIdentifierRaw();
+            id.setType(EntityPermissionsSubordinateEntityIdentifierTypeRaw.NIP);
+            id.setValue(filter.subordinateEntityNipValue());
+            body.subordinateEntityIdentifier(id);
+        }
+        String path = appendPaging(PATH_QUERY_SUBORDINATE, filter.pageOffsetValue(), filter.pageSizeValue());
+        QuerySubordinateEntityRolesResponseRaw rawValue = http.postJsonAuthenticated(path,
+                body, token, QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
         return PermissionsMappers.toSubordinateEntityRoles(rawValue);
     }
 
@@ -434,6 +499,24 @@ public final class PermissionClientImpl implements PermissionClient {
 
     private static String pagedPath(String basePath, int pageOffset) {
         return basePath + PERMISSION_QUERY_PAGE_PARAMS + pageOffset + PERMISSION_QUERY_PAGE_SIZE_PARAM;
+    }
+
+    /** Build {@code ?pageOffset=...&pageSize=...} query string fragments only when present. */
+    private static String appendPaging(String basePath,
+                                       @org.jspecify.annotations.Nullable Integer pageOffset,
+                                       @org.jspecify.annotations.Nullable Integer pageSize) {
+        if (pageOffset == null && pageSize == null) {
+            return basePath;
+        }
+        StringBuilder query = new StringBuilder(basePath);
+        if (pageOffset != null) {
+            query.append(QUERY_PARAM_SEPARATOR_FIRST).append(PARAM_PAGE_OFFSET).append(pageOffset);
+        }
+        if (pageSize != null) {
+            query.append(query.indexOf(QUERY_PARAM_SEPARATOR_FIRST) >= 0 ? QUERY_PARAM_SEPARATOR : QUERY_PARAM_SEPARATOR_FIRST)
+                    .append(PARAM_PAGE_SIZE).append(pageSize);
+        }
+        return query.toString();
     }
 
     @Override

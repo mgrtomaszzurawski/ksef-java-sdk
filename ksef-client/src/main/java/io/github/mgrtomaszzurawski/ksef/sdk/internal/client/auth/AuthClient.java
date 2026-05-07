@@ -79,6 +79,14 @@ public final class AuthClient {
     private static final String CONTEXT_IDENTIFIER_INNER_CLOSE = "></ContextIdentifier>";
     private static final String SUBJECT_IDENTIFIER_TYPE_OPEN = "<SubjectIdentifierType>";
     private static final String SUBJECT_IDENTIFIER_TYPE_CLOSE = "</SubjectIdentifierType>";
+    private static final String AUTHORIZATION_POLICY_OPEN = "<AuthorizationPolicy><AllowedIps>";
+    private static final String AUTHORIZATION_POLICY_CLOSE = "</AllowedIps></AuthorizationPolicy>";
+    private static final String IP4_ADDRESS_OPEN = "<Ip4Address>";
+    private static final String IP4_ADDRESS_CLOSE = "</Ip4Address>";
+    private static final String IP4_RANGE_OPEN = "<Ip4Range>";
+    private static final String IP4_RANGE_CLOSE = "</Ip4Range>";
+    private static final String IP4_MASK_OPEN = "<Ip4Mask>";
+    private static final String IP4_MASK_CLOSE = "</Ip4Mask>";
     private static final String XML_CLOSE_BRACKET = ">";
     private static final String XML_END_TAG_PREFIX = "</";
 
@@ -175,8 +183,31 @@ public final class AuthClient {
             String challenge, X509Certificate certificate, PrivateKey privateKey,
             KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier,
             io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
+        return authenticateWithXades(challenge, certificate, privateKey,
+                identifier, subjectIdentifier, signingOptions, null, null);
+    }
+
+    /**
+     * Authenticate with XAdES, optionally emitting an
+     * {@code <AuthorizationPolicy>} block carrying the IP allow-list.
+     * Mirrors the token-flow {@code AllowedIps} behaviour: when
+     * {@code policy} is {@code null}, falls back to a single
+     * {@code <Ip4Address>} entry containing {@code defaultClientIp}
+     * (typically the IP returned in {@code GET /auth/challenge}).
+     * Pass both {@code null} to omit the AuthorizationPolicy element
+     * entirely (server then defaults to "any caller IP").
+     *
+     * @since 1.0.0
+     */
+    public AuthenticationInit authenticateWithXades(
+            String challenge, X509Certificate certificate, PrivateKey privateKey,
+            KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier,
+            io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions,
+            @Nullable AuthorizationPolicy policy,
+            @Nullable String defaultClientIp) {
         LOGGER.debug(LOG_CALL, OP_AUTH_XADES);
-        String authXml = buildAuthTokenRequestXml(challenge, identifier, subjectIdentifier);
+        String authXml = buildAuthTokenRequestXml(challenge, identifier, subjectIdentifier,
+                policy, defaultClientIp);
         String signedXml = SigningService.signXml(
                 authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey, signingOptions);
         AuthenticationInitResponseRaw response = http.postXml(
@@ -316,15 +347,32 @@ public final class AuthClient {
     }
 
     /**
-     * List active authentication sessions.
+     * List active authentication sessions (first page).
      *
      * @return list response with session items and continuation token
      */
     public AuthenticationList listSessions() {
+        return listSessions(null);
+    }
+
+    /**
+     * List active authentication sessions, optionally continuing from a
+     * prior page's continuation token.
+     *
+     * @param continuationToken cursor returned by the previous page, or
+     *                          {@code null} to fetch the first page
+     * @return list response with session items and the next continuation token
+     */
+    public AuthenticationList listSessions(@org.jspecify.annotations.Nullable String continuationToken) {
         LOGGER.debug(LOG_CALL, OP_LIST_SESSIONS);
         String token = sessionContext.token();
-        AuthenticationListResponseRaw raw = http.getAuthenticated(PATH_SESSIONS, token,
-                AuthenticationListResponseRaw.class, OP_LIST_SESSIONS);
+        AuthenticationListResponseRaw raw = continuationToken == null
+                ? http.getAuthenticated(PATH_SESSIONS, token,
+                        AuthenticationListResponseRaw.class, OP_LIST_SESSIONS)
+                : http.getAuthenticated(PATH_SESSIONS, token,
+                        AuthenticationListResponseRaw.class, OP_LIST_SESSIONS,
+                        io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
+                        continuationToken);
         return AuthenticationList.from(raw);
     }
 
@@ -359,16 +407,44 @@ public final class AuthClient {
     }
 
     private static String buildAuthTokenRequestXml(String challenge, KsefIdentifier identifier,
-                                                   CertificateSubjectIdentifier subjectIdentifier) {
+                                                   CertificateSubjectIdentifier subjectIdentifier,
+                                                   @Nullable AuthorizationPolicy policy,
+                                                   @Nullable String defaultClientIp) {
         String elementName = xmlElementForType(identifier.type());
-        return XML_PROLOG
-                + AUTH_TOKEN_REQUEST_OPEN
-                + CHALLENGE_OPEN + escapeXml(challenge) + CHALLENGE_CLOSE
-                + CONTEXT_IDENTIFIER_OPEN + elementName + XML_CLOSE_BRACKET
-                + escapeXml(identifier.value())
-                + XML_END_TAG_PREFIX + elementName + CONTEXT_IDENTIFIER_INNER_CLOSE
-                + SUBJECT_IDENTIFIER_TYPE_OPEN + subjectIdentifier.wireType() + SUBJECT_IDENTIFIER_TYPE_CLOSE
-                + AUTH_TOKEN_REQUEST_CLOSE;
+        StringBuilder xmlBuilder = new StringBuilder()
+                .append(XML_PROLOG)
+                .append(AUTH_TOKEN_REQUEST_OPEN)
+                .append(CHALLENGE_OPEN).append(escapeXml(challenge)).append(CHALLENGE_CLOSE)
+                .append(CONTEXT_IDENTIFIER_OPEN).append(elementName).append(XML_CLOSE_BRACKET)
+                .append(escapeXml(identifier.value()))
+                .append(XML_END_TAG_PREFIX).append(elementName).append(CONTEXT_IDENTIFIER_INNER_CLOSE)
+                .append(SUBJECT_IDENTIFIER_TYPE_OPEN).append(subjectIdentifier.wireType()).append(SUBJECT_IDENTIFIER_TYPE_CLOSE);
+        appendAuthorizationPolicy(xmlBuilder, policy, defaultClientIp);
+        xmlBuilder.append(AUTH_TOKEN_REQUEST_CLOSE);
+        return xmlBuilder.toString();
+    }
+
+    private static void appendAuthorizationPolicy(StringBuilder xmlBuilder,
+                                                  @Nullable AuthorizationPolicy policy,
+                                                  @Nullable String defaultClientIp) {
+        if (policy == null && defaultClientIp == null) {
+            return;
+        }
+        xmlBuilder.append(AUTHORIZATION_POLICY_OPEN);
+        if (policy == null) {
+            xmlBuilder.append(IP4_ADDRESS_OPEN).append(escapeXml(defaultClientIp)).append(IP4_ADDRESS_CLOSE);
+        } else {
+            for (String addr : policy.ip4Addresses()) {
+                xmlBuilder.append(IP4_ADDRESS_OPEN).append(escapeXml(addr)).append(IP4_ADDRESS_CLOSE);
+            }
+            for (String range : policy.ip4Ranges()) {
+                xmlBuilder.append(IP4_RANGE_OPEN).append(escapeXml(range)).append(IP4_RANGE_CLOSE);
+            }
+            for (String mask : policy.ip4Masks()) {
+                xmlBuilder.append(IP4_MASK_OPEN).append(escapeXml(mask)).append(IP4_MASK_CLOSE);
+            }
+        }
+        xmlBuilder.append(AUTHORIZATION_POLICY_CLOSE);
     }
 
     private static AuthenticationContextIdentifierTypeRaw toRawType(KsefIdentifier.Type type) {

@@ -9,9 +9,11 @@ import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
@@ -40,6 +42,16 @@ public final class TokenClientImpl implements TokenClient {
     private static final String OP_GET_STATUS = "getTokenStatus";
     private static final String OP_REVOKE = "revokeToken";
     private static final String ERR_NULL_BUILDER = "tokenBuilder must not be null";
+    private static final String ERR_NULL_FILTER = "filter must not be null";
+
+    private static final String QUERY_PARAM_SEPARATOR_FIRST = "?";
+    private static final String QUERY_PARAM_SEPARATOR = "&";
+    private static final String QUERY_PARAM_EQUALS = "=";
+    private static final String PARAM_STATUS = "status";
+    private static final String PARAM_DESCRIPTION = "description";
+    private static final String PARAM_AUTHOR_IDENTIFIER = "authorIdentifier";
+    private static final String PARAM_AUTHOR_IDENTIFIER_TYPE = "authorIdentifierType";
+    private static final String PARAM_PAGE_SIZE = "pageSize";
 
     private final HttpSupport http;
 
@@ -79,23 +91,77 @@ public final class TokenClientImpl implements TokenClient {
     }
 
     /**
-     * Codex round-9 manual-validation A.4.1 — list all tokens, following
-     * {@code x-continuation-token} internally.
+     * List all tokens, following {@code x-continuation-token} internally.
      */
     @Override
     public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens() {
+        return streamTokens(TokenQueryBuilder.create());
+    }
+
+    @Override
+    public TokenList list(TokenQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_LIST);
+        String token = http.requireToken();
+        String path = PATH_TOKENS + buildQueryString(filter);
+        QueryTokensResponseRaw rawValue = http.getAuthenticated(path, token,
+                QueryTokensResponseRaw.class, OP_LIST);
+        return TokensMappers.toTokenList(rawValue);
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens(TokenQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
+        LOGGER.debug(LOG_CALL, OP_LIST);
+        String pathWithFilters = PATH_TOKENS + buildQueryString(filter);
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.cursorStream(continuationToken -> {
             String accessToken = http.requireToken();
             QueryTokensResponseRaw rawValue = continuationToken == null
-                    ? http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST)
-                    : http.getAuthenticated(PATH_TOKENS, accessToken, QueryTokensResponseRaw.class, OP_LIST,
+                    ? http.getAuthenticated(pathWithFilters, accessToken, QueryTokensResponseRaw.class, OP_LIST)
+                    : http.getAuthenticated(pathWithFilters, accessToken, QueryTokensResponseRaw.class, OP_LIST,
                             io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
                             continuationToken);
             TokenList page = TokensMappers.toTokenList(rawValue);
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.CursorPage<>(
                     page.tokens(), page.continuationToken());
         });
+    }
+
+    private static String buildQueryString(TokenQueryBuilder filter) {
+        StringBuilder query = new StringBuilder();
+        for (TokenStatus status : filter.statuses()) {
+            appendParam(query, PARAM_STATUS, toWireStatus(status));
+        }
+        if (filter.descriptionValue() != null) {
+            appendParam(query, PARAM_DESCRIPTION, filter.descriptionValue());
+        }
+        if (filter.authorIdentifierValue() != null) {
+            appendParam(query, PARAM_AUTHOR_IDENTIFIER, filter.authorIdentifierValue());
+        }
+        if (filter.authorIdentifierTypeValue() != null) {
+            appendParam(query, PARAM_AUTHOR_IDENTIFIER_TYPE, filter.authorIdentifierTypeValue().wireValue());
+        }
+        if (filter.pageSizeValue() != null) {
+            appendParam(query, PARAM_PAGE_SIZE, filter.pageSizeValue().toString());
+        }
+        return query.toString();
+    }
+
+    private static void appendParam(StringBuilder query, String name, String value) {
+        query.append(query.isEmpty() ? QUERY_PARAM_SEPARATOR_FIRST : QUERY_PARAM_SEPARATOR)
+                .append(name).append(QUERY_PARAM_EQUALS)
+                .append(java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    /** Map SDK enum to spec PascalCase wire value. */
+    private static String toWireStatus(TokenStatus status) {
+        return switch (status) {
+            case PENDING -> "Pending";
+            case ACTIVE -> "Active";
+            case REVOKING -> "Revoking";
+            case REVOKED -> "Revoked";
+            case FAILED -> "Failed";
+        };
     }
 
     /**

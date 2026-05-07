@@ -521,17 +521,45 @@ public final class KsefClient implements AutoCloseable {
         ensureOpen();
         ensureAuthenticated();
         return authClient.listSessions().items().stream()
-                .map(item -> new io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession(
-                        item.referenceNumber(),
-                        item.startDate(),
-                        item.authenticationMethodInfo() == null
-                                ? null : item.authenticationMethodInfo().displayName(),
-                        item.status(),
-                        Boolean.TRUE.equals(item.tokenRedeemed()),
-                        item.lastTokenRefreshDate(),
-                        item.refreshTokenValidUntil(),
-                        Boolean.TRUE.equals(item.current())))
+                .map(KsefClient::toAuthSession)
                 .toList();
+    }
+
+    /**
+     * Lazily paginate every active auth session for this consumer's KSeF
+     * context, walking pages on demand via the {@code x-continuation-token}
+     * cursor. Holds at most one page in heap; stops fetching as soon as the
+     * caller's terminal operation is satisfied.
+     *
+     * <p>Use {@link java.util.stream.Stream#limit(long)} or
+     * {@link java.util.stream.Stream#takeWhile(java.util.function.Predicate)}
+     * to bound the walk.
+     */
+    public synchronized java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession> streamAuthSessions() {
+        ensureOpen();
+        ensureAuthenticated();
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.cursorStream(
+                continuationToken -> {
+                    var page = authClient.listSessions(continuationToken);
+                    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession> mapped =
+                            page.items().stream().map(KsefClient::toAuthSession).toList();
+                    return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.CursorPage<>(
+                            mapped, page.continuationToken());
+                });
+    }
+
+    private static io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession toAuthSession(
+            io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationListItem item) {
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession(
+                item.referenceNumber(),
+                item.startDate(),
+                item.authenticationMethodInfo() == null
+                        ? null : item.authenticationMethodInfo().displayName(),
+                item.status(),
+                Boolean.TRUE.equals(item.tokenRedeemed()),
+                item.lastTokenRefreshDate(),
+                item.refreshTokenValidUntil(),
+                Boolean.TRUE.equals(item.current()));
     }
 
     /**
@@ -878,7 +906,8 @@ public final class KsefClient implements AutoCloseable {
             authenticateWithToken(token);
         } else if (credentials instanceof KsefCertificateCredentials cert) {
             authenticateWithCertificate(cert.certificate(), cert.privateKey(), cert.identifier(),
-                    cert.subjectIdentifier(), cert.signingOptions());
+                    cert.subjectIdentifier(), cert.signingOptions(),
+                    cert.authorizationPolicy().orElse(null));
         } else if (credentials instanceof KsefPkcs12Credentials pkcs12) {
             authenticateWithPkcs12(pkcs12);
         }
@@ -898,11 +927,12 @@ public final class KsefClient implements AutoCloseable {
     private void authenticateWithCertificate(X509Certificate certificate, PrivateKey privateKey,
                                              KsefIdentifier identifier,
                                              CertificateSubjectIdentifier subjectIdentifier,
-                                             io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
+                                             io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions,
+                                             io.github.mgrtomaszzurawski.ksef.sdk.config.@Nullable AuthorizationPolicy policy) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
         this.lastChallengeClientIp = challenge.clientIp();
         authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier,
-                subjectIdentifier, signingOptions);
+                subjectIdentifier, signingOptions, policy, challenge.clientIp());
         pollAuthStatus();
         authClient.redeemTokens();
     }
@@ -914,7 +944,8 @@ public final class KsefClient implements AutoCloseable {
         X509Certificate certificate = CertificateLoader.getCertificate(keyStore, alias);
         authenticateWithCertificate(certificate, privateKey, credentials.identifier(),
                 credentials.subjectIdentifier(),
-                io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults());
+                io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults(),
+                credentials.authorizationPolicy().orElse(null));
     }
 
     private boolean isCertificateBackedCredentials() {
