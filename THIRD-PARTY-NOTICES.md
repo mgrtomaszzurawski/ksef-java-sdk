@@ -60,6 +60,87 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Runtime dependencies
+
+The published `ksef-client` JAR has the following runtime dependencies
+(non-exhaustive — see `mvn dependency:tree` for transitives). Each is
+listed with its declared upstream license. Notable: EU DSS components
+ship under **LGPL 2.1**; the SDK links them via the standard Java
+classloader, satisfying LGPL relinking requirements automatically.
+
+### Jackson — Apache License 2.0
+
+- `com.fasterxml.jackson.core:jackson-core`
+- `com.fasterxml.jackson.core:jackson-databind`
+- `com.fasterxml.jackson.core:jackson-annotations`
+- `com.fasterxml.jackson.datatype:jackson-datatype-jsr310`
+
+Upstream: [github.com/FasterXML/jackson](https://github.com/FasterXML/jackson)
+License text: <https://www.apache.org/licenses/LICENSE-2.0>
+NOTICE: each Jackson JAR ships its own `META-INF/NOTICE.txt`; preserved
+when the SDK's shaded distribution is built.
+
+### jackson-databind-nullable — Apache License 2.0
+
+- `org.openapitools:jackson-databind-nullable`
+
+Upstream: [github.com/OpenAPITools/jackson-databind-nullable](https://github.com/OpenAPITools/jackson-databind-nullable)
+License text: <https://www.apache.org/licenses/LICENSE-2.0>
+
+### Bouncy Castle — MIT-style (Bouncy Castle Licence)
+
+- `org.bouncycastle:bcprov-jdk18on`
+- `org.bouncycastle:bcpkix-jdk18on`
+
+Upstream: [bouncycastle.org](https://www.bouncycastle.org/)
+License text: <https://www.bouncycastle.org/licence.html>
+
+### EU DSS — LGPL 2.1
+
+- `eu.europa.ec.joinup.sd-dss:dss-xades`
+- `eu.europa.ec.joinup.sd-dss:dss-token`
+- `eu.europa.ec.joinup.sd-dss:dss-utils-apache-commons`
+
+Upstream: [github.com/esig/dss](https://github.com/esig/dss)
+License text: <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>
+
+The SDK links DSS dynamically (standard JVM classloading); recipients
+may replace DSS JARs with a modified version satisfying the LGPL
+relinking obligation. AGPL-3.0-only is compatible with LGPL-2.1
+under the GPL/LGPL dependency-linking exception.
+
+### ZXing — Apache License 2.0
+
+- `com.google.zxing:core`
+- `com.google.zxing:javase`
+
+Upstream: [github.com/zxing/zxing](https://github.com/zxing/zxing)
+License text: <https://www.apache.org/licenses/LICENSE-2.0>
+
+### SLF4J — MIT License
+
+- `org.slf4j:slf4j-api`
+
+Upstream: [www.slf4j.org](https://www.slf4j.org/)
+License text: <https://www.slf4j.org/license.html>
+
+### JSpecify — Apache License 2.0
+
+- `org.jspecify:jspecify`
+
+Upstream: [jspecify.dev](https://jspecify.dev/)
+License text: <https://www.apache.org/licenses/LICENSE-2.0>
+
+### Jakarta XML Bind / Annotation / JAXB Runtime — EPL 2.0 + GPL 2.0 with Classpath Exception
+
+- `jakarta.annotation:jakarta.annotation-api`
+- `jakarta.xml.bind:jakarta.xml.bind-api`
+- `org.glassfish.jaxb:jaxb-runtime`
+
+Upstream: [eclipse-ee4j.github.io](https://eclipse-ee4j.github.io/)
+License texts: <https://www.eclipse.org/legal/epl-2.0/>,
+<https://openjdk.org/legal/gplv2+ce.html>
+
 ## Project license
 
 The SDK source code (everything not listed above) is licensed under

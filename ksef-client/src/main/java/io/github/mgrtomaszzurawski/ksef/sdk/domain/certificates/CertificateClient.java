@@ -20,6 +20,13 @@ import java.util.List;
  * Client for KSeF certificate management — enrollment, retrieval, querying,
  * revocation, and limits.
  *
+ * <p><strong>Authentication requirement:</strong> all endpoints in this
+ * client require certificate-based authentication (XAdES, via
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials}
+ * or
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials}).
+ * Token-authenticated callers will receive HTTP 403 from the server.
+ *
  * @since 1.0.0
  */
 public interface CertificateClient {

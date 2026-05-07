@@ -1,62 +1,57 @@
-# ADR-018: Generated `*Raw` types on internal bridge methods (deferred to 0.2.0)
+# ADR-018: Generated `*Raw` types removed from public bridge methods
 
-Date: 2026-05-02
-Status: Accepted — closure verified 2026-05-05 for 1.0.0 (Builder.build() returns SDK-owned records; no public from(*Raw) factories on domain records; the deferred 0.2.0 follow-up landed before 1.0.0 tag)
+Date: 2026-05-02 (originally deferred plan)
+Amended: 2026-05-05 (closure verified for 1.0.0)
+Status: Accepted — resolved historical
 
 ## Context
 
 ADR-005 declares that consumers must never see generated `client.model.*Raw`
 types — the SDK overlays them with immutable records under
-`sdk.domain.<feature>.model`. The 0.1.0 release of `ksef-client` ships with
-this contract intact for the common consumer surface (domain client
-interfaces, builder fluent APIs, returned record types). However, two
-specific bridge points still reference `*Raw` in their signatures:
+`sdk.domain.<feature>.model`. An earlier draft of the SDK left two bridge
+points referencing `*Raw` in their public signatures:
 
-1. **Builder `build()` methods** (~25 builders) return the OpenAPI-generated
-   request type (e.g. `GenerateTokenRequestRaw`). The SDK invokes
-   `builder.build()` internally; consumers don't normally need to call it.
-2. **Record `from(*Raw)` static factories** (~70 records) accept the
-   OpenAPI-generated response type. The SDK invokes them when mapping
-   responses; consumers don't normally need to call them.
+1. **Builder `build()` methods** (~25 builders) returned the OpenAPI-generated
+   request type (e.g. `GenerateTokenRequestRaw`).
+2. **Record `from(*Raw)` static factories** (~70 records) accepted the
+   OpenAPI-generated response type.
 
-JPMS classpath consumers (the common case for Maven Central artifacts) are
-unaffected — they read the unnamed module and can resolve any reference. JPMS
-named-module consumers, however, cannot reference these bridge methods
-because the `client.model` package is not exported. Calls compile fine when
-the consumer relies on the documented public flows (passing a builder into a
-domain client method, receiving a record from a domain client method) but
-fail if the consumer attempts to call `build()` or `from()` directly.
+JPMS classpath consumers (the common case for Maven Central artifacts) were
+unaffected — they read the unnamed module and could resolve any reference.
+JPMS named-module consumers, however, could not reference these bridge
+methods because the `client.model` package is not exported. Calls compiled
+fine when the consumer relied on the documented public flows (passing a
+builder into a domain client method, receiving a record from a domain client
+method) but failed if the consumer attempted to call `build()` or `from()`
+directly.
 
-## Decision
+## Decision (resolved for 1.0.0)
 
-For 0.1.0, ship with the bridge methods annotated `@apiNote internal — SDK
-plumbing only` and document the limitation in CHANGELOG. Both methods stay
-public because SDK domain client implementations live in non-exported
-`internal.client.<feature>` packages and need cross-package access; making
-the bridge methods package-private would break the SDK itself.
-
-For 0.2.0, eliminate `*Raw` from these signatures by:
+Eliminate `*Raw` from these public signatures before the 1.0.0 tag, by:
 
 - Introducing SDK-owned request records under
   `sdk.domain.<feature>.builder.*Request` — `build()` returns the SDK record,
   the internal client impl maps `Request → Raw` at the HTTP boundary.
-- Moving `Record.from(*Raw)` bodies to internal mapper classes under
-  `sdk.internal.client.<feature>.mapping.*Mapper` — public records lose the
-  `from()` factory; mapping is invisible to consumers.
+- Moving `Record.from(*Raw)` bodies to internal mapper classes (or
+  package-private mappers in the same domain package) — public records do
+  not expose `from()` factories; mapping is invisible to consumers.
 
-Estimated scope for 0.2.0: ~30 new request records, ~70 mapper extractions,
-~25 builder refactors, ~2400 LOC of mechanical change. Tests already exercise
-the public API surface, so the refactor is compile-time-only on the consumer
-side.
+Total scope of the closure: ~30 new request records, ~70 mapper extractions,
+~25 builder refactors, ~2400 LOC of mechanical change. Tests already
+exercised the public API surface, so the refactor was compile-time-only on
+the consumer side.
 
-## Consequences
+## Consequences (1.0.0)
 
-**0.1.0 ships with**:
-- Builders that work via the documented flow (`client.tokens().generate(builder)`).
-- Records returned by domain client methods (no consumer call to `from()`).
-- A documented limitation: direct invocation of `Builder.build()` /
-  `Record.from(*Raw)` from a JPMS named-module consumer is unsupported.
+- Builders work via the documented flow (`client.tokens().generate(builder)`).
+- Records returned by domain client methods carry no public `from()` factory.
+- JPMS named-module consumers see a clean public surface with no
+  unreferenceable types.
+- Early adopters (none on Maven Central yet) needed no migration.
 
-**0.2.0 will introduce a breaking change** to anyone who actually invokes
-these bridge methods. The Javadoc note + CHANGELOG entry warn early adopters
-that the bridge methods are not part of the supported API.
+## Note on Javadoc `@apiNote`
+
+A handful of public builder Javadocs may still carry the historical
+`@apiNote internal — SDK plumbing only` from before the refactor. Those notes
+are now harmless: the methods return SDK-owned records, are part of the
+documented public surface, and may be invoked directly by consumers.

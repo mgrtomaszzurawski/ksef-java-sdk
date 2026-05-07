@@ -44,8 +44,9 @@ public sealed interface BatchAssemblyMode {
 }
 ```
 
-Caller picks the mode via `BatchSessionOptions.assemblyMode(...)` and
-the rest of the pipeline branches on the sealed subtype.
+Caller picks the mode via `BatchSessionOptions.withAssembly(BatchAssemblyMode)`
+(canonical record component is `assembly`) and the rest of the pipeline
+branches on the sealed subtype.
 
 Single-pass pipeline. `BatchPackageBuilder.ChunkSink` is a custom
 `OutputStream` plumbed into the ZIP writer. It accumulates into a
@@ -60,7 +61,9 @@ Two `BatchPart` subtypes (also sealed, in non-exported
 - `OnDiskPart(int ordinalNumber, long sizeBytes, byte[] hash, Path path)`
   — uploaded via `BodyPublishers.ofFile(path)`,
 - `InMemoryPart(int ordinalNumber, byte[] hash, byte[] bytes)` —
-  uploaded via `BodyPublishers.ofByteArray(bytes)`.
+  uploaded via `BodyPublishers.ofInputStream(part::openStream)`,
+  where `openStream()` returns a fresh `ByteArrayInputStream` over the
+  same bytes (no extra copy).
 
 `KsefBatchSession.uploadParts` pattern-matches on the subtype.
 
@@ -78,17 +81,18 @@ Caller-supplied custom temp directories are NOT scanned automatically
 `purgeOrphans(customDir, ttl)` themselves at startup. Documented on
 `BatchTempCleanup`.
 
-`InMemoryPart` deliberately skips defensive `byte[]` clones in its
-compact constructor and `bytes()` accessor:
-
-- the record is internal (non-exported package),
-- only constructed by `ChunkSink` from a just-encrypted buffer with
-  no other live references,
-- `BodyPublishers.ofByteArray` performs its own internal copy.
-
-Skipping the clones reduces peak heap from 3× (compact-ctor clone +
-accessor clone + JDK internal copy) to 1× per part. For a 100 MiB
-part: ~200 MiB saved.
+`InMemoryPart` clones the `bytes` array in both the compact constructor
+and the `bytes()` accessor (same-package mutation by future callers
+would otherwise corrupt the encrypted buffer between hash computation
+and upload). The upload hot path uses
+`InMemoryPart.openStream()` returning a fresh `ByteArrayInputStream`
+over the stored buffer; this hands a stream to
+`BodyPublishers.ofInputStream(...)` without re-copying the bytes.
+Peak heap is 2× per part (one buffer in `InMemoryPart`, one transient
+buffer the JDK reads from the stream), versus a naive 3× pattern
+(compact-ctor clone + accessor clone + JDK internal copy with
+`ofByteArray`). The `hash` component (32 B) is also defensively
+cloned — small and security-relevant.
 
 ## Alternatives considered
 
@@ -104,21 +108,26 @@ part: ~200 MiB saved.
    implementation. Round-2 review flagged that
    `Files.list(/tmp)` on a host with millions of `/tmp` entries
    blocks construction for seconds. Switched to daemon thread.
-4. **Defensive `byte[]` clones everywhere on `InMemoryPart`.**
-   The "secure by default" answer. Rejected because the type is
-   non-exported, only one internal constructor path exists, and the
-   3× peak-heap cost was real on large batches. Hash component (32 B)
-   stays defensive — small, security-relevant.
+4. **Skip defensive `byte[]` clones on `InMemoryPart`.** Initial design
+   skipped the clones to drop peak heap from 3× to 1× per part, on the
+   reasoning that the type is non-exported. Reversed during the post-PR-50
+   audit: same-package callers had no compile-time block against
+   mutating the buffer, and a single careless edit could have corrupted
+   ciphertext between hash and upload. The current design clones in
+   ctor and accessor and uses `openStream()` for the upload — peak heap
+   is 2× per part, not 3×, because the JDK does not double-copy when
+   given an `InputStream`.
 
 ## Consequences
 
 - **Public API surface gains `BatchAssemblyMode` and `BatchSessionOptions`.**
   Future-compatible: adding a new variant to the sealed interface is
   source-compatible for callers using the static factories.
-- **`InMemoryPart.bytes()` is a no-clone accessor.** Same-package
-  callers must not mutate the returned buffer. The class is internal
-  and there is exactly one consumer (`KsefBatchSession.uploadParts`)
-  which passes it directly to `BodyPublishers.ofByteArray`.
+- **`InMemoryPart.bytes()` returns a defensive clone**; mutation by
+  future same-package callers cannot corrupt the encrypted buffer
+  between hash and upload. The upload hot path uses `openStream()`
+  with `BodyPublishers.ofInputStream(...)` and so avoids re-copying
+  the bytes via the accessor.
 - **Custom temp-dir cleanup is opt-in.** Callers who choose
   `onDisk(Path)` for crash-recovery reasons must pair it with their
   own `purgeOrphans` call at startup. Documented on

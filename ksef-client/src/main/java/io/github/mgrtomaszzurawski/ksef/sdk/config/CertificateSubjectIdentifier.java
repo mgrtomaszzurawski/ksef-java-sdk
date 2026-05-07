@@ -29,8 +29,7 @@ import java.util.Objects;
  * ({@code certificateSubject} or {@code certificateFingerprint}) when
  * building the {@code AuthTokenRequest} XML.
  *
- * <p>Spec citation: REQ-AUTH-027, REQ-AUTH-033 in
- * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}.
+ * <p>Spec citation: REQ-AUTH-027, REQ-AUTH-033.
  *
  * @since 1.0.0
  */

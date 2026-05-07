@@ -11,8 +11,14 @@ import java.util.Objects;
 
 /**
  * Builder for KSeF certificate enrollment requests.
- * <p>Required: certificateName, certificateType, csr (PKCS#10 in DER format).
- * Optional: validFrom.
+ *
+ * <p>Required: certificateName, certificateType, csr. Optional: validFrom.
+ *
+ * <p><strong>CSR encoding:</strong> {@code csr} must be raw PKCS#10
+ * bytes in <strong>DER</strong> form. PEM-encoded input (with
+ * {@code -----BEGIN CERTIFICATE REQUEST-----} headers and base64
+ * payload) is rejected by the server with a parse error. To convert
+ * a PEM CSR to DER: {@code openssl req -outform DER -in csr.pem -out csr.der}.
  *
  * @since 1.0.0
  */

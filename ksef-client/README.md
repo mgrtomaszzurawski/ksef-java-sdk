@@ -10,8 +10,7 @@ Library module of the [KSeF Java SDK](../README.md) — coordinates
 
 If you only need to consume the SDK, this README is enough. For project-wide
 context, the architecture deep-dive, and the demo / live-validation harness,
-see the [root README](../README.md) and the
-[`ARCHITECTURE.md`](../context/ARCHITECTURE.md) note.
+see the [root README](../README.md) and the [`ADR/`](../ADR/) set.
 
 ## Quickstart
 
@@ -52,17 +51,27 @@ via `KsefIdentifier`:
 |------|--------|-----|
 | `Nip` | 10 digits | Polish tax ID — most common authentication identifier |
 | `Pesel` | 11 digits | Polish personal ID — natural-person authentication |
-| `Fingerprint` | hex | Certificate fingerprint identifier (foreign certs) |
-| `NipVatUe` | EU prefix + 10 digits | EU VAT number (only on EU-entity flows) |
+| `Fingerprint` | SHA-256 hex of cert public key | Certificate fingerprint identifier (foreign / EU entities) |
+| `NipVatUe` | `{ownerNip}-{country}{specific}` compound | EU VAT number context bound to a Polish owner NIP |
 
 Construct via the factory methods:
 
 ```java
 KsefIdentifier.nip("1234567890");
 KsefIdentifier.pesel("12345678901");
-KsefIdentifier.fingerprint("abcd...");
-KsefIdentifier.nipVatUe("PL1234567890");
+KsefIdentifier.fingerprint("abcd1234...");          // SHA-256 hex of cert pubkey
+KsefIdentifier.nipVatUe("1234567890-DE123456789");  // ownerNip-{country}{specific}
 ```
+
+> **VAT-UE authenticated context** is a two-step flow: (1) the EU-entity
+> certificate must first be granted `EuEntityAdminPermission` by the
+> Polish owner — the grant is keyed on the SHA-256 fingerprint of the
+> cert's public key; (2) authentication then uses
+> `CertificateSubjectIdentifier.fingerprint(hex)` together with
+> `KsefIdentifier.nipVatUe(compound)` as the operation context. The
+> certificate's `organizationIdentifier` RDN must be `VATPL-{ownerNip}`,
+> not the compound. See `KsefCertificateCredentials` Javadoc for the
+> full contract.
 
 Some flows accept only a NIP (e.g. credentials) — those constructors take a
 plain `String` for ergonomics.
@@ -154,10 +163,10 @@ retry semantics, encryption flow, session abstractions — lives in
 [`ADR/`](../ADR/) at the repository root. Sixteen ADRs as of this release,
 each immutable in body once accepted (only `Status:` changes after the fact).
 
-Implementation plan and roadmap:
-[`context/PLAN-2026-04-03-2045-implementation-plan.md`](../context/PLAN-2026-04-03-2045-implementation-plan.md).
+Implementation plan and roadmap are tracked in the root [CHANGELOG.md](../CHANGELOG.md)
+and the [`ADR/`](../ADR/) set.
 
 ## License
 
-[AGPL-3.0-only](../LICENSE). See ADR-007 for the rationale (the original
+[AGPL-3.0-only](../LICENSE.txt). See ADR-007 for the rationale (the original
 plan to switch to Apache-2.0 at v1.0 was deprecated).

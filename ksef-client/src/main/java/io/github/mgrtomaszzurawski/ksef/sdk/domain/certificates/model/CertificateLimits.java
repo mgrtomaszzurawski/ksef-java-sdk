@@ -5,11 +5,16 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
 /**
- * Certificate enrollment and certificate limits for the current subject.
+ * Certificate enrollment and active-certificate limits for the current
+ * subject. KSeF caps certificate management per natural person:
+ * 12 enrollment requests per calendar month and 6 simultaneously
+ * active certificates.
  *
- * @param canRequest whether the subject can request new certificates
- * @param enrollment enrollment limits
- * @param certificate certificate limits
+ * @param canRequest whether the subject is currently allowed to request
+ *     a new certificate (false when monthly enrollment quota or active
+ *     cert cap is reached)
+ * @param enrollment per-month enrollment-request quota (used vs limit)
+ * @param certificate active-certificate cap (currently active vs limit)
  *
  * @since 1.0.0
  */

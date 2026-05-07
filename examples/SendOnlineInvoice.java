@@ -10,7 +10,8 @@
  * Required env vars:
  *   KSEF_TOKEN        — pre-issued KSeF token
  *   KSEF_NIP          — taxpayer NIP (10 digits)
- *   KSEF_INVOICE_XML  — path to a FA(2) invoice XML file
+ *   KSEF_INVOICE_XML  — path to a FA(3) invoice XML file (FormCode.FA2 is
+ *                       only valid on TEST environment for back-compat)
  *
  * Optional:
  *   KSEF_ENV          — TEST | DEMO | PREPROD | PROD (default: TEST)
@@ -72,6 +73,7 @@ public final class SendOnlineInvoice {
         }
         return switch (envName.toUpperCase()) {
             case "TEST" -> KsefEnvironment.TEST;
+            case "DEMO" -> KsefEnvironment.DEMO;
             case "PREPROD" -> KsefEnvironment.PREPROD;
             case "PROD" -> KsefEnvironment.PROD;
             default -> KsefEnvironment.custom(envName);

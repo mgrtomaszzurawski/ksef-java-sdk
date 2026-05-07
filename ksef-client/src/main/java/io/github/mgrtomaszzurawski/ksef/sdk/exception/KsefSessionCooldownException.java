@@ -12,12 +12,11 @@ import java.time.Duration;
  * server is still in the post-termination cooldown window for the
  * authenticated NIP. Codex 2026-05-05 #9.
  *
- * <p>Empirical observation (see
- * {@code context/RCA/RCA-session-cooldown-consecutive-runs-2026-04-04-2105.md}):
- * after terminating an online session, opening a new one for the same
- * NIP within ~30 seconds yields a session that opens with a reference
- * number but immediately reports status 415 and refuses to accept
- * invoices. A 5-second wait is not enough; 60 seconds usually is.
+ * <p>Empirical observation: after terminating an online session, opening
+ * a new one for the same NIP within ~30 seconds yields a session that
+ * opens with a reference number but immediately reports status 415 and
+ * refuses to accept invoices. A 5-second wait is not enough; 60 seconds
+ * usually is.
  *
  * <p>The {@link #suggestedRetryAfter()} accessor returns the SDK's
  * recommended wait — exposed for explicit retry policies. Consumers

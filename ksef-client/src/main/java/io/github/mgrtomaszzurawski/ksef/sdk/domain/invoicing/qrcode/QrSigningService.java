@@ -30,8 +30,7 @@ import org.bouncycastle.asn1.ASN1Sequence;
  * {@link PrivateKey}; use the canonical-payload flow when signing is
  * external (HSM, offline signer, custom PKI).
  *
- * <p>Spec citations: REQ-QR-14, REQ-QR-16, REQ-QR-17 in
- * {@code context/SPEC-CONFORMANCE-AUDIT-2026-05-03-1600.md}; ADR-019
+ * <p>Spec citations: REQ-QR-14, REQ-QR-16, REQ-QR-17; ADR-019
  * (KOD II signing scheme).
  *
  * @since 1.0.0

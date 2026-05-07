@@ -44,15 +44,15 @@ public record KsefTokenCredentials(String ksefToken, KsefIdentifier identifier,
     }
 
     /**
-     * Backwards-compatible constructor — token + identifier with no
-     * custom authorization policy.
+     * Convenience constructor — token + identifier with no custom
+     * authorization policy.
      */
     public KsefTokenCredentials(String ksefToken, KsefIdentifier identifier) {
         this(ksefToken, identifier, null);
     }
 
     /**
-     * Backwards-compatible constructor — accepts a plain NIP string.
+     * Convenience constructor — accepts a plain NIP string.
      *
      * @param ksefToken the KSeF authorization token
      * @param nip 10-digit Polish tax identification number

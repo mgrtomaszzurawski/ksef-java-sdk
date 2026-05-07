@@ -171,9 +171,8 @@ but JPMS prevents consumer reach.
 
 ## Amendment 2026-05-02 — credentials promoted to `config/`, auth records pushed to `internal/`
 
-User-review pass (see `context/USER-REVIEW-REMARKS-2026-05-01-2130.md`
-findings #2 and #11) revealed two follow-up moves that refine this
-decision without overturning it:
+User-review pass revealed two follow-up moves that refine this decision
+without overturning it:
 
 1. **`KsefCredentials` + 3 implementations moved from
    `domain/authentication/` to `config/`.** Rationale: from the

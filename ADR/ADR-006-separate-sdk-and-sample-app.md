@@ -29,5 +29,4 @@ The "sample-app" terminology used throughout this ADR was renamed to
 naming convention and with the internal `Demo*` class vocabulary
 already in use (`DemoApp`, `DemoContext`, `DemoSession`, etc.). The
 decision and module split documented above remain unchanged — only
-the artifactId moved. See finding #11 in
-`context/USER-REVIEW-REMARKS-2026-05-01-2130.md` for full reasoning.
+the artifactId moved.

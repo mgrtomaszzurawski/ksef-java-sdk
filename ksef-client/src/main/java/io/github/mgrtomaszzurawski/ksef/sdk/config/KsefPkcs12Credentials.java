@@ -64,7 +64,7 @@ public record KsefPkcs12Credentials(
     }
 
     /**
-     * Backwards-compatible constructor — accepts a plain NIP string and
+     * Convenience constructor — accepts a plain NIP string and
      * defaults to the {@code certificateSubject} identifier strategy.
      *
      * @param keystorePath path to PKCS#12 keystore

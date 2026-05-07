@@ -97,9 +97,8 @@ was renamed to `ksef-demo` to match the official CIRFMF/ksef-client-java
 SDK naming and to align with the internal `Demo*` class vocabulary
 (`DemoApp`, `DemoContext`, `DemoSession`, `DemoState`, `DemoMode`).
 Purpose-shift decision unchanged — the rename only completes the
-naming consistency. See finding #11 in
-`context/USER-REVIEW-REMARKS-2026-05-01-2130.md`.
+naming consistency.
 
-Related: finding #3 in the same file plans removal of
-`client.auth()` / `client.sessions()` accessors mentioned above
-(fork (a) — KsefClient becomes the true single entry point).
+> **Amendment (2026-05-07):** the `client.auth()` and `client.sessions()`
+> accessors mentioned above were removed before 1.0.0. ADR-016 supersedes
+> this ADR's assumption that those accessors remain public.
