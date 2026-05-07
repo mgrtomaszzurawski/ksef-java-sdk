@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Certificate enrollment and active-certificate limits for the current
  * subject. KSeF caps certificate management per natural person:
@@ -18,6 +20,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
  *
  * @since 1.0.0
  */
-public record CertificateLimits(boolean canRequest, CertificateLimit enrollment, CertificateLimit certificate) {
+public record CertificateLimits(boolean canRequest, @Nullable CertificateLimit enrollment, @Nullable CertificateLimit certificate) {
 
 }

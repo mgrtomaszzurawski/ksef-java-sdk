@@ -17,8 +17,8 @@ import org.jspecify.annotations.Nullable;
  * @since 1.0.0
  */
 public record AuthenticationMethodInfo(
-        AuthenticationMethodCategory category,
-        String code,
+        @Nullable AuthenticationMethodCategory category,
+        @Nullable String code,
         @Nullable String displayName) {
 
     public static @Nullable AuthenticationMethodInfo from(@Nullable AuthenticationMethodInfoRaw raw) {

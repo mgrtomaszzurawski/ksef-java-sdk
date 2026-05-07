@@ -7,16 +7,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Access and refresh tokens obtained by redeeming the operation token.
  *
- * @param accessToken the access token for API calls
- * @param refreshToken the refresh token for obtaining new access tokens
+ * @param accessToken the access token for API calls (null if not yet issued)
+ * @param refreshToken the refresh token for obtaining new access tokens (null if not yet issued)
  *
  * @since 1.0.0
  */
-public record AuthenticationTokens(TokenInfo accessToken, TokenInfo refreshToken) {
+public record AuthenticationTokens(@Nullable TokenInfo accessToken, @Nullable TokenInfo refreshToken) {
 
     public static AuthenticationTokens from(AuthenticationTokensResponseRaw rawValue) {
         return new AuthenticationTokens(

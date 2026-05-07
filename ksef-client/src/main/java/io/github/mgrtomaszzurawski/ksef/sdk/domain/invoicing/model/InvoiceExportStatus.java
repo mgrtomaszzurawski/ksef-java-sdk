@@ -19,7 +19,7 @@ import org.jspecify.annotations.Nullable;
  * @since 1.0.0
  */
 public record InvoiceExportStatus(
-        StatusInfo status,
+        @Nullable StatusInfo status,
         @Nullable OffsetDateTime completedDate,
         @Nullable OffsetDateTime packageExpirationDate,
         @Nullable InvoicePackage invoicePackage) {

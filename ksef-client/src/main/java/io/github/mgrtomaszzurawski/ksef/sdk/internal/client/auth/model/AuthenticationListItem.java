@@ -28,7 +28,7 @@ public record AuthenticationListItem(
         String referenceNumber,
         OffsetDateTime startDate,
         @Nullable AuthenticationMethodInfo authenticationMethodInfo,
-        StatusInfo status,
+        @Nullable StatusInfo status,
         @Nullable Boolean tokenRedeemed,
         @Nullable OffsetDateTime lastTokenRefreshDate,
         @Nullable OffsetDateTime refreshTokenValidUntil,

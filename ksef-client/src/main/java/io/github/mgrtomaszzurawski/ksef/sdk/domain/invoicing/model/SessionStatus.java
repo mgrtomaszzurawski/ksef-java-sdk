@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  * @since 1.0.0
  */
 public record SessionStatus(
-        StatusInfo status,
+        @Nullable StatusInfo status,
         OffsetDateTime dateCreated,
         OffsetDateTime dateUpdated,
         @Nullable OffsetDateTime validUntil,

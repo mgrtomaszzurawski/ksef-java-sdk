@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Certificate summary in a query result.
@@ -29,11 +30,11 @@ public record CertificateListItem(
         String type,
         String commonName,
         String status,
-        String subjectIdentifierType,
-        String subjectIdentifierValue,
+        @Nullable String subjectIdentifierType,
+        @Nullable String subjectIdentifierValue,
         OffsetDateTime validFrom,
         OffsetDateTime validTo,
-        OffsetDateTime lastUseDate,
+        @Nullable OffsetDateTime lastUseDate,
         OffsetDateTime requestDate) {
 
 }

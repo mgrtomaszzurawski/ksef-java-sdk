@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Status of a certificate enrollment operation.
@@ -18,7 +19,7 @@ import java.time.OffsetDateTime;
  */
 public record CertificateEnrollmentStatus(
         OffsetDateTime requestDate,
-        StatusInfo status,
-        String certificateSerialNumber) {
+        @Nullable StatusInfo status,
+        @Nullable String certificateSerialNumber) {
 
 }
