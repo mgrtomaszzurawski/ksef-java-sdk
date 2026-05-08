@@ -91,6 +91,31 @@ class ServerErrorParserTest {
     }
 
     @Test
+    void parseErrors_whenLegacyDescriptionNull_preservesItemWithEmptyDescription() {
+        // OpenAPI marks ExceptionDetails.exceptionDescription as nullable.
+        // The parser preserves the item (the error code is operationally
+        // valuable) but substitutes "" for the description — Jackson's
+        // NullNode.asText() would otherwise yield the literal string "null"
+        // which is misleading when shown to users.
+        String body = """
+                {
+                  "exception": {
+                    "exceptionDetailList": [
+                      {"exceptionCode":21001,"exceptionDescription":null},
+                      {"exceptionCode":21405,"exceptionDescription":"valid description"}
+                    ]
+                  }
+                }
+                """;
+        List<KsefValidationError> errors = ServerErrorParser.parseErrors(body);
+        assertEquals(2, errors.size());
+        assertEquals(CODE_JSON_PARSE, errors.get(0).code());
+        assertEquals("", errors.get(0).description());
+        assertEquals(CODE_FIELD_VALIDATION, errors.get(1).code());
+        assertEquals("valid description", errors.get(1).description());
+    }
+
+    @Test
     void parseErrors_whenBothShapesPresent_problemDetailsWins() {
         // Precedence pin: Problem Details errors[] takes precedence over
         // the legacy envelope when both happen to be present.

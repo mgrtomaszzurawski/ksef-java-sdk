@@ -575,11 +575,17 @@
                                 </rule>
                                 <!--
                                     PLAN A.9 — per-class METHOD coverage = 1.00
-                                    for every `*.domain.*.builder.*Builder` and
-                                    every `*.domain.**.*Client`. Catches the
-                                    "added a setter / default helper, forgot
-                                    the test" regression at PR time instead of
-                                    during a release smoke test.
+                                    for every `domain.*.builder.*Builder` and
+                                    every `domain.*.*Client`. JaCoCo's `*` in
+                                    a CLASS-level <include> matches across
+                                    the `.` separator, so the latter pattern
+                                    catches both `domain.tokens.TokenClient`
+                                    (2 segments) and
+                                    `domain.invoicing.sync.InvoiceSyncClient`
+                                    (3 segments). Catches the "added a
+                                    setter / default helper, forgot the test"
+                                    regression at PR time instead of during a
+                                    release smoke test.
                                 -->
                                 <rule>
                                     <element>CLASS</element>

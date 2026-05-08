@@ -27,4 +27,5 @@
  *
  * @since 1.0.0
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
