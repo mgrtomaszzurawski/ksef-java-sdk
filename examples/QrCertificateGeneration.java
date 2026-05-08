@@ -43,6 +43,12 @@
  *   args[4] — invoice XML file path (used to compute SHA-256)
  *   args[5] — output PNG file path (e.g. kod2.png)
  *   KSEF_QR_ENV — TEST | DEMO | PROD env var (optional, default: TEST)
+ *
+ *   PRODUCTION NOTE: this example reads the keystore password from {@code args[1]}
+ *   so it works under {@code mvn exec:java} / IDE without a TTY. In production
+ *   adapt to {@link java.io.Console#readPassword(String, Object...)} (no shell
+ *   history, no /proc/<pid>/cmdline exposure) or to your secret-manager API —
+ *   the {@code String} arg form leaves an unwipeable copy on the heap.
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;

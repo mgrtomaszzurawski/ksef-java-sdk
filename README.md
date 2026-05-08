@@ -307,7 +307,11 @@ The SDK reacts to HTTP 429 + `Retry-After` automatically (`RetryPolicy.retryOn42
 For high-concurrency producers, throttle at the call site:
 
 ```java
-Semaphore slot = new Semaphore(8);  // ~match invoiceMetadata.perSecond
+// Read the current per-operation limit from the server and use it as the
+// concurrency cap so SDK is never the source of 429s.
+ApiRateLimits limits = client.rateLimits().getRateLimits();
+int permits = limits.invoiceMetadata().perSecond();
+Semaphore slot = new Semaphore(permits);
 client.invoices().streamInvoicesByMetadata(filter)
     .parallel()
     .forEach(invoice -> {

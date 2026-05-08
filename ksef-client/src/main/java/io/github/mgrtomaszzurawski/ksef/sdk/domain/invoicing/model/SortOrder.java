@@ -16,13 +16,19 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 public enum SortOrder {
 
     /** Ascending — oldest record first. Spec default. */
-    ASC,
+    ASC("Asc"),
 
     /** Descending — newest record first. */
-    DESC;
+    DESC("Desc");
+
+    private final String wireValue;
+
+    SortOrder(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
     /** Wire value (PascalCase) expected by the KSeF API. */
     public String wireValue() {
-        return this == ASC ? "Asc" : "Desc";
+        return wireValue;
     }
 }

@@ -76,6 +76,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final int QUERY_METADATA_FIRST_PAGE_OFFSET = 0;
     private static final String QUERY_PAGE_OFFSET_PARAM = "pageOffset";
     private static final String QUERY_PAGE_SIZE_PARAM = "pageSize";
+    private static final String QUERY_SORT_ORDER_PARAM = "sortOrder";
 
     private final HttpSupport http;
     private final SecurityClient securityClient;
@@ -299,7 +300,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
                 .append('?').append(QUERY_PAGE_OFFSET_PARAM).append('=').append(pageOffset)
                 .append('&').append(QUERY_PAGE_SIZE_PARAM).append('=').append(pageSize);
         if (sortOrder != null) {
-            path.append("&sortOrder=").append(sortOrder.wireValue());
+            path.append('&').append(QUERY_SORT_ORDER_PARAM).append('=').append(sortOrder.wireValue());
         }
         QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(path.toString(), filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);

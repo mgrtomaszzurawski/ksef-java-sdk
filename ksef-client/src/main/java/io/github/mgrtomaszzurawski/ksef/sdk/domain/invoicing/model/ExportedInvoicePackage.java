@@ -32,6 +32,28 @@ import org.jspecify.annotations.Nullable;
  */
 public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String, byte[]> invoiceXmls) {
 
+    private static final String METADATA_INVOICES_FIELD = "invoices";
+    private static final String ERR_PARSE_METADATA = "Failed to parse _metadata.json from export package: ";
+    private static final String ERR_READ_METADATA = "Failed to read _metadata.json from export package: ";
+    /**
+     * Pre-configured `ObjectMapper` shared across all {@link #invoiceMetadataList()}
+     * calls — Jackson `ObjectMapper` is thread-safe once configured (canonical
+     * "build once, reuse forever" pattern). Allocating a fresh mapper per call
+     * was wasteful given module registration is non-trivial.
+     */
+    /**
+     * Pre-configured `ObjectMapper` shared across all {@link #invoiceMetadataList()}
+     * calls — Jackson `ObjectMapper` is thread-safe once configured (canonical
+     * "build once, reuse forever" pattern). Uses Jackson 2.18 default
+     * {@code StreamReadConstraints} (max depth 1000, max string 20 MB,
+     * max number 1000) — the metadata bytes come from a SHA-256-verified
+     * KSeF export over TLS, so the trust boundary is the upstream API
+     * not arbitrary input.
+     */
+    private static final ObjectMapper METADATA_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
     public ExportedInvoicePackage {
         metadataJson = metadataJson == null ? null : metadataJson.clone();
         invoiceXmls = invoiceXmls == null ? Map.of() : deepCopyByteMap(invoiceXmls);
@@ -83,6 +105,9 @@ public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String,
      *         {@code metadataOnly=false} and no metadata file was emitted
      *         (older API behaviour, before retention 27.10.2025)
      * @throws KsefException if the JSON is malformed
+     *         ({@link com.fasterxml.jackson.core.JsonProcessingException}
+     *         wrapped) or the metadata buffer cannot be read
+     *         ({@link java.io.IOException} wrapped)
      *
      * @since 1.0.0
      */
@@ -91,26 +116,19 @@ public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String,
             return List.of();
         }
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
-            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            JsonNode root = mapper.readTree(metadataJson);
-            JsonNode invoicesNode = root.get("invoices");
+            JsonNode root = METADATA_MAPPER.readTree(metadataJson);
+            JsonNode invoicesNode = root.get(METADATA_INVOICES_FIELD);
             if (invoicesNode == null || !invoicesNode.isArray()) {
                 return List.of();
             }
-            InvoiceMetadataRaw[] rawArray = mapper.treeToValue(invoicesNode, InvoiceMetadataRaw[].class);
+            InvoiceMetadataRaw[] rawArray = METADATA_MAPPER.treeToValue(invoicesNode, InvoiceMetadataRaw[].class);
             return Arrays.stream(rawArray)
                     .map(InvoicingMappers::toInvoiceMetadata)
                     .toList();
         } catch (JsonProcessingException jsonFailure) {
-            throw new KsefException(
-                    "Failed to parse _metadata.json from export package: " + jsonFailure.getMessage(),
-                    jsonFailure);
+            throw new KsefException(ERR_PARSE_METADATA + jsonFailure.getMessage(), jsonFailure);
         } catch (IOException ioFailure) {
-            throw new KsefException(
-                    "Failed to read _metadata.json from export package: " + ioFailure.getMessage(),
-                    ioFailure);
+            throw new KsefException(ERR_READ_METADATA + ioFailure.getMessage(), ioFailure);
         }
     }
 
