@@ -16,6 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenRes
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -136,7 +137,7 @@ class TokenClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             TokenDetail terminal = ksef.tokens().generateAndAwait(
                     TokenGenerateBuilder.create("test description").invoiceRead(),
-                    java.time.Duration.ofSeconds(5));
+                    Duration.ofSeconds(5));
 
             assertEquals(TEST_TOKEN_REF, terminal.referenceNumber());
         }

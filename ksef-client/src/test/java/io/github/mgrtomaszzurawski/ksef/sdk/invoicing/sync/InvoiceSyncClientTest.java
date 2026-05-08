@@ -30,8 +30,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -271,7 +273,7 @@ class InvoiceSyncClientTest {
         Path xmlPath = windowDir.resolve(ksefNumber + ".xml");
         Files.writeString(xmlPath, "<Invoice/>");
         return new ExportedInvoiceDirectory(windowDir, metadataPath,
-                java.util.Map.of(ksefNumber + ".xml", xmlPath));
+                Map.of(ksefNumber + ".xml", xmlPath));
     }
 
     private static InvoiceExportStatus exportStatus(long invoiceCount, OffsetDateTime hwm, boolean truncated) {
@@ -342,7 +344,7 @@ class InvoiceSyncClientTest {
     private static final class RecordingSink implements InvoiceSink {
         final AtomicInteger invocations = new AtomicInteger();
         final List<KsefNumber> seen = new ArrayList<>();
-        @org.jspecify.annotations.Nullable Path lastXmlPath;
+        @Nullable Path lastXmlPath;
 
         @Override
         public void accept(KsefNumber ksefNumber, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata metadata, Path xmlPath) {

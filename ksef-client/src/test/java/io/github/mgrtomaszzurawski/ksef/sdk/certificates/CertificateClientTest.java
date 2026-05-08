@@ -20,7 +20,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -192,7 +194,7 @@ class CertificateClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             CertificateEnrollmentStatus terminal = ksef.certificates().enrollAndAwait(
                     CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR),
-                    java.time.Duration.ofSeconds(5));
+                    Duration.ofSeconds(5));
 
             assertEquals(KSEF_STATUS_OK_CODE, terminal.status().code());
         }
@@ -218,8 +220,8 @@ class CertificateClientTest {
             CertificateEnrollBuilder builder =
                     CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR);
 
-            assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException.class,
-                    () -> ksef.certificates().enrollAndAwait(builder, java.time.Duration.ofMillis(50)));
+            assertThrows(KsefAsyncTimeoutException.class,
+                    () -> ksef.certificates().enrollAndAwait(builder, Duration.ofMillis(50)));
         }
     }
 

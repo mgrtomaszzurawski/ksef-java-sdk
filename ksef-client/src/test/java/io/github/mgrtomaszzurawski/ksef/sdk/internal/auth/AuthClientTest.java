@@ -339,10 +339,9 @@ class AuthClientTest {
     @Test
     void authenticateWithToken_whenNipString_delegatesToFiveArgFormAndActivatesSession(WireMockRuntimeInfo wmInfo) throws Exception {
         // Codex coverage gap — the (challenge, token, nipString, publicKey)
-        // convenience overload was not exercised by any existing test;
-        // it must wrap the NIP into KsefIdentifier and delegate to the
-        // five-arg form so the session activates exactly like the
-        // KsefIdentifier-typed overload.
+        // convenience overload must wrap the NIP into KsefIdentifier and
+        // delegate to the five-arg form so the session activates exactly
+        // like the KsefIdentifier-typed overload.
         stubFor(post(urlEqualTo(KSEF_TOKEN_PATH))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)
@@ -368,9 +367,9 @@ class AuthClientTest {
 
     @Test
     void authenticateWithToken_whenKsefIdentifierWithoutPolicy_activatesSession(WireMockRuntimeInfo wmInfo) throws Exception {
-        // Codex coverage gap — the (challenge, token, KsefIdentifier, publicKey)
-        // overload (no AuthorizationPolicy) is the typed equivalent of the
-        // String-NIP convenience and must also delegate to the five-arg form.
+        // The (challenge, token, KsefIdentifier, publicKey) overload (no
+        // AuthorizationPolicy) is the typed equivalent of the String-NIP
+        // convenience and must also delegate to the five-arg form.
         stubFor(post(urlEqualTo(KSEF_TOKEN_PATH))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)

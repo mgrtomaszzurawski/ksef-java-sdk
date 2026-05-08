@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefValidationError;
@@ -75,7 +76,7 @@ public final class ServerErrorParser {
         JsonNode root;
         try {
             root = MAPPER.readTree(body);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException malformed) {
+        } catch (JsonProcessingException malformed) {
             return List.of();
         }
         if (root == null || root.isMissingNode() || root.isNull()) {

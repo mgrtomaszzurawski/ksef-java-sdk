@@ -32,7 +32,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -80,8 +83,8 @@ class PermissionClientTest {
             }
             """;
     private static final String OPERATIONS_PATH = "/v2/permissions/operations/";
-    private static final java.time.Duration AWAIT_TIMEOUT = java.time.Duration.ofSeconds(5);
-    private static final java.time.Duration AWAIT_TINY_TIMEOUT = java.time.Duration.ofMillis(50);
+    private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration AWAIT_TINY_TIMEOUT = Duration.ofMillis(50);
 
     private static final String ATTACHMENT_STATUS_RESPONSE = """
             {
@@ -284,139 +287,138 @@ class PermissionClientTest {
 
     @Test
     void grantPersonAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubGrantEndpoint("/v2/permissions/persons/grants");
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = ksef.permissions().grantPersonAndAwait(
-                    PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
-                            .description(TEST_DESCRIPTION)
-                            .personDetails("Jan", "Kowalski")
-                            .invoiceRead(),
-                    AWAIT_TIMEOUT);
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
+        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/persons/grants",
+                permissions -> permissions.grantPersonAndAwait(
+                        PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
+                                .description(TEST_DESCRIPTION)
+                                .personDetails("Jan", "Kowalski")
+                                .invoiceRead(),
+                        AWAIT_TIMEOUT));
     }
 
     @Test
     void grantEntityAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubGrantEndpoint("/v2/permissions/entities/grants");
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = ksef.permissions().grantEntityAndAwait(
-                    EntityPermissionGrantBuilder.forNip(TEST_NIP)
-                            .description(TEST_DESCRIPTION)
-                            .entityDetails("Firma Sp. z o.o.")
-                            .invoiceRead(),
-                    AWAIT_TIMEOUT);
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
+        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/entities/grants",
+                permissions -> permissions.grantEntityAndAwait(
+                        EntityPermissionGrantBuilder.forNip(TEST_NIP)
+                                .description(TEST_DESCRIPTION)
+                                .entityDetails("Firma Sp. z o.o.")
+                                .invoiceRead(),
+                        AWAIT_TIMEOUT));
     }
 
     @Test
     void grantAuthorizationAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubGrantEndpoint("/v2/permissions/authorizations/grants");
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = ksef.permissions().grantAuthorizationAndAwait(
-                    EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
-                            .selfInvoicing()
-                            .description(TEST_DESCRIPTION)
-                            .entityDetails("Firma Sp. z o.o."),
-                    AWAIT_TIMEOUT);
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
+        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/authorizations/grants",
+                permissions -> permissions.grantAuthorizationAndAwait(
+                        EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
+                                .selfInvoicing()
+                                .description(TEST_DESCRIPTION)
+                                .entityDetails("Firma Sp. z o.o."),
+                        AWAIT_TIMEOUT));
     }
 
     @Test
     void grantIndirectAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubGrantEndpoint("/v2/permissions/indirect/grants");
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = ksef.permissions().grantIndirectAndAwait(
-                    IndirectPermissionGrantBuilder.forNip(TEST_NIP)
-                            .description(TEST_DESCRIPTION)
-                            .personDetails("Jan", "Kowalski")
-                            .invoiceRead(),
-                    AWAIT_TIMEOUT);
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
+        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/indirect/grants",
+                permissions -> permissions.grantIndirectAndAwait(
+                        IndirectPermissionGrantBuilder.forNip(TEST_NIP)
+                                .description(TEST_DESCRIPTION)
+                                .personDetails("Jan", "Kowalski")
+                                .invoiceRead(),
+                        AWAIT_TIMEOUT));
     }
 
     @Test
     void grantSubunitAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubGrantEndpoint("/v2/permissions/subunits/grants");
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = ksef.permissions().grantSubunitAndAwait(
-                    SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
-                            .contextNip(TEST_NIP)
-                            .description(TEST_DESCRIPTION)
-                            .personDetails("Jan", "Kowalski"),
-                    AWAIT_TIMEOUT);
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
+        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/subunits/grants",
+                permissions -> permissions.grantSubunitAndAwait(
+                        SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
+                                .contextNip(TEST_NIP)
+                                .description(TEST_DESCRIPTION)
+                                .personDetails("Jan", "Kowalski"),
+                        AWAIT_TIMEOUT));
     }
 
     @Test
     void grantEuEntityAdminAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubGrantEndpoint("/v2/permissions/eu-entities/administration/grants");
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = ksef.permissions().grantEuEntityAdminAndAwait(
-                    EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
-                            .contextNipVatUe("PL" + TEST_NIP)
-                            .description(TEST_DESCRIPTION)
-                            .euEntityName("EU Partner GmbH")
-                            .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
-                            .euEntityDetails("EU Partner GmbH", "Berlin, Germany"),
-                    AWAIT_TIMEOUT);
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
+        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/eu-entities/administration/grants",
+                permissions -> permissions.grantEuEntityAdminAndAwait(
+                        EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                                .contextNipVatUe("PL" + TEST_NIP)
+                                .description(TEST_DESCRIPTION)
+                                .euEntityName("EU Partner GmbH")
+                                .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
+                                .euEntityDetails("EU Partner GmbH", "Berlin, Germany"),
+                        AWAIT_TIMEOUT));
     }
 
     @Test
     void grantEuEntityAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubGrantEndpoint("/v2/permissions/eu-entities/grants");
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = ksef.permissions().grantEuEntityAndAwait(
-                    EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
-                            .description(TEST_DESCRIPTION)
-                            .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
-                            .invoiceRead(),
-                    AWAIT_TIMEOUT);
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
+        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/eu-entities/grants",
+                permissions -> permissions.grantEuEntityAndAwait(
+                        EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                                .description(TEST_DESCRIPTION)
+                                .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
+                                .invoiceRead(),
+                        AWAIT_TIMEOUT));
     }
 
     @Test
     void revokeCommonAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubFor(delete(urlEqualTo("/v2/permissions/common/grants/" + TEST_PERMISSION_ID))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(OPERATION_RESPONSE)));
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal =
-                    ksef.permissions().revokeCommonAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT);
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
+        assertRevokeAndAwaitReturnsTerminal(wmInfo,
+                "/v2/permissions/common/grants/" + TEST_PERMISSION_ID,
+                permissions -> permissions.revokeCommonAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT));
     }
 
     @Test
     void revokeAuthorizationAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        stubFor(delete(urlEqualTo("/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID))
+        assertRevokeAndAwaitReturnsTerminal(wmInfo,
+                "/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID,
+                permissions -> permissions.revokeAuthorizationAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT));
+    }
+
+    /**
+     * Stub the supplied grant endpoint + the operation-status poll
+     * (terminal code 200), invoke {@code grantInvocation}, and assert the
+     * returned status is terminal. Used by the seven {@code grant*AndAwait}
+     * variants to avoid copy-pasting the stub-and-assert template.
+     */
+    private static void assertGrantAndAwaitReturnsTerminal(WireMockRuntimeInfo wmInfo,
+                                                           String endpoint,
+                                                           AwaitInvocation grantInvocation) {
+        stubGrantEndpoint(endpoint);
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal = grantInvocation.run(ksef.permissions());
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    /**
+     * Variant of {@link #assertGrantAndAwaitReturnsTerminal} for revoke
+     * paths, which use {@code DELETE} instead of {@code POST} and carry a
+     * permission-id segment in the URL.
+     */
+    private static void assertRevokeAndAwaitReturnsTerminal(WireMockRuntimeInfo wmInfo,
+                                                            String deletePath,
+                                                            AwaitInvocation revokeInvocation) {
+        stubFor(delete(urlEqualTo(deletePath))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(OPERATION_RESPONSE)));
         stubOperationStatusTerminal();
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal =
-                    ksef.permissions().revokeAuthorizationAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT);
+            PermissionOperationStatus terminal = revokeInvocation.run(ksef.permissions());
             assertEquals(KSEF_STATUS_OK, terminal.status().code());
         }
+    }
+
+    /** Captures one specific {@code *AndAwait} default call against the permissions API. */
+    @FunctionalInterface
+    private interface AwaitInvocation {
+        PermissionOperationStatus run(PermissionClient permissions);
     }
 
     @Test
@@ -437,7 +439,7 @@ class PermissionClientTest {
                     .personDetails("Jan", "Kowalski")
                     .invoiceRead();
 
-            assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException.class,
+            assertThrows(KsefAsyncTimeoutException.class,
                     () -> ksef.permissions().grantPersonAndAwait(builder, AWAIT_TINY_TIMEOUT));
         }
     }
