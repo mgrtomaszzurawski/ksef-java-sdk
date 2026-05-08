@@ -575,10 +575,10 @@
                                 </rule>
                                 <!--
                                     PLAN A.9 — per-class METHOD coverage = 1.00
-                                    for every `*.domain.*.builder.*Builder`
-                                    and every `*.domain.*Client` class.
-                                    Catches the "added a setter, forgot the
-                                    test" regression at PR time instead of
+                                    for every `*.domain.*.builder.*Builder` and
+                                    every `*.domain.**.*Client`. Catches the
+                                    "added a setter / default helper, forgot
+                                    the test" regression at PR time instead of
                                     during a release smoke test.
                                 -->
                                 <rule>
@@ -586,6 +586,7 @@
                                     <includes>
                                         <include>io.github.mgrtomaszzurawski.ksef.sdk.domain.*.builder.*Builder</include>
                                         <include>io.github.mgrtomaszzurawski.ksef.sdk.domain.*.builder.*Builder$*</include>
+                                        <include>io.github.mgrtomaszzurawski.ksef.sdk.domain.*.*Client</include>
                                     </includes>
                                     <limits>
                                         <limit>

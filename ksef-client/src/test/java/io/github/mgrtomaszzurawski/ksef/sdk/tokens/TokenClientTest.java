@@ -117,6 +117,32 @@ class TokenClientTest {
     }
 
     @Test
+    void generateAndAwait_whenStatusReachesActive_returnsTerminalDetail(WireMockRuntimeInfo wmInfo) {
+        // given — POST returns operation reference; GET status reports Active
+        // (terminal status per TokenClient contract). The default helper polls
+        // getStatus(ref) until status is ACTIVE or FAILED — first poll already
+        // terminal, so no real wait happens.
+        stubFor(post(urlEqualTo("/v2/tokens"))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(GENERATE_RESPONSE)));
+        stubFor(get(urlEqualTo("/v2/tokens/" + TEST_TOKEN_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(STATUS_RESPONSE)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            TokenDetail terminal = ksef.tokens().generateAndAwait(
+                    TokenGenerateBuilder.create("test description").invoiceRead(),
+                    java.time.Duration.ofSeconds(5));
+
+            assertEquals(TEST_TOKEN_REF, terminal.referenceNumber());
+        }
+    }
+
+    @Test
     void getStatus_whenTokenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo("/v2/tokens/" + TEST_TOKEN_REF))

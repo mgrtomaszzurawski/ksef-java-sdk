@@ -73,6 +73,16 @@ class PermissionClientTest {
             }
             """;
 
+    /** In-progress (code 110) — used by the {@code *AndAwait} timeout test. */
+    private static final String OPERATION_STATUS_IN_PROGRESS_RESPONSE = """
+            {
+              "status": {"code": 110, "description": "InProgress"}
+            }
+            """;
+    private static final String OPERATIONS_PATH = "/v2/permissions/operations/";
+    private static final java.time.Duration AWAIT_TIMEOUT = java.time.Duration.ofSeconds(5);
+    private static final java.time.Duration AWAIT_TINY_TIMEOUT = java.time.Duration.ofMillis(50);
+
     private static final String ATTACHMENT_STATUS_RESPONSE = """
             {
               "isAttachmentAllowed": true
@@ -260,6 +270,175 @@ class PermissionClientTest {
                     ksef.permissions().revokeAuthorization(TEST_PERMISSION_ID);
 
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
+        }
+    }
+
+    // ----- *AndAwait coverage (PLAN A.9 — JaCoCo METHOD=1.00 on PermissionClient) -----
+    //
+    // The 9 default *AndAwait methods on PermissionClient share one
+    // private helper (awaitOperationTerminal) that polls
+    // GET /v2/permissions/operations/{ref} until status.code >= 200.
+    // Each test stubs the corresponding grant/revoke endpoint plus the
+    // status endpoint with terminal code 200, then calls the *AndAwait
+    // overload and asserts the helper returns the terminal status.
+
+    @Test
+    void grantPersonAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubGrantEndpoint("/v2/permissions/persons/grants");
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal = ksef.permissions().grantPersonAndAwait(
+                    PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
+                            .description(TEST_DESCRIPTION)
+                            .personDetails("Jan", "Kowalski")
+                            .invoiceRead(),
+                    AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void grantEntityAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubGrantEndpoint("/v2/permissions/entities/grants");
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal = ksef.permissions().grantEntityAndAwait(
+                    EntityPermissionGrantBuilder.forNip(TEST_NIP)
+                            .description(TEST_DESCRIPTION)
+                            .entityDetails("Firma Sp. z o.o.")
+                            .invoiceRead(),
+                    AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void grantAuthorizationAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubGrantEndpoint("/v2/permissions/authorizations/grants");
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal = ksef.permissions().grantAuthorizationAndAwait(
+                    EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
+                            .selfInvoicing()
+                            .description(TEST_DESCRIPTION)
+                            .entityDetails("Firma Sp. z o.o."),
+                    AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void grantIndirectAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubGrantEndpoint("/v2/permissions/indirect/grants");
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal = ksef.permissions().grantIndirectAndAwait(
+                    IndirectPermissionGrantBuilder.forNip(TEST_NIP)
+                            .description(TEST_DESCRIPTION)
+                            .personDetails("Jan", "Kowalski")
+                            .invoiceRead(),
+                    AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void grantSubunitAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubGrantEndpoint("/v2/permissions/subunits/grants");
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal = ksef.permissions().grantSubunitAndAwait(
+                    SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
+                            .contextNip(TEST_NIP)
+                            .description(TEST_DESCRIPTION)
+                            .personDetails("Jan", "Kowalski"),
+                    AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void grantEuEntityAdminAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubGrantEndpoint("/v2/permissions/eu-entities/administration/grants");
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal = ksef.permissions().grantEuEntityAdminAndAwait(
+                    EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                            .contextNipVatUe("PL" + TEST_NIP)
+                            .description(TEST_DESCRIPTION)
+                            .euEntityName("EU Partner GmbH")
+                            .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
+                            .euEntityDetails("EU Partner GmbH", "Berlin, Germany"),
+                    AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void grantEuEntityAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubGrantEndpoint("/v2/permissions/eu-entities/grants");
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal = ksef.permissions().grantEuEntityAndAwait(
+                    EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                            .description(TEST_DESCRIPTION)
+                            .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
+                            .invoiceRead(),
+                    AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void revokeCommonAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubFor(delete(urlEqualTo("/v2/permissions/common/grants/" + TEST_PERMISSION_ID))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(OPERATION_RESPONSE)));
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal =
+                    ksef.permissions().revokeCommonAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void revokeAuthorizationAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        stubFor(delete(urlEqualTo("/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(OPERATION_RESPONSE)));
+        stubOperationStatusTerminal();
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PermissionOperationStatus terminal =
+                    ksef.permissions().revokeAuthorizationAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT);
+            assertEquals(KSEF_STATUS_OK, terminal.status().code());
+        }
+    }
+
+    @Test
+    void grantPersonAndAwait_whenStatusNeverTerminal_throwsTimeout(WireMockRuntimeInfo wmInfo) {
+        // Covers awaitOperationTerminal's statusCodeOf lambda — that branch
+        // only fires when the deadline elapses with the last status still
+        // in-progress (code < 200).
+        stubGrantEndpoint("/v2/permissions/persons/grants");
+        stubFor(get(urlEqualTo(OPERATIONS_PATH + TEST_OPERATION_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(OPERATION_STATUS_IN_PROGRESS_RESPONSE)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            PersonPermissionGrantBuilder builder = PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
+                    .description(TEST_DESCRIPTION)
+                    .personDetails("Jan", "Kowalski")
+                    .invoiceRead();
+
+            assertThrows(io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException.class,
+                    () -> ksef.permissions().grantPersonAndAwait(builder, AWAIT_TINY_TIMEOUT));
         }
     }
 
@@ -455,6 +634,17 @@ class PermissionClientTest {
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(OPERATION_RESPONSE)));
+    }
+
+    private static void stubOperationStatusTerminal() {
+        // Used by every *AndAwait test — first status poll reports the
+        // operation completed (code 200), so the await loop returns
+        // immediately without sleeping.
+        stubFor(get(urlEqualTo(OPERATIONS_PATH + TEST_OPERATION_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(OPERATION_STATUS_RESPONSE)));
     }
 
     private static void stubQueryEndpoint(String path, String responseBody) {
