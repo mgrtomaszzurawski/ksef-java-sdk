@@ -41,6 +41,8 @@ class AuthClientTest {
     private static final String AUTH_BASE = "/v2/auth";
     private static final String PATH_CHALLENGE = AUTH_BASE + "/challenge";
     private static final String PATH_XADES = AUTH_BASE + "/xades-signature";
+    private static final String KSEF_TOKEN_PATH = AUTH_BASE + "/ksef-token";
+    private static final String TEST_KSEF_TOKEN_VALUE = "test-ksef-token-12345";
     private static final String PATH_TOKEN_REDEEM = AUTH_BASE + "/token/redeem";
     private static final String PATH_TOKEN_REFRESH = AUTH_BASE + "/token/refresh";
     private static final String PATH_SESSIONS = AUTH_BASE + "/sessions";
@@ -321,6 +323,66 @@ class AuthClientTest {
         // then
         assertThrows(KsefServerException.class,
                 () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, privateKey, TEST_NIP));
+    }
+
+    @Test
+    void authenticateWithToken_whenNipString_delegatesToFiveArgFormAndActivatesSession(WireMockRuntimeInfo wmInfo) throws Exception {
+        // Codex coverage gap — the (challenge, token, nipString, publicKey)
+        // convenience overload was not exercised by any existing test;
+        // it must wrap the NIP into KsefIdentifier and delegate to the
+        // five-arg form so the session activates exactly like the
+        // KsefIdentifier-typed overload.
+        stubFor(post(urlEqualTo(KSEF_TOKEN_PATH))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(AUTH_INIT_RESPONSE)));
+
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        TestCertificates testCerts = TestCertificates.generateRsa();
+        AuthenticationChallenge challenge = newChallenge();
+
+        AuthenticationInit response = new AuthClient(runtime).authenticateWithToken(
+                challenge, TEST_KSEF_TOKEN_VALUE, TEST_NIP, testCerts.certificate().getPublicKey());
+
+        assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
+        assertTrue(runtime.sessionContext().isActive());
+    }
+
+    @Test
+    void authenticateWithToken_whenKsefIdentifierWithoutPolicy_activatesSession(WireMockRuntimeInfo wmInfo) throws Exception {
+        // Codex coverage gap — the (challenge, token, KsefIdentifier, publicKey)
+        // overload (no AuthorizationPolicy) is the typed equivalent of the
+        // String-NIP convenience and must also delegate to the five-arg form.
+        stubFor(post(urlEqualTo(KSEF_TOKEN_PATH))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(AUTH_INIT_RESPONSE)));
+
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        TestCertificates testCerts = TestCertificates.generateRsa();
+        AuthenticationChallenge challenge = newChallenge();
+
+        AuthenticationInit response = new AuthClient(runtime).authenticateWithToken(
+                challenge, TEST_KSEF_TOKEN_VALUE,
+                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier.nip(TEST_NIP),
+                testCerts.certificate().getPublicKey());
+
+        assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
+        assertTrue(runtime.sessionContext().isActive());
+    }
+
+    private static AuthenticationChallenge newChallenge() {
+        // Use a fresh server timestamp so the encryption layer's challenge
+        // window check does not reject the token. Real wire body shape is
+        // mirrored from CHALLENGE_RESPONSE.
+        long nowMs = System.currentTimeMillis();
+        return new AuthenticationChallenge(
+                TEST_CHALLENGE,
+                java.time.OffsetDateTime.now(),
+                nowMs,
+                "192.168.1.1");
     }
 
     private static void stubXadesAuth() {

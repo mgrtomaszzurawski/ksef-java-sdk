@@ -88,6 +88,25 @@ class UncoveredBuildersCoverageTest {
     }
 
     @Test
+    void invoiceExportBuilder_metadataOnly_setsOnlyMetadataTrue() {
+        // given — a valid filter so .build() succeeds (filters are required)
+        var filters = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder
+                .seller()
+                .permanentStorageDateFrom(FROM)
+                .dateTo(TO);
+
+        // when
+        var request = InvoiceExportBuilder.create(realRsaKey())
+                .filters(filters)
+                .metadataOnly()
+                .build();
+
+        // then — metadataOnly() flips onlyMetadata to true on the resulting request
+        assertEquals(true, request.onlyMetadata(),
+                "metadataOnly() must set the export's onlyMetadata flag to true");
+    }
+
+    @Test
     void sendInvoiceBuilder_toBuilder_preservesContent() {
         // given
         SendInvoiceBuilder original = SendInvoiceBuilder.create(FAKE_INVOICE, FAKE_AES, FAKE_IV)
