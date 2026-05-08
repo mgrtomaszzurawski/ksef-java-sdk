@@ -4,8 +4,14 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.coverage;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.OnlineSessionBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.SendInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
@@ -13,12 +19,16 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionTy
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataAuthorizedIdentifierType;
 import java.nio.file.Path;
 import java.security.PublicKey;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,8 +69,7 @@ class UncoveredBuildersCoverageTest {
         assertNotNull(OnlineSessionBuilder.fa2(key));
         assertNotNull(OnlineSessionBuilder.fa3(key));
         OnlineSessionBuilder custom = OnlineSessionBuilder.fromFormCode(
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode.custom(
-                        "Custom (1)", "0-0X", "FA"),
+                FormCode.custom("Custom (1)", "0-0X", "FA"),
                 key);
         OnlineSessionBuilder copy = custom.toBuilder();
         assertNotNull(copy);
@@ -70,7 +79,7 @@ class UncoveredBuildersCoverageTest {
     @Test
     void invoiceExportBuilder_fullContent_andToBuilder() {
         // given — a query filter set so .build() can succeed on the copy
-        var filters = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder
+        var filters = InvoiceQueryBuilder
                 .seller()
                 .permanentStorageDateFrom(FROM)
                 .dateTo(TO);
@@ -83,14 +92,14 @@ class UncoveredBuildersCoverageTest {
         var request = copy.build();
 
         // then — toBuilder() must preserve onlyMetadata=false (fullContent flag)
-        assertEquals(false, request.onlyMetadata(),
+        assertFalse(request.onlyMetadata(),
                 "toBuilder() must preserve fullContent flag (onlyMetadata=false) from the source builder");
     }
 
     @Test
     void invoiceExportBuilder_metadataOnly_setsOnlyMetadataTrue() {
         // given — a valid filter so .build() succeeds (filters are required)
-        var filters = io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder
+        var filters = InvoiceQueryBuilder
                 .seller()
                 .permanentStorageDateFrom(FROM)
                 .dateTo(TO);
@@ -102,7 +111,7 @@ class UncoveredBuildersCoverageTest {
                 .build();
 
         // then — metadataOnly() flips onlyMetadata to true on the resulting request
-        assertEquals(true, request.onlyMetadata(),
+        assertTrue(request.onlyMetadata(),
                 "metadataOnly() must set the export's onlyMetadata flag to true");
     }
 
@@ -185,8 +194,7 @@ class UncoveredBuildersCoverageTest {
 
         // then — fingerprint flows into identifierValue with FINGERPRINT identifierType
         assertEquals(fingerprint, request.identifierValue());
-        assertEquals(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubjectIdentifierType.FINGERPRINT,
-                request.identifierType());
+        assertEquals(PersonSubjectIdentifierType.FINGERPRINT, request.identifierType());
     }
 
     @Test
@@ -208,29 +216,27 @@ class UncoveredBuildersCoverageTest {
 
         // then — each setter chooses the right authorizedType + value
         assertEquals(pesel, withPesel.authorizedValue());
-        assertEquals(io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataAuthorizedIdentifierType.PESEL,
-                withPesel.authorizedType());
+        assertEquals(TestDataAuthorizedIdentifierType.PESEL, withPesel.authorizedType());
         assertEquals(fingerprint, withFingerprint.authorizedValue());
-        assertEquals(io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataAuthorizedIdentifierType.FINGERPRINT,
-                withFingerprint.authorizedType());
+        assertEquals(TestDataAuthorizedIdentifierType.FINGERPRINT, withFingerprint.authorizedType());
     }
 
     @Test
     void ksefClientBuilder_connectTimeout_readTimeout_features() {
         // given — credentials are mandatory for build() per ADR-016; use a
         // throw-away token-based pair so the build can complete.
-        var creds = new io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials(
+        var creds = new KsefTokenCredentials(
                 "test-access-token",
-                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier.nip("1234567890"));
+                KsefIdentifier.nip("1234567890"));
 
         // when — exercise the three setters
-        var builder = io.github.mgrtomaszzurawski.ksef.sdk.KsefClient
+        var builder = KsefClient
                 .builder()
                 .environment(KsefEnvironment.TEST)
                 .credentials(creds)
-                .connectTimeout(java.time.Duration.ofSeconds(10))
-                .readTimeout(java.time.Duration.ofSeconds(30))
-                .features(io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy.defaults());
+                .connectTimeout(Duration.ofSeconds(10))
+                .readTimeout(Duration.ofSeconds(30))
+                .features(FeaturePolicy.defaults());
 
         // then — build succeeds, environment round-trips
         assertNotNull(builder);

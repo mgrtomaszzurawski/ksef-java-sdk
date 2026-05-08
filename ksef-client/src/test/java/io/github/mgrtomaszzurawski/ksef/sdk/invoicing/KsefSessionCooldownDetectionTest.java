@@ -17,9 +17,12 @@ import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -87,6 +90,12 @@ class KsefSessionCooldownDetectionTest {
                             () -> client.openSession(FormCode.FA3));
 
             assertEquals(KsefSessionCooldownException.TYPICAL_COOLDOWN, cooldown.suggestedRetryAfter());
+            // Wire-shape pin: both calls of the cooldown detection sequence
+            // (open + proactive status poll) MUST have hit the server. A
+            // future refactor that drops either step would silently regress
+            // the proactive guard — verify catches that.
+            verify(postRequestedFor(urlEqualTo(ONLINE_PATH)));
+            verify(getRequestedFor(urlEqualTo(STATUS_PATH)));
         }
     }
 
