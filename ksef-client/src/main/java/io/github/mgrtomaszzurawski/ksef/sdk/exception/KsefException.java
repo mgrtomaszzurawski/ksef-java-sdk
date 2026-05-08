@@ -18,6 +18,7 @@ public class KsefException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
     private static final String ERR_UNKNOWN_STATUS = "Unexpected HTTP status: ";
+    private static final int HTTP_BAD_REQUEST = 400;
     private static final int HTTP_UNAUTHORIZED = 401;
     private static final int HTTP_FORBIDDEN = 403;
     private static final int HTTP_NOT_FOUND = 404;
@@ -55,6 +56,23 @@ public class KsefException extends RuntimeException {
     }
 
     /**
+     * KSeF-internal error code parsed from {@link #responseBody()} when the
+     * server returns a structured error envelope (e.g. {@code 21405} per-field
+     * validation, {@code 21001} JSON parsing, {@code 21205} batch empty).
+     * Returns {@code null} when the body could not be parsed or carries no code.
+     *
+     * <p>Consumers can branch on this without parsing
+     * {@link #responseBody()} themselves:
+     * <pre>{@code
+     * if (ex.exceptionCode() != null && ex.exceptionCode() == 21205) { ... }
+     * }</pre>
+     */
+    public @Nullable Integer exceptionCode() {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport
+                .ServerErrorParser.firstExceptionCode(responseBody);
+    }
+
+    /**
      * Factory method that maps HTTP status codes to typed exception subclasses.
      */
     public static KsefException of(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody) {
@@ -67,6 +85,12 @@ public class KsefException extends RuntimeException {
      */
     public static KsefException of(String message, @Nullable Throwable cause, int statusCode,
                                    @Nullable String responseBody, @Nullable Long retryAfterSeconds) {
+        if (statusCode == HTTP_BAD_REQUEST) {
+            java.util.List<KsefValidationError> errors =
+                    io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport
+                            .ServerErrorParser.parseErrors(responseBody);
+            return new KsefValidationException(message, cause, statusCode, responseBody, errors);
+        }
         if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
             return new KsefAuthException(message, cause, statusCode, responseBody);
         }

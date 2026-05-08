@@ -84,12 +84,76 @@ class KsefExceptionTest {
     }
 
     @Test
-    void of_whenBadRequest_returnsBaseException() {
-        // when
+    void of_whenBadRequest_returnsValidationException() {
+        // when — body is non-validation JSON; parser yields empty errors list
         KsefException result = KsefException.of(ERROR_MESSAGE, null, TestHttpConstants.HTTP_BAD_REQUEST, RESPONSE_BODY);
 
         // then
-        assertEquals(KsefException.class, result.getClass());
+        assertInstanceOf(KsefValidationException.class, result);
+        KsefValidationException validation = (KsefValidationException) result;
+        assertEquals(0, validation.errors().size());
+        assertEquals(TestHttpConstants.HTTP_BAD_REQUEST, validation.statusCode());
+    }
+
+    @Test
+    void of_whenBadRequestWithProblemDetails_parsesErrors() {
+        // given — RFC 7807 Problem Details with two errors
+        String problemDetails = """
+                {
+                  "title": "Bad Request",
+                  "status": 400,
+                  "errors": [
+                    {"code": 21405, "description": "Invalid field", "details": ["filters.dateRange.from is in the future"]},
+                    {"code": 21405, "description": "Invalid field", "details": ["sellerNip is not a valid NIP"]}
+                  ]
+                }
+                """;
+
+        // when
+        KsefException result = KsefException.of(ERROR_MESSAGE, null, TestHttpConstants.HTTP_BAD_REQUEST, problemDetails);
+
+        // then
+        KsefValidationException validation = assertInstanceOf(KsefValidationException.class, result);
+        assertEquals(2, validation.errors().size());
+        assertEquals(21405, validation.errors().get(0).code());
+        assertEquals("filters.dateRange.from is in the future", validation.errors().get(0).details().get(0));
+        assertEquals(Integer.valueOf(21405), validation.exceptionCode());
+    }
+
+    @Test
+    void of_whenBadRequestWithLegacyFormat_parsesErrors() {
+        // given — legacy application/json envelope
+        String legacyBody = """
+                {
+                  "exception": {
+                    "exceptionDetailList": [
+                      {"exceptionCode": 21001, "exceptionDescription": "JSON parse error", "details": ["unexpected token at line 5"]}
+                    ]
+                  }
+                }
+                """;
+
+        // when
+        KsefException result = KsefException.of(ERROR_MESSAGE, null, TestHttpConstants.HTTP_BAD_REQUEST, legacyBody);
+
+        // then
+        KsefValidationException validation = assertInstanceOf(KsefValidationException.class, result);
+        assertEquals(1, validation.errors().size());
+        assertEquals(21001, validation.errors().get(0).code());
+        assertEquals("JSON parse error", validation.errors().get(0).description());
+        assertEquals(Integer.valueOf(21001), validation.exceptionCode());
+    }
+
+    @Test
+    void of_whenBadRequestBodyMalformed_emptyErrorsList() {
+        // when — body is not valid JSON at all
+        KsefException result = KsefException.of(ERROR_MESSAGE, null,
+                TestHttpConstants.HTTP_BAD_REQUEST, "garbage<not>json");
+
+        // then — no parse, but still validation type with empty list
+        KsefValidationException validation = assertInstanceOf(KsefValidationException.class, result);
+        assertEquals(0, validation.errors().size());
+        assertEquals(null, validation.exceptionCode());
     }
 
     @Test
