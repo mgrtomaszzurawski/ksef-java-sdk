@@ -41,6 +41,7 @@ side effects on KSeF).
 - [Examples](#examples)
 - [How this compares to the official SDK](#how-this-compares-to-the-official-sdk)
 - [Sample app (`ksef-demo`)](#sample-app-ksef-demo)
+- [Building from source](#building-from-source)
 - [Known KSeF gotchas](#known-ksef-gotchas)
 - [Logging](#logging)
 - [Architecture](#architecture)
@@ -265,6 +266,61 @@ The SDK ships with a live-validation runner under
 demo and test environments. Modes, credentials properties, certificate
 quota gating, and troubleshooting are documented in
 [`ksef-demo/README.md`](ksef-demo/README.md).
+
+## Building from source
+
+If you need to build a local snapshot (rather than depend on the published
+artefact), the SDK builds with **Maven 3.9+** and **JDK 17 or newer**.
+
+The runtime target is Java 17 (`<release>17</release>` in every module),
+so consumers can stay on JDK 17. Building on JDK 21 / 25 also works —
+this repository ships a [`.mvn/jvm.config`](.mvn/jvm.config) that
+disables JAXP secure-processing limits so the large FA(2) / FA(3) /
+PEF / RR / UPO XSDs parse cleanly under newer-JDK defaults.
+
+### Local install (no quality gates)
+
+When you only need the JAR in your local Maven repo to wire it into a
+consumer project, skip every static-analysis and coverage gate:
+
+```powershell
+mvn install -pl ksef-client `
+    -DskipTests `
+    -Dmaven.javadoc.skip=true `
+    -Dspotbugs.skip=true `
+    -Dpmd.skip=true `
+    -Dcheckstyle.skip=true `
+    -Djacoco.skip=true
+```
+
+(On PowerShell, the backtick is the line-continuation character; in
+`bash`/`zsh`, use `\`.)
+
+The artefact lands in `~/.m2/repository/io/github/mgrtomaszzurawski/ksef-client/1.0.0/`
+and your consumer project resolves it the same way it would resolve
+Maven Central.
+
+### Full build (every gate green)
+
+```bash
+mvn clean verify
+```
+
+Runs the full unit + WireMock test suite, SpotBugs, PMD, Checkstyle,
+JaCoCo (bundle floor + per-class `METHOD = 1.00` ratchet on every
+`domain.*.builder.*Builder` and `domain.*.*Client`), and Javadoc.
+Expect ~14–15 minutes.
+
+### JDK ≥ 21 — known issues
+
+- **`spotbugs:check` fails** with `Java returned: 1` on JDK ≥ 21 because
+  `spotbugs-maven-plugin:4.8.x` ships with an ASM version that does not
+  yet support the latest classfile metadata. CI builds in this
+  repository pin JDK 17. Add `-Dspotbugs.skip=true` for local builds on
+  newer JDKs, or run the build on JDK 17.
+- **`pmd:check` / `checkstyle:check`** can hit similar issues on the
+  newest JDKs. Skip with `-Dpmd.skip=true` / `-Dcheckstyle.skip=true`
+  for local builds; the gates run on every PR in CI.
 
 ## Known KSeF gotchas
 
