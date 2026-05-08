@@ -516,21 +516,12 @@
             </plugin>
 
             <!--
-                JaCoCo coverage agent + report (USER-REVIEW-REMARKS finding #7,
-                PLAN A.9). The `check` goal is intentionally NOT enabled yet —
-                turning it on now with the target threshold (METHOD coverage
-                ratio 1.00 on all `domain.*.builder.*` classes) would fail the
-                build on 139 currently-uncovered builder methods across 24
-                classes. Each missing method needs a unit test (or WireMock
-                integration test) before the gate can switch on.
-
-                Follow-up plan: ratchet the gate up by writing tests for each
-                builder, then add the `check` execution back with
-                `<minimum>1.00</minimum>`. Tracked under PLAN A.9.
-
-                For now, `mvn verify` produces a JaCoCo HTML report under
-                `target/site/jacoco/` so contributors can see coverage
-                without the build failing.
+                JaCoCo coverage agent + report. Two gates in `verify`:
+                a bundle-level floor (75% INSTRUCTION / 80% METHOD) and a
+                per-class METHOD=1.00 ratchet on builder + domain client
+                classes (PLAN A.9). The per-class rule is what catches
+                "added a builder setter, forgot the unit test" before
+                a release.
             -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -553,9 +544,7 @@
                     <!--
                         Coverage gate for the SDK overlay. Generated *Raw and JAXB
                         XML model classes are excluded — only hand-written sdk.*
-                        code is gated. The per-builder 100% method-coverage gate
-                        is tracked separately and intentionally not enforced here
-                        until the missing-builder-test backlog is closed.
+                        code is gated.
                     -->
                     <execution>
                         <id>jacoco-check</id>
@@ -581,6 +570,29 @@
                                             <counter>METHOD</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                                <!--
+                                    PLAN A.9 — per-class METHOD coverage = 1.00
+                                    for every `*.domain.*.builder.*Builder` and
+                                    every `*.domain.**.*Client`. Catches the
+                                    "added a setter / default helper, forgot
+                                    the test" regression at PR time instead of
+                                    during a release smoke test.
+                                -->
+                                <rule>
+                                    <element>CLASS</element>
+                                    <includes>
+                                        <include>io.github.mgrtomaszzurawski.ksef.sdk.domain.*.builder.*Builder</include>
+                                        <include>io.github.mgrtomaszzurawski.ksef.sdk.domain.*.builder.*Builder$*</include>
+                                        <include>io.github.mgrtomaszzurawski.ksef.sdk.domain.*.*Client</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>METHOD</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>1.00</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

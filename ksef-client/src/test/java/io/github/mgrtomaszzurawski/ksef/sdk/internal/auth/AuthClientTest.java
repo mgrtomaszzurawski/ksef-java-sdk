@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.auth;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationList;
@@ -18,15 +19,21 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,6 +48,8 @@ class AuthClientTest {
     private static final String AUTH_BASE = "/v2/auth";
     private static final String PATH_CHALLENGE = AUTH_BASE + "/challenge";
     private static final String PATH_XADES = AUTH_BASE + "/xades-signature";
+    private static final String KSEF_TOKEN_PATH = AUTH_BASE + "/ksef-token";
+    private static final String TEST_KSEF_TOKEN_VALUE = "test-ksef-token-12345";
     private static final String PATH_TOKEN_REDEEM = AUTH_BASE + "/token/redeem";
     private static final String PATH_TOKEN_REFRESH = AUTH_BASE + "/token/refresh";
     private static final String PATH_SESSIONS = AUTH_BASE + "/sessions";
@@ -52,15 +61,19 @@ class AuthClientTest {
     private static final String TEST_REFRESH_TOKEN = "eyJhbGciOiJIUzI1NiJ9.refresh-token.signature";
     private static final String TEST_NIP = "1234567890";
     private static final String TEST_TOKEN_EXPIRY = "2026-04-04T14:00:00+02:00";
+    /** Test client IP — matches CHALLENGE_RESPONSE body and newChallenge() helper. */
+    private static final String TEST_CLIENT_IP = "192.168.1.1";
+    /** Wire-encoded value for {@code KsefIdentifier.Type.NIP} in the auth request body. */
+    private static final String TYPE_NIP = "Nip";
 
     private static final String CHALLENGE_RESPONSE = """
             {
               "challenge": "%s",
               "timestamp": "2026-04-04T12:00:00+02:00",
               "timestampMs": 1775386800000,
-              "clientIp": "192.168.1.1"
+              "clientIp": "%s"
             }
-            """.formatted(TEST_CHALLENGE);
+            """.formatted(TEST_CHALLENGE, TEST_CLIENT_IP);
 
     private static final String AUTH_INIT_RESPONSE = """
             {
@@ -321,6 +334,80 @@ class AuthClientTest {
         // then
         assertThrows(KsefServerException.class,
                 () -> auth.authenticateWithXades(TEST_CHALLENGE, cert, privateKey, TEST_NIP));
+    }
+
+    @Test
+    void authenticateWithToken_whenNipString_delegatesToFiveArgFormAndActivatesSession(WireMockRuntimeInfo wmInfo) throws Exception {
+        // Codex coverage gap — the (challenge, token, nipString, publicKey)
+        // convenience overload must wrap the NIP into KsefIdentifier and
+        // delegate to the five-arg form so the session activates exactly
+        // like the KsefIdentifier-typed overload.
+        stubFor(post(urlEqualTo(KSEF_TOKEN_PATH))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(AUTH_INIT_RESPONSE)));
+
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        TestCertificates testCerts = TestCertificates.generateRsa();
+        AuthenticationChallenge challenge = newChallenge();
+
+        AuthenticationInit response = new AuthClient(runtime).authenticateWithToken(
+                challenge, TEST_KSEF_TOKEN_VALUE, TEST_NIP, testCerts.certificate().getPublicKey());
+
+        assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
+        assertTrue(runtime.sessionContext().isActive());
+        // Wire-shape pin: encrypted token + Nip context identifier must reach the server.
+        verify(postRequestedFor(urlEqualTo(KSEF_TOKEN_PATH))
+                .withRequestBody(matchingJsonPath("$.challenge", equalTo(TEST_CHALLENGE)))
+                .withRequestBody(matchingJsonPath("$.encryptedToken"))
+                .withRequestBody(matchingJsonPath("$.contextIdentifier.type", equalTo(TYPE_NIP)))
+                .withRequestBody(matchingJsonPath("$.contextIdentifier.value", equalTo(TEST_NIP))));
+    }
+
+    @Test
+    void authenticateWithToken_whenKsefIdentifierWithoutPolicy_activatesSession(WireMockRuntimeInfo wmInfo) throws Exception {
+        // The (challenge, token, KsefIdentifier, publicKey) overload (no
+        // AuthorizationPolicy) is the typed equivalent of the String-NIP
+        // convenience and must also delegate to the five-arg form.
+        stubFor(post(urlEqualTo(KSEF_TOKEN_PATH))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(AUTH_INIT_RESPONSE)));
+
+        HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
+        TestCertificates testCerts = TestCertificates.generateRsa();
+        AuthenticationChallenge challenge = newChallenge();
+
+        AuthenticationInit response = new AuthClient(runtime).authenticateWithToken(
+                challenge, TEST_KSEF_TOKEN_VALUE,
+                KsefIdentifier.nip(TEST_NIP),
+                testCerts.certificate().getPublicKey());
+
+        assertEquals(TEST_REFERENCE_NUMBER, response.referenceNumber());
+        assertTrue(runtime.sessionContext().isActive());
+        verify(postRequestedFor(urlEqualTo(KSEF_TOKEN_PATH))
+                .withRequestBody(matchingJsonPath("$.challenge", equalTo(TEST_CHALLENGE)))
+                .withRequestBody(matchingJsonPath("$.encryptedToken"))
+                .withRequestBody(matchingJsonPath("$.contextIdentifier.type", equalTo(TYPE_NIP)))
+                .withRequestBody(matchingJsonPath("$.contextIdentifier.value", equalTo(TEST_NIP))));
+    }
+
+    /**
+     * Build a deterministic {@link AuthenticationChallenge} for the
+     * token-auth tests. Both the {@code timestamp} and
+     * {@code timestampMs} fields are derived from a single fixed
+     * {@link Instant} so a JIT pause between accessors cannot drift them
+     * apart and surface as a flake on the encryption-window check.
+     */
+    private static AuthenticationChallenge newChallenge() {
+        Instant fixedInstant = Instant.now();
+        return new AuthenticationChallenge(
+                TEST_CHALLENGE,
+                OffsetDateTime.ofInstant(fixedInstant, ZoneOffset.UTC),
+                fixedInstant.toEpochMilli(),
+                TEST_CLIENT_IP);
     }
 
     private static void stubXadesAuth() {

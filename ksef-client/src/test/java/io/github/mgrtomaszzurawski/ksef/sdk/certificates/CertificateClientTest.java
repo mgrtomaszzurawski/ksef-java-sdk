@@ -20,7 +20,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -80,6 +82,24 @@ class CertificateClientTest {
             {
               "requestDate": "2026-04-04T12:00:00+02:00",
               "status": {"code": 200, "description": "Completed"}
+            }
+            """;
+
+    /** KSeF terminal status code per CertificateClient — 200 = Completed. */
+    private static final int KSEF_STATUS_OK_CODE = 200;
+    /** Comfortable upper bound for the await-loop in the happy-path test. */
+    private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(5);
+    /** Tight bound for the timeout test — terminate fast since the stub never reaches terminal. */
+    private static final Duration AWAIT_TINY_TIMEOUT = Duration.ofMillis(50);
+    /**
+     * Status body where {@code status.code = 100} (in-progress, below the
+     * 200 terminal threshold). The {@code enrollAndAwait} timeout test
+     * stubs this so the await loop never reaches a terminal state.
+     */
+    private static final String ENROLLMENT_IN_PROGRESS_RESPONSE = """
+            {
+              "requestDate": "2026-04-04T12:00:00+02:00",
+              "status": {"code": 100, "description": "Pending"}
             }
             """;
 
@@ -158,6 +178,54 @@ class CertificateClientTest {
             // then
             assertEquals(TEST_ENROLLMENT_REF, response.referenceNumber());
             assertNotNull(response.timestamp());
+        }
+    }
+
+    @Test
+    void enrollAndAwait_whenStatusReachesTerminal_returnsStatus(WireMockRuntimeInfo wmInfo) {
+        // given — POST returns enrollment reference; GET status is already terminal (code 200).
+        stubFor(post(urlEqualTo(PATH_ENROLLMENTS))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(ENROLL_RESPONSE)));
+        stubFor(get(urlEqualTo(PATH_ENROLLMENTS + "/" + TEST_ENROLLMENT_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(ENROLLMENT_STATUS_RESPONSE)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            CertificateEnrollmentStatus terminal = ksef.certificates().enrollAndAwait(
+                    CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR),
+                    AWAIT_TIMEOUT);
+
+            assertEquals(KSEF_STATUS_OK_CODE, terminal.status().code());
+        }
+    }
+
+    @Test
+    void enrollAndAwait_whenStatusNeverTerminal_throwsTimeoutWithLastCode(WireMockRuntimeInfo wmInfo) {
+        // given — POST succeeds; GET status keeps reporting code 100 (in-progress).
+        // The await loop must exhaust the timeout and throw KsefAsyncTimeoutException
+        // carrying the last-seen status code (covers the statusCodeOf lambda).
+        stubFor(post(urlEqualTo(PATH_ENROLLMENTS))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(ENROLL_RESPONSE)));
+        stubFor(get(urlEqualTo(PATH_ENROLLMENTS + "/" + TEST_ENROLLMENT_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(ENROLLMENT_IN_PROGRESS_RESPONSE)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            CertificateEnrollBuilder builder =
+                    CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR);
+
+            assertThrows(KsefAsyncTimeoutException.class,
+                    () -> ksef.certificates().enrollAndAwait(builder, AWAIT_TINY_TIMEOUT));
         }
     }
 

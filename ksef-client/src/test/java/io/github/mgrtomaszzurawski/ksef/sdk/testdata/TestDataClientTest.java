@@ -26,6 +26,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -33,6 +34,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
+import java.time.LocalDate;
 
 @WireMockTest
 class TestDataClientTest {
@@ -50,6 +52,14 @@ class TestDataClientTest {
     private static final int RATE_PER_SECOND = 10;
     private static final int RATE_PER_MINUTE = 100;
     private static final int RATE_PER_HOUR = 1000;
+    private static final LocalDate REVOKE_END_DATE = LocalDate.of(2026, 6, 30);
+    private static final String REVOKE_END_DATE_WIRE = "2026-06-30";
+    private static final String SUBUNIT_NIP_ONE = "1111111111";
+    private static final String SUBUNIT_NIP_TWO = "2222222222";
+    private static final String SUBUNIT_DESCRIPTION_ONE = "VAT group member 1";
+    private static final String SUBUNIT_DESCRIPTION_TWO = "VAT group member 2";
+    private static final String PATH_TESTDATA_SUBJECT = "/v2/testdata/subject";
+    private static final String PATH_TESTDATA_ATTACHMENT_REVOKE = "/v2/testdata/attachment/revoke";
 
     @Test
     void createSubject_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
@@ -65,6 +75,40 @@ class TestDataClientTest {
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/subject")));
+        }
+    }
+
+    @Test
+    void createSubject_whenVatGroupWithSubunits_postsExpectedJsonShape(WireMockRuntimeInfo wmInfo) {
+        // given — VAT_GROUP subject with two subunits. Pins wire shape:
+        //   subjectType=VatGroup (wire-encoded value)
+        //   subunits[].subjectNip + .description present for both entries
+        // KSeF treats VAT_GROUP differently from JST in subunit handling — this
+        // contract must not regress silently (e.g. enum rename, subunits dropped).
+        stubFor(post(urlEqualTo(PATH_TESTDATA_SUBJECT))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
+
+        try (KsefClient ksef = createClient(wmInfo)) {
+
+            // when
+            ksef.testData().createSubject(
+                    TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.VAT_GROUP, TEST_DESCRIPTION)
+                            .addSubunit(SUBUNIT_NIP_ONE, SUBUNIT_DESCRIPTION_ONE)
+                            .addSubunit(SUBUNIT_NIP_TWO, SUBUNIT_DESCRIPTION_TWO));
+
+            // then
+            verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_SUBJECT))
+                    .withRequestBody(matchingJsonPath("$.subjectNip", equalTo(TEST_NIP)))
+                    .withRequestBody(matchingJsonPath("$.subjectType", equalTo("VatGroup")))
+                    .withRequestBody(matchingJsonPath("$.description", equalTo(TEST_DESCRIPTION)))
+                    .withRequestBody(matchingJsonPath("$.subunits[0].subjectNip",
+                            equalTo(SUBUNIT_NIP_ONE)))
+                    .withRequestBody(matchingJsonPath("$.subunits[0].description",
+                            equalTo(SUBUNIT_DESCRIPTION_ONE)))
+                    .withRequestBody(matchingJsonPath("$.subunits[1].subjectNip",
+                            equalTo(SUBUNIT_NIP_TWO)))
+                    .withRequestBody(matchingJsonPath("$.subunits[1].description",
+                            equalTo(SUBUNIT_DESCRIPTION_TWO))));
         }
     }
 
@@ -181,6 +225,27 @@ class TestDataClientTest {
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/attachment/revoke")));
+        }
+    }
+
+    @Test
+    void revokeAttachment_withExpectedEndDate_postsBothFieldsInJsonBody(WireMockRuntimeInfo wmInfo) {
+        // given — pin the wire shape of the (nip, expectedEndDate) overload:
+        // body must carry {"nip":"...","expectedEndDate":"YYYY-MM-DD"} so a future
+        // refactor cannot silently drop the date or rewire it under a different key.
+        stubFor(post(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
+
+        try (KsefClient ksef = createClient(wmInfo)) {
+
+            // when
+            ksef.testData().revokeAttachment(TEST_NIP, REVOKE_END_DATE);
+
+            // then
+            verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))
+                    .withRequestBody(matchingJsonPath("$.nip", equalTo(TEST_NIP)))
+                    .withRequestBody(matchingJsonPath("$.expectedEndDate",
+                            equalTo(REVOKE_END_DATE_WIRE))));
         }
     }
 

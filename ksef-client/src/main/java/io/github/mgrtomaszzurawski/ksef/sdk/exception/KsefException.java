@@ -4,7 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ServerErrorParser;
 import java.io.Serial;
+import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -18,6 +20,7 @@ public class KsefException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
     private static final String ERR_UNKNOWN_STATUS = "Unexpected HTTP status: ";
+    private static final int HTTP_BAD_REQUEST = 400;
     private static final int HTTP_UNAUTHORIZED = 401;
     private static final int HTTP_FORBIDDEN = 403;
     private static final int HTTP_NOT_FOUND = 404;
@@ -55,6 +58,27 @@ public class KsefException extends RuntimeException {
     }
 
     /**
+     * KSeF-internal error code parsed from {@link #responseBody()} when the
+     * server returns a structured error envelope (e.g. {@code 21405} per-field
+     * validation, {@code 21001} JSON parsing, {@code 21205} batch empty).
+     * Returns {@code null} when the body could not be parsed or carries no code.
+     *
+     * <p>The base class always returns {@code null} — only
+     * {@link KsefValidationException} (HTTP 400) ships a structured error
+     * envelope, and overrides this method to surface the parsed code without
+     * re-parsing the response body on every call.
+     *
+     * <p>Consumers can branch on this without parsing
+     * {@link #responseBody()} themselves:
+     * <pre>{@code
+     * if (ex.exceptionCode() != null && ex.exceptionCode() == 21205) { ... }
+     * }</pre>
+     */
+    public @Nullable Integer exceptionCode() {
+        return null;
+    }
+
+    /**
      * Factory method that maps HTTP status codes to typed exception subclasses.
      */
     public static KsefException of(String message, @Nullable Throwable cause, int statusCode, @Nullable String responseBody) {
@@ -67,6 +91,10 @@ public class KsefException extends RuntimeException {
      */
     public static KsefException of(String message, @Nullable Throwable cause, int statusCode,
                                    @Nullable String responseBody, @Nullable Long retryAfterSeconds) {
+        if (statusCode == HTTP_BAD_REQUEST) {
+            List<KsefValidationError> errors = ServerErrorParser.parseErrors(responseBody);
+            return new KsefValidationException(message, cause, statusCode, responseBody, errors);
+        }
         if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
             return new KsefAuthException(message, cause, statusCode, responseBody);
         }

@@ -30,8 +30,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,6 +99,38 @@ class InvoiceSyncClientTest {
         Optional<SyncCheckpoint> checkpoint = store.load(InvoiceQuerySubjectType.SUBJECT1);
         assertTrue(checkpoint.isPresent(), "Checkpoint must be persisted after window");
         assertEquals(ADVANCED_CURSOR, checkpoint.get().cursor());
+    }
+
+    @Test
+    void sync_whenFullContentAndXmlPresent_passesXmlPathToSink(@TempDir Path tempDir) throws Exception {
+        // PLAN A.9 — covers InvoiceSyncClient.matchInvoiceXml (private), which
+        // only fires when the plan has fullContent=true. The directory carries
+        // one XML file keyed by {ksefNumber}.xml so the helper resolves it on
+        // the first lookup branch.
+        InvoiceClient invoiceClient = mock(InvoiceClient.class);
+        InMemoryCheckpointStore store = new InMemoryCheckpointStore();
+        RecordingSink sink = new RecordingSink();
+        IncrementalSyncPlan plan = singleSubjectPlanFullContent(tempDir);
+
+        PreparedInvoiceExport firstWindow = stubExport(
+                exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR, false),
+                metadataDirWithXml(tempDir.resolve("subject1/window-0"), VALID_KSEF_NUMBER));
+        PreparedInvoiceExport emptyWindow = stubExport(
+                exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR, false), null);
+
+        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryBuilder.class), anyBoolean()))
+                .thenReturn(firstWindow, emptyWindow);
+
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+
+        // when
+        SyncResult result = client.sync(plan, store, sink);
+
+        // then — sink received the resolved XML path, not null
+        assertEquals(1L, result.totalProcessed());
+        assertEquals(1, sink.invocations.get());
+        assertNotNull(sink.lastXmlPath, "matchInvoiceXml must resolve the by-KSeF-number XML");
+        assertTrue(sink.lastXmlPath.toString().endsWith(VALID_KSEF_NUMBER + ".xml"));
     }
 
     @Test
@@ -218,6 +252,30 @@ class InvoiceSyncClientTest {
                 .build();
     }
 
+    private static IncrementalSyncPlan singleSubjectPlanFullContent(Path tempDir) {
+        return IncrementalSyncPlan.builder()
+                .from(START_CURSOR)
+                .subjectTypes(InvoiceQuerySubjectType.SUBJECT1)
+                .outputDirectory(tempDir.resolve("output"))
+                .fullContent(true)
+                .build();
+    }
+
+    private static ExportedInvoiceDirectory metadataDirWithXml(Path windowDir,
+                                                                String ksefNumber) throws IOException {
+        // Same shape as metadataDir, plus one XML file keyed by
+        // {ksefNumber}.xml so InvoiceSyncClient.matchInvoiceXml resolves
+        // the file in its first branch (by-KSeF-number lookup).
+        Files.createDirectories(windowDir);
+        Path metadataPath = windowDir.resolve("_metadata.json");
+        Files.writeString(metadataPath,
+                "{\"invoices\":[{\"ksefNumber\":\"" + ksefNumber + "\"}]}");
+        Path xmlPath = windowDir.resolve(ksefNumber + ".xml");
+        Files.writeString(xmlPath, "<Invoice/>");
+        return new ExportedInvoiceDirectory(windowDir, metadataPath,
+                Map.of(ksefNumber + ".xml", xmlPath));
+    }
+
     private static InvoiceExportStatus exportStatus(long invoiceCount, OffsetDateTime hwm, boolean truncated) {
         InvoicePackage pkg = new InvoicePackage(
                 invoiceCount, null, List.of(), truncated, null, null,
@@ -286,11 +344,13 @@ class InvoiceSyncClientTest {
     private static final class RecordingSink implements InvoiceSink {
         final AtomicInteger invocations = new AtomicInteger();
         final List<KsefNumber> seen = new ArrayList<>();
+        @Nullable Path lastXmlPath;
 
         @Override
         public void accept(KsefNumber ksefNumber, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata metadata, Path xmlPath) {
             invocations.incrementAndGet();
             seen.add(ksefNumber);
+            lastXmlPath = xmlPath;
             assertNotNull(metadata, "metadata must not be null");
         }
     }
