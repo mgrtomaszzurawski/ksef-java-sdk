@@ -38,7 +38,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  * <p>Additional auth-area operations exercised here:
  * <ul>
  *   <li>{@code listSessions} — query active auth sessions via
- *       {@link KsefClient#listAuthSessions()}</li>
+ *       {@link KsefClient#streamAuthSessions()}</li>
  *   <li>{@code refreshToken} — renew access token via
  *       {@link KsefClient#refreshAuthToken()}</li>
  *   <li>{@code terminateSessionByRef} — terminate a specific session by reference
@@ -129,7 +129,7 @@ public final class AuthRunner implements DemoRunner {
     private void runListSessions(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            List<AuthSession> sessions = context.client().listAuthSessions();
+            List<AuthSession> sessions = context.client().streamAuthSessions().toList();
             int count = sessions.size();
             LOGGER.info(LOG_ACTIVE_SESSIONS, NAME, count);
             results.add(RunResult.ok(NAME, OP_LIST_SESSIONS, elapsed(start),
@@ -173,7 +173,7 @@ public final class AuthRunner implements DemoRunner {
         KsefClient client = context.client();
         String currentRef;
         try {
-            List<AuthSession> sessions = client.listAuthSessions();
+            List<AuthSession> sessions = client.streamAuthSessions().toList();
             currentRef = findCurrentSessionRef(sessions);
             client.terminateAuthSession(currentRef);
             LOGGER.info(LOG_TERMINATED_BY_REF, NAME, currentRef);

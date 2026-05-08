@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +71,7 @@ class KsefClientConcurrencyTest {
                     futures.add(executor.submit(() -> {
                         for (int call = 0; call < CALLS_PER_THREAD; call++) {
                             try {
-                                TokenList result = client.tokens().list();
+                                TokenList result = client.tokens().list(TokenQueryBuilder.create());
                                 if (result.tokens() == null) {
                                     errors.incrementAndGet();
                                 }

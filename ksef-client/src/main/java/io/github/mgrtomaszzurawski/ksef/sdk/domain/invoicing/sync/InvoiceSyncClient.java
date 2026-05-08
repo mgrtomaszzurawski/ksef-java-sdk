@@ -331,7 +331,7 @@ public final class InvoiceSyncClient {
         if (byInvoice != null) {
             return byInvoice;
         }
-        java.util.List<String> sorted = new java.util.ArrayList<>(all.keySet());
+        List<String> sorted = new java.util.ArrayList<>(all.keySet());
         Collections.sort(sorted);
         if (ordinal >= 0 && ordinal < sorted.size()) {
             return all.get(sorted.get(ordinal));

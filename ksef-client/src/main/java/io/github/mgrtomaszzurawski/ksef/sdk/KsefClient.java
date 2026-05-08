@@ -75,6 +75,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationListItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.slf4j.Logger;
@@ -512,45 +517,27 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * List active auth sessions for this consumer's KSeF context. Maps the
-     * raw {@code GET /auth/sessions} response into the public
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession}
-     * records.
-     */
-    public synchronized java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession> listAuthSessions() {
-        ensureOpen();
-        ensureAuthenticated();
-        return authClient.listSessions().items().stream()
-                .map(KsefClient::toAuthSession)
-                .toList();
-    }
-
-    /**
      * Lazily paginate every active auth session for this consumer's KSeF
      * context, walking pages on demand via the {@code x-continuation-token}
      * cursor. Holds at most one page in heap; stops fetching as soon as the
      * caller's terminal operation is satisfied.
      *
-     * <p>Use {@link java.util.stream.Stream#limit(long)} or
-     * {@link java.util.stream.Stream#takeWhile(java.util.function.Predicate)}
+     * <p>Use {@link Stream#limit(long)} or
+     * {@link Stream#takeWhile(java.util.function.Predicate)}
      * to bound the walk.
      */
-    public synchronized java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession> streamAuthSessions() {
+    public synchronized Stream<AuthSession> streamAuthSessions() {
         ensureOpen();
         ensureAuthenticated();
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.cursorStream(
-                continuationToken -> {
-                    var page = authClient.listSessions(continuationToken);
-                    java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession> mapped =
-                            page.items().stream().map(KsefClient::toAuthSession).toList();
-                    return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.CursorPage<>(
-                            mapped, page.continuationToken());
-                });
+        return PagedSpliterator.cursorStream(continuationToken -> {
+            var page = authClient.listSessions(continuationToken);
+            List<AuthSession> mapped = page.items().stream().map(KsefClient::toAuthSession).toList();
+            return new PagedSpliterator.CursorPage<>(mapped, page.continuationToken());
+        });
     }
 
-    private static io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession toAuthSession(
-            io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationListItem item) {
-        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession(
+    private static AuthSession toAuthSession(AuthenticationListItem item) {
+        return new AuthSession(
                 item.referenceNumber(),
                 item.startDate(),
                 item.authenticationMethodInfo() == null
@@ -571,7 +558,7 @@ public final class KsefClient implements AutoCloseable {
     public synchronized void terminateAuthSession(String referenceNumber) {
         ensureOpen();
         ensureAuthenticated();
-        authClient.terminateSession(java.util.Objects.requireNonNull(referenceNumber, "referenceNumber must not be null"));
+        authClient.terminateSession(Objects.requireNonNull(referenceNumber, "referenceNumber must not be null"));
     }
 
     /**
@@ -600,7 +587,7 @@ public final class KsefClient implements AutoCloseable {
      * these once on first use (for invoice / token encryption) and
      * caches them per JVM. Useful for consumer-side audit or display.
      */
-    public synchronized java.util.List<PublicKeyCertificate> publicKeyCertificates() {
+    public synchronized List<PublicKeyCertificate> publicKeyCertificates() {
         ensureOpen();
         return securityClient.getPublicKeyCertificates();
     }
@@ -702,7 +689,7 @@ public final class KsefClient implements AutoCloseable {
      * @param filter required filter (type, status, date ranges, exact ref)
      * @return lazy stream of matching session summary items
      */
-    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
+    public Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
             streamSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
         Objects.requireNonNull(filter, "filter must not be null");
         ensureOpen();
@@ -731,7 +718,7 @@ public final class KsefClient implements AutoCloseable {
      * {@code /auth/challenge} response, or {@code null} if no challenge
      * has been requested yet on this client.
      *
-     * <p>Use to autopin {@link io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy}
+     * <p>Use to autopin {@link AuthorizationPolicy}
      * for token authentication: read this after the first {@link #authenticate()}
      * call, then build a fresh policy that whitelists exactly this IP and
      * pass it via {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials}
@@ -928,7 +915,7 @@ public final class KsefClient implements AutoCloseable {
                                              KsefIdentifier identifier,
                                              CertificateSubjectIdentifier subjectIdentifier,
                                              io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions,
-                                             io.github.mgrtomaszzurawski.ksef.sdk.config.@Nullable AuthorizationPolicy policy) {
+                                             @Nullable AuthorizationPolicy policy) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
         this.lastChallengeClientIp = challenge.clientIp();
         authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier,

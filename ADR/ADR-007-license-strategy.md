@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-03 (initial); revised 2026-05-03
 **Status:** Accepted (revised)
-**Last verified:** 2026-05-03
+**Last verified:** 2026-05-07
 
 ## Context
 

@@ -9,8 +9,8 @@ import java.time.OffsetDateTime;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Public auth-session DTO — single entry returned by
- * {@code KsefClient.listAuthSessions()}. Captures one row of the
+ * Public auth-session DTO — single entry yielded by
+ * {@code KsefClient.streamAuthSessions()}. Captures one row of the
  * KSeF {@code GET /auth/sessions} response.
  *
  * <p>The internal richer representation

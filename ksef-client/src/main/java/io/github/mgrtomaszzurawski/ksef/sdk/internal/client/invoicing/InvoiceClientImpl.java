@@ -19,13 +19,13 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
@@ -61,11 +61,9 @@ public final class InvoiceClientImpl implements InvoiceClient {
 
     private static final String OP_GET_BY_KSEF = "getInvoiceByKsefNumber";
     private static final String OP_QUERY_METADATA = "queryInvoicesMetadata";
-    private static final String OP_EXPORT = "exportInvoices";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
     private static final String OP_PREPARE_EXPORT = "prepareInvoiceExport";
     private static final String ERR_NULL_QUERY = "query must not be null";
-    private static final String ERR_NULL_EXPORT = "exportBuilder must not be null";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
     private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
     private static final String ERR_TRUNCATED_NO_CURSOR =
@@ -78,6 +76,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final int QUERY_METADATA_FIRST_PAGE_OFFSET = 0;
     private static final String QUERY_PAGE_OFFSET_PARAM = "pageOffset";
     private static final String QUERY_PAGE_SIZE_PARAM = "pageSize";
+    private static final String QUERY_SORT_ORDER_PARAM = "sortOrder";
 
     private final HttpSupport http;
     private final SecurityClient securityClient;
@@ -116,7 +115,10 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryBuilder query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
-        return doQueryMetadata(InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build()));
+        return doQueryMetadata(
+                InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build()),
+                QUERY_METADATA_FIRST_PAGE_OFFSET, QUERY_METADATA_MAX_PAGE_SIZE,
+                query.sortOrderValue());
     }
 
     /**
@@ -146,7 +148,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build());
-        Iterator<InvoiceMetadata> iterator = new MetadataPageIterator(filters, query.build().dateType());
+        Iterator<InvoiceMetadata> iterator = new MetadataPageIterator(filters, query.build().dateType(), query.sortOrderValue());
         return java.util.stream.StreamSupport.stream(
                 java.util.Spliterators.spliteratorUnknownSize(iterator,
                         java.util.Spliterator.ORDERED | java.util.Spliterator.NONNULL),
@@ -157,15 +159,18 @@ public final class InvoiceClientImpl implements InvoiceClient {
 
         private final InvoiceQueryFiltersRaw filters;
         private final io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType;
+        private final @Nullable SortOrder sortOrder;
         private final java.util.Deque<InvoiceMetadata> buffer = new java.util.ArrayDeque<>();
         private int pageOffset = QUERY_METADATA_FIRST_PAGE_OFFSET;
         private java.time.@Nullable OffsetDateTime previousCursor;
         private boolean exhausted;
 
         MetadataPageIterator(InvoiceQueryFiltersRaw filters,
-                              io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType) {
+                              io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType dateType,
+                              @Nullable SortOrder sortOrder) {
             this.filters = filters;
             this.dateType = dateType;
+            this.sortOrder = sortOrder;
         }
 
         @Override
@@ -188,7 +193,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
         }
 
         private void fetchOnePage() {
-            InvoiceMetadataResult page = doQueryMetadata(filters, pageOffset, QUERY_METADATA_MAX_PAGE_SIZE);
+            InvoiceMetadataResult page = doQueryMetadata(filters, pageOffset, QUERY_METADATA_MAX_PAGE_SIZE, sortOrder);
             buffer.addAll(page.invoices());
             if (!page.hasMore()) {
                 exhausted = true;
@@ -213,28 +218,9 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     /**
-     * Start an invoice export job — Tier-3 advanced API per ADR-021.
-     * Most consumers should use
-     * {@link #prepareExport(InvoiceQueryBuilder, boolean)}.
-     *
-     * @param exportBuilder the export builder with date range and filters
-     * @return response with the export reference number for status polling
-     */
-    @Override
-    public ExportInvoicesResult exportInvoices(InvoiceExportBuilder exportBuilder) {
-        LOGGER.debug(LOG_CALL, OP_EXPORT);
-        Objects.requireNonNull(exportBuilder, ERR_NULL_EXPORT);
-        InvoiceExportRequestRaw request = InvoicingRequestMappers.toInvoiceExportRequestRaw(exportBuilder.build());
-        String token = http.requireToken();
-        ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, request, token,
-                ExportInvoicesResponseRaw.class, OP_EXPORT);
-        return InvoicingMappers.toExportInvoicesResult(rawValue);
-    }
-
-    /**
      * Get the status of an invoice export job.
      *
-     * @param referenceNumber the export reference number from {@link #exportInvoices}
+     * @param referenceNumber the export reference number from {@link #prepareExport(InvoiceQueryBuilder, boolean)}
      * @return export status with download URL when complete
      */
     @Override
@@ -305,18 +291,18 @@ public final class InvoiceClientImpl implements InvoiceClient {
         };
     }
 
-    private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters) {
-        return doQueryMetadata(filters, QUERY_METADATA_FIRST_PAGE_OFFSET, QUERY_METADATA_MAX_PAGE_SIZE);
-    }
-
     private InvoiceMetadataResult doQueryMetadata(InvoiceQueryFiltersRaw filters,
                                                     int pageOffset,
-                                                    int pageSize) {
+                                                    int pageSize,
+                                                    @Nullable SortOrder sortOrder) {
         String token = http.requireToken();
-        String path = PATH_QUERY_METADATA
-                + "?" + QUERY_PAGE_OFFSET_PARAM + "=" + pageOffset
-                + "&" + QUERY_PAGE_SIZE_PARAM + "=" + pageSize;
-        QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(path, filters, token,
+        StringBuilder path = new StringBuilder(PATH_QUERY_METADATA)
+                .append('?').append(QUERY_PAGE_OFFSET_PARAM).append('=').append(pageOffset)
+                .append('&').append(QUERY_PAGE_SIZE_PARAM).append('=').append(pageSize);
+        if (sortOrder != null) {
+            path.append('&').append(QUERY_SORT_ORDER_PARAM).append('=').append(sortOrder.wireValue());
+        }
+        QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(path.toString(), filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
         return InvoicingMappers.toInvoiceMetadataResult(rawValue);
     }

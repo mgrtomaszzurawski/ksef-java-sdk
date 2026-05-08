@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-02
 **Status:** Accepted
-**Last verified:** 2026-05-02
+**Last verified:** 2026-05-07
 **Trigger:** USER-REVIEW-REMARKS finding #6 — IDE inspection
 *"Condition `raw.getUsage() != null` is always 'true'"* on
 `PublicKeyCertificate.from()`. A mechanical scan against

@@ -363,7 +363,7 @@ public final class AuthClient {
      *                          {@code null} to fetch the first page
      * @return list response with session items and the next continuation token
      */
-    public AuthenticationList listSessions(@org.jspecify.annotations.Nullable String continuationToken) {
+    public AuthenticationList listSessions(@Nullable String continuationToken) {
         LOGGER.debug(LOG_CALL, OP_LIST_SESSIONS);
         String token = sessionContext.token();
         AuthenticationListResponseRaw raw = continuationToken == null

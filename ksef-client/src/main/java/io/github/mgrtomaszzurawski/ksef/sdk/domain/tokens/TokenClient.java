@@ -21,32 +21,22 @@ public interface TokenClient {
     GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder);
 
     /**
-     * Single-page list — keeps the original signature including the
-     * {@code continuationToken} accessor.
-     */
-    TokenList list();
-
-    /**
      * Single-page list with the five spec-defined filter parameters
      * ({@code status[]}, {@code description}, {@code authorIdentifier},
      * {@code authorIdentifierType}, {@code pageSize}). The continuation
      * token is preserved on the returned {@link TokenList} for callers
      * who want to drive paging manually; for lazy paging prefer
      * {@link #streamTokens(TokenQueryBuilder)}.
+     *
+     * <p>Pass {@link TokenQueryBuilder#create()} for an unfiltered query.
      */
     TokenList list(TokenQueryBuilder filter);
 
     /**
-     * Stream every token. Pages are fetched lazily, following the
-     * {@code x-continuation-token} cursor returned by the server.
-     * Caller controls memory by limiting / collecting downstream.
-     */
-    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens();
-
-    /**
      * Stream every token matching the given filter. Pages are fetched
      * lazily following the {@code x-continuation-token} cursor; the
-     * filter parameters are forwarded on every page.
+     * filter parameters are forwarded on every page. Pass
+     * {@link TokenQueryBuilder#create()} for an unfiltered stream.
      */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens(TokenQueryBuilder filter);
 

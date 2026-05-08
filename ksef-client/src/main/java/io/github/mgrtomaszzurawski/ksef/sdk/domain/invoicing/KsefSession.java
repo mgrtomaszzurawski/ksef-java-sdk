@@ -316,16 +316,16 @@ public final class KsefSession implements AutoCloseable {
      * @return one byte[] per bulk UPO XML page, in spec order; empty list
      *     if the session has no bulk UPO yet (typical before terminal close).
      */
-    public java.util.List<byte[]> bulkUpos() {
+    public List<byte[]> bulkUpos() {
         SessionStatus current = sessionClient.getStatus(referenceNumber);
         if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
-            return java.util.List.of();
+            return List.of();
         }
-        java.util.List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
+        List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
         for (var page : current.upo().pages()) {
             pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
         }
-        return java.util.List.copyOf(pages);
+        return List.copyOf(pages);
     }
 
     /**

@@ -12,16 +12,18 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
  */
 public enum TokenAuthorIdentifierType {
 
-    NIP,
-    PESEL,
-    FINGERPRINT;
+    NIP("Nip"),
+    PESEL("Pesel"),
+    FINGERPRINT("Fingerprint");
+
+    private final String wireValue;
+
+    TokenAuthorIdentifierType(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
     /** Wire value (PascalCase) expected by the KSeF API. */
     public String wireValue() {
-        return switch (this) {
-            case NIP -> "Nip";
-            case PESEL -> "Pesel";
-            case FINGERPRINT -> "Fingerprint";
-        };
+        return wireValue;
     }
 }

@@ -106,8 +106,8 @@ public final class CertificatesMappers {
     public static CertificateLimits toCertificateLimits(CertificateLimitsResponseRaw rawValue) {
         return new CertificateLimits(
                 rawValue.getCanRequest(),
-                CertificatesMappers.toCertificateLimit(rawValue.getEnrollment()),
-                CertificatesMappers.toCertificateLimit(rawValue.getCertificate()));
+                toCertificateLimit(rawValue.getEnrollment()),
+                toCertificateLimit(rawValue.getCertificate()));
     }
 
     public static CertificateListItem toCertificateListItem(CertificateListItemRaw rawValue) {
