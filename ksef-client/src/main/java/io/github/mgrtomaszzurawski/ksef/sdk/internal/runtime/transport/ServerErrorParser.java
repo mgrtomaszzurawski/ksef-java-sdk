@@ -11,6 +11,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefValidationError;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Best-effort parser for the two KSeF wire shapes of a 400 response body:
@@ -41,10 +43,20 @@ import org.jspecify.annotations.Nullable;
  */
 public final class ServerErrorParser {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerErrorParser.class);
+    private static final String LOG_MALFORMED_BODY =
+            "ServerErrorParser: 400 response body is not valid JSON — returning empty errors list";
+    private static final String LOG_NO_ENVELOPE_MATCHED =
+            "ServerErrorParser: 400 response body parsed but matched neither RFC 7807 Problem"
+            + " Details nor legacy exception envelope — wire format may have drifted (body length: {})";
+
     /**
-     * Reuse a single configured Jackson mapper — the parser is invoked
-     * from the HTTP error path which is already on a hot path during
-     * any 400 response.
+     * Reuse a single Jackson {@link ObjectMapper}. Uses defaults
+     * intentionally: this parser only navigates {@link JsonNode} paths
+     * by literal name and reads scalar values via
+     * {@link JsonNode#asInt()} / {@link JsonNode#asText()} — it never
+     * binds a Java type, so {@code JavaTimeModule}/{@code JsonNullableModule}
+     * configuration on the runtime mapper is not relevant here.
      */
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -77,6 +89,7 @@ public final class ServerErrorParser {
         try {
             root = MAPPER.readTree(body);
         } catch (JsonProcessingException malformed) {
+            LOGGER.debug(LOG_MALFORMED_BODY, malformed);
             return List.of();
         }
         if (root == null || root.isMissingNode() || root.isNull()) {
@@ -86,7 +99,15 @@ public final class ServerErrorParser {
         if (!problemDetails.isEmpty()) {
             return problemDetails;
         }
-        return parseLegacy(root);
+        List<KsefValidationError> legacy = parseLegacy(root);
+        if (legacy.isEmpty()) {
+            // Body parsed cleanly but neither documented envelope matched.
+            // Helpful breadcrumb when KSeF wire format drifts post-1.0 —
+            // operator otherwise just sees an empty errors() list with no
+            // signal to investigate.
+            LOGGER.debug(LOG_NO_ENVELOPE_MATCHED, body.length());
+        }
+        return legacy;
     }
 
     /**
@@ -145,8 +166,15 @@ public final class ServerErrorParser {
         if (codeNode == null || !codeNode.canConvertToInt() || descNode == null) {
             return null;
         }
+        // Legacy `ExceptionDetails.exceptionDescription` is marked nullable
+        // in the OpenAPI spec. Jackson returns NullNode for explicit JSON
+        // null, whose `asText()` would otherwise yield the literal string
+        // "null". Substitute "" so consumers see an empty description
+        // instead of misleading text — preserves the error code (the
+        // operationally useful field) without inventing wording.
+        String description = descNode.isNull() ? "" : descNode.asText();
         List<String> details = readDetails(item.get(detailsField));
-        return new KsefValidationError(codeNode.asInt(), descNode.asText(), details);
+        return new KsefValidationError(codeNode.asInt(), description, details);
     }
 
     private static List<String> readDetails(@Nullable JsonNode detailsNode) {

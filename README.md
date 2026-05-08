@@ -336,9 +336,9 @@ Bundled official KSeF OpenAPI/XSD files (`ksef-client/openapi/open-api.json`, `k
 ## Status
 
 - ✅ All 11 KSeF API domains covered (101 OK / 0 FAIL / 15 SKIP across DEMO + TEST live demo runs; SKIPs are documented per-runner and reflect domain-content limitations such as the PEPPOL accepted-UBL fixture)
-- ✅ 660+ unit + integration tests across 71 test classes (WireMock-mocked HTTP, full transport coverage)
-- ✅ JaCoCo coverage gate green at `INSTRUCTION ≥ 0.75`, `METHOD ≥ 0.80` (`mvn verify` → `target/site/jacoco/`); per-builder 100% method gate is tracked separately
-- 🚧 JSpecify null-safety annotations (ADR-017)
+- ✅ 720+ unit + integration tests across 78 test classes (WireMock-mocked HTTP, full transport coverage)
+- ✅ JaCoCo coverage gate green at `INSTRUCTION ≥ 0.75`, `METHOD ≥ 0.80` bundle floor + per-class `METHOD = 1.00` ratchet on every `domain.*.builder.*Builder` and `domain.*.*Client` (`mvn verify` → `target/site/jacoco/`)
+- ✅ JSpecify null-safety annotations across all 29 exported `package-info` (ADR-017)
 - 🚧 Maven Central first publish (release-profile dry run pending)
 
 - Release history: [`CHANGELOG.md`](CHANGELOG.md)

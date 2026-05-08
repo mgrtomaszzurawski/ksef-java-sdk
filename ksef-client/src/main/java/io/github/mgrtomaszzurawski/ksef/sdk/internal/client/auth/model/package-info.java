@@ -5,4 +5,5 @@
 /**
  * Authentication-flow response models (challenge, status, methods, tokens).
  */
+@org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
