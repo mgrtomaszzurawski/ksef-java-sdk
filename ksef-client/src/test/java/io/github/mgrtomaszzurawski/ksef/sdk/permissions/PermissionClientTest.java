@@ -142,7 +142,7 @@ class PermissionClientTest {
             PermissionOperationResult response =
                     ksef.permissions().grantPerson(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
                             .description(TEST_DESCRIPTION)
-                            .personDetails("Jan", "Kowalski")
+                            .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                             .invoiceRead());
 
             // then
@@ -196,7 +196,7 @@ class PermissionClientTest {
             PermissionOperationResult response =
                     ksef.permissions().grantIndirect(IndirectPermissionGrantBuilder.forNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
-                            .personDetails("Jan", "Kowalski")
+                            .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                             .invoiceRead());
 
             // then
@@ -215,7 +215,7 @@ class PermissionClientTest {
                     ksef.permissions().grantSubunit(SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
                             .contextNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
-                            .personDetails("Jan", "Kowalski"));
+                            .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME));
 
             // then
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
@@ -453,7 +453,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             PersonPermissionGrantBuilder builder = PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
                     .description(TEST_DESCRIPTION)
-                    .personDetails("Jan", "Kowalski")
+                    .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                     .invoiceRead();
 
             assertThrows(KsefAsyncTimeoutException.class,
@@ -620,7 +620,7 @@ class PermissionClientTest {
             var permissions = ksef.permissions();
             var builder = PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
                     .description(TEST_DESCRIPTION)
-                    .personDetails("Jan", "Kowalski")
+                    .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                     .invoiceRead();
             assertThrows(KsefAuthException.class, () -> permissions.grantPerson(builder));
         }

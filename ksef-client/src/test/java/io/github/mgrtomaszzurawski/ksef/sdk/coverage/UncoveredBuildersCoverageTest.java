@@ -50,6 +50,12 @@ class UncoveredBuildersCoverageTest {
     private static final byte[] FAKE_AES = new byte[32];
     private static final byte[] FAKE_IV = new byte[16];
     private static final byte[] FAKE_INVOICE = "<Invoice/>".getBytes();
+    /** Default connect timeout exercised by the {@code ksefClientBuilder_*} test. */
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    /** Default read timeout exercised by the {@code ksefClientBuilder_*} test. */
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
+    private static final String DUMMY_ACCESS_TOKEN = "test-access-token";
+    private static final String DUMMY_NIP = "1234567890";
     private static final OffsetDateTime FROM = OffsetDateTime.parse("2026-04-01T00:00:00Z");
     private static final OffsetDateTime TO = OffsetDateTime.parse("2026-04-30T00:00:00Z");
 
@@ -225,17 +231,15 @@ class UncoveredBuildersCoverageTest {
     void ksefClientBuilder_connectTimeout_readTimeout_features() {
         // given — credentials are mandatory for build() per ADR-016; use a
         // throw-away token-based pair so the build can complete.
-        var creds = new KsefTokenCredentials(
-                "test-access-token",
-                KsefIdentifier.nip("1234567890"));
+        var creds = new KsefTokenCredentials(DUMMY_ACCESS_TOKEN, KsefIdentifier.nip(DUMMY_NIP));
 
         // when — exercise the three setters
         var builder = KsefClient
                 .builder()
                 .environment(KsefEnvironment.TEST)
                 .credentials(creds)
-                .connectTimeout(Duration.ofSeconds(10))
-                .readTimeout(Duration.ofSeconds(30))
+                .connectTimeout(CONNECT_TIMEOUT)
+                .readTimeout(READ_TIMEOUT)
                 .features(FeaturePolicy.defaults());
 
         // then — build succeeds, environment round-trips

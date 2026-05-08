@@ -58,6 +58,8 @@ class TestDataClientTest {
     private static final String SUBUNIT_NIP_TWO = "2222222222";
     private static final String SUBUNIT_DESCRIPTION_ONE = "VAT group member 1";
     private static final String SUBUNIT_DESCRIPTION_TWO = "VAT group member 2";
+    private static final String PATH_TESTDATA_SUBJECT = "/v2/testdata/subject";
+    private static final String PATH_TESTDATA_ATTACHMENT_REVOKE = "/v2/testdata/attachment/revoke";
 
     @Test
     void createSubject_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
@@ -83,7 +85,7 @@ class TestDataClientTest {
         //   subunits[].subjectNip + .description present for both entries
         // KSeF treats VAT_GROUP differently from JST in subunit handling — this
         // contract must not regress silently (e.g. enum rename, subunits dropped).
-        stubFor(post(urlEqualTo("/v2/testdata/subject"))
+        stubFor(post(urlEqualTo(PATH_TESTDATA_SUBJECT))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
         try (KsefClient ksef = createClient(wmInfo)) {
@@ -95,7 +97,7 @@ class TestDataClientTest {
                             .addSubunit(SUBUNIT_NIP_TWO, SUBUNIT_DESCRIPTION_TWO));
 
             // then
-            verify(postRequestedFor(urlEqualTo("/v2/testdata/subject"))
+            verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_SUBJECT))
                     .withRequestBody(matchingJsonPath("$.subjectNip", equalTo(TEST_NIP)))
                     .withRequestBody(matchingJsonPath("$.subjectType", equalTo("VatGroup")))
                     .withRequestBody(matchingJsonPath("$.description", equalTo(TEST_DESCRIPTION)))
@@ -231,7 +233,7 @@ class TestDataClientTest {
         // given — pin the wire shape of the (nip, expectedEndDate) overload:
         // body must carry {"nip":"...","expectedEndDate":"YYYY-MM-DD"} so a future
         // refactor cannot silently drop the date or rewire it under a different key.
-        stubFor(post(urlEqualTo("/v2/testdata/attachment/revoke"))
+        stubFor(post(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
         try (KsefClient ksef = createClient(wmInfo)) {
@@ -240,7 +242,7 @@ class TestDataClientTest {
             ksef.testData().revokeAttachment(TEST_NIP, REVOKE_END_DATE);
 
             // then
-            verify(postRequestedFor(urlEqualTo("/v2/testdata/attachment/revoke"))
+            verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))
                     .withRequestBody(matchingJsonPath("$.nip", equalTo(TEST_NIP)))
                     .withRequestBody(matchingJsonPath("$.expectedEndDate",
                             equalTo(REVOKE_END_DATE_WIRE))));
