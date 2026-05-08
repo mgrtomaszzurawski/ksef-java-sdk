@@ -38,12 +38,6 @@ public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String,
     /**
      * Pre-configured `ObjectMapper` shared across all {@link #invoiceMetadataList()}
      * calls — Jackson `ObjectMapper` is thread-safe once configured (canonical
-     * "build once, reuse forever" pattern). Allocating a fresh mapper per call
-     * was wasteful given module registration is non-trivial.
-     */
-    /**
-     * Pre-configured `ObjectMapper` shared across all {@link #invoiceMetadataList()}
-     * calls — Jackson `ObjectMapper` is thread-safe once configured (canonical
      * "build once, reuse forever" pattern). Uses Jackson 2.18 default
      * {@code StreamReadConstraints} (max depth 1000, max string 20 MB,
      * max number 1000) — the metadata bytes come from a SHA-256-verified
