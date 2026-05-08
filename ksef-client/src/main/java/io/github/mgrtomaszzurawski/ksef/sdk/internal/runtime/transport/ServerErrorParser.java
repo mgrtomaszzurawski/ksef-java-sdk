@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefValidationError;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -52,13 +51,15 @@ public final class ServerErrorParser {
     private static final String PROBLEM_DETAILS_ERRORS = "errors";
     private static final String PROBLEM_DETAILS_CODE = "code";
     private static final String PROBLEM_DETAILS_DESCRIPTION = "description";
-    private static final String PROBLEM_DETAILS_DETAILS = "details";
 
     /** Legacy — {@code exception.exceptionDetailList[]}. */
     private static final String LEGACY_EXCEPTION = "exception";
     private static final String LEGACY_EXCEPTION_DETAIL_LIST = "exceptionDetailList";
     private static final String LEGACY_EXCEPTION_CODE = "exceptionCode";
     private static final String LEGACY_EXCEPTION_DESCRIPTION = "exceptionDescription";
+
+    /** Inner detail-string array name — identical in both wire shapes. */
+    private static final String FIELD_DETAILS = "details";
 
     private ServerErrorParser() { }
 
@@ -89,7 +90,9 @@ public final class ServerErrorParser {
 
     /**
      * Convenience — extract the first error's {@code code} (if any).
-     * Returns {@code null} when the body could not be parsed.
+     * Returns {@code null} when the body is null/blank, malformed JSON,
+     * or carries no recognised structured error envelope (neither
+     * Problem Details nor the legacy shape).
      */
     public static @Nullable Integer firstExceptionCode(@Nullable String body) {
         List<KsefValidationError> errors = parseErrors(body);
@@ -104,7 +107,7 @@ public final class ServerErrorParser {
         List<KsefValidationError> errors = new ArrayList<>(errorsNode.size());
         for (JsonNode item : errorsNode) {
             KsefValidationError parsed = readError(item,
-                    PROBLEM_DETAILS_CODE, PROBLEM_DETAILS_DESCRIPTION, PROBLEM_DETAILS_DETAILS);
+                    PROBLEM_DETAILS_CODE, PROBLEM_DETAILS_DESCRIPTION, FIELD_DETAILS);
             if (parsed != null) {
                 errors.add(parsed);
             }
@@ -124,7 +127,7 @@ public final class ServerErrorParser {
         List<KsefValidationError> errors = new ArrayList<>(listNode.size());
         for (JsonNode item : listNode) {
             KsefValidationError parsed = readError(item,
-                    LEGACY_EXCEPTION_CODE, LEGACY_EXCEPTION_DESCRIPTION, PROBLEM_DETAILS_DETAILS);
+                    LEGACY_EXCEPTION_CODE, LEGACY_EXCEPTION_DESCRIPTION, FIELD_DETAILS);
             if (parsed != null) {
                 errors.add(parsed);
             }
@@ -149,13 +152,12 @@ public final class ServerErrorParser {
         if (detailsNode == null || !detailsNode.isArray() || detailsNode.isEmpty()) {
             return List.of();
         }
-        List<String> out = new ArrayList<>(detailsNode.size());
-        for (Iterator<JsonNode> it = detailsNode.elements(); it.hasNext(); ) {
-            JsonNode el = it.next();
-            if (el != null && !el.isNull()) {
-                out.add(el.asText());
+        List<String> details = new ArrayList<>(detailsNode.size());
+        for (JsonNode detail : detailsNode) {
+            if (detail != null && !detail.isNull()) {
+                details.add(detail.asText());
             }
         }
-        return List.copyOf(out);
+        return List.copyOf(details);
     }
 }

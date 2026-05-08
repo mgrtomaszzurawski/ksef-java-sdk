@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 
 class KsefExceptionTest {
@@ -15,6 +16,10 @@ class KsefExceptionTest {
     private static final String RESPONSE_BODY = "{\"error\":\"test\"}";
     private static final int HTTP_GONE = 410;
     private static final int HTTP_CONFLICT = 409;
+    /** KSeF-internal code 21405 — per-field validation rejection. */
+    private static final int KSEF_CODE_FIELD_VALIDATION = 21405;
+    /** KSeF-internal code 21001 — JSON parse failure on the request body. */
+    private static final int KSEF_CODE_JSON_PARSE = 21001;
 
     @Test
     void of_whenUnauthorized_returnsAuthException() {
@@ -115,9 +120,9 @@ class KsefExceptionTest {
         // then
         KsefValidationException validation = assertInstanceOf(KsefValidationException.class, result);
         assertEquals(2, validation.errors().size());
-        assertEquals(21405, validation.errors().get(0).code());
+        assertEquals(KSEF_CODE_FIELD_VALIDATION, validation.errors().get(0).code());
         assertEquals("filters.dateRange.from is in the future", validation.errors().get(0).details().get(0));
-        assertEquals(Integer.valueOf(21405), validation.exceptionCode());
+        assertEquals(Integer.valueOf(KSEF_CODE_FIELD_VALIDATION), validation.exceptionCode());
     }
 
     @Test
@@ -139,9 +144,9 @@ class KsefExceptionTest {
         // then
         KsefValidationException validation = assertInstanceOf(KsefValidationException.class, result);
         assertEquals(1, validation.errors().size());
-        assertEquals(21001, validation.errors().get(0).code());
+        assertEquals(KSEF_CODE_JSON_PARSE, validation.errors().get(0).code());
         assertEquals("JSON parse error", validation.errors().get(0).description());
-        assertEquals(Integer.valueOf(21001), validation.exceptionCode());
+        assertEquals(Integer.valueOf(KSEF_CODE_JSON_PARSE), validation.exceptionCode());
     }
 
     @Test
@@ -153,7 +158,7 @@ class KsefExceptionTest {
         // then — no parse, but still validation type with empty list
         KsefValidationException validation = assertInstanceOf(KsefValidationException.class, result);
         assertEquals(0, validation.errors().size());
-        assertEquals(null, validation.exceptionCode());
+        assertNull(validation.exceptionCode());
     }
 
     @Test

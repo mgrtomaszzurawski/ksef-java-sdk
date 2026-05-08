@@ -55,4 +55,15 @@ public class KsefValidationException extends KsefException {
     public List<KsefValidationError> errors() {
         return errors;
     }
+
+    /**
+     * Override that returns the first parsed error's KSeF-internal code in
+     * O(1) — the {@link #errors() errors list} was populated once at
+     * construction by the factory, so consumers can branch on
+     * {@code ex.exceptionCode()} without re-parsing {@link #responseBody()}.
+     */
+    @Override
+    public @Nullable Integer exceptionCode() {
+        return errors.isEmpty() ? null : errors.get(0).code();
+    }
 }
