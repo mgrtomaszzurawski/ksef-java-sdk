@@ -87,6 +87,10 @@ class CertificateClientTest {
 
     /** KSeF terminal status code per CertificateClient — 200 = Completed. */
     private static final int KSEF_STATUS_OK_CODE = 200;
+    /** Comfortable upper bound for the await-loop in the happy-path test. */
+    private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(5);
+    /** Tight bound for the timeout test — terminate fast since the stub never reaches terminal. */
+    private static final Duration AWAIT_TINY_TIMEOUT = Duration.ofMillis(50);
     /**
      * Status body where {@code status.code = 100} (in-progress, below the
      * 200 terminal threshold). The {@code enrollAndAwait} timeout test
@@ -194,7 +198,7 @@ class CertificateClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             CertificateEnrollmentStatus terminal = ksef.certificates().enrollAndAwait(
                     CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR),
-                    Duration.ofSeconds(5));
+                    AWAIT_TIMEOUT);
 
             assertEquals(KSEF_STATUS_OK_CODE, terminal.status().code());
         }
@@ -221,7 +225,7 @@ class CertificateClientTest {
                     CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR);
 
             assertThrows(KsefAsyncTimeoutException.class,
-                    () -> ksef.certificates().enrollAndAwait(builder, Duration.ofMillis(50)));
+                    () -> ksef.certificates().enrollAndAwait(builder, AWAIT_TINY_TIMEOUT));
         }
     }
 

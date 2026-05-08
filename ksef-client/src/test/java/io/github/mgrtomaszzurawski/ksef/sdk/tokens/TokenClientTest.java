@@ -39,6 +39,10 @@ class TokenClientTest {
     private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
     private static final String TEST_TOKEN_REF = "20260404-TK-1234567890-ABCDEF1234-07";
     private static final String TEST_GENERATED_TOKEN = "generated-ksef-token-value-abc123";
+    private static final String PATH_TOKENS = "/v2/tokens";
+    private static final String PATH_TOKEN_BY_REF = PATH_TOKENS + "/" + TEST_TOKEN_REF;
+    /** Comfortable upper bound for the await-loop in the {@code generateAndAwait} happy-path test. */
+    private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(5);
     private static final String GENERATE_RESPONSE = """
             {
               "referenceNumber": "%s",
@@ -123,12 +127,12 @@ class TokenClientTest {
         // (terminal status per TokenClient contract). The default helper polls
         // getStatus(ref) until status is ACTIVE or FAILED — first poll already
         // terminal, so no real wait happens.
-        stubFor(post(urlEqualTo("/v2/tokens"))
+        stubFor(post(urlEqualTo(PATH_TOKENS))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(GENERATE_RESPONSE)));
-        stubFor(get(urlEqualTo("/v2/tokens/" + TEST_TOKEN_REF))
+        stubFor(get(urlEqualTo(PATH_TOKEN_BY_REF))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
@@ -137,7 +141,7 @@ class TokenClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             TokenDetail terminal = ksef.tokens().generateAndAwait(
                     TokenGenerateBuilder.create("test description").invoiceRead(),
-                    Duration.ofSeconds(5));
+                    AWAIT_TIMEOUT);
 
             assertEquals(TEST_TOKEN_REF, terminal.referenceNumber());
         }

@@ -86,6 +86,25 @@ class PermissionClientTest {
     private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration AWAIT_TINY_TIMEOUT = Duration.ofMillis(50);
 
+    /** Per-spec REST paths for the *AndAwait coverage tests. */
+    private static final String PATH_PERSONS_GRANTS = "/v2/permissions/persons/grants";
+    private static final String PATH_ENTITIES_GRANTS = "/v2/permissions/entities/grants";
+    private static final String PATH_AUTHORIZATIONS_GRANTS = "/v2/permissions/authorizations/grants";
+    private static final String PATH_INDIRECT_GRANTS = "/v2/permissions/indirect/grants";
+    private static final String PATH_SUBUNITS_GRANTS = "/v2/permissions/subunits/grants";
+    private static final String PATH_EU_ENTITIES_ADMIN_GRANTS = "/v2/permissions/eu-entities/administration/grants";
+    private static final String PATH_EU_ENTITIES_GRANTS = "/v2/permissions/eu-entities/grants";
+    private static final String PATH_REVOKE_COMMON = "/v2/permissions/common/grants/" + TEST_PERMISSION_ID;
+    private static final String PATH_REVOKE_AUTHORIZATION = "/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID;
+    /** Test fixtures for the *AndAwait grant-builder argument lists. */
+    private static final String TEST_FIRST_NAME = "Jan";
+    private static final String TEST_LAST_NAME = "Kowalski";
+    private static final String TEST_ENTITY_NAME = "Firma Sp. z o.o.";
+    private static final String TEST_EU_ENTITY_NAME = "EU Partner GmbH";
+    private static final String TEST_PARTNER_NAME = "Partner Corp";
+    private static final String TEST_PARTNER_ADDRESS = "Berlin, Germany";
+    private static final String NIP_VAT_UE_PREFIX = "PL";
+
     private static final String ATTACHMENT_STATUS_RESPONSE = """
             {
               "isAttachmentAllowed": true
@@ -116,7 +135,7 @@ class PermissionClientTest {
     @Test
     void grantPerson_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/v2/permissions/persons/grants");
+        stubGrantEndpoint(PATH_PERSONS_GRANTS);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -134,7 +153,7 @@ class PermissionClientTest {
     @Test
     void grantEntity_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/v2/permissions/entities/grants");
+        stubGrantEndpoint(PATH_ENTITIES_GRANTS);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -152,7 +171,7 @@ class PermissionClientTest {
     @Test
     void grantAuthorization_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/v2/permissions/authorizations/grants");
+        stubGrantEndpoint(PATH_AUTHORIZATIONS_GRANTS);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -170,7 +189,7 @@ class PermissionClientTest {
     @Test
     void grantIndirect_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/v2/permissions/indirect/grants");
+        stubGrantEndpoint(PATH_INDIRECT_GRANTS);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -188,7 +207,7 @@ class PermissionClientTest {
     @Test
     void grantSubunit_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/v2/permissions/subunits/grants");
+        stubGrantEndpoint(PATH_SUBUNITS_GRANTS);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -206,7 +225,7 @@ class PermissionClientTest {
     @Test
     void grantEuEntityAdmin_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/v2/permissions/eu-entities/administration/grants");
+        stubGrantEndpoint(PATH_EU_ENTITIES_ADMIN_GRANTS);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -226,7 +245,7 @@ class PermissionClientTest {
     @Test
     void grantEuEntity_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
         // given
-        stubGrantEndpoint("/v2/permissions/eu-entities/grants");
+        stubGrantEndpoint(PATH_EU_ENTITIES_GRANTS);
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
@@ -243,7 +262,7 @@ class PermissionClientTest {
 
     @Test
     void revokeCommon_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
-        stubFor(delete(urlEqualTo("/v2/permissions/common/grants/" + TEST_PERMISSION_ID))
+        stubFor(delete(urlEqualTo(PATH_REVOKE_COMMON))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -260,7 +279,7 @@ class PermissionClientTest {
 
     @Test
     void revokeAuthorization_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
-        stubFor(delete(urlEqualTo("/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID))
+        stubFor(delete(urlEqualTo(PATH_REVOKE_AUTHORIZATION))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -287,94 +306,92 @@ class PermissionClientTest {
 
     @Test
     void grantPersonAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/persons/grants",
+        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_PERSONS_GRANTS,
                 permissions -> permissions.grantPersonAndAwait(
                         PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
                                 .description(TEST_DESCRIPTION)
-                                .personDetails("Jan", "Kowalski")
+                                .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                                 .invoiceRead(),
                         AWAIT_TIMEOUT));
     }
 
     @Test
     void grantEntityAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/entities/grants",
+        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_ENTITIES_GRANTS,
                 permissions -> permissions.grantEntityAndAwait(
                         EntityPermissionGrantBuilder.forNip(TEST_NIP)
                                 .description(TEST_DESCRIPTION)
-                                .entityDetails("Firma Sp. z o.o.")
+                                .entityDetails(TEST_ENTITY_NAME)
                                 .invoiceRead(),
                         AWAIT_TIMEOUT));
     }
 
     @Test
     void grantAuthorizationAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/authorizations/grants",
+        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_AUTHORIZATIONS_GRANTS,
                 permissions -> permissions.grantAuthorizationAndAwait(
                         EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
                                 .selfInvoicing()
                                 .description(TEST_DESCRIPTION)
-                                .entityDetails("Firma Sp. z o.o."),
+                                .entityDetails(TEST_ENTITY_NAME),
                         AWAIT_TIMEOUT));
     }
 
     @Test
     void grantIndirectAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/indirect/grants",
+        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_INDIRECT_GRANTS,
                 permissions -> permissions.grantIndirectAndAwait(
                         IndirectPermissionGrantBuilder.forNip(TEST_NIP)
                                 .description(TEST_DESCRIPTION)
-                                .personDetails("Jan", "Kowalski")
+                                .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                                 .invoiceRead(),
                         AWAIT_TIMEOUT));
     }
 
     @Test
     void grantSubunitAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/subunits/grants",
+        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_SUBUNITS_GRANTS,
                 permissions -> permissions.grantSubunitAndAwait(
                         SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
                                 .contextNip(TEST_NIP)
                                 .description(TEST_DESCRIPTION)
-                                .personDetails("Jan", "Kowalski"),
+                                .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME),
                         AWAIT_TIMEOUT));
     }
 
     @Test
     void grantEuEntityAdminAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/eu-entities/administration/grants",
+        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_EU_ENTITIES_ADMIN_GRANTS,
                 permissions -> permissions.grantEuEntityAdminAndAwait(
                         EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
-                                .contextNipVatUe("PL" + TEST_NIP)
+                                .contextNipVatUe(NIP_VAT_UE_PREFIX + TEST_NIP)
                                 .description(TEST_DESCRIPTION)
-                                .euEntityName("EU Partner GmbH")
-                                .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
-                                .euEntityDetails("EU Partner GmbH", "Berlin, Germany"),
+                                .euEntityName(TEST_EU_ENTITY_NAME)
+                                .subjectEntityByFingerprint(TEST_PARTNER_NAME, TEST_PARTNER_ADDRESS)
+                                .euEntityDetails(TEST_EU_ENTITY_NAME, TEST_PARTNER_ADDRESS),
                         AWAIT_TIMEOUT));
     }
 
     @Test
     void grantEuEntityAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, "/v2/permissions/eu-entities/grants",
+        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_EU_ENTITIES_GRANTS,
                 permissions -> permissions.grantEuEntityAndAwait(
                         EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
                                 .description(TEST_DESCRIPTION)
-                                .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
+                                .subjectEntityByFingerprint(TEST_PARTNER_NAME, TEST_PARTNER_ADDRESS)
                                 .invoiceRead(),
                         AWAIT_TIMEOUT));
     }
 
     @Test
     void revokeCommonAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertRevokeAndAwaitReturnsTerminal(wmInfo,
-                "/v2/permissions/common/grants/" + TEST_PERMISSION_ID,
+        assertRevokeAndAwaitReturnsTerminal(wmInfo, PATH_REVOKE_COMMON,
                 permissions -> permissions.revokeCommonAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT));
     }
 
     @Test
     void revokeAuthorizationAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertRevokeAndAwaitReturnsTerminal(wmInfo,
-                "/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID,
+        assertRevokeAndAwaitReturnsTerminal(wmInfo, PATH_REVOKE_AUTHORIZATION,
                 permissions -> permissions.revokeAuthorizationAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT));
     }
 
@@ -426,7 +443,7 @@ class PermissionClientTest {
         // Covers awaitOperationTerminal's statusCodeOf lambda — that branch
         // only fires when the deadline elapses with the last status still
         // in-progress (code < 200).
-        stubGrantEndpoint("/v2/permissions/persons/grants");
+        stubGrantEndpoint(PATH_PERSONS_GRANTS);
         stubFor(get(urlEqualTo(OPERATIONS_PATH + TEST_OPERATION_REF))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
