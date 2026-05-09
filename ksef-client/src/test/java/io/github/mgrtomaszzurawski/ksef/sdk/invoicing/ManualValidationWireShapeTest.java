@@ -136,7 +136,7 @@ class ManualValidationWireShapeTest {
 
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             SessionsQueryFilter filter = SessionsQueryFilter.forOnline()
-                    .statuses(CommonSessionStatus.InProgress, CommonSessionStatus.Succeeded)
+                    .statuses(CommonSessionStatus.IN_PROGRESS, CommonSessionStatus.SUCCEEDED)
                     .build();
             List<SessionListItem> result = client.streamSessions(filter).toList();
 
