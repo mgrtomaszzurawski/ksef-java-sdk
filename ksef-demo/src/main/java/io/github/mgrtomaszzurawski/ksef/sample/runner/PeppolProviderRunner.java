@@ -133,8 +133,17 @@ public final class PeppolProviderRunner implements DemoRunner {
                     .pefInvoicing()
                     .entityDetails("KSeF Java SDK Demo Peppol Provider")
                     .description("PeppolProviderRunner grant for " + peppolId);
-            var status = context.client().permissions()
-                    .grantAuthorizationAndAwait(builder, java.time.Duration.ofSeconds(30));
+            String referenceNumber = context.client().permissions().grantAuthorization(builder).referenceNumber();
+            var permissions = context.client().permissions();
+            var status = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync.awaitTerminal(
+                    new io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync.Config<>(
+                            "grantAuthorization",
+                            () -> permissions.getOperationStatus(referenceNumber),
+                            s -> s.status() != null && s.status().code()
+                                    >= io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
+                            s -> s.status() == null ? null : s.status().code(),
+                            java.time.Duration.ofSeconds(30),
+                            null));
             int code = status.status() == null ? -1 : status.status().code();
             if (code == GRANT_SUCCESS_STATUS_CODE) {
                 results.add(RunResult.ok(NAME, "grantPefInvoicingToProvider", elapsed(start),

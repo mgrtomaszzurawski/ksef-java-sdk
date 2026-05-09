@@ -132,8 +132,17 @@ public final class VatUeProviderRunner implements DemoRunner {
                     .euEntityName(EU_ENTITY_NAME)
                     .subjectEntityByFingerprint(SUBJECT_FULL_NAME, DEMO_ADDRESS)
                     .euEntityDetails(EU_ENTITY_NAME, DEMO_ADDRESS);
-            var status = context.client().permissions()
-                    .grantEuEntityAdminAndAwait(builder, GRANT_AWAIT_TIMEOUT);
+            String referenceNumber = context.client().permissions().grantEuEntityAdmin(builder).referenceNumber();
+            var permissions = context.client().permissions();
+            var status = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync.awaitTerminal(
+                    new io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync.Config<>(
+                            "grantEuEntityAdmin",
+                            () -> permissions.getOperationStatus(referenceNumber),
+                            s -> s.status() != null && s.status().code()
+                                    >= io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
+                            s -> s.status() == null ? null : s.status().code(),
+                            GRANT_AWAIT_TIMEOUT,
+                            null));
             int code = status.status() == null ? -1 : status.status().code();
             String description = status.status() == null ? "" : status.status().description();
             if (code == GRANT_SUCCESS_STATUS_CODE) {
