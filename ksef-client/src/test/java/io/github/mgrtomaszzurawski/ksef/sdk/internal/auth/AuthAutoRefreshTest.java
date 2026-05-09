@@ -122,7 +122,7 @@ class AuthAutoRefreshTest {
             stubAuthFlowSuccess();
 
             // when
-            ksef.rateLimits().getRateLimits();
+            ksef.limits().getRateLimits();
 
             // then — both attempts hit the target, reauth flow ran exactly once
             verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
@@ -141,7 +141,7 @@ class AuthAutoRefreshTest {
             stubAuthFlowSuccess();
 
             // then
-            var rateLimits = ksef.rateLimits();
+            var rateLimits = ksef.limits();
 
             assertThrows(KsefAuthException.class, () -> rateLimits.getRateLimits());
             verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
@@ -163,7 +163,7 @@ class AuthAutoRefreshTest {
             stubAuthFlowSuccess();
 
             // when
-            ksef.rateLimits().getRateLimits();
+            ksef.limits().getRateLimits();
 
             // then — exactly one request, no reauth
             verify(1, getRequestedFor(urlEqualTo(TARGET_PATH)));
@@ -195,7 +195,7 @@ class AuthAutoRefreshTest {
             stubAuthFlowSuccess();
 
             // when
-            ksef.rateLimits().getRateLimits();
+            ksef.limits().getRateLimits();
 
             // then — refresh endpoint was used, full challenge flow was NOT
             verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));

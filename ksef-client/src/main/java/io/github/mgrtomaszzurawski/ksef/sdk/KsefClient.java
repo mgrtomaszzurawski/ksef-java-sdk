@@ -35,7 +35,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionO
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.RateLimitClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
@@ -48,7 +47,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.Authentic
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.CertificateClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoiceClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.LimitsClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.RateLimitClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.PeppolClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.PermissionClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
@@ -159,7 +157,6 @@ public final class KsefClient implements AutoCloseable {
     private final PermissionClient permissionClient;
     private final CertificateClient certificateClient;
     private final LimitsClient limitsClient;
-    private final RateLimitClient rateLimitClient;
     private final TestDataClient testDataClient;
     private final PeppolClient peppolClient;
     private final Auth authImpl;
@@ -196,7 +193,6 @@ public final class KsefClient implements AutoCloseable {
         this.permissionClient = new PermissionClientImpl(this.runtime);
         this.certificateClient = new CertificateClientImpl(this.runtime);
         this.limitsClient = new LimitsClientImpl(this.runtime);
-        this.rateLimitClient = new RateLimitClientImpl(this.runtime);
         this.testDataClient = new TestDataClientImpl(this.runtime);
         this.peppolClient = new PeppolClientImpl(this.runtime);
         this.authImpl = new AuthImpl(
@@ -522,19 +518,11 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Access session and subject limit queries.
+     * Access session, subject, and rate-limit queries.
      */
     public LimitsClient limits() {
         ensureOpen();
         return limitsClient;
-    }
-
-    /**
-     * Access API rate limit information.
-     */
-    public RateLimitClient rateLimits() {
-        ensureOpen();
-        return rateLimitClient;
     }
 
     /**

@@ -27,7 +27,9 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for RateLimitClient operations.
+ * Runner for the rate-limits endpoint, exposed via the merged
+ * {@code client.limits()} accessor (PR7 — RateLimitClient was folded
+ * into LimitsClient since KSeF docs describe both as "limity").
  */
 public final class RateLimitRunner implements DemoRunner {
 
@@ -43,7 +45,7 @@ public final class RateLimitRunner implements DemoRunner {
         List<RunResult> results = new ArrayList<>();
         long start = System.currentTimeMillis();
         try {
-            context.client().rateLimits().getRateLimits();
+            context.client().limits().getRateLimits();
             LOGGER.info("[{}] rate limits fetched", NAME);
             results.add(RunResult.ok(NAME, OP_GET, elapsed(start)));
         } catch (Exception exception) {
