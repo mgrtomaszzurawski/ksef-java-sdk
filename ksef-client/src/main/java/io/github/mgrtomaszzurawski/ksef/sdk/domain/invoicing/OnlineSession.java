@@ -61,6 +61,28 @@ import java.util.Optional;
 public interface OnlineSession extends Session {
 
     /**
+     * Send an invoice (the open {@link Invoice} interface) within this
+     * session.
+     *
+     * <p>The SDK extracts {@link Invoice#xml()} and {@link Invoice#formCode()},
+     * encrypts the XML with the session's AES key, SHA-256-hashes it,
+     * and submits it to KSeF. The consumer never handles encryption or
+     * hashing directly.
+     *
+     * <p>PR12a-only return type: the legacy {@link SendInvoiceResult}
+     * (single field {@code referenceNumber}). PR10 will widen this to
+     * {@code SubmittedInvoice}, which embeds the source {@link Invoice}
+     * plus terminal-state metadata (KSeF number, KOD I QR, error
+     * details).
+     *
+     * @param invoice the invoice to send — must not be null
+     * @return result containing the invoice reference number
+     * @throws IllegalStateException if the session is already closed or archived
+     * @throws NullPointerException if {@code invoice} is null
+     */
+    SendInvoiceResult sendInvoice(Invoice invoice);
+
+    /**
      * Send an invoice within this session.
      *
      * <p>The invoice XML is encrypted with the session's AES key, SHA-256 hashes are

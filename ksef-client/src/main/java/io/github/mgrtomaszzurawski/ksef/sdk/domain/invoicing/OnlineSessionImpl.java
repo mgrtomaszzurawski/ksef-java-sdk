@@ -125,6 +125,16 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
+    public SendInvoiceResult sendInvoice(Invoice invoice) {
+        Objects.requireNonNull(invoice, "invoice must not be null");
+        // PR12a wires Invoice.xml() through the existing SendInvoiceBuilder
+        // pipeline. FormCode is set at session-open time, so the SDK does
+        // not need to forward it on a per-invoice basis here. PR10 will
+        // widen the return type to SubmittedInvoice with sync verification.
+        return send(invoice.xml());
+    }
+
+    @Override
     public SendInvoiceResult send(byte[] invoiceXml) {
         return send(SendInvoiceCommand.normal(invoiceXml));
     }
