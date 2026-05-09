@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BuyerIdentifi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceFormType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryAmountType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.CommonSessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
@@ -135,7 +136,7 @@ class ManualValidationWireShapeTest {
 
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             SessionsQueryFilter filter = SessionsQueryFilter.forOnline()
-                    .statuses(100, 200)
+                    .statuses(CommonSessionStatus.InProgress, CommonSessionStatus.Succeeded)
                     .build();
             List<SessionListItem> result = client.streamSessions(filter).toList();
 
@@ -143,7 +144,7 @@ class ManualValidationWireShapeTest {
             verify(getRequestedFor(urlPathEqualTo(SESSIONS_PATH))
                     .withQueryParam("sessionType", equalTo("Online"))
                     .withQueryParam("pageSize", matching("\\d+"))
-                    .withQueryParam("statuses", matching("100|200")));
+                    .withQueryParam("statuses", matching("InProgress|Succeeded")));
         }
     }
 

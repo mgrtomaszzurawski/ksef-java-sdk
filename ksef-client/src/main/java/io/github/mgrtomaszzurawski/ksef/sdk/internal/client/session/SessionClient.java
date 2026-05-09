@@ -140,8 +140,8 @@ public final class SessionClient {
         appendDateParam(path, PARAM_DATE_MODIFIED_FROM, filter.dateModifiedFrom());
         appendDateParam(path, PARAM_DATE_MODIFIED_TO, filter.dateModifiedTo());
         if (filter.statuses() != null) {
-            for (Integer code : filter.statuses()) {
-                path.append(QUERY_PARAM_SEPARATOR).append(PARAM_STATUSES).append(QUERY_PARAM_EQUALS).append(code);
+            for (io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.CommonSessionStatus value : filter.statuses()) {
+                path.append(QUERY_PARAM_SEPARATOR).append(PARAM_STATUSES).append(QUERY_PARAM_EQUALS).append(value.name());
             }
         }
         return continuationToken == null
