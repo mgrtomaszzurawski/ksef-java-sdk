@@ -289,17 +289,6 @@ public final class KsefSession implements AutoCloseable {
     }
 
     /**
-     * Convenience overload that parses the raw KSeF number string before
-     * delegating. Throws {@link IllegalArgumentException} on invalid input.
-     *
-     * @param ksefNumber the KSeF invoice number as a raw string
-     * @return raw UPO bytes (XML)
-     */
-    public byte[] upoByKsefNumber(String ksefNumber) {
-        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
-    }
-
-    /**
      * Download every bulk-session UPO referenced in
      * {@link SessionStatus#upo()}. The KSeF spec
      * ({@code faktury/sesje/sesja-sprawdzenie-stanu-i-pobranie-upo.md}) returns

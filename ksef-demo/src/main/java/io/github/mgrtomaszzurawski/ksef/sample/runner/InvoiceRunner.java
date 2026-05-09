@@ -19,6 +19,7 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -169,7 +170,7 @@ public final class InvoiceRunner implements DemoRunner {
     private void runGetByKsefNumber(DemoContext context, String ksefNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            byte[] invoiceBytes = context.client().invoices().getByKsefNumber(ksefNumber);
+            byte[] invoiceBytes = context.client().invoices().getByKsefNumber(KsefNumber.parse(ksefNumber));
             LOGGER.info("[{}] retrieved invoice by KSeF number, size={} bytes", NAME, invoiceBytes.length);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF, elapsed(start),
                     invoiceBytes.length + " bytes"));

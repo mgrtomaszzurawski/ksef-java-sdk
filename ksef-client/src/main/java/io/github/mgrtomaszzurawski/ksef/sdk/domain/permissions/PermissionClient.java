@@ -63,13 +63,9 @@ public interface PermissionClient {
     AttachmentPermissionStatus getAttachmentStatus();
     PersonalPermissions queryPersonal(PersonalPermissionsQueryBuilder builder);
     PersonPermissions queryPersons(PersonPermissionsQueryBuilder builder);
-    SubunitPermissions querySubunits();
     SubunitPermissions querySubunits(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionsQueryBuilder filter);
-    EntityPermissions queryEntities();
     EntityPermissions queryEntities(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionsQueryBuilder filter);
-    EntityRoles queryEntityRoles();
     EntityRoles queryEntityRoles(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityRolesQueryBuilder filter);
-    SubordinateEntityRoles querySubordinateRoles();
     SubordinateEntityRoles querySubordinateRoles(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubordinateEntityRolesQueryBuilder filter);
     EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
     EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder);

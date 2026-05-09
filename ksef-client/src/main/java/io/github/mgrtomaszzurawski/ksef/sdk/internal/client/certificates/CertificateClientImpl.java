@@ -172,21 +172,6 @@ public final class CertificateClientImpl implements CertificateClient {
     }
 
     /**
-     * Revoke a certificate by its serial number with no specific reason.
-     *
-     * @param certificateSerialNumber the serial number of the certificate to revoke
-     */
-    @Override
-    public void revoke(String certificateSerialNumber) {
-        LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber);
-        requireSafePathSegment(certificateSerialNumber);
-        RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
-        String token = http.requireToken();
-        String path = ApiPaths.subPath(PATH_CERTIFICATES, certificateSerialNumber) + SEGMENT_REVOKE;
-        http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
-    }
-
-    /**
      * Revoke a certificate by its serial number with a specific reason.
      *
      * @param certificateSerialNumber the serial number of the certificate to revoke

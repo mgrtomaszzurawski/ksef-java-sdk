@@ -302,7 +302,7 @@ public final class TestDataRunner implements DemoRunner {
 
         long revokeStart = System.currentTimeMillis();
         try {
-            testData.revokeAttachment(attachmentNip);
+            testData.revokeAttachment(attachmentNip, java.time.LocalDate.now());
             LOGGER.info("[{}] revoked test attachment nip={}", NAME, attachmentNip);
             results.add(RunResult.ok(NAME, OP_REVOKE_ATTACHMENT, elapsed(revokeStart),
                     NIP_PREFIX + attachmentNip));

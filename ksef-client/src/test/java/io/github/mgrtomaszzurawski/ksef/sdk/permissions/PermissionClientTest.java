@@ -13,6 +13,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityRolesQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityAdminPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityPermissionsQueryBuilder;
@@ -20,7 +22,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.IndirectP
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubordinateEntityRolesQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.AttachmentPermissionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissions;
@@ -351,7 +355,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             SubunitPermissions response =
-                    ksef.permissions().querySubunits();
+                    ksef.permissions().querySubunits(SubunitPermissionsQueryBuilder.create());
 
             assertNotNull(response.permissions());
             assertFalse(response.hasMore());
@@ -364,7 +368,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             EntityPermissions response =
-                    ksef.permissions().queryEntities();
+                    ksef.permissions().queryEntities(EntityPermissionsQueryBuilder.create());
 
             assertNotNull(response.permissions());
             assertFalse(response.hasMore());
@@ -382,7 +386,7 @@ class PermissionClientTest {
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-            EntityRoles response = ksef.permissions().queryEntityRoles();
+            EntityRoles response = ksef.permissions().queryEntityRoles(EntityRolesQueryBuilder.create());
 
             assertNotNull(response.roles());
             assertFalse(response.hasMore());
@@ -395,7 +399,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             SubordinateEntityRoles response =
-                    ksef.permissions().querySubordinateRoles();
+                    ksef.permissions().querySubordinateRoles(SubordinateEntityRolesQueryBuilder.create());
 
             assertNotNull(response.roles());
             assertFalse(response.hasMore());

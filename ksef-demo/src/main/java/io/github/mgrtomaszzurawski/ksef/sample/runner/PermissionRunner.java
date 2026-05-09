@@ -23,6 +23,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityRolesQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityAdminPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityPermissionsQueryBuilder;
@@ -30,7 +32,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.IndirectP
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalPermissionsQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubordinateEntityRolesQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionGrantBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionsQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationResult;
 import java.util.ArrayList;
 import java.util.List;
@@ -408,7 +412,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQuerySubunits(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().querySubunits();
+            var response = context.client().permissions().querySubunits(SubunitPermissionsQueryBuilder.create());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] subunit permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_SUBUNITS, elapsed(start), count + SUFFIX_PERMISSIONS));
@@ -420,7 +424,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQueryEntities(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().queryEntities();
+            var response = context.client().permissions().queryEntities(EntityPermissionsQueryBuilder.create());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] entity permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_ENTITIES, elapsed(start), count + SUFFIX_PERMISSIONS));
@@ -432,7 +436,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQueryEntityRoles(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().queryEntityRoles();
+            var response = context.client().permissions().queryEntityRoles(EntityRolesQueryBuilder.create());
             int count = response.roles() != null ? response.roles().size() : 0;
             LOGGER.info("[{}] entity roles: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_ENTITY_ROLES, elapsed(start), count + " roles"));
@@ -444,7 +448,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQuerySubordinateRoles(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().querySubordinateRoles();
+            var response = context.client().permissions().querySubordinateRoles(SubordinateEntityRolesQueryBuilder.create());
             int count = response.roles() != null ? response.roles().size() : 0;
             LOGGER.info("[{}] subordinate roles: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_SUBORDINATE_ROLES, elapsed(start), count + " roles"));

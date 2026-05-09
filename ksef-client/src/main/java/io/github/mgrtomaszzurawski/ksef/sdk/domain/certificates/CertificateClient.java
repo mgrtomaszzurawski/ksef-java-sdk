@@ -36,8 +36,13 @@ public interface CertificateClient {
     EnrollCertificateResult enroll(CertificateEnrollBuilder builder);
     CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber);
     RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers);
-    void revoke(String certificateSerialNumber);
 
+    /**
+     * Revoke a certificate. The reason is required — every revocation must
+     * carry a documented cause for audit / compliance. Use
+     * {@link CertificateRevocationReason#UNSPECIFIED} only when no specific
+     * reason applies and the audit log entry "unspecified" is acceptable.
+     */
     void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
 
     CertificateQueryResult query(CertificateQueryBuilder builder);

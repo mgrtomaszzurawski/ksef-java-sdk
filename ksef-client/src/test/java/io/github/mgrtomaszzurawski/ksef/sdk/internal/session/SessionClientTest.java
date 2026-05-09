@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.session;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
@@ -243,7 +244,7 @@ class SessionClientTest {
         HttpRuntime runtime = activatedRuntime(wmInfo);
 
         // when
-        byte[] upoBytes = new SessionClient(runtime).getUpoByKsefNumber(TEST_SESSION_REF, TEST_KSEF_NUMBER);
+        byte[] upoBytes = new SessionClient(runtime).getUpoByKsefNumber(TEST_SESSION_REF, KsefNumber.parse(TEST_KSEF_NUMBER));
 
         // then
         assertArrayEquals(TEST_UPO_CONTENT, upoBytes);

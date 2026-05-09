@@ -37,9 +37,6 @@ public final class PeppolClientImpl implements PeppolClient {
     private static final String QUERY_PARAM_ASSIGN = "=";
     private static final String QUERY_PARAM_SEPARATOR = "&";
 
-    private static final int DEFAULT_PAGE_OFFSET = 0;
-    private static final int DEFAULT_PAGE_SIZE = 10;
-
     private static final String ERR_PAGE_OFFSET_NEGATIVE = "pageOffset must be >= 0";
     private static final String ERR_PAGE_SIZE_NOT_POSITIVE = "pageSize must be > 0";
 
@@ -47,17 +44,6 @@ public final class PeppolClientImpl implements PeppolClient {
 
     public PeppolClientImpl(HttpRuntime runtime) {
         this.http = new HttpSupport(runtime);
-    }
-
-    /**
-     * Query the first page of Peppol service providers using server defaults
-     * ({@code pageOffset=0}, {@code pageSize=10}).
-     *
-     * @return the first page of providers
-     */
-    @Override
-    public PeppolProvidersResult query() {
-        return query(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE);
     }
 
     /**
