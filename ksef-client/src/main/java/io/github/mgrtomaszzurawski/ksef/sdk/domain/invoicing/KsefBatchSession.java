@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 /**
  * An open KSeF batch session for bulk invoice submission via ZIP package.
  *
- * <p>Unlike {@link KsefSession}, batch sessions do not encrypt invoices individually.
+ * <p>Unlike {@link OnlineSession}, batch sessions do not encrypt invoices individually.
  * Instead, the entire ZIP package is encrypted with the session AES key. The consumer
  * uploads ZIP parts to the URLs provided in {@link #partUploadRequests()}.
  *
@@ -444,7 +444,7 @@ public final class KsefBatchSession implements AutoCloseable {
     /**
      * All invoices submitted within this batch session, with the
      * {@code x-continuation-token} cursor followed internally
-     * (Codex round-9 manual-validation A.2.2 — mirrors {@code KsefSession.invoices()}).
+     * (Codex round-9 manual-validation A.2.2 — mirrors {@code OnlineSession.invoices()}).
      */
     public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices invoices() {
         return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices(
@@ -485,7 +485,7 @@ public final class KsefBatchSession implements AutoCloseable {
     /**
      * Download every bulk-session UPO XML page referenced in
      * {@link SessionStatus#upo()}. Same shape as
-     * {@code KsefSession.bulkUpos()} — see Javadoc there for spec context
+     * {@code OnlineSession.bulkUpos()} — see Javadoc there for spec context
      * (Codex round-9 manual-validation A.2.1).
      */
     public List<byte[]> bulkUpos() {

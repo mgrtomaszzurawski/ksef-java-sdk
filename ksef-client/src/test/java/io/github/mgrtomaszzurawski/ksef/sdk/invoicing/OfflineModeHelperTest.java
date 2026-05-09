@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit tests for {@link KsefSession#shouldUseOfflineMode(LocalDate, LocalDate)} —
+ * Unit tests for {@link OnlineSession#shouldUseOfflineMode(LocalDate, LocalDate)} —
  * REQ-OFFLINE-002 helper that decides whether a normal send must use the
  * offline-mode wire flag based on calendar-date comparison.
  *
@@ -28,21 +28,21 @@ class OfflineModeHelperTest {
 
     @Test
     void shouldUseOfflineMode_whenIssueBeforeInvoicing_returnsTrue() {
-        boolean result = KsefSession.shouldUseOfflineMode(ISSUE_DATE, ISSUE_DATE.plusDays(1));
+        boolean result = OnlineSession.shouldUseOfflineMode(ISSUE_DATE, ISSUE_DATE.plusDays(1));
 
         assertTrue(result);
     }
 
     @Test
     void shouldUseOfflineMode_whenIssueSameDayAsInvoicing_returnsFalse() {
-        boolean result = KsefSession.shouldUseOfflineMode(ISSUE_DATE, ISSUE_DATE);
+        boolean result = OnlineSession.shouldUseOfflineMode(ISSUE_DATE, ISSUE_DATE);
 
         assertFalse(result);
     }
 
     @Test
     void shouldUseOfflineMode_whenIssueAfterInvoicing_returnsFalse() {
-        boolean result = KsefSession.shouldUseOfflineMode(ISSUE_DATE.plusDays(1), ISSUE_DATE);
+        boolean result = OnlineSession.shouldUseOfflineMode(ISSUE_DATE.plusDays(1), ISSUE_DATE);
 
         assertFalse(result);
     }
@@ -51,7 +51,7 @@ class OfflineModeHelperTest {
     void shouldUseOfflineMode_whenIssueOneSecondBeforeMidnightInvoicingNextDay_returnsTrue() {
         // Calendar-day comparison only — two LocalDates differ by one day no matter
         // how close together they were as instants.
-        boolean result = KsefSession.shouldUseOfflineMode(
+        boolean result = OnlineSession.shouldUseOfflineMode(
                 LocalDate.of(2026, 5, 1),
                 LocalDate.of(2026, 5, 2));
 
@@ -63,7 +63,7 @@ class OfflineModeHelperTest {
         LocalDate invoicingDate = ISSUE_DATE;
 
         assertThrows(NullPointerException.class,
-                () -> KsefSession.shouldUseOfflineMode(null, invoicingDate));
+                () -> OnlineSession.shouldUseOfflineMode(null, invoicingDate));
     }
 
     @Test
@@ -71,6 +71,6 @@ class OfflineModeHelperTest {
         LocalDate issueDate = ISSUE_DATE;
 
         assertThrows(NullPointerException.class,
-                () -> KsefSession.shouldUseOfflineMode(issueDate, null));
+                () -> OnlineSession.shouldUseOfflineMode(issueDate, null));
     }
 }

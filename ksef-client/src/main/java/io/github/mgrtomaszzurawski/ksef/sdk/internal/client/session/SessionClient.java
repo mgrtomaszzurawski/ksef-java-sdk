@@ -290,7 +290,7 @@ public final class SessionClient {
     /**
      * Iterate every page of invoices for the session, following
      * {@code x-continuation-token} internally. Use this from
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession#invoices()}
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession#invoices()}
      * — sessions with more than 10 (default) or {@value #SESSION_INVOICES_PAGE_SIZE}
      * (max) invoices were silently truncated by {@link #getInvoices(String)}.
      */

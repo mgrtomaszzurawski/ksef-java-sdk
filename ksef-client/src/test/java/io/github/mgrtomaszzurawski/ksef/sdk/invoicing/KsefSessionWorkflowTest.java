@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.SendInvoiceCommand;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Workflow-level tests for {@link KsefSession} that complement
+ * Workflow-level tests for {@link OnlineSession} that complement
  * {@code KsefSessionTest}: technical-correction send (TC-SESS-005),
  * failed-invoices listing (TC-SESS-014), and invoice-status mapping
  * for ksef-number propagation.
@@ -79,7 +79,7 @@ class KsefSessionWorkflowTest {
         }
         String expectedHashBase64 = java.util.Base64.getEncoder().encodeToString(hash);
         stubInvoicePost();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
 
             // when
             SendInvoiceResult result = session.sendTechnicalCorrection(INVOICE_XML, hash);
@@ -101,7 +101,7 @@ class KsefSessionWorkflowTest {
     void normalSend_omitsHashOfCorrectedInvoice(WireMockRuntimeInfo wmInfo) {
         // given
         stubInvoicePost();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
 
             // when
             session.send(INVOICE_XML);
@@ -116,7 +116,7 @@ class KsefSessionWorkflowTest {
     void technicalCorrection_whenHashOfCorrectedNull_throwsNPE(WireMockRuntimeInfo wmInfo) {
         // given
         stubInvoicePost();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
 
             // when / then — null hash is rejected by SendInvoiceCommand record
             assertThrows(NullPointerException.class,
@@ -130,7 +130,7 @@ class KsefSessionWorkflowTest {
         byte[] tooShort = new byte[31];
         byte[] tooLong = new byte[33];
         stubInvoicePost();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
 
             // when / then
             assertThrows(IllegalArgumentException.class,
@@ -144,7 +144,7 @@ class KsefSessionWorkflowTest {
     void send_command_isAcceptedAndDispatched(WireMockRuntimeInfo wmInfo) {
         // given
         stubInvoicePost();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
 
             SendInvoiceCommand command = SendInvoiceCommand.normal(INVOICE_XML);
 
@@ -165,7 +165,7 @@ class KsefSessionWorkflowTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(FAILED_INVOICES_RESPONSE)));
 
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
 
             // when
             SessionInvoices failed = session.failedInvoices();
@@ -181,7 +181,7 @@ class KsefSessionWorkflowTest {
     void send_whenInvoiceXmlIsEmpty_stillProducesAValidRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubInvoicePost();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
 
             // when — empty XML is allowed by SDK; KSeF would reject server-side
             SendInvoiceResult result = session.send(new byte[0]);
@@ -205,7 +205,7 @@ class KsefSessionWorkflowTest {
                                 {"status":{"code":200,"description":"OK"},
                                  "dateCreated":"2026-04-18T12:00:00+02:00"}""")));
 
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             session.close();
 
             // when / then
@@ -234,7 +234,7 @@ class KsefSessionWorkflowTest {
                                  "dateCreated":"2026-04-18T12:00:00+02:00"}""")));
     }
 
-    private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {
+    private static OnlineSession createSession(WireMockRuntimeInfo wmInfo) {
         // try-with-resources will eventually call close() — stub /close + status poll
         // so close completes cleanly and tests focus on their assertions.
         stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/close"))

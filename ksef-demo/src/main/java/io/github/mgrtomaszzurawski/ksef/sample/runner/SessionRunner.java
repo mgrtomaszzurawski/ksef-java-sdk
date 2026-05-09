@@ -23,7 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
@@ -37,7 +37,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for session operations using the KsefSession API.
+ * Runner for session operations using the OnlineSession API.
  * Tests each operation separately with per-operation reporting.
  * FULL mode only.
  *
@@ -116,7 +116,7 @@ public final class SessionRunner implements DemoRunner {
 
         runStaleSessionRecovery(context, results);
 
-        KsefSession session = runOpenSession(context, results);
+        OnlineSession session = runOpenSession(context, results);
         if (session == null) {
             return results;
         }
@@ -148,7 +148,7 @@ public final class SessionRunner implements DemoRunner {
      */
     private void runStaleSessionRecovery(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
-        KsefSession firstSession = null;
+        OnlineSession firstSession = null;
         try {
             firstSession = context.client().invoices().openSession(FormCode.FA3);
             String firstRef = firstSession.referenceNumber();
@@ -173,7 +173,7 @@ public final class SessionRunner implements DemoRunner {
      * Anything other than 440 is logged but not rethrown — throwing from
      * this finally would mask the recovery probe's own result.
      */
-    private static void closeNoInvoicesSession(KsefSession session) {
+    private static void closeNoInvoicesSession(OnlineSession session) {
         if (session == null) {
             return;
         }
@@ -189,7 +189,7 @@ public final class SessionRunner implements DemoRunner {
     }
 
     private void attemptConcurrentSession(DemoContext context, List<RunResult> results, long start) {
-        KsefSession second = null;
+        OnlineSession second = null;
         try {
             second = context.client().invoices().openSession(FormCode.FA3);
             String secondRef = second.referenceNumber();
@@ -218,10 +218,10 @@ public final class SessionRunner implements DemoRunner {
      * try-with-resources before any subsequent operation is invoked on it.
      */
     @SuppressWarnings("java:S2095")
-    private KsefSession runOpenSession(DemoContext context, List<RunResult> results) {
+    private OnlineSession runOpenSession(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            KsefSession session = context.client().invoices().openSession(FormCode.FA3);
+            OnlineSession session = context.client().invoices().openSession(FormCode.FA3);
             String sessionRef = session.referenceNumber();
             LOGGER.info(LOG_OPENED, NAME, sessionRef);
             context.state().setSessionReferenceNumber(sessionRef);
@@ -235,7 +235,7 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private String runSendInvoice(DemoContext context, KsefSession session,
+    private String runSendInvoice(DemoContext context, OnlineSession session,
                                   List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
@@ -253,7 +253,7 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private void runGetInvoiceStatus(KsefSession session, String invoiceRef,
+    private void runGetInvoiceStatus(OnlineSession session, String invoiceRef,
                                      List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
@@ -286,7 +286,7 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private void runGetStatus(KsefSession session, List<RunResult> results) {
+    private void runGetStatus(OnlineSession session, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             SessionStatus response = session.status();
@@ -301,7 +301,7 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private void runGetInvoices(KsefSession session, List<RunResult> results) {
+    private void runGetInvoices(OnlineSession session, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             SessionInvoices response = session.invoices();
@@ -315,7 +315,7 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private void runGetFailedInvoices(KsefSession session, List<RunResult> results) {
+    private void runGetFailedInvoices(OnlineSession session, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             SessionInvoices response = session.failedInvoices();
@@ -334,7 +334,7 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private boolean runClose(DemoContext context, KsefSession session, List<RunResult> results) {
+    private boolean runClose(DemoContext context, OnlineSession session, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             session.close();
@@ -362,7 +362,7 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private byte[] runGetUpo(KsefSession session, String invoiceRef,
+    private byte[] runGetUpo(OnlineSession session, String invoiceRef,
                              List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
@@ -386,7 +386,7 @@ public final class SessionRunner implements DemoRunner {
      * invoice reference. After close completes, the ksefNumber is populated for
      * accepted invoices; rejected invoices leave it null (skipped).
      */
-    private void runGetUpoByKsefNumber(DemoContext context, KsefSession session,
+    private void runGetUpoByKsefNumber(DemoContext context, OnlineSession session,
                                        String invoiceRef, byte[] upoByInvoiceRef,
                                        List<RunResult> results) {
         long start = System.currentTimeMillis();

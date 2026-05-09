@@ -29,7 +29,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -192,7 +192,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                     "peppolId=" + peppolId));
 
             long openStart = System.currentTimeMillis();
-            try (KsefSession session = client.invoices().openSession(formCode)) {
+            try (OnlineSession session = client.invoices().openSession(formCode)) {
                 results.add(RunResult.ok(NAME, OP_OPEN_SESSION + label, elapsed(openStart),
                         "ref=" + session.referenceNumber()));
                 invoiceRef = runSend(session, formCode, context.nipIdentifier(),
@@ -212,7 +212,7 @@ public final class PeppolProviderRunner implements DemoRunner {
     /**
      * @return the invoice reference if send succeeded, otherwise {@code null}.
      */
-    private String runSend(KsefSession session, FormCode formCode, String supplierNip,
+    private String runSend(OnlineSession session, FormCode formCode, String supplierNip,
                             String priorKsefNumber, String label, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
@@ -231,7 +231,7 @@ public final class PeppolProviderRunner implements DemoRunner {
         }
     }
 
-    private String queryAssignedKsefNumber(KsefSession session, String invoiceRef) {
+    private String queryAssignedKsefNumber(OnlineSession session, String invoiceRef) {
         try {
             var status = session.invoiceStatus(invoiceRef);
             String ksefNumber = status.ksefNumber();
@@ -243,7 +243,7 @@ public final class PeppolProviderRunner implements DemoRunner {
         }
     }
 
-    private void runClose(KsefSession session, String label, List<RunResult> results) {
+    private void runClose(OnlineSession session, String label, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             session.close();

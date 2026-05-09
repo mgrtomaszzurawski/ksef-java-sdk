@@ -91,7 +91,7 @@ import org.slf4j.LoggerFactory;
  *         .credentials(credentials)
  *         .build()) {
  *
- *     try (KsefSession session = client.invoices().openSession(FormCode.FA3)) {
+ *     try (OnlineSession session = client.invoices().openSession(FormCode.FA3)) {
  *         session.send(invoiceXmlBytes);
  *     }
  * }

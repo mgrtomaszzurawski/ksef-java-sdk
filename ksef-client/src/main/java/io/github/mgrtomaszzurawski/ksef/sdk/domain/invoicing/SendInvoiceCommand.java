@@ -157,7 +157,7 @@ public sealed interface SendInvoiceCommand
      *
      * <p>Setting this implies offline mode at the wire level
      * (REQ-OFFLINE-004). The session-type validation (online-only,
-     * REQ-OFFLINE-005) is enforced by {@code KsefSession} when this
+     * REQ-OFFLINE-005) is enforced by {@code OnlineSession} when this
      * command is dispatched.
      */
     record TechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrectedInvoice) implements SendInvoiceCommand {

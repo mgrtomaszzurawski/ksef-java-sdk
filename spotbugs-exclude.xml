@@ -64,19 +64,20 @@
         <Class name="io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
-    <!-- KsefSession holds session-scoped AES key + IV byte[] received from
-         OnlineSessionBuilder. Defensive-copying every byte[] hop in the auth
-         flow adds noise without security benefit — the SDK is the sole owner
-         of these arrays for the session's lifetime. -->
+    <!-- OnlineSessionImpl holds session-scoped AES key + IV byte[] received
+         from OnlineSessionBuilder (PR9 rename of KsefSession).
+         Defensive-copying every byte[] hop in the auth flow adds noise
+         without security benefit — the SDK is the sole owner of these
+         arrays for the session's lifetime. -->
     <Match>
-        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession"/>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSessionImpl"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
     <!-- OnlineSessionBuilder.SessionOpenResult is an internal-handoff record
-         (KsefClient consumes it once to construct a KsefSession). The byte[]
-         aesKey/initVector are session-scoped secrets; defensive copies would
-         force per-call clones for no real benefit since the builder owns
-         the only references. -->
+         (KsefClient consumes it once to construct an OnlineSessionImpl).
+         The byte[] aesKey/initVector are session-scoped secrets;
+         defensive copies would force per-call clones for no real
+         benefit since the builder owns the only references. -->
     <Match>
         <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.builder\.OnlineSessionBuilder\$SessionOpenResult"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>

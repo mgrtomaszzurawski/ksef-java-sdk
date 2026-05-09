@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
@@ -28,7 +27,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExport
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
@@ -336,7 +335,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
 
     @Override
     @SuppressWarnings("java:S2629")
-    public KsefSession openSession(FormCode formCode) {
+    public OnlineSession openSession(FormCode formCode) {
         Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
         if (sessionClient == null || environment == null || publicKeyResolver == null) {
             throw new IllegalStateException(ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME);
@@ -358,12 +357,13 @@ public final class InvoiceClientImpl implements InvoiceClient {
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector));
 
-        OnlineSession session = sessionClient.openOnline(request);
-        LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
-        guardAgainstCooldown(session.referenceNumber());
+        io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession openResult =
+                sessionClient.openOnline(request);
+        LOGGER.debug(LOG_OPENED_ONLINE_SESSION, openResult.referenceNumber(), formCode);
+        guardAgainstCooldown(openResult.referenceNumber());
 
         return SessionHandleConstructor.newOnlineSession(
-                sessionClient, session.referenceNumber(), aesKey, initVector, session.validUntil());
+                sessionClient, openResult.referenceNumber(), aesKey, initVector, openResult.validUntil());
     }
 
     /**

@@ -24,7 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefEncryptionInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.SendInvoiceCommand;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
@@ -98,7 +98,7 @@ public final class JpmsConsumerCompileFixture {
                 AuthSession.class,
                 // sdk.domain.invoicing + builder + batch + qrcode + sync
                 FormCode.class,
-                KsefSession.class,
+                OnlineSession.class,
                 KsefBatchSession.class,
                 PreparedInvoiceExport.class,
                 SendInvoiceCommand.class,

@@ -72,7 +72,7 @@ public interface InvoiceClient {
      * <p>Authenticates lazily on the parent {@code KsefClient} if not already
      * authenticated. Generates an AES encryption key, encrypts it with the
      * KSeF public key, and opens the session. The returned
-     * {@link KsefSession} handles all invoice encryption internally.
+     * {@link OnlineSession} handles all invoice encryption internally.
      *
      * <p>KSeF allows only one active online session per NIP at a time.
      *
@@ -89,7 +89,7 @@ public interface InvoiceClient {
      * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @return an open session — use with try-with-resources
      */
-    KsefSession openSession(FormCode formCode);
+    OnlineSession openSession(FormCode formCode);
 
     /**
      * Run an incremental sync over the consumer's invoice store.
