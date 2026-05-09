@@ -9,9 +9,9 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Thrown by {@code OnlineSession.close()} / {@code KsefBatchSession.close()}
- * when polling reaches the maximum attempt count without observing a terminal
- * server status. Surfaces the uncertainty to the caller instead of letting
+ * Thrown by {@code OnlineSession.close()} or the internal batch submission
+ * flow when polling reaches the maximum attempt count without observing a
+ * terminal server status. Surfaces the uncertainty to the caller instead of letting
  * try-with-resources exit normally on indeterminate state.
  *
  * <p>Carries the session reference number and the last observed status code

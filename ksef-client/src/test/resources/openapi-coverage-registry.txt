@@ -40,8 +40,8 @@
 /sessions/online                                                # SessionClientTest, KsefSessionTest
 /sessions/online/{referenceNumber}/invoices                     # SessionClientTest, KsefSessionTest, KsefSessionWorkflowTest, KsefSessionInvoiceCapTest
 /sessions/online/{referenceNumber}/close                        # SessionClientTest, KsefSessionTest
-/sessions/batch                                                 # KsefBatchSessionTest, KsefClientOpenBatchSessionTest
-/sessions/batch/{referenceNumber}/close                         # KsefBatchSessionTest, KsefBatchSessionUploadTest
+/sessions/batch                                                 # SubmitBatchTest
+/sessions/batch/{referenceNumber}/close                         # SubmitBatchTest
 /sessions/{referenceNumber}                                     # SessionClientTest, KsefSessionTest, KsefSessionWorkflowTest
 /sessions/{referenceNumber}/invoices                            # SessionClientTest
 /sessions/{referenceNumber}/invoices/{invoiceReferenceNumber}   # SessionClientTest

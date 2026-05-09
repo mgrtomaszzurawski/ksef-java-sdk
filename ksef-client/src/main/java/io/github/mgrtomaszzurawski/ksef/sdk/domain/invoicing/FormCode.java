@@ -112,7 +112,7 @@ public final class FormCode {
      * cannot infer their environment policy) and pass through.
      *
      * <p>Called by {@code client.invoices().openSession} and
-     * {@code openBatchSession*} as a client-side preflight so misconfigured
+     * {@code client.invoices().submitBatch*} as a client-side preflight so misconfigured
      * consumers fail fast with a clear message instead of seeing a
      * server-side schema rejection on the first invoice send.
      */

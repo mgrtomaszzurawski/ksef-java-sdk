@@ -35,11 +35,11 @@ import org.slf4j.LoggerFactory;
  * </ul>
  *
  * <p><strong>Custom temp directories:</strong> automatic constructor-time
- * cleanup only scans {@code java.io.tmpdir}. If callers configure a custom
- * directory via {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode#onDisk(Path)},
- * they must call {@link #purgeOrphans(Path, Duration)} themselves at
- * application startup to recover crashed batches in that directory —
- * the SDK does not track caller-supplied directories across JVM restarts.
+ * cleanup only scans {@code java.io.tmpdir}. The internal batch flow
+ * defaults to {@code java.io.tmpdir}; bespoke wrappers wiring a different
+ * directory must invoke {@link #purgeOrphans(Path, Duration)} themselves
+ * at startup — the SDK does not track caller-supplied directories across
+ * JVM restarts.
  *
  * @since 1.0.0
  */

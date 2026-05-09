@@ -155,6 +155,24 @@ diagnostic-mode logback snippet.
 Bodies are never logged: NIPs, PESELs, JWT tokens, AES keys, and full invoice
 XML would all be RODO-classified personal data if leaked into logs.
 
+## Batch invoice upload
+
+> **Threading warning:** This method blocks the calling thread for minutes to
+> hours, depending on batch size and upload bandwidth. KSeF batch can be up to
+> 5 GB. Do not call from UI threads, HTTP request handlers, or reactive
+> framework dispatch threads. Wrap with a dedicated executor for async use.
+
+```java
+List<Invoice> invoices = List.of(
+        Invoice.fromXml(FormCode.FA3, Files.readAllBytes(Path.of("inv-1.xml"))),
+        Invoice.fromXml(FormCode.FA3, Files.readAllBytes(Path.of("inv-2.xml"))));
+
+BatchResult result = client.invoices().submitBatch(
+        FormCode.FA3, invoices, BatchOptions.defaults());
+```
+
+`submitBatch` runs the full open / upload / close / poll / fetch-UPOs pipeline as a single synchronous call. For finer-grained progress reporting, wrap the call in your own executor — the SDK does not provide a callback / listener (per project ADR — inversion-of-control mismatched with SDK-as-API-tool framing).
+
 ## Architecture and design decisions
 
 The full set of architectural decisions — generation strategy, package layout,

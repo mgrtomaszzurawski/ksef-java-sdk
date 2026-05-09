@@ -27,16 +27,28 @@ coordinates that will resolve once Central publication completes.
 - `refreshAuthToken()` manual refresh and `terminateAuthSession(ref)`.
 
 #### Sessions and invoicing
-- `KsefSession` (online) and `KsefBatchSession` (batch) try-with-resources
-  abstractions; `close()` polls until terminal and surfaces failures as
-  typed `KsefSessionTerminalFailureException` / `KsefSessionPollingTimeoutException`.
+- `OnlineSession` (online) try-with-resources abstraction; `close()` polls
+  until terminal and surfaces failures as typed
+  `KsefSessionTerminalFailureException` / `KsefSessionPollingTimeoutException`.
+- `Invoices.submitBatch(FormCode, List<Invoice>, BatchOptions)` — synchronous
+  batch facade replacing the prior 5-step open / upload / close / poll / fetch
+  state machine. SDK encrypts every invoice with a session AES key, splits
+  into parts, opens the batch session, uploads parts in parallel, closes,
+  polls until terminal, and downloads UPOs for accepted invoices. Returns a
+  populated `BatchResult` with `cleared`/`failed` breakdown. `submitBatchFromFiles(...)`
+  is the file-streaming variant for large batches. (PR11)
+- **Threading warning:** `submitBatch` blocks the calling thread for minutes
+  to hours, depending on batch size and upload bandwidth. KSeF batch can be
+  up to 5 GB. Do not call from UI threads, HTTP request handlers, or
+  reactive framework dispatch threads. Wrap with a dedicated executor for
+  async use. (PR11)
+- **No progress listener** on `BatchOptions` — per ADR-008/D1, callback-style
+  progress events invert control of the consumer's thread context. Callers
+  needing UI progress wrap `submitBatch(...)` in
+  `CompletableFuture.supplyAsync(...)`. (PR11)
 - `SendInvoiceCommand` sealed interface — `Normal(byte[])` and
   `TechnicalCorrection(byte[], byte[] hashOfCorrected)` (per
   `ksef-docs/offline/korekta-techniczna.md`).
-- `BatchSessionOptions` with `online()`, `offline()`, and assembly modes
-  (`onDisk(Path)`, `inMemory(maxBytes)`).
-- `PreparedBatchPackage` validates aggregate caps client-side
-  (`KsefLimits.MAX_BATCH_PARTS = 50`, `MAX_BATCH_TOTAL_BYTES = 5 GB`).
 - `PreparedInvoiceExport` streaming export with file-backed extraction,
   ZIP-bomb caps, SHA-256 verification, AES key zeroisation on close.
 - `FormCode.assertAllowedOn(env)` — client-side preflight blocking
@@ -130,7 +142,14 @@ coordinates that will resolve once Central publication completes.
 
 ### Removed
 
-- N/A — first public release.
+- **Public batch session surface** (PR11): `KsefBatchSession`,
+  `PreparedBatchPackage`, `BatchFileSpec`, `BatchSessionOptions`,
+  `BatchAssemblyMode`, and the three `KsefClient.openBatchSession*`
+  overloads were removed from the public API. The 5-step state machine
+  they exposed (open → uploadParts → close → pollUntilComplete → bulkUpos)
+  was consolidated into the synchronous `Invoices.submitBatch(...)` facade.
+  These types now live in `sdk.internal.runtime.batch` /
+  `sdk.internal.client.session` and are not exported via JPMS.
 
 ### Security
 
