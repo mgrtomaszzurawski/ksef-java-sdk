@@ -9,13 +9,12 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Filter for {@code GET /sessions} (Codex round-9 manual-validation A.2.4).
+ * Filter for {@code GET /sessions}.
  *
  * <p>{@code sessionType} is REQUIRED per OpenAPI ({@code GET /sessions}
  * declares it {@code required: true}). All other fields are optional;
- * {@code null} means "no filter on this axis". Use {@link #forOnline()},
- * {@link #forBatch()}, or {@link #builder(KsefSessionType)} for fluent
- * construction.
+ * {@code null} means "no filter on this axis". Use {@link #forOnline()}
+ * or {@link #forBatch()} for fluent construction.
  *
  * @param sessionType narrow to ONLINE or BATCH (required)
  * @param referenceNumber narrow to one specific session reference
@@ -25,8 +24,9 @@ import org.jspecify.annotations.Nullable;
  * @param dateClosedTo inclusive upper bound
  * @param dateModifiedFrom inclusive lower bound on last-status-update time
  * @param dateModifiedTo inclusive upper bound
- * @param statuses narrow to one or more numeric status codes (e.g.
- *     {@code [100, 200]} for in-flight + success)
+ * @param statuses narrow to one or more {@link CommonSessionStatus} values
+ *     (e.g. {@code [InProgress, Failed]} for in-flight + failed sessions);
+ *     wire format is the string enum name per OpenAPI {@code CommonSessionStatus}
  *
  * @since 1.0.0
  */
@@ -39,7 +39,7 @@ public record SessionsQueryFilter(
         @Nullable OffsetDateTime dateClosedTo,
         @Nullable OffsetDateTime dateModifiedFrom,
         @Nullable OffsetDateTime dateModifiedTo,
-        @Nullable List<Integer> statuses) {
+        @Nullable List<CommonSessionStatus> statuses) {
 
     private static final String ERR_SESSION_TYPE_NULL =
             "sessionType is required by GET /sessions (OpenAPI required:true)";
@@ -59,10 +59,6 @@ public record SessionsQueryFilter(
         return new Builder(KsefSessionType.BATCH);
     }
 
-    public static Builder builder(KsefSessionType sessionType) {
-        return new Builder(sessionType);
-    }
-
     public static final class Builder {
         private final KsefSessionType sessionType;
         private @Nullable String referenceNumber;
@@ -72,7 +68,7 @@ public record SessionsQueryFilter(
         private @Nullable OffsetDateTime dateClosedTo;
         private @Nullable OffsetDateTime dateModifiedFrom;
         private @Nullable OffsetDateTime dateModifiedTo;
-        private @Nullable List<Integer> statuses;
+        private @Nullable List<CommonSessionStatus> statuses;
 
         private Builder(KsefSessionType sessionType) {
             this.sessionType = java.util.Objects.requireNonNull(sessionType, ERR_SESSION_TYPE_NULL);
@@ -85,7 +81,7 @@ public record SessionsQueryFilter(
         public Builder dateClosedTo(OffsetDateTime dateClosedTo) { this.dateClosedTo = dateClosedTo; return this; }
         public Builder dateModifiedFrom(OffsetDateTime dateModifiedFrom) { this.dateModifiedFrom = dateModifiedFrom; return this; }
         public Builder dateModifiedTo(OffsetDateTime dateModifiedTo) { this.dateModifiedTo = dateModifiedTo; return this; }
-        public Builder statuses(Integer... codes) { this.statuses = List.of(codes); return this; }
+        public Builder statuses(CommonSessionStatus... values) { this.statuses = List.of(values); return this; }
 
         public SessionsQueryFilter build() {
             return new SessionsQueryFilter(sessionType, referenceNumber,

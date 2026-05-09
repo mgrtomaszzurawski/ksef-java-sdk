@@ -38,6 +38,8 @@ class PeppolClientTest {
     private static final String DEFAULT_QUERY_URL = "/v2/peppol/query?pageOffset=0&pageSize=10";
     private static final String PAGED_QUERY_URL = "/v2/peppol/query?pageOffset=2&pageSize=5";
 
+    private static final int DEFAULT_PAGE_OFFSET = 0;
+    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int CUSTOM_PAGE_OFFSET = 2;
     private static final int CUSTOM_PAGE_SIZE = 5;
     private static final int EXPECTED_PROVIDER_COUNT = 2;
@@ -81,7 +83,7 @@ class PeppolClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PeppolProvidersResult result = ksef.peppol().query();
+            PeppolProvidersResult result = ksef.peppol().query(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE);
 
             // then
             assertNotNull(result);
@@ -133,7 +135,7 @@ class PeppolClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PeppolProvidersResult result = ksef.peppol().query();
+            PeppolProvidersResult result = ksef.peppol().query(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE);
 
             // then
             assertNotNull(result);

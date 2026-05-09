@@ -58,7 +58,7 @@ public final class PeppolRunner implements DemoRunner {
     private void runQueryDefault(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            PeppolProvidersResult response = context.client().peppol().query();
+            PeppolProvidersResult response = context.client().peppol().query(0, 10);
             int count = response.providers() != null ? response.providers().size() : 0;
             LOGGER.info("[{}] default query: {} providers, hasMore={}", NAME, count, response.hasMore());
             results.add(RunResult.ok(NAME, OP_QUERY_DEFAULT, elapsed(start),

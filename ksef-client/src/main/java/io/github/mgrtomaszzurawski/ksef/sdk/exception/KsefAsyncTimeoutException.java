@@ -5,14 +5,13 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 /**
- * Thrown by the public {@code *AndAwait(builder, Duration)} helpers
- * (Codex 2026-05-05 #10 / F7) when the supplied timeout elapses before
- * the polled operation reaches a terminal state.
+ * Thrown by
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync#awaitTerminal}
+ * when the configured timeout elapses before the polled status reaches a
+ * terminal state.
  *
- * <p>Lives in {@code sdk.exception} (an exported JPMS package) so
- * modular consumers can import it directly. The internal
- * poll-until-terminal helper that throws it remains in
- * {@code sdk.internal.runtime}.
+ * <p>Lives in {@code sdk.exception} (an exported JPMS package) so modular
+ * consumers can import it directly.
  *
  * @since 1.0.0
  */

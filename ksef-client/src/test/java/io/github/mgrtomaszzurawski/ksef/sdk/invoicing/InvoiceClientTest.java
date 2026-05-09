@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -86,7 +87,7 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] invoiceXml = ksef.invoices().getByKsefNumber(TEST_KSEF_NUMBER);
+            byte[] invoiceXml = ksef.invoices().getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER));
 
             // then
             assertArrayEquals(TEST_INVOICE_XML, invoiceXml);
@@ -104,7 +105,7 @@ class InvoiceClientTest {
             // then
             var invoices = ksef.invoices();
 
-            assertThrows(KsefNotFoundException.class, () -> invoices.getByKsefNumber(TEST_KSEF_NUMBER));
+            assertThrows(KsefNotFoundException.class, () -> invoices.getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER)));
         }
     }
 
@@ -330,7 +331,7 @@ class InvoiceClientTest {
             // when — first protected domain call must trigger auth via requireToken()
             // BEFORE any HTTP request to the protected endpoint.
             var invoices = ksef.invoices();
-            assertThrows(RuntimeException.class, () -> invoices.getByKsefNumber(TEST_KSEF_NUMBER));
+            assertThrows(RuntimeException.class, () -> invoices.getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER)));
 
             // then — proactive auth attempt observed at /security/public-key-certificates,
             // and the protected domain endpoint was NEVER called (old behavior would have

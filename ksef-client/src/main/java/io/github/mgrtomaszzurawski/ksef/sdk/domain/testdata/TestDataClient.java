@@ -36,8 +36,6 @@ public interface TestDataClient {
 
     void grantAttachment(String nip);
 
-    void revokeAttachment(String nip);
-
     void revokeAttachment(String nip, LocalDate expectedEndDate);
 
     void blockContext(TestDataIdentifierType identifierType, String identifierValue);

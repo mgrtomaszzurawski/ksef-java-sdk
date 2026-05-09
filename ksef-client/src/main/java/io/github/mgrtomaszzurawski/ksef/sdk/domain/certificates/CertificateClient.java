@@ -36,8 +36,13 @@ public interface CertificateClient {
     EnrollCertificateResult enroll(CertificateEnrollBuilder builder);
     CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber);
     RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers);
-    void revoke(String certificateSerialNumber);
 
+    /**
+     * Revoke a certificate. The reason is required — every revocation must
+     * carry a documented cause for audit / compliance. Use
+     * {@link CertificateRevocationReason#UNSPECIFIED} only when no specific
+     * reason applies and the audit log entry "unspecified" is acceptable.
+     */
     void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
 
     CertificateQueryResult query(CertificateQueryBuilder builder);
@@ -50,27 +55,4 @@ public interface CertificateClient {
      */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
             streamCertificates(CertificateQueryBuilder builder);
-
-    /**
-     * Codex 2026-05-05 #10 / F7 — enroll a certificate and poll
-     * {@link #getEnrollmentStatus(String)} until terminal
-     * (status.code() &gt;= 200). Returns the terminal status which
-     * carries the assigned {@code certificateSerialNumber} on success.
-     * Throws {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException}
-     * on timeout.
-     *
-     * @since 1.0.0
-     */
-    default CertificateEnrollmentStatus enrollAndAwait(CertificateEnrollBuilder builder,
-                                                        java.time.Duration timeout) {
-        EnrollCertificateResult result = enroll(builder);
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
-                new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.Config<>(
-                        "enrollCertificate",
-                        () -> getEnrollmentStatus(result.referenceNumber()),
-                        status -> status.status() != null && status.status().code() >= 200,
-                        status -> status.status() == null ? null : status.status().code(),
-                        timeout,
-                        null));
-    }
 }

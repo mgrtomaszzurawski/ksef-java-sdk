@@ -350,16 +350,6 @@ public final class PermissionClientImpl implements PermissionClient {
         return PermissionsMappers.toPersonPermissions(rawValue);
     }
 
-    /**
-     * Query permissions granted to subunits (sends empty request body).
-     *
-     * @return subunit permissions
-     */
-    @Override
-    public SubunitPermissions querySubunits() {
-        return querySubunits(SubunitPermissionsQueryBuilder.create());
-    }
-
     @Override
     public SubunitPermissions querySubunits(SubunitPermissionsQueryBuilder filter) {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
@@ -378,16 +368,6 @@ public final class PermissionClientImpl implements PermissionClient {
         QuerySubunitPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 body, token, QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
         return PermissionsMappers.toSubunitPermissions(rawValue);
-    }
-
-    /**
-     * Query permissions granted to entities (sends empty request body).
-     *
-     * @return entity permissions
-     */
-    @Override
-    public EntityPermissions queryEntities() {
-        return queryEntities(EntityPermissionsQueryBuilder.create());
     }
 
     @Override
@@ -410,16 +390,6 @@ public final class PermissionClientImpl implements PermissionClient {
         return PermissionsMappers.toEntityPermissions(rawValue);
     }
 
-    /**
-     * Query entity roles for the current context.
-     *
-     * @return entity roles
-     */
-    @Override
-    public EntityRoles queryEntityRoles() {
-        return queryEntityRoles(EntityRolesQueryBuilder.create());
-    }
-
     @Override
     public EntityRoles queryEntityRoles(EntityRolesQueryBuilder filter) {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
@@ -429,16 +399,6 @@ public final class PermissionClientImpl implements PermissionClient {
         QueryEntityRolesResponseRaw rawValue = http.getAuthenticated(path, token,
                 QueryEntityRolesResponseRaw.class, OP_QUERY_ENTITY_ROLES);
         return PermissionsMappers.toEntityRoles(rawValue);
-    }
-
-    /**
-     * Query roles of subordinate entities (sends empty request body).
-     *
-     * @return subordinate entity roles
-     */
-    @Override
-    public SubordinateEntityRoles querySubordinateRoles() {
-        return querySubordinateRoles(SubordinateEntityRolesQueryBuilder.create());
     }
 
     @Override

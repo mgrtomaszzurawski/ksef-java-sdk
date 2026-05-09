@@ -213,22 +213,6 @@ class TestDataClientTest {
     }
 
     @Test
-    void revokeAttachment_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
-        // given
-        stubFor(post(urlEqualTo("/v2/testdata/attachment/revoke"))
-                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
-
-        try (KsefClient ksef = createClient(wmInfo)) {
-
-            // when
-            ksef.testData().revokeAttachment(TEST_NIP);
-
-            // then
-            verify(postRequestedFor(urlEqualTo("/v2/testdata/attachment/revoke")));
-        }
-    }
-
-    @Test
     void revokeAttachment_withExpectedEndDate_postsBothFieldsInJsonBody(WireMockRuntimeInfo wmInfo) {
         // given — pin the wire shape of the (nip, expectedEndDate) overload:
         // body must carry {"nip":"...","expectedEndDate":"YYYY-MM-DD"} so a future

@@ -483,13 +483,6 @@ public final class KsefBatchSession implements AutoCloseable {
     }
 
     /**
-     * Convenience overload that parses the raw KSeF number string.
-     */
-    public byte[] upoByKsefNumber(String ksefNumber) {
-        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
-    }
-
-    /**
      * Download every bulk-session UPO XML page referenced in
      * {@link SessionStatus#upo()}. Same shape as
      * {@code KsefSession.bulkUpos()} — see Javadoc there for spec context

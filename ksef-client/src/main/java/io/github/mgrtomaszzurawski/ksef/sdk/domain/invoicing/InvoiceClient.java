@@ -22,17 +22,13 @@ public interface InvoiceClient {
     /**
      * Retrieve invoice XML by KSeF number. Validates length, format, and
      * CRC-8 checksum (REQ-SESS-18/19/20) before the network call.
+     *
+     * <p>If the consumer holds a raw string, parse it explicitly via
+     * {@link KsefNumber#parse(String)} — keeping validation up-front at the
+     * value-object boundary (rather than hidden behind a String overload)
+     * surfaces malformed input at the first opportunity.
      */
     byte[] getByKsefNumber(KsefNumber ksefNumber);
-
-    /**
-     * Convenience overload that parses the raw string into a
-     * {@link KsefNumber} before delegating. Throws
-     * {@link IllegalArgumentException} on invalid input.
-     */
-    default byte[] getByKsefNumber(String ksefNumber) {
-        return getByKsefNumber(KsefNumber.parse(ksefNumber));
-    }
 
     InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryBuilder query);
 

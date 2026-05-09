@@ -140,8 +140,8 @@ public final class SessionClient {
         appendDateParam(path, PARAM_DATE_MODIFIED_FROM, filter.dateModifiedFrom());
         appendDateParam(path, PARAM_DATE_MODIFIED_TO, filter.dateModifiedTo());
         if (filter.statuses() != null) {
-            for (Integer code : filter.statuses()) {
-                path.append(QUERY_PARAM_SEPARATOR).append(PARAM_STATUSES).append(QUERY_PARAM_EQUALS).append(code);
+            for (io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.CommonSessionStatus value : filter.statuses()) {
+                path.append(QUERY_PARAM_SEPARATOR).append(PARAM_STATUSES).append(QUERY_PARAM_EQUALS).append(value.wireValue());
             }
         }
         return continuationToken == null
@@ -414,14 +414,5 @@ public final class SessionClient {
         String path = ApiPaths.subPath(ApiPaths.SESSIONS, referenceNumber)
                 + SEGMENT_KSEF_UPO + value + SEGMENT_INVOICE_UPO;
         return http.getAuthenticatedBytes(path, token, OP_GET_UPO_BY_KSEF);
-    }
-
-    /**
-     * Convenience overload that parses the raw KSeF number string into a
-     * {@link KsefNumber} before delegating. Throws
-     * {@link IllegalArgumentException} on invalid input.
-     */
-    public byte[] getUpoByKsefNumber(String referenceNumber, String ksefNumber) {
-        return getUpoByKsefNumber(referenceNumber, KsefNumber.parse(ksefNumber));
     }
 }

@@ -39,8 +39,14 @@ public interface PermissionClient {
     /**
      * KSeF permission-operation status codes are conventionally
      * {@code 100/110} (in-progress), {@code 200} (success), and
-     * {@code 4xx/5xx} (failure). Anything {@code &gt;= 200} is terminal —
-     * the poll loop stops and returns the status to the caller.
+     * {@code 4xx/5xx} (failure). Anything {@code &gt;= 200} is terminal.
+     *
+     * <p>Useful when building a poll predicate for
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync#awaitTerminal}:
+     * <pre>{@code
+     * status -> status.status() != null
+     *           && status.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD
+     * }</pre>
      */
     int TERMINAL_STATUS_CODE_THRESHOLD = 200;
 
@@ -57,13 +63,9 @@ public interface PermissionClient {
     AttachmentPermissionStatus getAttachmentStatus();
     PersonalPermissions queryPersonal(PersonalPermissionsQueryBuilder builder);
     PersonPermissions queryPersons(PersonPermissionsQueryBuilder builder);
-    SubunitPermissions querySubunits();
     SubunitPermissions querySubunits(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionsQueryBuilder filter);
-    EntityPermissions queryEntities();
     EntityPermissions queryEntities(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionsQueryBuilder filter);
-    EntityRoles queryEntityRoles();
     EntityRoles queryEntityRoles(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityRolesQueryBuilder filter);
-    SubordinateEntityRoles querySubordinateRoles();
     SubordinateEntityRoles querySubordinateRoles(io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubordinateEntityRolesQueryBuilder filter);
     EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
     EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryBuilder builder);
@@ -89,75 +91,4 @@ public interface PermissionClient {
             streamAuthorizations(EntityAuthorizationPermissionsQueryBuilder builder);
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission>
             streamEuEntities(EuEntityPermissionsQueryBuilder builder);
-
-    // Codex 2026-05-05 #10 / F7 — *AndAwait helpers. Each issues the
-    // grant operation, polls getOperationStatus(reference) until the
-    // server reports a terminal state (status.code() >= 200), returns
-    // the terminal status. Throws KsefAsyncTimeoutException on timeout.
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            grantPersonAndAwait(PersonPermissionGrantBuilder builder, java.time.Duration timeout) {
-        return awaitOperationTerminal(grantPerson(builder).referenceNumber(), timeout, "grantPerson");
-    }
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            grantEntityAndAwait(EntityPermissionGrantBuilder builder, java.time.Duration timeout) {
-        return awaitOperationTerminal(grantEntity(builder).referenceNumber(), timeout, "grantEntity");
-    }
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            grantAuthorizationAndAwait(EntityAuthorizationPermissionGrantBuilder builder, java.time.Duration timeout) {
-        return awaitOperationTerminal(grantAuthorization(builder).referenceNumber(), timeout, "grantAuthorization");
-    }
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            grantSubunitAndAwait(SubunitPermissionGrantBuilder builder, java.time.Duration timeout) {
-        return awaitOperationTerminal(grantSubunit(builder).referenceNumber(), timeout, "grantSubunit");
-    }
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            grantEuEntityAndAwait(EuEntityPermissionGrantBuilder builder, java.time.Duration timeout) {
-        return awaitOperationTerminal(grantEuEntity(builder).referenceNumber(), timeout, "grantEuEntity");
-    }
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            grantIndirectAndAwait(IndirectPermissionGrantBuilder builder, java.time.Duration timeout) {
-        return awaitOperationTerminal(grantIndirect(builder).referenceNumber(), timeout, "grantIndirect");
-    }
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            grantEuEntityAdminAndAwait(EuEntityAdminPermissionGrantBuilder builder, java.time.Duration timeout) {
-        return awaitOperationTerminal(grantEuEntityAdmin(builder).referenceNumber(), timeout, "grantEuEntityAdmin");
-    }
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            revokeCommonAndAwait(String permissionId, java.time.Duration timeout) {
-        return awaitOperationTerminal(revokeCommon(permissionId).referenceNumber(), timeout, "revokeCommon");
-    }
-
-    /** @since 1.0.0 */
-    default PermissionOperationStatus
-            revokeAuthorizationAndAwait(String permissionId, java.time.Duration timeout) {
-        return awaitOperationTerminal(revokeAuthorization(permissionId).referenceNumber(), timeout, "revokeAuthorization");
-    }
-
-    private PermissionOperationStatus
-            awaitOperationTerminal(String referenceNumber, java.time.Duration timeout, String opName) {
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
-                new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.Config<>(
-                        opName,
-                        () -> getOperationStatus(referenceNumber),
-                        status -> status.status() != null && status.status().code() >= TERMINAL_STATUS_CODE_THRESHOLD,
-                        status -> status.status() == null ? null : status.status().code(),
-                        timeout,
-                        null));
-    }
 }

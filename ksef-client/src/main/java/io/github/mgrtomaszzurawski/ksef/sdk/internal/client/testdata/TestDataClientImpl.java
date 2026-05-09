@@ -187,20 +187,6 @@ public final class TestDataClientImpl implements TestDataClient {
     }
 
     /**
-     * Revoke attachment permissions in the test environment.
-     *
-     * @param nip NIP of the subject to revoke attachment permissions from
-     */
-    @Override
-    public void revokeAttachment(String nip) {
-        LOGGER.debug(LOG_CALL, OP_REVOKE_ATTACHMENT);
-        Objects.requireNonNull(nip, ERR_NULL_NIP);
-        AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
-        request.setNip(nip);
-        http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, request, OP_REVOKE_ATTACHMENT);
-    }
-
-    /**
      * Revoke attachment permissions in the test environment with an expected end date.
      *
      * @param nip NIP of the subject to revoke attachment permissions from

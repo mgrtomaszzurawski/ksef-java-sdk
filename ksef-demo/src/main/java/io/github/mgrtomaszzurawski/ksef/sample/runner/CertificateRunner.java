@@ -25,6 +25,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.Certific
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
@@ -237,7 +238,7 @@ public final class CertificateRunner implements DemoRunner {
     private void runRevoke(DemoContext context, String serialNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            context.client().certificates().revoke(serialNumber);
+            context.client().certificates().revoke(serialNumber, CertificateRevocationReason.UNSPECIFIED);
             LOGGER.info("[{}] revoked certificate serial={}", NAME, serialNumber);
             results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start), "serial=" + serialNumber));
         } catch (Exception exception) {

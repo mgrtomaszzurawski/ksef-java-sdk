@@ -17,6 +17,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersR
  */
 public interface PeppolClient {
 
-    PeppolProvidersResult query();
+    /**
+     * Single page of Peppol providers. Use this for explicit UI pagination
+     * where the consumer controls page offset and size; for full traversal
+     * iterate offsets until {@link PeppolProvidersResult#hasMore()} is false.
+     */
     PeppolProvidersResult query(int pageOffset, int pageSize);
 }
