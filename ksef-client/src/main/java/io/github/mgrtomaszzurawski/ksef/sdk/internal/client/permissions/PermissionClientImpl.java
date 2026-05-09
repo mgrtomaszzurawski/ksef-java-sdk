@@ -355,18 +355,9 @@ public final class PermissionClientImpl implements PermissionClient {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_QUERY_SUBUNITS);
         String token = http.requireToken();
-        SubunitPermissionsQueryRequestRaw body = new SubunitPermissionsQueryRequestRaw();
-        if (filter.subunitIdentifierType() != null && filter.subunitIdentifierValue() != null) {
-            SubunitPermissionsSubunitIdentifierRaw id = new SubunitPermissionsSubunitIdentifierRaw();
-            id.setType(filter.subunitIdentifierType() == SubunitPermissionsQueryBuilder.SubunitIdentifierType.NIP
-                    ? SubunitPermissionsSubunitIdentifierTypeRaw.NIP
-                    : SubunitPermissionsSubunitIdentifierTypeRaw.INTERNAL_ID);
-            id.setValue(filter.subunitIdentifierValue());
-            body.subunitIdentifier(id);
-        }
         String path = appendPaging(PATH_QUERY_SUBUNITS, filter.pageOffsetValue(), filter.pageSizeValue());
         QuerySubunitPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
-                body, token, QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
+                buildSubunitPermissionsBody(filter), token, QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
         return PermissionsMappers.toSubunitPermissions(rawValue);
     }
 
@@ -375,18 +366,9 @@ public final class PermissionClientImpl implements PermissionClient {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_QUERY_ENTITIES);
         String token = http.requireToken();
-        EntityPermissionsQueryRequestRaw body = new EntityPermissionsQueryRequestRaw();
-        if (filter.contextIdentifierType() != null && filter.contextIdentifierValue() != null) {
-            EntityPermissionsContextIdentifierRaw id = new EntityPermissionsContextIdentifierRaw();
-            id.setType(filter.contextIdentifierType() == EntityPermissionsQueryBuilder.ContextIdentifierType.NIP
-                    ? EntityPermissionsContextIdentifierTypeRaw.NIP
-                    : EntityPermissionsContextIdentifierTypeRaw.INTERNAL_ID);
-            id.setValue(filter.contextIdentifierValue());
-            body.contextIdentifier(id);
-        }
         String path = appendPaging(PATH_QUERY_ENTITIES, filter.pageOffsetValue(), filter.pageSizeValue());
         QueryEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
-                body, token, QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
+                buildEntityPermissionsBody(filter), token, QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
         return PermissionsMappers.toEntityPermissions(rawValue);
     }
 
@@ -406,16 +388,9 @@ public final class PermissionClientImpl implements PermissionClient {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_QUERY_SUBORDINATE);
         String token = http.requireToken();
-        SubordinateEntityRolesQueryRequestRaw body = new SubordinateEntityRolesQueryRequestRaw();
-        if (filter.subordinateEntityNipValue() != null) {
-            EntityPermissionsSubordinateEntityIdentifierRaw id = new EntityPermissionsSubordinateEntityIdentifierRaw();
-            id.setType(EntityPermissionsSubordinateEntityIdentifierTypeRaw.NIP);
-            id.setValue(filter.subordinateEntityNipValue());
-            body.subordinateEntityIdentifier(id);
-        }
         String path = appendPaging(PATH_QUERY_SUBORDINATE, filter.pageOffsetValue(), filter.pageSizeValue());
         QuerySubordinateEntityRolesResponseRaw rawValue = http.postJsonAuthenticated(path,
-                body, token, QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
+                buildSubordinateRolesBody(filter), token, QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
         return PermissionsMappers.toSubordinateEntityRoles(rawValue);
     }
 
@@ -513,12 +488,13 @@ public final class PermissionClientImpl implements PermissionClient {
 
     @Override
     public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermission>
-            streamSubunits() {
+            streamSubunits(SubunitPermissionsQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
             String token = http.requireToken();
             QuerySubunitPermissionsResponseRaw raw = http.postJsonAuthenticated(
                     pagedPath(PATH_QUERY_SUBUNITS, pageOffset),
-                    new SubunitPermissionsQueryRequestRaw(), token,
+                    buildSubunitPermissionsBody(filter), token,
                     QuerySubunitPermissionsResponseRaw.class, OP_QUERY_SUBUNITS);
             SubunitPermissions page = PermissionsMappers.toSubunitPermissions(raw);
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
@@ -528,12 +504,13 @@ public final class PermissionClientImpl implements PermissionClient {
 
     @Override
     public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission>
-            streamEntities() {
+            streamEntities(EntityPermissionsQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
             String token = http.requireToken();
             QueryEntityPermissionsResponseRaw raw = http.postJsonAuthenticated(
                     pagedPath(PATH_QUERY_ENTITIES, pageOffset),
-                    new EntityPermissionsQueryRequestRaw(), token,
+                    buildEntityPermissionsBody(filter), token,
                     QueryEntityPermissionsResponseRaw.class, OP_QUERY_ENTITIES);
             EntityPermissions page = PermissionsMappers.toEntityPermissions(raw);
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
@@ -543,12 +520,13 @@ public final class PermissionClientImpl implements PermissionClient {
 
     @Override
     public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole>
-            streamSubordinateRoles() {
+            streamSubordinateRoles(SubordinateEntityRolesQueryBuilder filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
             String token = http.requireToken();
             QuerySubordinateEntityRolesResponseRaw raw = http.postJsonAuthenticated(
                     pagedPath(PATH_QUERY_SUBORDINATE, pageOffset),
-                    new SubordinateEntityRolesQueryRequestRaw(), token,
+                    buildSubordinateRolesBody(filter), token,
                     QuerySubordinateEntityRolesResponseRaw.class, OP_QUERY_SUBORDINATE);
             SubordinateEntityRoles page = PermissionsMappers.toSubordinateEntityRoles(raw);
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
@@ -586,5 +564,42 @@ public final class PermissionClientImpl implements PermissionClient {
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
                     page.permissions(), page.hasMore());
         });
+    }
+
+    private static SubunitPermissionsQueryRequestRaw buildSubunitPermissionsBody(SubunitPermissionsQueryBuilder filter) {
+        SubunitPermissionsQueryRequestRaw body = new SubunitPermissionsQueryRequestRaw();
+        if (filter.subunitIdentifierType() != null && filter.subunitIdentifierValue() != null) {
+            SubunitPermissionsSubunitIdentifierRaw id = new SubunitPermissionsSubunitIdentifierRaw();
+            id.setType(filter.subunitIdentifierType() == SubunitPermissionsQueryBuilder.SubunitIdentifierType.NIP
+                    ? SubunitPermissionsSubunitIdentifierTypeRaw.NIP
+                    : SubunitPermissionsSubunitIdentifierTypeRaw.INTERNAL_ID);
+            id.setValue(filter.subunitIdentifierValue());
+            body.subunitIdentifier(id);
+        }
+        return body;
+    }
+
+    private static EntityPermissionsQueryRequestRaw buildEntityPermissionsBody(EntityPermissionsQueryBuilder filter) {
+        EntityPermissionsQueryRequestRaw body = new EntityPermissionsQueryRequestRaw();
+        if (filter.contextIdentifierType() != null && filter.contextIdentifierValue() != null) {
+            EntityPermissionsContextIdentifierRaw id = new EntityPermissionsContextIdentifierRaw();
+            id.setType(filter.contextIdentifierType() == EntityPermissionsQueryBuilder.ContextIdentifierType.NIP
+                    ? EntityPermissionsContextIdentifierTypeRaw.NIP
+                    : EntityPermissionsContextIdentifierTypeRaw.INTERNAL_ID);
+            id.setValue(filter.contextIdentifierValue());
+            body.contextIdentifier(id);
+        }
+        return body;
+    }
+
+    private static SubordinateEntityRolesQueryRequestRaw buildSubordinateRolesBody(SubordinateEntityRolesQueryBuilder filter) {
+        SubordinateEntityRolesQueryRequestRaw body = new SubordinateEntityRolesQueryRequestRaw();
+        if (filter.subordinateEntityNipValue() != null) {
+            EntityPermissionsSubordinateEntityIdentifierRaw id = new EntityPermissionsSubordinateEntityIdentifierRaw();
+            id.setType(EntityPermissionsSubordinateEntityIdentifierTypeRaw.NIP);
+            id.setValue(filter.subordinateEntityNipValue());
+            body.subordinateEntityIdentifier(id);
+        }
+        return body;
     }
 }
