@@ -103,6 +103,10 @@ public final class BatchSubmissionFlow {
     private static final long CLOSE_BUSY_MAX_DELAY_MS = 10_000L;
     /** Multiplier applied to the close back-off after each retry. */
     private static final int CLOSE_BUSY_BACKOFF_MULTIPLIER = 2;
+    /** Worker count below this triggers sequential (in-line) upload — no executor overhead. */
+    private static final int SEQUENTIAL_UPLOAD_THRESHOLD = 1;
+    /** Deadline-remaining sentinel — values at or below this mean the deadline elapsed. */
+    private static final long DEADLINE_EXPIRED_NANOS = 0L;
     /** Total budget for the close-with-busy-retry loop (separate from the overall batch timeout). */
     private static final long CLOSE_TIMEOUT_MS = 60_000L;
     /** Status indicator for HTTP 415 (session-busy) returned by KSeF on close while parts are still in-flight. */
@@ -282,7 +286,7 @@ public final class BatchSubmissionFlow {
             throw new IllegalStateException(ERR_PART_COUNT_MISMATCH);
         }
         int workers = Math.min(parallelism, uploadRequests.size());
-        if (workers <= 1) {
+        if (workers <= SEQUENTIAL_UPLOAD_THRESHOLD) {
             for (int index = 0; index < uploadRequests.size(); index++) {
                 assertWithinDeadline(deadlineNanos);
                 uploadOnePart(uploadRequests.get(index), parts.get(index));
@@ -315,7 +319,7 @@ public final class BatchSubmissionFlow {
         for (Future<?> future : futures) {
             try {
                 long remainingNanos = deadlineNanos - nanoNow();
-                if (remainingNanos <= 0L) {
+                if (remainingNanos <= DEADLINE_EXPIRED_NANOS) {
                     throw new KsefNetworkException("Batch upload timed out", null);
                 }
                 future.get(remainingNanos, TimeUnit.NANOSECONDS);
@@ -418,24 +422,34 @@ public final class BatchSubmissionFlow {
             attempt++;
             SessionStatus status = sessionClient.getStatus(sessionRef);
             Integer code = status.status() != null ? status.status().code() : null;
-            if (code != null && !code.equals(lastCode)) {
-                LOGGER.debug(LOG_STATUS_TRANSITION, sessionRef, lastCode, code, attempt);
-                lastCode = code;
-            }
+            lastCode = logCodeTransition(sessionRef, lastCode, code, attempt);
             if (code != null && code >= TERMINAL_STATUS_THRESHOLD) {
-                if (code == STATUS_CODE_OK) {
-                    LOGGER.debug(LOG_PROCESSING_COMPLETE, sessionRef);
-                    return;
-                }
-                String description = status.status() != null ? status.status().description() : null;
-                List<String> details = status.status() != null ? status.status().details() : List.of();
-                LOGGER.warn(LOG_TERMINAL_FAILURE, sessionRef, code);
-                throw new KsefSessionTerminalFailureException(sessionRef, code, description, details);
+                handleTerminalCode(sessionRef, status, code);
+                return;
             }
             if (nanoNow() >= deadlineNanos) {
                 throw new KsefSessionPollingTimeoutException(sessionRef, attempt, lastCode);
             }
         }
+    }
+
+    private static Integer logCodeTransition(String sessionRef, Integer lastCode, Integer code, int attempt) {
+        if (code != null && !code.equals(lastCode)) {
+            LOGGER.debug(LOG_STATUS_TRANSITION, sessionRef, lastCode, code, attempt);
+            return code;
+        }
+        return lastCode;
+    }
+
+    private static void handleTerminalCode(String sessionRef, SessionStatus status, Integer code) {
+        if (code == STATUS_CODE_OK) {
+            LOGGER.debug(LOG_PROCESSING_COMPLETE, sessionRef);
+            return;
+        }
+        String description = status.status() != null ? status.status().description() : null;
+        List<String> details = status.status() != null ? status.status().details() : List.of();
+        LOGGER.warn(LOG_TERMINAL_FAILURE, sessionRef, code);
+        throw new KsefSessionTerminalFailureException(sessionRef, code, description, details);
     }
 
     private BatchResult collectResult(String sessionRef, int totalCount, OffsetDateTime startedAt) {

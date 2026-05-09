@@ -19,19 +19,19 @@ import java.util.Objects;
  * @param referenceNumber the KSeF invoice reference number
  *     (server-assigned identifier tying this entry to the input invoice
  *     ordinal; preserved across the whole flow)
- * @param xml raw UPO XML bytes (immutable defensive copy on accessor)
+ * @param xmlBytes raw UPO XML bytes (immutable defensive copy on accessor)
  *
  * @since 1.0.0
  */
-public record UpoEntry(String referenceNumber, byte[] xml) {
+public record UpoEntry(String referenceNumber, byte[] xmlBytes) {
 
     private static final String ERR_REF_NULL = "referenceNumber must not be null";
-    private static final String ERR_XML_NULL = "xml must not be null";
+    private static final String ERR_XML_NULL = "xmlBytes must not be null";
 
     public UpoEntry {
         Objects.requireNonNull(referenceNumber, ERR_REF_NULL);
-        Objects.requireNonNull(xml, ERR_XML_NULL);
-        xml = xml.clone();
+        Objects.requireNonNull(xmlBytes, ERR_XML_NULL);
+        xmlBytes = xmlBytes.clone();
     }
 
     /**
@@ -39,8 +39,8 @@ public record UpoEntry(String referenceNumber, byte[] xml) {
      * canonical content cannot be mutated by callers.
      */
     @Override
-    public byte[] xml() {
-        return xml.clone();
+    public byte[] xmlBytes() {
+        return xmlBytes.clone();
     }
 
     @Override
@@ -52,17 +52,17 @@ public record UpoEntry(String referenceNumber, byte[] xml) {
             return false;
         }
         return Objects.equals(referenceNumber, that.referenceNumber)
-                && Arrays.equals(xml, that.xml);
+                && Arrays.equals(xmlBytes, that.xmlBytes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(referenceNumber, Arrays.hashCode(xml));
+        return Objects.hash(referenceNumber, Arrays.hashCode(xmlBytes));
     }
 
     @Override
     public String toString() {
         return "UpoEntry[referenceNumber=" + referenceNumber
-                + ", xml=byte[" + xml.length + "]]";
+                + ", xmlBytes=byte[" + xmlBytes.length + "]]";
     }
 }
