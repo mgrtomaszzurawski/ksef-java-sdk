@@ -272,9 +272,26 @@ class AuthAutoRefreshTest {
         // for the SECOND auth call (after a 401-driven reauth).
         KsefClient ksef = io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture
                 .newAuthenticatedClient(wmInfo, INITIAL_TOKEN, NIP);
-        ksef.authenticate();
+        forceAuthenticate(ksef);
         com.github.tomakehurst.wiremock.client.WireMock.resetAllRequests();
         return ksef;
+    }
+
+    /**
+     * Drive lazy auth at a precise point in the test setup. The
+     * {@code authenticate()} method on {@link KsefClient} is not
+     * exposed publicly (lazy auth is the documented API); reflection
+     * is the test seam for forcing the flow before the test body
+     * checks state.
+     */
+    private static void forceAuthenticate(KsefClient ksef) {
+        try {
+            java.lang.reflect.Method method = KsefClient.class.getDeclaredMethod("authenticate");
+            method.setAccessible(true);
+            method.invoke(ksef);
+        } catch (ReflectiveOperationException reflectiveFailure) {
+            throw new IllegalStateException("Test could not force lazy auth", reflectiveFailure);
+        }
     }
 
     private static KsefClient createClientWithStaleSessionAndRefreshToken(WireMockRuntimeInfo wmInfo) {

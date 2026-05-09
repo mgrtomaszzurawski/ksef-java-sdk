@@ -47,8 +47,7 @@ public final class QueryInvoiceMetadata {
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
-            client.authenticate();
-
+            // Authentication is lazy — the first authenticated read triggers it.
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(OffsetDateTime.now().minusDays(days))
                     .dateTo(OffsetDateTime.now());

@@ -25,16 +25,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.Auth;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.CertificateClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.RateLimitClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
@@ -42,6 +41,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationStatus;
@@ -75,11 +75,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationListItem;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.slf4j.Logger;
@@ -88,7 +84,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Main entry point for the KSeF Java SDK.
  *
- * <p>Provides authentication, session management, and access to domain-specific clients
+ * <p>Provides lazy authentication and access to domain-specific clients
  * for each KSeF API area. Use with try-with-resources.
  *
  * <p>Example:
@@ -100,9 +96,7 @@ import org.slf4j.LoggerFactory;
  *         .credentials(credentials)
  *         .build()) {
  *
- *     client.authenticate();
- *
- *     try (KsefSession session = client.openSession(FormCode.FA3)) {
+ *     try (KsefSession session = client.invoices().openSession(FormCode.FA3)) {
  *         session.send(invoiceXmlBytes);
  *     }
  * }
@@ -168,6 +162,7 @@ public final class KsefClient implements AutoCloseable {
     private final RateLimitClient rateLimitClient;
     private final TestDataClient testDataClient;
     private final PeppolClient peppolClient;
+    private final Auth authImpl;
 
     private final Map<PublicKeyCertificateUsage, PublicKey> publicKeyCache = new ConcurrentHashMap<>();
     private volatile boolean authenticated;
@@ -195,7 +190,8 @@ public final class KsefClient implements AutoCloseable {
         this.authClient = new AuthClient(this.runtime);
         this.securityClient = new SecurityClient(this.runtime);
         this.sessionClient = new SessionClient(this.runtime);
-        this.invoiceClient = new InvoiceClientImpl(this.runtime);
+        this.invoiceClient = new InvoiceClientImpl(this.runtime,
+                this.sessionClient, this.environment, this::getPublicKey, this.objectMapper);
         this.tokenClient = new TokenClientImpl(this.runtime);
         this.permissionClient = new PermissionClientImpl(this.runtime);
         this.certificateClient = new CertificateClientImpl(this.runtime);
@@ -203,6 +199,12 @@ public final class KsefClient implements AutoCloseable {
         this.rateLimitClient = new RateLimitClientImpl(this.runtime);
         this.testDataClient = new TestDataClientImpl(this.runtime);
         this.peppolClient = new PeppolClientImpl(this.runtime);
+        this.authImpl = new AuthImpl(
+                this.authClient,
+                this::ensureOpen,
+                this::ensureAuthenticated,
+                this::terminateAuthInternal,
+                () -> Optional.ofNullable(this.lastChallengeClientIp));
         // Best-effort recovery — if a previous JVM crashed mid-batch, its
         // encrypted part files are still in /tmp. Delete anything older than
         // the orphan-age cutoff that matches the SDK's exact prefix. Runs
@@ -214,7 +216,10 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Authenticate with KSeF using the configured credentials.
+     * Authenticate with KSeF using the configured credentials. Internal —
+     * exposed only to the runtime auth hooks. Consumers trigger
+     * authentication implicitly via the first call that requires it
+     * (lazy auth).
      *
      * <p>Handles the full authentication flow:
      * <ol>
@@ -224,13 +229,9 @@ public final class KsefClient implements AutoCloseable {
      *   <li>Redeem operation token for access + refresh tokens</li>
      * </ol>
      *
-     * <p>This method is called automatically by {@link #openSession(FormCode)} and other
-     * operations that require authentication. Call it explicitly to validate credentials
-     * early or to control timing.
-     *
      * <p>Thread-safe. If already authenticated, this is a no-op.
      */
-    public synchronized void authenticate() {
+    private synchronized void authenticate() {
         ensureOpen();
         if (authenticated) {
             return;
@@ -241,82 +242,6 @@ public final class KsefClient implements AutoCloseable {
             KsefIdentifier identifier = credentials.identifier();
             LOGGER.debug(LOG_AUTHENTICATED, identifier.type(),
                     IdentifierMasking.maskTail(identifier.value()));
-        }
-    }
-
-    /**
-     * Open an interactive (online) KSeF session for sending invoices.
-     *
-     * <p>Authenticates lazily if not already authenticated. Generates AES encryption key,
-     * encrypts it with the KSeF public key, and opens the session. The returned
-     * {@link KsefSession} handles all invoice encryption internally.
-     *
-     * <p>KSeF allows only one active online session per NIP at a time.
-     *
-     * <p><strong>Cooldown after termination.</strong> After a
-     * terminated online session, the server enforces a
-     * ~30–60 s cooldown for the same NIP. A new session opened too
-     * soon will return a reference number but reject the first
-     * {@code send(...)} with HTTP 415. The SDK translates that into
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException}
-     * with a {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#suggestedRetryAfter()}
-     * recommendation. Consumers should wait at least
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#TYPICAL_COOLDOWN}
-     * before reopening.
-     *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
-     * @return an open session — use with try-with-resources
-     */
-    @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
-    public synchronized KsefSession openSession(FormCode formCode) {
-        Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
-        ensureOpen();
-        ensureAuthenticated();
-        formCode.assertAllowedOn(environment);
-
-        PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
-        byte[] aesKey = CryptoService.generateAesKey();
-        byte[] initVector = CryptoService.generateIv();
-        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
-
-        OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw()
-                .formCode(new FormCodeRaw()
-                        .systemCode(formCode.systemCode())
-                        .schemaVersion(formCode.schemaVersion())
-                        .value(formCode.value()))
-                .encryption(new EncryptionInfoRaw()
-                        .encryptedSymmetricKey(encryptedKey)
-                        .initializationVector(initVector));
-
-        OnlineSession session = sessionClient.openOnline(request);
-        LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
-        guardAgainstCooldown(session.referenceNumber());
-
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(
-                sessionClient, session.referenceNumber(), aesKey, initVector, session.validUntil());
-    }
-
-    /**
-     * Codex 2026-05-05 #8b — proactively detect the post-termination
-     * cooldown window. KSeF returns a fresh session reference on
-     * {@code openOnline}, but the session can immediately enter status
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException#COOLDOWN_STATUS_CODE 415}
-     * when reopened too soon after a previous termination for the same
-     * NIP. We catch that here and surface it as a typed exception
-     * instead of letting the caller hit it on first {@code send(...)}.
-     */
-    private void guardAgainstCooldown(String referenceNumber) {
-        var status = sessionClient.getStatus(referenceNumber);
-        if (status.status() != null
-                && io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException.isCooldownStatus(
-                        status.status().code())) {
-            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException(
-                    "openSession returned reference " + referenceNumber
-                            + " but immediately reports status 415 — server is in the post-termination"
-                            + " cooldown window for this NIP. Wait at least "
-                            + io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException
-                                    .TYPICAL_COOLDOWN
-                            + " before retrying.");
         }
     }
 
@@ -503,13 +428,12 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Terminate the current authentication session.
-     * Clears all session state. After calling this, {@link #authenticate()} must be
-     * called again (explicitly or lazily) before any further operations.
+     * Internal: terminate the current auth session — invoked by
+     * {@link Auth#terminate()} via the lifecycle hook supplied to
+     * {@link AuthImpl}. Clears local auth state on success.
      */
-    public synchronized void terminateAuth() {
+    private synchronized void terminateAuthInternal() {
         ensureOpen();
-        authClient.terminateCurrentSession();
         authenticated = false;
         publicKeyCache.clear();
         lastChallengeClientIp = null;
@@ -517,120 +441,11 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Lazily paginate every active auth session for this consumer's KSeF
-     * context, walking pages on demand via the {@code x-continuation-token}
-     * cursor. Holds at most one page in heap; stops fetching as soon as the
-     * caller's terminal operation is satisfied.
-     *
-     * <p>Use {@link Stream#limit(long)} or
-     * {@link Stream#takeWhile(java.util.function.Predicate)}
-     * to bound the walk.
+     * Internal: force re-authentication on HTTP 401 (driven by
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime}).
+     * Prefers refresh-token over full challenge-response cycle.
      */
-    public synchronized Stream<AuthSession> streamAuthSessions() {
-        ensureOpen();
-        ensureAuthenticated();
-        return PagedSpliterator.cursorStream(continuationToken -> {
-            var page = authClient.listSessions(continuationToken);
-            List<AuthSession> mapped = page.items().stream().map(KsefClient::toAuthSession).toList();
-            return new PagedSpliterator.CursorPage<>(mapped, page.continuationToken());
-        });
-    }
-
-    private static AuthSession toAuthSession(AuthenticationListItem item) {
-        return new AuthSession(
-                item.referenceNumber(),
-                item.startDate(),
-                item.authenticationMethodInfo() == null
-                        ? null : item.authenticationMethodInfo().displayName(),
-                item.status(),
-                Boolean.TRUE.equals(item.tokenRedeemed()),
-                item.lastTokenRefreshDate(),
-                item.refreshTokenValidUntil(),
-                Boolean.TRUE.equals(item.current()));
-    }
-
-    /**
-     * Terminate a specific auth session by its reference number. Useful
-     * for cleaning up orphaned sessions or terminating a session other
-     * than the current one. Use {@link #terminateAuth()} for the
-     * current session.
-     */
-    public synchronized void terminateAuthSession(String referenceNumber) {
-        ensureOpen();
-        ensureAuthenticated();
-        authClient.terminateSession(Objects.requireNonNull(referenceNumber, "referenceNumber must not be null"));
-    }
-
-    /**
-     * Manually trigger a refresh of the current access token using the
-     * stored refresh token (if any). The SDK normally does this
-     * automatically on HTTP 401; consumers can call this proactively
-     * before issuing a long-running batch to ensure the token won't
-     * expire mid-flow.
-     *
-     * @throws io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException
-     *     if no refresh token is available or the refresh endpoint
-     *     itself returns a non-success status. In that case the caller
-     *     should re-authenticate via {@link #authenticate()}.
-     */
-    public synchronized void refreshAuthToken() {
-        ensureOpen();
-        if (!tryRefreshToken()) {
-            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException(
-                    "Refresh-token unavailable or refresh endpoint failed; call authenticate() to re-establish session",
-                    null, 0, null);
-        }
-    }
-
-    /**
-     * Return the cached KSeF public-key certificates. The SDK fetches
-     * these once on first use (for invoice / token encryption) and
-     * caches them per JVM. Useful for consumer-side audit or display.
-     */
-    public synchronized List<PublicKeyCertificate> publicKeyCertificates() {
-        ensureOpen();
-        return securityClient.getPublicKeyCertificates();
-    }
-
-    /**
-     * Return the current bearer access token (the JWT the SDK injects in
-     * the {@code Authorization} header) — Tier-3 advanced API per
-     * ADR-021. Intended for consumers that need to issue HTTP requests
-     * against KSeF outside the SDK's own transport plumbing (for
-     * example, probing test/diagnostic endpoints, or feeding tokens
-     * into a third-party HTTP framework).
-     *
-     * <p>Returns an empty {@link Optional} when no token is available.
-     * Triggers lazy authentication if needed.
-     *
-     * @apiNote Advanced. Most consumers should not need this — domain
-     *     clients ({@code client.invoices()}, {@code client.permissions()},
-     *     etc.) handle authentication internally.
-     *
-     * @return the active bearer token, or empty if the session has none
-     *
-     * @since 1.0.0
-     */
-    public synchronized Optional<String> bearerToken() {
-        ensureOpen();
-        ensureAuthenticated();
-        return Optional.ofNullable(sessionContext.token());
-    }
-
-    /**
-     * Force re-authentication: obtain a fresh access token.
-     *
-     * <p>Used by the SDK internally when an authenticated request returns HTTP 401
-     * (token expired). When a refresh token captured from the previous redeem
-     * response is still available, the client prefers a single
-     * {@code POST /auth/token/refresh} call over the full challenge-response
-     * cycle. Any failure on the refresh endpoint falls back to a full
-     * re-authentication.
-     *
-     * <p>Thread-safe: serialized on this {@link KsefClient} so concurrent 401s only
-     * trigger one re-auth.
-     */
-    public synchronized void reauthenticate() {
+    private synchronized void reauthenticate() {
         ensureOpen();
         if (tryRefreshToken()) {
             return;
@@ -660,8 +475,10 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Access invoice query and export operations.
-     * Requires authentication (lazy auth if needed).
+     * Access invoice query, export, online-session, sync, and
+     * session-stream operations.
+     *
+     * <p>Requires authentication (lazy auth if needed).
      */
     public InvoiceClient invoices() {
         ensureOpen();
@@ -669,32 +486,15 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Access incremental invoice sync orchestrator. Implements the
-     * documented HWM-based pagination algorithm from
-     * {@code ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md}.
-     * Tier 1 workflow API per ADR-021.
-     */
-    public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient invoiceSync() {
-        ensureOpen();
-        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient(
-                invoiceClient, objectMapper);
-    }
-
-    /**
-     * Stream sessions (online + batch) matching the filter, walking
-     * the {@code x-continuation-token} cursor returned by KSeF
-     * {@code GET /sessions} lazily. Caller controls memory pressure
-     * by limiting / collecting downstream.
+     * Access auth-session management — terminate, list, terminate by
+     * reference, and the diagnostic last-challenge client-IP hook.
      *
-     * @param filter required filter (type, status, date ranges, exact ref)
-     * @return lazy stream of matching session summary items
+     * <p>Authentication itself is lazy and handled internally; this
+     * accessor exposes the explicit session-management verbs.
      */
-    public Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
-            streamSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
-        Objects.requireNonNull(filter, "filter must not be null");
+    public Auth auth() {
         ensureOpen();
-        ensureAuthenticated();
-        return sessionClient.streamSessions(filter);
+        return authImpl;
     }
 
     /**
@@ -711,30 +511,6 @@ public final class KsefClient implements AutoCloseable {
     public PermissionClient permissions() {
         ensureOpen();
         return permissionClient;
-    }
-
-    /**
-     * The {@code clientIp} value reported by KSeF in the most recent
-     * {@code /auth/challenge} response, or {@code null} if no challenge
-     * has been requested yet on this client.
-     *
-     * <p>Use to autopin {@link AuthorizationPolicy}
-     * for token authentication: read this after the first {@link #authenticate()}
-     * call, then build a fresh policy that whitelists exactly this IP and
-     * pass it via {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials}
-     * on subsequent authentications.
-     *
-     * <p>Provided per Codex round-9 manual validation AUTH-15 — the
-     * {@code requestChallenge()} response is internal-only by design,
-     * but the {@code clientIp} field it carries is operationally useful.
-     *
-     * @return the client IP from the latest challenge, or empty if no
-     *     challenge has been issued yet
-     *
-     * @since 1.0.0
-     */
-    public Optional<String> lastChallengeClientIp() {
-        return Optional.ofNullable(lastChallengeClientIp);
     }
 
     /**

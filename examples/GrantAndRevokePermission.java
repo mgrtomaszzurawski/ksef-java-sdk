@@ -41,8 +41,7 @@ public final class GrantAndRevokePermission {
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
-            client.authenticate();
-
+            // Authentication is lazy — the first authenticated call triggers it.
             PersonPermissionGrantBuilder grant = PersonPermissionGrantBuilder.forPesel(pesel)
                     .description("Grant InvoiceRead from example")
                     .personDetails("Example", "Recipient")

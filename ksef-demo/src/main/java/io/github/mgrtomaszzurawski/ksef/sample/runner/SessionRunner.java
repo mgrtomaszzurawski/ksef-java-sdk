@@ -150,7 +150,7 @@ public final class SessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         KsefSession firstSession = null;
         try {
-            firstSession = context.client().openSession(FormCode.FA3);
+            firstSession = context.client().invoices().openSession(FormCode.FA3);
             String firstRef = firstSession.referenceNumber();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_FIRST_SESSION_OPENED, NAME, firstRef);
@@ -191,7 +191,7 @@ public final class SessionRunner implements DemoRunner {
     private void attemptConcurrentSession(DemoContext context, List<RunResult> results, long start) {
         KsefSession second = null;
         try {
-            second = context.client().openSession(FormCode.FA3);
+            second = context.client().invoices().openSession(FormCode.FA3);
             String secondRef = second.referenceNumber();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_CONCURRENT_PERMITTED, NAME, secondRef);
@@ -221,7 +221,7 @@ public final class SessionRunner implements DemoRunner {
     private KsefSession runOpenSession(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            KsefSession session = context.client().openSession(FormCode.FA3);
+            KsefSession session = context.client().invoices().openSession(FormCode.FA3);
             String sessionRef = session.referenceNumber();
             LOGGER.info(LOG_OPENED, NAME, sessionRef);
             context.state().setSessionReferenceNumber(sessionRef);

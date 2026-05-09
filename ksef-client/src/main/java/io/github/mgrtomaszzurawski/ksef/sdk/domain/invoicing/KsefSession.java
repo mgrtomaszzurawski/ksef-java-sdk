@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Example:
  * <pre>{@code
- * try (KsefSession session = client.openSession(FormCode.FA3)) {
+ * try (KsefSession session = client.invoices().openSession(FormCode.FA3)) {
  *     SendInvoiceResult result = session.send(invoiceXmlBytes);
  *     byte[] upo = session.upo(result.referenceNumber());
  * }
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * a memory barrier against in-flight HTTP requests. {@link KsefClient} itself
  * is thread-safe and supports concurrent session opens.
  *
- * @see KsefClient#openSession(FormCode)
+ * @see InvoiceClient#openSession(FormCode)
  *
  * @since 1.0.0
  */

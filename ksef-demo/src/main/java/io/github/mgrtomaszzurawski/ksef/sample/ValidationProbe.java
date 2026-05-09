@@ -120,17 +120,36 @@ public final class ValidationProbe {
         try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(ksefUrl))
                 .credentials(new KsefTokenCredentials(ksefToken, nipIdentifier))
                 .build()) {
-            client.authenticate();
+            // Drive lazy auth via any authenticated read.
+            client.auth().streamSessions().findAny();
             LOGGER.info("Authenticated successfully");
 
-            String bearer = client.bearerToken()
-                    .orElseThrow(() -> new IllegalStateException("authenticate() succeeded but no bearer token in session"));
+            String bearer = extractBearerToken(client);
 
             ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
             probe.runAllProbes();
 
-            client.terminateAuth();
+            client.auth().terminate();
             LOGGER.info("Session terminated. Probe complete.");
+        }
+    }
+
+    /**
+     * Diagnostic-only — reach into {@code KsefClient.sessionContext} to
+     * pull the active bearer token for raw out-of-SDK HTTP probes. The
+     * SDK no longer exposes {@code bearerToken()} as a public API
+     * (PR6) — auth state is internal — but the probe still needs a
+     * valid token to test endpoints with the SDK out of the picture.
+     */
+    private static String extractBearerToken(KsefClient client) {
+        try {
+            java.lang.reflect.Field field = KsefClient.class.getDeclaredField("sessionContext");
+            field.setAccessible(true);
+            Object sessionContext = field.get(client);
+            return (String) sessionContext.getClass().getMethod("token").invoke(sessionContext);
+        } catch (ReflectiveOperationException reflectiveFailure) {
+            throw new IllegalStateException(
+                    "Probe could not read bearer token from KsefClient internals", reflectiveFailure);
         }
     }
 

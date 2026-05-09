@@ -30,14 +30,12 @@
  *     (process restarts, overlapping windows) — implementations MUST
  *     persist by KsefNumber idempotently.
  */
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,8 +63,8 @@ public final class IncrementalSync {
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
-            client.authenticate();
-            System.out.println("Authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
+            // Authentication is lazy — the first authenticated read triggers it.
+            System.out.println("Connecting as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
             // The CheckpointStore persists the HWM cursor between runs.
             // For production, replace with a database-backed implementation;
@@ -87,11 +85,7 @@ public final class IncrementalSync {
             // Sink is invoked per invoice. Idempotent by KsefNumber:
             // if you re-run after a restart, the same invoice may arrive
             // again — your downstream store should upsert by KSeF number.
-            InvoiceSyncClient sync = new InvoiceSyncClient(
-                    client.invoices(),
-                    new ObjectMapper());
-
-            SyncResult result = sync.sync(plan, checkpointStore, (ksefNumber, metadata, xmlPath) -> {
+            SyncResult result = client.invoices().sync(plan, checkpointStore, (ksefNumber, metadata, xmlPath) -> {
                 System.out.println("Got " + ksefNumber.value()
                         + " issued=" + metadata.issueDate()
                         + " xml=" + (xmlPath == null ? "<no XML>" : xmlPath));

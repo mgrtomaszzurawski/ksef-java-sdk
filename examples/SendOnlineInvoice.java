@@ -45,10 +45,10 @@ public final class SendOnlineInvoice {
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
-            client.authenticate();
-            System.out.println("Authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
+            // Authentication is lazy — opening a session triggers it.
+            System.out.println("Connecting as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
-            try (KsefSession session = client.openSession(FormCode.FA3)) {
+            try (KsefSession session = client.invoices().openSession(FormCode.FA3)) {
                 System.out.println("Session opened: " + session.referenceNumber());
 
                 SendInvoiceResult result = session.send(invoiceXml);

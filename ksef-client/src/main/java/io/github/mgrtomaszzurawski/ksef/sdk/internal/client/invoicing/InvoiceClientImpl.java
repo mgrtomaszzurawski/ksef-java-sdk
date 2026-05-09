@@ -4,7 +4,14 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
@@ -14,6 +21,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException;
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -25,9 +33,19 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExport
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
@@ -35,6 +53,8 @@ import java.net.http.HttpClient;
 import java.security.PublicKey;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
@@ -63,7 +83,19 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String OP_QUERY_METADATA = "queryInvoicesMetadata";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
     private static final String OP_PREPARE_EXPORT = "prepareInvoiceExport";
+    private static final String OP_OPEN_SESSION = "openSession";
+    private static final String OP_STREAM_SESSIONS = "streamSessions";
+    private static final String OP_SYNC = "sync";
+    private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
     private static final String ERR_NULL_QUERY = "query must not be null";
+    private static final String ERR_NULL_FILTER = "filter must not be null";
+    private static final String ERR_NULL_FORM_CODE = "formCode must not be null";
+    private static final String ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME =
+            "openSession() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+    private static final String ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME =
+            "streamSessions() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+    private static final String ERR_SYNC_REQUIRES_FULL_RUNTIME =
+            "sync() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
     private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
     private static final String ERR_TRUNCATED_NO_CURSOR =
@@ -81,11 +113,27 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private final HttpSupport http;
     private final SecurityClient securityClient;
     private final HttpClient httpClient;
+    private final @Nullable SessionClient sessionClient;
+    private final @Nullable KsefEnvironment environment;
+    private final @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver;
+    private final @Nullable ObjectMapper objectMapper;
 
     public InvoiceClientImpl(HttpRuntime runtime) {
+        this(runtime, null, null, null, null);
+    }
+
+    public InvoiceClientImpl(HttpRuntime runtime,
+                              @Nullable SessionClient sessionClient,
+                              @Nullable KsefEnvironment environment,
+                              @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
+                              @Nullable ObjectMapper objectMapper) {
         this.http = new HttpSupport(runtime);
         this.securityClient = new SecurityClient(runtime);
         this.httpClient = runtime.httpClient();
+        this.sessionClient = sessionClient;
+        this.environment = environment;
+        this.publicKeyResolver = publicKeyResolver;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -305,5 +353,77 @@ public final class InvoiceClientImpl implements InvoiceClient {
         QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(path.toString(), filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
         return InvoicingMappers.toInvoiceMetadataResult(rawValue);
+    }
+
+    @Override
+    @SuppressWarnings("java:S2629")
+    public KsefSession openSession(FormCode formCode) {
+        Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
+        if (sessionClient == null || environment == null || publicKeyResolver == null) {
+            throw new IllegalStateException(ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME);
+        }
+        LOGGER.debug(LOG_CALL, OP_OPEN_SESSION);
+        formCode.assertAllowedOn(environment);
+
+        PublicKey encryptionKey = publicKeyResolver.apply(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
+        byte[] aesKey = CryptoService.generateAesKey();
+        byte[] initVector = CryptoService.generateIv();
+        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
+
+        OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw()
+                .formCode(new FormCodeRaw()
+                        .systemCode(formCode.systemCode())
+                        .schemaVersion(formCode.schemaVersion())
+                        .value(formCode.value()))
+                .encryption(new EncryptionInfoRaw()
+                        .encryptedSymmetricKey(encryptedKey)
+                        .initializationVector(initVector));
+
+        OnlineSession session = sessionClient.openOnline(request);
+        LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
+        guardAgainstCooldown(session.referenceNumber());
+
+        return SessionHandleConstructor.newOnlineSession(
+                sessionClient, session.referenceNumber(), aesKey, initVector, session.validUntil());
+    }
+
+    /**
+     * Codex 2026-05-05 #8b — proactively detect the post-termination
+     * cooldown window. KSeF returns a fresh session reference on
+     * {@code openOnline}, but the session can immediately enter status 415
+     * when reopened too soon after a previous termination for the same
+     * NIP. Catch that here and surface it as a typed exception instead of
+     * letting the caller hit it on first {@code send(...)}.
+     */
+    private void guardAgainstCooldown(String referenceNumber) {
+        var status = Objects.requireNonNull(sessionClient, "sessionClient").getStatus(referenceNumber);
+        if (status.status() != null
+                && KsefSessionCooldownException.isCooldownStatus(status.status().code())) {
+            throw new KsefSessionCooldownException(
+                    "openSession returned reference " + referenceNumber
+                            + " but immediately reports status 415 — server is in the post-termination"
+                            + " cooldown window for this NIP. Wait at least "
+                            + KsefSessionCooldownException.TYPICAL_COOLDOWN
+                            + " before retrying.");
+        }
+    }
+
+    @Override
+    public Stream<SessionListItem> streamSessions(SessionsQueryFilter filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
+        if (sessionClient == null) {
+            throw new IllegalStateException(ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME);
+        }
+        LOGGER.debug(LOG_CALL, OP_STREAM_SESSIONS);
+        return sessionClient.streamSessions(filter);
+    }
+
+    @Override
+    public SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink) {
+        if (objectMapper == null) {
+            throw new IllegalStateException(ERR_SYNC_REQUIRES_FULL_RUNTIME);
+        }
+        LOGGER.debug(LOG_CALL, OP_SYNC);
+        return new InvoiceSyncClient(this, objectMapper).sync(plan, checkpointStore, sink);
     }
 }
