@@ -201,6 +201,9 @@
                 <includes>
                     <include>xsd/FA/schemat_FA(*)_*.xsd</include>
                     <include>xsd/FA/bazowe/*.xsd</include>
+                    <include>xsd/PEF/Schemat_PEF(*)_*.xsd</include>
+                    <include>xsd/PEF/Schemat_PEF_KOR(*)_*.xsd</include>
+                    <include>xsd/PEF/bazowe/*.xsd</include>
                 </includes>
             </resource>
             <resource>
@@ -302,6 +305,48 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>xjc-pef</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <schemaDirectory>${project.basedir}/xsd/PEF</schemaDirectory>
+                            <schemaIncludes>
+                                <include>Schemat_PEF(3)_v2-1.xsd</include>
+                            </schemaIncludes>
+                            <bindingDirectory>${project.basedir}/xsd/PEF</bindingDirectory>
+                            <bindingIncludes>
+                                <include>pef-bindings.xjb</include>
+                            </bindingIncludes>
+                            <generateDirectory>${project.build.directory}/generated-sources/xjc-pef</generateDirectory>
+                            <args>
+                                <arg>-no-header</arg>
+                                <arg>-quiet</arg>
+                            </args>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>xjc-pef-kor</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <schemaDirectory>${project.basedir}/xsd/PEF</schemaDirectory>
+                            <schemaIncludes>
+                                <include>Schemat_PEF_KOR(3)_v2-1.xsd</include>
+                            </schemaIncludes>
+                            <bindingDirectory>${project.basedir}/xsd/PEF</bindingDirectory>
+                            <bindingIncludes>
+                                <include>pef-kor-bindings.xjb</include>
+                            </bindingIncludes>
+                            <generateDirectory>${project.build.directory}/generated-sources/xjc-pef-kor</generateDirectory>
+                            <args>
+                                <arg>-no-header</arg>
+                                <arg>-quiet</arg>
+                            </args>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>xjc-upo</id>
                         <goals>
                             <goal>generate</goal>
@@ -354,6 +399,8 @@
                             <sources>
                                 <source>${project.build.directory}/generated-sources/xjc-fa2</source>
                                 <source>${project.build.directory}/generated-sources/xjc-fa3</source>
+                                <source>${project.build.directory}/generated-sources/xjc-pef</source>
+                                <source>${project.build.directory}/generated-sources/xjc-pef-kor</source>
                                 <source>${project.build.directory}/generated-sources/xjc-upo</source>
                                 <source>${project.build.directory}/generated-sources/xjc-auth</source>
                             </sources>
@@ -411,6 +458,8 @@
                         <excludeRoot>${openapi.output}/src/main/java</excludeRoot>
                         <excludeRoot>${project.build.directory}/generated-sources/xjc-fa2</excludeRoot>
                         <excludeRoot>${project.build.directory}/generated-sources/xjc-fa3</excludeRoot>
+                        <excludeRoot>${project.build.directory}/generated-sources/xjc-pef</excludeRoot>
+                        <excludeRoot>${project.build.directory}/generated-sources/xjc-pef-kor</excludeRoot>
                         <excludeRoot>${project.build.directory}/generated-sources/xjc-upo</excludeRoot>
                         <excludeRoot>${project.build.directory}/generated-sources/xjc-auth</excludeRoot>
                     </excludeRoots>

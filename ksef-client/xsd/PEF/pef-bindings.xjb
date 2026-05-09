@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    JAXB bindings for the PEF(3) Invoice schema and its UBL 2.1 / Polish
+    extensions / xmldsig dependency tree. Each XSD namespace lands in a
+    distinct Java sub-package so that namespace-scoped types with the
+    same local name (e.g. cac:ConditionType vs cbc:ConditionType) do not
+    collide on a flat package layout.
+-->
+<jaxb:bindings xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+               xmlns:xs="http://www.w3.org/2001/XMLSchema"
+               jaxb:version="3.0">
+
+    <jaxb:bindings schemaLocation="Schemat_PEF(3)_v2-1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-CommonAggregateComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.cac"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-CommonBasicComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.cbc"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-CommonExtensionComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.ext"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-CommonSignatureComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.sig"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-QualifiedDataTypes-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.qdt"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-SignatureAggregateComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.sigcac"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-SignatureBasicComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.sigcbc"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-UnqualifiedDataTypes-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.udt"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-XAdESv132-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.xades132"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-XAdESv141-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.xades141"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-xmldsig-core-schema-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.xmldsig"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/CCTS_CCT_SchemaModule-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.ccts"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/20241206_PEFPL-CommonAggregateComponents-2.1-v1.4.34.xsd" node="/xs:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.cacpl"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/20241206_PEFPL-CommonBasicComponents-2.1-v1.4.34.xsd" node="/xs:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pef.cbcpl"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+</jaxb:bindings>

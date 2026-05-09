@@ -11,6 +11,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.BatchFileInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.BatchFilePartInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator;
+import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.Severity;
+import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.ValidationIssue;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
@@ -228,6 +231,9 @@ public final class BatchSubmissionFlow {
                         BatchAssemblyMode.onDisk()));
     }
 
+    private static final java.util.Set<FormCode> XSD_VALIDATED_FORM_CODES = java.util.Set.of(
+            FormCode.FA2, FormCode.FA3, FormCode.PEF3, FormCode.PEF_KOR3);
+
     private static List<byte[]> extractAndValidateXmls(FormCode expected, List<Invoice> invoices) {
         List<byte[]> result = new ArrayList<>(invoices.size());
         for (int index = 0; index < invoices.size(); index++) {
@@ -238,9 +244,34 @@ public final class BatchSubmissionFlow {
                 throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
                         ERR_FORM_CODE_MISMATCH, index, declared, expected));
             }
-            result.add(invoice.xml());
+            byte[] xml = invoice.xml();
+            preFlightValidate(declared, xml);
+            result.add(xml);
         }
         return result;
+    }
+
+    private static void preFlightValidate(FormCode formCode, byte[] xml) {
+        if (!XSD_VALIDATED_FORM_CODES.contains(formCode)) {
+            return;
+        }
+        List<ValidationIssue> issues = KsefXmlValidator.validate(xml, formCode);
+        if (issues.isEmpty()) {
+            return;
+        }
+        boolean hasFailure = false;
+        List<String> failureMessages = new ArrayList<>(issues.size());
+        for (ValidationIssue issue : issues) {
+            failureMessages.add(issue.toString());
+            if (issue.severity() == Severity.ERROR || issue.severity() == Severity.FATAL) {
+                hasFailure = true;
+            }
+        }
+        if (hasFailure) {
+            throw new KsefXmlValidator.KsefXmlValidationException(
+                    "Batch invoice XML failed XSD validation: " + String.join("; ", failureMessages),
+                    List.copyOf(failureMessages));
+        }
     }
 
     @SuppressWarnings("java:S2629")

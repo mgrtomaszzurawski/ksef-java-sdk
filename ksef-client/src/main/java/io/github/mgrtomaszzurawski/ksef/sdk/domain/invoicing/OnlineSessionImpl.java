@@ -172,6 +172,7 @@ final class OnlineSessionImpl implements OnlineSession {
             throw new IllegalStateException(ERR_SEND_INVOICE_REQUIRES_FULL_CTOR);
         }
         byte[] invoiceXml = invoice.xml();
+        InvoiceValidationGate.validate(invoice.formCode(), invoiceXml);
         // Submit through the existing wire path. SendInvoiceBuilder
         // computes the SHA-256 internally, but we re-compute it here so
         // we own a copy of the digest for the KOD I QR step (the
