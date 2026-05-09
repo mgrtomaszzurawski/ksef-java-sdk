@@ -71,7 +71,7 @@ public final class TokenRunner implements DemoRunner {
         try {
             TokenGenerateBuilder tokenBuilder = TokenGenerateBuilder.create(TOKEN_DESCRIPTION)
                     .invoiceRead();
-            GenerateTokenResult response = context.client().tokens().generate(tokenBuilder);
+            GenerateTokenResult response = context.client().tokens().generate(tokenBuilder.build());
             String refNum = response.referenceNumber();
             LOGGER.info("[{}] generated token ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GENERATE, elapsed(start), "ref=" + refNum));
@@ -96,7 +96,7 @@ public final class TokenRunner implements DemoRunner {
     private void runList(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            TokenList response = context.client().tokens().list(TokenQueryBuilder.create());
+            TokenList response = context.client().tokens().list(TokenQueryBuilder.create().build());
             int tokenCount = response.tokens() != null ? response.tokens().size() : 0;
             LOGGER.info("[{}] listed {} tokens", NAME, tokenCount);
             results.add(RunResult.ok(NAME, OP_LIST, elapsed(start), tokenCount + " tokens"));

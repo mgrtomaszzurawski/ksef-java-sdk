@@ -6,10 +6,10 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
 
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
@@ -30,7 +30,7 @@ public interface InvoiceClient {
      */
     byte[] getByKsefNumber(KsefNumber ksefNumber);
 
-    InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryBuilder query);
+    InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryFilters query);
 
     /**
      * Stream every invoice metadata record matching the filter, walking
@@ -39,7 +39,7 @@ public interface InvoiceClient {
      * caller controls memory pressure by limiting / collecting
      * downstream.
      */
-    java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryBuilder query);
+    java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryFilters query);
 
     InvoiceExportStatus getExportStatus(String referenceNumber);
 
@@ -58,5 +58,5 @@ public interface InvoiceClient {
      *     metadata-only
      * @return prepared-export handle
      */
-    PreparedInvoiceExport prepareExport(InvoiceQueryBuilder query, boolean fullContent);
+    PreparedInvoiceExport prepareExport(InvoiceQueryFilters query, boolean fullContent);
 }

@@ -211,7 +211,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_PERSON_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
                     .invoiceRead();
-            PermissionOperationResult response = context.client().permissions().grantPerson(builder);
+            PermissionOperationResult response = context.client().permissions().grantPerson(builder.build());
             String refNum = response.referenceNumber();
             LOGGER.info("[{}] granted person permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_PERSON, elapsed(start), "ref=" + refNum));
@@ -230,7 +230,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_ENTITY_DESC)
                     .entityDetails(TEST_ENTITY_FULL_NAME)
                     .invoiceRead();
-            PermissionOperationResult response = context.client().permissions().grantEntity(builder);
+            PermissionOperationResult response = context.client().permissions().grantEntity(builder.build());
             String refNum = response.referenceNumber();
             LOGGER.info("[{}] granted entity permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_ENTITY, elapsed(start), "ref=" + refNum));
@@ -249,7 +249,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_AUTH_DESC)
                     .entityDetails(TEST_AUTHORIZATION_NAME)
                     .selfInvoicing();
-            PermissionOperationResult response = context.client().permissions().grantAuthorization(builder);
+            PermissionOperationResult response = context.client().permissions().grantAuthorization(builder.build());
             String refNum = response.referenceNumber();
             LOGGER.info("[{}] granted authorization permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_AUTHORIZATION, elapsed(start), "ref=" + refNum));
@@ -268,7 +268,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_INDIRECT_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
                     .invoiceRead();
-            PermissionOperationResult response = context.client().permissions().grantIndirect(builder);
+            PermissionOperationResult response = context.client().permissions().grantIndirect(builder.build());
             String refNum = response.referenceNumber();
             LOGGER.info("[{}] granted indirect permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_INDIRECT, elapsed(start), "ref=" + refNum));
@@ -287,7 +287,7 @@ public final class PermissionRunner implements DemoRunner {
                     .contextNip(TEST_SUBUNIT_CONTEXT_NIP)
                     .description(GRANT_SUBUNIT_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME);
-            PermissionOperationResult response = context.client().permissions().grantSubunit(builder);
+            PermissionOperationResult response = context.client().permissions().grantSubunit(builder.build());
             String refNum = response.referenceNumber();
             LOGGER.info("[{}] granted subunit permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_SUBUNIT, elapsed(start), "ref=" + refNum));
@@ -308,7 +308,7 @@ public final class PermissionRunner implements DemoRunner {
                     .euEntityName(TEST_EU_ENTITY_NAME)
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
                     .euEntityDetails(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS);
-            PermissionOperationResult response = context.client().permissions().grantEuEntityAdmin(builder);
+            PermissionOperationResult response = context.client().permissions().grantEuEntityAdmin(builder.build());
             String refNum = response.referenceNumber();
             LOGGER.info("[{}] granted EU entity admin permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_EU_ENTITY_ADMIN, elapsed(start), "ref=" + refNum));
@@ -327,7 +327,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_EU_ENTITY_DESC)
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
                     .invoiceRead();
-            PermissionOperationResult response = context.client().permissions().grantEuEntity(builder);
+            PermissionOperationResult response = context.client().permissions().grantEuEntity(builder.build());
             String refNum = response.referenceNumber();
             LOGGER.info("[{}] granted EU entity permission, ref={}", NAME, refNum);
             results.add(RunResult.ok(NAME, OP_GRANT_EU_ENTITY, elapsed(start), "ref=" + refNum));
@@ -386,7 +386,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQueryPersonal(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().queryPersonal(PersonalPermissionsQueryBuilder.create());
+            var response = context.client().permissions().queryPersonal(PersonalPermissionsQueryBuilder.create().build());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] personal permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_PERSONAL, elapsed(start), count + SUFFIX_PERMISSIONS));
@@ -400,7 +400,7 @@ public final class PermissionRunner implements DemoRunner {
         try {
             PersonPermissionsQueryBuilder builder = PersonPermissionsQueryBuilder
                     .permissionsGrantedInCurrentContext();
-            var response = context.client().permissions().queryPersons(builder);
+            var response = context.client().permissions().queryPersons(builder.build());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] person permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_PERSONS, elapsed(start), count + SUFFIX_PERMISSIONS));
@@ -412,7 +412,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQuerySubunits(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().querySubunits(SubunitPermissionsQueryBuilder.create());
+            var response = context.client().permissions().querySubunits(SubunitPermissionsQueryBuilder.create().build());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] subunit permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_SUBUNITS, elapsed(start), count + SUFFIX_PERMISSIONS));
@@ -424,7 +424,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQueryEntities(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().queryEntities(EntityPermissionsQueryBuilder.create());
+            var response = context.client().permissions().queryEntities(EntityPermissionsQueryBuilder.create().build());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] entity permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_ENTITIES, elapsed(start), count + SUFFIX_PERMISSIONS));
@@ -436,7 +436,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQueryEntityRoles(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().queryEntityRoles(EntityRolesQueryBuilder.create());
+            var response = context.client().permissions().queryEntityRoles(EntityRolesQueryBuilder.create().build());
             int count = response.roles() != null ? response.roles().size() : 0;
             LOGGER.info("[{}] entity roles: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_ENTITY_ROLES, elapsed(start), count + " roles"));
@@ -448,7 +448,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQuerySubordinateRoles(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().querySubordinateRoles(SubordinateEntityRolesQueryBuilder.create());
+            var response = context.client().permissions().querySubordinateRoles(SubordinateEntityRolesQueryBuilder.create().build());
             int count = response.roles() != null ? response.roles().size() : 0;
             LOGGER.info("[{}] subordinate roles: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_SUBORDINATE_ROLES, elapsed(start), count + " roles"));
@@ -461,7 +461,7 @@ public final class PermissionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             EntityAuthorizationPermissionsQueryBuilder builder = EntityAuthorizationPermissionsQueryBuilder.granted();
-            var response = context.client().permissions().queryAuthorizations(builder);
+            var response = context.client().permissions().queryAuthorizations(builder.build());
             int count = response.authorizationGrants() != null ? response.authorizationGrants().size() : 0;
             LOGGER.info("[{}] authorization permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_AUTHORIZATIONS, elapsed(start), count + " grants"));
@@ -473,7 +473,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runQueryEuEntities(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().queryEuEntities(EuEntityPermissionsQueryBuilder.create());
+            var response = context.client().permissions().queryEuEntities(EuEntityPermissionsQueryBuilder.create().build());
             int count = response.permissions() != null ? response.permissions().size() : 0;
             LOGGER.info("[{}] EU entity permissions: {} found", NAME, count);
             results.add(RunResult.ok(NAME, OP_QUERY_EU_ENTITIES, elapsed(start), count + SUFFIX_PERMISSIONS));

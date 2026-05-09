@@ -134,7 +134,7 @@ public final class VatUeProviderRunner implements DemoRunner {
                     .euEntityName(EU_ENTITY_NAME)
                     .subjectEntityByFingerprint(SUBJECT_FULL_NAME, DEMO_ADDRESS)
                     .euEntityDetails(EU_ENTITY_NAME, DEMO_ADDRESS);
-            String referenceNumber = context.client().permissions().grantEuEntityAdmin(builder).referenceNumber();
+            String referenceNumber = context.client().permissions().grantEuEntityAdmin(builder.build()).referenceNumber();
             var permissions = context.client().permissions();
             var status = KsefAsync.awaitTerminal(
                     new KsefAsync.Config<>(

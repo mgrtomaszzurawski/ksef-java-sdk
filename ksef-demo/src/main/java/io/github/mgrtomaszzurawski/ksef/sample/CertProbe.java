@@ -120,7 +120,7 @@ public final class CertProbe {
 
     private static void queryAndRevokeYoungestActive(KsefClient client) {
         section("STEP 3: query active certificates");
-        CertificateQueryResult queryResult = client.certificates().query(CertificateQueryBuilder.create());
+        CertificateQueryResult queryResult = client.certificates().query(CertificateQueryBuilder.create().build());
         List<CertificateListItem> certs = queryResult.certificates();
         logCertificateInventory(certs);
 
@@ -185,7 +185,7 @@ public final class CertProbe {
                 CERT_NAME, KsefCertificateType.AUTHENTICATION, csr.csrDer());
 
         try {
-            EnrollCertificateResult enrollResult = client.certificates().enroll(enrollBuilder);
+            EnrollCertificateResult enrollResult = client.certificates().enroll(enrollBuilder.build());
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("ENROLL OK ref={}", enrollResult.referenceNumber());
             }

@@ -5,14 +5,14 @@
 
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsRevokeBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPersonCreateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestRateLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestRateLimitsRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLimitsRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectCreateRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectLimitsRequest;
 import java.time.LocalDate;
 
 /**
@@ -22,17 +22,17 @@ import java.time.LocalDate;
  */
 public interface TestDataClient {
 
-    void createSubject(TestSubjectCreateBuilder builder);
+    void createSubject(TestSubjectCreateRequest request);
 
     void removeSubject(String subjectNip);
 
-    void createPerson(TestPersonCreateBuilder builder);
+    void createPerson(TestPersonCreateRequest request);
 
     void removePerson(String nip);
 
-    void grantPermissions(TestPermissionsGrantBuilder builder);
+    void grantPermissions(TestPermissionsGrantRequest request);
 
-    void revokePermissions(TestPermissionsRevokeBuilder builder);
+    void revokePermissions(TestPermissionsRevokeRequest request);
 
     void grantAttachment(String nip);
 
@@ -42,15 +42,15 @@ public interface TestDataClient {
 
     void unblockContext(TestDataIdentifierType identifierType, String identifierValue);
 
-    void setSessionLimits(TestSessionLimitsBuilder builder);
+    void setSessionLimits(TestSessionLimitsRequest request);
 
     void resetSessionLimits();
 
-    void setSubjectLimits(TestSubjectLimitsBuilder builder);
+    void setSubjectLimits(TestSubjectLimitsRequest request);
 
     void resetSubjectLimits();
 
-    void setRateLimits(TestRateLimitsBuilder builder);
+    void setRateLimits(TestRateLimitsRequest request);
 
     void resetRateLimits();
 

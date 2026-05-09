@@ -125,7 +125,7 @@ class InvoiceClientTest {
             // when
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1));
-            InvoiceMetadataResult response = ksef.invoices().queryInvoicesByMetadata(query);
+            InvoiceMetadataResult response = ksef.invoices().queryInvoicesByMetadata(query.build());
 
             // then
             assertEquals(1, response.invoices().size());
@@ -177,7 +177,7 @@ class InvoiceClientTest {
                     .onlineOnly()
                     .selfInvoicing(true)
                     .hasAttachment(true);
-            ksef.invoices().streamInvoicesByMetadata(query).toList();
+            ksef.invoices().streamInvoicesByMetadata(query.build()).toList();
 
             // then — both POSTs hit. Page 2 body carries the same caller filters,
             // and the spec-conformant algorithm advanced pageOffset (not the
@@ -245,7 +245,7 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"));
-            ksef.invoices().streamInvoicesByMetadata(query).toList();
+            ksef.invoices().streamInvoicesByMetadata(query.build()).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata")));
             assertEquals(2, requests.size());
@@ -284,7 +284,7 @@ class InvoiceClientTest {
             io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException thrown =
                     org.junit.jupiter.api.Assertions.assertThrows(
                             io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
-                            () -> ksef.invoices().streamInvoicesByMetadata(query).toList());
+                            () -> ksef.invoices().streamInvoicesByMetadata(query.build()).toList());
             assertTrue(thrown.getMessage().contains("isTruncated"),
                     "exception message must explain truncation, was: " + thrown.getMessage());
         }
@@ -362,7 +362,7 @@ class InvoiceClientTest {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1))
                     .sortOrder(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder.DESC);
-            InvoiceMetadataResult response = ksef.invoices().queryInvoicesByMetadata(query);
+            InvoiceMetadataResult response = ksef.invoices().queryInvoicesByMetadata(query.build());
 
             // then
             assertEquals(1, response.invoices().size());
@@ -386,7 +386,7 @@ class InvoiceClientTest {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1))
                     .sortOrder(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder.ASC);
-            ksef.invoices().queryInvoicesByMetadata(query);
+            ksef.invoices().queryInvoicesByMetadata(query.build());
 
             // then
             verify(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))

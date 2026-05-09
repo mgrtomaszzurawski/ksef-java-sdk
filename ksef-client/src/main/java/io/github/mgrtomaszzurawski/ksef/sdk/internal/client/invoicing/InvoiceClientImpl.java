@@ -19,12 +19,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
@@ -108,17 +108,17 @@ public final class InvoiceClientImpl implements InvoiceClient {
     /**
      * Query invoice metadata with filters (date range, buyer/seller, amounts, etc.).
      *
-     * @param query the query builder with filter criteria
+     * @param query the filter criteria
      * @return paginated list of invoice metadata
      */
     @Override
-    public InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryBuilder query) {
+    public InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryFilters query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         return doQueryMetadata(
-                InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build()),
+                InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query),
                 QUERY_METADATA_FIRST_PAGE_OFFSET, QUERY_METADATA_MAX_PAGE_SIZE,
-                query.sortOrderValue());
+                query.sortOrder());
     }
 
     /**
@@ -144,11 +144,11 @@ public final class InvoiceClientImpl implements InvoiceClient {
      * result completeness.
      */
     @Override
-    public java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryBuilder query) {
+    public java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryFilters query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
-        InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query.build());
-        Iterator<InvoiceMetadata> iterator = new MetadataPageIterator(filters, query.build().dateType(), query.sortOrderValue());
+        InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query);
+        Iterator<InvoiceMetadata> iterator = new MetadataPageIterator(filters, query.dateType(), query.sortOrder());
         return java.util.stream.StreamSupport.stream(
                 java.util.Spliterators.spliteratorUnknownSize(iterator,
                         java.util.Spliterator.ORDERED | java.util.Spliterator.NONNULL),
@@ -220,7 +220,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     /**
      * Get the status of an invoice export job.
      *
-     * @param referenceNumber the export reference number from {@link #prepareExport(InvoiceQueryBuilder, boolean)}
+     * @param referenceNumber the export reference number from {@link #prepareExport(InvoiceQueryFilters, boolean)}
      * @return export status with download URL when complete
      */
     @Override
@@ -234,7 +234,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     @Override
-    public PreparedInvoiceExport prepareExport(InvoiceQueryBuilder query, boolean fullContent) {
+    public PreparedInvoiceExport prepareExport(InvoiceQueryFilters query, boolean fullContent) {
         LOGGER.debug(LOG_CALL, OP_PREPARE_EXPORT);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
 
@@ -249,7 +249,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, symmetricKey);
 
         InvoiceExportRequest request = new InvoiceExportRequest(
-                encryptedKey, initVector, !fullContent, query.build());
+                encryptedKey, initVector, !fullContent, query);
         InvoiceExportRequestRaw rawRequest = InvoicingRequestMappers.toInvoiceExportRequestRaw(request);
         String token = http.requireToken();
         ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, rawRequest, token,

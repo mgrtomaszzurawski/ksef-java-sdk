@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handle for an in-flight invoice export. Returned by
- * {@link InvoiceClient#prepareExport(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder, boolean)
+ * {@link InvoiceClient#prepareExport(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters, boolean)
  * client.invoices().prepareExport(...)}, this class:
  *
  * <ol>

@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissionsQueryRequest;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -73,5 +74,11 @@ public final class SubunitPermissionsQueryBuilder {
 
     public @Nullable Integer pageSizeValue() {
         return pageSize;
+    }
+
+    /** Build the immutable {@link SubunitPermissionsQueryRequest} captured by this builder. */
+    public SubunitPermissionsQueryRequest build() {
+        return new SubunitPermissionsQueryRequest(
+                subunitIdentifierType, subunitIdentifierValue, pageOffset, pageSize);
     }
 }

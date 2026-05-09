@@ -180,7 +180,7 @@ public final class TestDataRunner implements DemoRunner {
         boolean createdOk = false;
         try {
             testData.createSubject(TestSubjectCreateBuilder.create(
-                    subjectNip, TestSubjectType.JST, SUBJECT_DESCRIPTION));
+                    subjectNip, TestSubjectType.JST, SUBJECT_DESCRIPTION).build());
             LOGGER.info("[{}] created test subject nip={}", NAME, subjectNip);
             results.add(RunResult.ok(NAME, OP_CREATE_SUBJECT, elapsed(start), NIP_PREFIX + subjectNip));
             createdOk = true;
@@ -213,7 +213,7 @@ public final class TestDataRunner implements DemoRunner {
         boolean createdOk = false;
         try {
             testData.createPerson(TestPersonCreateBuilder.create(
-                    personNip, pesel, false, PERSON_DESCRIPTION));
+                    personNip, pesel, false, PERSON_DESCRIPTION).build());
             LOGGER.info("[{}] created test person nip={} pesel={}", NAME, personNip, pesel);
             results.add(RunResult.ok(NAME, OP_CREATE_PERSON, elapsed(start),
                     NIP_PREFIX + personNip + " pesel=" + pesel));
@@ -249,7 +249,8 @@ public final class TestDataRunner implements DemoRunner {
         try {
             testData.grantPermissions(TestPermissionsGrantBuilder.create(contextNip)
                     .authorizedNip(authorizedNip)
-                    .invoiceRead());
+                    .invoiceRead()
+                    .build());
             LOGGER.info("[{}] granted test permissions context={} authorized={}",
                     NAME, contextNip, authorizedNip);
             results.add(RunResult.ok(NAME, OP_GRANT_PERMISSIONS, elapsed(start),
@@ -268,7 +269,8 @@ public final class TestDataRunner implements DemoRunner {
         long revokeStart = System.currentTimeMillis();
         try {
             testData.revokePermissions(TestPermissionsRevokeBuilder.create(contextNip)
-                    .authorizedNip(authorizedNip));
+                    .authorizedNip(authorizedNip)
+                    .build());
             LOGGER.info("[{}] revoked test permissions context={} authorized={}",
                     NAME, contextNip, authorizedNip);
             results.add(RunResult.ok(NAME, OP_REVOKE_PERMISSIONS, elapsed(revokeStart),
@@ -356,7 +358,8 @@ public final class TestDataRunner implements DemoRunner {
                             SESSION_MAX_INVOICES)
                     .batchSession(SESSION_MAX_INVOICE_SIZE_MB,
                             SESSION_MAX_INVOICE_WITH_ATTACHMENT_MB,
-                            SESSION_MAX_INVOICES));
+                            SESSION_MAX_INVOICES)
+                    .build());
             LOGGER.info("[{}] session limits applied", NAME);
             results.add(RunResult.ok(NAME, OP_SET_SESSION_LIMITS, elapsed(start)));
         } catch (Exception exception) {
@@ -370,7 +373,8 @@ public final class TestDataRunner implements DemoRunner {
         try {
             testData.setSubjectLimits(TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP)
                     .maxEnrollments(SUBJECT_MAX_ENROLLMENTS)
-                    .maxCertificates(SUBJECT_MAX_CERTIFICATES));
+                    .maxCertificates(SUBJECT_MAX_CERTIFICATES)
+                    .build());
             LOGGER.info("[{}] subject limits applied", NAME);
             results.add(RunResult.ok(NAME, OP_SET_SUBJECT_LIMITS, elapsed(start)));
         } catch (Exception exception) {
@@ -383,7 +387,8 @@ public final class TestDataRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             testData.setRateLimits(TestRateLimitsBuilder.create()
-                    .invoiceSend(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR));
+                    .invoiceSend(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR)
+                    .build());
             LOGGER.info("[{}] rate limits applied", NAME);
             results.add(RunResult.ok(NAME, OP_SET_RATE_LIMITS, elapsed(start)));
         } catch (Exception exception) {

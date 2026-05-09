@@ -319,7 +319,7 @@ class CertificatesMappersTest {
         // given
         var request = new io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest(
                 SERIAL, NAME, KsefCertificateType.AUTHENTICATION,
-                CertificateStatus.ACTIVE, java.time.OffsetDateTime.parse(DATE_ISO));
+                CertificateStatus.ACTIVE, java.time.OffsetDateTime.parse(DATE_ISO), null, null);
 
         // when
         var rawRequest = CertificatesMappers.toQueryCertificatesRequestRaw(request);
@@ -336,7 +336,7 @@ class CertificatesMappersTest {
     void toQueryCertificatesRequestRaw_skipsNullFields() {
         // given
         var request = new io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest(
-                null, null, null, null, null);
+                null, null, null, null, null, null, null);
 
         // when
         var rawRequest = CertificatesMappers.toQueryCertificatesRequestRaw(request);

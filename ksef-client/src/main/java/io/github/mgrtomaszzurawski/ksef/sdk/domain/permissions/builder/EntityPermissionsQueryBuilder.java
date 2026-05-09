@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissionsQueryRequest;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -73,5 +74,11 @@ public final class EntityPermissionsQueryBuilder {
 
     public @Nullable Integer pageSizeValue() {
         return pageSize;
+    }
+
+    /** Build the immutable {@link EntityPermissionsQueryRequest} captured by this builder. */
+    public EntityPermissionsQueryRequest build() {
+        return new EntityPermissionsQueryRequest(
+                contextIdentifierType, contextIdentifierValue, pageOffset, pageSize);
     }
 }

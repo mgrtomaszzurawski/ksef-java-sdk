@@ -101,7 +101,7 @@ public final class InvoiceRunner implements DemoRunner {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(from);
 
-            InvoiceMetadataResult response = context.client().invoices().queryInvoicesByMetadata(query);
+            InvoiceMetadataResult response = context.client().invoices().queryInvoicesByMetadata(query.build());
             int count = response.invoices() != null ? response.invoices().size() : 0;
             boolean hasMore = response.hasMore();
             if (LOGGER.isInfoEnabled()) {
@@ -127,7 +127,7 @@ public final class InvoiceRunner implements DemoRunner {
             // package-decrypt material retention; demo only needs the reference
             // number to drive status polling. fullContent=false → metadata only.
             try (PreparedInvoiceExport export = context.client().invoices().prepareExport(
-                    InvoiceQueryBuilder.seller().invoicingDateFrom(from), false)) {
+                    InvoiceQueryBuilder.seller().invoicingDateFrom(from).build(), false)) {
                 String refNum = export.referenceNumber();
                 LOGGER.info("[{}] export started, ref={}", NAME, refNum);
                 context.state().setExportReferenceNumber(refNum);

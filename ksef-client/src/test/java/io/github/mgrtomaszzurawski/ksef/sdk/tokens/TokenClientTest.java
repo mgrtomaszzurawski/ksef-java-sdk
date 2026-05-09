@@ -86,7 +86,7 @@ class TokenClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            GenerateTokenResult response = ksef.tokens().generate(TokenGenerateBuilder.create("test description").invoiceRead());
+            GenerateTokenResult response = ksef.tokens().generate(TokenGenerateBuilder.create("test description").invoiceRead().build());
 
             // then
             assertEquals(TEST_TOKEN_REF, response.referenceNumber());
@@ -107,7 +107,7 @@ class TokenClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            TokenList response = ksef.tokens().list(TokenQueryBuilder.create());
+            TokenList response = ksef.tokens().list(TokenQueryBuilder.create().build());
 
             // then
             assertNotNull(response.tokens());
@@ -169,8 +169,8 @@ class TokenClientTest {
 
             // then
             var tokens = ksef.tokens();
-            var builder = TokenGenerateBuilder.create("test description").invoiceRead();
-            assertThrows(KsefAuthException.class, () -> tokens.generate(builder));
+            var request = TokenGenerateBuilder.create("test description").invoiceRead().build();
+            assertThrows(KsefAuthException.class, () -> tokens.generate(request));
         }
     }
 

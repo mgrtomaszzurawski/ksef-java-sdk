@@ -5,11 +5,11 @@
 
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
@@ -33,7 +33,7 @@ public interface CertificateClient {
 
     CertificateLimits getLimits();
     CertificateEnrollmentData getEnrollmentData();
-    EnrollCertificateResult enroll(CertificateEnrollBuilder builder);
+    EnrollCertificateResult enroll(CertificateEnrollRequest request);
     CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber);
     RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers);
 
@@ -45,7 +45,7 @@ public interface CertificateClient {
      */
     void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
 
-    CertificateQueryResult query(CertificateQueryBuilder builder);
+    CertificateQueryResult query(CertificateQueryRequest request);
 
     /**
      * Stream all certificates matching the filter. Pages are fetched
@@ -54,5 +54,5 @@ public interface CertificateClient {
      * limiting / collecting downstream.
      */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
-            streamCertificates(CertificateQueryBuilder builder);
+            streamCertificates(CertificateQueryRequest request);
 }

@@ -18,5 +18,7 @@ public record CertificateQueryRequest(
         @Nullable String name,
         @Nullable KsefCertificateType type,
         @Nullable CertificateStatus status,
-        @Nullable OffsetDateTime expiresAfter) {
+        @Nullable OffsetDateTime expiresAfter,
+        @Nullable Integer pageOffset,
+        @Nullable Integer pageSize) {
 }

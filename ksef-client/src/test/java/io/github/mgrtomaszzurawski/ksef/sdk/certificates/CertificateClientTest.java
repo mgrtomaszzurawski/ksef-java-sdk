@@ -152,7 +152,7 @@ class CertificateClientTest {
 
             // when
             EnrollCertificateResult response = ksef.certificates().enroll(
-                    CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR));
+                    CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR).build());
 
             // then
             assertEquals(TEST_ENROLLMENT_REF, response.referenceNumber());
@@ -236,7 +236,7 @@ class CertificateClientTest {
 
             // when
             CertificateQueryResult response =
-                    ksef.certificates().query(CertificateQueryBuilder.create());
+                    ksef.certificates().query(CertificateQueryBuilder.create().build());
 
             // then
             assertNotNull(response.certificates());
@@ -254,9 +254,9 @@ class CertificateClientTest {
 
             // then
             var certs = ksef.certificates();
-            var builder = CertificateEnrollBuilder.create(
-                    TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR);
-            assertThrows(KsefServerException.class, () -> certs.enroll(builder));
+            var request = CertificateEnrollBuilder.create(
+                    TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR).build();
+            assertThrows(KsefServerException.class, () -> certs.enroll(request));
         }
     }
 

@@ -133,7 +133,7 @@ public final class CertificateRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             CertificateQueryResult response = context.client().certificates()
-                    .query(CertificateQueryBuilder.create());
+                    .query(CertificateQueryBuilder.create().build());
             List<CertificateListItem> certs = response.certificates();
             int count = certs != null ? certs.size() : 0;
             if (LOGGER.isInfoEnabled()) {
@@ -190,7 +190,7 @@ public final class CertificateRunner implements DemoRunner {
             CertificateCsrUtil.CsrResult csr = CertificateCsrUtil.generate(enrollmentData);
             CertificateEnrollBuilder builder = CertificateEnrollBuilder.create(
                     CERT_NAME, KsefCertificateType.AUTHENTICATION, csr.csrDer());
-            EnrollCertificateResult response = context.client().certificates().enroll(builder);
+            EnrollCertificateResult response = context.client().certificates().enroll(builder.build());
             String referenceNumber = response.referenceNumber();
             LOGGER.info("[{}] enrolled certificate, ref={}", NAME, referenceNumber);
             results.add(RunResult.ok(NAME, OP_ENROLL, elapsed(start), "ref=" + referenceNumber));
