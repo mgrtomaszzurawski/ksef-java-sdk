@@ -23,11 +23,12 @@ module io.github.mgrtomaszzurawski.ksef {
     // Public crypto facade (REQ-CRYPTO-001..004)
     exports io.github.mgrtomaszzurawski.ksef.sdk.crypto;
 
-    // Invoicing functionality (online + batch sessions, invoice ops, QR, batch helper, sync orchestrator)
+    // Invoicing functionality (online + batch sessions, invoice ops, QR, sync orchestrator)
+    // PR11 (2026-05-09): batch submission moved to a single sync facade
+    // Invoices.submitBatch(...) — public batch metadata types removed.
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
-    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 

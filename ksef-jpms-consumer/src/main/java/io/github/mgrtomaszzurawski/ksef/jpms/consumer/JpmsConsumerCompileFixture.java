@@ -23,13 +23,14 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefCryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefEncryptionInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.SendInvoiceCommand;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FailedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
@@ -96,15 +97,17 @@ public final class JpmsConsumerCompileFixture {
                 CsrResult.class,
                 // sdk.domain.authentication.model — verify exported (gap caught earlier)
                 AuthSession.class,
-                // sdk.domain.invoicing + builder + batch + qrcode + sync
+                // sdk.domain.invoicing + builder + qrcode + sync
                 FormCode.class,
                 OnlineSession.class,
-                KsefBatchSession.class,
                 PreparedInvoiceExport.class,
                 SendInvoiceCommand.class,
                 InvoiceQueryBuilder.class,
-                BatchFileSpec.class,
-                PreparedBatchPackage.class,
+                // PR11 — batch submission API surface (model package)
+                BatchOptions.class,
+                BatchResult.class,
+                FailedInvoice.class,
+                UpoEntry.class,
                 KsefVerificationLinks.class,
                 QrEnvironment.class,
                 QrContextType.class,

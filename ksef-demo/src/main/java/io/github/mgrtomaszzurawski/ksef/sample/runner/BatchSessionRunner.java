@@ -22,10 +22,9 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -34,21 +33,23 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for batch session operations using {@code KsefBatchSession}.
+ * Runner for batch session operations using the new
+ * {@code Invoices.submitBatch(...)} synchronous facade (PR11).
  *
- * <p>Exercises the full cross-product of supported {@link FormCode}
- * variants and {@link BatchAssemblyMode} variants:
+ * <p>Exercises the supported {@link FormCode} variants:
  * <ul>
  *   <li>FormCodes: FA(2), FA(3), PEF(3), PEF_KOR(3).</li>
- *   <li>Assembly modes: on-disk and in-memory.</li>
  * </ul>
  *
  * <p>FormCodes rejected by the active environment surface as SKIPs in
  * the report rather than FAILs (e.g. FA(2) on DEMO/PROD per
  * {@code srodowiska.md}).
  *
- * <p>Batch sessions do not exhibit the post-termination cooldown that
- * online sessions do, so the cross-product runs back-to-back safely.
+ * <p><strong>Threading warning:</strong> {@code submitBatch} blocks the
+ * calling thread for minutes to hours, depending on batch size and upload
+ * bandwidth. KSeF batch can be up to 5 GB. Do not call from UI threads,
+ * HTTP request handlers, or reactive framework dispatch threads. Wrap with
+ * a dedicated executor for async use.
  *
  * <p>FULL mode only — sends actual invoices to KSeF.
  */
@@ -56,19 +57,13 @@ public final class BatchSessionRunner implements DemoRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BatchSessionRunner.class);
     private static final String NAME = "batchSession";
-    private static final String OP_OPEN_BATCH = "openBatchSession";
-    private static final String OP_UPLOAD_PARTS = "uploadParts";
-    private static final String OP_GET_STATUS = "getStatus";
-    private static final String OP_CLOSE = "close";
-    private static final String SUFFIX_ON_DISK = "[onDisk]";
-    private static final String SUFFIX_IN_MEMORY = "[inMemory]";
+    private static final String OP_SUBMIT_BATCH = "submitBatch";
     private static final String SKIP_REASON_PREFIX = "FormCode rejected by environment: ";
     private static final String SKIP_REASON_PEF_AUTH =
             "FA_PEF/FA_KOR_PEF require Peppol provider auth (PefInvoiceWrite permission) — "
                     + "demo creds use regular NIP, KSeF returns 21405 \"kod formularza nie jest wspierany\". "
                     + "Wire-shape coverage for these FormCodes lives in WireMock contract tests.";
     private static final int INVOICE_COUNT = 3;
-    private static final long IN_MEMORY_CAP_BYTES = 50L * 1024L * 1024L;
 
     private static final String HOST_FRAGMENT_TEST = "api-test.";
     private static final String HOST_FRAGMENT_DEMO = "api-demo.";
@@ -76,11 +71,6 @@ public final class BatchSessionRunner implements DemoRunner {
 
     private static final List<FormCode> FORM_CODES = List.of(
             FormCode.FA2, FormCode.FA3, FormCode.PEF3, FormCode.PEF_KOR3);
-
-    private static final List<AssemblyVariant> ASSEMBLY_VARIANTS = List.of(
-            new AssemblyVariant(SUFFIX_ON_DISK, BatchSessionOptions.online()),
-            new AssemblyVariant(SUFFIX_IN_MEMORY,
-                    BatchSessionOptions.online().withAssembly(BatchAssemblyMode.inMemory(IN_MEMORY_CAP_BYTES))));
 
     @Override
     public String name() { return NAME; }
@@ -94,62 +84,45 @@ public final class BatchSessionRunner implements DemoRunner {
             try {
                 formCode.assertAllowedOn(env);
             } catch (IllegalArgumentException notAllowed) {
-                for (AssemblyVariant variant : ASSEMBLY_VARIANTS) {
-                    results.add(RunResult.skip(NAME, OP_OPEN_BATCH + formCodeLabel + variant.suffix(),
-                            SKIP_REASON_PREFIX + notAllowed.getMessage()));
-                }
+                results.add(RunResult.skip(NAME, OP_SUBMIT_BATCH + formCodeLabel,
+                        SKIP_REASON_PREFIX + notAllowed.getMessage()));
                 continue;
             }
             if (requiresPeppolProviderAuth(formCode)) {
-                for (AssemblyVariant variant : ASSEMBLY_VARIANTS) {
-                    results.add(RunResult.skip(NAME, OP_OPEN_BATCH + formCodeLabel + variant.suffix(),
-                            SKIP_REASON_PEF_AUTH));
-                }
+                results.add(RunResult.skip(NAME, OP_SUBMIT_BATCH + formCodeLabel, SKIP_REASON_PEF_AUTH));
                 continue;
             }
-            for (AssemblyVariant variant : ASSEMBLY_VARIANTS) {
-                runOnce(context, formCode, formCodeLabel, variant, results);
-            }
+            runOnce(context, formCode, formCodeLabel, results);
         }
         return results;
     }
 
     private void runOnce(DemoContext context, FormCode formCode, String formCodeLabel,
-                         AssemblyVariant variant, List<RunResult> results) {
-        String label = formCodeLabel + variant.suffix();
-        List<byte[]> invoiceXmls = generateInvoices(formCode, context.nipIdentifier());
+                         List<RunResult> results) {
+        List<Invoice> invoices = generateInvoices(formCode, context.nipIdentifier());
 
-        long openStart = System.currentTimeMillis();
-        KsefBatchSession batch;
+        long start = System.currentTimeMillis();
         try {
-            batch = context.client().openBatchSession(formCode, invoiceXmls, variant.options());
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_OPEN_BATCH + label, elapsed(openStart),
-                    errorMessage(exception)));
-            return;
-        }
-
-        try (KsefBatchSession session = batch) {
-            String batchRef = session.referenceNumber();
-            int invoiceCount = invoiceXmls.size();
-            int partCount = session.partUploadRequests().size();
+            BatchResult result = context.client().invoices()
+                    .submitBatch(formCode, invoices, BatchOptions.defaults());
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("[{}] {} opened batch session ref={}, invoices={}, parts={}",
-                        NAME, label, batchRef, invoiceCount, partCount);
+                LOGGER.info("[{}] {} submitted batch ref={}, total={}, cleared={}, failed={}",
+                        NAME, formCodeLabel, result.sessionRef(), result.totalCount(),
+                        result.successfulCount(), result.failedCount());
             }
-            results.add(RunResult.ok(NAME, OP_OPEN_BATCH + label, elapsed(openStart),
-                    "ref=" + batchRef + ", " + invoiceCount + " invoices"));
-
-            runUploadParts(session, label, results);
-            runGetStatus(session, label, results);
-            runClose(session, label, results);
+            results.add(RunResult.ok(NAME, OP_SUBMIT_BATCH + formCodeLabel, elapsed(start),
+                    "ref=" + result.sessionRef() + ", " + result.totalCount() + " invoices"));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_SUBMIT_BATCH + formCodeLabel, elapsed(start),
+                    errorMessage(exception)));
         }
     }
 
-    private List<byte[]> generateInvoices(FormCode formCode, String sellerNip) {
-        List<byte[]> invoices = new ArrayList<>(INVOICE_COUNT);
+    private List<Invoice> generateInvoices(FormCode formCode, String sellerNip) {
+        List<Invoice> invoices = new ArrayList<>(INVOICE_COUNT);
         for (int index = 0; index < INVOICE_COUNT; index++) {
-            invoices.add(TestInvoiceXml.generate(formCode, sellerNip));
+            byte[] xml = TestInvoiceXml.generate(formCode, sellerNip);
+            invoices.add(Invoice.fromXml(formCode, xml));
         }
         return invoices;
     }
@@ -177,44 +150,4 @@ public final class BatchSessionRunner implements DemoRunner {
         }
         return KsefEnvironment.PROD;
     }
-
-    private void runUploadParts(KsefBatchSession session, String label, List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        try {
-            session.uploadParts();
-            LOGGER.info("[{}] {} uploaded {} part(s)", NAME, label, session.partUploadRequests().size());
-            results.add(RunResult.ok(NAME, OP_UPLOAD_PARTS + label, elapsed(start),
-                    session.partUploadRequests().size() + " parts"));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_UPLOAD_PARTS + label, elapsed(start),
-                    errorMessage(exception)));
-        }
-    }
-
-    private void runGetStatus(KsefBatchSession session, String label, List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        try {
-            SessionStatus response = session.status();
-            LOGGER.info("[{}] {} status: code={}", NAME, label,
-                    response.status() != null ? response.status().code() : "null");
-            results.add(RunResult.ok(NAME, OP_GET_STATUS + label, elapsed(start)));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_GET_STATUS + label, elapsed(start),
-                    errorMessage(exception)));
-        }
-    }
-
-    private void runClose(KsefBatchSession session, String label, List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        try {
-            session.close();
-            LOGGER.info("[{}] {} batch session closed", NAME, label);
-            results.add(RunResult.ok(NAME, OP_CLOSE + label, elapsed(start)));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_CLOSE + label, elapsed(start),
-                    errorMessage(exception)));
-        }
-    }
-
-    private record AssemblyVariant(String suffix, BatchSessionOptions options) { }
 }

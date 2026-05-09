@@ -14,7 +14,7 @@ Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-do
 ## What you can do
 
 - Send invoices online, one at a time (`KsefSession`)
-- Send invoices in batch via async ZIP packages (`KsefBatchSession`)
+- Send invoices in batch via the synchronous `Invoices.submitBatch(...)` facade (encrypted ZIP, parallel upload, automatic UPO fetch)
 - Query invoice metadata + filter, lazily paginated
   (`streamInvoicesByMetadata`)
 - Download invoice content + UPO by KSeF number
@@ -101,16 +101,32 @@ try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.TEST)
 
 ### Batch invoice upload
 
+> **Threading warning:** This method blocks the calling thread for minutes to
+> hours, depending on batch size and upload bandwidth. KSeF batch can be up to
+> 5 GB. Do not call from UI threads, HTTP request handlers, or reactive
+> framework dispatch threads. Wrap with a dedicated executor for async use.
+
 ```java
-List<byte[]> invoiceXmls = List.of(invoice1Xml, invoice2Xml, invoice3Xml);
-try (KsefBatchSession batch = client.openBatchSession(
-        FormCode.FA3, invoiceXmls, BatchSessionOptions.online())) {
-    batch.uploadParts();
-    // close() returns when the server reaches a terminal state (UPO ready,
-    // schema rejection, etc.); throws KsefSessionTerminalFailureException on
-    // non-200 terminal states or KsefSessionPollingTimeoutException if the
-    // session never reaches a terminal state within the polling budget.
-}
+List<Invoice> invoices = List.of(
+        Invoice.fromXml(FormCode.FA3, invoice1Xml),
+        Invoice.fromXml(FormCode.FA3, invoice2Xml),
+        Invoice.fromXml(FormCode.FA3, invoice3Xml));
+
+BatchResult result = client.invoices().submitBatch(
+        FormCode.FA3, invoices, BatchOptions.defaults());
+
+// By the time submitBatch returns, every accepted invoice has its UPO downloaded.
+System.out.println("Cleared: " + result.successfulCount()
+        + " / Failed: " + result.failedCount());
+```
+
+For async use, wrap in a `CompletableFuture`:
+
+```java
+ExecutorService executor = Executors.newSingleThreadExecutor();
+CompletableFuture<BatchResult> future = CompletableFuture.supplyAsync(
+        () -> client.invoices().submitBatch(FormCode.FA3, invoices, BatchOptions.defaults()),
+        executor);
 ```
 
 ### Authentication options
@@ -210,7 +226,7 @@ against the strict profile and you want server-side enforcement.
 Plus session-level helpers on `KsefClient` itself:
 
 - `client.authenticate()` / `client.reauthenticate()` / `client.terminateAuth()`
-- `client.openSession(FormCode)` / `client.openBatchSession(...)`
+- `client.invoices().openSession(FormCode)` / `client.invoices().submitBatch(...)`
 - `client.invoiceSync(IncrementalSyncPlan, CheckpointStore, InvoiceSink)` —
   HWM-based incremental sync with content download and per-invoice sink
 - `client.streamSessions(filter)` — paginate online + batch sessions

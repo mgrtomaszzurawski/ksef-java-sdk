@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.api;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.SendInvoiceCommand;
 import java.lang.reflect.Method;
@@ -22,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>Enforced structurally: {@link OnlineSession#send(SendInvoiceCommand)}
  * accepts {@link SendInvoiceCommand.TechnicalCorrection} and the
  * convenience overload {@link OnlineSession#sendTechnicalCorrection(byte[], byte[])}
- * exists. {@link KsefBatchSession} exposes neither — there is no public
- * method that accepts a {@code SendInvoiceCommand} or a corrected-invoice
- * hash. Reflection scan asserts that.
+ * exists. The batch facade ({@code Invoices.submitBatch(...)}) exposes
+ * neither — there is no public method that accepts a {@code SendInvoiceCommand}
+ * or a corrected-invoice hash on the batch path. Reflection scan asserts that.
  *
  * <p>Spec citation: {@code ksef-docs/offline/korekta-techniczna.md} —
  * "korekta techniczna jest dostępna wyłącznie w sesji interaktywnej (online)".
@@ -47,22 +47,22 @@ class PublicApiKorektaTest {
     }
 
     @Test
-    void batchSession_exposesNoTechnicalCorrectionEntryPoint() {
-        // No method named sendTechnicalCorrection
-        boolean hasTechnicalCorrectionMethod = Arrays.stream(KsefBatchSession.class.getMethods())
-                .anyMatch(method -> method.getName().toLowerCase(java.util.Locale.ROOT).contains("technicalcorrection"));
+    void batchSurface_exposesNoTechnicalCorrectionEntryPoint() {
+        // No batch-related method named sendTechnicalCorrection on InvoiceClient.
+        boolean hasTechnicalCorrectionMethod = Arrays.stream(InvoiceClient.class.getMethods())
+                .anyMatch(method -> method.getName().toLowerCase(java.util.Locale.ROOT)
+                        .contains("technicalcorrection"));
         assertFalse(hasTechnicalCorrectionMethod,
-                "KsefBatchSession must NOT expose a technical-correction method (REQ-OFFLINE-005)");
+                "InvoiceClient (batch facade) must NOT expose a technical-correction method (REQ-OFFLINE-005)");
 
-        // No method takes SendInvoiceCommand or a 32-byte hash parameter named
-        // hashOfCorrectedInvoice — batch sessions cannot pipe per-invoice corrections.
-        List<String> sendCommandMethods = Arrays.stream(KsefBatchSession.class.getMethods())
-                .filter(method -> method.getName().equals("send"))
-                .filter(method -> method.getParameterCount() == 1
-                        && method.getParameterTypes()[0].equals(SendInvoiceCommand.class))
+        // No batch method accepts SendInvoiceCommand — that type only flows through OnlineSession.
+        List<String> batchMethodsTakingCommand = Arrays.stream(InvoiceClient.class.getMethods())
+                .filter(method -> method.getName().toLowerCase(java.util.Locale.ROOT).contains("batch"))
+                .filter(method -> Arrays.stream(method.getParameterTypes())
+                        .anyMatch(parameterType -> parameterType.equals(SendInvoiceCommand.class)))
                 .map(Method::toString)
                 .collect(Collectors.toList());
-        assertTrue(sendCommandMethods.isEmpty(),
-                "KsefBatchSession must NOT accept SendInvoiceCommand as a parameter (REQ-OFFLINE-005)");
+        assertTrue(batchMethodsTakingCommand.isEmpty(),
+                "Batch methods must NOT accept SendInvoiceCommand as a parameter (REQ-OFFLINE-005)");
     }
 }

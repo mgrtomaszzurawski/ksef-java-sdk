@@ -6,6 +6,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -16,10 +18,20 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStor
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
+import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Client for KSeF invoice operations — querying metadata, retrieving by KSeF number,
- * and exporting invoices.
+ * exporting invoices, opening online sessions, and submitting batches.
+ *
+ * <p><strong>Threading warning for batch methods:</strong> the
+ * {@link #submitBatch(FormCode, List, BatchOptions)} and
+ * {@link #submitBatchFromFiles(FormCode, List, BatchOptions)} methods block the
+ * calling thread for minutes to hours, depending on batch size and upload
+ * bandwidth. KSeF batch can be up to 5 GB. Do not call from UI threads, HTTP
+ * request handlers, or reactive framework dispatch threads. Wrap with a
+ * dedicated executor for async use.
  *
  * @since 1.0.0
  */
@@ -115,4 +127,47 @@ public interface InvoiceClient {
      * @return lazy stream of matching session summary items
      */
     java.util.stream.Stream<SessionListItem> streamSessions(SessionsQueryFilter filter);
+
+    /**
+     * Submit a batch of invoices synchronously. SDK encrypts every invoice with
+     * a fresh AES session key, splits the encrypted ZIP into parts, opens a
+     * KSeF batch session, uploads every part, closes the session, polls until
+     * KSeF reports a terminal state, and downloads UPOs for accepted invoices.
+     *
+     * <p>By the time this method returns, every accepted invoice's UPO is
+     * already in {@link BatchResult#cleared()}.
+     *
+     * <p><strong>Warning:</strong> This method blocks the calling thread for
+     * minutes to hours, depending on batch size and upload bandwidth. KSeF batch
+     * can be up to 5 GB. Do not call from UI threads, HTTP request handlers, or
+     * reactive framework dispatch threads. Wrap with a dedicated executor for
+     * async use.
+     *
+     * @param formCode form code for the batch — must match every invoice's own
+     *     {@link Invoice#formCode()}
+     * @param invoices invoices to submit (non-empty)
+     * @param options runtime tunables (timeout, parallelism)
+     * @return {@link BatchResult} populated with cleared + failed entries
+     */
+    BatchResult submitBatch(FormCode formCode, List<Invoice> invoices, BatchOptions options);
+
+    /**
+     * File-streaming variant of {@link #submitBatch(FormCode, List, BatchOptions)}.
+     * Each invoice is read straight from disk into the batch ZIP rather than
+     * materialised as a {@code byte[]} in heap. Use this for large batches —
+     * e.g. the spec cap of 10 000 invoices (REQ-SESS-41) — so peak heap stays
+     * bounded by the chunk-encryption buffer.
+     *
+     * <p><strong>Warning:</strong> This method blocks the calling thread for
+     * minutes to hours, depending on batch size and upload bandwidth. KSeF batch
+     * can be up to 5 GB. Do not call from UI threads, HTTP request handlers, or
+     * reactive framework dispatch threads. Wrap with a dedicated executor for
+     * async use.
+     *
+     * @param formCode form code for the batch
+     * @param files non-empty list of paths to invoice XML files
+     * @param options runtime tunables (timeout, parallelism)
+     * @return {@link BatchResult} populated with cleared + failed entries
+     */
+    BatchResult submitBatchFromFiles(FormCode formCode, List<Path> files, BatchOptions options);
 }

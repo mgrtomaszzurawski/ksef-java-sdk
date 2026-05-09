@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
@@ -21,6 +22,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -38,14 +41,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncCli
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.BatchSubmissionFlow;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.net.http.HttpClient;
+import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -80,6 +86,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String OP_OPEN_SESSION = "openSession";
     private static final String OP_STREAM_SESSIONS = "streamSessions";
     private static final String OP_SYNC = "sync";
+    private static final String OP_SUBMIT_BATCH = "submitBatch";
+    private static final String OP_SUBMIT_BATCH_FROM_FILES = "submitBatchFromFiles";
     private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
     private static final String ERR_NULL_QUERY = "query must not be null";
     private static final String ERR_NULL_FILTER = "filter must not be null";
@@ -88,6 +96,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
             "openSession() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
     private static final String ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME =
             "streamSessions() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+    private static final String ERR_SUBMIT_BATCH_REQUIRES_FULL_RUNTIME =
+            "submitBatch() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
     private static final String ERR_TRUNCATED_NO_CURSOR =
             "streamInvoicesByMetadata: server returned isTruncated=true but no usable date cursor on the last record "
@@ -416,5 +426,39 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink) {
         LOGGER.debug(LOG_CALL, OP_SYNC);
         return new InvoiceSyncClient(this, runtime.objectMapper()).sync(plan, checkpointStore, sink);
+    }
+
+    @Override
+    public BatchResult submitBatch(FormCode formCode, List<Invoice> invoices, BatchOptions options) {
+        Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
+        Objects.requireNonNull(invoices, "invoices must not be null");
+        Objects.requireNonNull(options, "options must not be null");
+        if (sessionClient == null || environment == null || publicKeyResolver == null) {
+            throw new IllegalStateException(ERR_SUBMIT_BATCH_REQUIRES_FULL_RUNTIME);
+        }
+        LOGGER.debug(LOG_CALL, OP_SUBMIT_BATCH);
+        return newBatchFlow().submit(formCode, invoices, options);
+    }
+
+    @Override
+    public BatchResult submitBatchFromFiles(FormCode formCode, List<Path> files, BatchOptions options) {
+        Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
+        Objects.requireNonNull(files, "files must not be null");
+        Objects.requireNonNull(options, "options must not be null");
+        if (sessionClient == null || environment == null || publicKeyResolver == null) {
+            throw new IllegalStateException(ERR_SUBMIT_BATCH_REQUIRES_FULL_RUNTIME);
+        }
+        LOGGER.debug(LOG_CALL, OP_SUBMIT_BATCH_FROM_FILES);
+        return newBatchFlow().submitFromFiles(formCode, files, options);
+    }
+
+    private BatchSubmissionFlow newBatchFlow() {
+        // sessionClient / environment / publicKeyResolver are non-null guarded
+        // by the callers above; the requireNonNull here is a NullAway hint only.
+        return new BatchSubmissionFlow(
+                Objects.requireNonNull(sessionClient, "sessionClient"),
+                httpClient,
+                Objects.requireNonNull(environment, "environment"),
+                Objects.requireNonNull(publicKeyResolver, "publicKeyResolver"));
     }
 }

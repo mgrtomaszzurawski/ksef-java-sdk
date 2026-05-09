@@ -6,21 +6,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import java.time.Duration;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.http.HttpClient;
-import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Internal construction bridge for the {@code OnlineSessionImpl}
- * (returned as {@link OnlineSession}), {@link KsefBatchSession}, and
+ * (returned as {@link OnlineSession}) and
  * {@link PreparedInvoiceExport}.
  *
  * <p>Codex round-9 fresh-review F1: the previous {@code KsefSessionFactory}
@@ -73,10 +69,6 @@ public final class SessionHandleConstructor {
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR;
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VALID_UNTIL;
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VERIFICATION_AWARE;
-    private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_3_ARG;
-    private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_5_ARG;
-    private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_6_ARG;
-    private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_7_ARG_VALID_UNTIL;
     private static final Constructor<PreparedInvoiceExport> PREPARED_EXPORT_CTOR;
 
     static {
@@ -96,24 +88,6 @@ public final class SessionHandleConstructor {
                             SessionClient.class, String.class, byte[].class, byte[].class,
                             java.time.OffsetDateTime.class,
                             KsefEnvironment.class, Duration.class));
-            BATCH_SESSION_CTOR_3_ARG = makeAccessible(
-                    KsefBatchSession.class.getDeclaredConstructor(
-                            SessionClient.class, String.class, List.class));
-            BATCH_SESSION_CTOR_5_ARG = makeAccessible(
-                    KsefBatchSession.class.getDeclaredConstructor(
-                            SessionClient.class, HttpClient.class, String.class,
-                            List.class, BatchPackageBuilder.BatchPackage.class));
-            BATCH_SESSION_CTOR_6_ARG = makeAccessible(
-                    KsefBatchSession.class.getDeclaredConstructor(
-                            SessionClient.class, HttpClient.class, String.class,
-                            List.class, BatchPackageBuilder.BatchPackage.class,
-                            java.util.function.LongSupplier.class));
-            BATCH_SESSION_CTOR_7_ARG_VALID_UNTIL = makeAccessible(
-                    KsefBatchSession.class.getDeclaredConstructor(
-                            SessionClient.class, HttpClient.class, String.class,
-                            List.class, BatchPackageBuilder.BatchPackage.class,
-                            java.util.function.LongSupplier.class,
-                            java.time.OffsetDateTime.class));
             PREPARED_EXPORT_CTOR = makeAccessible(
                     PreparedInvoiceExport.class.getDeclaredConstructor(
                             InvoiceClient.class, HttpClient.class, String.class,
@@ -176,56 +150,6 @@ public final class SessionHandleConstructor {
                                                  Duration invoiceVerificationTimeout) {
         return invoke(ONLINE_SESSION_CTOR_VERIFICATION_AWARE, sessionClient,
                 referenceNumber, aesKey, initVector, validUntil, environment, invoiceVerificationTimeout);
-    }
-
-    /**
-     * @apiNote Internal — see class-level Javadoc.
-     */
-    public static KsefBatchSession newBatchSession(SessionClient sessionClient,
-                                                    String referenceNumber,
-                                                    List<PartUploadRequest> partUploadRequests) {
-        return invoke(BATCH_SESSION_CTOR_3_ARG, sessionClient, referenceNumber, partUploadRequests);
-    }
-
-    /**
-     * @apiNote Internal — see class-level Javadoc.
-     */
-    public static KsefBatchSession newBatchSession(SessionClient sessionClient,
-                                                    @Nullable HttpClient httpClient,
-                                                    String referenceNumber,
-                                                    List<PartUploadRequest> partUploadRequests,
-                                                    BatchPackageBuilder.@Nullable BatchPackage batchPackage) {
-        return invoke(BATCH_SESSION_CTOR_5_ARG, sessionClient, httpClient,
-                referenceNumber, partUploadRequests, batchPackage);
-    }
-
-    /**
-     * @apiNote Internal — F8a variant carrying the open-response
-     *     {@code validUntil} into the handle.
-     */
-    public static KsefBatchSession newBatchSession(SessionClient sessionClient,
-                                                    @Nullable HttpClient httpClient,
-                                                    String referenceNumber,
-                                                    List<PartUploadRequest> partUploadRequests,
-                                                    BatchPackageBuilder.@Nullable BatchPackage batchPackage,
-                                                    java.time.@Nullable OffsetDateTime validUntil) {
-        return invoke(BATCH_SESSION_CTOR_7_ARG_VALID_UNTIL, sessionClient, httpClient,
-                referenceNumber, partUploadRequests, batchPackage,
-                (java.util.function.LongSupplier) System::nanoTime, validUntil);
-    }
-
-    /**
-     * @apiNote Internal — overload with injectable nano-time source for
-     * upload-budget tests; see class-level Javadoc.
-     */
-    public static KsefBatchSession newBatchSession(SessionClient sessionClient,
-                                                    @Nullable HttpClient httpClient,
-                                                    String referenceNumber,
-                                                    List<PartUploadRequest> partUploadRequests,
-                                                    BatchPackageBuilder.@Nullable BatchPackage batchPackage,
-                                                    java.util.function.LongSupplier nanoTimeSource) {
-        return invoke(BATCH_SESSION_CTOR_6_ARG, sessionClient, httpClient,
-                referenceNumber, partUploadRequests, batchPackage, nanoTimeSource);
     }
 
     /**

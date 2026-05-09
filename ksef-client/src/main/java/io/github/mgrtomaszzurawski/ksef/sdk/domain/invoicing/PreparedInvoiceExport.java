@@ -611,7 +611,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
 
     /**
      * Delegate to shared {@code UriRedaction.redactQuery(URI)} (internal helper)
-     * so this class and {@code KsefBatchSession} share the same redaction policy
+     * so this class and the batch submission flow share the same redaction policy
      * (Codex round-9 fresh review H1).
      */
     private static String redactQuery(URI url) {

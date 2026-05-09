@@ -57,12 +57,13 @@
         <Package name="io.github.mgrtomaszzurawski.ksef.sdk.config"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
-    <!-- KsefBatchSession.partUploadRequests() returns a List that was already
-         List.copyOf'd in the constructor (immutable). SpotBugs cannot detect
-         the defensive copy pattern. -->
+    <!-- BatchSubmissionFlow internal mechanics: AES key + IV held to drive
+         the synchronous batch flow; the flow is the sole owner for the call's
+         lifetime, so defensive copies on every internal hop add noise without
+         security benefit. -->
     <Match>
-        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.BatchSubmissionFlow"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
     <!-- OnlineSessionImpl holds session-scoped AES key + IV byte[] received
          from OnlineSessionBuilder (PR9 rename of KsefSession).

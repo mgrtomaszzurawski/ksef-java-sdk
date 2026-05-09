@@ -8,11 +8,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.mgrtomaszzurawski.ksef.client.model.BatchFileInfoRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.BatchFilePartInfoRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
@@ -26,13 +21,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.Auth;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.CertificateClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchSessionOptions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.PreparedBatchPackage;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
@@ -53,9 +42,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClien
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.TestDataClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.TokenClientImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.IdentifierMasking;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefHttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
@@ -65,7 +52,6 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
@@ -105,19 +91,12 @@ public final class KsefClient implements AutoCloseable {
 
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
-    private static final String ERR_FORM_CODE_NULL = "formCode must not be null";
-    private static final String ERR_BATCH_PACKAGE_NULL = "preparedPackage must not be null";
-    private static final String ERR_INVOICES_NULL = "invoices must not be null";
-    private static final String ERR_BATCH_OPTIONS_NULL = "options must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
     private static final String ERR_NO_CERT = "No certificate found with usage: ";
     private static final String ERR_INTERRUPTED = "Interrupted while polling";
 
     private static final String LOG_AUTHENTICATED = "Authenticated with KSeF as {} {}";
-    private static final String LOG_OPENED_BATCH_SESSION = "Opened KSeF batch session {}, formCode={}";
-    private static final String LOG_OPENED_BATCH_SESSION_WITH_INVOICES =
-            "Opened KSeF batch session {} with {} invoices, formCode={}";
     private static final String LOG_TERMINATED = "Terminated KSeF auth session";
     private static final String LOG_REAUTHENTICATED = "Re-authenticated with KSeF after 401 (full auth flow)";
     private static final String LOG_REFRESHED = "Refreshed KSeF access token via /auth/token/refresh";
@@ -236,188 +215,6 @@ public final class KsefClient implements AutoCloseable {
             LOGGER.debug(LOG_AUTHENTICATED, identifier.type(),
                     IdentifierMasking.maskTail(identifier.value()));
         }
-    }
-
-    /**
-     * Open a batch KSeF session from a caller-prepared, already-encrypted package.
-     *
-     * <p>Manual entry point for advanced flows where the consumer streams or
-     * externally encrypts the batch parts. The {@link PreparedBatchPackage}
-     * <strong>must</strong> contain the AES key and IV that were used to
-     * encrypt {@code partBytes} — the SDK uses them verbatim to register the
-     * encryption material with KSeF (RSA-wrapped against the KSeF
-     * SymmetricKeyEncryption certificate). Mismatched key/IV results in a
-     * KSeF-side decryption failure.
-     *
-     * <p>For the common case where the SDK should build and encrypt the
-     * package itself, prefer {@link #openBatchSession(FormCode, List, BatchSessionOptions)}.
-     *
-     * <p><strong>Cleanup ownership:</strong> the SDK does not delete files or
-     * release buffers referenced by {@code preparedPackage} after the returned
-     * session is closed — they were not created by the SDK. The caller is
-     * responsible for cleaning up any temp files / large buffers they pass in.
-     * The auto-built overloads ({@link #openBatchSession(FormCode, List, BatchSessionOptions)}
-     * and {@link #openBatchSessionFromFiles(FormCode, List, BatchSessionOptions)})
-     * own their parts and clean up automatically.
-     *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
-     * @param preparedPackage caller-prepared spec + key/IV + encrypted part bytes
-     * @param options batch session options (see {@link BatchSessionOptions})
-     * @return an open batch session — use with try-with-resources
-     */
-    @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
-    public synchronized KsefBatchSession openBatchSession(FormCode formCode,
-                                                          PreparedBatchPackage preparedPackage,
-                                                          BatchSessionOptions options) {
-        Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
-        Objects.requireNonNull(preparedPackage, ERR_BATCH_PACKAGE_NULL);
-        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
-        // Batch sessions do not exhibit the post-termination 415 cooldown
-        // documented for online sessions, so no guardAgainstCooldown here.
-        ensureOpen();
-        ensureAuthenticated();
-        formCode.assertAllowedOn(environment);
-
-        PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
-        byte[] aesKey = preparedPackage.aesKey();
-        byte[] initVector = preparedPackage.initVector();
-        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
-
-        OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
-                .formCode(new FormCodeRaw()
-                        .systemCode(formCode.systemCode())
-                        .schemaVersion(formCode.schemaVersion())
-                        .value(formCode.value()))
-                .encryption(new EncryptionInfoRaw()
-                        .encryptedSymmetricKey(encryptedKey)
-                        .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(preparedPackage.spec()))
-                .offlineMode(options.offlineMode());
-
-        BatchSession session = sessionClient.openBatch(request);
-        LOGGER.debug(LOG_OPENED_BATCH_SESSION, session.referenceNumber(), formCode);
-
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(
-                sessionClient, httpClient, session.referenceNumber(),
-                session.partUploadRequests(), null);
-    }
-
-    /**
-     * Open a batch KSeF session for a list of raw invoice XML byte arrays.
-     *
-     * <p>Convenience overload that fully automates the batch package construction:
-     * <ol>
-     *   <li>Wrap each invoice as a separate entry in an in-memory ZIP</li>
-     *   <li>Encrypt the ZIP with a session AES-256 key</li>
-     *   <li>Split the encrypted bytes into upload parts (max 100 MB each)</li>
-     *   <li>Compute SHA-256 hashes for the whole file and each part</li>
-     *   <li>Open the batch session</li>
-     * </ol>
-     *
-     * <p>Authenticates lazily if not already authenticated. After this call, invoke
-     * {@link KsefBatchSession#uploadParts()} to push the encrypted bytes, then
-     * {@link KsefBatchSession#close()} to finalise the session.
-     *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
-     * @param invoiceXmls non-empty list of raw invoice XML byte arrays
-     * @param options batch session options (see {@link BatchSessionOptions})
-     * @return an open batch session pre-loaded with the encrypted part bytes
-     */
-    @SuppressWarnings("java:S2629") // SLF4J parameterised log args are simple getters; isDebugEnabled() guard would be redundant noise.
-    public synchronized KsefBatchSession openBatchSession(FormCode formCode,
-                                                          List<byte[]> invoiceXmls,
-                                                          BatchSessionOptions options) {
-        Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
-        Objects.requireNonNull(invoiceXmls, ERR_INVOICES_NULL);
-        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
-        // Codex round-9 manual validation A.4.2.3: batch cooldown asymmetry
-        // intentional — see openBatchSession(PreparedBatchPackage) overload
-        // for the rationale.
-        ensureOpen();
-        ensureAuthenticated();
-        formCode.assertAllowedOn(environment);
-
-        PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
-        byte[] aesKey = CryptoService.generateAesKey();
-        byte[] initVector = CryptoService.generateIv();
-        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
-
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.build(
-                invoiceXmls, aesKey, initVector, options.assembly());
-
-        OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
-                .formCode(new FormCodeRaw()
-                        .systemCode(formCode.systemCode())
-                        .schemaVersion(formCode.schemaVersion())
-                        .value(formCode.value()))
-                .encryption(new EncryptionInfoRaw()
-                        .encryptedSymmetricKey(encryptedKey)
-                        .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(pkg.spec()))
-                .offlineMode(options.offlineMode());
-
-        BatchSession session = sessionClient.openBatch(request);
-        LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,
-                session.referenceNumber(), invoiceXmls.size(), formCode);
-
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(
-                sessionClient, httpClient, session.referenceNumber(),
-                session.partUploadRequests(), pkg);
-    }
-
-    /**
-     * File-streaming variant of {@link #openBatchSession(FormCode, List, BatchSessionOptions)}.
-     * Each invoice is read straight from disk into the batch ZIP rather than
-     * materialised as a {@code byte[]} in heap (Codex round-9
-     * manual-validation A.4.2). Use this for large batches — e.g. the spec
-     * cap of 10 000 invoices (REQ-SESS-41) — so peak heap stays bounded by
-     * the chunk-encryption buffer.
-     *
-     * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
-     * @param invoiceFiles non-empty list of paths to invoice XML files
-     * @param options batch session options (see {@link BatchSessionOptions})
-     * @return an open batch session pre-loaded with the encrypted part bytes
-     */
-    @SuppressWarnings("java:S2629")
-    public synchronized KsefBatchSession openBatchSessionFromFiles(FormCode formCode,
-                                                                     List<java.nio.file.Path> invoiceFiles,
-                                                                     BatchSessionOptions options) {
-        Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
-        Objects.requireNonNull(invoiceFiles, ERR_INVOICES_NULL);
-        Objects.requireNonNull(options, ERR_BATCH_OPTIONS_NULL);
-        // Codex round-9 manual validation A.4.2.3: batch cooldown asymmetry
-        // intentional — see openBatchSession(PreparedBatchPackage) overload
-        // for the rationale.
-        ensureOpen();
-        ensureAuthenticated();
-        formCode.assertAllowedOn(environment);
-
-        PublicKey encryptionKey = getPublicKey(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
-        byte[] aesKey = CryptoService.generateAesKey();
-        byte[] initVector = CryptoService.generateIv();
-        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
-
-        BatchPackageBuilder.BatchPackage pkg = BatchPackageBuilder.buildFromFiles(
-                invoiceFiles, aesKey, initVector, options.assembly());
-
-        OpenBatchSessionRequestRaw request = new OpenBatchSessionRequestRaw()
-                .formCode(new FormCodeRaw()
-                        .systemCode(formCode.systemCode())
-                        .schemaVersion(formCode.schemaVersion())
-                        .value(formCode.value()))
-                .encryption(new EncryptionInfoRaw()
-                        .encryptedSymmetricKey(encryptedKey)
-                        .initializationVector(initVector))
-                .batchFile(toBatchFileInfoRaw(pkg.spec()))
-                .offlineMode(options.offlineMode());
-
-        BatchSession session = sessionClient.openBatch(request);
-        LOGGER.debug(LOG_OPENED_BATCH_SESSION_WITH_INVOICES,
-                session.referenceNumber(), invoiceFiles.size(), formCode);
-
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newBatchSession(
-                sessionClient, httpClient, session.referenceNumber(),
-                session.partUploadRequests(), pkg);
     }
 
     /**
@@ -768,19 +565,6 @@ public final class KsefClient implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(ERR_INTERRUPTED, interrupted);
         }
-    }
-
-    private static BatchFileInfoRaw toBatchFileInfoRaw(BatchFileSpec spec) {
-        List<BatchFilePartInfoRaw> parts = spec.parts().stream()
-                .map(part -> new BatchFilePartInfoRaw()
-                        .ordinalNumber(part.ordinalNumber())
-                        .fileSize(part.fileSize())
-                        .fileHash(part.fileHash()))
-                .toList();
-        return new BatchFileInfoRaw()
-                .fileSize(spec.fileSize())
-                .fileHash(spec.fileHash())
-                .fileParts(parts);
     }
 
     /**

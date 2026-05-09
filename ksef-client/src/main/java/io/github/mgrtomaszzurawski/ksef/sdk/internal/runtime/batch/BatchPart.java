@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +26,7 @@ import java.util.Objects;
  * <p>Internal to the SDK transport layer — not part of the public,
  * Maven-Central-exported API surface (lives under
  * {@code sdk.internal.runtime.batch}, which is not exported by
- * {@code module-info.java}). {@code KsefBatchSession.uploadParts}
+ * {@code module-info.java}). The internal batch upload path
  * pattern-matches on the subtype to pick the right
  * {@code java.net.http.HttpRequest.BodyPublisher}.
  */
@@ -45,7 +44,7 @@ public sealed interface BatchPart {
     /**
      * Release any resources held by this part. Idempotent and quiet —
      * a failed delete is logged but not propagated. Called automatically
-     * by {@code KsefBatchSession.close()}; safe to call manually too.
+     * by the internal batch submission flow; safe to call manually too.
      */
     void cleanup();
 

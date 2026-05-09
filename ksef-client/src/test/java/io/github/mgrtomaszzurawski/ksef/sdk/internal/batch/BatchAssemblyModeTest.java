@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.batch;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchAssemblyMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;

@@ -4,9 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchAssemblyMode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.batch.BatchFileSpec;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.IOException;
@@ -415,7 +412,7 @@ public final class BatchPackageBuilder {
      * describing the unencrypted ZIP.
      *
      * <p>Caller must invoke {@link #cleanup()} once parts have been
-     * uploaded — typically from {@link KsefBatchSession#close()}.
+     * uploaded — typically from the internal batch submission flow.
      */
     public record BatchPackage(BatchFileSpec spec, List<BatchPart> parts) {
 
