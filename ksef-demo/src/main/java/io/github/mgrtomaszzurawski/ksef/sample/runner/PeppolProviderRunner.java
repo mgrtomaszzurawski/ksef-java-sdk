@@ -23,12 +23,15 @@ import io.github.mgrtomaszzurawski.ksef.sample.util.IdentifierGenerators;
 import io.github.mgrtomaszzurawski.ksef.sample.util.SelfSignedCerts;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -62,6 +65,8 @@ public final class PeppolProviderRunner implements DemoRunner {
     private static final String OP_CLOSE = "close";
     /** KSeF terminal-success status code on permission grant operations. */
     private static final int GRANT_SUCCESS_STATUS_CODE = 200;
+    /** Wall-clock budget for the grant-authorization poll loop. */
+    private static final long GRANT_AWAIT_SECONDS = 30;
 
     @Override
     public String name() { return NAME; }
@@ -135,14 +140,14 @@ public final class PeppolProviderRunner implements DemoRunner {
                     .description("PeppolProviderRunner grant for " + peppolId);
             String referenceNumber = context.client().permissions().grantAuthorization(builder).referenceNumber();
             var permissions = context.client().permissions();
-            var status = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync.awaitTerminal(
-                    new io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync.Config<>(
+            var status = KsefAsync.awaitTerminal(
+                    new KsefAsync.Config<>(
                             "grantAuthorization",
                             () -> permissions.getOperationStatus(referenceNumber),
-                            s -> s.status() != null && s.status().code()
-                                    >= io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
-                            s -> s.status() == null ? null : s.status().code(),
-                            java.time.Duration.ofSeconds(30),
+                            opStatus -> opStatus.status() != null
+                                    && opStatus.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
+                            opStatus -> opStatus.status() == null ? null : opStatus.status().code(),
+                            Duration.ofSeconds(GRANT_AWAIT_SECONDS),
                             null));
             int code = status.status() == null ? -1 : status.status().code();
             if (code == GRANT_SUCCESS_STATUS_CODE) {

@@ -39,6 +39,9 @@ public final class PeppolRunner implements DemoRunner {
     private static final String NAME = "peppol";
     private static final String OP_QUERY_DEFAULT = "queryDefault";
     private static final String OP_QUERY_PAGED = "queryPaged";
+    private static final int DEFAULT_PAGE_OFFSET = 0;
+    /** First-page size for the default-paging probe — small to keep wire trace tight. */
+    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int PAGED_OFFSET = 0;
     private static final int PAGED_SIZE = 50;
 
@@ -58,7 +61,8 @@ public final class PeppolRunner implements DemoRunner {
     private void runQueryDefault(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            PeppolProvidersResult response = context.client().peppol().query(0, 10);
+            PeppolProvidersResult response = context.client().peppol()
+                    .query(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE);
             int count = response.providers() != null ? response.providers().size() : 0;
             LOGGER.info("[{}] default query: {} providers, hasMore={}", NAME, count, response.hasMore());
             results.add(RunResult.ok(NAME, OP_QUERY_DEFAULT, elapsed(start),
