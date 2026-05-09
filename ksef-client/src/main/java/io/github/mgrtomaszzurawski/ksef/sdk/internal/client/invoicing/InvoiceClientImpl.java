@@ -100,6 +100,9 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String QUERY_PAGE_SIZE_PARAM = "pageSize";
     private static final String QUERY_SORT_ORDER_PARAM = "sortOrder";
 
+    /** Default verification timeout matching {@code OnlineSessionImpl.DEFAULT_VERIFICATION_TIMEOUT}. */
+    private static final java.time.Duration DEFAULT_INVOICE_VERIFICATION_TIMEOUT = java.time.Duration.ofSeconds(60);
+
     private final HttpRuntime runtime;
     private final HttpSupport http;
     private final SecurityClient securityClient;
@@ -107,15 +110,24 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private final @Nullable SessionClient sessionClient;
     private final @Nullable KsefEnvironment environment;
     private final @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver;
+    private final java.time.Duration invoiceVerificationTimeout;
 
     public InvoiceClientImpl(HttpRuntime runtime) {
-        this(runtime, null, null, null);
+        this(runtime, null, null, null, DEFAULT_INVOICE_VERIFICATION_TIMEOUT);
     }
 
     public InvoiceClientImpl(HttpRuntime runtime,
                               @Nullable SessionClient sessionClient,
                               @Nullable KsefEnvironment environment,
                               @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver) {
+        this(runtime, sessionClient, environment, publicKeyResolver, DEFAULT_INVOICE_VERIFICATION_TIMEOUT);
+    }
+
+    public InvoiceClientImpl(HttpRuntime runtime,
+                              @Nullable SessionClient sessionClient,
+                              @Nullable KsefEnvironment environment,
+                              @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
+                              java.time.Duration invoiceVerificationTimeout) {
         this.runtime = runtime;
         this.http = new HttpSupport(runtime);
         this.securityClient = new SecurityClient(runtime);
@@ -123,6 +135,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
         this.sessionClient = sessionClient;
         this.environment = environment;
         this.publicKeyResolver = publicKeyResolver;
+        this.invoiceVerificationTimeout = Objects.requireNonNull(invoiceVerificationTimeout,
+                "invoiceVerificationTimeout must not be null");
     }
 
     /**
@@ -363,7 +377,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
         guardAgainstCooldown(openResult.referenceNumber());
 
         return SessionHandleConstructor.newOnlineSession(
-                sessionClient, openResult.referenceNumber(), aesKey, initVector, openResult.validUntil());
+                sessionClient, openResult.referenceNumber(), aesKey, initVector,
+                openResult.validUntil(), environment, invoiceVerificationTimeout);
     }
 
     /**

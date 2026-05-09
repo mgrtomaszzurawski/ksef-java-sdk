@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -62,25 +63,37 @@ public interface OnlineSession extends Session {
 
     /**
      * Send an invoice (the open {@link Invoice} interface) within this
-     * session.
+     * session and synchronously wait for KSeF terminal verification.
      *
      * <p>The SDK extracts {@link Invoice#xml()} and {@link Invoice#formCode()},
      * encrypts the XML with the session's AES key, SHA-256-hashes it,
-     * and submits it to KSeF. The consumer never handles encryption or
-     * hashing directly.
+     * and submits it to KSeF. It then polls
+     * {@link Session#invoiceStatus(String)} on the assigned reference
+     * number until the server reports a terminal status (Accepted /
+     * Rejected / etc.). The verification timeout is configured via
+     * {@code KsefClient.Builder.invoiceVerificationTimeout(Duration)}
+     * (default 60 seconds).
      *
-     * <p>PR12a-only return type: the legacy {@link SendInvoiceResult}
-     * (single field {@code referenceNumber}). PR10 will widen this to
-     * {@code SubmittedInvoice}, which embeds the source {@link Invoice}
-     * plus terminal-state metadata (KSeF number, KOD I QR, error
-     * details).
+     * <p>On Accepted: the returned {@link SubmittedInvoice} carries the
+     * canonical {@link KsefNumber} and a freshly-rendered KOD I QR-code
+     * PNG so callers can produce buyer-facing visualisations without an
+     * extra round-trip.
+     *
+     * <p>On Rejected: the returned {@link SubmittedInvoice} carries the
+     * server's error details and an empty KSeF number / KOD I QR.
+     *
+     * <p>On verification timeout: throws
+     * {@code KsefSessionPollingTimeoutException}. The submission itself
+     * has already happened by then — the caller can re-query
+     * {@link Session#invoiceStatus(String)} later if they want to wait
+     * longer.
      *
      * @param invoice the invoice to send — must not be null
-     * @return result containing the invoice reference number
+     * @return synchronous terminal-state result with embedded invoice
      * @throws IllegalStateException if the session is already closed or archived
      * @throws NullPointerException if {@code invoice} is null
      */
-    SendInvoiceResult sendInvoice(Invoice invoice);
+    SubmittedInvoice sendInvoice(Invoice invoice);
 
     /**
      * Send an invoice within this session.

@@ -5,18 +5,26 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.SendInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -81,11 +89,28 @@ final class OnlineSessionImpl implements OnlineSession {
     /** REQ-SESS-41 — KSeF caps a single session at 10,000 invoices. */
     private static final int MAX_INVOICES_PER_SESSION = 10_000;
 
+    private static final String SHA_256_ALGORITHM = "SHA-256";
+    private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 not available";
+    private static final String ERR_INVOICE_NULL = "invoice must not be null";
+    private static final String ERR_SEND_INVOICE_REQUIRES_FULL_CTOR =
+            "sendInvoice(Invoice) requires the verification-aware constructor (KsefEnvironment + timeout);"
+                    + " InvoiceClientImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
+
+    /** Default verification timeout when none is supplied via the builder. */
+    static final Duration DEFAULT_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);
+    /** Verification poll interval — matches the close-poll cadence (3s). */
+    private static final long VERIFICATION_POLL_INTERVAL_MS = STATUS_POLL_DELAY_MS;
+    /** A status with code &lt; 200 means KSeF is still processing the invoice. */
+    private static final int VERIFICATION_TERMINAL_THRESHOLD = STATUS_CODE_OK;
+
     private final SessionClient sessionClient;
     private final String referenceNumber;
     private final byte[] aesKey;
     private final byte[] initVector;
     @Nullable private final OffsetDateTime validUntil;
+    @Nullable private final KsefEnvironment environment;
+    private final Duration invoiceVerificationTimeout;
+    private final QrCodeService qrCodeService;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -100,17 +125,29 @@ final class OnlineSessionImpl implements OnlineSession {
 
     OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
-        this(sessionClient, referenceNumber, aesKey, initVector, null);
+        this(sessionClient, referenceNumber, aesKey, initVector, null, null, DEFAULT_VERIFICATION_TIMEOUT);
     }
 
     OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector,
                 @Nullable OffsetDateTime validUntil) {
+        this(sessionClient, referenceNumber, aesKey, initVector, validUntil, null, DEFAULT_VERIFICATION_TIMEOUT);
+    }
+
+    OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
+                byte[] aesKey, byte[] initVector,
+                @Nullable OffsetDateTime validUntil,
+                @Nullable KsefEnvironment environment,
+                Duration invoiceVerificationTimeout) {
         this.sessionClient = sessionClient;
         this.referenceNumber = referenceNumber;
         this.aesKey = aesKey;
         this.initVector = initVector;
         this.validUntil = validUntil;
+        this.environment = environment;
+        this.invoiceVerificationTimeout = Objects.requireNonNull(invoiceVerificationTimeout,
+                "invoiceVerificationTimeout must not be null");
+        this.qrCodeService = new QrCodeService();
     }
 
     @Override
@@ -125,13 +162,85 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public SendInvoiceResult sendInvoice(Invoice invoice) {
-        Objects.requireNonNull(invoice, "invoice must not be null");
-        // PR12a wires Invoice.xml() through the existing SendInvoiceBuilder
-        // pipeline. FormCode is set at session-open time, so the SDK does
-        // not need to forward it on a per-invoice basis here. PR10 will
-        // widen the return type to SubmittedInvoice with sync verification.
-        return send(invoice.xml());
+    public SubmittedInvoice sendInvoice(Invoice invoice) {
+        Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
+        if (environment == null) {
+            // Legacy 4/5-arg constructors do not carry the environment +
+            // timeout pair needed for KOD I QR rendering. Surface the
+            // misconfiguration loudly rather than silently producing a
+            // half-populated SubmittedInvoice.
+            throw new IllegalStateException(ERR_SEND_INVOICE_REQUIRES_FULL_CTOR);
+        }
+        byte[] invoiceXml = invoice.xml();
+        // Submit through the existing wire path. SendInvoiceBuilder
+        // computes the SHA-256 internally, but we re-compute it here so
+        // we own a copy of the digest for the KOD I QR step (the
+        // builder's hash is wrapped inside the request and not exposed
+        // by the wire response).
+        byte[] invoiceSha256 = computeSha256(invoiceXml);
+        SendInvoiceResult sendResult = send(invoiceXml);
+        SessionInvoiceStatus terminalStatus = pollUntilVerified(sendResult.referenceNumber());
+        return buildSubmittedInvoice(invoice, sendResult.referenceNumber(),
+                terminalStatus, invoiceSha256);
+    }
+
+    private SessionInvoiceStatus pollUntilVerified(String invoiceRef) {
+        long deadlineMillis = System.currentTimeMillis() + invoiceVerificationTimeout.toMillis();
+        Integer lastCode = null;
+        int attempts = 0;
+        while (System.currentTimeMillis() < deadlineMillis) {
+            attempts++;
+            SessionInvoiceStatus snapshot = sessionClient.getInvoiceStatus(referenceNumber, invoiceRef);
+            Integer code = snapshot.status() != null ? snapshot.status().code() : null;
+            lastCode = code;
+            if (code != null && code >= VERIFICATION_TERMINAL_THRESHOLD) {
+                return snapshot;
+            }
+            sleep((int) VERIFICATION_POLL_INTERVAL_MS);
+        }
+        throw new KsefSessionPollingTimeoutException(invoiceRef, attempts, lastCode);
+    }
+
+    private SubmittedInvoice buildSubmittedInvoice(Invoice invoice, String invoiceRef,
+                                                   SessionInvoiceStatus terminalStatus,
+                                                   byte[] invoiceSha256) {
+        Integer code = terminalStatus.status() != null ? terminalStatus.status().code() : null;
+        boolean accepted = code != null && code == STATUS_CODE_OK;
+        Optional<KsefNumber> ksefNumber = Optional.empty();
+        Optional<byte[]> kodIQr = Optional.empty();
+        List<String> errorDetails = List.of();
+        if (accepted && terminalStatus.ksefNumber() != null) {
+            KsefNumber number = KsefNumber.parse(terminalStatus.ksefNumber());
+            ksefNumber = Optional.of(number);
+            kodIQr = Optional.of(renderKodIQr(number, invoiceSha256));
+        } else if (terminalStatus.status() != null && terminalStatus.status().details() != null) {
+            errorDetails = new ArrayList<>(terminalStatus.status().details());
+            if (terminalStatus.status().description() != null && errorDetails.isEmpty()) {
+                errorDetails.add(terminalStatus.status().description());
+            }
+        }
+        return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
+                ksefNumber, kodIQr, errorDetails);
+    }
+
+    private byte[] renderKodIQr(KsefNumber ksefNumber, byte[] invoiceSha256) {
+        Objects.requireNonNull(environment, "environment must not be null at this point");
+        QrEnvironment qrEnvironment = QrEnvironment.fromKsefEnvironment(environment);
+        String url = KsefVerificationLinks.buildInvoiceVerificationUrl(
+                qrEnvironment,
+                ksefNumber.sellerNip(),
+                ksefNumber.acceptanceDate(),
+                invoiceSha256);
+        return qrCodeService.generateQrCode(url);
+    }
+
+    private static byte[] computeSha256(byte[] data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
+            return digest.digest(data);
+        } catch (NoSuchAlgorithmException missingAlgorithm) {
+            throw new IllegalStateException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
+        }
     }
 
     @Override
