@@ -29,7 +29,6 @@ import io.github.mgrtomaszzurawski.ksef.sample.runner.PeppolRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.PermissionRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.QrCodeRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.RateLimitRunner;
-import io.github.mgrtomaszzurawski.ksef.sample.runner.SecurityRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.SessionRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.TestDataRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.TokenRunner;
@@ -234,7 +233,6 @@ public final class DemoApp {
         List<DemoRunner> runners = new ArrayList<>();
 
         if (mode != DemoMode.CLEANUP) {
-            runners.add(new SecurityRunner());
             runners.add(new QrCodeRunner());
         }
 

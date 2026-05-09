@@ -147,11 +147,18 @@ public final class CertificatesMappers {
     }
 
     public static RetrievedCertificate toRetrievedCertificate(RetrieveCertificatesListItemRaw rawValue) {
-        return new RetrievedCertificate(
+        return RetrievedCertificate.from(
                 rawValue.getCertificate(),
                 rawValue.getCertificateName(),
                 rawValue.getCertificateSerialNumber(),
-                rawValue.getCertificateType().getValue());
+                toKsefCertificateType(rawValue.getCertificateType()));
+    }
+
+    private static KsefCertificateType toKsefCertificateType(KsefCertificateTypeRaw rawValue) {
+        return switch (rawValue) {
+            case AUTHENTICATION -> KsefCertificateType.AUTHENTICATION;
+            case OFFLINE -> KsefCertificateType.OFFLINE;
+        };
     }
 
     public static CertificateRevocationReasonRaw toCertificateRevocationReasonRaw(CertificateRevocationReason value) {

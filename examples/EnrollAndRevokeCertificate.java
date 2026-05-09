@@ -53,9 +53,10 @@ public final class EnrollAndRevokeCertificate {
                 .credentials(new KsefPkcs12Credentials(p12Path, p12Password, nip))
                 .build()) {
 
-            client.authenticate();
-            // After authentication the password buffer is no longer
-            // needed; zero it so a heap dump cannot recover it.
+            // Drive lazy auth via any authenticated read so the PKCS#12
+            // material is consumed up-front; then zero the password buffer
+            // so a heap dump cannot recover it.
+            client.auth().streamSessions().findAny();
             java.util.Arrays.fill(p12Password, '\0');
             System.out.println("XAdES authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 

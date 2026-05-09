@@ -4,7 +4,13 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
 import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
@@ -14,10 +20,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-import java.io.ByteArrayInputStream;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest;
@@ -25,9 +28,19 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExport
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
@@ -35,6 +48,8 @@ import java.net.http.HttpClient;
 import java.security.PublicKey;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
@@ -63,13 +78,21 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String OP_QUERY_METADATA = "queryInvoicesMetadata";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
     private static final String OP_PREPARE_EXPORT = "prepareInvoiceExport";
+    private static final String OP_OPEN_SESSION = "openSession";
+    private static final String OP_STREAM_SESSIONS = "streamSessions";
+    private static final String OP_SYNC = "sync";
+    private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
     private static final String ERR_NULL_QUERY = "query must not be null";
+    private static final String ERR_NULL_FILTER = "filter must not be null";
+    private static final String ERR_NULL_FORM_CODE = "formCode must not be null";
+    private static final String ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME =
+            "openSession() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+    private static final String ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME =
+            "streamSessions() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
-    private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
     private static final String ERR_TRUNCATED_NO_CURSOR =
             "streamInvoicesByMetadata: server returned isTruncated=true but no usable date cursor on the last record "
                     + "for the selected dateType axis — cannot advance pagination safely";
-    private static final String CERT_TYPE_X509 = "X.509";
     /** Spec-defined maximum page size for {@code POST /invoices/query/metadata}. */
     private static final int QUERY_METADATA_MAX_PAGE_SIZE = 250;
     /** First page is offset 0 per OpenAPI. */
@@ -78,14 +101,29 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String QUERY_PAGE_SIZE_PARAM = "pageSize";
     private static final String QUERY_SORT_ORDER_PARAM = "sortOrder";
 
+    private final HttpRuntime runtime;
     private final HttpSupport http;
     private final SecurityClient securityClient;
     private final HttpClient httpClient;
+    private final @Nullable SessionClient sessionClient;
+    private final @Nullable KsefEnvironment environment;
+    private final @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver;
 
     public InvoiceClientImpl(HttpRuntime runtime) {
+        this(runtime, null, null, null);
+    }
+
+    public InvoiceClientImpl(HttpRuntime runtime,
+                              @Nullable SessionClient sessionClient,
+                              @Nullable KsefEnvironment environment,
+                              @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver) {
+        this.runtime = runtime;
         this.http = new HttpSupport(runtime);
         this.securityClient = new SecurityClient(runtime);
         this.httpClient = runtime.httpClient();
+        this.sessionClient = sessionClient;
+        this.environment = environment;
+        this.publicKeyResolver = publicKeyResolver;
     }
 
     /**
@@ -144,7 +182,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      * result completeness.
      */
     @Override
-    public java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryFilters query) {
+    public Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryFilters query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query);
@@ -241,7 +279,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
         PublicKey symmetricKey = securityClient.getPublicKeyCertificates().stream()
                 .filter(cert -> cert.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
                 .findFirst()
-                .map(InvoiceClientImpl::parsePublicKey)
+                .map(PublicKeyCertificate::publicKey)
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_SYMMETRIC_KEY_CERT));
 
         byte[] aesKey = CryptoService.generateAesKey();
@@ -255,19 +293,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
         ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, rawRequest, token,
                 ExportInvoicesResponseRaw.class, OP_PREPARE_EXPORT);
         ExportInvoicesResult result = InvoicingMappers.toExportInvoicesResult(rawValue);
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(
+        return SessionHandleConstructor.newPreparedExport(
                 this, httpClient, result.referenceNumber(), aesKey, initVector);
-    }
-
-    private static PublicKey parsePublicKey(PublicKeyCertificate certificate) {
-        try {
-            CertificateFactory factory = CertificateFactory.getInstance(CERT_TYPE_X509);
-            X509Certificate x509 = (X509Certificate)
-                    factory.generateCertificate(new ByteArrayInputStream(certificate.certificate()));
-            return x509.getPublicKey();
-        } catch (CertificateException certificateFailure) {
-            throw new KsefException(ERR_PARSE_SYMMETRIC_CERT, certificateFailure);
-        }
     }
 
     /**
@@ -305,5 +332,74 @@ public final class InvoiceClientImpl implements InvoiceClient {
         QueryInvoicesMetadataResponseRaw rawValue = http.postJsonAuthenticated(path.toString(), filters, token,
                 QueryInvoicesMetadataResponseRaw.class, OP_QUERY_METADATA);
         return InvoicingMappers.toInvoiceMetadataResult(rawValue);
+    }
+
+    @Override
+    @SuppressWarnings("java:S2629")
+    public KsefSession openSession(FormCode formCode) {
+        Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
+        if (sessionClient == null || environment == null || publicKeyResolver == null) {
+            throw new IllegalStateException(ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME);
+        }
+        LOGGER.debug(LOG_CALL, OP_OPEN_SESSION);
+        formCode.assertAllowedOn(environment);
+
+        PublicKey encryptionKey = publicKeyResolver.apply(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION);
+        byte[] aesKey = CryptoService.generateAesKey();
+        byte[] initVector = CryptoService.generateIv();
+        byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, encryptionKey);
+
+        OpenOnlineSessionRequestRaw request = new OpenOnlineSessionRequestRaw()
+                .formCode(new FormCodeRaw()
+                        .systemCode(formCode.systemCode())
+                        .schemaVersion(formCode.schemaVersion())
+                        .value(formCode.value()))
+                .encryption(new EncryptionInfoRaw()
+                        .encryptedSymmetricKey(encryptedKey)
+                        .initializationVector(initVector));
+
+        OnlineSession session = sessionClient.openOnline(request);
+        LOGGER.debug(LOG_OPENED_ONLINE_SESSION, session.referenceNumber(), formCode);
+        guardAgainstCooldown(session.referenceNumber());
+
+        return SessionHandleConstructor.newOnlineSession(
+                sessionClient, session.referenceNumber(), aesKey, initVector, session.validUntil());
+    }
+
+    /**
+     * Codex 2026-05-05 #8b — proactively detect the post-termination
+     * cooldown window. KSeF returns a fresh session reference on
+     * {@code openOnline}, but the session can immediately enter status 415
+     * when reopened too soon after a previous termination for the same
+     * NIP. Catch that here and surface it as a typed exception instead of
+     * letting the caller hit it on first {@code send(...)}.
+     */
+    private void guardAgainstCooldown(String referenceNumber) {
+        var status = Objects.requireNonNull(sessionClient, "sessionClient").getStatus(referenceNumber);
+        if (status.status() != null
+                && KsefSessionCooldownException.isCooldownStatus(status.status().code())) {
+            throw new KsefSessionCooldownException(
+                    "openSession returned reference " + referenceNumber
+                            + " but immediately reports status 415 — server is in the post-termination"
+                            + " cooldown window for this NIP. Wait at least "
+                            + KsefSessionCooldownException.TYPICAL_COOLDOWN
+                            + " before retrying.");
+        }
+    }
+
+    @Override
+    public Stream<SessionListItem> streamSessions(SessionsQueryFilter filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
+        if (sessionClient == null) {
+            throw new IllegalStateException(ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME);
+        }
+        LOGGER.debug(LOG_CALL, OP_STREAM_SESSIONS);
+        return sessionClient.streamSessions(filter);
+    }
+
+    @Override
+    public SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink) {
+        LOGGER.debug(LOG_CALL, OP_SYNC);
+        return new InvoiceSyncClient(this, runtime.objectMapper()).sync(plan, checkpointStore, sink);
     }
 }

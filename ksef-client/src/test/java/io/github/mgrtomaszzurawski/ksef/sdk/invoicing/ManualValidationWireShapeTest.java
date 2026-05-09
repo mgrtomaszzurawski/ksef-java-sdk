@@ -138,7 +138,7 @@ class ManualValidationWireShapeTest {
             SessionsQueryFilter filter = SessionsQueryFilter.forOnline()
                     .statuses(CommonSessionStatus.IN_PROGRESS, CommonSessionStatus.SUCCEEDED)
                     .build();
-            List<SessionListItem> result = client.streamSessions(filter).toList();
+            List<SessionListItem> result = client.invoices().streamSessions(filter).toList();
 
             assertNotNull(result, "streamSessions returns empty list, not null, on no results");
             verify(getRequestedFor(urlPathEqualTo(SESSIONS_PATH))

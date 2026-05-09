@@ -27,7 +27,7 @@ public final class CommonMappers {
 
     public static PublicKeyCertificate toPublicKeyCertificate(PublicKeyCertificateRaw rawValue) {
         List<PublicKeyCertificateUsage> mappedUsage = rawValue.getUsage().stream().map(CommonMappers::toPublicKeyCertificateUsage).toList();
-        return new PublicKeyCertificate(
+        return PublicKeyCertificate.from(
                 rawValue.getCertificate(),
                 rawValue.getValidFrom(),
                 rawValue.getValidTo(),

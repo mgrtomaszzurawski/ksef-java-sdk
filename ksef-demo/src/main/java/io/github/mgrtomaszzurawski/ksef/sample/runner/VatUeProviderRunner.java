@@ -175,7 +175,8 @@ public final class VatUeProviderRunner implements DemoRunner {
                 .credentials(creds)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
-            client.authenticate();
+            // Drive lazy auth via any authenticated read.
+            client.auth().streamSessions().findAny();
             LOGGER.info("[{}] {} authenticated as nipVatUe={}", NAME, LABEL, nipVatUe);
             results.add(RunResult.ok(NAME, OP_AUTH + LABEL, elapsed(start),
                     "nipVatUe=" + nipVatUe));

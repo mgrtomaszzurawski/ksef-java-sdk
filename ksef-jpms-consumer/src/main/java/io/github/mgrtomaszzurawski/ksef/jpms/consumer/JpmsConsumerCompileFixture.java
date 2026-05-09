@@ -162,9 +162,10 @@ public final class JpmsConsumerCompileFixture {
             throw new IllegalStateException("input was null");
         }
 
-        // Reference Stream<AuthSession> as a public return shape.
+        // Reference Stream<AuthSession> as a public return shape (now via
+        // the client.auth() accessor — PR6 trim).
         java.util.function.Function<KsefClient, java.util.stream.Stream<AuthSession>> streamSessions =
-                KsefClient::streamAuthSessions;
+                client -> client.auth().streamSessions();
         if (streamSessions == null) {
             throw new IllegalStateException("streamSessions was null");
         }

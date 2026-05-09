@@ -120,7 +120,8 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .credentials(creds)
                 .retryPolicy(io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy.builder().build())
                 .build()) {
-            client.authenticate();
+            // Drive lazy auth via any authenticated read.
+            client.auth().streamSessions().findAny();
             results.add(RunResult.ok(NAME, OP_AUTH, elapsed(start),
                     "peppolId=" + peppolId + " (registered via XAdES self-signed cert)"));
             return true;
@@ -185,12 +186,13 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .credentials(creds)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
-            client.authenticate();
+            // Drive lazy auth via any authenticated read.
+            client.auth().streamSessions().findAny();
             results.add(RunResult.ok(NAME, OP_AUTH + label, elapsed(authStart),
                     "peppolId=" + peppolId));
 
             long openStart = System.currentTimeMillis();
-            try (KsefSession session = client.openSession(formCode)) {
+            try (KsefSession session = client.invoices().openSession(formCode)) {
                 results.add(RunResult.ok(NAME, OP_OPEN_SESSION + label, elapsed(openStart),
                         "ref=" + session.referenceNumber()));
                 invoiceRef = runSend(session, formCode, context.nipIdentifier(),

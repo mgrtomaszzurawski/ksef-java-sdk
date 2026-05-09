@@ -122,7 +122,7 @@ class AuthAutoRefreshTest {
             stubAuthFlowSuccess();
 
             // when
-            ksef.rateLimits().getRateLimits();
+            ksef.limits().getRateLimits();
 
             // then — both attempts hit the target, reauth flow ran exactly once
             verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
@@ -141,7 +141,7 @@ class AuthAutoRefreshTest {
             stubAuthFlowSuccess();
 
             // then
-            var rateLimits = ksef.rateLimits();
+            var rateLimits = ksef.limits();
 
             assertThrows(KsefAuthException.class, () -> rateLimits.getRateLimits());
             verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
@@ -163,7 +163,7 @@ class AuthAutoRefreshTest {
             stubAuthFlowSuccess();
 
             // when
-            ksef.rateLimits().getRateLimits();
+            ksef.limits().getRateLimits();
 
             // then — exactly one request, no reauth
             verify(1, getRequestedFor(urlEqualTo(TARGET_PATH)));
@@ -195,7 +195,7 @@ class AuthAutoRefreshTest {
             stubAuthFlowSuccess();
 
             // when
-            ksef.rateLimits().getRateLimits();
+            ksef.limits().getRateLimits();
 
             // then — refresh endpoint was used, full challenge flow was NOT
             verify(2, getRequestedFor(urlEqualTo(TARGET_PATH)));
@@ -272,9 +272,26 @@ class AuthAutoRefreshTest {
         // for the SECOND auth call (after a 401-driven reauth).
         KsefClient ksef = io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture
                 .newAuthenticatedClient(wmInfo, INITIAL_TOKEN, NIP);
-        ksef.authenticate();
+        forceAuthenticate(ksef);
         com.github.tomakehurst.wiremock.client.WireMock.resetAllRequests();
         return ksef;
+    }
+
+    /**
+     * Drive lazy auth at a precise point in the test setup. The
+     * {@code authenticate()} method on {@link KsefClient} is not
+     * exposed publicly (lazy auth is the documented API); reflection
+     * is the test seam for forcing the flow before the test body
+     * checks state.
+     */
+    private static void forceAuthenticate(KsefClient ksef) {
+        try {
+            java.lang.reflect.Method method = KsefClient.class.getDeclaredMethod("authenticate");
+            method.setAccessible(true);
+            method.invoke(ksef);
+        } catch (ReflectiveOperationException reflectiveFailure) {
+            throw new IllegalStateException("Test could not force lazy auth", reflectiveFailure);
+        }
     }
 
     private static KsefClient createClientWithStaleSessionAndRefreshToken(WireMockRuntimeInfo wmInfo) {

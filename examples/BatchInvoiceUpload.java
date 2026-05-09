@@ -52,8 +52,8 @@ public final class BatchInvoiceUpload {
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
-            client.authenticate();
-            System.out.println("Authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
+            // Authentication is lazy — opening the batch session triggers it.
+            System.out.println("Connecting as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
             try (KsefBatchSession batch = client.openBatchSession(FormCode.FA3, invoices, BatchSessionOptions.online())) {
                 System.out.println("Batch session: " + batch.referenceNumber());

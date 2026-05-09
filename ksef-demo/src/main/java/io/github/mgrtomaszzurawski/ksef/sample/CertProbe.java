@@ -85,7 +85,8 @@ public final class CertProbe {
 
         try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(properties.environment()))
                 .credentials(credentials).build()) {
-            client.authenticate();
+            // Drive lazy auth via any authenticated read.
+            client.auth().streamSessions().findAny();
             run(client);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
@@ -103,7 +104,7 @@ public final class CertProbe {
                    org.bouncycastle.operator.OperatorCreationException,
                    java.io.IOException {
         section("STEP 1: XAdES authentication (handled by SDK)");
-        LOGGER.info("XAdES session active (authenticated via KsefClient.authenticate())");
+        LOGGER.info("XAdES session active (authenticated via KsefClient lazy-auth flow)");
 
         section("STEP 2: certificates/limits BEFORE");
         printLimits("BEFORE", client.certificates().getLimits());
