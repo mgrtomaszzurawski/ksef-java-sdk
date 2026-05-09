@@ -205,11 +205,6 @@ public final class InvoiceQueryBuilder {
         return this;
     }
 
-    /** @return configured sort order, or {@code null} if not set (server defaults to {@code Asc}). */
-    public @Nullable SortOrder sortOrderValue() {
-        return sortOrder;
-    }
-
     public InvoiceQueryBuilder toBuilder() {
         InvoiceQueryBuilder copy = new InvoiceQueryBuilder(this.subjectType);
         copy.dateType = this.dateType;

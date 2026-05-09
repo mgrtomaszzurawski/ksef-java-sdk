@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -100,6 +101,35 @@ class UncoveredBuildersCoverageTest {
         // then — toBuilder() must preserve onlyMetadata=false (fullContent flag)
         assertFalse(request.onlyMetadata(),
                 "toBuilder() must preserve fullContent flag (onlyMetadata=false) from the source builder");
+    }
+
+    @Test
+    void invoiceQueryBuilder_build_persistsSortOrderIntoRequest() {
+        // given — sortOrder set; .build() must propagate the value into the
+        // emitted InvoiceQueryFilters record (PR5 moved this from a separate
+        // builder accessor onto the request itself).
+        var request = InvoiceQueryBuilder.seller()
+                .permanentStorageDateFrom(FROM)
+                .dateTo(TO)
+                .sortOrder(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder.DESC)
+                .build();
+
+        // then
+        assertEquals(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder.DESC,
+                request.sortOrder());
+    }
+
+    @Test
+    void invoiceQueryBuilder_build_whenDateRangeExceeds3Months_throws() {
+        // given — dateTo is more than 3 months past dateFrom; spec caps the
+        // server-side window at 3 months and the builder must surface that
+        // up-front so a 400 round-trip is avoided.
+        var builder = InvoiceQueryBuilder.seller()
+                .permanentStorageDateFrom(FROM)
+                .dateTo(FROM.plusMonths(4));
+
+        // when / then
+        assertThrows(IllegalStateException.class, builder::build);
     }
 
     @Test
