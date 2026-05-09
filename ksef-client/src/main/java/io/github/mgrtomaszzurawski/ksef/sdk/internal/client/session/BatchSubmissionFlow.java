@@ -122,6 +122,8 @@ public final class BatchSubmissionFlow {
     private static final String LOG_PART_UPLOADED = "Uploaded batch part {}";
     private static final String LOG_CLOSED = "Closed KSeF batch session {}";
     private static final String LOG_CLOSE_BUSY_RETRY = "Batch session {} still busy on close, retrying in {}ms";
+    private static final String LOG_TOTAL_COUNT_MISMATCH =
+            "Batch session {} expected {} invoices, KSeF returned {}; reporting KSeF's count";
 
     private static final String ERR_FORM_CODE_NULL = "formCode must not be null";
     private static final String ERR_INVOICES_NULL = "invoices must not be null";
@@ -139,6 +141,23 @@ public final class BatchSubmissionFlow {
     private static final String ERR_INSECURE_UPLOAD_URL = "Refusing to upload batch part over non-HTTPS URL: ";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
+    private static final String ERR_UPLOAD_TIMED_OUT = "Batch upload timed out";
+    private static final String ERR_UPLOAD_WORKER_FAILED = "Batch upload worker failed";
+    private static final String ERR_DEADLINE_EXCEEDED = "submitBatch deadline exceeded";
+    private static final String ERR_UNKNOWN_BATCH_PART_SUBTYPE = "Unknown BatchPart subtype: ";
+    private static final String UNKNOWN_FAILURE_DESCRIPTION = "Unknown error";
+    private static final String ERR_NULL_SESSION_CLIENT = "sessionClient must not be null";
+    private static final String ERR_NULL_HTTP_CLIENT = "httpClient must not be null";
+    private static final String ERR_NULL_ENVIRONMENT = "environment must not be null";
+    private static final String ERR_NULL_PUBLIC_KEY_RESOLVER = "publicKeyResolver must not be null";
+    private static final String ERR_NULL_CLOCK = "clock must not be null";
+
+    /** Worker thread name for batch part uploads — load-bearing for log diagnostics. */
+    private static final String UPLOAD_THREAD_NAME = "ksef-batch-upload";
+    /** Per-part HTTP request timeout — REQ-SESS-13 (ksef-docs/sesja-wsadowa.md). */
+    private static final long UPLOAD_PART_TIMEOUT_MINUTES = 20L;
+    /** Plain-HTTP scheme — accepted only for loopback uploads. */
+    private static final String SCHEME_HTTP = "http";
 
     private static final java.util.regex.Pattern IP_LITERAL_PATTERN = java.util.regex.Pattern.compile(
             "^(?:(?:\\d{1,3}\\.){3}\\d{1,3}|\\[?[0-9a-fA-F]*:[0-9a-fA-F:]*\\]?)$");
@@ -161,11 +180,11 @@ public final class BatchSubmissionFlow {
                         KsefEnvironment environment,
                         Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
                         Clock clock) {
-        this.sessionClient = Objects.requireNonNull(sessionClient, "sessionClient must not be null");
-        this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
-        this.environment = Objects.requireNonNull(environment, "environment must not be null");
-        this.publicKeyResolver = Objects.requireNonNull(publicKeyResolver, "publicKeyResolver must not be null");
-        this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.sessionClient = Objects.requireNonNull(sessionClient, ERR_NULL_SESSION_CLIENT);
+        this.httpClient = Objects.requireNonNull(httpClient, ERR_NULL_HTTP_CLIENT);
+        this.environment = Objects.requireNonNull(environment, ERR_NULL_ENVIRONMENT);
+        this.publicKeyResolver = Objects.requireNonNull(publicKeyResolver, ERR_NULL_PUBLIC_KEY_RESOLVER);
+        this.clock = Objects.requireNonNull(clock, ERR_NULL_CLOCK);
     }
 
     /**
@@ -187,7 +206,7 @@ public final class BatchSubmissionFlow {
         }
         formCode.assertAllowedOn(environment);
         List<byte[]> invoiceXmls = extractAndValidateXmls(formCode, invoices);
-        return runFlow(formCode, options,
+        return runFlow(formCode, options, invoices.size(),
                 aesKey -> aesIv -> BatchPackageBuilder.build(invoiceXmls, aesKey, aesIv,
                         BatchAssemblyMode.onDisk()));
     }
@@ -204,7 +223,7 @@ public final class BatchSubmissionFlow {
             throw new IllegalArgumentException(ERR_FILES_EMPTY);
         }
         formCode.assertAllowedOn(environment);
-        return runFlow(formCode, options,
+        return runFlow(formCode, options, files.size(),
                 aesKey -> aesIv -> BatchPackageBuilder.buildFromFiles(files, aesKey, aesIv,
                         BatchAssemblyMode.onDisk()));
     }
@@ -225,7 +244,7 @@ public final class BatchSubmissionFlow {
     }
 
     @SuppressWarnings("java:S2629")
-    private BatchResult runFlow(FormCode formCode, BatchOptions options,
+    private BatchResult runFlow(FormCode formCode, BatchOptions options, int invoiceCount,
                                 Function<byte[], Function<byte[], BatchPackageBuilder.BatchPackage>> packagerFactory) {
         OffsetDateTime startedAt = OffsetDateTime.now(clock);
         long deadlineNanos = nanoNow() + options.timeout().toNanos();
@@ -246,7 +265,7 @@ public final class BatchSubmissionFlow {
             closeWithRetry(sessionRef, deadlineNanos);
             pollUntilTerminal(sessionRef, deadlineNanos);
 
-            return collectResult(sessionRef, pkg.parts().size(), startedAt);
+            return collectResult(sessionRef, invoiceCount, startedAt);
         } finally {
             pkg.cleanup();
         }
@@ -294,7 +313,7 @@ public final class BatchSubmissionFlow {
             return;
         }
         ExecutorService executor = Executors.newFixedThreadPool(workers, runnable -> {
-            Thread thread = new Thread(runnable, "ksef-batch-upload");
+            Thread thread = new Thread(runnable, UPLOAD_THREAD_NAME);
             thread.setDaemon(true);
             return thread;
         });
@@ -320,7 +339,7 @@ public final class BatchSubmissionFlow {
             try {
                 long remainingNanos = deadlineNanos - nanoNow();
                 if (remainingNanos <= DEADLINE_EXPIRED_NANOS) {
-                    throw new KsefNetworkException("Batch upload timed out", null);
+                    throw new KsefNetworkException(ERR_UPLOAD_TIMED_OUT, null);
                 }
                 future.get(remainingNanos, TimeUnit.NANOSECONDS);
             } catch (InterruptedException interrupted) {
@@ -331,9 +350,9 @@ public final class BatchSubmissionFlow {
                 if (cause instanceof RuntimeException runtimeFailure) {
                     throw runtimeFailure;
                 }
-                throw new KsefNetworkException("Batch upload worker failed", cause);
+                throw new KsefNetworkException(ERR_UPLOAD_WORKER_FAILED, cause);
             } catch (java.util.concurrent.TimeoutException timeoutFailure) {
-                throw new KsefNetworkException("Batch upload timed out", timeoutFailure);
+                throw new KsefNetworkException(ERR_UPLOAD_TIMED_OUT, timeoutFailure);
             }
         }
     }
@@ -348,7 +367,7 @@ public final class BatchSubmissionFlow {
                     null);
         }
         HttpRequest.Builder builder = HttpRequest.newBuilder(upload.url())
-                .timeout(Duration.ofMinutes(20));
+                .timeout(Duration.ofMinutes(UPLOAD_PART_TIMEOUT_MINUTES));
         String method = upload.method() != null ? upload.method() : METHOD_PUT;
         HttpRequest.BodyPublisher publisher;
         try {
@@ -357,7 +376,7 @@ public final class BatchSubmissionFlow {
             } else if (part instanceof BatchPart.InMemoryPart inMem) {
                 publisher = BodyPublishers.ofInputStream(inMem::openStream);
             } else {
-                throw new IllegalStateException("Unknown BatchPart subtype: " + part.getClass());
+                throw new IllegalStateException(ERR_UNKNOWN_BATCH_PART_SUBTYPE + part.getClass());
             }
         } catch (java.io.FileNotFoundException missingFile) {
             throw new KsefNetworkException(
@@ -391,9 +410,11 @@ public final class BatchSubmissionFlow {
 
     @SuppressWarnings("java:S2629")
     private void closeWithRetry(String sessionRef, long deadlineNanos) {
-        long start = System.currentTimeMillis();
+        long closeBudgetExpiry = Math.min(
+                nanoNow() + Duration.ofMillis(CLOSE_TIMEOUT_MS).toNanos(),
+                deadlineNanos);
         long delayMs = CLOSE_BUSY_INITIAL_DELAY_MS;
-        while (System.currentTimeMillis() - start < CLOSE_TIMEOUT_MS) {
+        while (nanoNow() < closeBudgetExpiry) {
             assertWithinDeadline(deadlineNanos);
             try {
                 sessionClient.closeBatch(sessionRef);
@@ -463,12 +484,13 @@ public final class BatchSubmissionFlow {
         java.util.Set<String> failedRefs = new java.util.HashSet<>();
         for (SessionInvoiceStatus failedInvoice : failed) {
             failedRefs.add(failedInvoice.referenceNumber());
-            String error = failedInvoice.status() != null ? failedInvoice.status().description() : "Unknown error";
+            String error = failedInvoice.status() != null && failedInvoice.status().description() != null
+                    ? failedInvoice.status().description()
+                    : UNKNOWN_FAILURE_DESCRIPTION;
             List<String> details = failedInvoice.status() != null && failedInvoice.status().details() != null
                     ? failedInvoice.status().details()
                     : List.of();
-            failures.add(new FailedInvoice(failedInvoice.referenceNumber(),
-                    error != null ? error : "Unknown error", details));
+            failures.add(new FailedInvoice(failedInvoice.referenceNumber(), error, details));
         }
         for (SessionInvoiceStatus invoice : all) {
             if (failedRefs.contains(invoice.referenceNumber())) {
@@ -477,10 +499,17 @@ public final class BatchSubmissionFlow {
             byte[] upo = sessionClient.getUpoByInvoiceReference(sessionRef, invoice.referenceNumber());
             cleared.add(new UpoEntry(invoice.referenceNumber(), upo));
         }
-        // totalCount supplied by builder — sanity check against KSeF's own counters
-        int actualTotal = Math.max(totalCount, all.size() + failures.size());
+        // BatchResult invariants: successfulCount == cleared.size(), failedCount == failed.size(),
+        // totalCount == successful + failed. Caller-supplied totalCount is the *invoice count*
+        // submitted to the SDK; if KSeF later disagrees with that count (i.e. all.size() +
+        // failures.size() != totalCount), surface it via WARN log + use KSeF's count for the
+        // result so the consumer sees what the server actually processed.
+        int reconciled = cleared.size() + failures.size();
+        if (reconciled != totalCount) {
+            LOGGER.warn(LOG_TOTAL_COUNT_MISMATCH, sessionRef, totalCount, reconciled);
+        }
         return new BatchResult(sessionRef, cleared, failures,
-                actualTotal, cleared.size(), failures.size(),
+                reconciled, cleared.size(), failures.size(),
                 startedAt, completedAt);
     }
 
@@ -495,7 +524,7 @@ public final class BatchSubmissionFlow {
             return false;
         }
         return SCHEME_HTTPS.equalsIgnoreCase(scheme)
-                || ("http".equalsIgnoreCase(scheme) && isLoopbackHost(url.getHost()));
+                || (SCHEME_HTTP.equalsIgnoreCase(scheme) && isLoopbackHost(url.getHost()));
     }
 
     private static boolean isLoopbackHost(String host) {
@@ -521,7 +550,7 @@ public final class BatchSubmissionFlow {
 
     private static void assertWithinDeadline(long deadlineNanos) {
         if (nanoNow() >= deadlineNanos) {
-            throw new KsefNetworkException("submitBatch deadline exceeded", null);
+            throw new KsefNetworkException(ERR_DEADLINE_EXCEEDED, null);
         }
     }
 
