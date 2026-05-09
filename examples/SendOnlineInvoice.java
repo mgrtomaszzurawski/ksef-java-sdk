@@ -24,7 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,7 +48,7 @@ public final class SendOnlineInvoice {
             // Authentication is lazy — opening a session triggers it.
             System.out.println("Connecting as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
-            try (KsefSession session = client.invoices().openSession(FormCode.FA3)) {
+            try (OnlineSession session = client.invoices().openSession(FormCode.FA3)) {
                 System.out.println("Session opened: " + session.referenceNumber());
 
                 SendInvoiceResult result = session.send(invoiceXml);

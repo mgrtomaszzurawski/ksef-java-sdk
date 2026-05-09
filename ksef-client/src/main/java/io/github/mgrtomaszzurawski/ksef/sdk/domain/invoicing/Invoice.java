@@ -70,14 +70,14 @@ public interface Invoice {
      * {@code formCode} as-is — {@code FormCode} itself is immutable.
      *
      * @param formCode non-null form code
-     * @param xml non-null raw invoice XML bytes
+     * @param invoiceXml non-null raw invoice XML bytes
      * @return immutable {@link Invoice} wrapper
      * @throws NullPointerException if either argument is null
      */
-    static Invoice fromXml(FormCode formCode, byte[] xml) {
+    static Invoice fromXml(FormCode formCode, byte[] invoiceXml) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
-        Objects.requireNonNull(xml, ERR_XML_NULL);
-        byte[] copy = xml.clone();
+        Objects.requireNonNull(invoiceXml, ERR_XML_NULL);
+        byte[] copy = invoiceXml.clone();
         return new Invoice() {
             @Override
             public FormCode formCode() {

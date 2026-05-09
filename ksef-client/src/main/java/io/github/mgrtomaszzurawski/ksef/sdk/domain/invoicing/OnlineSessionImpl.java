@@ -341,7 +341,7 @@ final class OnlineSessionImpl implements OnlineSession {
         if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
             return List.of();
         }
-        List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
+        List<byte[]> pages = new ArrayList<>(current.upo().pages().size());
         for (var page : current.upo().pages()) {
             pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
         }
