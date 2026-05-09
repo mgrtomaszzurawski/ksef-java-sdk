@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
@@ -22,10 +21,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException;
-import java.io.ByteArrayInputStream;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest;
@@ -94,14 +89,10 @@ public final class InvoiceClientImpl implements InvoiceClient {
             "openSession() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
     private static final String ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME =
             "streamSessions() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
-    private static final String ERR_SYNC_REQUIRES_FULL_RUNTIME =
-            "sync() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
-    private static final String ERR_PARSE_SYMMETRIC_CERT = "Failed to parse SYMMETRIC_KEY_ENCRYPTION certificate";
     private static final String ERR_TRUNCATED_NO_CURSOR =
             "streamInvoicesByMetadata: server returned isTruncated=true but no usable date cursor on the last record "
                     + "for the selected dateType axis — cannot advance pagination safely";
-    private static final String CERT_TYPE_X509 = "X.509";
     /** Spec-defined maximum page size for {@code POST /invoices/query/metadata}. */
     private static final int QUERY_METADATA_MAX_PAGE_SIZE = 250;
     /** First page is offset 0 per OpenAPI. */
@@ -110,30 +101,29 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String QUERY_PAGE_SIZE_PARAM = "pageSize";
     private static final String QUERY_SORT_ORDER_PARAM = "sortOrder";
 
+    private final HttpRuntime runtime;
     private final HttpSupport http;
     private final SecurityClient securityClient;
     private final HttpClient httpClient;
     private final @Nullable SessionClient sessionClient;
     private final @Nullable KsefEnvironment environment;
     private final @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver;
-    private final @Nullable ObjectMapper objectMapper;
 
     public InvoiceClientImpl(HttpRuntime runtime) {
-        this(runtime, null, null, null, null);
+        this(runtime, null, null, null);
     }
 
     public InvoiceClientImpl(HttpRuntime runtime,
                               @Nullable SessionClient sessionClient,
                               @Nullable KsefEnvironment environment,
-                              @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
-                              @Nullable ObjectMapper objectMapper) {
+                              @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver) {
+        this.runtime = runtime;
         this.http = new HttpSupport(runtime);
         this.securityClient = new SecurityClient(runtime);
         this.httpClient = runtime.httpClient();
         this.sessionClient = sessionClient;
         this.environment = environment;
         this.publicKeyResolver = publicKeyResolver;
-        this.objectMapper = objectMapper;
     }
 
     /**
@@ -192,7 +182,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
      * result completeness.
      */
     @Override
-    public java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryFilters query) {
+    public Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryFilters query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query);
@@ -289,7 +279,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
         PublicKey symmetricKey = securityClient.getPublicKeyCertificates().stream()
                 .filter(cert -> cert.usage().contains(PublicKeyCertificateUsage.SYMMETRIC_KEY_ENCRYPTION))
                 .findFirst()
-                .map(InvoiceClientImpl::parsePublicKey)
+                .map(PublicKeyCertificate::publicKey)
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_SYMMETRIC_KEY_CERT));
 
         byte[] aesKey = CryptoService.generateAesKey();
@@ -303,19 +293,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
         ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, rawRequest, token,
                 ExportInvoicesResponseRaw.class, OP_PREPARE_EXPORT);
         ExportInvoicesResult result = InvoicingMappers.toExportInvoicesResult(rawValue);
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(
+        return SessionHandleConstructor.newPreparedExport(
                 this, httpClient, result.referenceNumber(), aesKey, initVector);
-    }
-
-    private static PublicKey parsePublicKey(PublicKeyCertificate certificate) {
-        try {
-            CertificateFactory factory = CertificateFactory.getInstance(CERT_TYPE_X509);
-            X509Certificate x509 = (X509Certificate)
-                    factory.generateCertificate(new ByteArrayInputStream(certificate.certificate()));
-            return x509.getPublicKey();
-        } catch (CertificateException certificateFailure) {
-            throw new KsefException(ERR_PARSE_SYMMETRIC_CERT, certificateFailure);
-        }
     }
 
     /**
@@ -420,10 +399,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
 
     @Override
     public SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink) {
-        if (objectMapper == null) {
-            throw new IllegalStateException(ERR_SYNC_REQUIRES_FULL_RUNTIME);
-        }
         LOGGER.debug(LOG_CALL, OP_SYNC);
-        return new InvoiceSyncClient(this, objectMapper).sync(plan, checkpointStore, sink);
+        return new InvoiceSyncClient(this, runtime.objectMapper()).sync(plan, checkpointStore, sink);
     }
 }

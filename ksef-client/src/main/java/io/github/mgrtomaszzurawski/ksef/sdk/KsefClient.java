@@ -13,7 +13,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.BatchFilePartInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
@@ -60,12 +59,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoServic
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefHttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
-import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.List;
@@ -115,12 +112,9 @@ public final class KsefClient implements AutoCloseable {
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
     private static final String ERR_NO_CERT = "No certificate found with usage: ";
-    private static final String ERR_KEY_EXTRACT = "Failed to extract public key from certificate";
     private static final String ERR_INTERRUPTED = "Interrupted while polling";
-    private static final String CERT_TYPE_X509 = "X.509";
 
     private static final String LOG_AUTHENTICATED = "Authenticated with KSeF as {} {}";
-    private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
     private static final String LOG_OPENED_BATCH_SESSION = "Opened KSeF batch session {}, formCode={}";
     private static final String LOG_OPENED_BATCH_SESSION_WITH_INVOICES =
             "Opened KSeF batch session {} with {} invoices, formCode={}";
@@ -188,7 +182,7 @@ public final class KsefClient implements AutoCloseable {
         this.securityClient = new SecurityClient(this.runtime);
         this.sessionClient = new SessionClient(this.runtime);
         this.invoiceClient = new InvoiceClientImpl(this.runtime,
-                this.sessionClient, this.environment, this::getPublicKey, this.objectMapper);
+                this.sessionClient, this.environment, this::getPublicKey);
         this.tokenClient = new TokenClientImpl(this.runtime);
         this.permissionClient = new PermissionClientImpl(this.runtime);
         this.certificateClient = new CertificateClientImpl(this.runtime);
@@ -740,18 +734,7 @@ public final class KsefClient implements AutoCloseable {
                 .filter(cert -> cert.usage().contains(usage))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(ERR_NO_CERT + usage));
-        return extractPublicKey(certificate.certificate());
-    }
-
-    private static PublicKey extractPublicKey(byte[] certBytes) {
-        try {
-            CertificateFactory factory = CertificateFactory.getInstance(CERT_TYPE_X509);
-            X509Certificate x509 = (X509Certificate) factory.generateCertificate(
-                    new ByteArrayInputStream(certBytes));
-            return x509.getPublicKey();
-        } catch (java.security.cert.CertificateException cause) {
-            throw new IllegalStateException(ERR_KEY_EXTRACT, cause);
-        }
+        return certificate.publicKey();
     }
 
     private static void sleep() {

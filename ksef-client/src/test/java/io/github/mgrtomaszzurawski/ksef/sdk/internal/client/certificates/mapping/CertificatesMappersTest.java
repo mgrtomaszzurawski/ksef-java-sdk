@@ -26,6 +26,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrievedCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,7 +54,18 @@ class CertificatesMappersTest {
     private static final byte[] CSR_BYTES = new byte[]{0x30, 0x01, 0x02, 0x03};
     private static final String DATE_ISO = "2026-04-15T10:00:00+02:00";
     private static final String NIP = "1234567890";
-    private static final String CERTIFICATE_BASE64 = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA";
+    // Real DER bytes generated lazily — PR8 made RetrievedCertificate.from()
+    // require a parseable X.509 (typed surface).
+    private static final String CERTIFICATE_BASE64 = realCertificateBase64();
+
+    private static String realCertificateBase64() {
+        try {
+            return Base64.getEncoder().encodeToString(
+                    TestCertificates.generateRsa().certificate().getEncoded());
+        } catch (Exception generationFailure) {
+            throw new IllegalStateException("Could not generate test certificate", generationFailure);
+        }
+    }
     private static final int LIMIT_VALUE = 12;
     private static final int LIMIT_REMAINING = 6;
 
@@ -242,11 +255,13 @@ class CertificatesMappersTest {
         // when
         RetrievedCertificate result = CertificatesMappers.toRetrievedCertificate(raw);
 
-        // then
+        // then — typed accessors exposed on the new RetrievedCertificate surface.
         assertNotNull(result.certificate());
+        assertNotNull(result.publicKey());
+        assertNotNull(result.der());
         assertEquals(NAME, result.certificateName());
         assertEquals(SERIAL, result.certificateSerialNumber());
-        assertEquals("Authentication", result.certificateType());
+        assertEquals(KsefCertificateType.AUTHENTICATION, result.certificateType());
     }
 
     @Test
