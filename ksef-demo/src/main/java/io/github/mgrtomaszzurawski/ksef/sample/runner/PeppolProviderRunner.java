@@ -138,7 +138,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                     .pefInvoicing()
                     .entityDetails("KSeF Java SDK Demo Peppol Provider")
                     .description("PeppolProviderRunner grant for " + peppolId);
-            String referenceNumber = context.client().permissions().grantAuthorization(builder).referenceNumber();
+            String referenceNumber = context.client().permissions().grantAuthorization(builder.build()).referenceNumber();
             var permissions = context.client().permissions();
             var status = KsefAsync.awaitTerminal(
                     new KsefAsync.Config<>(

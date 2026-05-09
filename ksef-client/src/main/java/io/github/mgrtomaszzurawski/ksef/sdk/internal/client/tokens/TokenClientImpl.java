@@ -8,11 +8,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenGenerateRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
@@ -41,7 +41,7 @@ public final class TokenClientImpl implements TokenClient {
     private static final String OP_LIST = "listTokens";
     private static final String OP_GET_STATUS = "getTokenStatus";
     private static final String OP_REVOKE = "revokeToken";
-    private static final String ERR_NULL_BUILDER = "tokenBuilder must not be null";
+    private static final String ERR_NULL_REQUEST = "request must not be null";
     private static final String ERR_NULL_FILTER = "filter must not be null";
 
     private static final String QUERY_PARAM_SEPARATOR_FIRST = "?";
@@ -62,22 +62,22 @@ public final class TokenClientImpl implements TokenClient {
     /**
      * Generate a new API token with the specified permissions and description.
      *
-     * @param tokenBuilder token generation builder with permissions and description
+     * @param request token generation request with permissions and description
      * @return response with the generated token details
      */
     @Override
-    public GenerateTokenResult generate(TokenGenerateBuilder tokenBuilder) {
+    public GenerateTokenResult generate(TokenGenerateRequest request) {
         LOGGER.debug(LOG_CALL, OP_GENERATE);
-        Objects.requireNonNull(tokenBuilder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();
         GenerateTokenResponseRaw rawValue = http.postJsonAuthenticated(PATH_TOKENS,
-                TokensMappers.toGenerateTokenRequestRaw(tokenBuilder.build()), token,
+                TokensMappers.toGenerateTokenRequestRaw(request), token,
                 GenerateTokenResponseRaw.class, OP_GENERATE);
         return TokensMappers.toGenerateTokenResult(rawValue);
     }
 
     @Override
-    public TokenList list(TokenQueryBuilder filter) {
+    public TokenList list(TokenQueryRequest filter) {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_LIST);
         String token = http.requireToken();
@@ -88,7 +88,7 @@ public final class TokenClientImpl implements TokenClient {
     }
 
     @Override
-    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens(TokenQueryBuilder filter) {
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens(TokenQueryRequest filter) {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_LIST);
         String pathWithFilters = PATH_TOKENS + buildQueryString(filter);
@@ -105,22 +105,22 @@ public final class TokenClientImpl implements TokenClient {
         });
     }
 
-    private static String buildQueryString(TokenQueryBuilder filter) {
+    private static String buildQueryString(TokenQueryRequest filter) {
         StringBuilder query = new StringBuilder();
         for (TokenStatus status : filter.statuses()) {
             appendParam(query, PARAM_STATUS, toWireStatus(status));
         }
-        if (filter.descriptionValue() != null) {
-            appendParam(query, PARAM_DESCRIPTION, filter.descriptionValue());
+        if (filter.description() != null) {
+            appendParam(query, PARAM_DESCRIPTION, filter.description());
         }
-        if (filter.authorIdentifierValue() != null) {
-            appendParam(query, PARAM_AUTHOR_IDENTIFIER, filter.authorIdentifierValue());
+        if (filter.authorIdentifier() != null) {
+            appendParam(query, PARAM_AUTHOR_IDENTIFIER, filter.authorIdentifier());
         }
-        if (filter.authorIdentifierTypeValue() != null) {
-            appendParam(query, PARAM_AUTHOR_IDENTIFIER_TYPE, filter.authorIdentifierTypeValue().wireValue());
+        if (filter.authorIdentifierType() != null) {
+            appendParam(query, PARAM_AUTHOR_IDENTIFIER_TYPE, filter.authorIdentifierType().wireValue());
         }
-        if (filter.pageSizeValue() != null) {
-            appendParam(query, PARAM_PAGE_SIZE, filter.pageSizeValue().toString());
+        if (filter.pageSize() != null) {
+            appendParam(query, PARAM_PAGE_SIZE, filter.pageSize().toString());
         }
         return query.toString();
     }

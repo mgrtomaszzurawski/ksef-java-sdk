@@ -62,7 +62,7 @@ public final class EnrollAndRevokeCertificate {
             CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder
                     .create("Example certificate", KsefCertificateType.AUTHENTICATION, csrDer);
 
-            EnrollCertificateResult enroll = client.certificates().enroll(enrollBuilder);
+            EnrollCertificateResult enroll = client.certificates().enroll(enrollBuilder.build());
             System.out.println("Enrollment submitted, ref: " + enroll.referenceNumber());
 
             String serial = pollForSerial(client, enroll.referenceNumber());

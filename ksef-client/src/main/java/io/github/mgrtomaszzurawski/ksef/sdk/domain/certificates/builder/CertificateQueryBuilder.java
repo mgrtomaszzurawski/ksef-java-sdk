@@ -67,6 +67,6 @@ public final class CertificateQueryBuilder {
     }
 
     public CertificateQueryRequest build() {
-        return new CertificateQueryRequest(serialNumber, name, type, status, expiresAfter);
+        return new CertificateQueryRequest(serialNumber, name, type, status, expiresAfter, pageOffset, pageSize);
     }
 }

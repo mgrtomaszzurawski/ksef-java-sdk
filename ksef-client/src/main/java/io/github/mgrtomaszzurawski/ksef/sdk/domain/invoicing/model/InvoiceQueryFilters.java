@@ -19,6 +19,10 @@ import org.jspecify.annotations.Nullable;
  *     ({@code pobieranie-faktur/przyrostowe-pobieranie-faktur.md}). Set by
  *     {@code InvoiceSyncClient} on every export it opens; consumers do not
  *     normally need to set this directly. Default {@code false}.
+ * @param sortOrder optional sort order for the
+ *     {@code POST /invoices/query/metadata} call. Maps to the spec's
+ *     {@code sortOrder} query parameter; default (when {@code null}) is
+ *     {@link SortOrder#ASC} per spec.
  *
  * @since 1.0.0
  */
@@ -38,7 +42,8 @@ public record InvoiceQueryFilters(
         @Nullable InvoiceQueryBuyerIdentifier buyerIdentifier,
         @Nullable List<String> currencyCodes,
         @Nullable InvoiceFormType formType,
-        @Nullable List<InvoiceType> invoiceTypes) {
+        @Nullable List<InvoiceType> invoiceTypes,
+        @Nullable SortOrder sortOrder) {
 
     public InvoiceQueryFilters {
         Objects.requireNonNull(subjectType, "subjectType");

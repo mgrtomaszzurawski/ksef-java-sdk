@@ -71,7 +71,7 @@ class TestDataClientTest {
 
             // when
             ksef.testData().createSubject(
-                    TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION));
+                    TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION).build());
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/subject")));
@@ -94,7 +94,8 @@ class TestDataClientTest {
             ksef.testData().createSubject(
                     TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.VAT_GROUP, TEST_DESCRIPTION)
                             .addSubunit(SUBUNIT_NIP_ONE, SUBUNIT_DESCRIPTION_ONE)
-                            .addSubunit(SUBUNIT_NIP_TWO, SUBUNIT_DESCRIPTION_TWO));
+                            .addSubunit(SUBUNIT_NIP_TWO, SUBUNIT_DESCRIPTION_TWO)
+                            .build());
 
             // then
             verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_SUBJECT))
@@ -138,7 +139,7 @@ class TestDataClientTest {
 
             // when
             ksef.testData().createPerson(
-                    TestPersonCreateBuilder.create(TEST_NIP, TEST_PESEL, false, TEST_DESCRIPTION));
+                    TestPersonCreateBuilder.create(TEST_NIP, TEST_PESEL, false, TEST_DESCRIPTION).build());
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/person")));
@@ -172,7 +173,8 @@ class TestDataClientTest {
             // when
             ksef.testData().grantPermissions(TestPermissionsGrantBuilder.create(TEST_NIP)
                     .authorizedNip(TEST_AUTHORIZED_NIP)
-                    .invoiceRead());
+                    .invoiceRead()
+                    .build());
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/permissions")));
@@ -189,7 +191,8 @@ class TestDataClientTest {
 
             // when
             ksef.testData().revokePermissions(TestPermissionsRevokeBuilder.create(TEST_NIP)
-                    .authorizedNip(TEST_AUTHORIZED_NIP));
+                    .authorizedNip(TEST_AUTHORIZED_NIP)
+                    .build());
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/permissions/revoke")));
@@ -277,7 +280,8 @@ class TestDataClientTest {
             // when
             ksef.testData().setSessionLimits(TestSessionLimitsBuilder.create()
                     .onlineSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_ONLINE)
-                    .batchSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_BATCH));
+                    .batchSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_BATCH)
+                    .build());
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/limits/context/session"))
@@ -314,7 +318,7 @@ class TestDataClientTest {
 
             // when
             ksef.testData().setSubjectLimits(
-                    TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP));
+                    TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP).build());
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/limits/subject/certificate"))
@@ -351,7 +355,8 @@ class TestDataClientTest {
 
             // when
             ksef.testData().setRateLimits(TestRateLimitsBuilder.create()
-                    .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR));
+                    .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR)
+                    .build());
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/rate-limits"))
@@ -405,8 +410,8 @@ class TestDataClientTest {
 
             // then
             var testData = ksef.testData();
-            var builder = TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION);
-            assertThrows(KsefServerException.class, () -> testData.createSubject(builder));
+            var request = TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION).build();
+            assertThrows(KsefServerException.class, () -> testData.createSubject(request));
         }
     }
 

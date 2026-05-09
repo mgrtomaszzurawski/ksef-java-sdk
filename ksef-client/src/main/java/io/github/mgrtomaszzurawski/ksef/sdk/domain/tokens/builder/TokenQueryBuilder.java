@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenAuthorIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus;
 import java.util.ArrayList;
 import java.util.List;
@@ -126,6 +127,13 @@ public final class TokenQueryBuilder {
 
     public @Nullable Integer pageSizeValue() {
         return pageSize;
+    }
+
+    /**
+     * Build the immutable {@link TokenQueryRequest} captured by this builder.
+     */
+    public TokenQueryRequest build() {
+        return new TokenQueryRequest(statuses, description, authorIdentifier, authorIdentifierType, pageSize);
     }
 
     /** Return a copy of this builder with the same field state (ergonomic for partial reuse). */

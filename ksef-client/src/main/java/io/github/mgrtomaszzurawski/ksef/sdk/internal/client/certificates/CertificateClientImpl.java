@@ -14,11 +14,11 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRa
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
@@ -64,7 +64,7 @@ public final class CertificateClientImpl implements CertificateClient {
     private static final String OP_REVOKE = "revokeCertificate";
     private static final String OP_QUERY = "queryCertificates";
 
-    private static final String ERR_NULL_BUILDER = "builder is required";
+    private static final String ERR_NULL_REQUEST = "request is required";
     private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBERS = "certificateSerialNumbers is required";
     private static final String ERR_NULL_REVOCATION_REASON = "revocationReason is required";
 
@@ -122,17 +122,17 @@ public final class CertificateClientImpl implements CertificateClient {
     /**
      * Enroll (register) a new certificate.
      *
-     * @param builder enrollment builder with certificate name, type, and CSR
+     * @param request enrollment request with certificate name, type, and CSR
      * @return response with enrollment reference number
      */
     @Override
-    public EnrollCertificateResult enroll(CertificateEnrollBuilder builder) {
+    public EnrollCertificateResult enroll(CertificateEnrollRequest request) {
         LOGGER.debug(LOG_CALL, OP_ENROLL);
         warnIfNotCertificateAuth(OP_ENROLL);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        EnrollCertificateRequestRaw request = CertificatesMappers.toEnrollCertificateRequestRaw(builder.build());
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
+        EnrollCertificateRequestRaw rawRequest = CertificatesMappers.toEnrollCertificateRequestRaw(request);
         String token = http.requireToken();
-        EnrollCertificateResponseRaw rawValue = http.postJsonAuthenticated(PATH_ENROLLMENTS, request, token,
+        EnrollCertificateResponseRaw rawValue = http.postJsonAuthenticated(PATH_ENROLLMENTS, rawRequest, token,
                 EnrollCertificateResponseRaw.class, OP_ENROLL);
         return CertificatesMappers.toEnrollCertificateResult(rawValue);
     }
@@ -163,10 +163,10 @@ public final class CertificateClientImpl implements CertificateClient {
     public RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers) {
         LOGGER.debug(LOG_CALL, OP_RETRIEVE);
         Objects.requireNonNull(certificateSerialNumbers, ERR_NULL_CERTIFICATE_SERIAL_NUMBERS);
-        RetrieveCertificatesRequestRaw request = new RetrieveCertificatesRequestRaw();
-        request.setCertificateSerialNumbers(certificateSerialNumbers);
+        RetrieveCertificatesRequestRaw rawRequest = new RetrieveCertificatesRequestRaw();
+        rawRequest.setCertificateSerialNumbers(certificateSerialNumbers);
         String token = http.requireToken();
-        RetrieveCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_RETRIEVE, request, token,
+        RetrieveCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_RETRIEVE, rawRequest, token,
                 RetrieveCertificatesResponseRaw.class, OP_RETRIEVE);
         return CertificatesMappers.toRetrieveCertificatesResult(rawValue);
     }
@@ -182,43 +182,43 @@ public final class CertificateClientImpl implements CertificateClient {
         LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber);
         requireSafePathSegment(certificateSerialNumber);
         Objects.requireNonNull(revocationReason, ERR_NULL_REVOCATION_REASON);
-        RevokeCertificateRequestRaw request = new RevokeCertificateRequestRaw();
-        request.setRevocationReason(CertificatesMappers.toCertificateRevocationReasonRaw(revocationReason));
+        RevokeCertificateRequestRaw rawRequest = new RevokeCertificateRequestRaw();
+        rawRequest.setRevocationReason(CertificatesMappers.toCertificateRevocationReasonRaw(revocationReason));
         String token = http.requireToken();
         String path = ApiPaths.subPath(PATH_CERTIFICATES, certificateSerialNumber) + SEGMENT_REVOKE;
-        http.postJsonAuthenticatedNoContent(path, request, token, OP_REVOKE);
+        http.postJsonAuthenticatedNoContent(path, rawRequest, token, OP_REVOKE);
     }
 
     /**
      * Query certificates with optional filters.
      *
-     * @param builder query builder with optional filters
+     * @param request query request with optional filters and paging
      * @return matching certificates
      */
     @Override
-    public CertificateQueryResult query(CertificateQueryBuilder builder) {
+    public CertificateQueryResult query(CertificateQueryRequest request) {
         LOGGER.debug(LOG_CALL, OP_QUERY);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();
-        String path = appendPaging(PATH_QUERY, builder.pageOffsetValue(), builder.pageSizeValue());
+        String path = appendPaging(PATH_QUERY, request.pageOffset(), request.pageSize());
         QueryCertificatesResponseRaw rawValue = http.postJsonAuthenticated(path,
-                CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()), token,
+                CertificatesMappers.toQueryCertificatesRequestRaw(request), token,
                 QueryCertificatesResponseRaw.class, OP_QUERY);
         return CertificatesMappers.toCertificateQueryResult(rawValue);
     }
 
     @Override
     public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem>
-            streamCertificates(CertificateQueryBuilder builder) {
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
-        int effectivePageSize = builder.pageSizeValue() == null
-                ? CERTIFICATE_QUERY_MAX_PAGE_SIZE : builder.pageSizeValue();
+            streamCertificates(CertificateQueryRequest request) {
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
+        int effectivePageSize = request.pageSize() == null
+                ? CERTIFICATE_QUERY_MAX_PAGE_SIZE : request.pageSize();
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
             String token = http.requireToken();
             String pagedPath = PATH_QUERY + "?pageOffset=" + pageOffset
                     + "&pageSize=" + effectivePageSize;
             QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(pagedPath,
-                    CertificatesMappers.toQueryCertificatesRequestRaw(builder.build()),
+                    CertificatesMappers.toQueryCertificatesRequestRaw(request),
                     token, QueryCertificatesResponseRaw.class, OP_QUERY);
             CertificateQueryResult page = CertificatesMappers.toCertificateQueryResult(raw);
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(

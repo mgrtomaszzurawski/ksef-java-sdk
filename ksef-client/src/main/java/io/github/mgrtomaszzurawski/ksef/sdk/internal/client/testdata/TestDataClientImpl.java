@@ -13,14 +13,14 @@ import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationConte
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsRevokeBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPersonCreateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestRateLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestRateLimitsRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLimitsRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectCreateRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectLimitsRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
@@ -79,7 +79,7 @@ public final class TestDataClientImpl implements TestDataClient {
     private static final String OP_RESET_RATE_LIMITS = "resetRateLimits";
     private static final String OP_SET_PRODUCTION_RATE_LIMITS = "setProductionRateLimits";
 
-    private static final String ERR_NULL_BUILDER = "builder is required";
+    private static final String ERR_NULL_REQUEST = "request is required";
     private static final String ERR_NULL_SUBJECT_NIP = "subjectNip is required";
     private static final String ERR_NULL_NIP = "nip is required";
     private static final String ERR_NULL_IDENTIFIER_TYPE = "identifierType is required";
@@ -95,14 +95,14 @@ public final class TestDataClientImpl implements TestDataClient {
     /**
      * Create a test subject (taxpayer entity) in the test environment.
      *
-     * @param builder subject creation builder (NIP, type, description)
+     * @param request subject creation request (NIP, type, description)
      */
     @Override
-    public void createSubject(TestSubjectCreateBuilder builder) {
+    public void createSubject(TestSubjectCreateRequest request) {
         LOGGER.debug(LOG_CALL, OP_CREATE_SUBJECT);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         http.postJsonNoContent(PATH_SUBJECT,
-                TestdataMappers.toSubjectCreateRequestRaw(builder.build()), OP_CREATE_SUBJECT);
+                TestdataMappers.toSubjectCreateRequestRaw(request), OP_CREATE_SUBJECT);
     }
 
     /**
@@ -122,14 +122,14 @@ public final class TestDataClientImpl implements TestDataClient {
     /**
      * Create a test person in the test environment.
      *
-     * @param builder person creation builder (NIP, PESEL, isBailiff, description)
+     * @param request person creation request (NIP, PESEL, isBailiff, description)
      */
     @Override
-    public void createPerson(TestPersonCreateBuilder builder) {
+    public void createPerson(TestPersonCreateRequest request) {
         LOGGER.debug(LOG_CALL, OP_CREATE_PERSON);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         http.postJsonNoContent(PATH_PERSON,
-                TestdataMappers.toPersonCreateRequestRaw(builder.build()), OP_CREATE_PERSON);
+                TestdataMappers.toPersonCreateRequestRaw(request), OP_CREATE_PERSON);
     }
 
     /**
@@ -149,27 +149,27 @@ public final class TestDataClientImpl implements TestDataClient {
     /**
      * Grant test permissions in the test environment.
      *
-     * @param builder permission grant builder
+     * @param request permission grant request
      */
     @Override
-    public void grantPermissions(TestPermissionsGrantBuilder builder) {
+    public void grantPermissions(TestPermissionsGrantRequest request) {
         LOGGER.debug(LOG_CALL, OP_GRANT_PERMISSIONS);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         http.postJsonNoContent(PATH_PERMISSIONS,
-                TestdataMappers.toTestDataPermissionsGrantRequestRaw(builder.build()), OP_GRANT_PERMISSIONS);
+                TestdataMappers.toTestDataPermissionsGrantRequestRaw(request), OP_GRANT_PERMISSIONS);
     }
 
     /**
      * Revoke test permissions in the test environment.
      *
-     * @param builder permission revocation builder
+     * @param request permission revocation request
      */
     @Override
-    public void revokePermissions(TestPermissionsRevokeBuilder builder) {
+    public void revokePermissions(TestPermissionsRevokeRequest request) {
         LOGGER.debug(LOG_CALL, OP_REVOKE_PERMISSIONS);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         http.postJsonNoContent(PATH_PERMISSIONS_REVOKE,
-                TestdataMappers.toTestDataPermissionsRevokeRequestRaw(builder.build()), OP_REVOKE_PERMISSIONS);
+                TestdataMappers.toTestDataPermissionsRevokeRequestRaw(request), OP_REVOKE_PERMISSIONS);
     }
 
     /**
@@ -244,15 +244,15 @@ public final class TestDataClientImpl implements TestDataClient {
     /**
      * Set session limits override in the test environment.
      *
-     * @param builder session limits builder (online and batch)
+     * @param request session limits request (online and batch)
      */
     @Override
-    public void setSessionLimits(TestSessionLimitsBuilder builder) {
+    public void setSessionLimits(TestSessionLimitsRequest request) {
         LOGGER.debug(LOG_CALL, OP_SET_SESSION_LIMITS);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();
         http.postJsonAuthenticatedNoContent(PATH_SESSION_LIMITS,
-                TestdataMappers.toSetSessionLimitsRequestRaw(builder.build()), token, OP_SET_SESSION_LIMITS);
+                TestdataMappers.toSetSessionLimitsRequestRaw(request), token, OP_SET_SESSION_LIMITS);
     }
 
     /**
@@ -268,15 +268,15 @@ public final class TestDataClientImpl implements TestDataClient {
     /**
      * Set subject certificate limits override in the test environment.
      *
-     * @param builder subject limits builder
+     * @param request subject limits request
      */
     @Override
-    public void setSubjectLimits(TestSubjectLimitsBuilder builder) {
+    public void setSubjectLimits(TestSubjectLimitsRequest request) {
         LOGGER.debug(LOG_CALL, OP_SET_SUBJECT_LIMITS);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();
         http.postJsonAuthenticatedNoContent(PATH_SUBJECT_LIMITS,
-                TestdataMappers.toSetSubjectLimitsRequestRaw(builder.build()), token, OP_SET_SUBJECT_LIMITS);
+                TestdataMappers.toSetSubjectLimitsRequestRaw(request), token, OP_SET_SUBJECT_LIMITS);
     }
 
     /**
@@ -292,15 +292,15 @@ public final class TestDataClientImpl implements TestDataClient {
     /**
      * Set rate limit overrides in the test environment.
      *
-     * @param builder rate limits builder
+     * @param request rate limits request
      */
     @Override
-    public void setRateLimits(TestRateLimitsBuilder builder) {
+    public void setRateLimits(TestRateLimitsRequest request) {
         LOGGER.debug(LOG_CALL, OP_SET_RATE_LIMITS);
-        Objects.requireNonNull(builder, ERR_NULL_BUILDER);
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();
         http.postJsonAuthenticatedNoContent(PATH_RATE_LIMITS,
-                TestdataMappers.toSetRateLimitsRequestRaw(builder.build()), token, OP_SET_RATE_LIMITS);
+                TestdataMappers.toSetRateLimitsRequestRaw(request), token, OP_SET_RATE_LIMITS);
     }
 
     /**

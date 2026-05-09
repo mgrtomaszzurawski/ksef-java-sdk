@@ -107,7 +107,7 @@ class ManualValidationWireShapeTest {
                     .currencyCodes("PLN", "EUR")
                     .formType(InvoiceFormType.FA)
                     .invoiceTypes(InvoiceType.VAT, InvoiceType.KOR);
-            client.invoices().queryInvoicesByMetadata(query);
+            client.invoices().queryInvoicesByMetadata(query.build());
 
             verify(postRequestedFor(urlPathEqualTo(QUERY_METADATA_PATH))
                     .withRequestBody(matchingJsonPath("$.amount.type", equalTo("Brutto")))
@@ -184,7 +184,7 @@ class ManualValidationWireShapeTest {
 
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             client.permissions().streamPersonal(
-                    io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalPermissionsQueryBuilder.create()).toList();
+                    io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalPermissionsQueryBuilder.create().build()).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(PERMISSIONS_PERSONAL_PATH)));
             assertEquals(2, requests.size(), "streamPersonal must fetch both pages");
@@ -235,7 +235,7 @@ class ManualValidationWireShapeTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .permanentStorageDateFrom(OffsetDateTime.parse("2026-04-01T00:00:00Z"));
-            client.invoices().streamInvoicesByMetadata(query).toList();
+            client.invoices().streamInvoicesByMetadata(query.build()).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(QUERY_METADATA_PATH)));
             assertEquals(2, requests.size());

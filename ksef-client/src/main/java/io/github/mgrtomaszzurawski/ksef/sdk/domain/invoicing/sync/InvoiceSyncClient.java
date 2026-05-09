@@ -173,7 +173,7 @@ public final class InvoiceSyncClient {
             query.dateTo(plan.to());
         }
 
-        try (PreparedInvoiceExport export = invoiceClient.prepareExport(query, plan.fullContent())) {
+        try (PreparedInvoiceExport export = invoiceClient.prepareExport(query.build(), plan.fullContent())) {
             InvoiceExportStatus status = export.awaitReady();
             InvoicePackage pkg = status.invoicePackage();
             if (pkg == null || pkg.invoiceCount() == null || pkg.invoiceCount() == 0L) {

@@ -243,6 +243,7 @@ public final class InvoiceQueryBuilder {
                 ksefNumber, invoiceNumber, sellerNip,
                 invoicingMode, selfInvoicing, hasAttachment,
                 restrictToPermanentStorageHwm,
-                amount, buyerIdentifier, currencyCodes, formType, invoiceTypes);
+                amount, buyerIdentifier, currencyCodes, formType, invoiceTypes,
+                sortOrder);
     }
 }

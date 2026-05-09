@@ -72,14 +72,14 @@ class RecordsEqualsHashCodeTest {
 
     @Test
     void certificateQueryRequest_toString_doesNotThrowOnNullFields() {
-        assertNotNull(new CertificateQueryRequest(null, null, null, null, null).toString());
+        assertNotNull(new CertificateQueryRequest(null, null, null, null, null, null, null).toString());
     }
 
     @Test
     void certificateQueryRequest_toString_includesSerialAndName() {
         String rendered = new CertificateQueryRequest(QUERY_SERIAL, QUERY_NAME,
                 KsefCertificateType.AUTHENTICATION, CertificateStatus.ACTIVE,
-                OffsetDateTime.now()).toString();
+                OffsetDateTime.now(), null, null).toString();
         assertTrue(rendered.contains(QUERY_SERIAL));
         assertTrue(rendered.contains(QUERY_NAME));
     }
@@ -98,7 +98,7 @@ class RecordsEqualsHashCodeTest {
                 InvoiceQuerySubjectType.SUBJECT1, InvoiceQueryDateType.INVOICING,
                 OffsetDateTime.now(), null, null, null, null,
                 InvoicingMode.ONLINE, null, null, false,
-                null, null, null, null, null).toString();
+                null, null, null, null, null, null).toString();
         assertTrue(rendered.contains(InvoiceQuerySubjectType.SUBJECT1.name()));
         assertTrue(rendered.contains(InvoicingMode.ONLINE.name()));
     }
