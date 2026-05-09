@@ -4,57 +4,58 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.SendInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An open KSeF interactive session for sending invoices.
+ * Package-private implementation of {@link OnlineSession}. Holds the
+ * session AES key + IV, dispatches sends, and runs the close /
+ * status-poll state machine.
  *
- * <p>Manages session crypto state (AES key, IV) internally and provides a clean API
- * for sending invoices without exposing encryption details. Use with try-with-resources
- * to ensure the session is properly closed.
+ * <p>Constructed reflectively by
+ * {@code SessionHandleConstructor} — see that class's Javadoc for the
+ * cross-package access rationale.
  *
- * <p>Example:
- * <pre>{@code
- * try (KsefSession session = client.invoices().openSession(FormCode.FA3)) {
- *     SendInvoiceResult result = session.send(invoiceXmlBytes);
- *     byte[] upo = session.upo(result.referenceNumber());
- * }
- * }</pre>
- *
- * <p>On {@link #close()}: sends close request to KSeF (retries on 415 "session busy"),
- * then polls until processing completes (status 200). UPO is available after close completes.
- *
- * <p><strong>Not thread-safe.</strong> Use one session instance per thread,
- * or coordinate access externally. Concurrent {@code send(...)} + {@code close()}
- * calls produce undefined ordering — the {@code volatile closed} flag is not
- * a memory barrier against in-flight HTTP requests. {@link KsefClient} itself
- * is thread-safe and supports concurrent session opens.
- *
- * @see InvoiceClient#openSession(FormCode)
+ * <p><strong>Not thread-safe.</strong> Use one session instance per
+ * thread, or coordinate access externally. Concurrent {@code send(...)}
+ * + {@code close()} calls produce undefined ordering — the
+ * {@code volatile closed} flag is not a memory barrier against
+ * in-flight HTTP requests. The transition between OPEN and CLOSED is
+ * coordinated via a single {@link AtomicReference}, so concurrent
+ * {@link #archive()} / {@link #close()} observers see the same
+ * {@link ClosedSession} instance.
  *
  * @since 1.0.0
  */
-public final class KsefSession implements AutoCloseable {
+final class OnlineSessionImpl implements OnlineSession {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(KsefSession.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OnlineSessionImpl.class);
 
     private static final int STATUS_CODE_OK = 200;
     private static final int CLOSE_POLL_INITIAL_DELAY_MS = 1000;
@@ -69,7 +70,9 @@ public final class KsefSession implements AutoCloseable {
      */
     private static final int STATUS_POLL_MAX_ATTEMPTS = 100;
     private static final String SESSION_BUSY_INDICATOR = "(415)";
-    private static final String ERR_SESSION_CLOSED = "Session is already closed";
+    private static final String ERR_SESSION_CLOSED =
+            "Session is already closed (or archived); use the ClosedSession returned by archive()"
+                    + " to fetch UPO/clearance — sendInvoice on a closed session is not allowed";
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for session to become closeable";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting";
 
@@ -86,77 +89,166 @@ public final class KsefSession implements AutoCloseable {
     /** REQ-SESS-41 — KSeF caps a single session at 10,000 invoices. */
     private static final int MAX_INVOICES_PER_SESSION = 10_000;
 
+    private static final String SHA_256_ALGORITHM = "SHA-256";
+    private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 not available";
+    private static final String ERR_INVOICE_NULL = "invoice must not be null";
+    private static final String ERR_SEND_INVOICE_REQUIRES_FULL_CTOR =
+            "sendInvoice(Invoice) requires the verification-aware constructor (KsefEnvironment + timeout);"
+                    + " InvoiceClientImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
+
+    /** Default verification timeout when none is supplied via the builder. */
+    static final Duration DEFAULT_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);
+    /** Verification poll interval — matches the close-poll cadence (3s). */
+    private static final long VERIFICATION_POLL_INTERVAL_MS = STATUS_POLL_DELAY_MS;
+    /** A status with code &lt; 200 means KSeF is still processing the invoice. */
+    private static final int VERIFICATION_TERMINAL_THRESHOLD = STATUS_CODE_OK;
+
     private final SessionClient sessionClient;
     private final String referenceNumber;
     private final byte[] aesKey;
     private final byte[] initVector;
     @Nullable private final OffsetDateTime validUntil;
+    @Nullable private final KsefEnvironment environment;
+    private final Duration invoiceVerificationTimeout;
+    private final QrCodeService qrCodeService;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
+    /**
+     * Non-null once the session has transitioned to closed (via either
+     * {@link #close()} or {@link #archive()}). Both transition methods
+     * publish the same {@link ClosedSession} reference into this slot
+     * via compare-and-set, so subsequent observers see one canonical
+     * archive view.
+     */
+    private final AtomicReference<ClosedSessionImpl> archiveView = new AtomicReference<>();
 
-    KsefSession(SessionClient sessionClient, String referenceNumber,
+    OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
-        this(sessionClient, referenceNumber, aesKey, initVector, null);
+        this(sessionClient, referenceNumber, aesKey, initVector, null, null, DEFAULT_VERIFICATION_TIMEOUT);
     }
 
-    KsefSession(SessionClient sessionClient, String referenceNumber,
+    OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector,
                 @Nullable OffsetDateTime validUntil) {
+        this(sessionClient, referenceNumber, aesKey, initVector, validUntil, null, DEFAULT_VERIFICATION_TIMEOUT);
+    }
+
+    OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
+                byte[] aesKey, byte[] initVector,
+                @Nullable OffsetDateTime validUntil,
+                @Nullable KsefEnvironment environment,
+                Duration invoiceVerificationTimeout) {
         this.sessionClient = sessionClient;
         this.referenceNumber = referenceNumber;
         this.aesKey = aesKey;
         this.initVector = initVector;
         this.validUntil = validUntil;
+        this.environment = environment;
+        this.invoiceVerificationTimeout = Objects.requireNonNull(invoiceVerificationTimeout,
+                "invoiceVerificationTimeout must not be null");
+        this.qrCodeService = new QrCodeService();
     }
 
-    /**
-     * Session expiration timestamp captured from the open-session
-     * response (Codex 2026-05-05 F8a). May be empty for sessions
-     * constructed via legacy paths or test fixtures that don't pass it.
-     *
-     * <p>Use {@link #status()} to fetch the current value from the
-     * server when freshness matters.
-     */
+    @Override
     public Optional<OffsetDateTime> validUntil() {
         return Optional.ofNullable(validUntil);
     }
 
-    /**
-     * Time remaining until {@link #validUntil()} relative to the supplied
-     * clock. Empty when {@code validUntil} is unknown. Negative durations
-     * indicate an already-expired session.
-     */
+    @Override
     public Optional<Duration> timeToExpiry(Clock clock) {
         Objects.requireNonNull(clock, "clock must not be null");
         return validUntil().map(deadline -> Duration.between(clock.instant(), deadline.toInstant()));
     }
 
-    /**
-     * Send an invoice within this session.
-     *
-     * <p>The invoice XML is encrypted with the session's AES key, SHA-256 hashes are
-     * computed, and the encrypted payload is sent to KSeF. The consumer never needs
-     * to handle encryption or hashing directly.
-     *
-     * @param invoiceXml raw invoice XML bytes (unencrypted)
-     * @return result containing the invoice reference number
-     * @throws IllegalStateException if the session is already closed
-     */
+    @Override
+    public SubmittedInvoice sendInvoice(Invoice invoice) {
+        Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
+        if (environment == null) {
+            // Legacy 4/5-arg constructors do not carry the environment +
+            // timeout pair needed for KOD I QR rendering. Surface the
+            // misconfiguration loudly rather than silently producing a
+            // half-populated SubmittedInvoice.
+            throw new IllegalStateException(ERR_SEND_INVOICE_REQUIRES_FULL_CTOR);
+        }
+        byte[] invoiceXml = invoice.xml();
+        // Submit through the existing wire path. SendInvoiceBuilder
+        // computes the SHA-256 internally, but we re-compute it here so
+        // we own a copy of the digest for the KOD I QR step (the
+        // builder's hash is wrapped inside the request and not exposed
+        // by the wire response).
+        byte[] invoiceSha256 = computeSha256(invoiceXml);
+        SendInvoiceResult sendResult = send(invoiceXml);
+        SessionInvoiceStatus terminalStatus = pollUntilVerified(sendResult.referenceNumber());
+        return buildSubmittedInvoice(invoice, sendResult.referenceNumber(),
+                terminalStatus, invoiceSha256);
+    }
+
+    private SessionInvoiceStatus pollUntilVerified(String invoiceRef) {
+        long deadlineMillis = System.currentTimeMillis() + invoiceVerificationTimeout.toMillis();
+        Integer lastCode = null;
+        int attempts = 0;
+        while (System.currentTimeMillis() < deadlineMillis) {
+            attempts++;
+            SessionInvoiceStatus snapshot = sessionClient.getInvoiceStatus(referenceNumber, invoiceRef);
+            Integer code = snapshot.status() != null ? snapshot.status().code() : null;
+            lastCode = code;
+            if (code != null && code >= VERIFICATION_TERMINAL_THRESHOLD) {
+                return snapshot;
+            }
+            sleep((int) VERIFICATION_POLL_INTERVAL_MS);
+        }
+        throw new KsefSessionPollingTimeoutException(invoiceRef, attempts, lastCode);
+    }
+
+    private SubmittedInvoice buildSubmittedInvoice(Invoice invoice, String invoiceRef,
+                                                   SessionInvoiceStatus terminalStatus,
+                                                   byte[] invoiceSha256) {
+        Integer code = terminalStatus.status() != null ? terminalStatus.status().code() : null;
+        boolean accepted = code != null && code == STATUS_CODE_OK;
+        Optional<KsefNumber> ksefNumber = Optional.empty();
+        Optional<byte[]> kodIQr = Optional.empty();
+        List<String> errorDetails = List.of();
+        if (accepted && terminalStatus.ksefNumber() != null) {
+            KsefNumber number = KsefNumber.parse(terminalStatus.ksefNumber());
+            ksefNumber = Optional.of(number);
+            kodIQr = Optional.of(renderKodIQr(number, invoiceSha256));
+        } else if (terminalStatus.status() != null && terminalStatus.status().details() != null) {
+            errorDetails = new ArrayList<>(terminalStatus.status().details());
+            if (terminalStatus.status().description() != null && errorDetails.isEmpty()) {
+                errorDetails.add(terminalStatus.status().description());
+            }
+        }
+        return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
+                ksefNumber, kodIQr, errorDetails);
+    }
+
+    private byte[] renderKodIQr(KsefNumber ksefNumber, byte[] invoiceSha256) {
+        Objects.requireNonNull(environment, "environment must not be null at this point");
+        QrEnvironment qrEnvironment = QrEnvironment.fromKsefEnvironment(environment);
+        String url = KsefVerificationLinks.buildInvoiceVerificationUrl(
+                qrEnvironment,
+                ksefNumber.sellerNip(),
+                ksefNumber.acceptanceDate(),
+                invoiceSha256);
+        return qrCodeService.generateQrCode(url);
+    }
+
+    private static byte[] computeSha256(byte[] data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
+            return digest.digest(data);
+        } catch (NoSuchAlgorithmException missingAlgorithm) {
+            throw new IllegalStateException(ERR_SHA256_UNAVAILABLE, missingAlgorithm);
+        }
+    }
+
+    @Override
     public SendInvoiceResult send(byte[] invoiceXml) {
         return send(SendInvoiceCommand.normal(invoiceXml));
     }
 
-    /**
-     * Send an invoice within this session using the supplied command shape
-     * (normal vs technical correction). REQ-OFFLINE-003.
-     *
-     * <p>Encrypts with the session's AES key, computes hashes, and posts
-     * the encrypted payload. For
-     * {@link SendInvoiceCommand.TechnicalCorrection} the
-     * {@code hashOfCorrectedInvoice} field is forwarded and offline mode
-     * is implied at the wire level.
-     */
+    @Override
     public SendInvoiceResult send(SendInvoiceCommand command) {
         ensureOpen();
         Objects.requireNonNull(command, "command must not be null");
@@ -180,64 +272,42 @@ public final class KsefSession implements AutoCloseable {
         return sessionClient.sendInvoice(referenceNumber, builder.build());
     }
 
-    /**
-     * Convenience for sending a technical correction (korekta techniczna).
-     * Equivalent to
-     * {@code send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected))}.
-     * REQ-OFFLINE-003.
-     */
+    @Override
     public SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
         return send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected));
     }
 
-    /**
-     * Convenience for sending an invoice issued during an offline window
-     * (offline24, awaria, niedostępność). Equivalent to
-     * {@code send(SendInvoiceCommand.offline(invoiceXml))}. Codex
-     * 2026-05-05 F1.
-     */
+    @Override
     public SendInvoiceResult sendOffline(byte[] invoiceXml) {
         return send(SendInvoiceCommand.offline(invoiceXml));
     }
 
-    /**
-     * Returns {@code true} when KSeF would auto-classify an invoice as
-     * offline based on its issue date vs. the current invoicing date.
-     *
-     * <p>Per spec ({@code ksef-docs/offline/automatyczne-okreslanie-trybu-offline.md:6-14}):
-     * an invoice is automatically considered offline when the calendar
-     * day of {@code issueDate} is earlier than the calendar day of
-     * {@code invoicingDate}. The comparison is by date only, ignoring
-     * time-of-day.
-     *
-     * <p>Use this helper to decide between {@link SendInvoiceCommand#normal}
-     * and an offline-mode send before posting to KSeF, so a server-side
-     * mode mismatch does not cause a round-trip failure.
-     *
-     * <p>Spec citation: REQ-OFFLINE-002.
-     */
-    public static boolean shouldUseOfflineMode(java.time.LocalDate issueDate,
-                                                java.time.LocalDate invoicingDate) {
-        Objects.requireNonNull(issueDate, "issueDate must not be null");
-        Objects.requireNonNull(invoicingDate, "invoicingDate must not be null");
-        return issueDate.isBefore(invoicingDate);
-    }
-
-    /**
-     * Get the current session status.
-     * Works on both open and closed sessions.
-     *
-     * @return session status with invoice counts and processing state
-     */
+    @Override
     public SessionStatus status() {
         return sessionClient.getStatus(referenceNumber);
     }
 
-    /**
-     * Get all invoices submitted within this session.
-     *
-     * @return submitted invoice metadata
-     */
+    @Override
+    public OffsetDateTime dateCreated() {
+        return status().dateCreated();
+    }
+
+    @Override
+    public Optional<Integer> totalInvoiceCount() {
+        return Optional.ofNullable(status().invoiceCount());
+    }
+
+    @Override
+    public Optional<Integer> successfulInvoiceCount() {
+        return Optional.ofNullable(status().successfulInvoiceCount());
+    }
+
+    @Override
+    public Optional<Integer> failedInvoiceCount() {
+        return Optional.ofNullable(status().failedInvoiceCount());
+    }
+
+    @Override
     public SessionInvoices invoices() {
         // Codex round-9 manual-validation A.2.3 — single-page getInvoices()
         // dropped invoices for sessions with > pageSize entries. Iterate the
@@ -245,96 +315,89 @@ public final class KsefSession implements AutoCloseable {
         return new SessionInvoices(null, sessionClient.getAllInvoices(referenceNumber));
     }
 
-    /**
-     * Get the status of a specific invoice within this session.
-     *
-     * @param invoiceReferenceNumber the invoice reference number from {@link #send(byte[])}
-     * @return invoice processing status
-     */
+    @Override
     public SessionInvoiceStatus invoiceStatus(String invoiceReferenceNumber) {
         return sessionClient.getInvoiceStatus(referenceNumber, invoiceReferenceNumber);
     }
 
-    /**
-     * Get failed invoices within this session.
-     *
-     * @return failed invoice metadata
-     */
+    @Override
     public SessionInvoices failedInvoices() {
         return new SessionInvoices(null, sessionClient.getAllFailedInvoices(referenceNumber));
     }
 
-    /**
-     * Download UPO (official receipt) for a specific invoice.
-     * Works on closed sessions — UPO is only available after close completes.
-     *
-     * @param invoiceReferenceNumber the invoice reference number
-     * @return raw UPO bytes (XML)
-     */
+    @Override
     public byte[] upo(String invoiceReferenceNumber) {
         return sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
     }
 
-    /**
-     * Download UPO (official receipt) by KSeF invoice number. Works on
-     * closed sessions — UPO is only available after close completes.
-     * The KSeF number's structure (length, segments, CRC-8) is validated
-     * by {@link io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber}.
-     *
-     * @param ksefNumber the KSeF invoice number
-     * @return raw UPO bytes (XML)
-     */
-    public byte[] upoByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber ksefNumber) {
+    @Override
+    public byte[] upoByKsefNumber(KsefNumber ksefNumber) {
         return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
     }
 
-    /**
-     * Download every bulk-session UPO referenced in
-     * {@link SessionStatus#upo()}. The KSeF spec
-     * ({@code faktury/sesje/sesja-sprawdzenie-stanu-i-pobranie-upo.md}) returns
-     * one or more {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoPage}
-     * references after a session reaches terminal status; each page can carry
-     * up to ~10 000 invoices. This method fetches the current
-     * {@link SessionStatus} and downloads every page in order.
-     *
-     * <p>Codex round-9 manual-validation A.2.1 — previously the
-     * {@code SessionClient.getUpoByReference(...)} endpoint was reachable but
-     * unreachable through {@code KsefSession}/{@code KsefBatchSession}; the
-     * consumer had to plumb {@code upo.pages[]} themselves.
-     *
-     * @return one byte[] per bulk UPO XML page, in spec order; empty list
-     *     if the session has no bulk UPO yet (typical before terminal close).
-     */
+    @Override
     public List<byte[]> bulkUpos() {
         SessionStatus current = sessionClient.getStatus(referenceNumber);
         if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
             return List.of();
         }
-        List<byte[]> pages = new java.util.ArrayList<>(current.upo().pages().size());
+        List<byte[]> pages = new ArrayList<>(current.upo().pages().size());
         for (var page : current.upo().pages()) {
             pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
         }
         return List.copyOf(pages);
     }
 
-    /**
-     * The session reference number assigned by KSeF.
-     *
-     * @return session reference number
-     */
+    @Override
     public String referenceNumber() {
         return referenceNumber;
     }
 
-    /**
-     * Close this session. Sends close request to KSeF, retrying on 415 (session busy),
-     * then polls until session processing is complete (status 200).
-     *
-     * <p>This method is idempotent — calling it on an already-closed session is a no-op.
-     * It is called automatically when using try-with-resources.
-     */
+    @Override
+    public ClosedSession archive() {
+        ClosedSessionImpl existing = archiveView.get();
+        if (existing != null) {
+            return existing;
+        }
+        // First call wins. Run the close-and-poll lifecycle, then publish
+        // a ClosedSession view. Subsequent archive()/close() callers see
+        // the same instance via the AtomicReference.
+        transitionToClosed();
+        ClosedSessionImpl view = new ClosedSessionImpl(sessionClient, referenceNumber);
+        if (archiveView.compareAndSet(null, view)) {
+            return view;
+        }
+        // Lost the race — return the canonical view that won.
+        return Objects.requireNonNull(archiveView.get());
+    }
+
     @Override
     public void close() {
+        if (closed) {
+            return;
+        }
+        // Run the close lifecycle exactly once, identically to archive().
+        // We don't expose the ClosedSession view here — close() is the
+        // void-returning AutoCloseable contract — but we still set
+        // archiveView so that a subsequent archive() returns a coherent
+        // (already-closed) handle without re-running the lifecycle.
+        transitionToClosed();
+        archiveView.compareAndSet(null, new ClosedSessionImpl(sessionClient, referenceNumber));
+    }
+
+    private void ensureOpen() {
+        if (closed) {
+            throw new IllegalStateException(ERR_SESSION_CLOSED);
+        }
+    }
+
+    /**
+     * Drives the close-and-poll lifecycle. Idempotent — once
+     * {@code closed} is set, subsequent calls return immediately. Wipes
+     * AES material from the heap on completion regardless of how the
+     * close + poll resolved (CWE-316).
+     */
+    private synchronized void transitionToClosed() {
         if (closed) {
             return;
         }
@@ -349,12 +412,6 @@ public final class KsefSession implements AutoCloseable {
             // the arrays are unreachable past this point.
             java.util.Arrays.fill(aesKey, (byte) 0);
             java.util.Arrays.fill(initVector, (byte) 0);
-        }
-    }
-
-    private void ensureOpen() {
-        if (closed) {
-            throw new IllegalStateException(ERR_SESSION_CLOSED);
         }
     }
 

@@ -4,10 +4,12 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import java.time.Duration;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import java.lang.reflect.Constructor;
@@ -17,8 +19,9 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Internal construction bridge for {@link KsefSession}, {@link KsefBatchSession},
- * and {@link PreparedInvoiceExport}.
+ * Internal construction bridge for the {@code OnlineSessionImpl}
+ * (returned as {@link OnlineSession}), {@link KsefBatchSession}, and
+ * {@link PreparedInvoiceExport}.
  *
  * <p>Codex round-9 fresh-review F1: the previous {@code KsefSessionFactory}
  * lived in the exported {@code sdk.domain.invoicing} package, which meant
@@ -57,8 +60,19 @@ public final class SessionHandleConstructor {
     private static final String ERR_REFLECTIVE_CONSTRUCTION_FAILED =
             "SDK internal error: reflective construction of session handle failed";
 
-    private static final Constructor<KsefSession> ONLINE_SESSION_CTOR;
-    private static final Constructor<KsefSession> ONLINE_SESSION_CTOR_VALID_UNTIL;
+    /**
+     * Fully-qualified name of the package-private
+     * {@code OnlineSessionImpl} (PR9 rename of {@code KsefSession}).
+     * Resolved via {@link Class#forName(String)} because the impl class
+     * is package-private inside {@code sdk.domain.invoicing} and not
+     * importable from this internal package.
+     */
+    private static final String ONLINE_SESSION_IMPL_FQN =
+            "io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSessionImpl";
+
+    private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR;
+    private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VALID_UNTIL;
+    private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VERIFICATION_AWARE;
     private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_3_ARG;
     private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_5_ARG;
     private static final Constructor<KsefBatchSession> BATCH_SESSION_CTOR_6_ARG;
@@ -67,13 +81,21 @@ public final class SessionHandleConstructor {
 
     static {
         try {
+            @SuppressWarnings("unchecked")
+            Class<? extends OnlineSession> onlineImpl =
+                    (Class<? extends OnlineSession>) Class.forName(ONLINE_SESSION_IMPL_FQN);
             ONLINE_SESSION_CTOR = makeAccessible(
-                    KsefSession.class.getDeclaredConstructor(
+                    onlineImpl.getDeclaredConstructor(
                             SessionClient.class, String.class, byte[].class, byte[].class));
             ONLINE_SESSION_CTOR_VALID_UNTIL = makeAccessible(
-                    KsefSession.class.getDeclaredConstructor(
+                    onlineImpl.getDeclaredConstructor(
                             SessionClient.class, String.class, byte[].class, byte[].class,
                             java.time.OffsetDateTime.class));
+            ONLINE_SESSION_CTOR_VERIFICATION_AWARE = makeAccessible(
+                    onlineImpl.getDeclaredConstructor(
+                            SessionClient.class, String.class, byte[].class, byte[].class,
+                            java.time.OffsetDateTime.class,
+                            KsefEnvironment.class, Duration.class));
             BATCH_SESSION_CTOR_3_ARG = makeAccessible(
                     KsefBatchSession.class.getDeclaredConstructor(
                             SessionClient.class, String.class, List.class));
@@ -96,7 +118,7 @@ public final class SessionHandleConstructor {
                     PreparedInvoiceExport.class.getDeclaredConstructor(
                             InvoiceClient.class, HttpClient.class, String.class,
                             byte[].class, byte[].class));
-        } catch (NoSuchMethodException ex) {
+        } catch (NoSuchMethodException | ClassNotFoundException ex) {
             throw new ExceptionInInitializerError(ex);
         }
     }
@@ -118,7 +140,7 @@ public final class SessionHandleConstructor {
     /**
      * @apiNote Internal — see class-level Javadoc.
      */
-    public static KsefSession newOnlineSession(SessionClient sessionClient,
+    public static OnlineSession newOnlineSession(SessionClient sessionClient,
                                                  String referenceNumber,
                                                  byte[] aesKey,
                                                  byte[] initVector) {
@@ -129,13 +151,31 @@ public final class SessionHandleConstructor {
      * @apiNote Internal — F8a variant carrying the open-response
      *     {@code validUntil} into the handle.
      */
-    public static KsefSession newOnlineSession(SessionClient sessionClient,
+    public static OnlineSession newOnlineSession(SessionClient sessionClient,
                                                  String referenceNumber,
                                                  byte[] aesKey,
                                                  byte[] initVector,
                                                  java.time.OffsetDateTime validUntil) {
         return invoke(ONLINE_SESSION_CTOR_VALID_UNTIL, sessionClient,
                 referenceNumber, aesKey, initVector, validUntil);
+    }
+
+    /**
+     * @apiNote Internal — PR10 variant carrying the {@link KsefEnvironment}
+     *     and {@link Duration verification timeout} the impl needs to
+     *     drive the synchronous {@code sendInvoice(Invoice)} pipeline
+     *     (poll {@code invoiceStatus} until terminal, parse KsefNumber,
+     *     render KOD I QR).
+     */
+    public static OnlineSession newOnlineSession(SessionClient sessionClient,
+                                                 String referenceNumber,
+                                                 byte[] aesKey,
+                                                 byte[] initVector,
+                                                 java.time.@Nullable OffsetDateTime validUntil,
+                                                 KsefEnvironment environment,
+                                                 Duration invoiceVerificationTimeout) {
+        return invoke(ONLINE_SESSION_CTOR_VERIFICATION_AWARE, sessionClient,
+                referenceNumber, aesKey, initVector, validUntil, environment, invoiceVerificationTimeout);
     }
 
     /**

@@ -10,7 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
@@ -86,7 +86,7 @@ class KsefSessionTest {
                         .withBody(SEND_INVOICE_RESPONSE)));
         stubCloseAndStatusOk();
 
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             // when
             var result = session.send(TEST_INVOICE_XML);
 
@@ -100,7 +100,7 @@ class KsefSessionTest {
     void send_whenSessionClosed_throwsIllegalStateException(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             session.close();
 
             // when / then
@@ -126,7 +126,7 @@ class KsefSessionTest {
 
         stubStatusOk();
 
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             // when — should not throw despite the first 415
             session.close();
 
@@ -139,7 +139,7 @@ class KsefSessionTest {
     void close_whenAlreadyClosed_isNoOp(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             session.close();
 
             // when — second close should be a no-op, no error
@@ -154,7 +154,7 @@ class KsefSessionTest {
     void referenceNumber_returnsSessionRef(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             // when
             String referenceNumber = session.referenceNumber();
 
@@ -174,7 +174,7 @@ class KsefSessionTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, OCTET_STREAM)
                         .withBody(TEST_UPO_CONTENT)));
 
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             session.close();
 
             // when
@@ -196,7 +196,7 @@ class KsefSessionTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SESSION_STATUS_TERMINAL_FAILURE_RESPONSE)));
 
-        KsefSession session = createSession(wmInfo);
+        OnlineSession session = createSession(wmInfo);
 
         // when / then
         KsefSessionTerminalFailureException failure =
@@ -212,7 +212,7 @@ class KsefSessionTest {
         // package-private constructor and timeToExpiry should compute
         // duration against the supplied clock.
         java.time.OffsetDateTime deadline = java.time.OffsetDateTime.parse("2026-04-18T13:00:00+02:00");
-        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor
+        OnlineSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor
                 .newOnlineSession(null, TEST_SESSION_REF, new byte[0], new byte[0], deadline);
 
         assertEquals(deadline, session.validUntil().orElseThrow());
@@ -226,7 +226,7 @@ class KsefSessionTest {
     @Test
     void validUntil_emptyWhenLegacyConstructor() {
         // Legacy 4-arg ctor (no validUntil) → accessor returns empty.
-        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor
+        OnlineSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor
                 .newOnlineSession(null, TEST_SESSION_REF, new byte[0], new byte[0]);
         assertEquals(java.util.Optional.empty(), session.validUntil());
         assertEquals(java.util.Optional.empty(), session.timeToExpiry(java.time.Clock.systemUTC()));
@@ -244,7 +244,7 @@ class KsefSessionTest {
                         .withBody(SEND_INVOICE_RESPONSE)));
         stubCloseAndStatusOk();
 
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             session.sendOffline(TEST_INVOICE_XML);
 
             verify(postRequestedFor(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
@@ -253,7 +253,7 @@ class KsefSessionTest {
         }
     }
 
-    private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {
+    private static OnlineSession createSession(WireMockRuntimeInfo wmInfo) {
         io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime runtime =
                 io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF,

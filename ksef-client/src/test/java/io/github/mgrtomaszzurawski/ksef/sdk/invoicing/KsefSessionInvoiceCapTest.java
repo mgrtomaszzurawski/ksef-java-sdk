@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.lang.reflect.Field;
@@ -56,7 +56,7 @@ class KsefSessionInvoiceCapTest {
     void send_when10kInvoicesAlreadySent_throwsBeforeHttpCall(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — counter pre-seeded to the cap (i.e. 10,000 already sent)
         stubInvoiceEndpoint();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             seedCounter(session, MAX_INVOICES);
 
             // when / then — the 10001st send is rejected before HTTP
@@ -73,7 +73,7 @@ class KsefSessionInvoiceCapTest {
     void send_when9999InvoicesAlreadySent_acceptsThe10000thAndRejectsThe10001st(WireMockRuntimeInfo wmInfo) throws Exception {
         // given — one short of the cap
         stubInvoiceEndpoint();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             seedCounter(session, MAX_INVOICES - 1);
 
             // when — 10,000th send succeeds
@@ -89,7 +89,7 @@ class KsefSessionInvoiceCapTest {
     void send_whenRejected_doesNotIncrementBeyondCap(WireMockRuntimeInfo wmInfo) throws Exception {
         // given
         stubInvoiceEndpoint();
-        try (KsefSession session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             seedCounter(session, MAX_INVOICES);
 
             // when — invoke many rejected sends
@@ -121,7 +121,7 @@ class KsefSessionInvoiceCapTest {
                                  "dateCreated":"2026-04-18T12:00:00+02:00"}""")));
     }
 
-    private static KsefSession createSession(WireMockRuntimeInfo wmInfo) {
+    private static OnlineSession createSession(WireMockRuntimeInfo wmInfo) {
         // try-with-resources will eventually call close() — stub /close + status poll
         // so close completes cleanly even when the test only exercises send().
         stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/close"))
@@ -141,17 +141,19 @@ class KsefSessionInvoiceCapTest {
                 CryptoService.generateAesKey(), CryptoService.generateIv());
     }
 
-    private static void seedCounter(KsefSession session, int value) throws Exception {
+    private static void seedCounter(OnlineSession session, int value) throws Exception {
         AtomicInteger counter = readCounterField(session);
         counter.set(value);
     }
 
-    private static int readCounter(KsefSession session) throws Exception {
+    private static int readCounter(OnlineSession session) throws Exception {
         return readCounterField(session).get();
     }
 
-    private static AtomicInteger readCounterField(KsefSession session) throws Exception {
-        Field field = KsefSession.class.getDeclaredField("sentInvoiceCount");
+    private static AtomicInteger readCounterField(OnlineSession session) throws Exception {
+        // OnlineSessionImpl is package-private — reach the field via the
+        // runtime class rather than a static class literal.
+        Field field = session.getClass().getDeclaredField("sentInvoiceCount");
         field.setAccessible(true);
         return (AtomicInteger) field.get(session);
     }

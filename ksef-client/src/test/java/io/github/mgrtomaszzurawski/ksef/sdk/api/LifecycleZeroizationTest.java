@@ -9,7 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Lifecycle-hygiene gates for {@link KsefSession#close()} and
+ * Lifecycle-hygiene gates for {@link OnlineSession#close()} and
  * {@link KsefClient#close()}.
  *
- * <p>Closes Codex round-9 findings F4 (KsefSession.close did not zeroize
+ * <p>Closes Codex round-9 findings F4 (OnlineSession.close did not zeroize
  * the retained AES key + IV) and F6 (KsefClient.close did not clear
  * sessionContext + publicKeyCache).
  *
@@ -54,7 +54,7 @@ class LifecycleZeroizationTest {
         HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
-        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF, aesKey.clone(), iv.clone());
+        OnlineSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF, aesKey.clone(), iv.clone());
 
         // when
         session.close();
@@ -64,11 +64,11 @@ class LifecycleZeroizationTest {
         byte[] storedIv = readByteField(session, "initVector");
         for (byte byteValue : storedKey) {
             assertEquals((byte) 0, byteValue,
-                    "AES key must be zeroized after KsefSession.close() (CWE-316)");
+                    "AES key must be zeroized after OnlineSession.close() (CWE-316)");
         }
         for (byte byteValue : storedIv) {
             assertEquals((byte) 0, byteValue,
-                    "IV must be zeroized after KsefSession.close() (CWE-316)");
+                    "IV must be zeroized after OnlineSession.close() (CWE-316)");
         }
     }
 
@@ -79,7 +79,7 @@ class LifecycleZeroizationTest {
         HttpRuntime runtime = KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
-        KsefSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF,
+        OnlineSession session = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF,
                 CryptoService.generateAesKey(), CryptoService.generateIv());
 
         // when

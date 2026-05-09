@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.api;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefBatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.KsefSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.SendInvoiceCommand;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -19,9 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Architecture gate for REQ-OFFLINE-005 — technical correction (korekta
  * techniczna) is permitted only in an online session.
  *
- * <p>Enforced structurally: {@link KsefSession#send(SendInvoiceCommand)}
+ * <p>Enforced structurally: {@link OnlineSession#send(SendInvoiceCommand)}
  * accepts {@link SendInvoiceCommand.TechnicalCorrection} and the
- * convenience overload {@link KsefSession#sendTechnicalCorrection(byte[], byte[])}
+ * convenience overload {@link OnlineSession#sendTechnicalCorrection(byte[], byte[])}
  * exists. {@link KsefBatchSession} exposes neither — there is no public
  * method that accepts a {@code SendInvoiceCommand} or a corrected-invoice
  * hash. Reflection scan asserts that.
@@ -33,17 +33,17 @@ class PublicApiKorektaTest {
 
     @Test
     void onlineSession_exposesTechnicalCorrectionEntryPoints() {
-        boolean acceptsCommand = Arrays.stream(KsefSession.class.getMethods())
+        boolean acceptsCommand = Arrays.stream(OnlineSession.class.getMethods())
                 .filter(method -> method.getName().equals("send"))
                 .anyMatch(method -> method.getParameterCount() == 1
                         && method.getParameterTypes()[0].equals(SendInvoiceCommand.class));
         assertTrue(acceptsCommand,
-                "KsefSession.send(SendInvoiceCommand) must exist for technical-correction dispatch");
+                "OnlineSession.send(SendInvoiceCommand) must exist for technical-correction dispatch");
 
-        boolean exposesConvenienceMethod = Arrays.stream(KsefSession.class.getMethods())
+        boolean exposesConvenienceMethod = Arrays.stream(OnlineSession.class.getMethods())
                 .anyMatch(method -> method.getName().equals("sendTechnicalCorrection"));
         assertTrue(exposesConvenienceMethod,
-                "KsefSession.sendTechnicalCorrection must exist as convenience overload");
+                "OnlineSession.sendTechnicalCorrection must exist as convenience overload");
     }
 
     @Test

@@ -91,7 +91,7 @@ import org.slf4j.LoggerFactory;
  *         .credentials(credentials)
  *         .build()) {
  *
- *     try (KsefSession session = client.invoices().openSession(FormCode.FA3)) {
+ *     try (OnlineSession session = client.invoices().openSession(FormCode.FA3)) {
  *         session.send(invoiceXmlBytes);
  *     }
  * }
@@ -125,6 +125,8 @@ public final class KsefClient implements AutoCloseable {
             "Refresh-token endpoint failed ({}); falling back to full re-auth";
     private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(30);
+    /** Default deadline for the synchronous invoice verification poll in {@code OnlineSession.sendInvoice}. */
+    private static final Duration DEFAULT_INVOICE_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);
     private static final int AUTH_POLL_DELAY_MS = 2000;
     private static final int AUTH_POLL_MAX_ATTEMPTS = 15;
     private static final int STATUS_CODE_OK = 200;
@@ -182,7 +184,8 @@ public final class KsefClient implements AutoCloseable {
         this.securityClient = new SecurityClient(this.runtime);
         this.sessionClient = new SessionClient(this.runtime);
         this.invoiceClient = new InvoiceClientImpl(this.runtime,
-                this.sessionClient, this.environment, this::getPublicKey);
+                this.sessionClient, this.environment, this::getPublicKey,
+                builder.invoiceVerificationTimeout);
         this.tokenClient = new TokenClientImpl(this.runtime);
         this.permissionClient = new PermissionClientImpl(this.runtime);
         this.certificateClient = new CertificateClientImpl(this.runtime);
@@ -566,6 +569,7 @@ public final class KsefClient implements AutoCloseable {
         private Duration readTimeout = DEFAULT_READ_TIMEOUT;
         private RetryPolicy retryPolicy = RetryPolicy.builder().build();
         private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
+        private Duration invoiceVerificationTimeout = DEFAULT_INVOICE_VERIFICATION_TIMEOUT;
 
         private Builder() { }
 
@@ -624,6 +628,26 @@ public final class KsefClient implements AutoCloseable {
          */
         public Builder features(FeaturePolicy featurePolicy) {
             this.featurePolicy = Objects.requireNonNull(featurePolicy, "featurePolicy must not be null");
+            return this;
+        }
+
+        /**
+         * Set the deadline for synchronous invoice verification inside
+         * {@code OnlineSession.sendInvoice(Invoice)} (PR10). When the
+         * SDK posts an invoice it polls the per-invoice status until
+         * KSeF reports a terminal state (Accepted / Rejected); this
+         * duration bounds how long the SDK waits before throwing
+         * {@code KsefSessionPollingTimeoutException}. Default 60s.
+         *
+         * <p>Tune higher for environments where verification is known
+         * to spike; lower for tests that want a fast-fail behaviour.
+         *
+         * @param invoiceVerificationTimeout the deadline (must not be null)
+         * @return this builder
+         */
+        public Builder invoiceVerificationTimeout(Duration invoiceVerificationTimeout) {
+            this.invoiceVerificationTimeout = Objects.requireNonNull(invoiceVerificationTimeout,
+                    "invoiceVerificationTimeout must not be null");
             return this;
         }
 
