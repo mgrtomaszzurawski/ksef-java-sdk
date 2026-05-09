@@ -42,29 +42,4 @@ public interface TokenClient {
 
     TokenDetail getStatus(String referenceNumber);
     void revoke(String referenceNumber);
-
-    /**
-     * Codex 2026-05-05 #10 / F7 — generate a token and poll
-     * {@link #getStatus(String)} until terminal. Terminal statuses for
-     * a freshly generated token are {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus#ACTIVE ACTIVE}
-     * (success) or {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus#FAILED FAILED}.
-     * Throws {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException}
-     * on timeout.
-     *
-     * @since 1.0.0
-     */
-    default TokenDetail generateAndAwait(TokenGenerateBuilder tokenBuilder, java.time.Duration timeout) {
-        GenerateTokenResult result = generate(tokenBuilder);
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.awaitTerminal(
-                new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.AsyncOperationAwaiter.Config<>(
-                        "generateToken",
-                        () -> getStatus(result.referenceNumber()),
-                        detail -> detail.status() != null
-                                && (detail.status() == io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus.ACTIVE
-                                    || detail.status() == io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus.FAILED),
-                        TokenDetail::status,
-                        timeout,
-                        null));
-    }
-
 }

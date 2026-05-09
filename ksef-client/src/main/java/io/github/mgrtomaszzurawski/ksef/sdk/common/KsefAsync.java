@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime;
+package io.github.mgrtomaszzurawski.ksef.sdk.common;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
@@ -14,24 +14,36 @@ import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Internal poll-until-terminal helper used by the public
- * {@code *AndAwait(...)} convenience methods on permission/token/
- * certificate clients (Codex 2026-05-05 #10 / F7).
+ * Public utility for the "submit + poll a status endpoint until terminal"
+ * pattern.
  *
- * <p>Polls a status endpoint at a configurable interval until either:
- * <ul>
- *   <li>the supplied {@code isTerminal} predicate returns {@code true}
- *       — returns the terminal status object;</li>
- *   <li>the wall-clock timeout elapses — throws
- *       {@link KsefAsyncTimeoutException}.</li>
- * </ul>
+ * <p>The KSeF SDK exposes async-by-spec operations (certificate enrollment,
+ * token generation, permission grant/revoke) as bare submit calls returning
+ * a reference number; the caller polls the corresponding status endpoint
+ * until the operation reaches a terminal state. {@code KsefAsync} provides
+ * the canonical poll loop for that pattern, so consumers do not have to
+ * write the timeout / interval / interrupt-handling boilerplate themselves.
  *
- * <p>Default poll interval is 1 second. Min is 100 ms. Long polls cap
- * at 5 s to avoid waking up too rarely on long-running operations.
+ * <p>Typical use:
+ * <pre>{@code
+ * EnrollCertificateResult result = client.certificates().enroll(request);
+ * CertificateEnrollmentStatus terminal = KsefAsync.awaitTerminal(
+ *     new KsefAsync.Config<>(
+ *         "enrollCertificate",
+ *         () -> client.certificates().getEnrollmentStatus(result.referenceNumber()),
+ *         status -> status.status() != null && status.status().code() >= 200,
+ *         status -> status.status() == null ? null : status.status().code(),
+ *         Duration.ofMinutes(5),
+ *         null));   // null = use default poll interval
+ * }</pre>
+ *
+ * <p>Default poll interval is 1 second. Configurable interval is clamped
+ * to {@code [100ms, 5s]} to bound server load and keep reactivity bounded
+ * for long-running operations.
  *
  * @since 1.0.0
  */
-public final class AsyncOperationAwaiter {
+public final class KsefAsync {
 
     /** Default poll interval — balances reactivity against server load. */
     public static final Duration DEFAULT_POLL_INTERVAL = Duration.ofSeconds(1);
@@ -43,12 +55,12 @@ public final class AsyncOperationAwaiter {
             "Async operation %s did not reach terminal state within %s (last status code: %s)";
     private static final String ERR_INTERRUPTED = "Interrupted while awaiting async operation";
 
-    private AsyncOperationAwaiter() { }
+    private KsefAsync() { }
 
     /**
      * Configuration for {@link #awaitTerminal(Config)}. Bundles the six
-     * parameters previously taken individually so callers can express
-     * the await contract without a wide positional argument list.
+     * parameters as a record so callers can express the await contract
+     * without a wide positional argument list.
      *
      * @param <S> the status type the fetcher yields
      * @param operationName diagnostic name for the timeout exception
@@ -82,6 +94,9 @@ public final class AsyncOperationAwaiter {
      * true or {@code timeout} elapses.
      *
      * @return the first terminal status object returned by the fetcher
+     * @throws KsefAsyncTimeoutException when the timeout elapses before any
+     *     polled status reaches a terminal state
+     * @throws KsefException when the polling thread is interrupted
      */
     public static <S> S awaitTerminal(Config<S> config) {
         long pollMillis = clamp(config.pollInterval() == null
@@ -109,5 +124,4 @@ public final class AsyncOperationAwaiter {
     private static long clamp(long requested) {
         return Math.max(MIN_POLL_MILLIS, Math.min(MAX_POLL_MILLIS, requested));
     }
-
 }

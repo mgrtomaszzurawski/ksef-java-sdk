@@ -16,7 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.GenerateTokenRes
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenDetail;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -36,13 +35,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 class TokenClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
     private static final String TEST_TOKEN_REF = "20260404-TK-1234567890-ABCDEF1234-07";
     private static final String TEST_GENERATED_TOKEN = "generated-ksef-token-value-abc123";
     private static final String PATH_TOKENS = "/v2/tokens";
-    private static final String PATH_TOKEN_BY_REF = PATH_TOKENS + "/" + TEST_TOKEN_REF;
-    /** Comfortable upper bound for the await-loop in the {@code generateAndAwait} happy-path test. */
-    private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(5);
     private static final String GENERATE_RESPONSE = """
             {
               "referenceNumber": "%s",
@@ -118,32 +113,6 @@ class TokenClientTest {
             assertNotNull(response.tokens());
             assertEquals(1, response.tokens().size());
             assertEquals(TEST_TOKEN_REF, response.tokens().get(0).referenceNumber());
-        }
-    }
-
-    @Test
-    void generateAndAwait_whenStatusReachesActive_returnsTerminalDetail(WireMockRuntimeInfo wmInfo) {
-        // given — POST returns operation reference; GET status reports Active
-        // (terminal status per TokenClient contract). The default helper polls
-        // getStatus(ref) until status is ACTIVE or FAILED — first poll already
-        // terminal, so no real wait happens.
-        stubFor(post(urlEqualTo(PATH_TOKENS))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(GENERATE_RESPONSE)));
-        stubFor(get(urlEqualTo(PATH_TOKEN_BY_REF))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(STATUS_RESPONSE)));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            TokenDetail terminal = ksef.tokens().generateAndAwait(
-                    TokenGenerateBuilder.create("test description").invoiceRead(),
-                    AWAIT_TIMEOUT);
-
-            assertEquals(TEST_TOKEN_REF, terminal.referenceNumber());
         }
     }
 

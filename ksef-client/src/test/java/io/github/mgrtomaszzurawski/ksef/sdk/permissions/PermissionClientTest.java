@@ -33,9 +33,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPer
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -76,17 +74,7 @@ class PermissionClientTest {
             }
             """;
 
-    /** In-progress (code 110) — used by the {@code *AndAwait} timeout test. */
-    private static final String OPERATION_STATUS_IN_PROGRESS_RESPONSE = """
-            {
-              "status": {"code": 110, "description": "InProgress"}
-            }
-            """;
-    private static final String OPERATIONS_PATH = "/v2/permissions/operations/";
-    private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(5);
-    private static final Duration AWAIT_TINY_TIMEOUT = Duration.ofMillis(50);
-
-    /** Per-spec REST paths for the *AndAwait coverage tests. */
+    /** Per-spec REST paths used by individual grant tests. */
     private static final String PATH_PERSONS_GRANTS = "/v2/permissions/persons/grants";
     private static final String PATH_ENTITIES_GRANTS = "/v2/permissions/entities/grants";
     private static final String PATH_AUTHORIZATIONS_GRANTS = "/v2/permissions/authorizations/grants";
@@ -96,7 +84,7 @@ class PermissionClientTest {
     private static final String PATH_EU_ENTITIES_GRANTS = "/v2/permissions/eu-entities/grants";
     private static final String PATH_REVOKE_COMMON = "/v2/permissions/common/grants/" + TEST_PERMISSION_ID;
     private static final String PATH_REVOKE_AUTHORIZATION = "/v2/permissions/authorizations/grants/" + TEST_PERMISSION_ID;
-    /** Test fixtures for the *AndAwait grant-builder argument lists. */
+    /** Test fixtures for grant-builder argument lists. */
     private static final String TEST_FIRST_NAME = "Jan";
     private static final String TEST_LAST_NAME = "Kowalski";
     private static final String TEST_ENTITY_NAME = "Firma Sp. z o.o.";
@@ -295,172 +283,6 @@ class PermissionClientTest {
         }
     }
 
-    // ----- *AndAwait coverage (PLAN A.9 — JaCoCo METHOD=1.00 on PermissionClient) -----
-    //
-    // The 9 default *AndAwait methods on PermissionClient share one
-    // private helper (awaitOperationTerminal) that polls
-    // GET /v2/permissions/operations/{ref} until status.code >= 200.
-    // Each test stubs the corresponding grant/revoke endpoint plus the
-    // status endpoint with terminal code 200, then calls the *AndAwait
-    // overload and asserts the helper returns the terminal status.
-
-    @Test
-    void grantPersonAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_PERSONS_GRANTS,
-                permissions -> permissions.grantPersonAndAwait(
-                        PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
-                                .description(TEST_DESCRIPTION)
-                                .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
-                                .invoiceRead(),
-                        AWAIT_TIMEOUT));
-    }
-
-    @Test
-    void grantEntityAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_ENTITIES_GRANTS,
-                permissions -> permissions.grantEntityAndAwait(
-                        EntityPermissionGrantBuilder.forNip(TEST_NIP)
-                                .description(TEST_DESCRIPTION)
-                                .entityDetails(TEST_ENTITY_NAME)
-                                .invoiceRead(),
-                        AWAIT_TIMEOUT));
-    }
-
-    @Test
-    void grantAuthorizationAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_AUTHORIZATIONS_GRANTS,
-                permissions -> permissions.grantAuthorizationAndAwait(
-                        EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
-                                .selfInvoicing()
-                                .description(TEST_DESCRIPTION)
-                                .entityDetails(TEST_ENTITY_NAME),
-                        AWAIT_TIMEOUT));
-    }
-
-    @Test
-    void grantIndirectAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_INDIRECT_GRANTS,
-                permissions -> permissions.grantIndirectAndAwait(
-                        IndirectPermissionGrantBuilder.forNip(TEST_NIP)
-                                .description(TEST_DESCRIPTION)
-                                .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
-                                .invoiceRead(),
-                        AWAIT_TIMEOUT));
-    }
-
-    @Test
-    void grantSubunitAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_SUBUNITS_GRANTS,
-                permissions -> permissions.grantSubunitAndAwait(
-                        SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
-                                .contextNip(TEST_NIP)
-                                .description(TEST_DESCRIPTION)
-                                .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME),
-                        AWAIT_TIMEOUT));
-    }
-
-    @Test
-    void grantEuEntityAdminAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_EU_ENTITIES_ADMIN_GRANTS,
-                permissions -> permissions.grantEuEntityAdminAndAwait(
-                        EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
-                                .contextNipVatUe(NIP_VAT_UE_PREFIX + TEST_NIP)
-                                .description(TEST_DESCRIPTION)
-                                .euEntityName(TEST_EU_ENTITY_NAME)
-                                .subjectEntityByFingerprint(TEST_PARTNER_NAME, TEST_PARTNER_ADDRESS)
-                                .euEntityDetails(TEST_EU_ENTITY_NAME, TEST_PARTNER_ADDRESS),
-                        AWAIT_TIMEOUT));
-    }
-
-    @Test
-    void grantEuEntityAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertGrantAndAwaitReturnsTerminal(wmInfo, PATH_EU_ENTITIES_GRANTS,
-                permissions -> permissions.grantEuEntityAndAwait(
-                        EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
-                                .description(TEST_DESCRIPTION)
-                                .subjectEntityByFingerprint(TEST_PARTNER_NAME, TEST_PARTNER_ADDRESS)
-                                .invoiceRead(),
-                        AWAIT_TIMEOUT));
-    }
-
-    @Test
-    void revokeCommonAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertRevokeAndAwaitReturnsTerminal(wmInfo, PATH_REVOKE_COMMON,
-                permissions -> permissions.revokeCommonAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT));
-    }
-
-    @Test
-    void revokeAuthorizationAndAwait_whenStatusTerminal_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
-        assertRevokeAndAwaitReturnsTerminal(wmInfo, PATH_REVOKE_AUTHORIZATION,
-                permissions -> permissions.revokeAuthorizationAndAwait(TEST_PERMISSION_ID, AWAIT_TIMEOUT));
-    }
-
-    /**
-     * Stub the supplied grant endpoint + the operation-status poll
-     * (terminal code 200), invoke {@code grantInvocation}, and assert the
-     * returned status is terminal. Used by the seven {@code grant*AndAwait}
-     * variants to avoid copy-pasting the stub-and-assert template.
-     */
-    private static void assertGrantAndAwaitReturnsTerminal(WireMockRuntimeInfo wmInfo,
-                                                           String endpoint,
-                                                           AwaitInvocation grantInvocation) {
-        stubGrantEndpoint(endpoint);
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = grantInvocation.run(ksef.permissions());
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
-    }
-
-    /**
-     * Variant of {@link #assertGrantAndAwaitReturnsTerminal} for revoke
-     * paths, which use {@code DELETE} instead of {@code POST} and carry a
-     * permission-id segment in the URL.
-     */
-    private static void assertRevokeAndAwaitReturnsTerminal(WireMockRuntimeInfo wmInfo,
-                                                            String deletePath,
-                                                            AwaitInvocation revokeInvocation) {
-        stubFor(delete(urlEqualTo(deletePath))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(OPERATION_RESPONSE)));
-        stubOperationStatusTerminal();
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PermissionOperationStatus terminal = revokeInvocation.run(ksef.permissions());
-            assertEquals(KSEF_STATUS_OK, terminal.status().code());
-        }
-    }
-
-    /** Captures one specific {@code *AndAwait} default call against the permissions API. */
-    @FunctionalInterface
-    private interface AwaitInvocation {
-        PermissionOperationStatus run(PermissionClient permissions);
-    }
-
-    @Test
-    void grantPersonAndAwait_whenStatusNeverTerminal_throwsTimeout(WireMockRuntimeInfo wmInfo) {
-        // Covers awaitOperationTerminal's statusCodeOf lambda — that branch
-        // only fires when the deadline elapses with the last status still
-        // in-progress (code < 200).
-        stubGrantEndpoint(PATH_PERSONS_GRANTS);
-        stubFor(get(urlEqualTo(OPERATIONS_PATH + TEST_OPERATION_REF))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(OPERATION_STATUS_IN_PROGRESS_RESPONSE)));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            PersonPermissionGrantBuilder builder = PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
-                    .description(TEST_DESCRIPTION)
-                    .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
-                    .invoiceRead();
-
-            assertThrows(KsefAsyncTimeoutException.class,
-                    () -> ksef.permissions().grantPersonAndAwait(builder, AWAIT_TINY_TIMEOUT));
-        }
-    }
-
     @Test
     void getOperationStatus_whenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
         stubFor(get(urlEqualTo("/v2/permissions/operations/" + TEST_OPERATION_REF))
@@ -653,17 +475,6 @@ class PermissionClientTest {
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(OPERATION_RESPONSE)));
-    }
-
-    private static void stubOperationStatusTerminal() {
-        // Used by every *AndAwait test — first status poll reports the
-        // operation completed (code 200), so the await loop returns
-        // immediately without sleeping.
-        stubFor(get(urlEqualTo(OPERATIONS_PATH + TEST_OPERATION_REF))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(OPERATION_STATUS_RESPONSE)));
     }
 
     private static void stubQueryEndpoint(String path, String responseBody) {
