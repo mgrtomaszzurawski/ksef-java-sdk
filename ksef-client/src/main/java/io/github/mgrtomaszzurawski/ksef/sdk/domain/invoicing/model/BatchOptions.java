@@ -17,10 +17,10 @@ import java.util.Objects;
  *
  * <p>{@code parallelism} caps concurrent part uploads. KSeF returns one upload
  * URL per part (max {@value #MAX_PARTS_PER_BATCH}); the SDK uploads them with up
- * to {@code parallelism} workers. Clamped internally to
+ * to {@code parallelism} workers. Validated to
  * [{@value #MIN_PARALLELISM}, {@value #MAX_PARALLELISM}] — values outside that
- * range either provide no benefit (single-threaded) or risk saturating the
- * upload bandwidth and tripping KSeF's per-IP rate limits.
+ * range throw {@link IllegalArgumentException} symmetrically (silent clamping
+ * surprises callers when the documented setting is not the one used).
  *
  * <p><strong>No progress listener.</strong> Per ADR-008/D1, callback-style
  * "SDK calls your function on each event" inverts control of the consumer's
@@ -45,8 +45,8 @@ public record BatchOptions(Duration timeout, int parallelism) {
 
     private static final String ERR_TIMEOUT_NULL = "timeout must not be null";
     private static final String ERR_TIMEOUT_NON_POSITIVE = "timeout must be positive (was %s)";
-    private static final String ERR_PARALLELISM_TOO_LOW =
-            "parallelism must be >= " + MIN_PARALLELISM + " (was %d)";
+    private static final String ERR_PARALLELISM_OUT_OF_RANGE =
+            "parallelism must be in [" + MIN_PARALLELISM + ", " + MAX_PARALLELISM + "] (was %d)";
 
     /** Default overall deadline: 30 minutes. */
     private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(30);
@@ -59,12 +59,9 @@ public record BatchOptions(Duration timeout, int parallelism) {
             throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
                     ERR_TIMEOUT_NON_POSITIVE, timeout));
         }
-        if (parallelism < MIN_PARALLELISM) {
+        if (parallelism < MIN_PARALLELISM || parallelism > MAX_PARALLELISM) {
             throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
-                    ERR_PARALLELISM_TOO_LOW, parallelism));
-        }
-        if (parallelism > MAX_PARALLELISM) {
-            parallelism = MAX_PARALLELISM;
+                    ERR_PARALLELISM_OUT_OF_RANGE, parallelism));
         }
     }
 

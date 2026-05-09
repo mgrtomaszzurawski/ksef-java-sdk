@@ -92,6 +92,12 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String ERR_NULL_QUERY = "query must not be null";
     private static final String ERR_NULL_FILTER = "filter must not be null";
     private static final String ERR_NULL_FORM_CODE = "formCode must not be null";
+    private static final String ERR_NULL_INVOICES = "invoices must not be null";
+    private static final String ERR_NULL_OPTIONS = "options must not be null";
+    private static final String ERR_NULL_FILES = "files must not be null";
+    private static final String ERR_NULL_SESSION_CLIENT = "sessionClient must not be null";
+    private static final String ERR_NULL_ENVIRONMENT = "environment must not be null";
+    private static final String ERR_NULL_PUBLIC_KEY_RESOLVER = "publicKeyResolver must not be null";
     private static final String ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME =
             "openSession() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
     private static final String ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME =
@@ -431,8 +437,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
     @Override
     public BatchResult submitBatch(FormCode formCode, List<Invoice> invoices, BatchOptions options) {
         Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
-        Objects.requireNonNull(invoices, "invoices must not be null");
-        Objects.requireNonNull(options, "options must not be null");
+        Objects.requireNonNull(invoices, ERR_NULL_INVOICES);
+        Objects.requireNonNull(options, ERR_NULL_OPTIONS);
         if (sessionClient == null || environment == null || publicKeyResolver == null) {
             throw new IllegalStateException(ERR_SUBMIT_BATCH_REQUIRES_FULL_RUNTIME);
         }
@@ -443,8 +449,8 @@ public final class InvoiceClientImpl implements InvoiceClient {
     @Override
     public BatchResult submitBatchFromFiles(FormCode formCode, List<Path> files, BatchOptions options) {
         Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
-        Objects.requireNonNull(files, "files must not be null");
-        Objects.requireNonNull(options, "options must not be null");
+        Objects.requireNonNull(files, ERR_NULL_FILES);
+        Objects.requireNonNull(options, ERR_NULL_OPTIONS);
         if (sessionClient == null || environment == null || publicKeyResolver == null) {
             throw new IllegalStateException(ERR_SUBMIT_BATCH_REQUIRES_FULL_RUNTIME);
         }
@@ -456,9 +462,9 @@ public final class InvoiceClientImpl implements InvoiceClient {
         // sessionClient / environment / publicKeyResolver are non-null guarded
         // by the callers above; the requireNonNull here is a NullAway hint only.
         return new BatchSubmissionFlow(
-                Objects.requireNonNull(sessionClient, "sessionClient"),
+                Objects.requireNonNull(sessionClient, ERR_NULL_SESSION_CLIENT),
                 httpClient,
-                Objects.requireNonNull(environment, "environment"),
-                Objects.requireNonNull(publicKeyResolver, "publicKeyResolver"));
+                Objects.requireNonNull(environment, ERR_NULL_ENVIRONMENT),
+                Objects.requireNonNull(publicKeyResolver, ERR_NULL_PUBLIC_KEY_RESOLVER));
     }
 }

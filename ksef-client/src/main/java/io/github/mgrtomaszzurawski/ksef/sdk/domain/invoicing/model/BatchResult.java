@@ -26,7 +26,10 @@ import java.util.Objects;
  * @param cleared one entry per accepted invoice (raw UPO bytes today;
  *     {@code ClearedInvoice} after PR15)
  * @param failed one entry per rejected invoice
- * @param totalCount total invoices submitted in the batch
+ * @param totalCount total invoices observed by KSeF on the batch session
+ *     (always equals {@code successfulCount + failedCount}; reflects the
+ *     server-side reconciled count, which may differ from the count the
+ *     SDK uploaded if KSeF rejected the manifest)
  * @param successfulCount equal to {@code cleared.size()}
  * @param failedCount equal to {@code failed.size()}
  * @param processingStartedAt wall-clock time the SDK started the batch
@@ -51,6 +54,12 @@ public record BatchResult(
     private static final String ERR_FAILED_NULL = "failed must not be null";
     private static final String ERR_STARTED_NULL = "processingStartedAt must not be null";
     private static final String ERR_COMPLETED_NULL = "processingCompletedAt must not be null";
+    private static final String ERR_SUCCESS_COUNT_MISMATCH =
+            "successfulCount %d must equal cleared.size() %d";
+    private static final String ERR_FAILED_COUNT_MISMATCH =
+            "failedCount %d must equal failed.size() %d";
+    private static final String ERR_TOTAL_COUNT_MISMATCH =
+            "totalCount %d must equal successfulCount + failedCount (%d)";
 
     public BatchResult {
         Objects.requireNonNull(sessionRef, ERR_SESSION_REF_NULL);
@@ -60,5 +69,17 @@ public record BatchResult(
         Objects.requireNonNull(processingCompletedAt, ERR_COMPLETED_NULL);
         cleared = List.copyOf(cleared);
         failed = List.copyOf(failed);
+        if (successfulCount != cleared.size()) {
+            throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
+                    ERR_SUCCESS_COUNT_MISMATCH, successfulCount, cleared.size()));
+        }
+        if (failedCount != failed.size()) {
+            throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
+                    ERR_FAILED_COUNT_MISMATCH, failedCount, failed.size()));
+        }
+        if (totalCount != successfulCount + failedCount) {
+            throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
+                    ERR_TOTAL_COUNT_MISMATCH, totalCount, successfulCount + failedCount));
+        }
     }
 }
