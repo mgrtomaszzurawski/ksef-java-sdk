@@ -168,6 +168,54 @@ class PeppolClientTest {
         }
     }
 
+    @Test
+    void streamProviders_walksUntilHasMoreFalse(WireMockRuntimeInfo wmInfo) {
+        // given — 2 pages; first reports hasMore=true, second hasMore=false
+        // (stream-page size hardcoded to STREAM_PAGE_SIZE=50 in PeppolClientImpl)
+        String firstPageBody = """
+                {
+                  "peppolProviders": [
+                    {"id": "%s", "name": "%s", "dateCreated": "%s"}
+                  ],
+                  "hasMore": true
+                }
+                """.formatted(PROVIDER_ID_1, PROVIDER_NAME_1, PROVIDER_DATE_1);
+        String secondPageBody = """
+                {
+                  "peppolProviders": [
+                    {"id": "%s", "name": "%s", "dateCreated": "%s"}
+                  ],
+                  "hasMore": false
+                }
+                """.formatted(PROVIDER_ID_2, PROVIDER_NAME_2, PROVIDER_DATE_2);
+
+        stubFor(get(urlEqualTo("/v2/peppol/query?pageOffset=0&pageSize=50"))
+                .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(CONTENT_TYPE_HEADER, APPLICATION_JSON)
+                        .withBody(firstPageBody)));
+        stubFor(get(urlEqualTo("/v2/peppol/query?pageOffset=1&pageSize=50"))
+                .withHeader(AUTH_HEADER, equalTo(BEARER_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(CONTENT_TYPE_HEADER, APPLICATION_JSON)
+                        .withBody(secondPageBody)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+
+            // when
+            var collected = ksef.peppol().streamProviders().toList();
+
+            // then
+            assertEquals(EXPECTED_PROVIDER_COUNT, collected.size());
+            assertEquals(PROVIDER_ID_1, collected.get(0).id());
+            assertEquals(PROVIDER_ID_2, collected.get(1).id());
+            verify(getRequestedFor(urlEqualTo("/v2/peppol/query?pageOffset=0&pageSize=50")));
+            verify(getRequestedFor(urlEqualTo("/v2/peppol/query?pageOffset=1&pageSize=50")));
+        }
+    }
+
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
         return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
     }

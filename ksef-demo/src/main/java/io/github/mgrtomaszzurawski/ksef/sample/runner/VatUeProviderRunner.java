@@ -22,11 +22,13 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.IdentifierGenerators;
 import io.github.mgrtomaszzurawski.ksef.sample.util.SelfSignedCerts;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityAdminPermissionGrantBuilder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -134,13 +136,13 @@ public final class VatUeProviderRunner implements DemoRunner {
                     .euEntityDetails(EU_ENTITY_NAME, DEMO_ADDRESS);
             String referenceNumber = context.client().permissions().grantEuEntityAdmin(builder).referenceNumber();
             var permissions = context.client().permissions();
-            var status = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync.awaitTerminal(
-                    new io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync.Config<>(
+            var status = KsefAsync.awaitTerminal(
+                    new KsefAsync.Config<>(
                             "grantEuEntityAdmin",
                             () -> permissions.getOperationStatus(referenceNumber),
-                            s -> s.status() != null && s.status().code()
-                                    >= io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
-                            s -> s.status() == null ? null : s.status().code(),
+                            opStatus -> opStatus.status() != null
+                                    && opStatus.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
+                            opStatus -> opStatus.status() == null ? null : opStatus.status().code(),
                             GRANT_AWAIT_TIMEOUT,
                             null));
             int code = status.status() == null ? -1 : status.status().code();

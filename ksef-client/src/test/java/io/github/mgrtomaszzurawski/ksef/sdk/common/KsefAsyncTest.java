@@ -15,11 +15,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Behavior of the public {@link KsefAsync#awaitTerminal} poll loop:
  * returns as soon as the predicate is satisfied, throws
- * {@link KsefAsyncTimeoutException} on deadline exceeded, and clamps
- * configured poll intervals to the documented bounds.
+ * {@link KsefAsyncTimeoutException} on deadline exceeded, and accepts
+ * configured poll intervals below the documented minimum (clamped
+ * internally).
  */
 class KsefAsyncTest {
 
+    private static final String OPERATION_NAME = "test";
     private static final int TERMINAL_THRESHOLD = 3;
     private static final int LAST_SEEN_VALUE = 42;
     private static final Duration GENEROUS_TIMEOUT = Duration.ofSeconds(5);
@@ -29,23 +31,27 @@ class KsefAsyncTest {
 
     @Test
     void awaitTerminal_whenPredicateSatisfied_returnsImmediately() {
+        // given
         AtomicInteger ticks = new AtomicInteger();
 
+        // when
         Integer result = KsefAsync.awaitTerminal(
                 new KsefAsync.Config<>(
-                        "test",
+                        OPERATION_NAME,
                         () -> ticks.incrementAndGet(),
                         value -> value >= TERMINAL_THRESHOLD,
                         value -> value,
                         GENEROUS_TIMEOUT,
                         STANDARD_POLL));
 
+        // then
         assertEquals(TERMINAL_THRESHOLD, result);
         assertTrue(ticks.get() >= TERMINAL_THRESHOLD);
     }
 
     @Test
     void awaitTerminal_whenDeadlineExceeded_throwsWithOperationNameAndLastStatus() {
+        // when
         KsefAsyncTimeoutException ex = assertThrows(
                 KsefAsyncTimeoutException.class,
                 () -> KsefAsync.awaitTerminal(
@@ -56,6 +62,8 @@ class KsefAsyncTest {
                                 value -> value,
                                 TIGHT_TIMEOUT,
                                 STANDARD_POLL)));
+
+        // then
         assertTrue(ex.getMessage().contains("neverTerminal"),
                 "operation name in timeout message: " + ex.getMessage());
         assertTrue(ex.getMessage().contains(String.valueOf(LAST_SEEN_VALUE)),
@@ -63,16 +71,19 @@ class KsefAsyncTest {
     }
 
     @Test
-    void awaitTerminal_whenPollIntervalBelowMinimum_clampsAndStillCompletes() {
+    void awaitTerminal_whenPollIntervalBelowMinimum_acceptedAndCompletes() {
+        // given / when — below-minimum interval is internally clamped, not rejected;
+        // an immediate-terminal predicate verifies the call returns under the clamp
         Integer result = KsefAsync.awaitTerminal(
                 new KsefAsync.Config<>(
-                        "test",
+                        OPERATION_NAME,
                         () -> 1,
                         value -> true,
                         value -> value,
                         Duration.ofSeconds(1),
                         BELOW_MIN_POLL));
 
+        // then
         assertEquals(1, result);
     }
 }

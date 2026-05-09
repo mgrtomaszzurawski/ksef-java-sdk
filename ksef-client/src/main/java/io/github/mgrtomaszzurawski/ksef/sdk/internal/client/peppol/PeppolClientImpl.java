@@ -4,15 +4,18 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvider;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.mapping.PeppolMappers;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.mapping.PeppolMappers;
 
 /**
  * Client for KSeF Peppol service provider queries.
@@ -40,6 +43,15 @@ public final class PeppolClientImpl implements PeppolClient {
     private static final String ERR_PAGE_OFFSET_NEGATIVE = "pageOffset must be >= 0";
     private static final String ERR_PAGE_SIZE_NOT_POSITIVE = "pageSize must be > 0";
 
+    /**
+     * Page size used by {@link #streamProviders()} on each underlying
+     * page fetch. Picked to balance request count (smaller = more
+     * round-trips) against per-page memory cost (larger = bigger
+     * response payload). Spec does not document a server-side maximum
+     * for this endpoint; 50 matches the demo runner's manual paging.
+     */
+    private static final int STREAM_PAGE_SIZE = 50;
+
     private final HttpSupport http;
 
     public PeppolClientImpl(HttpRuntime runtime) {
@@ -62,6 +74,18 @@ public final class PeppolClientImpl implements PeppolClient {
         if (pageSize <= 0) {
             throw new IllegalArgumentException(ERR_PAGE_SIZE_NOT_POSITIVE);
         }
+        return fetchPage(pageOffset, pageSize);
+    }
+
+    @Override
+    public Stream<PeppolProvider> streamProviders() {
+        return PagedSpliterator.stream(pageOffset -> {
+            PeppolProvidersResult page = fetchPage(pageOffset, STREAM_PAGE_SIZE);
+            return new PagedSpliterator.Page<>(page.providers(), page.hasMore());
+        });
+    }
+
+    private PeppolProvidersResult fetchPage(int pageOffset, int pageSize) {
         String path = PATH_PEPPOL_QUERY
                 + QUERY_STRING_PREFIX + QUERY_PARAM_PAGE_OFFSET + QUERY_PARAM_ASSIGN + pageOffset
                 + QUERY_PARAM_SEPARATOR + QUERY_PARAM_PAGE_SIZE + QUERY_PARAM_ASSIGN + pageSize;

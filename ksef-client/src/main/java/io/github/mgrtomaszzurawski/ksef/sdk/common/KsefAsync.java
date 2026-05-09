@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
@@ -24,14 +25,17 @@ import org.jspecify.annotations.Nullable;
  * the canonical poll loop for that pattern, so consumers do not have to
  * write the timeout / interval / interrupt-handling boilerplate themselves.
  *
- * <p>Typical use:
+ * <p>Typical use (terminal threshold pulled from the relevant client interface
+ * — see {@code PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD} for the
+ * documented poll-loop terminal value):
  * <pre>{@code
  * EnrollCertificateResult result = client.certificates().enroll(request);
  * CertificateEnrollmentStatus terminal = KsefAsync.awaitTerminal(
  *     new KsefAsync.Config<>(
  *         "enrollCertificate",
  *         () -> client.certificates().getEnrollmentStatus(result.referenceNumber()),
- *         status -> status.status() != null && status.status().code() >= 200,
+ *         status -> status.status() != null
+ *                   && status.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
  *         status -> status.status() == null ? null : status.status().code(),
  *         Duration.ofMinutes(5),
  *         null));   // null = use default poll interval
@@ -77,7 +81,7 @@ public final class KsefAsync {
      */
     public record Config<S>(String operationName,
                              Supplier<S> statusFetcher,
-                             Function<S, Boolean> isTerminal,
+                             Predicate<S> isTerminal,
                              @Nullable Function<S, @Nullable Object> statusCodeOf,
                              Duration timeout,
                              @Nullable Duration pollInterval) {
@@ -104,7 +108,7 @@ public final class KsefAsync {
         Instant deadline = Instant.now().plus(config.timeout());
         while (true) {
             S status = config.statusFetcher().get();
-            if (Boolean.TRUE.equals(config.isTerminal().apply(status))) {
+            if (config.isTerminal().test(status)) {
                 return status;
             }
             if (Instant.now().isAfter(deadline)) {
