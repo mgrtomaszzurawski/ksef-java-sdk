@@ -49,6 +49,8 @@ public record KsefIdentifier(Type type, String value) {
             "nipVatUe must contain only [A-Z0-9-] and be at least 4 characters long";
     private static final String ERR_INVALID_PEPPOL_ID =
             "peppolId must contain only [A-Z0-9] and be 4-30 characters long";
+    private static final String ERR_UNSUPPORTED_TYPE = "Unsupported identifier type: ";
+    private static final int RADIX_DECIMAL = 10;
 
     private static final Pattern INTERNAL_ID_PATTERN = Pattern.compile("^\\d{10}-\\d{5}$");
     private static final Pattern NIP_VAT_UE_PATTERN = Pattern.compile("^[A-Z0-9-]{4,40}$");
@@ -88,7 +90,7 @@ public record KsefIdentifier(Type type, String value) {
                     throw new IllegalArgumentException(ERR_INVALID_PEPPOL_ID);
                 }
             }
-            default -> throw new IllegalArgumentException("Unsupported identifier type: " + type);
+            default -> throw new IllegalArgumentException(ERR_UNSUPPORTED_TYPE + type);
         }
     }
 
@@ -138,10 +140,10 @@ public record KsefIdentifier(Type type, String value) {
         }
         int sum = 0;
         for (int i = 0; i < NIP_CHECKSUM_WEIGHTS.length; i++) {
-            sum += Character.digit(nip.charAt(i), 10) * NIP_CHECKSUM_WEIGHTS[i];
+            sum += Character.digit(nip.charAt(i), RADIX_DECIMAL) * NIP_CHECKSUM_WEIGHTS[i];
         }
         int checksum = sum % NIP_CHECKSUM_MODULUS;
         return checksum != NIP_CHECKSUM_INVALID
-                && checksum == Character.digit(nip.charAt(NIP_LENGTH - 1), 10);
+                && checksum == Character.digit(nip.charAt(NIP_LENGTH - 1), RADIX_DECIMAL);
     }
 }

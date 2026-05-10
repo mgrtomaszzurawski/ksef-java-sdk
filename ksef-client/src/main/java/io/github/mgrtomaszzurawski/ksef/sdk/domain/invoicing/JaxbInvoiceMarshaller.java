@@ -84,9 +84,8 @@ final class JaxbInvoiceMarshaller {
 
     private static JAXBContext buildContext(Class<?> rootClass) {
         try {
-            ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
-            ClassLoader loader = contextLoader != null ? contextLoader : rootClass.getClassLoader();
-            return JAXBContext.newInstance(rootClass.getPackage().getName(), loader);
+            return JAXBContext.newInstance(rootClass.getPackage().getName(),
+                    Thread.currentThread().getContextClassLoader());
         } catch (JAXBException ex) {
             throw new IllegalStateException(ERR_CONTEXT_FAILED + rootClass.getName(), ex);
         }

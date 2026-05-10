@@ -37,6 +37,7 @@ import java.util.Optional;
 final class ClosedSessionImpl implements ClosedSession {
 
     private static final String ERR_NULL_SUBMITTED = "submitted must not be null";
+    private static final String ERR_NULL_INVOICE_REF = "invoiceReferenceNumber must not be null";
 
     private final SessionClient sessionClient;
     private final String referenceNumber;
@@ -106,7 +107,7 @@ final class ClosedSessionImpl implements ClosedSession {
 
     @Override
     public ClearedInvoice cleared(String invoiceReferenceNumber) {
-        Objects.requireNonNull(invoiceReferenceNumber, "invoiceReferenceNumber must not be null");
+        Objects.requireNonNull(invoiceReferenceNumber, ERR_NULL_INVOICE_REF);
         byte[] xml = sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
         SessionInvoiceStatus status = sessionClient.getInvoiceStatus(referenceNumber, invoiceReferenceNumber);
         Invoice placeholder = Invoice.fromXml(FormCode.FA3, xml);
