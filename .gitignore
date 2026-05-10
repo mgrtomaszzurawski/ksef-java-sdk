@@ -1,8 +1,12 @@
 # Build output
 target/
+build/
+.gradle/
 *.class
 *.jar
 *.war
+# Gradle wrapper jar IS committed (standard practice) — re-include after the *.jar exclude.
+!gradle/wrapper/gradle-wrapper.jar
 
 # IDE
 .idea/

@@ -47,7 +47,20 @@ class JpmsExportsCoverageTest {
     private static final String MODULE_INFO_PATH = "src/main/java/module-info.java";
     private static final String SDK_ROOT_PACKAGE = "io.github.mgrtomaszzurawski.ksef.sdk";
     private static final String INTERNAL_PACKAGE_PREFIX = SDK_ROOT_PACKAGE + ".internal";
-    private static final String CLASSES_DIR = "target/classes";
+    /**
+     * Resolved at first access — auto-detect Gradle ({@code build/classes/java/main})
+     * or Maven ({@code target/classes}) layout so the test runs from either build
+     * tool without per-tool configuration.
+     */
+    private static final String CLASSES_DIR = resolveClassesDir();
+
+    private static String resolveClassesDir() {
+        Path gradle = Paths.get("build/classes/java/main");
+        if (Files.isDirectory(gradle)) {
+            return gradle.toString();
+        }
+        return "target/classes";
+    }
     private static final String JAVA_PACKAGE_SEPARATOR = ".";
     private static final String FS_SEPARATOR = "/";
     private static final String CLASS_FILE_SUFFIX = ".class";
