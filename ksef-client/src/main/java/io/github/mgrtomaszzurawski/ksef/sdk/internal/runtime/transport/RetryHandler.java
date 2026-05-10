@@ -9,7 +9,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnavailableException;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.util.concurrent.ThreadLocalRandom;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -28,6 +31,8 @@ public final class RetryHandler {
     private static final String LOG_EXHAUSTED = "All {} retry attempts exhausted for: {}";
     private static final String ERR_RETRY_LOOP_NEVER_ENTERED =
             "Retry loop exited without executing any attempt — likely an invalid RetryPolicy.maxAttempts (must be >= 1)";
+    private static final String ERR_KSEF_UNREACHABLE =
+            "KSeF is unreachable (connection-level failure) — switch to offline mode";
     private static final long BACKOFF_BASE_MILLIS = 1000L;
     private static final long MILLIS_PER_SECOND = 1000L;
     private static final int JITTER_DIVISOR = 2;
@@ -113,8 +118,30 @@ public final class RetryHandler {
             return AttemptResult.failed(exception, terminal);
         } catch (IOException exception) {
             boolean terminal = attempt == policy.maxAttempts();
-            return AttemptResult.failed(new KsefNetworkException(operationName, exception), terminal);
+            return AttemptResult.failed(mapIoFailure(exception, operationName), terminal);
         }
+    }
+
+    private static KsefException mapIoFailure(IOException exception, String operationName) {
+        // Connection-level failures indicate KSeF is unreachable rather
+        // than just slow — surface them as KsefUnavailableException so
+        // consumers can branch on offline-mode policy. Other IOExceptions
+        // (read timeout, malformed response) stay as KsefNetworkException.
+        if (isUnavailableTransport(exception)) {
+            return new KsefUnavailableException(ERR_KSEF_UNREACHABLE + " — " + operationName, exception);
+        }
+        return new KsefNetworkException(operationName, exception);
+    }
+
+    private static boolean isUnavailableTransport(IOException exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof ConnectException || current instanceof UnknownHostException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private record AttemptResult<T>(@Nullable T value, @Nullable KsefException exception, boolean terminal, boolean success) {
@@ -141,7 +168,7 @@ public final class RetryHandler {
         try {
             return call.execute();
         } catch (IOException exception) {
-            throw new KsefNetworkException(operationName, exception);
+            throw mapIoFailure(exception, operationName);
         }
     }
 

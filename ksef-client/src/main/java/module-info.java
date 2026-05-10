@@ -65,6 +65,20 @@ module io.github.mgrtomaszzurawski.ksef {
 
     // Internal mechanisms (sdk.internal.*) are NOT exported.
 
+    // PR12b: typed Invoice accessors (Fa2Invoice.faktura(), PefInvoice.invoice(),
+    // PefKorInvoice.creditNote()) currently return JAXB raw types. Exporting the
+    // four root packages so JPMS consumers can use these accessors. Sub-packages
+    // (xml.pef.cac, xml.pef.cbc, etc.) stay internal. Full SDK-record overlay
+    // is tracked as PR21 (post-PR20 polish).
+    exports io.github.mgrtomaszzurawski.ksef.xml.fa2;
+    exports io.github.mgrtomaszzurawski.ksef.xml.fa3;
+    exports io.github.mgrtomaszzurawski.ksef.xml.pef;
+    exports io.github.mgrtomaszzurawski.ksef.xml.pefkor;
+    exports io.github.mgrtomaszzurawski.ksef.xml.pef.cac;
+    exports io.github.mgrtomaszzurawski.ksef.xml.pef.cbc;
+    exports io.github.mgrtomaszzurawski.ksef.xml.pefkor.cac;
+    exports io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbc;
+
     // Required modules
     requires java.net.http;
     requires com.fasterxml.jackson.databind;

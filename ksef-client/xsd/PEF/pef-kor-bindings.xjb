@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    JAXB bindings for the PEF_KOR(3) CreditNote schema. Each XSD
+    namespace lands in a distinct Java sub-package under
+    ksef.xml.pefkor.* so that namespace-scoped types with the same
+    local name do not collide on a flat package layout.
+-->
+<jaxb:bindings xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+               xmlns:xs="http://www.w3.org/2001/XMLSchema"
+               jaxb:version="3.0">
+
+    <jaxb:bindings schemaLocation="Schemat_PEF_KOR(3)_v2-1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-CommonAggregateComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.cac"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-CommonBasicComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbc"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-CommonExtensionComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.ext"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-CommonSignatureComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.sig"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-QualifiedDataTypes-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.qdt"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-SignatureAggregateComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.sigcac"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-SignatureBasicComponents-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.sigcbc"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-UnqualifiedDataTypes-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.udt"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-XAdESv132-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.xades132"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-XAdESv141-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.xades141"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/UBL-xmldsig-core-schema-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.xmldsig"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/CCTS_CCT_SchemaModule-2.1.xsd" node="/xsd:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.ccts"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/20241206_PEFPL-CommonAggregateComponents-2.1-v1.4.34.xsd" node="/xs:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.cacpl"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="bazowe/20241206_PEFPL-CommonBasicComponents-2.1-v1.4.34.xsd" node="/xs:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbcpl"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+</jaxb:bindings>

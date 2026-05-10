@@ -38,15 +38,21 @@ import java.util.List;
 public interface InvoiceClient {
 
     /**
-     * Retrieve invoice XML by KSeF number. Validates length, format, and
-     * CRC-8 checksum (REQ-SESS-18/19/20) before the network call.
+     * Retrieve a typed {@link InvoiceDocument} by KSeF number. Validates
+     * length, format, and CRC-8 checksum (REQ-SESS-18/19/20) before the
+     * network call. Branches on the FormCode detected from the response
+     * XML root element + namespace and returns the matching typed
+     * subclass ({@code Fa3InvoiceDocument}, {@code Fa2InvoiceDocument},
+     * {@code PefInvoiceDocument}, {@code PefKorInvoiceDocument}). Unknown
+     * / custom schemas fall through to the minimal
+     * {@link InvoiceDocument#fromXml(FormCode, byte[])} wrapper.
      *
      * <p>If the consumer holds a raw string, parse it explicitly via
      * {@link KsefNumber#parse(String)} — keeping validation up-front at the
      * value-object boundary (rather than hidden behind a String overload)
      * surfaces malformed input at the first opportunity.
      */
-    byte[] getByKsefNumber(KsefNumber ksefNumber);
+    InvoiceDocument getByKsefNumber(KsefNumber ksefNumber);
 
     InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryFilters query);
 

@@ -12,12 +12,16 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Synchronous result of {@code OnlineSession.sendInvoice(Invoice)}.
+ * Synchronous result of {@code OnlineSession.sendInvoice(Invoice)} and
+ * the offline-mode variants
+ * ({@code OnlineSession.sendOfflineInvoice(OfflineInvoice)},
+ * {@code OnlineSession.sendTechnicalCorrection(...)}).
  *
  * <p>Replaces {@code SendInvoiceResult}'s single-field reference number
  * with the full terminal-state shape that consumers actually need:
- * KSeF number, KOD I QR PNG, error details, and the original
- * {@link Invoice} embedded for downstream chaining.
+ * KSeF number, KOD I QR PNG, KOD II QR PNG (offline path only), error
+ * details, and the original {@link Invoice} embedded for downstream
+ * chaining.
  *
  * <p>The SDK blocks until KSeF reaches a terminal state (Accepted or
  * Rejected) before constructing this record. On verification timeout
@@ -25,10 +29,9 @@ import java.util.Optional;
  * the caller can re-query {@code session.invoiceStatus(referenceNumber)}
  * later if they want to retry the wait.
  *
- * @param invoice the original {@link Invoice} passed to
- *     {@code sendInvoice}; embedded for chain-of-custody and stream
- *     fold patterns ("for each invoice, send and tell me what
- *     happened")
+ * @param invoice the original {@link Invoice} passed to the send call;
+ *     embedded for chain-of-custody and stream fold patterns ("for each
+ *     invoice, send and tell me what happened")
  * @param referenceNumber session-level invoice reference assigned by
  *     KSeF immediately after submission (always present)
  * @param status terminal session-invoice status snapshot
@@ -36,10 +39,15 @@ import java.util.Optional;
  * @param ksefNumber populated when the invoice was accepted; empty on
  *     rejection or any non-Accepted terminal state
  * @param kodIQr KOD I (online verification) QR-code PNG bytes,
- *     populated on Accepted; empty otherwise. The verification URL
- *     embedded in the QR is the per-spec
+ *     populated on Accepted (online path) OR carried straight from the
+ *     supplied {@code OfflineInvoice} on the offline path; empty
+ *     otherwise. The verification URL embedded in the QR is the
+ *     per-spec
  *     {@code https://qr-{env}.ksef.mf.gov.pl/invoice/{nip}/{date}/{hash}}
  *     link
+ * @param kodIIQr KOD II (offline-certificate authenticity) QR-code PNG
+ *     bytes — populated only on the offline-send path (carried from
+ *     the supplied {@code OfflineInvoice}); empty on online sends
  * @param errorDetails human-readable error messages reported by KSeF
  *     on rejection; empty list on success
  *
@@ -51,6 +59,7 @@ public record SubmittedInvoice(
         SessionInvoiceStatus status,
         Optional<KsefNumber> ksefNumber,
         Optional<byte[]> kodIQr,
+        Optional<byte[]> kodIIQr,
         List<String> errorDetails) {
 
     private static final String ERR_INVOICE_NULL = "invoice must not be null";
@@ -72,17 +81,49 @@ public record SubmittedInvoice(
         kodIQr = kodIQr == null
                 ? Optional.empty()
                 : kodIQr.map(byte[]::clone);
+        kodIIQr = kodIIQr == null
+                ? Optional.empty()
+                : kodIIQr.map(byte[]::clone);
         errorDetails = errorDetails == null ? List.of() : List.copyOf(errorDetails);
     }
 
     /**
-     * Returns a fresh defensive copy of the QR-code bytes so callers
-     * cannot mutate the cached array through repeated access. Empty
-     * when {@link #ksefNumber()} is empty (not Accepted).
+     * Compatibility constructor — pre-PR13 5-arg form (no
+     * {@code kodIIQr}) used by online-only sends. Preserved so existing
+     * online-send call sites compile unchanged. The new 6th parameter
+     * defaults to {@link Optional#empty()}.
+     */
+    public SubmittedInvoice(Invoice invoice,
+                            String referenceNumber,
+                            SessionInvoiceStatus status,
+                            Optional<KsefNumber> ksefNumber,
+                            Optional<byte[]> kodIQr,
+                            List<String> errorDetails) {
+        this(invoice, referenceNumber, status, ksefNumber, kodIQr,
+                Optional.empty(), errorDetails);
+    }
+
+    /**
+     * Returns a fresh defensive copy of the KOD I QR-code bytes so
+     * callers cannot mutate the cached array through repeated access.
+     * Empty when {@link #ksefNumber()} is empty (not Accepted) and the
+     * invoice was sent through the online path; populated when the
+     * invoice was sent via the offline path even before KSeF assigns
+     * the canonical KSeF number.
      */
     @Override
     public Optional<byte[]> kodIQr() {
         return kodIQr.map(byte[]::clone);
+    }
+
+    /**
+     * Returns a fresh defensive copy of the KOD II QR-code bytes so
+     * callers cannot mutate the cached array through repeated access.
+     * Populated only on the offline-send path; empty on online sends.
+     */
+    @Override
+    public Optional<byte[]> kodIIQr() {
+        return kodIIQr.map(byte[]::clone);
     }
 
     @Override
@@ -98,13 +139,15 @@ public record SubmittedInvoice(
                 && Objects.equals(status, that.status)
                 && Objects.equals(ksefNumber, that.ksefNumber)
                 && optionalBytesEqual(kodIQr, that.kodIQr)
+                && optionalBytesEqual(kodIIQr, that.kodIIQr)
                 && Objects.equals(errorDetails, that.errorDetails);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(invoice, referenceNumber, status, ksefNumber,
-                optionalBytesHashCode(kodIQr), errorDetails);
+                optionalBytesHashCode(kodIQr), optionalBytesHashCode(kodIIQr),
+                errorDetails);
     }
 
     @Override
@@ -112,6 +155,7 @@ public record SubmittedInvoice(
         return "SubmittedInvoice[referenceNumber=" + referenceNumber
                 + ", ksefNumber=" + ksefNumber.map(KsefNumber::value).orElse("<absent>")
                 + ", kodIQr=" + kodIQr.map(bytes -> bytes.length + " bytes").orElse("<absent>")
+                + ", kodIIQr=" + kodIIQr.map(bytes -> bytes.length + " bytes").orElse("<absent>")
                 + ", errorDetails=" + errorDetails.size() + " entries"
                 + ", statusCode="
                 + (status.status() == null ? "<unknown>" : Integer.toString(status.status().code()))

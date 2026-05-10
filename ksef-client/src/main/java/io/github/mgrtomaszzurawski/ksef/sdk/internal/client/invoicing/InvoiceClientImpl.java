@@ -8,9 +8,14 @@ import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa2InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefInvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.client.model.ExportInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceExportStatusResponseRaw;
@@ -53,6 +58,7 @@ import java.security.PublicKey;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -80,6 +86,9 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String PATH_EXPORT_STATUS = ApiPaths.INVOICES + "/exports/";
 
     private static final String OP_GET_BY_KSEF = "getInvoiceByKsefNumber";
+    private static final String UNKNOWN_FORM_CODE_SYSTEM_CODE = "UNKNOWN";
+    private static final String UNKNOWN_FORM_CODE_SCHEMA_VERSION = "0";
+    private static final String UNKNOWN_FORM_CODE_TYPE = "UNKNOWN";
     private static final String OP_QUERY_METADATA = "queryInvoicesMetadata";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
     private static final String OP_PREPARE_EXPORT = "prepareInvoiceExport";
@@ -156,20 +165,43 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     /**
-     * Retrieve an invoice by its KSeF number. Returns raw invoice XML bytes.
+     * Retrieve a typed {@link InvoiceDocument} by its KSeF number. Detects
+     * the FormCode from the XML root element + namespace and returns the
+     * matching typed subclass; falls through to a minimal
+     * {@link InvoiceDocument#fromXml(FormCode, byte[])} wrapper for
+     * unrecognised schemas.
      *
      * @param ksefNumber the unique KSeF invoice number — pre-validated by
      *     {@link KsefNumber} (length, format, CRC-8) so this method never
      *     issues a request with a malformed identifier
-     * @return raw invoice XML bytes
+     * @return typed {@link InvoiceDocument}
      */
     @Override
-    public byte[] getByKsefNumber(KsefNumber ksefNumber) {
+    public InvoiceDocument getByKsefNumber(KsefNumber ksefNumber) {
         String value = ksefNumber.value();
         LOGGER.debug(LOG_CALL_REF, OP_GET_BY_KSEF, value);
         requireSafePathSegment(value);
         String token = http.requireToken();
-        return http.getAuthenticatedBytes(PATH_INVOICES_KSEF + value, token, OP_GET_BY_KSEF);
+        byte[] xml = http.getAuthenticatedBytes(PATH_INVOICES_KSEF + value, token, OP_GET_BY_KSEF);
+        Optional<FormCode> detected = FormCodeDetector.detect(xml);
+        if (detected.isEmpty()) {
+            return InvoiceDocument.fromXml(FormCode.custom(UNKNOWN_FORM_CODE_SYSTEM_CODE,
+                    UNKNOWN_FORM_CODE_SCHEMA_VERSION, UNKNOWN_FORM_CODE_TYPE), xml);
+        }
+        FormCode formCode = detected.get();
+        if (formCode.equals(FormCode.FA3)) {
+            return Fa3InvoiceDocument.from(xml);
+        }
+        if (formCode.equals(FormCode.FA2)) {
+            return Fa2InvoiceDocument.from(xml);
+        }
+        if (formCode.equals(FormCode.PEF3)) {
+            return PefInvoiceDocument.from(xml);
+        }
+        if (formCode.equals(FormCode.PEF_KOR3)) {
+            return PefKorInvoiceDocument.from(xml);
+        }
+        return InvoiceDocument.fromXml(formCode, xml);
     }
 
     /**

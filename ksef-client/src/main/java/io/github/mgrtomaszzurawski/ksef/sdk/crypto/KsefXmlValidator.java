@@ -37,18 +37,18 @@ import org.xml.sax.SAXException;
  * validator does not guarantee server acceptance (KSeF business rules
  * are not in the XSD).
  *
- * <p>Bundled XSDs cover {@link FormCode#FA2} and {@link FormCode#FA3}
- * only. PEF/KOR_PEF (and any other custom form code) raise
- * {@link KsefXmlValidationException} from {@link #validate(byte[], FormCode)}
- * at schema-load time — the validator is FA-only by design.
+ * <p>Bundled XSDs cover {@link FormCode#FA2}, {@link FormCode#FA3},
+ * {@link FormCode#PEF3} and {@link FormCode#PEF_KOR3}. Any other
+ * (custom) form code raises {@link KsefXmlValidationException} from
+ * {@link #validate(byte[], FormCode)} at schema-load time — the
+ * validator covers the four KSeF-accepted schemas only.
  *
  * <p>The validator throws {@link KsefXmlValidationException} (a
- * {@link KsefException} subclass) on failure with the SAX line/column
- * info carried in the message. {@link #validate(byte[], FormCode)}
- * returns the list of validation issues — empty when the document is
- * valid. {@link #validateDetailed(byte[], FormCode)} returns
- * structured {@link ValidationIssue} records with explicit
- * {@link Severity} so callers can distinguish warnings from errors.
+ * {@link KsefException} subclass) from {@link #validateOrThrow}.
+ * {@link #validate(byte[], FormCode)} returns structured
+ * {@link ValidationIssue} records with explicit {@link Severity} so
+ * callers can distinguish warnings from errors — empty list means
+ * valid.
  *
  * @since 1.0.0
  */
@@ -76,8 +76,20 @@ public final class KsefXmlValidator {
     /** Resource path inside the SDK jar for each {@link FormCode#systemCode()}. */
     private static final java.util.Map<String, String> SCHEMA_RESOURCE_BY_SYSTEM_CODE = java.util.Map.of(
             "FA (2)", "/xsd/FA/schemat_FA(2)_v1-0E.xsd",
-            "FA (3)", "/xsd/FA/schemat_FA(3)_v1-0E.xsd"
+            "FA (3)", "/xsd/FA/schemat_FA(3)_v1-0E.xsd",
+            "PEF (3)", "/xsd/PEF/Schemat_PEF(3)_v2-1.xsd",
+            "PEF_KOR (3)", "/xsd/PEF/Schemat_PEF_KOR(3)_v2-1.xsd"
     );
+
+    /**
+     * Classpath subdirectory containing the FA-family bazowe XSDs.
+     */
+    private static final String FA_BAZOWE_PREFIX = "/xsd/FA/bazowe/";
+    /**
+     * Classpath subdirectory containing the PEF (UBL + Polish) bazowe XSDs.
+     */
+    private static final String PEF_BAZOWE_PREFIX = "/xsd/PEF/bazowe/";
+    private static final String PEF_SYSTEM_CODE_PREFIX = "PEF";
 
     private static final ConcurrentMap<String, Schema> SCHEMA_CACHE = new ConcurrentHashMap<>();
 
@@ -114,31 +126,13 @@ public final class KsefXmlValidator {
     /**
      * Validate {@code invoiceXml} against the XSD shipped for the
      * supplied {@link FormCode}. Returns the (possibly empty) list of
-     * SAX validation issues serialised as strings — empty list means
-     * valid.
-     *
-     * <p>Severities collapse into the string prefix
-     * ({@code WARNING/ERROR/FATAL}). Use
-     * {@link #validateDetailed(byte[], FormCode)} when you need to
-     * distinguish severities programmatically.
+     * structured {@link ValidationIssue} records carrying explicit
+     * {@link Severity} — empty list means the document is valid.
      *
      * @throws KsefXmlValidationException when the form code has no
      *     bundled XSD or the XSD itself fails to load.
      */
-    public static List<String> validate(byte[] invoiceXml, FormCode formCode) {
-        return validateDetailed(invoiceXml, formCode).stream()
-                .map(ValidationIssue::toString)
-                .toList();
-    }
-
-    /**
-     * Detailed validation — returns structured {@link ValidationIssue}
-     * records. Empty list means valid.
-     *
-     * @throws KsefXmlValidationException when the form code has no
-     *     bundled XSD or the XSD itself fails to load.
-     */
-    public static List<ValidationIssue> validateDetailed(byte[] invoiceXml, FormCode formCode) {
+    public static List<ValidationIssue> validate(byte[] invoiceXml, FormCode formCode) {
         Objects.requireNonNull(invoiceXml, ERR_NULL_XML);
         Objects.requireNonNull(formCode, ERR_NULL_FORM);
         Schema schema = SCHEMA_CACHE.computeIfAbsent(formCode.systemCode(),
@@ -180,7 +174,7 @@ public final class KsefXmlValidator {
      * {@link Severity#WARNING}-only results pass through silently.
      */
     public static void validateOrThrow(byte[] invoiceXml, FormCode formCode) {
-        List<ValidationIssue> issues = validateDetailed(invoiceXml, formCode);
+        List<ValidationIssue> issues = validate(invoiceXml, formCode);
         boolean hasFailure = false;
         List<String> failureMessages = new ArrayList<>();
         for (ValidationIssue issue : issues) {
@@ -268,7 +262,7 @@ public final class KsefXmlValidator {
             } catch (SAXException ignored) {
                 // Property unsupported in some JAXP impls — schema may still load.
             }
-            factory.setResourceResolver(new ClasspathResourceResolver());
+            factory.setResourceResolver(new ClasspathResourceResolver(systemCode));
             return factory.newSchema(new StreamSource(stream));
         } catch (SAXException | IOException ex) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode + " — " + ex.getMessage(), List.of());
@@ -277,7 +271,12 @@ public final class KsefXmlValidator {
 
     private static final class ClasspathResourceResolver implements org.w3c.dom.ls.LSResourceResolver {
 
-        private static final String BAZOWE_RESOURCE_PREFIX = "/xsd/FA/bazowe/";
+        private final String bazoweResourcePrefix;
+
+        ClasspathResourceResolver(String systemCode) {
+            this.bazoweResourcePrefix = systemCode != null && systemCode.startsWith(PEF_SYSTEM_CODE_PREFIX)
+                    ? PEF_BAZOWE_PREFIX : FA_BAZOWE_PREFIX;
+        }
 
         @Override
         @SuppressWarnings("PMD.UseObjectForClearerAPI") // signature fixed by W3C LSResourceResolver interface
@@ -289,7 +288,7 @@ public final class KsefXmlValidator {
             int lastSlash = systemId.lastIndexOf('/');
             String fileName = lastSlash >= 0 ? systemId.substring(lastSlash + 1) : systemId;
             InputStream resourceStream = KsefXmlValidator.class.getResourceAsStream(
-                    BAZOWE_RESOURCE_PREFIX + fileName);
+                    bazoweResourcePrefix + fileName);
             if (resourceStream == null) {
                 return null;
             }

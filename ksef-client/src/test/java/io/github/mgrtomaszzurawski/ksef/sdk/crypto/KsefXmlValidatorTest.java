@@ -21,12 +21,12 @@ class KsefXmlValidatorTest {
         byte[] notXml = "<<<not even xml".getBytes(StandardCharsets.UTF_8);
 
         // when
-        List<String> issues = KsefXmlValidator.validate(notXml, FormCode.FA3);
+        List<KsefXmlValidator.ValidationIssue> issues = KsefXmlValidator.validate(notXml, FormCode.FA3);
 
         // then
         assertFalse(issues.isEmpty(),
                 "malformed XML must produce at least one issue");
-        assertTrue(issues.stream().anyMatch(issue -> issue.startsWith("FATAL")),
+        assertTrue(issues.stream().anyMatch(issue -> issue.severity() == KsefXmlValidator.Severity.FATAL),
                 "malformed XML should surface as FATAL: " + issues);
     }
 
@@ -62,17 +62,17 @@ class KsefXmlValidatorTest {
     }
 
     @Test
-    void validateDetailed_malformedXml_returnsFatalIssueWithSeverity() {
+    void validate_malformedXml_returnsFatalIssueWithSeverity() {
         // given
         byte[] notXml = "<<<not even xml".getBytes(StandardCharsets.UTF_8);
 
         // when
         List<KsefXmlValidator.ValidationIssue> issues =
-                KsefXmlValidator.validateDetailed(notXml, FormCode.FA3);
+                KsefXmlValidator.validate(notXml, FormCode.FA3);
 
         // then
         assertFalse(issues.isEmpty());
-        assertTrue(issues.stream().anyMatch(i -> i.severity() == KsefXmlValidator.Severity.FATAL));
+        assertTrue(issues.stream().anyMatch(issue -> issue.severity() == KsefXmlValidator.Severity.FATAL));
     }
 
     @Test
