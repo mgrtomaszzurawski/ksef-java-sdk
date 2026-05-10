@@ -42,12 +42,16 @@ public final class QrCodeRunner implements DemoRunner {
     private static final String NAME = "qrcode";
     private static final String OP_URL = "buildInvoiceVerificationUrl";
     private static final String OP_QR = "generateQrCode";
+    private static final String OP_CLIENT_ACCESSOR = "clientQrCodeAccessor";
     private static final String SAMPLE_SELLER_NIP = "1111111111";
     private static final String SAMPLE_INVOICE_XML = "<Faktura>fixture</Faktura>";
     private static final String SHA_256 = "SHA-256";
     private static final LocalDate SAMPLE_ISSUE_DATE = LocalDate.of(2026, 4, 4);
     private static final String ENV_DEMO = "demo";
     private static final String ENV_TEST = "test";
+    private static final String FAIL_NULL_QR_CODE_ACCESSOR =
+            "client.qrCode() returned null — KsefClient accessor (PR21) wiring broken";
+    private static final String FAIL_EMPTY_PNG = "PNG bytes are empty";
 
     @Override
     public String name() { return NAME; }
@@ -57,7 +61,7 @@ public final class QrCodeRunner implements DemoRunner {
         List<RunResult> results = new ArrayList<>();
         boolean isTestEnv = context.environment().contains(ENV_DEMO) || context.environment().contains(ENV_TEST);
         QrEnvironment qrEnv = isTestEnv ? QrEnvironment.TEST : QrEnvironment.PROD;
-        QrCodeService service = new QrCodeService();
+        QrCodeService service = context.client().qrCode();
 
         long start = System.currentTimeMillis();
         String verificationUrl = null;
@@ -83,6 +87,42 @@ public final class QrCodeRunner implements DemoRunner {
             }
         }
 
+        runClientQrCodeAccessor(context, qrEnv, results);
+
         return results;
+    }
+
+    /**
+     * Verify the {@code KsefClient.qrCode()} accessor (PR21) returns a
+     * non-null {@link QrCodeService} that can render a real KSeF
+     * verification URL into a non-empty PNG.
+     */
+    private void runClientQrCodeAccessor(DemoContext context, QrEnvironment qrEnv,
+                                         List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            QrCodeService accessorService = context.client().qrCode();
+            if (accessorService == null) {
+                results.add(RunResult.fail(NAME, OP_CLIENT_ACCESSOR, elapsed(start),
+                        FAIL_NULL_QR_CODE_ACCESSOR));
+                return;
+            }
+            byte[] hash = MessageDigest.getInstance(SHA_256)
+                    .digest(SAMPLE_INVOICE_XML.getBytes(StandardCharsets.UTF_8));
+            String payloadUrl = KsefVerificationLinks.buildInvoiceVerificationUrl(
+                    qrEnv, SAMPLE_SELLER_NIP, SAMPLE_ISSUE_DATE, hash);
+            byte[] pngBytes = accessorService.generateQrCode(payloadUrl);
+            if (pngBytes == null || pngBytes.length == 0) {
+                results.add(RunResult.fail(NAME, OP_CLIENT_ACCESSOR, elapsed(start), FAIL_EMPTY_PNG));
+                return;
+            }
+            LOGGER.info("[{}] client.qrCode() rendered {} bytes PNG (url len={})",
+                    NAME, pngBytes.length, payloadUrl.length());
+            results.add(RunResult.ok(NAME, OP_CLIENT_ACCESSOR, elapsed(start),
+                    pngBytes.length + " bytes (url=" + payloadUrl.length() + " chars)"));
+        } catch (NoSuchAlgorithmException | RuntimeException exception) {
+            results.add(RunResult.fail(NAME, OP_CLIENT_ACCESSOR, elapsed(start),
+                    errorMessage(exception)));
+        }
     }
 }

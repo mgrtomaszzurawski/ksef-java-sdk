@@ -22,7 +22,16 @@ public class KsefException extends RuntimeException {
     private static final long serialVersionUID = 1L;
     private static final String ERR_UNKNOWN_STATUS = "Unexpected HTTP status: ";
     private static final Pattern PII_DIGIT_RUN = Pattern.compile("\\d{9,}");
+    /**
+     * JWT shape — three dot-separated base64url segments. Header always begins
+     * with {@code eyJ} (the base64url encoding of {@code {"} starting any JSON
+     * object), so we anchor on it to keep the regex tight enough not to match
+     * unrelated dotted tokens.
+     */
+    private static final Pattern PII_JWT = Pattern.compile(
+            "eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+");
     private static final String PII_REPLACEMENT_PREFIX = "***";
+    private static final String JWT_HEADER_MARKER = "eyJ.";
     private static final int PII_PRESERVED_TAIL = 4;
     private static final int HTTP_BAD_REQUEST = 400;
     private static final int HTTP_UNAUTHORIZED = 401;
@@ -62,9 +71,9 @@ public class KsefException extends RuntimeException {
 
     /**
      * Raw response body as returned by KSeF. <strong>May contain PII</strong>
-     * (NIPs, PESELs, names, JWT fragments). Never log directly — use
-     * {@link #safeResponseBody()} for diagnostic output that scrubs digit
-     * runs of length ≥ 9.
+     * (NIPs, PESELs, names, JWTs). Never log directly — use
+     * {@link #safeResponseBody()} for diagnostic output that scrubs both
+     * long digit runs AND JWT-shaped tokens.
      *
      * <p>Stays public for SDK-internal parsing (error-code extraction)
      * and forensic use. Consumers writing logs/audit trails should
@@ -75,10 +84,20 @@ public class KsefException extends RuntimeException {
     }
 
     /**
-     * Diagnostic-safe response body — replaces every digit run of length
-     * ≥ 9 (NIP=10, PESEL=11, JWT=base64-large) with {@code ***NNNN}
-     * keeping the last four chars for cross-correlation. Suitable for
-     * inclusion in logs and error messages.
+     * Diagnostic-safe response body — applies two redaction passes in
+     * sequence:
+     * <ol>
+     *   <li>Long digit runs (length &ge; 9 — NIP=10, PESEL=11, ksef-number
+     *       embedded ordinals) are replaced with {@code ***NNNN} preserving
+     *       the last four digits for cross-correlation.</li>
+     *   <li>JWT-shaped tokens ({@code eyJ&lt;base64url&gt;.&lt;base64url&gt;.&lt;base64url&gt;})
+     *       are collapsed to {@code eyJ.***NNNN} preserving the last four
+     *       chars of the signature segment (also for cross-correlation),
+     *       so the header prefix stays diagnostic but the signature payload
+     *       and the encoded claims set are not surfaced.</li>
+     * </ol>
+     *
+     * <p>Suitable for inclusion in logs and error messages.
      *
      * @return scrubbed response body, or {@code null} when no body is
      *     attached to this exception
@@ -87,7 +106,15 @@ public class KsefException extends RuntimeException {
         if (responseBody == null) {
             return null;
         }
-        return PII_DIGIT_RUN.matcher(responseBody).replaceAll(matchResult -> {
+        String afterJwt = PII_JWT.matcher(responseBody).replaceAll(matchResult -> {
+            String token = matchResult.group();
+            int lastDot = token.lastIndexOf('.');
+            String signatureTail = lastDot >= 0 && token.length() - lastDot - 1 >= PII_PRESERVED_TAIL
+                    ? token.substring(token.length() - PII_PRESERVED_TAIL)
+                    : token.substring(Math.max(0, token.length() - PII_PRESERVED_TAIL));
+            return JWT_HEADER_MARKER + PII_REPLACEMENT_PREFIX + signatureTail;
+        });
+        return PII_DIGIT_RUN.matcher(afterJwt).replaceAll(matchResult -> {
             String digits = matchResult.group();
             return PII_REPLACEMENT_PREFIX + digits.substring(digits.length() - PII_PRESERVED_TAIL);
         });

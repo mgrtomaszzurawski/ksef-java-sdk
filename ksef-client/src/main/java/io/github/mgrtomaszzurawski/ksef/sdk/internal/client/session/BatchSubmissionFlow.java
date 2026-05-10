@@ -164,6 +164,14 @@ public final class BatchSubmissionFlow {
     /** Plain-HTTP scheme — accepted only for loopback uploads. */
     private static final String SCHEME_HTTP = "http";
 
+    /** Sentinel form-code for the synthetic UPO-only placeholder invoice carried on
+     *  rebuilt {@link SubmittedInvoice} entries — see {@link #buildUpoPlaceholderInvoice()}. */
+    private static final FormCode UPO_PLACEHOLDER_FORM_CODE = FormCode.custom("UPO", "1", "UPO");
+    /** Empty payload for the UPO-only placeholder invoice. The original FA(3)/PEF/PEFKOR
+     *  XML is not retained server-side after batch close; consumers needing the canonical
+     *  invoice payload must call {@code client.invoices().getByKsefNumber(...)}. */
+    private static final byte[] UPO_PLACEHOLDER_XML = new byte[0];
+
     private static final java.util.regex.Pattern IP_LITERAL_PATTERN = java.util.regex.Pattern.compile(
             "^(?:(?:\\d{1,3}\\.){3}\\d{1,3}|\\[?[0-9a-fA-F]*:[0-9a-fA-F:]*\\]?)$");
 
@@ -298,7 +306,7 @@ public final class BatchSubmissionFlow {
             closeWithRetry(sessionRef, deadlineNanos);
             pollUntilTerminal(sessionRef, deadlineNanos);
 
-            return collectResult(sessionRef, formCode, invoiceCount, startedAt);
+            return collectResult(sessionRef, invoiceCount, startedAt);
         } finally {
             pkg.cleanup();
         }
@@ -519,8 +527,7 @@ public final class BatchSubmissionFlow {
         }
     }
 
-    private BatchResult collectResult(String sessionRef, FormCode formCode, int totalCount,
-                                       OffsetDateTime startedAt) {
+    private BatchResult collectResult(String sessionRef, int totalCount, OffsetDateTime startedAt) {
         OffsetDateTime completedAt = OffsetDateTime.now(clock);
         List<SessionInvoiceStatus> all = sessionClient.getAllInvoices(sessionRef);
         List<SessionInvoiceStatus> failed = sessionClient.getAllFailedInvoices(sessionRef);
@@ -545,7 +552,7 @@ public final class BatchSubmissionFlow {
             }
             byte[] upo = sessionClient.getUpoByInvoiceReference(sessionRef, invoice.referenceNumber());
             UpoEntry entry = new UpoEntry(invoice.referenceNumber(), upo);
-            Invoice placeholder = Invoice.fromXml(formCode, upo);
+            Invoice placeholder = buildUpoPlaceholderInvoice();
             SubmittedInvoice submitted = new SubmittedInvoice(
                     placeholder, invoice.referenceNumber(), invoice,
                     parseKsefNumberOrEmpty(invoice.ksefNumber()),
@@ -564,6 +571,19 @@ public final class BatchSubmissionFlow {
         return new BatchResult(sessionRef, cleared, failures,
                 reconciled, cleared.size(), failures.size(),
                 startedAt, completedAt);
+    }
+
+    /**
+     * Build the UPO-only placeholder {@link Invoice} carried on rebuilt
+     * {@link SubmittedInvoice} entries. The previous implementation built the
+     * placeholder from UPO bytes ({@code Invoice.fromXml(formCode, upo)}),
+     * which lied about the placeholder content — UPO XAdES bytes are NOT a
+     * valid FA/PEF invoice payload. The sentinel below makes the placeholder
+     * shape explicit; consumers needing the original invoice XML must call
+     * {@code client.invoices().getByKsefNumber(...)}.
+     */
+    private static Invoice buildUpoPlaceholderInvoice() {
+        return Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
     }
 
     private static boolean isSessionBusy(KsefException exception) {

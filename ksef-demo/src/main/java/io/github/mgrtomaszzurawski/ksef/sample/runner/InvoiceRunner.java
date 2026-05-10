@@ -18,17 +18,30 @@
 package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
+import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa2InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefInvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.POLL_BACKOFF_MULTIPLIER;
@@ -54,12 +67,25 @@ public final class InvoiceRunner implements DemoRunner {
     private static final String OP_EXPORT = "exportInvoices";
     private static final String OP_EXPORT_STATUS = "getExportStatus";
     private static final String OP_GET_BY_KSEF = "getByKsefNumber";
+    private static final String OP_GET_BY_KSEF_TYPED = "getByKsefNumberTyped";
+    private static final String OP_SYNC_AS_STREAM = "syncAsStream";
     private static final String SKIP_NO_KSEF_NUMBER =
             "no KSeF number available — queryInvoicesByMetadata returned empty and no FULL-mode ref in context";
     private static final String SKIP_NO_EXPORT_REF = "export not started";
+    private static final String SKIP_NO_KSEF_NUMBER_TYPED =
+            "no KSeF number available — typed-doc probe needs an existing KSeF number";
+    private static final String SKIP_NOT_FULL_MODE = "FULL-only — typed-doc probe needs a known KSeF number";
     private static final int EXPORT_STATUS_OK = 200;
     private static final int EXPORT_POLL_MAX_DELAY_MS = 10000;
     private static final int QUERY_DATE_RANGE_DAYS = 30;
+    private static final int SYNC_WINDOW_DAYS = 7;
+    private static final long SYNC_STREAM_LIMIT = 5L;
+    private static final String SYNC_OUTPUT_PREFIX = "ksef-demo-sync-";
+    private static final String LABEL_FA3 = "FA3";
+    private static final String LABEL_FA2 = "FA2";
+    private static final String LABEL_PEF = "PEF";
+    private static final String LABEL_PEF_KOR = "PEF_KOR";
+    private static final String LABEL_RAW_FALLBACK = "raw-fallback";
     @Override
     public String name() { return NAME; }
 
@@ -87,6 +113,9 @@ public final class InvoiceRunner implements DemoRunner {
         } else {
             results.add(RunResult.skip(NAME, OP_GET_BY_KSEF, SKIP_NO_KSEF_NUMBER));
         }
+
+        runSyncAsStream(context, results);
+        runGetByKsefNumberTyped(context, ksefNumber, results);
 
         return results;
     }
@@ -170,12 +199,115 @@ public final class InvoiceRunner implements DemoRunner {
     private void runGetByKsefNumber(DemoContext context, String ksefNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            byte[] invoiceBytes = context.client().invoices().getByKsefNumber(KsefNumber.parse(ksefNumber));
-            LOGGER.info("[{}] retrieved invoice by KSeF number, size={} bytes", NAME, invoiceBytes.length);
+            InvoiceDocument invoiceDocument = context.client().invoices().getByKsefNumber(KsefNumber.parse(ksefNumber));
+            int xmlLength = invoiceDocument.xml().length;
+            LOGGER.info("[{}] retrieved invoice by KSeF number, size={} bytes", NAME, xmlLength);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF, elapsed(start),
-                    invoiceBytes.length + " bytes"));
+                    xmlLength + " bytes"));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_BY_KSEF, elapsed(start), errorMessage(exception)));
         }
+    }
+
+    /**
+     * Smoke-test the {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient#syncAsStream}
+     * stream entry point (PR16): walk up to {@value #SYNC_STREAM_LIMIT}
+     * decrypted invoices in a {@value #SYNC_WINDOW_DAYS}-day window
+     * ending now, persisting per-window checkpoints into an in-memory
+     * store. The probe passes whether or not the KSeF env actually has
+     * invoices in the window — empty windows are documented and OK.
+     */
+    private void runSyncAsStream(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        Path outputDirectory = null;
+        try {
+            outputDirectory = Files.createTempDirectory(SYNC_OUTPUT_PREFIX);
+            OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC)
+                    .truncatedTo(ChronoUnit.SECONDS)
+                    .minusDays(SYNC_WINDOW_DAYS);
+            IncrementalSyncPlan plan = IncrementalSyncPlan.builder()
+                    .from(from)
+                    .outputDirectory(outputDirectory)
+                    .fullContent(true)
+                    .build();
+            CheckpointStore store = CheckpointStore.inMemory();
+            long count;
+            try (Stream<DecryptedInvoice> stream =
+                         context.client().invoices().syncAsStream(plan, store)) {
+                count = stream.limit(SYNC_STREAM_LIMIT).count();
+            }
+            LOGGER.info("[{}] syncAsStream walked {} invoices (limit {})", NAME, count, SYNC_STREAM_LIMIT);
+            String message = count == 0
+                    ? "0 invoices in window"
+                    : count + " invoices walked";
+            results.add(RunResult.ok(NAME, OP_SYNC_AS_STREAM, elapsed(start), message));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_SYNC_AS_STREAM, elapsed(start),
+                    errorMessage(exception)));
+        } finally {
+            cleanupSyncOutput(outputDirectory);
+        }
+    }
+
+    private static void cleanupSyncOutput(Path directory) {
+        if (directory == null) {
+            return;
+        }
+        try (Stream<Path> walk = Files.walk(directory)) {
+            walk.sorted((left, right) -> right.getNameCount() - left.getNameCount())
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException ignored) {
+                            // best-effort cleanup; leftover sync output is harmless
+                        }
+                    });
+        } catch (IOException ignored) {
+            // best-effort cleanup; leftover sync output is harmless
+        }
+    }
+
+    /**
+     * Exercise the typed-doc branch of {@code getByKsefNumber}: the
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient#getByKsefNumber}
+     * overload returning {@link InvoiceDocument} (PR12b). Only runs in
+     * FULL mode when a real KSeF number is captured by an earlier probe.
+     */
+    private void runGetByKsefNumberTyped(DemoContext context, String ksefNumber, List<RunResult> results) {
+        if (context.mode() != DemoMode.FULL) {
+            results.add(RunResult.skip(NAME, OP_GET_BY_KSEF_TYPED, SKIP_NOT_FULL_MODE));
+            return;
+        }
+        if (ksefNumber == null) {
+            results.add(RunResult.skip(NAME, OP_GET_BY_KSEF_TYPED, SKIP_NO_KSEF_NUMBER_TYPED));
+            return;
+        }
+        long start = System.currentTimeMillis();
+        try {
+            InvoiceDocument invoiceDocument = context.client().invoices()
+                    .getByKsefNumber(KsefNumber.parse(ksefNumber));
+            String typeName = labelFor(invoiceDocument);
+            LOGGER.info("[{}] typed invoice document: {}", NAME, typeName);
+            results.add(RunResult.ok(NAME, OP_GET_BY_KSEF_TYPED, elapsed(start), typeName));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_GET_BY_KSEF_TYPED, elapsed(start),
+                    errorMessage(exception)));
+        }
+    }
+
+    private static String labelFor(InvoiceDocument invoiceDocument) {
+        if (invoiceDocument instanceof Fa3InvoiceDocument) {
+            return LABEL_FA3;
+        }
+        if (invoiceDocument instanceof Fa2InvoiceDocument) {
+            return LABEL_FA2;
+        }
+        if (invoiceDocument instanceof PefKorInvoiceDocument) {
+            return LABEL_PEF_KOR;
+        }
+        if (invoiceDocument instanceof PefInvoiceDocument) {
+            return LABEL_PEF;
+        }
+        return LABEL_RAW_FALLBACK;
     }
 }

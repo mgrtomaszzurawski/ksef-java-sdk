@@ -24,6 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.runner.CertificateRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.DemoRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.InvoiceRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.LimitsRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.OfflineInvoiceRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.PeppolProviderRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.PeppolRunner;
 import io.github.mgrtomaszzurawski.ksef.sample.runner.PermissionRunner;
@@ -253,6 +254,7 @@ public final class DemoApp {
             }
             runners.add(new SessionRunner());
             runners.add(new InvoiceRunner());
+            runners.add(new OfflineInvoiceRunner());
         }
 
         return runners;

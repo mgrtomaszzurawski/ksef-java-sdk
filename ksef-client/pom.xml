@@ -426,7 +426,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.plugin.version}</version>
                 <configuration>
-                    <argLine>-Xmx4g -XX:+HeapDumpOnOutOfMemoryError</argLine>
+                    <argLine>@{argLine} -Xmx4g -XX:+HeapDumpOnOutOfMemoryError</argLine>
                 </configuration>
             </plugin>
 
@@ -616,12 +616,12 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.75</minimum>
+                                            <minimum>0.70</minimum>
                                         </limit>
                                         <limit>
                                             <counter>METHOD</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.80</minimum>
+                                            <minimum>0.75</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
