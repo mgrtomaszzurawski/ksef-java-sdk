@@ -23,6 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.Auth;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.CertificateClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
@@ -135,6 +136,7 @@ public final class KsefClient implements AutoCloseable {
     private final TestDataClient testDataClient;
     private final PeppolClient peppolClient;
     private final Auth authImpl;
+    private final QrCodeService qrCodeService;
 
     private final Map<PublicKeyCertificateUsage, PublicKey> publicKeyCache = new ConcurrentHashMap<>();
     private volatile boolean authenticated;
@@ -171,6 +173,7 @@ public final class KsefClient implements AutoCloseable {
         this.limitsClient = new LimitsClientImpl(this.runtime);
         this.testDataClient = new TestDataClientImpl(this.runtime);
         this.peppolClient = new PeppolClientImpl(this.runtime);
+        this.qrCodeService = new QrCodeService();
         this.authImpl = new AuthImpl(
                 this.authClient,
                 this::ensureOpen,
@@ -334,6 +337,17 @@ public final class KsefClient implements AutoCloseable {
     public PeppolClient peppol() {
         ensureOpen();
         return peppolClient;
+    }
+
+    /**
+     * Access QR code rendering — KOD I (verification URL QR) and labelled
+     * variants. Stateless instance shared across the client lifecycle;
+     * the service does not require authentication.
+     *
+     * @return the shared {@link QrCodeService}
+     */
+    public QrCodeService qrCode() {
+        return qrCodeService;
     }
 
     /** Configured KSeF environment for this client. */
