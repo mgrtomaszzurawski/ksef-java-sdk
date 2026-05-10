@@ -4,22 +4,29 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TNaglowek;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TPodmiot1;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TPodmiot2;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import javax.xml.datatype.XMLGregorianCalendar;
 
 /**
  * Read-side FA(3) invoice fetched from KSeF. Wraps the JAXB-generated
  * {@link Faktura} root and the raw XML bytes returned by the server.
  * Construct via {@link #from(byte[])}.
  *
- * <p>Accessors mirror the FA(3) {@code <Faktura>} XSD shape and return
- * JAXB raw types directly. The full SDK sub-record overlay tracked by
- * PR21 will replace these with SDK-owned records pre-1.0; the
- * {@link #faktura()} escape-hatch survives the refactor.
+ * <p>Public accessors are flat primitives that read through to the
+ * underlying JAXB tree on demand. The {@link #faktura()} escape-hatch
+ * provides direct access to fields the flat accessors do not surface.
  *
  * @since 1.0.0
  */
@@ -54,39 +61,163 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         return xmlBytes.clone();
     }
 
-    /** The underlying JAXB tree. Read-only access — do not mutate. */
+    /**
+     * Underlying JAXB tree — escape-hatch for fields the flat
+     * accessors do not surface (footer, advance payments, KOR_ROZ
+     * breakdowns, EU cross-border attachments). Read-only access — do
+     * not mutate.
+     */
     public Faktura faktura() {
         return faktura;
     }
 
-    /** Header section ({@code <Naglowek>}). */
-    public TNaglowek header() {
-        return faktura.getNaglowek();
+    /** Form-systemCode token from {@code Naglowek/KodFormularza/@kodSystemowy}. */
+    public String systemCode() {
+        TNaglowek header = faktura.getNaglowek();
+        if (header == null || header.getKodFormularza() == null) {
+            return null;
+        }
+        return header.getKodFormularza().getKodSystemowy();
     }
 
-    /** Seller identity block ({@code <Podmiot1>/<DaneIdentyfikacyjne>}). */
-    public TPodmiot1 sellerIdentity() {
+    /** Schema version token from {@code Naglowek/KodFormularza/@wersjaSchemy}. */
+    public String formVersion() {
+        TNaglowek header = faktura.getNaglowek();
+        if (header == null || header.getKodFormularza() == null) {
+            return null;
+        }
+        return header.getKodFormularza().getWersjaSchemy();
+    }
+
+    /** Issue timestamp from {@code Naglowek/DataWytworzeniaFa}. */
+    public OffsetDateTime issuedAt() {
+        TNaglowek header = faktura.getNaglowek();
+        if (header == null || header.getDataWytworzeniaFa() == null) {
+            return null;
+        }
+        return toOffsetDateTime(header.getDataWytworzeniaFa());
+    }
+
+    /** Seller NIP from {@code Podmiot1/DaneIdentyfikacyjne/NIP}. */
+    public String sellerNip() {
+        TPodmiot1 identity = sellerIdentityInternal();
+        return identity != null ? identity.getNIP() : null;
+    }
+
+    /** Seller name from {@code Podmiot1/DaneIdentyfikacyjne/Nazwa}. */
+    public String sellerName() {
+        TPodmiot1 identity = sellerIdentityInternal();
+        return identity != null ? identity.getNazwa() : null;
+    }
+
+    /** Buyer NIP from {@code Podmiot2/DaneIdentyfikacyjne/NIP}. */
+    public String buyerNip() {
+        TPodmiot2 identity = buyerIdentityInternal();
+        return identity != null ? identity.getNIP() : null;
+    }
+
+    /** Buyer name from {@code Podmiot2/DaneIdentyfikacyjne/Nazwa}. */
+    public String buyerName() {
+        TPodmiot2 identity = buyerIdentityInternal();
+        return identity != null ? identity.getNazwa() : null;
+    }
+
+    /** Invoice number from {@code Fa/P_2}. */
+    public String invoiceNumber() {
+        Faktura.Fa fa = faktura.getFa();
+        return fa != null ? fa.getP2() : null;
+    }
+
+    /** Issue date from {@code Fa/P_1}. */
+    public LocalDate issueDate() {
+        Faktura.Fa fa = faktura.getFa();
+        if (fa == null || fa.getP1() == null) {
+            return null;
+        }
+        return toLocalDate(fa.getP1());
+    }
+
+    /** ISO 4217 currency code from {@code Fa/KodWaluty}. */
+    public String currency() {
+        Faktura.Fa fa = faktura.getFa();
+        if (fa == null || fa.getKodWaluty() == null) {
+            return null;
+        }
+        return fa.getKodWaluty().value();
+    }
+
+    /** Gross total from {@code Fa/P_15}. */
+    public BigDecimal grossTotal() {
+        Faktura.Fa fa = faktura.getFa();
+        return fa != null ? fa.getP15() : null;
+    }
+
+    /** Optional net total from {@code Fa/P_13_1}. */
+    public Optional<BigDecimal> netTotal() {
+        Faktura.Fa fa = faktura.getFa();
+        return fa != null ? Optional.ofNullable(fa.getP131()) : Optional.empty();
+    }
+
+    /** Invoice type code from {@code Fa/RodzajFaktury}. */
+    public String invoiceTypeCode() {
+        Faktura.Fa fa = faktura.getFa();
+        if (fa == null || fa.getRodzajFaktury() == null) {
+            return null;
+        }
+        return fa.getRodzajFaktury().value();
+    }
+
+    /**
+     * Line items mapped from {@code Fa/FaWiersz} entries to SDK
+     * records. Returns an empty list when the underlying JAXB tree
+     * has no line items. Lines whose JAXB element lacks the required
+     * fields {@code P_7}, {@code P_11} or {@code P_12} are skipped.
+     */
+    public List<InvoiceLineItem> lineItems() {
+        Faktura.Fa fa = faktura.getFa();
+        if (fa == null || fa.getFaWiersz() == null) {
+            return List.of();
+        }
+        List<InvoiceLineItem> mapped = new ArrayList<>(fa.getFaWiersz().size());
+        for (Faktura.Fa.FaWiersz wiersz : fa.getFaWiersz()) {
+            InvoiceLineItem item = mapLineItem(wiersz);
+            if (item != null) {
+                mapped.add(item);
+            }
+        }
+        return List.copyOf(mapped);
+    }
+
+    private TPodmiot1 sellerIdentityInternal() {
         return faktura.getPodmiot1() != null ? faktura.getPodmiot1().getDaneIdentyfikacyjne() : null;
     }
 
-    /** Buyer identity block ({@code <Podmiot2>/<DaneIdentyfikacyjne>}). */
-    public TPodmiot2 buyerIdentity() {
+    private TPodmiot2 buyerIdentityInternal() {
         return faktura.getPodmiot2() != null ? faktura.getPodmiot2().getDaneIdentyfikacyjne() : null;
     }
 
-    /** Invoice content body ({@code <Fa>}). */
-    public Faktura.Fa content() {
-        return faktura.getFa();
+    private static InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
+        if (wiersz == null || wiersz.getP7() == null
+                || wiersz.getP11() == null || wiersz.getP12() == null) {
+            return null;
+        }
+        int rowNumber = wiersz.getNrWierszaFa() != null ? wiersz.getNrWierszaFa().intValue() : 1;
+        return new InvoiceLineItem(
+                rowNumber,
+                wiersz.getP7(),
+                wiersz.getP8A(),
+                wiersz.getP8B(),
+                wiersz.getP9A(),
+                wiersz.getP11(),
+                wiersz.getP12());
     }
 
-    /** Invoice line items ({@code <FaWiersz>} list). */
-    public List<Faktura.Fa.FaWiersz> lineItems() {
-        Faktura.Fa fa = faktura.getFa();
-        return fa != null && fa.getFaWiersz() != null ? List.copyOf(fa.getFaWiersz()) : List.of();
+    private static OffsetDateTime toOffsetDateTime(XMLGregorianCalendar gregorian) {
+        return gregorian.toGregorianCalendar().toZonedDateTime()
+                .withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime();
     }
 
-    /** Footer section ({@code <Stopka>}, optional). */
-    public Faktura.Stopka footer() {
-        return faktura.getStopka();
+    private static LocalDate toLocalDate(XMLGregorianCalendar gregorian) {
+        return LocalDate.of(gregorian.getYear(), gregorian.getMonth(), gregorian.getDay());
     }
 }

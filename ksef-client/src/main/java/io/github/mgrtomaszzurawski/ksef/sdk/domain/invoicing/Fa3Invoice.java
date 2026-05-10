@@ -19,24 +19,27 @@ import io.github.mgrtomaszzurawski.ksef.xml.fa3.TRodzajFaktury;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 
 /**
  * Typed FA(3) invoice: wraps the JAXB-generated {@link Faktura} root
- * and exposes its content alongside the {@link Invoice} contract
- * ({@link #formCode()}, {@link #xml()}).
+ * and exposes its content as flat primitive accessors alongside the
+ * {@link Invoice} contract ({@link #formCode()}, {@link #xml()}).
  *
  * <p>Construct via {@link #builder()}. The builder mirrors the
  * minimum-viable subset of the FA(3) XSD — header, seller, buyer,
  * line items, currency, totals, correction reference. Rare fields
  * (advance payments, tourism margin, KOR_ROZ breakdowns, EU
- * cross-border attachments) are deferred to {@link Invoice#fromXml}.
+ * cross-border attachments) are reachable through the
+ * {@link #faktura()} escape-hatch.
  *
  * @since 1.0.0
  */
@@ -71,41 +74,164 @@ public final class Fa3Invoice implements Invoice {
         return xmlBytes.clone();
     }
 
-    /** The underlying JAXB tree. Read-only access — do not mutate. */
+    /**
+     * Underlying JAXB tree — escape-hatch for fields the flat
+     * accessors do not surface (footer, advance payments, KOR_ROZ
+     * breakdowns, EU cross-border attachments). Read-only access — do
+     * not mutate.
+     */
     public Faktura faktura() {
         return faktura;
     }
 
-    /** Header section (Naglowek). */
-    public TNaglowek header() {
-        return faktura.getNaglowek();
+    /** Form-systemCode token from {@code Naglowek/KodFormularza/@kodSystemowy}. */
+    public String systemCode() {
+        TNaglowek header = faktura.getNaglowek();
+        if (header == null || header.getKodFormularza() == null) {
+            return null;
+        }
+        return header.getKodFormularza().getKodSystemowy();
     }
 
-    /** Seller (Podmiot1 / DaneIdentyfikacyjne). */
-    public TPodmiot1 sellerIdentity() {
+    /** Schema version token from {@code Naglowek/KodFormularza/@wersjaSchemy}. */
+    public String formVersion() {
+        TNaglowek header = faktura.getNaglowek();
+        if (header == null || header.getKodFormularza() == null) {
+            return null;
+        }
+        return header.getKodFormularza().getWersjaSchemy();
+    }
+
+    /** Issue timestamp from {@code Naglowek/DataWytworzeniaFa}. */
+    public OffsetDateTime issuedAt() {
+        TNaglowek header = faktura.getNaglowek();
+        if (header == null || header.getDataWytworzeniaFa() == null) {
+            return null;
+        }
+        return toOffsetDateTime(header.getDataWytworzeniaFa());
+    }
+
+    /** Seller NIP from {@code Podmiot1/DaneIdentyfikacyjne/NIP}. */
+    public String sellerNip() {
+        TPodmiot1 identity = sellerIdentityInternal();
+        return identity != null ? identity.getNIP() : null;
+    }
+
+    /** Seller name from {@code Podmiot1/DaneIdentyfikacyjne/Nazwa}. */
+    public String sellerName() {
+        TPodmiot1 identity = sellerIdentityInternal();
+        return identity != null ? identity.getNazwa() : null;
+    }
+
+    /** Buyer NIP from {@code Podmiot2/DaneIdentyfikacyjne/NIP}. */
+    public String buyerNip() {
+        TPodmiot2 identity = buyerIdentityInternal();
+        return identity != null ? identity.getNIP() : null;
+    }
+
+    /** Buyer name from {@code Podmiot2/DaneIdentyfikacyjne/Nazwa}. */
+    public String buyerName() {
+        TPodmiot2 identity = buyerIdentityInternal();
+        return identity != null ? identity.getNazwa() : null;
+    }
+
+    /** Invoice number from {@code Fa/P_2}. */
+    public String invoiceNumber() {
+        Faktura.Fa fa = faktura.getFa();
+        return fa != null ? fa.getP2() : null;
+    }
+
+    /** Issue date from {@code Fa/P_1}. */
+    public LocalDate issueDate() {
+        Faktura.Fa fa = faktura.getFa();
+        if (fa == null || fa.getP1() == null) {
+            return null;
+        }
+        return toLocalDate(fa.getP1());
+    }
+
+    /** ISO 4217 currency code from {@code Fa/KodWaluty}. */
+    public String currency() {
+        Faktura.Fa fa = faktura.getFa();
+        if (fa == null || fa.getKodWaluty() == null) {
+            return null;
+        }
+        return fa.getKodWaluty().value();
+    }
+
+    /** Gross total from {@code Fa/P_15}. */
+    public BigDecimal grossTotal() {
+        Faktura.Fa fa = faktura.getFa();
+        return fa != null ? fa.getP15() : null;
+    }
+
+    /** Optional net total from {@code Fa/P_13_1}. */
+    public Optional<BigDecimal> netTotal() {
+        Faktura.Fa fa = faktura.getFa();
+        return fa != null ? Optional.ofNullable(fa.getP131()) : Optional.empty();
+    }
+
+    /** Invoice type code from {@code Fa/RodzajFaktury}. */
+    public String invoiceTypeCode() {
+        Faktura.Fa fa = faktura.getFa();
+        if (fa == null || fa.getRodzajFaktury() == null) {
+            return null;
+        }
+        return fa.getRodzajFaktury().value();
+    }
+
+    /**
+     * Line items mapped from {@code Fa/FaWiersz} entries to SDK
+     * records. Returns an empty list when the underlying JAXB tree
+     * has no line items. Lines whose JAXB element lacks the required
+     * fields {@code P_7}, {@code P_11} or {@code P_12} are skipped.
+     */
+    public List<InvoiceLineItem> lineItems() {
+        Faktura.Fa fa = faktura.getFa();
+        if (fa == null || fa.getFaWiersz() == null) {
+            return List.of();
+        }
+        List<InvoiceLineItem> mapped = new ArrayList<>(fa.getFaWiersz().size());
+        for (Faktura.Fa.FaWiersz wiersz : fa.getFaWiersz()) {
+            InvoiceLineItem item = mapLineItem(wiersz);
+            if (item != null) {
+                mapped.add(item);
+            }
+        }
+        return List.copyOf(mapped);
+    }
+
+    private TPodmiot1 sellerIdentityInternal() {
         return faktura.getPodmiot1() != null ? faktura.getPodmiot1().getDaneIdentyfikacyjne() : null;
     }
 
-    /** Buyer (Podmiot2 / DaneIdentyfikacyjne). */
-    public TPodmiot2 buyerIdentity() {
+    private TPodmiot2 buyerIdentityInternal() {
         return faktura.getPodmiot2() != null ? faktura.getPodmiot2().getDaneIdentyfikacyjne() : null;
     }
 
-    /** Invoice content (Fa). */
-    public Faktura.Fa content() {
-        return faktura.getFa();
+    private static InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
+        if (wiersz == null || wiersz.getP7() == null
+                || wiersz.getP11() == null || wiersz.getP12() == null) {
+            return null;
+        }
+        int rowNumber = wiersz.getNrWierszaFa() != null ? wiersz.getNrWierszaFa().intValue() : 1;
+        return new InvoiceLineItem(
+                rowNumber,
+                wiersz.getP7(),
+                wiersz.getP8A(),
+                wiersz.getP8B(),
+                wiersz.getP9A(),
+                wiersz.getP11(),
+                wiersz.getP12());
     }
 
-    /** Read-only view of line items (FaWiersz list). */
-    public List<Faktura.Fa.FaWiersz> lineItems() {
-        return faktura.getFa() != null && faktura.getFa().getFaWiersz() != null
-                ? Collections.unmodifiableList(faktura.getFa().getFaWiersz())
-                : List.of();
+    private static OffsetDateTime toOffsetDateTime(XMLGregorianCalendar gregorian) {
+        return gregorian.toGregorianCalendar().toZonedDateTime()
+                .withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime();
     }
 
-    /** Footer section (Stopka). */
-    public Faktura.Stopka footer() {
-        return faktura.getStopka();
+    private static LocalDate toLocalDate(XMLGregorianCalendar gregorian) {
+        return LocalDate.of(gregorian.getYear(), gregorian.getMonth(), gregorian.getDay());
     }
 
     /** Begin building a new {@link Fa3Invoice}. */

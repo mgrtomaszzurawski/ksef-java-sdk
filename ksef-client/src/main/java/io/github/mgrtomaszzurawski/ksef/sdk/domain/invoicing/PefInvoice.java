@@ -40,7 +40,6 @@ import io.github.mgrtomaszzurawski.ksef.xml.pef.cbc.StreetNameType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -49,13 +48,14 @@ import javax.xml.datatype.XMLGregorianCalendar;
 
 /**
  * Typed PEF(3) Peppol/UBL invoice: wraps the JAXB-generated
- * {@link InvoiceType} root and exposes its content alongside the
- * {@link Invoice} contract.
+ * {@link InvoiceType} root and exposes its content as flat primitive
+ * accessors alongside the {@link Invoice} contract.
  *
  * <p>Construct via {@link #builder()} for a minimally-valid Peppol
- * BIS-style invoice. Use {@link Invoice#fromXml} for any UBL feature
- * not surfaced by the builder (allowance/charges, tax breakdowns,
- * payment means details, EU cross-border attachments).
+ * BIS-style invoice. Use the {@link #invoice()} escape-hatch for any
+ * UBL feature not surfaced by the flat accessors (allowance/charges,
+ * tax breakdowns, payment means details, EU cross-border
+ * attachments).
  *
  * @since 1.0.0
  */
@@ -90,31 +90,150 @@ public final class PefInvoice implements Invoice {
         return xmlBytes.clone();
     }
 
-    /** Underlying UBL JAXB tree — read-only access. */
-    public InvoiceType invoiceType() {
+    /**
+     * Underlying UBL JAXB tree — escape-hatch for fields the flat
+     * accessors do not surface. Read-only access — do not mutate.
+     */
+    public InvoiceType invoice() {
         return invoiceType;
     }
 
-    /** Seller (AccountingSupplierParty). */
-    public SupplierPartyType accountingSupplierParty() {
-        return invoiceType.getAccountingSupplierParty();
+    /** Invoice number from {@code <cbc:ID>}. */
+    public String invoiceNumber() {
+        return invoiceType.getID() != null ? invoiceType.getID().getValue() : null;
     }
 
-    /** Buyer (AccountingCustomerParty). */
-    public CustomerPartyType accountingCustomerParty() {
-        return invoiceType.getAccountingCustomerParty();
+    /** Issue date from {@code <cbc:IssueDate>}. */
+    public LocalDate issueDate() {
+        IssueDateType issue = invoiceType.getIssueDate();
+        if (issue == null || issue.getValue() == null) {
+            return null;
+        }
+        return toLocalDate(issue.getValue());
     }
 
-    /** Read-only view of UBL InvoiceLine elements. */
-    public List<InvoiceLineType> lines() {
-        return invoiceType.getInvoiceLine() != null
-                ? Collections.unmodifiableList(invoiceType.getInvoiceLine())
-                : List.of();
+    /** Currency code from {@code <cbc:DocumentCurrencyCode>}. */
+    public String currency() {
+        DocumentCurrencyCodeType code = invoiceType.getDocumentCurrencyCode();
+        return code != null ? code.getValue() : null;
     }
 
-    /** Legal monetary total (totals block). */
-    public MonetaryTotalType legalMonetaryTotal() {
-        return invoiceType.getLegalMonetaryTotal();
+    /** Supplier endpoint identifier (Peppol participant ID). */
+    public String supplierEndpointId() {
+        PartyType party = supplierParty();
+        if (party == null || party.getEndpointID() == null) {
+            return null;
+        }
+        return party.getEndpointID().getValue();
+    }
+
+    /** Supplier registered name from {@code Party/PartyName/Name}. */
+    public String supplierName() {
+        return firstPartyName(supplierParty());
+    }
+
+    /** Customer endpoint identifier (Peppol participant ID). */
+    public String customerEndpointId() {
+        PartyType party = customerParty();
+        if (party == null || party.getEndpointID() == null) {
+            return null;
+        }
+        return party.getEndpointID().getValue();
+    }
+
+    /** Customer registered name from {@code Party/PartyName/Name}. */
+    public String customerName() {
+        return firstPartyName(customerParty());
+    }
+
+    /** Total payable amount from {@code LegalMonetaryTotal/PayableAmount}. */
+    public BigDecimal payableAmount() {
+        MonetaryTotalType total = invoiceType.getLegalMonetaryTotal();
+        if (total == null || total.getPayableAmount() == null) {
+            return null;
+        }
+        return total.getPayableAmount().getValue();
+    }
+
+    /**
+     * Line items mapped from UBL {@code <cac:InvoiceLine>} entries to
+     * SDK {@link PefInvoiceLine} records. Lines that lack any
+     * required UBL field for the SDK record are skipped.
+     */
+    public List<PefInvoiceLine> lines() {
+        if (invoiceType.getInvoiceLine() == null) {
+            return List.of();
+        }
+        List<PefInvoiceLine> mapped = new ArrayList<>(invoiceType.getInvoiceLine().size());
+        for (InvoiceLineType line : invoiceType.getInvoiceLine()) {
+            PefInvoiceLine item = mapLine(line);
+            if (item != null) {
+                mapped.add(item);
+            }
+        }
+        return List.copyOf(mapped);
+    }
+
+    private PartyType supplierParty() {
+        SupplierPartyType supplier = invoiceType.getAccountingSupplierParty();
+        return supplier != null ? supplier.getParty() : null;
+    }
+
+    private PartyType customerParty() {
+        CustomerPartyType customer = invoiceType.getAccountingCustomerParty();
+        return customer != null ? customer.getParty() : null;
+    }
+
+    private static String firstPartyName(PartyType party) {
+        if (party == null || party.getPartyName() == null || party.getPartyName().isEmpty()) {
+            return null;
+        }
+        PartyNameType partyName = party.getPartyName().get(0);
+        if (partyName == null || partyName.getName() == null) {
+            return null;
+        }
+        return partyName.getName().getValue();
+    }
+
+    private static PefInvoiceLine mapLine(InvoiceLineType line) {
+        if (line == null || line.getID() == null
+                || line.getInvoicedQuantity() == null
+                || line.getLineExtensionAmount() == null
+                || line.getItem() == null
+                || line.getItem().getName() == null) {
+            return null;
+        }
+        BigDecimal quantity = line.getInvoicedQuantity().getValue();
+        String unitCode = line.getInvoicedQuantity().getUnitCode();
+        BigDecimal amount = line.getLineExtensionAmount().getValue();
+        String itemName = line.getItem().getName().getValue();
+        BigDecimal vatPercent = firstClassifiedTaxPercent(line.getItem());
+        if (quantity == null || unitCode == null || amount == null
+                || itemName == null || vatPercent == null) {
+            return null;
+        }
+        return new PefInvoiceLine(
+                line.getID().getValue(),
+                quantity,
+                unitCode,
+                amount,
+                itemName,
+                vatPercent);
+    }
+
+    private static BigDecimal firstClassifiedTaxPercent(ItemType item) {
+        if (item.getClassifiedTaxCategory() == null || item.getClassifiedTaxCategory().isEmpty()) {
+            return null;
+        }
+        TaxCategoryType category = item.getClassifiedTaxCategory().get(0);
+        if (category == null || category.getPercent() == null) {
+            return null;
+        }
+        return category.getPercent().getValue();
+    }
+
+    private static LocalDate toLocalDate(XMLGregorianCalendar gregorian) {
+        return LocalDate.of(gregorian.getYear(), gregorian.getMonth(), gregorian.getDay());
     }
 
     /** Begin building a new {@link PefInvoice}. */

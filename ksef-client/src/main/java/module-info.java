@@ -65,19 +65,17 @@ module io.github.mgrtomaszzurawski.ksef {
 
     // Internal mechanisms (sdk.internal.*) are NOT exported.
 
-    // PR12b: typed Invoice accessors (Fa2Invoice.faktura(), PefInvoice.invoice(),
-    // PefKorInvoice.creditNote()) currently return JAXB raw types. Exporting the
-    // four root packages so JPMS consumers can use these accessors. Sub-packages
-    // (xml.pef.cac, xml.pef.cbc, etc.) stay internal. Full SDK-record overlay
-    // is tracked as PR21 (post-PR20 polish).
+    // PR21 (ADR-030): typed Invoice / Document classes expose flat
+    // primitive accessors, but keep one JAXB escape-hatch each — Fa(2|3)
+    // .faktura(), PefInvoice.invoice(), PefKorInvoice.creditNote(). Those
+    // return types live at the four root xml.* packages, which therefore
+    // remain on the public API surface. UBL sub-packages (xml.pef.cac,
+    // xml.pef.cbc, etc.) are NO longer consumer-visible — they were only
+    // needed for the old direct accessors and are dropped from exports.
     exports io.github.mgrtomaszzurawski.ksef.xml.fa2;
     exports io.github.mgrtomaszzurawski.ksef.xml.fa3;
     exports io.github.mgrtomaszzurawski.ksef.xml.pef;
     exports io.github.mgrtomaszzurawski.ksef.xml.pefkor;
-    exports io.github.mgrtomaszzurawski.ksef.xml.pef.cac;
-    exports io.github.mgrtomaszzurawski.ksef.xml.pef.cbc;
-    exports io.github.mgrtomaszzurawski.ksef.xml.pefkor.cac;
-    exports io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbc;
 
     // Required modules
     requires java.net.http;
@@ -113,37 +111,15 @@ module io.github.mgrtomaszzurawski.ksef {
     // Open generated model packages to Jackson for reflection-based deserialization
     opens io.github.mgrtomaszzurawski.ksef.client.model to com.fasterxml.jackson.databind;
 
-    // Open JAXB-generated packages to jakarta.xml.bind for reflective marshalling
+    // Open JAXB-generated root packages to jakarta.xml.bind for reflective
+    // marshalling. Sub-package opens (xml.pef.cac, xml.pef.cbc, etc.) are
+    // dropped under PR21 / ADR-030 — they are no longer on the consumer
+    // surface. If JAXB runtime needs reflection on a sub-package internally,
+    // re-add the specific opens.
     opens io.github.mgrtomaszzurawski.ksef.xml.fa2;
     opens io.github.mgrtomaszzurawski.ksef.xml.fa3;
     opens io.github.mgrtomaszzurawski.ksef.xml.pef;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cac;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cbc;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.ext;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cacpl;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cbcpl;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.ccts;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sig;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sigcac;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sigcbc;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.udt;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xades132;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xades141;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xmldsig;
     opens io.github.mgrtomaszzurawski.ksef.xml.pefkor;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cac;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbc;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.ext;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cacpl;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbcpl;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.ccts;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sig;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sigcac;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sigcbc;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.udt;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xades132;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xades141;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xmldsig;
     opens io.github.mgrtomaszzurawski.ksef.xml.upo;
     opens io.github.mgrtomaszzurawski.ksef.xml.auth;
 }

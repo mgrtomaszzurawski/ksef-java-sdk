@@ -56,7 +56,7 @@ class PefInvoiceBuilderTest {
                 .build();
 
         assertTrue(invoice.lines().size() == 1);
-        assertEquals(1, invoice.invoiceType().getAccountingSupplierParty()
+        assertEquals(1, invoice.invoice().getAccountingSupplierParty()
                 .getParty().getPartyTaxScheme().size());
     }
 
