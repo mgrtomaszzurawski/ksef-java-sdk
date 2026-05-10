@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public final class KsefSessionPollingTimeoutException extends KsefException {
+public class KsefSessionPollingTimeoutException extends KsefTimeoutException {
 
     @Serial
     private static final long serialVersionUID = 1L;

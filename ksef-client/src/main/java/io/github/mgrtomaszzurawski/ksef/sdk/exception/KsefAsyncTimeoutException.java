@@ -15,7 +15,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
  *
  * @since 1.0.0
  */
-public class KsefAsyncTimeoutException extends KsefException {
+public class KsefAsyncTimeoutException extends KsefTimeoutException {
 
     private static final long serialVersionUID = 1L;
 
