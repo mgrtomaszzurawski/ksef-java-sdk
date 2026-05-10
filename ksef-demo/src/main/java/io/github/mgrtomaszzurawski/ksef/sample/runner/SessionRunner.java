@@ -59,11 +59,14 @@ public final class SessionRunner implements DemoRunner {
     private static final String OP_UPO = "getUpo";
     private static final String OP_UPO_BY_KSEF = "getUpoByKsefNumber";
     private static final String OP_STALE_SESSION_RECOVERY = "staleSessionRecovery";
+    private static final String OP_CLEARED_BY_SUBMITTED = "getClearedBySubmittedInvoice";
 
     private static final String SKIP_NO_KSEF_NUMBER =
             "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
     private static final String FAIL_UPO_BYTES_DIFFER =
             "UPO retrieved by invoice ref differs from UPO retrieved by KSeF number";
+    private static final String SKIP_LEGACY_SEND =
+            "demo uses legacy send(byte[]) — no SubmittedInvoice handle to test cleared(SubmittedInvoice) overload";
     private static final String OK_CONCURRENT_PERMITTED = "server permitted concurrent open";
     private static final String OK_CONCURRENT_REJECTED_PREFIX = "server rejected: ";
     /**
@@ -133,9 +136,25 @@ public final class SessionRunner implements DemoRunner {
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = runArchive(context, session, results);
             if (fullMode && closed != null && invoiceRef != null) {
                 runGetCleared(closed, invoiceRef, results);
+                runGetClearedBySubmittedInvoice(closed, results);
             }
         }
         return results;
+    }
+
+    /**
+     * Probes the {@code closed.cleared(SubmittedInvoice)} typed overload
+     * (PR15). The current happy-path uses the legacy {@code send(byte[])}
+     * entry point which yields a {@code SendInvoiceResult} (reference-only)
+     * — there is no {@code SubmittedInvoice} handle to feed the typed
+     * overload, so the probe records SKIP with a clear reason. When the
+     * demo migrates to {@code session.sendInvoice(Invoice)} the probe will
+     * activate automatically.
+     */
+    private void runGetClearedBySubmittedInvoice(
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed,
+            List<RunResult> results) {
+        results.add(RunResult.skip(NAME, OP_CLEARED_BY_SUBMITTED, SKIP_LEGACY_SEND));
     }
 
     /**
