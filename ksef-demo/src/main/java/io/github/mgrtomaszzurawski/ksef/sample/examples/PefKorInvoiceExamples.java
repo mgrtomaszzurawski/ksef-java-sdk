@@ -30,7 +30,7 @@ import java.time.LocalDate;
  */
 public final class PefKorInvoiceExamples {
 
-    private static final String SUPPLIER_NIP = "1234567890";
+    private static final String SUPPLIER_NIP = "1111111111";
     private static final String CUSTOMER_NIP = "9876543210";
     private static final String SUPPLIER_NAME = "Acme sp. z o.o.";
     private static final String CUSTOMER_NAME = "Public Buyer sp. z o.o.";

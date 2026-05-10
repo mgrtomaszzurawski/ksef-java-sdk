@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 class LifecycleZeroizationTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260418-SE-1234567890-AAAAAAAAAA-01";
+    private static final String TEST_SESSION_REF = "20260418-SE-1111111111-AAAAAAAAAA-01";
     private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
 

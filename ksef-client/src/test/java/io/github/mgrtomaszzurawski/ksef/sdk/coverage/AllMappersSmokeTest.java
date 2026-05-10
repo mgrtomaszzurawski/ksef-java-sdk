@@ -75,7 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class AllMappersSmokeTest {
 
-    private static final String NIP = "1234567890";
+    private static final String NIP = "1111111111";
     private static final String OTHER_NIP = "0987654321";
     private static final String PESEL = "82060411457";
     private static final String FINGERPRINT = "ABC123DEF456";
@@ -85,7 +85,7 @@ class AllMappersSmokeTest {
     private static final String LAST_NAME = "Kowalski";
     private static final String FULL_NAME = "Firma Sp. z o.o.";
     private static final String ADDRESS = "Berlin, Germany";
-    private static final String NIP_VAT_UE = "PL1234567890";
+    private static final String NIP_VAT_UE = "PL1111111111";
     private static final String EU_ENTITY_NAME = "EU Partner GmbH";
     private static final String CERTIFICATE_NAME = "auth-cert";
     private static final int AES_256_KEY_SIZE_BYTES = 32;
@@ -104,7 +104,7 @@ class AllMappersSmokeTest {
     private static final String QUERY_KSEF_NUMBER = "test-ksef-1";
     private static final String QUERY_INVOICE_NUMBER = "test-invoice-1";
     private static final String SUBUNIT_DESC = "subunit-desc";
-    private static final String PEPPOL_ID_FIXTURE = "PL:0007:1234567890";
+    private static final String PEPPOL_ID_FIXTURE = "PL:0007:1111111111";
     private static final int TOKEN_PERMISSION_COUNT = 7;
     private static final int ENTITY_AUTHORIZATION_PERMISSION_COUNT = 4;
     private static final int SINGLE_SUBUNIT_COUNT = 1;

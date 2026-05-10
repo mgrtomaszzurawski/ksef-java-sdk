@@ -40,8 +40,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 public final class KsefAuthFlowFixture {
 
     public static final String DEFAULT_TEST_TOKEN = "test-access-token";
-    public static final String DEFAULT_TEST_NIP = "1234567890";
-    public static final String DEFAULT_TEST_REFERENCE = "20260404-AU-1234567890-ABCDEF1234-01";
+    public static final String DEFAULT_TEST_NIP = "1111111111";
+    public static final String DEFAULT_TEST_REFERENCE = "20260404-AU-1111111111-ABCDEF1234-01";
     public static final String DEFAULT_TEST_KSEF_TOKEN = "test-ksef-token";
 
     private static final String AUTH_PREFIX = "/v2/auth";

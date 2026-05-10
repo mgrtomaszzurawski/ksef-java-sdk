@@ -53,7 +53,7 @@ class CertificatesMappersTest {
     private static final String COMMON_NAME = "CN=Test";
     private static final byte[] CSR_BYTES = new byte[]{0x30, 0x01, 0x02, 0x03};
     private static final String DATE_ISO = "2026-04-15T10:00:00+02:00";
-    private static final String NIP = "1234567890";
+    private static final String NIP = "1111111111";
     // Real DER bytes generated lazily — PR8 made RetrievedCertificate.from()
     // require a parseable X.509 (typed surface).
     private static final String CERTIFICATE_BASE64 = realCertificateBase64();
@@ -122,7 +122,7 @@ class CertificatesMappersTest {
                   "givenName": "Jan",
                   "surname": "Kowalski",
                   "organizationName": "Acme",
-                  "organizationIdentifier": "VATPL-1234567890",
+                  "organizationIdentifier": "VATPL-1111111111",
                   "serialNumber": "%s",
                   "uniqueIdentifier": "U-1"
                 }

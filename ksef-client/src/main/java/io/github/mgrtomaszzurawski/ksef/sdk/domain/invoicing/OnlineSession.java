@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvo
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 

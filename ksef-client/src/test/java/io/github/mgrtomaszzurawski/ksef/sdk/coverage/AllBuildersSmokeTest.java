@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  */
 class AllBuildersSmokeTest {
 
-    private static final String NIP = "1234567890";
+    private static final String NIP = "1111111111";
     private static final String OTHER_NIP = "0987654321";
     private static final String PESEL = "82060411457";
     private static final String FINGERPRINT = "ABC123DEF456";
@@ -76,14 +76,14 @@ class AllBuildersSmokeTest {
     private static final String LAST_NAME = "Kowalski";
     private static final String FULL_NAME = "Firma Sp. z o.o.";
     private static final String ADDRESS = "Berlin, Germany";
-    private static final String NIP_VAT_UE = "PL1234567890";
+    private static final String NIP_VAT_UE = "PL1111111111";
     private static final String EU_ENTITY_NAME = "EU Partner GmbH";
     private static final String SUBUNIT_NAME = "Branch 1";
     private static final String CERTIFICATE_NAME = "auth-cert";
     private static final String CERTIFICATE_SERIAL = "00112233";
     private static final String SUBUNIT_DESCRIPTION = "subunit-desc";
     private static final String EXTRA_PERMISSION_DESCRIPTION = "extra-perm";
-    private static final String PEPPOL_ID_FIXTURE = "PL:0007:1234567890";
+    private static final String PEPPOL_ID_FIXTURE = "PL:0007:1111111111";
     private static final byte[] FAKE_CSR = new byte[]{1, 2, 3, 4};
     private static final int RATE_PER_SECOND = 1;
     private static final int RATE_PER_MINUTE = 2;

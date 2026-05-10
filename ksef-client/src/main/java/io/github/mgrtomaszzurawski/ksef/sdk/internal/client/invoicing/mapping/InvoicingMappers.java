@@ -286,7 +286,7 @@ public final class InvoicingMappers {
 
     public static SessionInvoiceStatus toSessionInvoiceStatus(SessionInvoiceStatusResponseRaw rawValue) {
         return new SessionInvoiceStatus(
-                rawValue.getOrdinalNumber(),
+                rawValue.getOrdinalNumber() != null ? rawValue.getOrdinalNumber() : 0,
                 rawValue.getInvoiceNumber(),
                 rawValue.getKsefNumber(),
                 rawValue.getReferenceNumber(),

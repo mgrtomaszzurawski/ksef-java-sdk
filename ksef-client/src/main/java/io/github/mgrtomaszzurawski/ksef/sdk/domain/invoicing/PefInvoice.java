@@ -204,7 +204,9 @@ public final class PefInvoice implements Invoice {
             Objects.requireNonNull(customer, ERR_NULL_CUSTOMER);
             Objects.requireNonNull(payableAmount, ERR_NULL_PAYABLE);
             InvoiceType invoice = assembleInvoice();
-            byte[] xml = JaxbInvoiceMarshaller.marshal(invoice, InvoiceType.class);
+            jakarta.xml.bind.JAXBElement<InvoiceType> root =
+                    new io.github.mgrtomaszzurawski.ksef.xml.pef.ObjectFactory().createInvoice(invoice);
+            byte[] xml = JaxbInvoiceMarshaller.marshal(root, InvoiceType.class);
             return new PefInvoice(invoice, xml);
         }
 

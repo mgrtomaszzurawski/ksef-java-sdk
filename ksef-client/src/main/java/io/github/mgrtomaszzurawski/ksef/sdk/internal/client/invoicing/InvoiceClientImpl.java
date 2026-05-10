@@ -40,6 +40,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListIt
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
@@ -471,25 +472,21 @@ public final class InvoiceClientImpl implements InvoiceClient {
     }
 
     @Override
-    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice>
-            syncAsStream(IncrementalSyncPlan plan,
-                         io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore checkpointStore) {
+    public Stream<DecryptedInvoice> syncAsStream(IncrementalSyncPlan plan, CheckpointStore checkpointStore) {
         Objects.requireNonNull(plan, ERR_NULL_SYNC_PLAN);
         Objects.requireNonNull(checkpointStore, ERR_NULL_CHECKPOINT_STORE);
         LOGGER.debug(LOG_CALL, OP_SYNC_AS_STREAM);
-        java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice> collected =
-                new java.util.ArrayList<>();
+        List<DecryptedInvoice> collected = new java.util.ArrayList<>();
         InvoiceSink collectingSink = (ksefNumber, metadata, xmlPath) -> {
             byte[] xml = readXmlBytes(xmlPath);
-            collected.add(new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice(
-                    ksefNumber, metadata, xml,
+            collected.add(new DecryptedInvoice(ksefNumber, metadata, xml,
                     xmlPath != null ? Optional.of(xmlPath) : Optional.empty()));
         };
         new InvoiceSyncClient(this, runtime.objectMapper()).sync(plan, checkpointStore, collectingSink);
         return collected.stream();
     }
 
-    private static byte[] readXmlBytes(java.nio.file.Path xmlPath) {
+    private static byte[] readXmlBytes(Path xmlPath) {
         if (xmlPath == null) {
             return new byte[0];
         }

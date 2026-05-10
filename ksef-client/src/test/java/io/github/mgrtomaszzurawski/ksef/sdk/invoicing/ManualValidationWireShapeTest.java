@@ -204,7 +204,7 @@ class ManualValidationWireShapeTest {
         String pageOneBody = """
                 {
                   "invoices": [
-                    {"ksefNumber": "20260404-FA-1234567890-AAAAAAAAAA-12",
+                    {"ksefNumber": "20260404-FA-1111111111-AAAAAAAAAA-12",
                      "permanentStorageDate": "%s",
                      "invoiceType": "Vat"}
                   ],

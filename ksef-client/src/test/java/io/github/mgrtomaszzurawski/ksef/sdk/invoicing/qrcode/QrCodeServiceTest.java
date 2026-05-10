@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class QrCodeServiceTest {
 
-    private static final String SAMPLE_PAYLOAD_URL = "https://qr-test.ksef.mf.gov.pl/invoice/1234567890/04-04-2026/abc";
+    private static final String SAMPLE_PAYLOAD_URL = "https://qr-test.ksef.mf.gov.pl/invoice/1111111111/04-04-2026/abc";
     private static final int CUSTOM_QR_SIZE = 300;
     private static final int OVERSIZE_QR_SIZE = 5000;
     private static final int PNG_HEADER_LENGTH = 8;

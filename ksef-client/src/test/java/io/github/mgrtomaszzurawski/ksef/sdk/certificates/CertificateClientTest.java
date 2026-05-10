@@ -42,13 +42,13 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 class CertificateClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_ENROLLMENT_REF = "20260404-CE-1234567890-ABCDEF1234-08";
+    private static final String TEST_ENROLLMENT_REF = "20260404-CE-1111111111-ABCDEF1234-08";
     private static final String TEST_CERT_SERIAL = "ABC123DEF456";
     private static final String TEST_CERT_NAME = "Test Auth Certificate";
     private static final byte[] TEST_CSR = new byte[]{0x30, 0x42};
     private static final int KSEF_STATUS_OK = 200;
     private static final String CREDENTIALS_TOKEN = "test-token";
-    private static final String CREDENTIALS_NIP = "1234567890";
+    private static final String CREDENTIALS_NIP = "1111111111";
     private static final String PATH_ENROLLMENTS = "/v2/certificates/enrollments";
     private static final String COMMON_NAME = "KSeF Certificate";
     private static final String COUNTRY_NAME = "PL";
@@ -271,6 +271,6 @@ class CertificateClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1111111111");
     }
 }

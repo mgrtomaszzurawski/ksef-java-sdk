@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class KsefSessionCooldownDetectionTest {
 
     private static final String ONLINE_PATH = "/v2/sessions/online";
-    private static final String SESSION_REF = "20260507-SE-1234567890-CDCDCDCDCD-01";
+    private static final String SESSION_REF = "20260507-SE-1111111111-CDCDCDCDCD-01";
     private static final String STATUS_PATH = "/v2/sessions/" + SESSION_REF;
     private static final String SECURITY_KEYS_PATH = "/v2/security/public-key-certificates";
 

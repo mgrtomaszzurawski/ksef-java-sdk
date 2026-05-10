@@ -55,11 +55,11 @@ class AuthClientTest {
     private static final String PATH_SESSIONS = AUTH_BASE + "/sessions";
     private static final String PATH_SESSIONS_CURRENT = AUTH_BASE + "/sessions/current";
     private static final String TEST_CHALLENGE = "20260404-CR-AAAAAAAAAA-BBBBBBBBBB-CC";
-    private static final String TEST_REFERENCE_NUMBER = "20260404-AU-1234567890-ABCDEF1234-01";
+    private static final String TEST_REFERENCE_NUMBER = "20260404-AU-1111111111-ABCDEF1234-01";
     private static final String TEST_TOKEN = "eyJhbGciOiJIUzI1NiJ9.test-payload.signature";
     private static final String TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.access-token.signature";
     private static final String TEST_REFRESH_TOKEN = "eyJhbGciOiJIUzI1NiJ9.refresh-token.signature";
-    private static final String TEST_NIP = "1234567890";
+    private static final String TEST_NIP = "1111111111";
     private static final String TEST_TOKEN_EXPIRY = "2026-04-04T14:00:00+02:00";
     /** Test client IP — matches CHALLENGE_RESPONSE body and newChallenge() helper. */
     private static final String TEST_CLIENT_IP = "192.168.1.1";

@@ -35,7 +35,7 @@ import java.time.LocalDate;
  */
 public final class Fa2InvoiceExamples {
 
-    private static final String SELLER_NIP = "1234567890";
+    private static final String SELLER_NIP = "1111111111";
     private static final String SELLER_NAME = "Legacy Vendor sp. z o.o.";
     private static final String SELLER_POSTAL = "00-001";
     private static final String SELLER_CITY = "Warszawa";

@@ -50,12 +50,12 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
  */
 class BuilderToBuilderRoundTripTest {
 
-    private static final String NIP = "1234567890";
+    private static final String NIP = "1111111111";
     private static final String OTHER_NIP = "0987654321";
-    private static final String PESEL = "12345678901";
+    private static final String PESEL = "11111111111";
     private static final String FINGERPRINT = "ABC123DEF456";
-    private static final String PEPPOL_ID = "PL1234567890";
-    private static final String VAT_UE = "PL1234567890";
+    private static final String PEPPOL_ID = "PL1111111111";
+    private static final String VAT_UE = "PL1111111111";
     private static final String DESCRIPTION = "Round-trip test description";
     private static final String FIRST_NAME = "Jan";
     private static final String LAST_NAME = "Kowalski";

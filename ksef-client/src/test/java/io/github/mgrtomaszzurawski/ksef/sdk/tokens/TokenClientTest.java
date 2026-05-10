@@ -35,7 +35,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 class TokenClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_TOKEN_REF = "20260404-TK-1234567890-ABCDEF1234-07";
+    private static final String TEST_TOKEN_REF = "20260404-TK-1111111111-ABCDEF1234-07";
     private static final String TEST_GENERATED_TOKEN = "generated-ksef-token-value-abc123";
     private static final String PATH_TOKENS = "/v2/tokens";
     private static final String GENERATE_RESPONSE = """
@@ -51,8 +51,8 @@ class TokenClientTest {
                 {
                   "referenceNumber": "%s",
                   "description": "Test token",
-                  "authorIdentifier": {"type": "Nip", "value": "1234567890"},
-                  "contextIdentifier": {"type": "Nip", "value": "1234567890"},
+                  "authorIdentifier": {"type": "Nip", "value": "1111111111"},
+                  "contextIdentifier": {"type": "Nip", "value": "1111111111"},
                   "requestedPermissions": ["InvoiceRead"],
                   "status": "Active",
                   "dateCreated": "2026-04-04T12:00:00+02:00"
@@ -65,8 +65,8 @@ class TokenClientTest {
             {
               "referenceNumber": "%s",
               "description": "Test token",
-              "authorIdentifier": {"type": "Nip", "value": "1234567890"},
-              "contextIdentifier": {"type": "Nip", "value": "1234567890"},
+              "authorIdentifier": {"type": "Nip", "value": "1111111111"},
+              "contextIdentifier": {"type": "Nip", "value": "1111111111"},
               "requestedPermissions": ["InvoiceRead"],
               "status": "Active",
               "dateCreated": "2026-04-04T12:00:00+02:00"
@@ -185,6 +185,6 @@ class TokenClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1111111111");
     }
 }

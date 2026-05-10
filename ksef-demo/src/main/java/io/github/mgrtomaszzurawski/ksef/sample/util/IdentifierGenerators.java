@@ -93,7 +93,7 @@ public final class IdentifierGenerators {
      * KSeF's {@code TNipVatUE} schema (per
      * {@code ksef-client/xsd/auth/*.xsd}, EU VIES validation pattern).
      *
-     * <p>Example output: {@code 1234567890-DE123456789}.
+     * <p>Example output: {@code 1111111111-DE123456789}.
      *
      * <p>{@code DE} is the EU country prefix used here (9 digits per
      * VIES); KSeF TEST env auto-creates the resulting VAT-UE context.

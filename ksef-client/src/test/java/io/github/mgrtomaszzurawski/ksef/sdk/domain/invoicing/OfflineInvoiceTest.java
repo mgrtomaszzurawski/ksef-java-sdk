@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OfflineInvoiceTest {
 
-    private static final String SELLER_NIP = "1234567890";
+    private static final String SELLER_NIP = "1111111111";
     private static final String CONTEXT_VALUE = SELLER_NIP;
     private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
     private static final byte[] SIMPLE_XML = "<Faktura><Header/></Faktura>".getBytes(StandardCharsets.UTF_8);

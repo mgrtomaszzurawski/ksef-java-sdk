@@ -57,7 +57,7 @@ class InvoicingMappersTest {
 
     private static final String KSEF_NUMBER = "20260404-FA-0000000000-AAAAAAAAAA-12";
     private static final String INVOICE_NUMBER = "FV/2026/04/001";
-    private static final String NIP = "1234567890";
+    private static final String NIP = "1111111111";
     private static final String SELLER_NAME = "Acme Sp. z o.o.";
     private static final String BUYER_NAME = "Buyer Co.";
     private static final String SUBJECT_NAME = "Third Party";

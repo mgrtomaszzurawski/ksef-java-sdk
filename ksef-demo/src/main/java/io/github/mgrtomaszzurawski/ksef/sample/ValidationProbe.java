@@ -180,10 +180,10 @@ public final class ValidationProbe {
             {"{\"challenge\":null,\"contextIdentifier\":null,\"encryptedToken\":null}", DESC_NULL_REQUIRED},
             {"{\"challenge\":\"\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"\"},\"encryptedToken\":\"\"}", "Empty strings"},
             {"{\"challenge\":123}", "Wrong type (int for string)"},
-            {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"INVALID\",\"value\":\"1234567890\"},\"encryptedToken\":\"dGVzdA==\"}", "Invalid enum value"},
+            {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"INVALID\",\"value\":\"1111111111\"},\"encryptedToken\":\"dGVzdA==\"}", "Invalid enum value"},
             {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"123\"},\"encryptedToken\":\"dGVzdA==\"}", "Invalid NIP (too short)"},
-            {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"12345678901234567890\"},\"encryptedToken\":\"dGVzdA==\"}", "NIP too long"},
-            {"{\"challenge\":\"" + "A".repeat(TEST_LONG_STRING_LENGTH) + "\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"1234567890\"},\"encryptedToken\":\"dGVzdA==\"}", "Very long challenge (500 chars)"},
+            {"{\"challenge\":\"test\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"11111111111111111111\"},\"encryptedToken\":\"dGVzdA==\"}", "NIP too long"},
+            {"{\"challenge\":\"" + "A".repeat(TEST_LONG_STRING_LENGTH) + "\",\"contextIdentifier\":{\"type\":\"Nip\",\"value\":\"1111111111\"},\"encryptedToken\":\"dGVzdA==\"}", "Very long challenge (500 chars)"},
         });
     }
 
@@ -227,7 +227,7 @@ public final class ValidationProbe {
         probeAndLog("/api/v2/permissions/persons/grants", true, new String[][]{
             {BODY_EMPTY_OBJECT, DESC_EMPTY_BODY},
             {"{\"permission\":null,\"subjectIdentifier\":null}", DESC_NULL_REQUIRED},
-            {"{\"permission\":\"INVALID\",\"subjectIdentifier\":{\"type\":\"Pesel\",\"value\":\"12345678901\"},\"description\":\"test\"}", "Invalid permission enum"},
+            {"{\"permission\":\"INVALID\",\"subjectIdentifier\":{\"type\":\"Pesel\",\"value\":\"11111111111\"},\"description\":\"test\"}", "Invalid permission enum"},
             {"{\"permission\":\"InvoiceRead\",\"subjectIdentifier\":{\"type\":\"Pesel\",\"value\":\"123\"},\"description\":\"test\"}", "Invalid PESEL (too short)"},
             {"{\"permission\":\"InvoiceRead\",\"subjectIdentifier\":{\"type\":\"Pesel\",\"value\":\"\"},\"description\":\"test\"}", "Empty PESEL"},
         });

@@ -38,6 +38,7 @@ public record KsefIdentifier(Type type, String value) {
     private static final int NIP_LENGTH = 10;
     private static final int[] NIP_CHECKSUM_WEIGHTS = {6, 5, 7, 2, 3, 4, 5, 6, 7};
     private static final int NIP_CHECKSUM_MODULUS = 11;
+    private static final int NIP_CHECKSUM_INVALID = 10;
     private static final String ERR_NULL_TYPE = "type must not be null";
     private static final String ERR_NULL_VALUE = "value must not be null";
     private static final String ERR_BLANK_VALUE = "value must not be blank";
@@ -45,13 +46,13 @@ public record KsefIdentifier(Type type, String value) {
     private static final String ERR_INVALID_INTERNAL_ID =
             "internalId must match <10-digit NIP>-<5 digits>";
     private static final String ERR_INVALID_NIP_VAT_UE =
-            "nipVatUe must match country prefix + digits (e.g. DE123456789, FR12345678901)";
+            "nipVatUe must contain only [A-Z0-9-] and be at least 4 characters long";
     private static final String ERR_INVALID_PEPPOL_ID =
-            "peppolId must match <prefix>:<value> (e.g. 0088:5790000436088 or PEPPOL ENI scheme)";
+            "peppolId must contain only [A-Z0-9] and be 4-30 characters long";
 
     private static final Pattern INTERNAL_ID_PATTERN = Pattern.compile("^\\d{10}-\\d{5}$");
-    private static final Pattern NIP_VAT_UE_PATTERN = Pattern.compile("^[A-Z]{2}[A-Z0-9]{2,12}$");
-    private static final Pattern PEPPOL_ID_PATTERN = Pattern.compile("^\\d{4}:[A-Za-z0-9]{4,30}$");
+    private static final Pattern NIP_VAT_UE_PATTERN = Pattern.compile("^[A-Z0-9-]{4,40}$");
+    private static final Pattern PEPPOL_ID_PATTERN = Pattern.compile("^[A-Z0-9]{4,30}$");
 
     /**
      * Compact canonical constructor — validates non-null type, non-blank value, and
@@ -87,6 +88,7 @@ public record KsefIdentifier(Type type, String value) {
                     throw new IllegalArgumentException(ERR_INVALID_PEPPOL_ID);
                 }
             }
+            default -> throw new IllegalArgumentException("Unsupported identifier type: " + type);
         }
     }
 
@@ -139,9 +141,7 @@ public record KsefIdentifier(Type type, String value) {
             sum += Character.digit(nip.charAt(i), 10) * NIP_CHECKSUM_WEIGHTS[i];
         }
         int checksum = sum % NIP_CHECKSUM_MODULUS;
-        if (checksum == 10) {
-            return false;
-        }
-        return checksum == Character.digit(nip.charAt(NIP_LENGTH - 1), 10);
+        return checksum != NIP_CHECKSUM_INVALID
+                && checksum == Character.digit(nip.charAt(NIP_LENGTH - 1), 10);
     }
 }

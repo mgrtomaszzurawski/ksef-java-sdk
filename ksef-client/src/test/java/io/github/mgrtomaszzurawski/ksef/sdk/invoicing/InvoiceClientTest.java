@@ -38,11 +38,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 class InvoiceClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
-    private static final String TEST_NIP = "1234567890";
+    private static final String TEST_SESSION_REF = "20260404-SE-1111111111-ABCDEF1234-01";
+    private static final String TEST_NIP = "1111111111";
     private static final String TEST_KSEF_TOKEN = "test-ksef-token";
     private static final String TEST_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
-    private static final String TEST_EXPORT_REF = "20260404-EX-1234567890-ABCDEF1234-05";
+    private static final String TEST_EXPORT_REF = "20260404-EX-1111111111-ABCDEF1234-05";
     private static final int KSEF_STATUS_OK = 200;
     private static final byte[] TEST_INVOICE_XML = "<Faktura>test invoice</Faktura>".getBytes(StandardCharsets.UTF_8);
     private static final String INVOICES_BASE = "/v2/invoices";
@@ -87,7 +87,9 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] invoiceXml = ksef.invoices().getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER));
+            byte[] invoiceXml = ksef.invoices()
+                    .getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER))
+                    .xml();
 
             // then
             assertArrayEquals(TEST_INVOICE_XML, invoiceXml);
@@ -395,6 +397,6 @@ class InvoiceClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1111111111");
     }
 }

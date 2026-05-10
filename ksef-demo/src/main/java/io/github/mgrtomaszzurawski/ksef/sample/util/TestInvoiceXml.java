@@ -68,7 +68,7 @@ public final class TestInvoiceXml {
 
     private static final String DEFAULT_BUYER_NIP = "3861610227";
     private static final String DEFAULT_BUYER_REFERENCE = "BR-DEMO";
-    private static final String DEFAULT_IBAN = "PL12345678901234567890123456";
+    private static final String DEFAULT_IBAN = "PL11111111111111111111123456";
     private static final String INVOICE_NUMBER_PREFIX = "SDK-DEMO-";
     private static final int DEFAULT_PAYMENT_TERM_DAYS = 14;
     private static final String ERR_TEMPLATE_NOT_FOUND = "Invoice template not found on classpath: ";

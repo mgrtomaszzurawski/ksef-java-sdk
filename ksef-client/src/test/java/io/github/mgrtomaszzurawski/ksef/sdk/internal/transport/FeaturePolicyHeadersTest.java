@@ -42,8 +42,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 class FeaturePolicyHeadersTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260418-SE-1234567890-ABCDEF1234-01";
-    private static final String TEST_INVOICE_REF = "20260418-IN-1234567890-ABCDEF1234-02";
+    private static final String TEST_SESSION_REF = "20260418-SE-1111111111-ABCDEF1234-01";
+    private static final String TEST_INVOICE_REF = "20260418-IN-1111111111-ABCDEF1234-02";
     private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String UPO_PATH = SESSIONS_BASE + "/" + TEST_SESSION_REF
             + "/invoices/" + TEST_INVOICE_REF + "/upo";
