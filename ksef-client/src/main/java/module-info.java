@@ -66,6 +66,8 @@ module io.github.mgrtomaszzurawski.ksef {
     // ksef-xml-models owns xml.* — re-exported transitively so consumers
     // see the four root JAXB packages (FA2/FA3/PEF/PEF_KOR) via this SDK
     // dependency without declaring ksef-xml-models themselves (ADR-030).
+    // UBL sub-package types (xml.ubl.cac / cbc) used by internal mappers
+    // come in via qualified exports on the xml module.
     requires transitive io.github.mgrtomaszzurawski.ksef.xml;
 
     // ksef-rest-models owns the OpenAPI-generated client.* — internal use

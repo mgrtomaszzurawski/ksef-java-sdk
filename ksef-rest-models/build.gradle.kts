@@ -54,6 +54,16 @@ openApiGenerate {
     ))
 }
 
+// Cache the OpenAPI generator output across `clean build` runs — keyed on
+// the spec file + generator config. Without this the 303-class generation
+// re-runs every time the build/ directory is wiped, even when the spec is
+// unchanged.
+tasks.named("openApiGenerate") {
+    inputs.file(specFile).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(layout.buildDirectory.dir("generated-sources/openapi"))
+    outputs.cacheIf { true }
+}
+
 sourceSets.main {
     java.srcDirs(layout.buildDirectory.dir("generated-sources/openapi/src/main/java"))
 }
