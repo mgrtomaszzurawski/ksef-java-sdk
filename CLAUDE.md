@@ -4,15 +4,19 @@ Repository conventions and architecture notes for assistants working on this cod
 
 ## What this is
 
-OpenAPI-first Java SDK for the Polish National e-Invoicing System (KSeF) REST API v2. Multi-module Maven project:
+OpenAPI-first Java SDK for the Polish National e-Invoicing System (KSeF) REST API v2. Multi-module Gradle project (Maven removed 2026-05-10 per ADR-031):
+- `ksef-xml-models` — JAXB-generated XML models (FA2/FA3/PEF/PEF_KOR/UPO/AUTH)
+- `ksef-rest-models` — OpenAPI-generated REST models (`*Raw`)
 - `ksef-client` — the SDK library (target: Maven Central; **not yet published**)
 - `ksef-demo` — integration examples and smoke tests (not published)
+- `ksef-examples` — compile-only check of consumer examples in `examples/`
+- `ksef-jpms-consumer` — JPMS consumer compile gate
 
 ## Release status
 
 **Pre-1.0. No version has been published to Maven Central yet.** Current
-artefact version is `1.0.0` in the pom (preparing for first release; no
-git tag, no Maven Central artefact). There is no consumer contract to
+artefact version is `1.0.0` in `gradle.properties` (preparing for first
+release; no git tag, no Maven Central artefact). There is no consumer contract to
 preserve — the project has zero external dependents because the artefact
 has never been released.
 
@@ -37,38 +41,63 @@ Exception: Polish KSeF-specific terms (`faktura`, `NIP`, `PESEL`, `UPO`) are unt
 ## Build and test commands
 
 ```bash
-# Full build + all tests (no live KSeF access needed)
-mvn clean verify --no-transfer-progress
+# Full reactor build + all tests + static gates (no live KSeF access needed)
+./gradlew build
 
-# Static analysis (must pass with 0 violations)
-mvn spotbugs:check pmd:check checkstyle:check -pl ksef-client --no-transfer-progress
+# SDK module only — compile, test, gates
+./gradlew :ksef-client:build
+
+# Static analysis only (must pass with 0 violations)
+./gradlew :ksef-client:check
 
 # Run a single test class
-mvn test -pl ksef-client -Dtest=SessionClientTest --no-transfer-progress
+./gradlew :ksef-client:test --tests SessionClientTest
 
 # Run a single test method
-mvn test -pl ksef-client -Dtest=SessionClientTest#openOnline_whenChallengeSucceeds_returnsSession --no-transfer-progress
-
-# SDK module only
-mvn clean verify -pl ksef-client --no-transfer-progress
+./gradlew :ksef-client:test --tests "SessionClientTest.openOnline_whenChallengeSucceeds_returnsSession"
 
 # Run sample demo app (requires ksef-credentials.properties in project root)
-mvn install -pl ksef-client -DskipTests -Dmaven.javadoc.skip=true --no-transfer-progress
-mvn exec:java -pl ksef-demo -Ddemo.mode=AUTH_SAFE
+./gradlew :ksef-demo:run -P"demo.mode=AUTH_SAFE"
 
-# IMPORTANT: after changing ksef-client code, run `mvn install` before `mvn exec:java` on ksef-demo
-# mvn exec:java resolves from ~/.m2/repository, NOT from target/classes
+# Incremental compile only — fastest iteration during dev
+./gradlew :ksef-client:compileJava
+
+# Force everything from scratch (rare — typically only after editing pom.xml,
+# build.gradle.kts, or files under xsd/ or openapi/)
+./gradlew clean build
 ```
+
+Gradle's UP-TO-DATE checks, build cache, and incremental Java compiler mean
+plain `./gradlew build` usually finishes in seconds when nothing relevant
+has changed. The `clean` task is rarely needed in the dev loop; reserve it
+for situations where the XSD or OpenAPI inputs change or a plugin
+configuration is edited.
 
 ## Architecture
 
-### Maven multi-module structure
+### Gradle multi-module structure (ADR-031)
 
-Root `pom.xml` is a `<packaging>pom</packaging>` aggregator. Modules:
-- `ksef-client` — SDK jar. OpenAPI Generator plugin produces REST models into `target/generated-sources/openapi/`. JAXB XJC generates invoice XML models from XSD into `target/generated-sources/xjc/`. Configures GPG signing and Maven Central publishing.
-- `ksef-demo` — consumer app. Depends on `ksef-client`. `<maven.deploy.skip>true</maven.deploy.skip>` — never published.
+Root `settings.gradle.kts` aggregates six subprojects; root `build.gradle.kts`
+applies the `base` plugin and shared repositories. Each subproject owns its
+own `build.gradle.kts`.
 
-Both modules independently configure SpotBugs, PMD, and Checkstyle (shared config files at project root). No shared `<pluginManagement>` in root pom.
+- `ksef-xml-models` — JAXB-generated XML models. Owns the `xml.*` package
+  tree. Six XJC JavaExec tasks emit into `build/generated-sources/xjc-*`.
+  Cached as a JAR dependency for `ksef-client`; UP-TO-DATE unless XSDs
+  under `ksef-client/xsd/` change.
+- `ksef-rest-models` — OpenAPI-generated REST models. Owns
+  `client.api.*` + `client.model.*` packages with `*Raw` suffix. UP-TO-DATE
+  unless `ksef-client/openapi/open-api.json` changes.
+- `ksef-client` — SDK jar. Hand-written code only (362 main + 98 test files).
+  Configures Spotless, SpotBugs, PMD, Checkstyle, JaCoCo, GPG signing
+  (release-property-gated), and Maven Central publication via
+  `maven-publish` + `signing`.
+- `ksef-demo` — consumer app exercising the live KSeF demo server. Uses
+  the `application` plugin; demo modes are passed via Gradle properties.
+- `ksef-examples` — compile-only check of the JBang-style examples in
+  the top-level `examples/` directory.
+- `ksef-jpms-consumer` — minimal named-module consumer used as a
+  compile-time JPMS surface check.
 
 ### Layered architecture (ADR-012)
 
