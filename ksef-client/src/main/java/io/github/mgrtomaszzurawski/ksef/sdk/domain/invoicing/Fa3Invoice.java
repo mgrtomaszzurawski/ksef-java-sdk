@@ -397,6 +397,11 @@ public final class Fa3Invoice implements Invoice {
             return podmiot;
         }
 
+        /** {@code Podmiot2/JST} marker — value 2 = invoice is NOT for a JST sub-unit. */
+        private static final BigInteger PODMIOT2_JST_NO = BigInteger.valueOf(2);
+        /** {@code Podmiot2/GV} marker — value 2 = invoice is NOT for a VAT-group member. */
+        private static final BigInteger PODMIOT2_GV_NO = BigInteger.valueOf(2);
+
         private static Faktura.Podmiot2 buildBuyer(InvoiceParty party) {
             Faktura.Podmiot2 podmiot = new Faktura.Podmiot2();
             TPodmiot2 identity = new TPodmiot2();
@@ -404,6 +409,12 @@ public final class Fa3Invoice implements Invoice {
             identity.setNazwa(party.name());
             podmiot.setDaneIdentyfikacyjne(identity);
             podmiot.setAdres(buildAddress(party));
+            // FA(3) XSD marks JST and GV as required on the Podmiot2 wrapper.
+            // Default to "2" (No) for both — the builder targets the common
+            // non-JST, non-VAT-group buyer; consumers needing the alternative
+            // values reach for the {@link Fa3Invoice#faktura()} escape-hatch.
+            podmiot.setJST(PODMIOT2_JST_NO);
+            podmiot.setGV(PODMIOT2_GV_NO);
             return podmiot;
         }
 

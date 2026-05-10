@@ -33,9 +33,6 @@ class PefInvoiceTest {
         assertEquals(FormCode.PEF3, invoice.formCode());
     }
 
-    @org.junit.jupiter.api.Disabled("PR20 — UBL JAXB context built from xml.pef package-scan does not "
-            + "resolve {urn:oasis:Invoice-2}Invoice on unmarshal; deeper JAXB-context configuration "
-            + "(or explicit @XmlSeeAlso wiring) is tracked as a follow-up. Marshal succeeds.")
     @Test
     void xml_whenInvoiceBuilt_roundTripsThroughJaxbUnchanged() throws Exception {
         PefInvoice invoice = minimalInvoice();

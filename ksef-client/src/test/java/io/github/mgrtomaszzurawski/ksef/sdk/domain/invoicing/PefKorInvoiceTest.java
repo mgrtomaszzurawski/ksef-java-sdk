@@ -42,8 +42,6 @@ class PefKorInvoiceTest {
                 "XML must contain UBL CreditNote root: " + xml);
     }
 
-    @org.junit.jupiter.api.Disabled("PR20 — same UBL JAXB unmarshal-context limitation as PefInvoiceTest "
-            + "round-trip; tracked as a follow-up.")
     @Test
     void xml_whenCreditNoteBuilt_roundTripsThroughJaxbUnchanged() throws Exception {
         PefKorInvoice creditNote = minimalCreditNote();

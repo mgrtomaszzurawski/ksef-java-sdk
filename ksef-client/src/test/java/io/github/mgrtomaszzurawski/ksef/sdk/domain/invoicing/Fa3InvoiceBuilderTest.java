@@ -54,9 +54,6 @@ class Fa3InvoiceBuilderTest {
                         .build());
     }
 
-    @org.junit.jupiter.api.Disabled("PR20 — builder produces minimum-viable Podmiot2 without "
-            + "the choice element {AdresKoresp|DaneKontaktowe|NrKlienta|IDNabywcy|JST} required by "
-            + "the FA(3) XSD; full conformance tracked as builder-coverage cleanup.")
     @Test
     void build_whenHappyPath_producesXmlSurvivingXsdValidation() {
         // given

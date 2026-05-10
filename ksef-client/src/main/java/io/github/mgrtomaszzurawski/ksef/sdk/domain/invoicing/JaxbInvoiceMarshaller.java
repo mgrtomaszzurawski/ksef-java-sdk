@@ -33,6 +33,21 @@ final class JaxbInvoiceMarshaller {
     private static final String ERR_MARSHAL_FAILED = "Failed to marshal invoice JAXB tree to XML";
     private static final String ERR_UNMARSHAL_FAILED = "Failed to unmarshal invoice XML";
     private static final String ERR_CONTEXT_FAILED = "Failed to initialise JAXB context for ";
+    private static final String OBJECT_FACTORY_CLASS_NAME = "ObjectFactory";
+    /**
+     * UBL sub-package leaves under {@code xml.pef} / {@code xml.pefkor}. Each
+     * sub-package owns its own {@code ObjectFactory} carrying the
+     * {@code @XmlElementDecl} bindings JAXB needs to resolve qualified UBL
+     * element names like {@code {urn:oasis:Invoice-2}Invoice} during
+     * unmarshal. Single-package context construction misses those
+     * declarations and unmarshal fails on a global element lookup.
+     */
+    private static final String[] UBL_SUB_PACKAGES = {
+            "cac", "cacpl", "cbc", "cbcpl", "ccts", "ext",
+            "sig", "sigcac", "sigcbc",
+            "udt",
+            "xades132", "xades141", "xmldsig"
+    };
     private static final ConcurrentMap<Class<?>, JAXBContext> CONTEXT_CACHE = new ConcurrentHashMap<>();
     private static final javax.xml.stream.XMLInputFactory XML_INPUT_FACTORY = createHardenedXmlInputFactory();
 
@@ -84,10 +99,46 @@ final class JaxbInvoiceMarshaller {
 
     private static JAXBContext buildContext(Class<?> rootClass) {
         try {
-            return JAXBContext.newInstance(rootClass.getPackage().getName(),
-                    Thread.currentThread().getContextClassLoader());
+            Class<?>[] factoryClasses = collectObjectFactories(rootClass);
+            return JAXBContext.newInstance(factoryClasses);
         } catch (JAXBException ex) {
             throw new IllegalStateException(ERR_CONTEXT_FAILED + rootClass.getName(), ex);
+        }
+    }
+
+    /**
+     * Collect every {@code ObjectFactory} reachable from {@code rootClass}'s
+     * package: the root package's own factory plus, for the UBL-derived PEF
+     * and PEFKOR schemas, the {@code cac/cbc/ext/...} sub-package factories
+     * that declare the qualified UBL element names. For non-UBL schemas
+     * (FA(2), FA(3), UPO, auth) only the root factory is returned, matching
+     * the previous single-package behaviour.
+     */
+    private static Class<?>[] collectObjectFactories(Class<?> rootClass) {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        if (loader == null) {
+            loader = JaxbInvoiceMarshaller.class.getClassLoader();
+        }
+        String rootPackage = rootClass.getPackage().getName();
+        java.util.List<Class<?>> factories = new java.util.ArrayList<>();
+        Class<?> rootFactory = loadObjectFactory(loader, rootPackage);
+        if (rootFactory != null) {
+            factories.add(rootFactory);
+        }
+        for (String subPackage : UBL_SUB_PACKAGES) {
+            Class<?> subFactory = loadObjectFactory(loader, rootPackage + '.' + subPackage);
+            if (subFactory != null) {
+                factories.add(subFactory);
+            }
+        }
+        return factories.toArray(new Class<?>[0]);
+    }
+
+    private static Class<?> loadObjectFactory(ClassLoader loader, String packageName) {
+        try {
+            return Class.forName(packageName + '.' + OBJECT_FACTORY_CLASS_NAME, false, loader);
+        } catch (ClassNotFoundException notPresent) {
+            return null;
         }
     }
 }
