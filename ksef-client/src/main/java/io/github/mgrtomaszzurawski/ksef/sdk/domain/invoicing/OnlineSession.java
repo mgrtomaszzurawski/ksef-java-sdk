@@ -96,6 +96,56 @@ public interface OnlineSession extends Session {
     SubmittedInvoice sendInvoice(Invoice invoice);
 
     /**
+     * Send a pre-built {@link OfflineInvoice} within this session.
+     *
+     * <p>Sets the wire-level {@code offlineMode=true} marker on the
+     * request and otherwise mirrors the {@link #sendInvoice(Invoice)}
+     * lifecycle: XML validation gate, AES-encryption with the session
+     * key, post, terminal-state polling.
+     *
+     * <p>The {@link OfflineInvoice} carries the KOD I + KOD II PNG
+     * bytes pre-rendered at construction time; both are propagated
+     * verbatim to the returned {@link SubmittedInvoice} via
+     * {@link SubmittedInvoice#kodIQr()} and
+     * {@link SubmittedInvoice#kodIIQr()} regardless of the terminal
+     * status code (because the offline visualisation must show the
+     * KOD II QR even before KSeF acceptance per
+     * {@code ksef-docs/kody-qr.md}).
+     *
+     * <p>Spec citation: REQ-OFFLINE-001..007.
+     *
+     * @param offline the offline invoice to send — must not be null
+     * @return synchronous terminal-state result with embedded KOD I + KOD II QRs
+     * @throws IllegalStateException if the session is already closed or archived
+     * @throws NullPointerException if {@code offline} is null
+     */
+    SubmittedInvoice sendOfflineInvoice(OfflineInvoice offline);
+
+    /**
+     * Send a technical correction (korekta techniczna) within this
+     * session. The {@code hashOfOriginal} is the SHA-256 (32 bytes) of
+     * the corrected invoice's XML; KSeF requires it on every technical
+     * correction (REQ-OFFLINE-004) and rejects a missing or
+     * malformed value.
+     *
+     * <p>Wire shape: same as a normal send except
+     * {@code offlineMode=true} (technical corrections are implicitly
+     * offline at the wire level) and the {@code hashOfCorrectedInvoice}
+     * field carries {@code hashOfOriginal}.
+     *
+     * <p>Spec citation: REQ-OFFLINE-003..005;
+     * {@code ksef-docs/offline/korekta-techniczna.md}.
+     *
+     * @param invoice the corrected (replacement) invoice
+     * @param hashOfOriginal SHA-256 of the original invoice XML; must be exactly 32 bytes
+     * @return synchronous terminal-state result
+     * @throws IllegalArgumentException if {@code hashOfOriginal} is not 32 bytes
+     * @throws IllegalStateException if the session is already closed or archived
+     * @throws NullPointerException if any argument is null
+     */
+    SubmittedInvoice sendTechnicalCorrection(Invoice invoice, byte[] hashOfOriginal);
+
+    /**
      * Send an invoice within this session.
      *
      * <p>The invoice XML is encrypted with the session's AES key, SHA-256 hashes are

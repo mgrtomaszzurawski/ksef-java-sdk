@@ -12,6 +12,15 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.sax.SAXSource;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
+import org.xml.sax.XMLReader;
 
 /**
  * Internal helper for marshalling and unmarshalling invoice JAXB
@@ -33,8 +42,19 @@ final class JaxbInvoiceMarshaller {
     private static final String ERR_MARSHAL_FAILED = "Failed to marshal invoice JAXB tree to XML";
     private static final String ERR_UNMARSHAL_FAILED = "Failed to unmarshal invoice XML";
     private static final String ERR_CONTEXT_FAILED = "Failed to initialise JAXB context for ";
+    private static final String ERR_SAX_PARSER_FAILED =
+            "Failed to configure hardened SAX parser for JAXB unmarshalling";
+
+    private static final String FEATURE_DISALLOW_DOCTYPE = "http://apache.org/xml/features/disallow-doctype-decl";
+    private static final String FEATURE_EXTERNAL_GENERAL_ENTITIES =
+            "http://xml.org/sax/features/external-general-entities";
+    private static final String FEATURE_EXTERNAL_PARAMETER_ENTITIES =
+            "http://xml.org/sax/features/external-parameter-entities";
+    private static final String FEATURE_LOAD_EXTERNAL_DTD =
+            "http://apache.org/xml/features/nonvalidating/load-external-dtd";
 
     private static final ConcurrentMap<Class<?>, JAXBContext> CONTEXT_CACHE = new ConcurrentHashMap<>();
+    private static final SAXParserFactory SAX_PARSER_FACTORY = createHardenedSaxParserFactory();
 
     private JaxbInvoiceMarshaller() {
     }
@@ -58,14 +78,48 @@ final class JaxbInvoiceMarshaller {
         try {
             JAXBContext context = contextFor(rootClass);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            Object result = unmarshaller.unmarshal(new ByteArrayInputStream(xml));
+            SAXSource hardenedSource = hardenedSource(new ByteArrayInputStream(xml));
+            Object result = unmarshaller.unmarshal(hardenedSource);
             if (result instanceof jakarta.xml.bind.JAXBElement<?> wrapper) {
                 return rootClass.cast(wrapper.getValue());
             }
             return rootClass.cast(result);
-        } catch (JAXBException ex) {
+        } catch (JAXBException | SAXException ex) {
             throw new IllegalStateException(ERR_UNMARSHAL_FAILED, ex);
         }
+    }
+
+    /**
+     * Wrap an input stream in a SAX source with DOCTYPE disabled and
+     * external entity resolution turned off — defends against XXE
+     * (CWE-611) and billion-laughs (CWE-776) attacks.
+     */
+    private static SAXSource hardenedSource(ByteArrayInputStream input) throws SAXException {
+        try {
+            SAXParser parser = SAX_PARSER_FACTORY.newSAXParser();
+            XMLReader reader = parser.getXMLReader();
+            reader.setEntityResolver((publicId, systemId) -> new InputSource(new java.io.StringReader("")));
+            return new SAXSource(reader, new InputSource(input));
+        } catch (javax.xml.parsers.ParserConfigurationException configFailure) {
+            throw new IllegalStateException(ERR_SAX_PARSER_FAILED, configFailure);
+        }
+    }
+
+    private static SAXParserFactory createHardenedSaxParserFactory() {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        factory.setNamespaceAware(true);
+        try {
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            factory.setFeature(FEATURE_DISALLOW_DOCTYPE, true);
+            factory.setFeature(FEATURE_EXTERNAL_GENERAL_ENTITIES, false);
+            factory.setFeature(FEATURE_EXTERNAL_PARAMETER_ENTITIES, false);
+            factory.setFeature(FEATURE_LOAD_EXTERNAL_DTD, false);
+            factory.setXIncludeAware(false);
+        } catch (SAXNotRecognizedException | SAXNotSupportedException
+                | javax.xml.parsers.ParserConfigurationException notSupported) {
+            throw new IllegalStateException(ERR_SAX_PARSER_FAILED, notSupported);
+        }
+        return factory;
     }
 
     private static JAXBContext contextFor(Class<?> rootClass) {

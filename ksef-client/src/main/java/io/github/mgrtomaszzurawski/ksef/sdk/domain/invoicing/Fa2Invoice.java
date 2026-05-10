@@ -119,7 +119,7 @@ public final class Fa2Invoice implements Invoice {
 
         private static final String DEFAULT_ISSUE_TIME_ZONE = "+00:00";
         private static final String DEFAULT_ISSUE_TIME = "T00:00:00";
-        private static final String ERR_NULL_FORM_GENERATION = "issueDate must not be null";
+        private static final String ERR_NULL_ISSUE_DATE = "issueDate must not be null";
         private static final String ERR_NULL_INVOICE_NUMBER = "invoiceNumber must not be null";
         private static final String ERR_NULL_SELLER = "seller must not be null";
         private static final String ERR_NULL_BUYER = "buyer must not be null";
@@ -151,7 +151,7 @@ public final class Fa2Invoice implements Invoice {
         }
 
         public Builder issueDate(LocalDate value) {
-            this.issueDate = Objects.requireNonNull(value, ERR_NULL_FORM_GENERATION);
+            this.issueDate = Objects.requireNonNull(value, ERR_NULL_ISSUE_DATE);
             return this;
         }
 
@@ -201,7 +201,7 @@ public final class Fa2Invoice implements Invoice {
         }
 
         public Fa2Invoice build() {
-            Objects.requireNonNull(issueDate, ERR_NULL_FORM_GENERATION);
+            Objects.requireNonNull(issueDate, ERR_NULL_ISSUE_DATE);
             Objects.requireNonNull(invoiceNumber, ERR_NULL_INVOICE_NUMBER);
             Objects.requireNonNull(seller, ERR_NULL_SELLER);
             Objects.requireNonNull(buyer, ERR_NULL_BUYER);
@@ -343,21 +343,23 @@ public final class Fa2Invoice implements Invoice {
             return entry;
         }
 
-        private static XMLGregorianCalendar toGregorianDate(LocalDate date) {
+        private static final DatatypeFactory DATATYPE_FACTORY = createDatatypeFactory();
+
+        private static DatatypeFactory createDatatypeFactory() {
             try {
-                return DatatypeFactory.newInstance().newXMLGregorianCalendar(date.toString());
+                return DatatypeFactory.newInstance();
             } catch (DatatypeConfigurationException ex) {
                 throw new IllegalStateException(ERR_BAD_DATATYPE_FACTORY, ex);
             }
         }
 
+        private static XMLGregorianCalendar toGregorianDate(LocalDate date) {
+            return DATATYPE_FACTORY.newXMLGregorianCalendar(date.toString());
+        }
+
         private static XMLGregorianCalendar toGregorianDateTime(LocalDate date) {
-            try {
-                return DatatypeFactory.newInstance().newXMLGregorianCalendar(
-                        date.toString() + DEFAULT_ISSUE_TIME + DEFAULT_ISSUE_TIME_ZONE);
-            } catch (DatatypeConfigurationException ex) {
-                throw new IllegalStateException(ERR_BAD_DATATYPE_FACTORY, ex);
-            }
+            return DATATYPE_FACTORY.newXMLGregorianCalendar(
+                    date.toString() + DEFAULT_ISSUE_TIME + DEFAULT_ISSUE_TIME_ZONE);
         }
     }
 }

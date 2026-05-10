@@ -92,6 +92,11 @@ final class OnlineSessionImpl implements OnlineSession {
     private static final String SHA_256_ALGORITHM = "SHA-256";
     private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 not available";
     private static final String ERR_INVOICE_NULL = "invoice must not be null";
+    private static final String ERR_OFFLINE_INVOICE_NULL = "offline must not be null";
+    private static final String ERR_HASH_NULL = "hashOfOriginal must not be null";
+    private static final int SHA256_LENGTH_BYTES = 32;
+    private static final String ERR_HASH_LENGTH_TEMPLATE =
+            "hashOfOriginal must be exactly %d bytes (SHA-256), got %d";
     private static final String ERR_SEND_INVOICE_REQUIRES_FULL_CTOR =
             "sendInvoice(Invoice) requires the verification-aware constructor (KsefEnvironment + timeout);"
                     + " InvoiceClientImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
@@ -183,6 +188,61 @@ final class OnlineSessionImpl implements OnlineSession {
         SessionInvoiceStatus terminalStatus = pollUntilVerified(sendResult.referenceNumber());
         return buildSubmittedInvoice(invoice, sendResult.referenceNumber(),
                 terminalStatus, invoiceSha256);
+    }
+
+    @Override
+    public SubmittedInvoice sendOfflineInvoice(OfflineInvoice offline) {
+        Objects.requireNonNull(offline, ERR_OFFLINE_INVOICE_NULL);
+        Invoice underlying = offline.underlyingInvoice();
+        byte[] invoiceXml = offline.xml();
+        InvoiceValidationGate.validate(offline.formCode(), invoiceXml);
+        SendInvoiceResult sendResult = send(SendInvoiceCommand.offline(invoiceXml));
+        SessionInvoiceStatus terminalStatus = pollUntilVerified(sendResult.referenceNumber());
+        return buildOfflineSubmittedInvoice(underlying, sendResult.referenceNumber(),
+                terminalStatus, offline.kodIQrPng(), offline.kodIIQrPng());
+    }
+
+    @Override
+    public SubmittedInvoice sendTechnicalCorrection(Invoice invoice, byte[] hashOfOriginal) {
+        Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
+        Objects.requireNonNull(hashOfOriginal, ERR_HASH_NULL);
+        if (hashOfOriginal.length != SHA256_LENGTH_BYTES) {
+            throw new IllegalArgumentException(String.format(
+                    ERR_HASH_LENGTH_TEMPLATE, SHA256_LENGTH_BYTES, hashOfOriginal.length));
+        }
+        byte[] invoiceXml = invoice.xml();
+        InvoiceValidationGate.validate(invoice.formCode(), invoiceXml);
+        SendInvoiceResult sendResult = send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfOriginal));
+        SessionInvoiceStatus terminalStatus = pollUntilVerified(sendResult.referenceNumber());
+        // Technical correction is offline at the wire level but we do
+        // not synthesise a KOD II here — the caller is responsible for
+        // pairing this submission with a KOD II if visualisation is
+        // required (the certificate isn't available at this layer).
+        return new SubmittedInvoice(invoice, sendResult.referenceNumber(),
+                terminalStatus, Optional.empty(), Optional.empty(),
+                Optional.empty(), List.of());
+    }
+
+    private SubmittedInvoice buildOfflineSubmittedInvoice(Invoice invoice, String invoiceRef,
+                                                          SessionInvoiceStatus terminalStatus,
+                                                          byte[] kodIPng, byte[] kodIIPng) {
+        Integer code = terminalStatus.status() != null ? terminalStatus.status().code() : null;
+        boolean accepted = code != null && code == STATUS_CODE_OK;
+        Optional<KsefNumber> ksefNumber = Optional.empty();
+        List<String> errorDetails = List.of();
+        if (accepted && terminalStatus.ksefNumber() != null) {
+            ksefNumber = Optional.of(KsefNumber.parse(terminalStatus.ksefNumber()));
+        } else if (terminalStatus.status() != null && terminalStatus.status().details() != null) {
+            errorDetails = new ArrayList<>(terminalStatus.status().details());
+            if (terminalStatus.status().description() != null && errorDetails.isEmpty()) {
+                errorDetails.add(terminalStatus.status().description());
+            }
+        }
+        // KOD I + KOD II were rendered at OfflineInvoice construction
+        // time — propagate them verbatim. The visualisation must show
+        // both QRs on the offline path even on rejection.
+        return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
+                ksefNumber, Optional.of(kodIPng), Optional.of(kodIIPng), errorDetails);
     }
 
     private SessionInvoiceStatus pollUntilVerified(String invoiceRef) {

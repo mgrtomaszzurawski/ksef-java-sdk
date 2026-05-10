@@ -133,10 +133,12 @@ public final class PefInvoice implements Invoice {
         private static final String ERR_NULL_LINE = "line must not be null";
         private static final String ERR_NULL_PAYABLE = "payableAmount must not be null";
         private static final String ERR_BAD_DATATYPE_FACTORY = "DatatypeFactory unavailable";
+        private static final String UBL_TAX_SCHEME_ID_VAT = "VAT";
+        private static final String DEFAULT_CURRENCY_CODE_PLN = "PLN";
 
         private String invoiceNumber;
         private LocalDate issueDate;
-        private String currencyCode = "PLN";
+        private String currencyCode = DEFAULT_CURRENCY_CODE_PLN;
         private String invoiceTypeCode = DEFAULT_INVOICE_TYPE_CODE;
         private PefParty supplier;
         private PefParty customer;
@@ -332,17 +334,23 @@ public final class PefInvoice implements Invoice {
         private static TaxSchemeType buildVatTaxScheme() {
             TaxSchemeType scheme = new TaxSchemeType();
             IDType schemeId = new IDType();
-            schemeId.setValue("VAT");
+            schemeId.setValue(UBL_TAX_SCHEME_ID_VAT);
             scheme.setID(schemeId);
             return scheme;
         }
 
-        private static XMLGregorianCalendar toGregorianDate(LocalDate date) {
+        private static final DatatypeFactory DATATYPE_FACTORY = createDatatypeFactory();
+
+        private static DatatypeFactory createDatatypeFactory() {
             try {
-                return DatatypeFactory.newInstance().newXMLGregorianCalendar(date.toString());
+                return DatatypeFactory.newInstance();
             } catch (DatatypeConfigurationException ex) {
                 throw new IllegalStateException(ERR_BAD_DATATYPE_FACTORY, ex);
             }
+        }
+
+        private static XMLGregorianCalendar toGregorianDate(LocalDate date) {
+            return DATATYPE_FACTORY.newXMLGregorianCalendar(date.toString());
         }
     }
 }
