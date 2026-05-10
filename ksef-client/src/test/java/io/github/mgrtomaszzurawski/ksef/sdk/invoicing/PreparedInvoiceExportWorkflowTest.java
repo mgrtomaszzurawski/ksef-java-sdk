@@ -81,7 +81,7 @@ class PreparedInvoiceExportWorkflowTest {
         }
     }
 
-    private static final String EXPORT_REF = "20260418-EX-1234567890-ABCDEF1234-01";
+    private static final String EXPORT_REF = "20260418-EX-1111111111-ABCDEF1234-01";
     private static final String PART_PATH = "/parts/part1.bin";
     private static final String METADATA_FILE = "_metadata.json";
     private static final String INVOICE_NAME = "faktura_1.xml";

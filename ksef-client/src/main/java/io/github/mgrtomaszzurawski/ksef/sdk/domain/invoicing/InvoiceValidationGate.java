@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.Severity;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.ValidationIssue;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -46,7 +47,7 @@ final class InvoiceValidationGate {
             return;
         }
         boolean hasFailure = false;
-        java.util.List<String> failures = new java.util.ArrayList<>(issues.size());
+        List<String> failures = new ArrayList<>(issues.size());
         for (ValidationIssue issue : issues) {
             failures.add(issue.toString());
             if (issue.severity() == Severity.ERROR || issue.severity() == Severity.FATAL) {

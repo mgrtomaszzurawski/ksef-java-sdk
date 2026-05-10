@@ -62,6 +62,7 @@ public final class OfflineInvoice {
     private static final String ERR_NULL_CONTEXT_VALUE = "contextValue must not be null";
     private static final String ERR_NULL_SELLER_NIP = "sellerNip must not be null";
     private static final String ERR_NULL_ISSUE_DATE = "issueDate must not be null";
+    private static final String BYTES_LABEL = " bytes";
 
     private final Invoice underlyingInvoice;
     private final byte[] xml;
@@ -264,11 +265,11 @@ public final class OfflineInvoice {
     public String toString() {
         return "OfflineInvoice[formCode=" + underlyingInvoice.formCode()
                 + ", offlineMode=" + offlineMode
-                + ", xml=" + xml.length + " bytes"
-                + ", kodIQrPng=" + kodIQrPng.length + " bytes"
-                + ", kodIIQrPng=" + kodIIQrPng.length + " bytes"
+                + ", xml=" + xml.length + BYTES_LABEL
+                + ", kodIQrPng=" + kodIQrPng.length + BYTES_LABEL
+                + ", kodIIQrPng=" + kodIIQrPng.length + BYTES_LABEL
                 + ", hashOfCorrectedInvoice="
-                + (hashOfCorrectedInvoice == null ? "<absent>" : hashOfCorrectedInvoice.length + " bytes")
+                + (hashOfCorrectedInvoice == null ? "<absent>" : hashOfCorrectedInvoice.length + BYTES_LABEL)
                 + "]";
     }
 }

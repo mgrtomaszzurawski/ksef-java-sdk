@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SubmitBatchTest {
 
     private static final String BATCH_PATH = "/v2/sessions/batch";
-    private static final String BATCH_REF = "20260509-BA-1234567890-AAAAAAAAAA-01";
+    private static final String BATCH_REF = "20260509-BA-1111111111-AAAAAAAAAA-01";
     private static final String SESSIONS_PATH = "/v2/sessions/" + BATCH_REF;
     private static final String SESSION_INVOICES_PATH = "/v2/sessions/" + BATCH_REF + "/invoices";
     private static final String SESSION_FAILED_PATH = "/v2/sessions/" + BATCH_REF + "/invoices/failed";
@@ -79,11 +79,11 @@ class SubmitBatchTest {
             stubUpoFetch(INVOICE_REF_3, UPO_BYTES_3);
 
             List<Invoice> invoices = List.of(
-                    Invoice.fromXml(FormCode.FA3, INVOICE_XML_1.getBytes(StandardCharsets.UTF_8)),
-                    Invoice.fromXml(FormCode.FA3, INVOICE_XML_2.getBytes(StandardCharsets.UTF_8)),
-                    Invoice.fromXml(FormCode.FA3, INVOICE_XML_3.getBytes(StandardCharsets.UTF_8)));
+                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_1.getBytes(StandardCharsets.UTF_8)),
+                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_2.getBytes(StandardCharsets.UTF_8)),
+                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_3.getBytes(StandardCharsets.UTF_8)));
 
-            BatchResult result = client.invoices().submitBatch(FormCode.FA3, invoices, FAST_OPTIONS);
+            BatchResult result = client.invoices().submitBatch(FormCode.custom("FA (TEST)", "test", "FA"), invoices, FAST_OPTIONS);
 
             assertEquals(BATCH_REF, result.sessionRef());
             assertEquals(EXPECTED_INVOICE_COUNT, result.totalCount());
@@ -111,11 +111,11 @@ class SubmitBatchTest {
             stubUpoFetch(INVOICE_REF_2, UPO_BYTES_2);
 
             List<Invoice> invoices = List.of(
-                    Invoice.fromXml(FormCode.FA3, INVOICE_XML_1.getBytes(StandardCharsets.UTF_8)),
-                    Invoice.fromXml(FormCode.FA3, INVOICE_XML_2.getBytes(StandardCharsets.UTF_8)),
-                    Invoice.fromXml(FormCode.FA3, INVOICE_XML_3.getBytes(StandardCharsets.UTF_8)));
+                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_1.getBytes(StandardCharsets.UTF_8)),
+                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_2.getBytes(StandardCharsets.UTF_8)),
+                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_3.getBytes(StandardCharsets.UTF_8)));
 
-            BatchResult result = client.invoices().submitBatch(FormCode.FA3, invoices, FAST_OPTIONS);
+            BatchResult result = client.invoices().submitBatch(FormCode.custom("FA (TEST)", "test", "FA"), invoices, FAST_OPTIONS);
 
             assertEquals(EXPECTED_CLEARED_PARTIAL, result.successfulCount());
             assertEquals(EXPECTED_FAILED_FAILURE, result.failedCount());

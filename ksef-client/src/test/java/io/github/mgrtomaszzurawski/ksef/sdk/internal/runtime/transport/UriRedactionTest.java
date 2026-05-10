@@ -15,26 +15,26 @@ class UriRedactionTest {
     @Test
     void redactNipSegments_pathWithNip_masksNip() {
         // given
-        URI uri = URI.create("https://api-test.ksef.mf.gov.pl/v2/invoices/ksef/1234567890");
+        URI uri = URI.create("https://api-test.ksef.mf.gov.pl/v2/invoices/ksef/1111111111");
 
         // when
         String redacted = UriRedaction.redactNipSegments(uri);
 
         // then
-        assertFalse(redacted.contains("1234567890"));
-        assertTrue(redacted.contains("***7890"));
+        assertFalse(redacted.contains("1111111111"));
+        assertTrue(redacted.contains("***1111"));
     }
 
     @Test
     void redactNipSegments_pathWithKsefNumber_masksFullSegment() {
         // given
-        URI uri = URI.create("https://api.ksef.mf.gov.pl/v2/invoices/ksef/1234567890-20260505-AB-1234");
+        URI uri = URI.create("https://api.ksef.mf.gov.pl/v2/invoices/ksef/1111111111-20260505-AB-1234");
 
         // when
         String redacted = UriRedaction.redactNipSegments(uri);
 
         // then
-        assertFalse(redacted.contains("1234567890-20260505"));
+        assertFalse(redacted.contains("1111111111-20260505"));
         assertTrue(redacted.contains("***1234"));
     }
 

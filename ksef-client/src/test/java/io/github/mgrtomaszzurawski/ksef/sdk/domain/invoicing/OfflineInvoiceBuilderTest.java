@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OfflineInvoiceBuilderTest {
 
-    private static final String SELLER_NIP = "1234567890";
+    private static final String SELLER_NIP = "1111111111";
     private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
     private static final byte[] SIMPLE_XML = "<Faktura/>".getBytes(StandardCharsets.UTF_8);
     private static final FormCode CUSTOM_CODE = FormCode.custom("FA (3)", "1-0E", "FA");

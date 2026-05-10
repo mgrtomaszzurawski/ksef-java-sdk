@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public final class KsefSessionTerminalFailureException extends KsefException {
+public class KsefSessionTerminalFailureException extends KsefException {
 
     @Serial
     private static final long serialVersionUID = 1L;

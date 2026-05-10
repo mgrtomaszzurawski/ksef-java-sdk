@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvo
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -177,41 +176,6 @@ public interface OnlineSession extends Session {
      * {@link SendInvoiceCommand#offline(byte[])}.
      */
     SendInvoiceResult sendOffline(byte[] invoiceXml);
-
-    /**
-     * Download the UPO (official receipt) for a specific invoice within
-     * this session. UPO is only available after the session is closed —
-     * calling this on an open session will return whatever the server
-     * has at that moment, which may be empty.
-     *
-     * <p>Available on {@link OnlineSession} for legacy compatibility.
-     * Prefer the strongly-typed lifecycle path: close the session via
-     * {@link #archive()}, then call {@code upo(...)} on the returned
-     * {@link ClosedSession}.
-     *
-     * @param invoiceReferenceNumber the invoice reference number
-     * @return raw UPO bytes (XML)
-     */
-    byte[] upo(String invoiceReferenceNumber);
-
-    /**
-     * Download UPO by KSeF invoice number. See {@link #upo(String)} for
-     * the lifecycle caveat — only meaningful post-close.
-     *
-     * @param ksefNumber the KSeF invoice number (validated structurally)
-     * @return raw UPO bytes (XML)
-     */
-    byte[] upoByKsefNumber(KsefNumber ksefNumber);
-
-    /**
-     * Download every bulk-session UPO referenced in
-     * {@link Session#status()}. See {@link #upo(String)} for the
-     * lifecycle caveat — only meaningful post-close.
-     *
-     * @return one byte[] per bulk UPO XML page; empty list if no bulk
-     *     UPO is yet available.
-     */
-    List<byte[]> bulkUpos();
 
     /**
      * Time remaining until {@link Session#validUntil()} relative to the

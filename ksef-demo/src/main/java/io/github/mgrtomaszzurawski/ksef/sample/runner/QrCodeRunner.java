@@ -42,7 +42,7 @@ public final class QrCodeRunner implements DemoRunner {
     private static final String NAME = "qrcode";
     private static final String OP_URL = "buildInvoiceVerificationUrl";
     private static final String OP_QR = "generateQrCode";
-    private static final String SAMPLE_SELLER_NIP = "1234567890";
+    private static final String SAMPLE_SELLER_NIP = "1111111111";
     private static final String SAMPLE_INVOICE_XML = "<Faktura>fixture</Faktura>";
     private static final String SHA_256 = "SHA-256";
     private static final LocalDate SAMPLE_ISSUE_DATE = LocalDate.of(2026, 4, 4);

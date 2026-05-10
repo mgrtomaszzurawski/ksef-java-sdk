@@ -56,7 +56,7 @@ class UncoveredBuildersCoverageTest {
     /** Default read timeout exercised by the {@code ksefClientBuilder_*} test. */
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
     private static final String DUMMY_ACCESS_TOKEN = "test-access-token";
-    private static final String DUMMY_NIP = "1234567890";
+    private static final String DUMMY_NIP = "1111111111";
     private static final OffsetDateTime FROM = OffsetDateTime.parse("2026-04-01T00:00:00Z");
     private static final OffsetDateTime TO = OffsetDateTime.parse("2026-04-30T00:00:00Z");
 
@@ -192,7 +192,7 @@ class UncoveredBuildersCoverageTest {
     @Test
     void sessionsQueryFilterBuilder_allOptionalSetters() {
         // given
-        String reference = "20260418-SE-1234567890-AAAAAAAAAA-01";
+        String reference = "20260418-SE-1111111111-AAAAAAAAAA-01";
 
         // when
         SessionsQueryFilter filter = SessionsQueryFilter.forBatch()
@@ -236,7 +236,7 @@ class UncoveredBuildersCoverageTest {
     @Test
     void testPermissionsGrantBuilder_authorizedPesel_authorizedFingerprint() {
         // given
-        String supplierNip = "1234567890";
+        String supplierNip = "1111111111";
         String pesel = "82060411457";
         String fingerprint = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
 

@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TokenQueryBuilderTest {
 
     private static final String DESCRIPTION = "issued for batch processing";
-    private static final String AUTHOR_IDENTIFIER = "1234567890";
+    private static final String AUTHOR_IDENTIFIER = "1111111111";
     private static final int VALID_PAGE_SIZE = 25;
     private static final int PAGE_SIZE_TOO_SMALL = 5;
     private static final int PAGE_SIZE_TOO_LARGE = 250;

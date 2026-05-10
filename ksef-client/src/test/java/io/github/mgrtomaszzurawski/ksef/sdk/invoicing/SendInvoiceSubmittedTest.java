@@ -48,8 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SendInvoiceSubmittedTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260418-SE-1234567890-ABCDEF1234-01";
-    private static final String TEST_INVOICE_REF = "20260418-IN-1234567890-ABCDEF1234-02";
+    private static final String TEST_SESSION_REF = "20260418-SE-1111111111-ABCDEF1234-01";
+    private static final String TEST_INVOICE_REF = "20260418-IN-1111111111-ABCDEF1234-02";
     /** Spec example KSeF number — passes the CRC-8 checksum validation in {@code KsefNumber}. */
     private static final String TEST_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final String SESSIONS_BASE = "/v2/sessions";
@@ -95,7 +95,7 @@ class SendInvoiceSubmittedTest {
         stubInvoicePost();
         stubInvoiceStatus(INVOICE_STATUS_ACCEPTED);
         stubCloseAndStatusOk();
-        Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
+        Invoice invoice = Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML);
 
         try (OnlineSession session = createSession(wmInfo)) {
 
@@ -124,7 +124,7 @@ class SendInvoiceSubmittedTest {
         stubInvoicePost();
         stubInvoiceStatus(INVOICE_STATUS_REJECTED);
         stubCloseAndStatusOk();
-        Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
+        Invoice invoice = Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML);
 
         try (OnlineSession session = createSession(wmInfo)) {
 

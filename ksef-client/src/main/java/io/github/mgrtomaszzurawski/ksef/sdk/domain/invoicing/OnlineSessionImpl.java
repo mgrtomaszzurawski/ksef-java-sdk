@@ -387,29 +387,6 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public byte[] upo(String invoiceReferenceNumber) {
-        return sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
-    }
-
-    @Override
-    public byte[] upoByKsefNumber(KsefNumber ksefNumber) {
-        return sessionClient.getUpoByKsefNumber(referenceNumber, ksefNumber);
-    }
-
-    @Override
-    public List<byte[]> bulkUpos() {
-        SessionStatus current = sessionClient.getStatus(referenceNumber);
-        if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
-            return List.of();
-        }
-        List<byte[]> pages = new ArrayList<>(current.upo().pages().size());
-        for (var page : current.upo().pages()) {
-            pages.add(sessionClient.getUpoByReference(referenceNumber, page.referenceNumber()));
-        }
-        return List.copyOf(pages);
-    }
-
-    @Override
     public String referenceNumber() {
         return referenceNumber;
     }

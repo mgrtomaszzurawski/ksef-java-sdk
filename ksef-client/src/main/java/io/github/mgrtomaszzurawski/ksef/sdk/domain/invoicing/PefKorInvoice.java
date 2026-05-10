@@ -214,7 +214,9 @@ public final class PefKorInvoice implements Invoice {
             Objects.requireNonNull(payableAmount, ERR_NULL_PAYABLE);
             Objects.requireNonNull(originalInvoiceNumber, ERR_NULL_ORIGINAL);
             CreditNoteType creditNote = assembleCreditNote();
-            byte[] xml = JaxbInvoiceMarshaller.marshal(creditNote, CreditNoteType.class);
+            jakarta.xml.bind.JAXBElement<CreditNoteType> root =
+                    new io.github.mgrtomaszzurawski.ksef.xml.pefkor.ObjectFactory().createCreditNote(creditNote);
+            byte[] xml = JaxbInvoiceMarshaller.marshal(root, CreditNoteType.class);
             return new PefKorInvoice(creditNote, xml);
         }
 

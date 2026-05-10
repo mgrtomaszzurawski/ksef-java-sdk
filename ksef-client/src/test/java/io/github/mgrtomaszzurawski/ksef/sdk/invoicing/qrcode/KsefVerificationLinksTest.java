@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KsefVerificationLinksTest {
 
-    private static final String SELLER_NIP = "1234567890";
+    private static final String SELLER_NIP = "1111111111";
     private static final QrContextType CONTEXT_TYPE = QrContextType.NIP;
     private static final String CONTEXT_TYPE_WIRE = QrContextType.NIP.wireValue();
     private static final String CONTEXT_VALUE = "0987654321";

@@ -337,7 +337,7 @@ client.invoices().streamInvoicesByMetadata(filter)
     });
 ```
 
-For `InvoiceSyncClient` incremental sync: spec recommends a **15 minute interval** between runs (`przyrostowe-pobieranie-faktur.md`) — schedule via cron / queue worker, not a tight loop.
+For incremental sync (preferred path: `client.invoices().syncAsStream(plan, store)` returning a lazy `Stream<DecryptedInvoice>`): spec recommends a **15 minute interval** between runs (`przyrostowe-pobieranie-faktur.md`) — schedule via cron / queue worker, not a tight loop.
 
 ## Architecture
 

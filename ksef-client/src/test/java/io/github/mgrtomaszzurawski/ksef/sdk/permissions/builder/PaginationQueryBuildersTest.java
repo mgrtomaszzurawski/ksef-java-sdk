@@ -25,7 +25,7 @@ class PaginationQueryBuildersTest {
 
     private static final int PAGE_OFFSET = 2;
     private static final int PAGE_SIZE = 25;
-    private static final String SUBORDINATE_NIP = "1234567890";
+    private static final String SUBORDINATE_NIP = "1111111111";
     private static final String CONTEXT_NIP = "0987654321";
     private static final String CONTEXT_INTERNAL_ID = "internal-42";
     private static final String SUBUNIT_NIP = "5555555555";

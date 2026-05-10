@@ -40,13 +40,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OnlineSessionImplOfflineSendTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260418-SE-1234567890-ABCDEF1234-01";
-    private static final String TEST_INVOICE_REF = "20260418-IN-1234567890-ABCDEF1234-02";
-    private static final String SELLER_NIP = "1234567890";
+    private static final String TEST_SESSION_REF = "20260418-SE-1111111111-ABCDEF1234-01";
+    private static final String TEST_INVOICE_REF = "20260418-IN-1111111111-ABCDEF1234-02";
+    private static final String SELLER_NIP = "1111111111";
     private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
     private static final byte[] TEST_INVOICE_XML = "<Invoice>test</Invoice>".getBytes(StandardCharsets.UTF_8);
-    private static final FormCode CUSTOM_CODE = FormCode.custom("FA (3)", "1-0E", "FA");
+    private static final FormCode CUSTOM_CODE = FormCode.custom("FA (TEST)", "test", "FA");
     private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
 
     private static final String SEND_INVOICE_RESPONSE = """
@@ -58,8 +58,8 @@ class OnlineSessionImplOfflineSendTest {
     private static final String INVOICE_STATUS_OK_RESPONSE = """
             {
               "status": {"code": 200, "description": "Accepted"},
-              "invoiceNumber": "20260418-FA-1234567890-AAAAAA-FF",
-              "ksefNumber": "20260418-FA-1234567890-AAAAAA-FF"
+              "invoiceNumber": "20260418-FA-1111111111-AAAAAA-FF",
+              "ksefNumber": "5265877635-20250826-0100001AF629-AF"
             }
             """;
 

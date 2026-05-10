@@ -91,4 +91,14 @@
         <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.internal\.runtime\.batch\.BatchPackageBuilder\$BatchPackage"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
+    <!-- Typed Invoice/Document classes expose a single JAXB escape-hatch
+         accessor (faktura()/invoice()/creditNote()/invoiceType()) per the
+         PR12b/PR14 architecture. The wrapped JAXB tree is bound to the
+         outer Invoice's lifetime and intentionally shared with consumers
+         that need direct introspection — defensive copy of a JAXB tree is
+         not feasible (no clone() contract on JAXB types). -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.(Fa2|Fa3|Pef|PefKor)Invoice(Document)?"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
 </FindBugsFilter>

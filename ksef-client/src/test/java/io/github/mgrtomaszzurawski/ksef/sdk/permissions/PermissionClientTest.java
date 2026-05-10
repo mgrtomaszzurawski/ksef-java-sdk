@@ -57,10 +57,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 class PermissionClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
-    private static final String TEST_OPERATION_REF = "20260404-PM-1234567890-ABCDEF1234-09";
+    private static final String TEST_SESSION_REF = "20260404-SE-1111111111-ABCDEF1234-01";
+    private static final String TEST_OPERATION_REF = "20260404-PM-1111111111-ABCDEF1234-09";
     private static final String TEST_PERMISSION_ID = "perm-id-abc123def456";
-    private static final String TEST_NIP = "1234567890";
+    private static final String TEST_NIP = "1111111111";
     private static final String TEST_PESEL = "82060411457";
     private static final String TEST_FINGERPRINT = "ABC123DEF456";
     private static final String TEST_DESCRIPTION = "Test permission grant";
@@ -499,6 +499,6 @@ class PermissionClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1111111111");
     }
 }

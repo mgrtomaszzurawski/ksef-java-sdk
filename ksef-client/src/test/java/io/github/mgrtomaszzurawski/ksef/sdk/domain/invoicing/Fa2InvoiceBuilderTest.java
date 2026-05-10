@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Fa2InvoiceBuilderTest {
 
-    private static final String SELLER_NIP = "1234567890";
+    private static final String SELLER_NIP = "1111111111";
     private static final String BUYER_NIP = "9876543210";
     private static final String INVOICE_NUMBER = "FA/2026/0001";
     private static final BigDecimal NET_AMOUNT = new BigDecimal("100.00");

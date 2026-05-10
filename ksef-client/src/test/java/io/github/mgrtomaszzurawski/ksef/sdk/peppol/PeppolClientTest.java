@@ -30,7 +30,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 class PeppolClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
+    private static final String TEST_SESSION_REF = "20260404-SE-1111111111-ABCDEF1234-01";
     private static final String AUTH_HEADER = TestHttpConstants.AUTHORIZATION_HEADER;
     private static final String BEARER_TOKEN = TestHttpConstants.BEARER_PREFIX + TEST_TOKEN;
     private static final String CONTENT_TYPE_HEADER = TestHttpConstants.CONTENT_TYPE_HEADER;
@@ -217,6 +217,6 @@ class PeppolClientTest {
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1111111111");
     }
 }

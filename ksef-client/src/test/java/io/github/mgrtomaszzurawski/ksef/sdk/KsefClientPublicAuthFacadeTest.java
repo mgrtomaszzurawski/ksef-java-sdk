@@ -42,7 +42,7 @@ class KsefClientPublicAuthFacadeTest {
             {
               "items": [
                 {
-                  "referenceNumber": "20260418-AU-1234567890-AAAAAAAAAA-01",
+                  "referenceNumber": "20260418-AU-1111111111-AAAAAAAAAA-01",
                   "isCurrent": true,
                   "tokenRedeemed": true,
                   "startDate": "2026-04-18T12:00:00+02:00",
@@ -52,7 +52,7 @@ class KsefClientPublicAuthFacadeTest {
                   "authenticationMethodInfo": {"displayName": "Token"}
                 },
                 {
-                  "referenceNumber": "20260418-AU-1234567890-BBBBBBBBBB-02",
+                  "referenceNumber": "20260418-AU-1111111111-BBBBBBBBBB-02",
                   "isCurrent": false,
                   "tokenRedeemed": false,
                   "startDate": "2026-04-17T12:00:00+02:00",
@@ -84,8 +84,8 @@ class KsefClientPublicAuthFacadeTest {
             // constructor + setters; a future raw-model regeneration could break
             // the mapping, so we assert the wire shape we actually rely on.
             assertEquals(2, sessions.size());
-            assertEquals("20260418-AU-1234567890-AAAAAAAAAA-01", sessions.get(0).referenceNumber());
-            assertEquals("20260418-AU-1234567890-BBBBBBBBBB-02", sessions.get(1).referenceNumber());
+            assertEquals("20260418-AU-1111111111-AAAAAAAAAA-01", sessions.get(0).referenceNumber());
+            assertEquals("20260418-AU-1111111111-BBBBBBBBBB-02", sessions.get(1).referenceNumber());
             assertNotNull(sessions.get(0).status());
             assertEquals(200, sessions.get(0).status().code());
             // The second row has no authenticationMethodInfo block — must map to null,
@@ -96,7 +96,7 @@ class KsefClientPublicAuthFacadeTest {
 
     @Test
     void terminateSession_callsDeleteOnReferencePath(WireMockRuntimeInfo wmInfo) {
-        String targetRef = "20260418-AU-1234567890-CCCCCCCCCC-03";
+        String targetRef = "20260418-AU-1111111111-CCCCCCCCCC-03";
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             // given — stub registered after the fixture's auth stubs.
             stubFor(delete(urlEqualTo(AUTH_SESSIONS + "/" + targetRef))

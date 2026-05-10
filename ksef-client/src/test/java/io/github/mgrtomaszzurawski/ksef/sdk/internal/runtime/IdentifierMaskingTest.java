@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class IdentifierMaskingTest {
 
-    private static final String NIP_VALUE = "1234567890";
-    private static final String NIP_MASKED = "***7890";
+    private static final String NIP_VALUE = "1111111111";
+    private static final String NIP_MASKED = "***1111";
     private static final String SHORT_VALUE = "ab";
     private static final String SHORT_MASKED = "***ab";
     private static final String EMPTY_MASKED = "***";

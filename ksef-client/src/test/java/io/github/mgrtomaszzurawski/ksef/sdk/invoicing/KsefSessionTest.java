@@ -36,9 +36,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 class KsefSessionTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260418-SE-1234567890-ABCDEF1234-01";
-    private static final String TEST_INVOICE_REF = "20260418-IN-1234567890-ABCDEF1234-02";
-    private static final String TEST_NIP = "1234567890";
+    private static final String TEST_SESSION_REF = "20260418-SE-1111111111-ABCDEF1234-01";
+    private static final String TEST_INVOICE_REF = "20260418-IN-1111111111-ABCDEF1234-02";
+    private static final String TEST_NIP = "1111111111";
     private static final String TEST_KSEF_TOKEN = "test-ksef-token";
 
     private static final String SEND_INVOICE_RESPONSE = """
@@ -173,12 +173,27 @@ class KsefSessionTest {
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, OCTET_STREAM)
                         .withBody(TEST_UPO_CONTENT)));
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF
+                + "/invoices/" + TEST_INVOICE_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody("""
+                                {
+                                  "ordinalNumber": 1,
+                                  "invoiceNumber": "FV/1",
+                                  "referenceNumber": "%s",
+                                  "acquisitionDate": "2026-04-18T12:00:00+02:00",
+                                  "invoicingDate": "2026-04-18T12:00:00+02:00",
+                                  "status": {"code": 200, "description": "Ok"}
+                                }
+                                """.formatted(TEST_INVOICE_REF))));
 
         try (OnlineSession session = createSession(wmInfo)) {
-            session.close();
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.archive();
 
             // when
-            byte[] upoBytes = session.upo(TEST_INVOICE_REF);
+            byte[] upoBytes = closed.cleared(TEST_INVOICE_REF).upo().xmlBytes();
 
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);

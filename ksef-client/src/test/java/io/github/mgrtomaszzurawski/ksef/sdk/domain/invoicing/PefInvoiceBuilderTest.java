@@ -25,7 +25,7 @@ class PefInvoiceBuilderTest {
         assertThrows(NullPointerException.class,
                 () -> PefInvoice.builder()
                         .issueDate(LocalDate.of(2026, 5, 9))
-                        .supplier(party("1234567890", "Acme"))
+                        .supplier(party("1111111111", "Acme"))
                         .customer(party("9876543210", "Customer"))
                         .addLine(line())
                         .payableAmount(AMOUNT)
@@ -49,7 +49,7 @@ class PefInvoiceBuilderTest {
         PefInvoice invoice = PefInvoice.builder()
                 .invoiceNumber("PEF/0001")
                 .issueDate(LocalDate.of(2026, 5, 9))
-                .supplier(party("1234567890", "Acme"))
+                .supplier(party("1111111111", "Acme"))
                 .customer(party("9876543210", "Customer"))
                 .addLine(line())
                 .payableAmount(AMOUNT)

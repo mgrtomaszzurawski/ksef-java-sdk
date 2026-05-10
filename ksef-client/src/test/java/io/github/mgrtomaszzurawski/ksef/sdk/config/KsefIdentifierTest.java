@@ -10,11 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class KsefIdentifierTest {
 
-    private static final String VALID_NIP = "1234567890";
+    private static final String VALID_NIP = "1111111111";
     private static final String SHORT_NIP = "123456789";
     private static final String NIP_WITH_LETTERS = "12345678AB";
-    private static final String VALID_INTERNAL_ID = "1234567890-12345";
-    private static final String VALID_NIP_VAT_UE = "1234567890-DE123456789";
+    private static final String VALID_INTERNAL_ID = "1111111111-12345";
+    private static final String VALID_NIP_VAT_UE = "1111111111-DE123456789";
     private static final String VALID_PEPPOL_ID = "PPL000123";
     private static final String BLANK = "   ";
 

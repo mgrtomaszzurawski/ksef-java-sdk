@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ServerErrorParser;
 import java.io.Serial;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -20,6 +21,9 @@ public class KsefException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
     private static final String ERR_UNKNOWN_STATUS = "Unexpected HTTP status: ";
+    private static final Pattern PII_DIGIT_RUN = Pattern.compile("\\d{9,}");
+    private static final String PII_REPLACEMENT_PREFIX = "***";
+    private static final int PII_PRESERVED_TAIL = 4;
     private static final int HTTP_BAD_REQUEST = 400;
     private static final int HTTP_UNAUTHORIZED = 401;
     private static final int HTTP_FORBIDDEN = 403;
@@ -56,8 +60,37 @@ public class KsefException extends RuntimeException {
         return statusCode;
     }
 
+    /**
+     * Raw response body as returned by KSeF. <strong>May contain PII</strong>
+     * (NIPs, PESELs, names, JWT fragments). Never log directly — use
+     * {@link #safeResponseBody()} for diagnostic output that scrubs digit
+     * runs of length ≥ 9.
+     *
+     * <p>Stays public for SDK-internal parsing (error-code extraction)
+     * and forensic use. Consumers writing logs/audit trails should
+     * always call {@link #safeResponseBody()} instead.
+     */
     public @Nullable String responseBody() {
         return responseBody;
+    }
+
+    /**
+     * Diagnostic-safe response body — replaces every digit run of length
+     * ≥ 9 (NIP=10, PESEL=11, JWT=base64-large) with {@code ***NNNN}
+     * keeping the last four chars for cross-correlation. Suitable for
+     * inclusion in logs and error messages.
+     *
+     * @return scrubbed response body, or {@code null} when no body is
+     *     attached to this exception
+     */
+    public @Nullable String safeResponseBody() {
+        if (responseBody == null) {
+            return null;
+        }
+        return PII_DIGIT_RUN.matcher(responseBody).replaceAll(matchResult -> {
+            String digits = matchResult.group();
+            return PII_REPLACEMENT_PREFIX + digits.substring(digits.length() - PII_PRESERVED_TAIL);
+        });
     }
 
     /**

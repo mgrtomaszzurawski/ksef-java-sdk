@@ -31,7 +31,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 class LimitsClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
+    private static final String TEST_SESSION_REF = "20260404-SE-1111111111-ABCDEF1234-01";
     private static final int RATE_PER_SECOND = 10;
     private static final int RATE_PER_MINUTE = 100;
     private static final int RATE_PER_HOUR = 1000;
@@ -157,6 +157,6 @@ class LimitsClientTest {
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
         return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture
-                .newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
+                .newAuthenticatedClient(wmInfo, TEST_TOKEN, "1111111111");
     }
 }

@@ -49,8 +49,8 @@ class QrSigningServiceTest {
     private static final int ECDSA_COORDINATE_BYTES = 32;
     private static final int FAKE_INVOICE_HASH_LENGTH = 32;
     private static final byte FAKE_HASH_FILL_BYTE = (byte) 0xAB;
-    private static final String SELLER_NIP = "1234567890";
-    private static final String CONTEXT_VALUE = "1234567890";
+    private static final String SELLER_NIP = "1111111111";
+    private static final String CONTEXT_VALUE = "1111111111";
     private static final String CERT_SERIAL = "0123456789ABCDEF";
 
     private final QrSigningService signingService = new QrSigningService();

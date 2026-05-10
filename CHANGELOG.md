@@ -63,10 +63,57 @@ coordinates that will resolve once Central publication completes.
 - `InvoiceClient.streamInvoicesByMetadata(filter)` — lazy paginator using
   `permanentStorageHwmDate` cursor; bound memory with `.limit(N)` or
   `.takeWhile(...)`.
-- `InvoiceClient.getByKsefNumber(KsefNumber)` typed input with CRC-8
-  client-side validation (REQ-SESS-18/19/20).
+- `InvoiceClient.getByKsefNumber(KsefNumber)` returns a typed
+  `InvoiceDocument` (`Fa2InvoiceDocument` / `Fa3InvoiceDocument` /
+  `PefInvoiceDocument` / `PefKorInvoiceDocument`) with JAXB tree
+  exposed via the schema-specific escape-hatch accessor. Unknown
+  schemas fall through to `InvoiceDocument.fromXml(...)` minimal
+  wrapper for forward compatibility. (PR14)
+- `FormCodeDetector` infers the `FormCode` from the XML root element
+  + namespace; covers FA(2)/FA(3)/PEF(3)/PEF_KOR(3) and reports unknown
+  for forward-compat. (PR14)
 - `InvoiceSyncClient` — HWM-based incremental sync with `CheckpointStore`
   + `InvoiceSink`; mandates `PERMANENT_STORAGE` axis per spec.
+- `InvoiceClient.syncAsStream(plan, store)` — Stream-based incremental
+  sync. Each consumed element returns a `DecryptedInvoice` (KsefNumber +
+  metadata + decrypted XML bytes + optional file path). Caller composes
+  with standard Stream operators (`filter`, `limit`, `takeWhile`) and
+  consumes via try-with-resources for deterministic cleanup. (PR17)
+
+#### Typed Invoice impls (PR12b)
+- `Fa2Invoice`, `Fa3Invoice`, `PefInvoice`, `PefKorInvoice` — typed
+  wrappers over the JAXB raw tree with fluent data-authoring builders
+  for the common business cases (header, seller/buyer, line items,
+  currency, totals, correction reference). Builders validate XSD-equivalent
+  required-field rules at `.build()` time and throw informative
+  `IllegalStateException` on missing fields.
+- `Invoice.fromXml(FormCode, byte[])` minimal escape-hatch factory
+  remains the path for schemas the SDK does not yet model.
+
+#### Offline + technical correction (PR13)
+- `OfflineInvoice` immutable type wrapping an authored `Invoice` with
+  pre-rendered KOD I + KOD II QR PNGs.
+- `OfflineInvoiceBuilder` fluent builder; `OfflineMode` enum captures
+  the legal basis (`OFFLINE_24`, `KSEF_UNAVAILABILITY`, `KSEF_EMERGENCY`).
+- `OnlineSession.sendOfflineInvoice(OfflineInvoice)` and
+  `sendTechnicalCorrection(Invoice, byte[] hashOfOriginal)`.
+- `KsefUnavailableException` thrown on HTTP 503 and on transport-level
+  unreachability (ConnectException, UnknownHostException) — caller
+  branches into offline-mode flow.
+
+#### UPO retrieval (PR15)
+- `ClearedInvoice` record completes the `Invoice → SubmittedInvoice →
+  ClearedInvoice` lifecycle. Embeds the full SubmittedInvoice + UpoEntry
+  (raw XAdES bytes + parsed summary).
+- `UpoSummary.parse(byte[])` static factory — hardened SAX +
+  JAXB unmarshal of the Potwierdzenie tree with bit-exact `rawXml`
+  preserved for archive use.
+- `ClosedSession.cleared(SubmittedInvoice)` and
+  `ClosedSession.cleared(String referenceNumber)` overloads;
+  `ClosedSession.allCleared()` returns the typed list.
+- Legacy `OnlineSession.upo(...)` / `upoByKsefNumber(...)` /
+  `bulkUpos()` accessors removed — UPO retrieval is post-archive only
+  per the type-state model.
 
 #### Permissions
 - 10 grant builders (`PersonPermissionGrantBuilder`,
@@ -110,6 +157,23 @@ coordinates that will resolve once Central publication completes.
   `CsrRequest`, `CsrResult` records.
 
 #### Configuration and infrastructure
+- `KsefClient.qrCode()` accessor returning the shared `QrCodeService`
+  for KOD I / KOD II rendering. (PR16)
+- `KsefIdentifier` per-type format validation: `internalId` matches
+  `<10-digit NIP>-<5 digits>`, `nipVatUe` matches country-prefix +
+  alphanumeric, `peppolId` matches `<ICD>:<value>`. NIP factory now
+  validates the weighted-sum checksum (weights 6,5,7,2,3,4,5,6,7
+  modulo 11). (PR19)
+- `KsefTimeoutException` abstract parent of `KsefAsyncTimeoutException`
+  and `KsefSessionPollingTimeoutException` — single catch covers both. (PR19)
+- `KsefException.safeResponseBody()` scrubs digit runs ≥ 9 (NIP, PESEL,
+  JWT) preserving last 4 chars; suitable for log/audit output. Raw
+  `responseBody()` still public for SDK-internal error parsing. (PR19)
+- `KsefEnvironment.custom(String)` validates via `URI.parseServerAuthority()`
+  — rejects malformed URLs and missing-host configurations at config
+  time instead of letting them surface as obscure HTTP failures later. (PR19)
+- HTTP 410 Gone mapped to `KsefRetentionExpiredException` for KSeF
+  retention-expired responses (api-changelog v2.4.0).
 - `KsefClient.builder()` no-arg + required `.environment(...)` and
   `.credentials(...)` setters validated at `build()` (matches AWS / Spring
   / Azure SDK idiom).

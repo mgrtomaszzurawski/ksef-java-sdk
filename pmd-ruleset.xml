@@ -39,6 +39,11 @@
         <exclude name="TooFewBranchesForSwitch"/>
         <!-- LinguisticNaming flags semantic naming we use intentionally (e.g. 'is...' returning enums). -->
         <exclude name="LinguisticNaming"/>
+        <!-- FieldDeclarationsShouldBeAtStartOfClass forces a strict ordering that conflicts with
+             "static helper field colocated with its consumer methods" patterns (e.g. JAXB
+             DATATYPE_FACTORY held next to its private helper methods). Placement is a style
+             preference; ordering is uniform within each class. -->
+        <exclude name="FieldDeclarationsShouldBeAtStartOfClass"/>
     </rule>
 
     <rule ref="category/java/design.xml">
@@ -154,7 +159,7 @@
 //VariableId[
     string-length(@Name) < 4
     and not(@Name = ('raw','nip','NIP','VAT','id','pkg','url','in','out','obj','o',
-                     'csr','zip','upo','der','seq','key','iv','crc',
+                     'csr','zip','upo','der','seq','key','iv','crc','xml','sum','fa',
                      'FA','FA2','FA3','PEF','RR','ROZ','KOR','JST','ZAL','UPR',
                      'ASC','DESC',
                      'i','j','k','x','y','b','r','s','ch','cp','to','off','len',

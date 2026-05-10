@@ -19,7 +19,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FailedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
@@ -296,7 +298,7 @@ public final class BatchSubmissionFlow {
             closeWithRetry(sessionRef, deadlineNanos);
             pollUntilTerminal(sessionRef, deadlineNanos);
 
-            return collectResult(sessionRef, invoiceCount, startedAt);
+            return collectResult(sessionRef, formCode, invoiceCount, startedAt);
         } finally {
             pkg.cleanup();
         }
@@ -504,12 +506,26 @@ public final class BatchSubmissionFlow {
         throw new KsefSessionTerminalFailureException(sessionRef, code, description, details);
     }
 
-    private BatchResult collectResult(String sessionRef, int totalCount, OffsetDateTime startedAt) {
+    private static java.util.Optional<io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber>
+            parseKsefNumberOrEmpty(String value) {
+        if (value == null || value.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return java.util.Optional.of(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(value));
+        } catch (IllegalArgumentException malformed) {
+            LOGGER.warn("Skipping malformed KSeF number {}: {}", value, malformed.getMessage());
+            return java.util.Optional.empty();
+        }
+    }
+
+    private BatchResult collectResult(String sessionRef, FormCode formCode, int totalCount,
+                                       OffsetDateTime startedAt) {
         OffsetDateTime completedAt = OffsetDateTime.now(clock);
         List<SessionInvoiceStatus> all = sessionClient.getAllInvoices(sessionRef);
         List<SessionInvoiceStatus> failed = sessionClient.getAllFailedInvoices(sessionRef);
 
-        List<UpoEntry> cleared = new ArrayList<>();
+        List<ClearedInvoice> cleared = new ArrayList<>();
         List<FailedInvoice> failures = new ArrayList<>();
 
         java.util.Set<String> failedRefs = new java.util.HashSet<>();
@@ -528,7 +544,13 @@ public final class BatchSubmissionFlow {
                 continue;
             }
             byte[] upo = sessionClient.getUpoByInvoiceReference(sessionRef, invoice.referenceNumber());
-            cleared.add(new UpoEntry(invoice.referenceNumber(), upo));
+            UpoEntry entry = new UpoEntry(invoice.referenceNumber(), upo);
+            Invoice placeholder = Invoice.fromXml(formCode, upo);
+            SubmittedInvoice submitted = new SubmittedInvoice(
+                    placeholder, invoice.referenceNumber(), invoice,
+                    parseKsefNumberOrEmpty(invoice.ksefNumber()),
+                    java.util.Optional.empty(), java.util.Optional.empty(), List.of());
+            cleared.add(new ClearedInvoice(submitted, entry));
         }
         // BatchResult invariants: successfulCount == cleared.size(), failedCount == failed.size(),
         // totalCount == successful + failed. Caller-supplied totalCount is the *invoice count*

@@ -40,6 +40,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListIt
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
@@ -86,6 +87,10 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String PATH_EXPORT_STATUS = ApiPaths.INVOICES + "/exports/";
 
     private static final String OP_GET_BY_KSEF = "getInvoiceByKsefNumber";
+    private static final String OP_SYNC_AS_STREAM = "syncAsStream";
+    private static final String ERR_NULL_SYNC_PLAN = "plan must not be null";
+    private static final String ERR_NULL_CHECKPOINT_STORE = "checkpointStore must not be null";
+    private static final String ERR_READ_XML_FAILED = "Failed to read decrypted invoice XML at ";
     private static final String UNKNOWN_FORM_CODE_SYSTEM_CODE = "UNKNOWN";
     private static final String UNKNOWN_FORM_CODE_SCHEMA_VERSION = "0";
     private static final String UNKNOWN_FORM_CODE_TYPE = "UNKNOWN";
@@ -464,6 +469,32 @@ public final class InvoiceClientImpl implements InvoiceClient {
     public SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink) {
         LOGGER.debug(LOG_CALL, OP_SYNC);
         return new InvoiceSyncClient(this, runtime.objectMapper()).sync(plan, checkpointStore, sink);
+    }
+
+    @Override
+    public Stream<DecryptedInvoice> syncAsStream(IncrementalSyncPlan plan, CheckpointStore checkpointStore) {
+        Objects.requireNonNull(plan, ERR_NULL_SYNC_PLAN);
+        Objects.requireNonNull(checkpointStore, ERR_NULL_CHECKPOINT_STORE);
+        LOGGER.debug(LOG_CALL, OP_SYNC_AS_STREAM);
+        List<DecryptedInvoice> collected = new java.util.ArrayList<>();
+        InvoiceSink collectingSink = (ksefNumber, metadata, xmlPath) -> {
+            byte[] xml = readXmlBytes(xmlPath);
+            collected.add(new DecryptedInvoice(ksefNumber, metadata, xml,
+                    xmlPath != null ? Optional.of(xmlPath) : Optional.empty()));
+        };
+        new InvoiceSyncClient(this, runtime.objectMapper()).sync(plan, checkpointStore, collectingSink);
+        return collected.stream();
+    }
+
+    private static byte[] readXmlBytes(Path xmlPath) {
+        if (xmlPath == null) {
+            return new byte[0];
+        }
+        try {
+            return java.nio.file.Files.readAllBytes(xmlPath);
+        } catch (java.io.IOException ioFailure) {
+            throw new IllegalStateException(ERR_READ_XML_FAILED + xmlPath, ioFailure);
+        }
     }
 
     @Override

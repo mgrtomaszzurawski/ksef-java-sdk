@@ -75,7 +75,7 @@ class InvoiceSyncClientIntegrationTest {
             "jdk.internal.httpclient.disableHostnameVerification";
     private static String previousDisableHostnameVerify;
 
-    private static final String EXPORT_REF = "20260418-EX-1234567890-ABCDEF1234-01";
+    private static final String EXPORT_REF = "20260418-EX-1111111111-ABCDEF1234-01";
     private static final String PART_PATH = "/parts/part1.bin";
     private static final String VALID_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final OffsetDateTime START_CURSOR =

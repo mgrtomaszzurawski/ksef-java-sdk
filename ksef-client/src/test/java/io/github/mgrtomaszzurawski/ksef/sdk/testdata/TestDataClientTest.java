@@ -40,8 +40,8 @@ import java.time.LocalDate;
 class TestDataClientTest {
 
     private static final String TEST_TOKEN = "test-access-token";
-    private static final String TEST_SESSION_REF = "20260404-SE-1234567890-ABCDEF1234-01";
-    private static final String TEST_NIP = "1234567890";
+    private static final String TEST_SESSION_REF = "20260404-SE-1111111111-ABCDEF1234-01";
+    private static final String TEST_NIP = "1111111111";
     private static final String TEST_PESEL = "82060411457";
     private static final String TEST_AUTHORIZED_NIP = "0987654321";
     private static final String TEST_DESCRIPTION = "Test data entry";
@@ -417,12 +417,12 @@ class TestDataClientTest {
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {
         return KsefClient.builder().environment(KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + "/v2"))
-                .credentials(new KsefTokenCredentials("test-token", "1234567890"))
+                .credentials(new KsefTokenCredentials("test-token", "1111111111"))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build();
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
-        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1234567890");
+        return io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, "1111111111");
     }
 }

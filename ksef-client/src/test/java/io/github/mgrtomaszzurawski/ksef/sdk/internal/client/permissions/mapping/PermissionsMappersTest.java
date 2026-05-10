@@ -55,7 +55,7 @@ class PermissionsMappersTest {
     private static final String GRANT_ID = "grant-1";
     private static final String DESCRIPTION = "test grant";
     private static final String START_DATE_ISO = "2026-04-01T10:00:00+02:00";
-    private static final String NIP_VALUE = "1234567890";
+    private static final String NIP_VALUE = "1111111111";
     private static final String PESEL_VALUE = "82060411457";
     private static final String FINGERPRINT_VALUE = "ABC123DEF456";
     private static final String VAT_UE = "DE123456789";

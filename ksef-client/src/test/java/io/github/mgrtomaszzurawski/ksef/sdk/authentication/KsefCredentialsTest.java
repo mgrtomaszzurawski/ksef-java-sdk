@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class KsefCredentialsTest {
 
-    private static final String VALID_NIP = "1234567890";
+    private static final String VALID_NIP = "1111111111";
     private static final String VALID_TOKEN = "eyJhbGciOiJIUzI1NiJ9.test-token";
     private static final String SHORT_NIP = "123456789";
-    private static final String LONG_NIP = "12345678901";
+    private static final String LONG_NIP = "11111111111";
     private static final String ALPHA_NIP = "12345678AB";
     private static final String BLANK_TOKEN = "   ";
     private static final String KEYSTORE_PASSWORD = "test-password";
@@ -167,7 +167,7 @@ class KsefCredentialsTest {
     }
 
     private static final String PEPPOL_VALUE = "PPL000123";
-    private static final String INTERNAL_VALUE = "1234567890-12345";
+    private static final String INTERNAL_VALUE = "1111111111-12345";
 
     @Test
     void tokenCredentials_whenIdentifierConstructor_returnsIdentifier() {

@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * Authentication context identifier — generalisation over the four KSeF identifier types.
@@ -35,10 +36,25 @@ public record KsefIdentifier(Type type, String value) {
     }
 
     private static final int NIP_LENGTH = 10;
+    private static final int[] NIP_CHECKSUM_WEIGHTS = {6, 5, 7, 2, 3, 4, 5, 6, 7};
+    private static final int NIP_CHECKSUM_MODULUS = 11;
+    private static final int NIP_CHECKSUM_INVALID = 10;
     private static final String ERR_NULL_TYPE = "type must not be null";
     private static final String ERR_NULL_VALUE = "value must not be null";
     private static final String ERR_BLANK_VALUE = "value must not be blank";
-    private static final String ERR_INVALID_NIP = "NIP must be exactly 10 digits";
+    private static final String ERR_INVALID_NIP = "NIP must be exactly 10 digits with valid checksum";
+    private static final String ERR_INVALID_INTERNAL_ID =
+            "internalId must match <10-digit NIP>-<5 digits>";
+    private static final String ERR_INVALID_NIP_VAT_UE =
+            "nipVatUe must contain only [A-Z0-9-] and be at least 4 characters long";
+    private static final String ERR_INVALID_PEPPOL_ID =
+            "peppolId must contain only [A-Z0-9] and be 4-30 characters long";
+    private static final String ERR_UNSUPPORTED_TYPE = "Unsupported identifier type: ";
+    private static final int RADIX_DECIMAL = 10;
+
+    private static final Pattern INTERNAL_ID_PATTERN = Pattern.compile("^\\d{10}-\\d{5}$");
+    private static final Pattern NIP_VAT_UE_PATTERN = Pattern.compile("^[A-Z0-9-]{4,40}$");
+    private static final Pattern PEPPOL_ID_PATTERN = Pattern.compile("^[A-Z0-9]{4,30}$");
 
     /**
      * Compact canonical constructor — validates non-null type, non-blank value, and
@@ -53,8 +69,28 @@ public record KsefIdentifier(Type type, String value) {
         if (value.isBlank()) {
             throw new IllegalArgumentException(ERR_BLANK_VALUE);
         }
-        if (type == Type.NIP && !isValidNip(value)) {
-            throw new IllegalArgumentException(ERR_INVALID_NIP);
+        switch (type) {
+            case NIP -> {
+                if (!isValidNip(value)) {
+                    throw new IllegalArgumentException(ERR_INVALID_NIP);
+                }
+            }
+            case INTERNAL_ID -> {
+                if (!INTERNAL_ID_PATTERN.matcher(value).matches()) {
+                    throw new IllegalArgumentException(ERR_INVALID_INTERNAL_ID);
+                }
+            }
+            case NIP_VAT_UE -> {
+                if (!NIP_VAT_UE_PATTERN.matcher(value).matches()) {
+                    throw new IllegalArgumentException(ERR_INVALID_NIP_VAT_UE);
+                }
+            }
+            case PEPPOL_ID -> {
+                if (!PEPPOL_ID_PATTERN.matcher(value).matches()) {
+                    throw new IllegalArgumentException(ERR_INVALID_PEPPOL_ID);
+                }
+            }
+            default -> throw new IllegalArgumentException(ERR_UNSUPPORTED_TYPE + type);
         }
     }
 
@@ -99,6 +135,15 @@ public record KsefIdentifier(Type type, String value) {
     }
 
     private static boolean isValidNip(String nip) {
-        return nip.length() == NIP_LENGTH && nip.chars().allMatch(Character::isDigit);
+        if (nip.length() != NIP_LENGTH || !nip.chars().allMatch(Character::isDigit)) {
+            return false;
+        }
+        int sum = 0;
+        for (int i = 0; i < NIP_CHECKSUM_WEIGHTS.length; i++) {
+            sum += Character.digit(nip.charAt(i), RADIX_DECIMAL) * NIP_CHECKSUM_WEIGHTS[i];
+        }
+        int checksum = sum % NIP_CHECKSUM_MODULUS;
+        return checksum != NIP_CHECKSUM_INVALID
+                && checksum == Character.digit(nip.charAt(NIP_LENGTH - 1), RADIX_DECIMAL);
     }
 }

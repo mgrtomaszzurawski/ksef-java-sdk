@@ -124,6 +124,27 @@ public interface InvoiceClient {
     SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink);
 
     /**
+     * Stream-based incremental sync — returns a lazy {@link java.util.stream.Stream}
+     * of {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice}
+     * elements walked across the configured subject types and date windows.
+     *
+     * <p>Stream is {@link AutoCloseable} — caller MUST consume via
+     * try-with-resources to release the underlying paginator and ensure
+     * the final checkpoint commit. Each consumed-and-not-skipped element
+     * advances the {@code checkpointStore} atomically per element so a
+     * caller breaking out early via {@link java.util.stream.Stream#limit(long)}
+     * leaves the checkpoint at the last successfully consumed element.
+     *
+     * <p>Spec citation: {@code ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md}.
+     *
+     * @param plan sync configuration
+     * @param checkpointStore where checkpoints are persisted between runs
+     * @return lazy {@link java.util.stream.Stream} of decrypted invoices
+     */
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice>
+            syncAsStream(IncrementalSyncPlan plan, CheckpointStore checkpointStore);
+
+    /**
      * Stream sessions (online + batch) matching the filter, walking the
      * {@code x-continuation-token} cursor returned by KSeF
      * {@code GET /sessions} lazily. Caller controls memory pressure by

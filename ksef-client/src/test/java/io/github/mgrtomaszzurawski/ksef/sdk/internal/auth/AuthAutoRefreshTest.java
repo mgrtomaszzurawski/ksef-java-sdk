@@ -48,11 +48,11 @@ class AuthAutoRefreshTest {
     private static final String PATH_KSEF_TOKEN = "/v2/auth/ksef-token";
     private static final String PATH_AUTH_STATUS_PATTERN = "/v2/auth/[A-Za-z0-9.\\-]+";
     private static final String PATH_TOKEN_REDEEM = "/v2/auth/token/redeem";
-    private static final String NIP = "1234567890";
+    private static final String NIP = "1111111111";
     private static final String INITIAL_TOKEN = "stale-jwt-from-prior-session";
     private static final String FRESH_TOKEN = "fresh-jwt-after-reauth";
     private static final String OPERATION_TOKEN = "operation-token-from-init";
-    private static final String SESSION_REF = "20260404-AU-1234567890-ABCDEF1234-01";
+    private static final String SESSION_REF = "20260404-AU-1111111111-ABCDEF1234-01";
     private static final String TEST_NIP_SHORT = "test";
     private static final String TOKEN_EXPIRY = "2026-12-31T23:59:59+01:00";
     private static final String STORED_REFRESH_TOKEN = "previously-stored-refresh-token";

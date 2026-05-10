@@ -112,4 +112,38 @@ module io.github.mgrtomaszzurawski.ksef {
 
     // Open generated model packages to Jackson for reflection-based deserialization
     opens io.github.mgrtomaszzurawski.ksef.client.model to com.fasterxml.jackson.databind;
+
+    // Open JAXB-generated packages to jakarta.xml.bind for reflective marshalling
+    opens io.github.mgrtomaszzurawski.ksef.xml.fa2;
+    opens io.github.mgrtomaszzurawski.ksef.xml.fa3;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cac;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cbc;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.ext;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cacpl;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cbcpl;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.ccts;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sig;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sigcac;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sigcbc;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.udt;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xades132;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xades141;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xmldsig;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cac;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbc;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.ext;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cacpl;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbcpl;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.ccts;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sig;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sigcac;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sigcbc;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.udt;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xades132;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xades141;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xmldsig;
+    opens io.github.mgrtomaszzurawski.ksef.xml.upo;
+    opens io.github.mgrtomaszzurawski.ksef.xml.auth;
 }
