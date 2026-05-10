@@ -4,7 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import java.util.List;
 
 /**
@@ -17,9 +18,9 @@ import java.util.List;
  * enforces that by omitting all {@code send*} methods on this
  * interface.
  *
- * <p>UPO accessors live here ({@link #upo(String)},
- * {@link #upoByKsefNumber(KsefNumber)}, {@link #bulkUpos()}) — KSeF
- * semantics make UPO retrieval reliably available only after the
+ * <p>UPO retrieval lives here via the typed
+ * {@link #cleared(SubmittedInvoice)} and {@link #allCleared()} accessors
+ * — KSeF semantics make UPO retrieval reliably available only after the
  * session is closed, so colocating it here gives the consumer
  * compile-time confidence they aren't blocking on data the server is
  * still computing.
@@ -27,43 +28,49 @@ import java.util.List;
  * <p>{@link #close()} is inherited from {@link Session} and is a
  * no-op idempotent for an already-closed session.
  *
- * <h2>{@code cleared(SubmittedInvoice)} / {@code allCleared()}</h2>
- *
- * <p>The richer cleared-invoice retrieval API — bridging
- * {@code SubmittedInvoice} to {@code ClearedInvoice} (UPO + canonical
- * number + clearance metadata) — is added in PR15. Until then,
- * consumers fetch raw UPO bytes via {@link #upo(String)} or
- * {@link #upoByKsefNumber(KsefNumber)} and parse them externally.
- *
  * @since 1.0.0
  */
 public interface ClosedSession extends Session {
 
     /**
-     * Download UPO (official receipt) for a specific invoice.
+     * Bridge a {@link SubmittedInvoice} to its {@link ClearedInvoice} —
+     * embeds the original {@code SubmittedInvoice} chain plus the UPO
+     * (raw XAdES bytes + parsed {@code UpoSummary}). Synchronous: blocks
+     * polling internally until the UPO is ready or the configured
+     * {@code upoRetrievalTimeout} elapses.
      *
-     * @param invoiceReferenceNumber the invoice reference number
-     * @return raw UPO bytes (XML)
+     * @param submitted the submission record returned by an earlier
+     *     {@code OnlineSession.sendInvoice(...)} on the same session
+     * @return the cleared-invoice record
+     * @throws NullPointerException if {@code submitted} is null
+     * @throws io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException
+     *     if the UPO is not available within the configured retrieval timeout
      */
-    byte[] upo(String invoiceReferenceNumber);
+    ClearedInvoice cleared(SubmittedInvoice submitted);
 
     /**
-     * Download UPO by KSeF invoice number. The KSeF number's structure
-     * (length, segments, CRC-8) is validated by {@link KsefNumber}.
+     * Convenience overload for callers that hold only a reference number
+     * (e.g. legacy {@code SendInvoiceResult.referenceNumber()}). Builds
+     * a synthetic {@link SubmittedInvoice} from the latest server query
+     * for the given reference and attaches the UPO entry.
      *
-     * @param ksefNumber the KSeF invoice number
-     * @return raw UPO bytes (XML)
+     * @param invoiceReferenceNumber the SDK-assigned reference number
+     * @return the cleared-invoice record
      */
-    byte[] upoByKsefNumber(KsefNumber ksefNumber);
+    ClearedInvoice cleared(String invoiceReferenceNumber);
 
     /**
-     * Download every bulk-session UPO referenced in
-     * {@link Session#status()}.
+     * Bulk-fetch every {@link ClearedInvoice} for this session — covers
+     * each UPO page referenced in {@link Session#status()}. Each
+     * embedded {@link SubmittedInvoice} is rebuilt from server query
+     * data (the original {@code Invoice} sent on this session is not
+     * preserved; the embedded {@code Invoice} is the minimal
+     * {@code Invoice.fromXml(...)} wrapper for the fetched bytes).
      *
-     * @return one byte[] per bulk UPO XML page; empty list if the
-     *     session has no bulk UPO yet.
+     * @return one {@link ClearedInvoice} per accepted invoice; empty
+     *     list when the session has no UPO yet
      */
-    List<byte[]> bulkUpos();
+    List<ClearedInvoice> allCleared();
 
     /**
      * AutoCloseable contract — for an already-closed session this is a

@@ -21,7 +21,6 @@ import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
@@ -29,7 +28,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,10 +130,9 @@ public final class SessionRunner implements DemoRunner {
             runGetStatus(session, results);
             runGetInvoices(session, results);
             runGetFailedInvoices(session, results);
-            boolean closed = runClose(context, session, results);
-            if (fullMode && closed && invoiceRef != null) {
-                byte[] upoByInvoiceRef = runGetUpo(session, invoiceRef, results);
-                runGetUpoByKsefNumber(context, session, invoiceRef, upoByInvoiceRef, results);
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = runArchive(context, session, results);
+            if (fullMode && closed != null && invoiceRef != null) {
+                runGetCleared(closed, invoiceRef, results);
             }
         }
         return results;
@@ -334,13 +331,14 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private boolean runClose(DemoContext context, OnlineSession session, List<RunResult> results) {
+    private io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession runArchive(
+            DemoContext context, OnlineSession session, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            session.close();
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.archive();
             LOGGER.info(LOG_SESSION_CLOSED, NAME);
             results.add(RunResult.ok(NAME, OP_CLOSE, elapsed(start)));
-            return true;
+            return closed;
         } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException terminalFailure) {
             // KSeF terminal status 440 ("Sesja anulowana") on close is the documented
             // outcome when the session ends without any invoice being sent — see
@@ -350,75 +348,34 @@ public final class SessionRunner implements DemoRunner {
                     && context.mode() != DemoMode.FULL) {
                 results.add(RunResult.ok(NAME, OP_CLOSE, elapsed(start),
                         OK_CANCELLED_NO_INVOICES));
-                return true;
+                return null;
             }
             results.add(RunResult.fail(NAME, OP_CLOSE, elapsed(start),
                     errorMessage(terminalFailure)));
-            return false;
+            return null;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_CLOSE, elapsed(start),
                     errorMessage(exception)));
-            return false;
+            return null;
         }
     }
 
-    private byte[] runGetUpo(OnlineSession session, String invoiceRef,
-                             List<RunResult> results) {
+    private void runGetCleared(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed,
+                               String invoiceRef, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            byte[] upo = session.upo(invoiceRef);
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice cleared =
+                    closed.cleared(invoiceRef);
+            byte[] upo = cleared.upo().xmlBytes();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_UPO_RETRIEVED, NAME, upo.length);
             }
             results.add(RunResult.ok(NAME, OP_UPO, elapsed(start),
                     upo.length + BYTES_LABEL));
-            return upo;
+            cleared.submitted().ksefNumber().ifPresent(ksefNumber ->
+                    LOGGER.info(LOG_UPO_BY_KSEF_RETRIEVED, NAME, upo.length));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_UPO, elapsed(start),
-                    errorMessage(exception)));
-            return new byte[0];
-        }
-    }
-
-    /**
-     * Re-queries the invoice status to get the assigned KSeF number, then
-     * fetches UPO by KSeF number and confirms it matches the UPO retrieved by
-     * invoice reference. After close completes, the ksefNumber is populated for
-     * accepted invoices; rejected invoices leave it null (skipped).
-     */
-    private void runGetUpoByKsefNumber(DemoContext context, OnlineSession session,
-                                       String invoiceRef, byte[] upoByInvoiceRef,
-                                       List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        String ksefNumber;
-        try {
-            SessionInvoiceStatus status = session.invoiceStatus(invoiceRef);
-            ksefNumber = status.ksefNumber();
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_UPO_BY_KSEF, elapsed(start),
-                    errorMessage(exception)));
-            return;
-        }
-
-        if (ksefNumber == null || ksefNumber.isBlank()) {
-            results.add(RunResult.skip(NAME, OP_UPO_BY_KSEF, SKIP_NO_KSEF_NUMBER));
-            return;
-        }
-        context.setInvoiceKsefNumber(ksefNumber);
-
-        try {
-            byte[] upoByKsef = session.upoByKsefNumber(KsefNumber.parse(ksefNumber));
-            LOGGER.info(LOG_UPO_BY_KSEF_RETRIEVED, NAME, upoByKsef.length);
-
-            if (upoByInvoiceRef.length > 0 && !Arrays.equals(upoByInvoiceRef, upoByKsef)) {
-                results.add(RunResult.fail(NAME, OP_UPO_BY_KSEF, elapsed(start),
-                        FAIL_UPO_BYTES_DIFFER));
-                return;
-            }
-            results.add(RunResult.ok(NAME, OP_UPO_BY_KSEF, elapsed(start),
-                    upoByKsef.length + BYTES_MATCHES_LABEL));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_UPO_BY_KSEF, elapsed(start),
                     errorMessage(exception)));
         }
     }

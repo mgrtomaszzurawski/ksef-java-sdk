@@ -4,13 +4,20 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FailedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceStatusInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -35,7 +42,7 @@ class BatchResultTest {
 
     @Test
     void constructor_whenAllInvariantsHold_succeeds() {
-        UpoEntry cleared = new UpoEntry("inv-1", UPO_BYTES);
+        ClearedInvoice cleared = sampleCleared("inv-1");
         FailedInvoice failed = new FailedInvoice("inv-2", "rejected", List.of("detail"));
 
         BatchResult result = new BatchResult(
@@ -49,7 +56,7 @@ class BatchResultTest {
     @Test
     void constructor_whenSuccessfulCountMismatchesClearedSize_throws() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                new BatchResult(REF, List.of(new UpoEntry("inv-1", UPO_BYTES)),
+                new BatchResult(REF, List.of(sampleCleared("inv-1")),
                         List.of(), 1, 0, 0, STARTED, COMPLETED));
 
         assertTrue(ex.getMessage().contains("successfulCount"));
@@ -75,8 +82,8 @@ class BatchResultTest {
 
     @Test
     void constructor_copiesClearedAndFailedDefensively() {
-        java.util.List<UpoEntry> mutableCleared = new java.util.ArrayList<>();
-        mutableCleared.add(new UpoEntry("inv-1", UPO_BYTES));
+        java.util.List<ClearedInvoice> mutableCleared = new java.util.ArrayList<>();
+        mutableCleared.add(sampleCleared("inv-1"));
         java.util.List<FailedInvoice> mutableFailed = new java.util.ArrayList<>();
         mutableFailed.add(new FailedInvoice("inv-2", "err", List.of()));
 
@@ -85,5 +92,17 @@ class BatchResultTest {
 
         assertNotSame(mutableCleared, result.cleared());
         assertNotSame(mutableFailed, result.failed());
+    }
+
+    private static ClearedInvoice sampleCleared(String referenceNumber) {
+        Invoice placeholder = Invoice.fromXml(FormCode.FA3, UPO_BYTES);
+        SessionInvoiceStatus status = new SessionInvoiceStatus(
+                1, "FV/1", null, referenceNumber, null, null,
+                STARTED, STARTED, null, null, null, null,
+                new InvoiceStatusInfo(200, "Ok", List.of(), java.util.Map.of()));
+        SubmittedInvoice submitted = new SubmittedInvoice(
+                placeholder, referenceNumber, status,
+                Optional.empty(), Optional.empty(), Optional.empty(), List.of());
+        return new ClearedInvoice(submitted, new UpoEntry(referenceNumber, UPO_BYTES));
     }
 }

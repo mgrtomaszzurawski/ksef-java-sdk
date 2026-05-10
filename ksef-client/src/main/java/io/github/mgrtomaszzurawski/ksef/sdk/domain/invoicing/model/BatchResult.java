@@ -17,14 +17,11 @@ import java.util.Objects;
  * the time the call returns, every accepted invoice already has its UPO
  * downloaded.
  *
- * <p><strong>Note on {@code cleared} element type:</strong> currently
- * {@link UpoEntry} (per-invoice ref + UPO XML). PR15 will widen this to
- * {@code ClearedInvoice}, which embeds the full {@code SubmittedInvoice}
- * chain (input invoice + KSeF number + acquisition timestamp + UPO).
- *
  * @param sessionRef the KSeF batch session reference number
- * @param cleared one entry per accepted invoice (raw UPO bytes today;
- *     {@code ClearedInvoice} after PR15)
+ * @param cleared one {@link ClearedInvoice} per accepted invoice — embeds
+ *     the full {@code SubmittedInvoice} chain (input invoice + KSeF
+ *     number + acceptance timestamp) plus the UPO entry (raw XAdES
+ *     bytes available via {@link UpoEntry#xmlBytes()})
  * @param failed one entry per rejected invoice
  * @param totalCount total invoices observed by KSeF on the batch session
  *     (always equals {@code successfulCount + failedCount}; reflects the
@@ -41,7 +38,7 @@ import java.util.Objects;
  */
 public record BatchResult(
         String sessionRef,
-        List<UpoEntry> cleared,
+        List<ClearedInvoice> cleared,
         List<FailedInvoice> failed,
         int totalCount,
         int successfulCount,

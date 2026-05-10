@@ -175,10 +175,10 @@ class KsefSessionTest {
                         .withBody(TEST_UPO_CONTENT)));
 
         try (OnlineSession session = createSession(wmInfo)) {
-            session.close();
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.archive();
 
             // when
-            byte[] upoBytes = session.upo(TEST_INVOICE_REF);
+            byte[] upoBytes = closed.cleared(TEST_INVOICE_REF).upo().xmlBytes();
 
             // then
             assertArrayEquals(TEST_UPO_CONTENT, upoBytes);
