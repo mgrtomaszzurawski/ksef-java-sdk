@@ -199,8 +199,8 @@ public final class InvoiceRunner implements DemoRunner {
     private void runGetByKsefNumber(DemoContext context, String ksefNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            InvoiceDocument doc = context.client().invoices().getByKsefNumber(KsefNumber.parse(ksefNumber));
-            int xmlLength = doc.xml().length;
+            InvoiceDocument invoiceDocument = context.client().invoices().getByKsefNumber(KsefNumber.parse(ksefNumber));
+            int xmlLength = invoiceDocument.xml().length;
             LOGGER.info("[{}] retrieved invoice by KSeF number, size={} bytes", NAME, xmlLength);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF, elapsed(start),
                     xmlLength + " bytes"));
@@ -284,9 +284,9 @@ public final class InvoiceRunner implements DemoRunner {
         }
         long start = System.currentTimeMillis();
         try {
-            InvoiceDocument doc = context.client().invoices()
+            InvoiceDocument invoiceDocument = context.client().invoices()
                     .getByKsefNumber(KsefNumber.parse(ksefNumber));
-            String typeName = labelFor(doc);
+            String typeName = labelFor(invoiceDocument);
             LOGGER.info("[{}] typed invoice document: {}", NAME, typeName);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF_TYPED, elapsed(start), typeName));
         } catch (Exception exception) {
@@ -295,17 +295,17 @@ public final class InvoiceRunner implements DemoRunner {
         }
     }
 
-    private static String labelFor(InvoiceDocument doc) {
-        if (doc instanceof Fa3InvoiceDocument) {
+    private static String labelFor(InvoiceDocument invoiceDocument) {
+        if (invoiceDocument instanceof Fa3InvoiceDocument) {
             return LABEL_FA3;
         }
-        if (doc instanceof Fa2InvoiceDocument) {
+        if (invoiceDocument instanceof Fa2InvoiceDocument) {
             return LABEL_FA2;
         }
-        if (doc instanceof PefKorInvoiceDocument) {
+        if (invoiceDocument instanceof PefKorInvoiceDocument) {
             return LABEL_PEF_KOR;
         }
-        if (doc instanceof PefInvoiceDocument) {
+        if (invoiceDocument instanceof PefInvoiceDocument) {
             return LABEL_PEF;
         }
         return LABEL_RAW_FALLBACK;

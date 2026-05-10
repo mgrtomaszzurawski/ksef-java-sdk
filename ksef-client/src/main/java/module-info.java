@@ -111,15 +111,44 @@ module io.github.mgrtomaszzurawski.ksef {
     // Open generated model packages to Jackson for reflection-based deserialization
     opens io.github.mgrtomaszzurawski.ksef.client.model to com.fasterxml.jackson.databind;
 
-    // Open JAXB-generated root packages to jakarta.xml.bind for reflective
-    // marshalling. Sub-package opens (xml.pef.cac, xml.pef.cbc, etc.) are
-    // dropped under PR21 / ADR-030 — they are no longer on the consumer
-    // surface. If JAXB runtime needs reflection on a sub-package internally,
-    // re-add the specific opens.
-    opens io.github.mgrtomaszzurawski.ksef.xml.fa2;
-    opens io.github.mgrtomaszzurawski.ksef.xml.fa3;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pef;
-    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor;
-    opens io.github.mgrtomaszzurawski.ksef.xml.upo;
-    opens io.github.mgrtomaszzurawski.ksef.xml.auth;
+    // Open JAXB-generated packages to jakarta.xml.bind for reflective
+    // marshalling. Per ADR-030 / PR21, only the 6 root packages are
+    // EXPORTED (consumer-visible). UBL sub-packages (xml.pef.cac /
+    // xml.pef.cbc / etc.) are NOT exported but ARE opened — JAXB context
+    // construction needs reflection access to their ObjectFactory classes
+    // to resolve the qualified UBL element names that InvoiceType /
+    // CreditNoteType reference. opens-to-module is reflection-only and
+    // does not contribute to the public API surface.
+    opens io.github.mgrtomaszzurawski.ksef.xml.fa2 to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.fa3 to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cac to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cacpl to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cbc to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.cbcpl to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.ccts to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.ext to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sig to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sigcac to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.sigcbc to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.udt to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xades132 to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xades141 to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pef.xmldsig to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cac to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cacpl to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbc to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.cbcpl to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.ccts to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.ext to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sig to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sigcac to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.sigcbc to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.udt to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xades132 to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xades141 to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.pefkor.xmldsig to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.upo to jakarta.xml.bind;
+    opens io.github.mgrtomaszzurawski.ksef.xml.auth to jakarta.xml.bind;
 }

@@ -306,7 +306,7 @@ public final class BatchSubmissionFlow {
             closeWithRetry(sessionRef, deadlineNanos);
             pollUntilTerminal(sessionRef, deadlineNanos);
 
-            return collectResult(sessionRef, formCode, invoiceCount, startedAt);
+            return collectResult(sessionRef, invoiceCount, startedAt);
         } finally {
             pkg.cleanup();
         }
@@ -527,8 +527,7 @@ public final class BatchSubmissionFlow {
         }
     }
 
-    private BatchResult collectResult(String sessionRef, FormCode formCode, int totalCount,
-                                       OffsetDateTime startedAt) {
+    private BatchResult collectResult(String sessionRef, int totalCount, OffsetDateTime startedAt) {
         OffsetDateTime completedAt = OffsetDateTime.now(clock);
         List<SessionInvoiceStatus> all = sessionClient.getAllInvoices(sessionRef);
         List<SessionInvoiceStatus> failed = sessionClient.getAllFailedInvoices(sessionRef);

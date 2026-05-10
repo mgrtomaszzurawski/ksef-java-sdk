@@ -66,13 +66,17 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
     private static final long POLL_TIMEOUT_MILLIS = 250L;
     /** Producer-thread name template — load-bearing for log diagnostics. */
     private static final String PRODUCER_THREAD_NAME = "DecryptedInvoiceSyncProducer";
-    /** Sentinel posted to the queue by the producer when the sync run completes. */
-    private static final DecryptedInvoice POISON_PILL = null;
     /** Join timeout for the producer thread on close — bounded so close cannot hang. */
     private static final long PRODUCER_JOIN_TIMEOUT_SECONDS = 30L;
 
     private static final String ERR_READ_XML_FAILED = "Failed to read decrypted invoice XML at ";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting for next decrypted invoice";
+    private static final String ERR_NULL_INVOICE_CLIENT = "invoiceClient must not be null";
+    private static final String ERR_NULL_OBJECT_MAPPER = "objectMapper must not be null";
+    private static final String ERR_NULL_PLAN = "plan must not be null";
+    private static final String ERR_NULL_CHECKPOINT_STORE = "checkpointStore must not be null";
+    private static final String ERR_NULL_ACTION = "action must not be null";
+    private static final String ERR_PRODUCER_FAILED = "Sync producer thread failed";
 
     private final BlockingQueue<DecryptedInvoice> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
     private final AtomicReference<Throwable> producerFailure = new AtomicReference<>();
@@ -85,10 +89,10 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
                                     ObjectMapper objectMapper,
                                     IncrementalSyncPlan plan,
                                     CheckpointStore checkpointStore) {
-        Objects.requireNonNull(invoiceClient, "invoiceClient must not be null");
-        Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-        Objects.requireNonNull(plan, "plan must not be null");
-        Objects.requireNonNull(checkpointStore, "checkpointStore must not be null");
+        Objects.requireNonNull(invoiceClient, ERR_NULL_INVOICE_CLIENT);
+        Objects.requireNonNull(objectMapper, ERR_NULL_OBJECT_MAPPER);
+        Objects.requireNonNull(plan, ERR_NULL_PLAN);
+        Objects.requireNonNull(checkpointStore, ERR_NULL_CHECKPOINT_STORE);
         this.executor = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, PRODUCER_THREAD_NAME);
             thread.setDaemon(true);
@@ -102,28 +106,30 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
                     if (failure != null) {
                         producerFailure.set(failure);
                     }
-                    enqueuePoisonPill();
                 });
     }
 
     @Override
     public boolean tryAdvance(Consumer<? super DecryptedInvoice> action) {
-        Objects.requireNonNull(action, "action must not be null");
+        Objects.requireNonNull(action, ERR_NULL_ACTION);
         if (producerCompleted) {
             return false;
         }
         DecryptedInvoice next;
         try {
             next = queue.poll(POLL_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-            while (next == POISON_PILL && !producerFuture.isDone()) {
+            while (next == null && !producerFuture.isDone()) {
                 next = queue.poll(POLL_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            }
+            if (next == null) {
+                next = queue.poll();
             }
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             cancelled = true;
             throw new KsefException(ERR_INTERRUPTED, interrupted);
         }
-        if (next == POISON_PILL) {
+        if (next == null) {
             producerCompleted = true;
             propagateProducerFailure();
             return false;
@@ -169,8 +175,8 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
             if (cancelled) {
                 throw new CancelledStreamException();
             }
-            byte[] xml = readXmlBytes(xmlPath);
-            DecryptedInvoice invoice = new DecryptedInvoice(ksefNumber, metadata, xml,
+            byte[] xmlBytes = readXmlBytes(xmlPath);
+            DecryptedInvoice invoice = new DecryptedInvoice(ksefNumber, metadata, xmlBytes,
                     xmlPath != null ? Optional.of(xmlPath) : Optional.empty());
             try {
                 while (!cancelled) {
@@ -184,12 +190,6 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
                 throw new CancelledStreamException();
             }
         };
-    }
-
-    private void enqueuePoisonPill() {
-        // Best-effort enqueue of the sentinel; tryAdvance also re-polls on
-        // producerFuture.isDone() so a full queue does not deadlock.
-        queue.offer(POISON_PILL);
     }
 
     private void propagateProducerFailure() {
@@ -209,7 +209,7 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
         if (rootCause instanceof Error errorFailure) {
             throw errorFailure;
         }
-        throw new KsefException("Sync producer thread failed", rootCause);
+        throw new KsefException(ERR_PRODUCER_FAILED, rootCause);
     }
 
     private static byte[] readXmlBytes(Path xmlPath) {

@@ -31,6 +31,7 @@ public class KsefException extends RuntimeException {
     private static final Pattern PII_JWT = Pattern.compile(
             "eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+");
     private static final String PII_REPLACEMENT_PREFIX = "***";
+    private static final String JWT_HEADER_MARKER = "eyJ.";
     private static final int PII_PRESERVED_TAIL = 4;
     private static final int HTTP_BAD_REQUEST = 400;
     private static final int HTTP_UNAUTHORIZED = 401;
@@ -111,7 +112,7 @@ public class KsefException extends RuntimeException {
             String signatureTail = lastDot >= 0 && token.length() - lastDot - 1 >= PII_PRESERVED_TAIL
                     ? token.substring(token.length() - PII_PRESERVED_TAIL)
                     : token.substring(Math.max(0, token.length() - PII_PRESERVED_TAIL));
-            return "eyJ." + PII_REPLACEMENT_PREFIX + signatureTail;
+            return JWT_HEADER_MARKER + PII_REPLACEMENT_PREFIX + signatureTail;
         });
         return PII_DIGIT_RUN.matcher(afterJwt).replaceAll(matchResult -> {
             String digits = matchResult.group();

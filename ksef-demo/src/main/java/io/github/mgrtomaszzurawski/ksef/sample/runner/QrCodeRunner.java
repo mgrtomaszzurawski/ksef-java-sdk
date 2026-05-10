@@ -109,17 +109,17 @@ public final class QrCodeRunner implements DemoRunner {
             }
             byte[] hash = MessageDigest.getInstance(SHA_256)
                     .digest(SAMPLE_INVOICE_XML.getBytes(StandardCharsets.UTF_8));
-            String url = KsefVerificationLinks.buildInvoiceVerificationUrl(
+            String payloadUrl = KsefVerificationLinks.buildInvoiceVerificationUrl(
                     qrEnv, SAMPLE_SELLER_NIP, SAMPLE_ISSUE_DATE, hash);
-            byte[] png = accessorService.generateQrCode(url);
-            if (png == null || png.length == 0) {
+            byte[] pngBytes = accessorService.generateQrCode(payloadUrl);
+            if (pngBytes == null || pngBytes.length == 0) {
                 results.add(RunResult.fail(NAME, OP_CLIENT_ACCESSOR, elapsed(start), FAIL_EMPTY_PNG));
                 return;
             }
             LOGGER.info("[{}] client.qrCode() rendered {} bytes PNG (url len={})",
-                    NAME, png.length, url.length());
+                    NAME, pngBytes.length, payloadUrl.length());
             results.add(RunResult.ok(NAME, OP_CLIENT_ACCESSOR, elapsed(start),
-                    png.length + " bytes (url=" + url.length() + " chars)"));
+                    pngBytes.length + " bytes (url=" + payloadUrl.length() + " chars)"));
         } catch (NoSuchAlgorithmException | RuntimeException exception) {
             results.add(RunResult.fail(NAME, OP_CLIENT_ACCESSOR, elapsed(start),
                     errorMessage(exception)));

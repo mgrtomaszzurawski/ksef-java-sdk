@@ -134,47 +134,47 @@ public final class Fa2Invoice implements Invoice {
 
     /** Invoice number from {@code Fa/P_2}. */
     public String invoiceNumber() {
-        Faktura.Fa fa = faktura.getFa();
-        return fa != null ? fa.getP2() : null;
+        Faktura.Fa faContent = faktura.getFa();
+        return faContent != null ? faContent.getP2() : null;
     }
 
     /** Issue date from {@code Fa/P_1}. */
     public LocalDate issueDate() {
-        Faktura.Fa fa = faktura.getFa();
-        if (fa == null || fa.getP1() == null) {
+        Faktura.Fa faContent = faktura.getFa();
+        if (faContent == null || faContent.getP1() == null) {
             return null;
         }
-        return toLocalDate(fa.getP1());
+        return toLocalDate(faContent.getP1());
     }
 
     /** ISO 4217 currency code from {@code Fa/KodWaluty}. */
     public String currency() {
-        Faktura.Fa fa = faktura.getFa();
-        if (fa == null || fa.getKodWaluty() == null) {
+        Faktura.Fa faContent = faktura.getFa();
+        if (faContent == null || faContent.getKodWaluty() == null) {
             return null;
         }
-        return fa.getKodWaluty().value();
+        return faContent.getKodWaluty().value();
     }
 
     /** Gross total from {@code Fa/P_15}. */
     public BigDecimal grossTotal() {
-        Faktura.Fa fa = faktura.getFa();
-        return fa != null ? fa.getP15() : null;
+        Faktura.Fa faContent = faktura.getFa();
+        return faContent != null ? faContent.getP15() : null;
     }
 
     /** Optional net total from {@code Fa/P_13_1}. */
     public Optional<BigDecimal> netTotal() {
-        Faktura.Fa fa = faktura.getFa();
-        return fa != null ? Optional.ofNullable(fa.getP131()) : Optional.empty();
+        Faktura.Fa faContent = faktura.getFa();
+        return faContent != null ? Optional.ofNullable(faContent.getP131()) : Optional.empty();
     }
 
     /** Invoice type code from {@code Fa/RodzajFaktury}. */
     public String invoiceTypeCode() {
-        Faktura.Fa fa = faktura.getFa();
-        if (fa == null || fa.getRodzajFaktury() == null) {
+        Faktura.Fa faContent = faktura.getFa();
+        if (faContent == null || faContent.getRodzajFaktury() == null) {
             return null;
         }
-        return fa.getRodzajFaktury().value();
+        return faContent.getRodzajFaktury().value();
     }
 
     /**
@@ -184,12 +184,12 @@ public final class Fa2Invoice implements Invoice {
      * fields {@code P_7}, {@code P_11} or {@code P_12} are skipped.
      */
     public List<InvoiceLineItem> lineItems() {
-        Faktura.Fa fa = faktura.getFa();
-        if (fa == null || fa.getFaWiersz() == null) {
+        Faktura.Fa faContent = faktura.getFa();
+        if (faContent == null || faContent.getFaWiersz() == null) {
             return List.of();
         }
-        List<InvoiceLineItem> mapped = new ArrayList<>(fa.getFaWiersz().size());
-        for (Faktura.Fa.FaWiersz wiersz : fa.getFaWiersz()) {
+        List<InvoiceLineItem> mapped = new ArrayList<>(faContent.getFaWiersz().size());
+        for (Faktura.Fa.FaWiersz wiersz : faContent.getFaWiersz()) {
             InvoiceLineItem item = mapLineItem(wiersz);
             if (item != null) {
                 mapped.add(item);
@@ -404,23 +404,23 @@ public final class Fa2Invoice implements Invoice {
         }
 
         private Faktura.Fa buildFa() {
-            Faktura.Fa fa = new Faktura.Fa();
-            fa.setKodWaluty(currency);
-            fa.setP1(toGregorianDate(issueDate));
+            Faktura.Fa faContent = new Faktura.Fa();
+            faContent.setKodWaluty(currency);
+            faContent.setP1(toGregorianDate(issueDate));
             if (issueLocality != null) {
-                fa.setP1M(issueLocality);
+                faContent.setP1M(issueLocality);
             }
-            fa.setP2(invoiceNumber);
-            fa.setP15(totalGrossAmount);
-            fa.setRodzajFaktury(rodzajFaktury);
-            fa.setAdnotacje(buildDefaultAdnotacje());
+            faContent.setP2(invoiceNumber);
+            faContent.setP15(totalGrossAmount);
+            faContent.setRodzajFaktury(rodzajFaktury);
+            faContent.setAdnotacje(buildDefaultAdnotacje());
             for (InvoiceLineItem line : lineItems) {
-                fa.getFaWiersz().add(buildLineItem(line));
+                faContent.getFaWiersz().add(buildLineItem(line));
             }
             for (InvoiceCorrectionReference correction : correctionReferences) {
-                fa.getDaneFaKorygowanej().add(buildCorrectionRef(correction));
+                faContent.getDaneFaKorygowanej().add(buildCorrectionRef(correction));
             }
-            return fa;
+            return faContent;
         }
 
         private static Faktura.Fa.Adnotacje buildDefaultAdnotacje() {

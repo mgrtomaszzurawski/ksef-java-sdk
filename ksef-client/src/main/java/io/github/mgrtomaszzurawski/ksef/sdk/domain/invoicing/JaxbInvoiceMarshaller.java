@@ -116,9 +116,6 @@ final class JaxbInvoiceMarshaller {
      */
     private static Class<?>[] collectObjectFactories(Class<?> rootClass) {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        if (loader == null) {
-            loader = JaxbInvoiceMarshaller.class.getClassLoader();
-        }
         String rootPackage = rootClass.getPackage().getName();
         java.util.List<Class<?>> factories = new java.util.ArrayList<>();
         Class<?> rootFactory = loadObjectFactory(loader, rootPackage);
