@@ -56,7 +56,7 @@ public final class Handle401Refresh {
                     + limits2.onlineSession().maxInvoiceSizeInMB());
 
             client.auth().terminate();
-            System.out.println("Auth session terminated");
+            System.out.println("AuthSessions session terminated");
         }
     }
 

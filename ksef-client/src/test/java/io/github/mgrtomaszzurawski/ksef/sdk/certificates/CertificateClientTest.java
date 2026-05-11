@@ -44,7 +44,7 @@ class CertificateClientTest {
     private static final String TEST_TOKEN = "test-access-token";
     private static final String TEST_ENROLLMENT_REF = "20260404-CE-1111111111-ABCDEF1234-08";
     private static final String TEST_CERT_SERIAL = "ABC123DEF456";
-    private static final String TEST_CERT_NAME = "Test Auth Certificate";
+    private static final String TEST_CERT_NAME = "Test AuthSessions Certificate";
     private static final byte[] TEST_CSR = new byte[]{0x30, 0x42};
     private static final int KSEF_STATUS_OK = 200;
     private static final String CREDENTIALS_TOKEN = "test-token";

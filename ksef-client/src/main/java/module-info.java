@@ -14,7 +14,7 @@ module io.github.mgrtomaszzurawski.ksef {
     // Common shared types (StatusInfo, TokenInfo, KsefNumber, public-key models)
     exports io.github.mgrtomaszzurawski.ksef.sdk.common;
 
-    // Auth-session management accessor (KsefClient.auth())
+    // AuthSessions-session management accessor (KsefClient.auth())
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.auth;
 
     // Authentication public DTOs (AuthSession returned by KsefClient.auth().streamSessions())

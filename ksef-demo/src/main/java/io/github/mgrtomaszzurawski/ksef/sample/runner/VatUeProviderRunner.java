@@ -46,7 +46,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  *       {@link CertificateSubjectIdentifier#fingerprint(String)}
  *       (NOT subject DN — KSeF resolves the entity by the SHA-256
  *       registered in step 1).</li>
- *   <li>Auth succeeds because KSeF now recognises the fingerprint
+ *   <li>AuthSessions succeeds because KSeF now recognises the fingerprint
  *       in the NipVatUe context.</li>
  * </ol>
  *

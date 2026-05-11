@@ -4,7 +4,7 @@
  */
 
 /**
- * Auth-session management — the {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.Auth}
+ * AuthSessions-session management — the {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.AuthSessions}
  * accessor returned by {@code KsefClient.auth()}. Mirrors the other
  * domain accessors (invoices, permissions, certificates, ...) for the
  * authentication-session management verbs that are not the lazy

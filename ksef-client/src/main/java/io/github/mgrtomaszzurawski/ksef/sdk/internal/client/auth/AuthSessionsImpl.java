@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.Auth;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.AuthSessions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator;
@@ -15,14 +15,14 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
- * Package-private implementation of {@link Auth}. Constructed by
+ * Package-private implementation of {@link AuthSessions}. Constructed by
  * {@code KsefClient}; delegates to {@link AuthClient} for HTTP work and
  * threads in the parent client's lifecycle hooks (gate-checks,
  * lazy-auth trigger, terminate-side cleanup, last-challenge IP).
  *
  * @since 1.0.0
  */
-public final class AuthImpl implements Auth {
+public final class AuthSessionsImpl implements AuthSessions {
 
     private static final String ERR_REF_NULL = "referenceNumber must not be null";
 
@@ -32,7 +32,7 @@ public final class AuthImpl implements Auth {
     private final Runnable onTerminate;
     private final Supplier<Optional<String>> lastChallengeClientIpSupplier;
 
-    public AuthImpl(AuthClient authClient,
+    public AuthSessionsImpl(AuthClient authClient,
                     Runnable ensureOpen,
                     Runnable ensureAuthenticated,
                     Runnable onTerminate,
@@ -58,7 +58,7 @@ public final class AuthImpl implements Auth {
         ensureAuthenticated.run();
         return PagedSpliterator.cursorStream(continuationToken -> {
             var page = authClient.listSessions(continuationToken);
-            List<AuthSession> mapped = page.items().stream().map(AuthImpl::toAuthSession).toList();
+            List<AuthSession> mapped = page.items().stream().map(AuthSessionsImpl::toAuthSession).toList();
             return new PagedSpliterator.CursorPage<>(mapped, page.continuationToken());
         });
     }

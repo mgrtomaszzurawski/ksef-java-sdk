@@ -19,17 +19,18 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.Auth;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.AuthSessions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.Certificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.Limits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolProviders;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.Tokens;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthSessionsImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationStatus;
@@ -135,8 +136,8 @@ public final class KsefClient implements AutoCloseable {
     private final Limits limitsClient;
     private final TestDataAdmin testDataClient;
     private final PeppolProviders peppolClient;
-    private final Auth authImpl;
-    private final QrCodeService qrCodeService;
+    private final AuthSessions authImpl;
+    private final QrCodes qrCodeService;
 
     private final Map<PublicKeyCertificateUsage, PublicKey> publicKeyCache = new ConcurrentHashMap<>();
     private volatile boolean authenticated;
@@ -174,7 +175,7 @@ public final class KsefClient implements AutoCloseable {
         this.testDataClient = new TestDataAdminImpl(this.runtime);
         this.peppolClient = new PeppolProvidersImpl(this.runtime);
         this.qrCodeService = new QrCodeService();
-        this.authImpl = new AuthImpl(
+        this.authImpl = new AuthSessionsImpl(
                 this.authClient,
                 this::ensureOpen,
                 this::ensureAuthenticated,
@@ -222,8 +223,8 @@ public final class KsefClient implements AutoCloseable {
 
     /**
      * Internal: terminate the current auth session — invoked by
-     * {@link Auth#terminate()} via the lifecycle hook supplied to
-     * {@link AuthImpl}. Clears local auth state on success.
+     * {@link AuthSessions#terminate()} via the lifecycle hook supplied to
+     * {@link AuthSessionsImpl}. Clears local auth state on success.
      */
     private synchronized void terminateAuthInternal() {
         ensureOpen();
@@ -285,7 +286,7 @@ public final class KsefClient implements AutoCloseable {
      * <p>Authentication itself is lazy and handled internally; this
      * accessor exposes the explicit session-management verbs.
      */
-    public Auth auth() {
+    public AuthSessions auth() {
         ensureOpen();
         return authImpl;
     }
@@ -344,9 +345,9 @@ public final class KsefClient implements AutoCloseable {
      * variants. Stateless instance shared across the client lifecycle;
      * the service does not require authentication.
      *
-     * @return the shared {@link QrCodeService}
+     * @return the shared {@link QrCodes} default implementation
      */
-    public QrCodeService qrCode() {
+    public QrCodes qrCode() {
         return qrCodeService;
     }
 

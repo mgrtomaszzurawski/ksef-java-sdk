@@ -36,7 +36,7 @@ import javax.imageio.ImageIO;
  *
  * @since 1.0.0
  */
-public final class QrCodeService {
+public final class QrCodeService implements QrCodes {
 
     private static final String IMAGE_FORMAT_PNG = "PNG";
     private static final int DEFAULT_QR_SIZE = 250;

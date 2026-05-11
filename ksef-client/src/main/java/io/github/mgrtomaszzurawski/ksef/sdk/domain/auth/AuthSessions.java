@@ -21,7 +21,7 @@ import java.util.stream.Stream;
  *
  * @since 1.0.0
  */
-public interface Auth {
+public interface AuthSessions {
 
     /**
      * Terminate the current authentication session.
