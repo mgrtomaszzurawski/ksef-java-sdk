@@ -19,9 +19,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
@@ -66,8 +68,10 @@ public final class OfflineInvoiceRunner implements DemoRunner {
      * payload structure is rejected before per-field validation runs.
      */
     private static final int EXPECTED_CODE_JSON_PARSE = 21001;
-    /** Substring the server includes when the rejection is certificate-related. */
-    private static final String CERT_KEYWORD = "certificate";
+    /** Substring the server may include when the rejection is certificate-related. */
+    private static final String CERT_KEYWORD_EN = "certificate";
+    /** Polish equivalent — production KSeF localises error messages. */
+    private static final String CERT_KEYWORD_PL = "certyfikat";
 
     private static final String CERT_ORG = "KSeF Java SDK Demo Offline";
     private static final String CERT_ORG_ID_PREFIX = "VATPL-";
@@ -213,18 +217,20 @@ public final class OfflineInvoiceRunner implements DemoRunner {
                     ? submitted.status().status().code() : -1;
             results.add(RunResult.ok(NAME, OP_SEND_OFFLINE, elapsed(start),
                     "submitted ref=" + submitted.referenceNumber() + " status=" + statusCode));
-        } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException ksefException) {
+        } catch (KsefException ksefException) {
             // Self-signed test certificate is expected to be rejected by the
             // server. Recognise the specific validation codes (21405 per-field
             // validation, 21001 JSON parse) and require the message to mention
-            // 'certificate' — otherwise this is an unexpected error and the
+            // 'certificate' (English) or 'certyfikat' (Polish — production
+            // KSeF localises) — otherwise this is an unexpected error and the
             // probe must FAIL.
             Integer code = ksefException.exceptionCode();
             String body = ksefException.safeResponseBody();
             boolean expectedCode = code != null && (code == EXPECTED_CODE_VALIDATION
                     || code == EXPECTED_CODE_JSON_PARSE);
-            boolean mentionsCertificate = body != null
-                    && body.toLowerCase(java.util.Locale.ROOT).contains(CERT_KEYWORD);
+            String bodyLower = body == null ? "" : body.toLowerCase(Locale.ROOT);
+            boolean mentionsCertificate = bodyLower.contains(CERT_KEYWORD_EN)
+                    || bodyLower.contains(CERT_KEYWORD_PL);
             if (expectedCode && mentionsCertificate) {
                 LOGGER.info("[{}] sendOfflineInvoice rejected with expected code {}", NAME, code);
                 results.add(RunResult.ok(NAME, OP_SEND_OFFLINE, elapsed(start),

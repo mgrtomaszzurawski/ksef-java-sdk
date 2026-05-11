@@ -75,6 +75,8 @@ public final class SessionRunner implements DemoRunner {
     private static final String DEMO_LINE_VAT = "23";
     private static final BigDecimal DEMO_LINE_NET = new BigDecimal("100.00");
     private static final BigDecimal DEMO_LINE_GROSS = new BigDecimal("123.00");
+    private static final String DEMO_SELLER_NAME = "Demo Seller sp. z o.o.";
+    private static final String DEMO_BUYER_NAME = "Demo Buyer sp. z o.o.";
     /**
      * KSeF terminal status code on a session that ends without any invoice having
      * been sent (or, for batch, without any part being uploaded). Documented in
@@ -164,7 +166,7 @@ public final class SessionRunner implements DemoRunner {
             ClearedInvoice cleared = closed.cleared(submitted);
             results.add(RunResult.ok(NAME, OP_CLEARED_BY_SUBMITTED, elapsed(start),
                     REF_PREFIX + cleared.submitted().referenceNumber()));
-        } catch (Exception exception) {
+        } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException exception) {
             results.add(RunResult.fail(NAME, OP_CLEARED_BY_SUBMITTED, elapsed(start),
                     errorMessage(exception)));
         }
@@ -288,9 +290,9 @@ public final class SessionRunner implements DemoRunner {
                 .invoiceNumber(DEMO_INVOICE_NUMBER_PREFIX + System.currentTimeMillis())
                 .issueDate(LocalDate.now())
                 .issueLocality(DEMO_LOCALITY)
-                .seller(new InvoiceParty(sellerNip, "Demo Seller sp. z o.o.", DEMO_POSTAL,
+                .seller(new InvoiceParty(sellerNip, DEMO_SELLER_NAME, DEMO_POSTAL,
                         DEMO_LOCALITY, DEMO_STREET, DEMO_HOUSE, null))
-                .buyer(new InvoiceParty(DEMO_BUYER_NIP, "Demo Buyer sp. z o.o.", DEMO_BUYER_POSTAL,
+                .buyer(new InvoiceParty(DEMO_BUYER_NIP, DEMO_BUYER_NAME, DEMO_BUYER_POSTAL,
                         DEMO_BUYER_LOCALITY, null, DEMO_BUYER_HOUSE, null))
                 .totalGrossAmount(DEMO_LINE_GROSS)
                 .addLineItem(new InvoiceLineItem(1, DEMO_LINE_DESCRIPTION, DEMO_LINE_UNIT,
