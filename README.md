@@ -9,7 +9,7 @@ Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-do
 
 > **Status:** SDK has reached `1.0.0` source-tree readiness. Maven Central
 > publication is gated on a clean release-profile dry run; until the artifact
-> is staged on Central, install locally with `mvn install` to use it.
+> is staged on Central, install locally with `./gradlew publishToMavenLocal` to use it.
 
 ## What you can do
 
@@ -353,7 +353,7 @@ Bundled official KSeF OpenAPI/XSD files (`ksef-client/openapi/open-api.json`, `k
 
 - ✅ All 11 KSeF API domains covered (101 OK / 0 FAIL / 15 SKIP across DEMO + TEST live demo runs; SKIPs are documented per-runner and reflect domain-content limitations such as the PEPPOL accepted-UBL fixture)
 - ✅ 720+ unit + integration tests across 78 test classes (WireMock-mocked HTTP, full transport coverage)
-- ✅ JaCoCo coverage gate green at `INSTRUCTION ≥ 0.75`, `METHOD ≥ 0.80` bundle floor + per-class `METHOD = 1.00` ratchet on every `domain.*.builder.*Builder` and `domain.*.*Client` (`mvn verify` → `target/site/jacoco/`)
+- ✅ JaCoCo coverage gate green at `INSTRUCTION ≥ 0.70`, `METHOD ≥ 0.75` bundle floor + per-class `METHOD = 1.00` ratchet on every `domain.*.builder.*Builder` and `domain.*.*Client` (`./gradlew check` → `ksef-client/build/reports/jacoco/`)
 - ✅ JSpecify null-safety annotations across all 29 exported `package-info` (ADR-017)
 - 🚧 Maven Central first publish (release-profile dry run pending)
 

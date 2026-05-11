@@ -10,8 +10,6 @@ import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Internal helper for marshalling and unmarshalling invoice JAXB
@@ -34,13 +32,22 @@ final class JaxbInvoiceMarshaller {
     private static final String ERR_UNMARSHAL_FAILED = "Failed to unmarshal invoice XML";
     private static final String ERR_CONTEXT_FAILED = "Failed to initialise JAXB context for ";
     private static final String OBJECT_FACTORY_CLASS_NAME = "ObjectFactory";
+    private static final String PEF_ROOT_PACKAGE = "io.github.mgrtomaszzurawski.ksef.xml.pef";
+    private static final String PEFKOR_ROOT_PACKAGE = "io.github.mgrtomaszzurawski.ksef.xml.pefkor";
+    private static final String UBL_ROOT_PACKAGE = "io.github.mgrtomaszzurawski.ksef.xml.ubl";
     /**
-     * UBL sub-package leaves under {@code xml.pef} / {@code xml.pefkor}. Each
-     * sub-package owns its own {@code ObjectFactory} carrying the
-     * {@code @XmlElementDecl} bindings JAXB needs to resolve qualified UBL
-     * element names like {@code {urn:oasis:Invoice-2}Invoice} during
-     * unmarshal. Single-package context construction misses those
+     * UBL sub-packages under {@code xml.ubl} — shared between PEF Invoice
+     * and PEF_KOR CreditNote after the consolidation in
+     * ADR-031. Each sub-package owns its own {@code ObjectFactory}
+     * carrying the {@code @XmlElementDecl} bindings JAXB needs to resolve
+     * qualified UBL element names like {@code {urn:oasis:Invoice-2}Invoice}
+     * during unmarshal. Single-package context construction misses those
      * declarations and unmarshal fails on a global element lookup.
+     *
+     * <p>Only loaded when the root class is PEF or PEF_KOR — non-UBL
+     * schemas (FA(2), FA(3), UPO, AUTH) build a much cheaper context
+     * from just their own ObjectFactory, so a consumer using only FA(3)
+     * never pays the UBL JAXBContext cost.
      */
     private static final String[] UBL_SUB_PACKAGES = {
             "cac", "cacpl", "cbc", "cbcpl", "ccts", "ext",
@@ -48,7 +55,20 @@ final class JaxbInvoiceMarshaller {
             "udt",
             "xades132", "xades141", "xmldsig"
     };
-    private static final ConcurrentMap<Class<?>, JAXBContext> CONTEXT_CACHE = new ConcurrentHashMap<>();
+    /**
+     * Per-root-class JAXBContext cache. {@link ClassValue} ties the cache
+     * lifetime to the keying Class's ClassLoader — in a hot-redeploy
+     * container the redeployed app's class graph is collected with its
+     * loader, the context goes with it. A static ConcurrentMap would
+     * pin both the Class and the ClassLoader as GC roots, leaking memory
+     * across redeploys.
+     */
+    private static final ClassValue<JAXBContext> CONTEXT_CACHE = new ClassValue<>() {
+        @Override
+        protected JAXBContext computeValue(Class<?> rootClass) {
+            return buildContext(rootClass);
+        }
+    };
     private static final javax.xml.stream.XMLInputFactory XML_INPUT_FACTORY = createHardenedXmlInputFactory();
 
     private JaxbInvoiceMarshaller() {
@@ -94,7 +114,7 @@ final class JaxbInvoiceMarshaller {
     }
 
     private static JAXBContext contextFor(Class<?> rootClass) {
-        return CONTEXT_CACHE.computeIfAbsent(rootClass, JaxbInvoiceMarshaller::buildContext);
+        return CONTEXT_CACHE.get(rootClass);
     }
 
     private static JAXBContext buildContext(Class<?> rootClass) {
@@ -107,12 +127,16 @@ final class JaxbInvoiceMarshaller {
     }
 
     /**
-     * Collect every {@code ObjectFactory} reachable from {@code rootClass}'s
-     * package: the root package's own factory plus, for the UBL-derived PEF
-     * and PEFKOR schemas, the {@code cac/cbc/ext/...} sub-package factories
-     * that declare the qualified UBL element names. For non-UBL schemas
-     * (FA(2), FA(3), UPO, auth) only the root factory is returned, matching
-     * the previous single-package behaviour.
+     * Collect every {@code ObjectFactory} required by {@code rootClass}'s
+     * schema: always the root package's own factory; additionally, for the
+     * UBL-derived PEF and PEFKOR schemas, the shared {@code xml.ubl.*}
+     * sub-package factories that declare the qualified UBL element names.
+     *
+     * <p>For non-UBL schemas (FA(2), FA(3), UPO, AUTH) only the root
+     * factory is returned, so a consumer using only FA(3) gets a JAXBContext
+     * built over ~50 classes (~30 MB peak) rather than the full UBL world
+     * (~1300 classes, ~150-300 MB peak). The cache in {@link #CONTEXT_CACHE}
+     * is keyed per root class so the cost of each is paid lazily, once.
      */
     private static Class<?>[] collectObjectFactories(Class<?> rootClass) {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -122,10 +146,12 @@ final class JaxbInvoiceMarshaller {
         if (rootFactory != null) {
             factories.add(rootFactory);
         }
-        for (String subPackage : UBL_SUB_PACKAGES) {
-            Class<?> subFactory = loadObjectFactory(loader, rootPackage + '.' + subPackage);
-            if (subFactory != null) {
-                factories.add(subFactory);
+        if (PEF_ROOT_PACKAGE.equals(rootPackage) || PEFKOR_ROOT_PACKAGE.equals(rootPackage)) {
+            for (String subPackage : UBL_SUB_PACKAGES) {
+                Class<?> subFactory = loadObjectFactory(loader, UBL_ROOT_PACKAGE + '.' + subPackage);
+                if (subFactory != null) {
+                    factories.add(subFactory);
+                }
             }
         }
         return factories.toArray(new Class<?>[0]);
