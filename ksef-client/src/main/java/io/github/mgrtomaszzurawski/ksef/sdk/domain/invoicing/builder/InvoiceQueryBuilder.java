@@ -10,7 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryA
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryAmountType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryBuyerIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
@@ -226,14 +226,14 @@ public final class InvoiceQueryBuilder {
         return copy;
     }
 
-    public InvoiceQueryFilters build() {
+    public InvoiceQueryRequest build() {
         Objects.requireNonNull(dateFrom, ERR_DATE_FROM_REQUIRED);
         if (dateTo != null && dateFrom.plusMonths(MAX_DATE_RANGE_MONTHS).isBefore(dateTo)) {
             throw new IllegalStateException(ERR_DATE_RANGE_EXCEEDED);
         }
         OffsetDateTime truncatedFrom = dateFrom.withNano(0);
         OffsetDateTime truncatedTo = dateTo == null ? null : dateTo.withNano(0);
-        return new InvoiceQueryFilters(
+        return new InvoiceQueryRequest(
                 subjectType, dateType, truncatedFrom, truncatedTo,
                 ksefNumber, invoiceNumber, sellerNip,
                 invoicingMode, selfInvoicing, hasAttachment,

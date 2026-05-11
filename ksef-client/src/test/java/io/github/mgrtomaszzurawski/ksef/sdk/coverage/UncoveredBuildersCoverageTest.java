@@ -16,7 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.builder.On
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.builder.SendInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonSubjectIdentifierType;
@@ -106,7 +106,7 @@ class UncoveredBuildersCoverageTest {
     @Test
     void invoiceQueryBuilder_build_persistsSortOrderIntoRequest() {
         // given — sortOrder set; .build() must propagate the value into the
-        // emitted InvoiceQueryFilters record (PR5 moved this from a separate
+        // emitted InvoiceQueryRequest record (PR5 moved this from a separate
         // builder accessor onto the request itself).
         var request = InvoiceQueryBuilder.seller()
                 .permanentStorageDateFrom(FROM)
@@ -195,7 +195,7 @@ class UncoveredBuildersCoverageTest {
         String reference = "20260418-SE-1111111111-AAAAAAAAAA-01";
 
         // when
-        SessionsQueryFilter filter = SessionsQueryFilter.forBatch()
+        SessionsQueryRequest filter = SessionsQueryRequest.forBatch()
                 .referenceNumber(reference)
                 .dateCreatedFrom(FROM)
                 .dateCreatedTo(TO)

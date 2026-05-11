@@ -30,7 +30,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public record SessionsQueryFilter(
+public record SessionsQueryRequest(
         KsefSessionType sessionType,
         @Nullable String referenceNumber,
         @Nullable OffsetDateTime dateCreatedFrom,
@@ -44,7 +44,7 @@ public record SessionsQueryFilter(
     private static final String ERR_SESSION_TYPE_NULL =
             "sessionType is required by GET /sessions (OpenAPI required:true)";
 
-    public SessionsQueryFilter {
+    public SessionsQueryRequest {
         java.util.Objects.requireNonNull(sessionType, ERR_SESSION_TYPE_NULL);
         statuses = statuses == null ? null : List.copyOf(statuses);
     }
@@ -83,8 +83,8 @@ public record SessionsQueryFilter(
         public Builder dateModifiedTo(OffsetDateTime dateModifiedTo) { this.dateModifiedTo = dateModifiedTo; return this; }
         public Builder statuses(CommonSessionStatus... values) { this.statuses = List.of(values); return this; }
 
-        public SessionsQueryFilter build() {
-            return new SessionsQueryFilter(sessionType, referenceNumber,
+        public SessionsQueryRequest build() {
+            return new SessionsQueryRequest(sessionType, referenceNumber,
                     dateCreatedFrom, dateCreatedTo, dateClosedFrom, dateClosedTo,
                     dateModifiedFrom, dateModifiedTo, statuses);
         }

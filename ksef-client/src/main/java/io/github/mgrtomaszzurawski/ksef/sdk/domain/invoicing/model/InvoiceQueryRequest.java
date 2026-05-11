@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public record InvoiceQueryFilters(
+public record InvoiceQueryRequest(
         InvoiceQuerySubjectType subjectType,
         InvoiceQueryDateType dateType,
         OffsetDateTime dateFrom,
@@ -45,7 +45,7 @@ public record InvoiceQueryFilters(
         @Nullable List<InvoiceType> invoiceTypes,
         @Nullable SortOrder sortOrder) {
 
-    public InvoiceQueryFilters {
+    public InvoiceQueryRequest {
         Objects.requireNonNull(subjectType, "subjectType");
         Objects.requireNonNull(dateType, "dateType");
         Objects.requireNonNull(dateFrom, "dateFrom");

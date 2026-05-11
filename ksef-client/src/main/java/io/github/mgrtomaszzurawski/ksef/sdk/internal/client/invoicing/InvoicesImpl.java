@@ -38,10 +38,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.Invo
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
@@ -261,7 +261,7 @@ public final class InvoicesImpl implements Invoices {
      * @return paginated list of invoice metadata
      */
     @Override
-    public InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryFilters query) {
+    public InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryRequest query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         return doQueryMetadata(
@@ -293,7 +293,7 @@ public final class InvoicesImpl implements Invoices {
      * result completeness.
      */
     @Override
-    public Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryFilters query) {
+    public Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryRequest query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
         InvoiceQueryFiltersRaw filters = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query);
@@ -369,7 +369,7 @@ public final class InvoicesImpl implements Invoices {
     /**
      * Get the status of an invoice export job.
      *
-     * @param referenceNumber the export reference number from {@link #prepareExport(InvoiceQueryFilters, boolean)}
+     * @param referenceNumber the export reference number from {@link #prepareExport(InvoiceQueryRequest, boolean)}
      * @return export status with download URL when complete
      */
     @Override
@@ -383,7 +383,7 @@ public final class InvoicesImpl implements Invoices {
     }
 
     @Override
-    public PreparedInvoiceExport prepareExport(InvoiceQueryFilters query, boolean fullContent) {
+    public PreparedInvoiceExport prepareExport(InvoiceQueryRequest query, boolean fullContent) {
         LOGGER.debug(LOG_CALL, OP_PREPARE_EXPORT);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
 
@@ -501,7 +501,7 @@ public final class InvoicesImpl implements Invoices {
     }
 
     @Override
-    public Stream<SessionListItem> streamSessions(SessionsQueryFilter filter) {
+    public Stream<SessionListItem> streamSessions(SessionsQueryRequest filter) {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
         if (sessionClient == null) {
             throw new IllegalStateException(ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME);

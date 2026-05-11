@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.builder;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceExportRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.security.PublicKey;
 import java.util.Objects;
@@ -26,7 +26,7 @@ public final class InvoiceExportBuilder {
     private static final String ERR_NULL_FILTERS = "filters are required — use .filters() before .build()";
 
     private final PublicKey ksefPublicKey;
-    private @Nullable InvoiceQueryFilters filters;
+    private @Nullable InvoiceQueryRequest filters;
     private boolean onlyMetadata;
 
     private InvoiceExportBuilder(PublicKey ksefPublicKey) {

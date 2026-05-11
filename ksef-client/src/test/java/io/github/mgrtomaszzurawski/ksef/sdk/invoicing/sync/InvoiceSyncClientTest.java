@@ -11,7 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportedInvoiceDirectory;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
@@ -84,7 +84,7 @@ class InvoiceSyncClientTest {
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR, false), null);
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryFilters.class), anyBoolean()))
+        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), anyBoolean()))
                 .thenReturn(firstWindow, emptyWindow);
 
         InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
@@ -118,7 +118,7 @@ class InvoiceSyncClientTest {
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR, false), null);
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryFilters.class), anyBoolean()))
+        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), anyBoolean()))
                 .thenReturn(firstWindow, emptyWindow);
 
         InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
@@ -147,7 +147,7 @@ class InvoiceSyncClientTest {
                 exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR, false),
                 metadataDir(tempDir.resolve("subject1/window-0"), List.of(VALID_KSEF_NUMBER)));
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryFilters.class), anyBoolean()))
+        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), anyBoolean()))
                 .thenReturn(firstWindow);
 
         InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
@@ -170,7 +170,7 @@ class InvoiceSyncClientTest {
                 exportStatus(INVOICE_COUNT_ONE, START_CURSOR, false),
                 metadataDir(tempDir.resolve("subject1/window-0"), List.of(VALID_KSEF_NUMBER)));
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryFilters.class), anyBoolean()))
+        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), anyBoolean()))
                 .thenReturn(stuckWindow);
 
         InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
@@ -199,7 +199,7 @@ class InvoiceSyncClientTest {
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, FAR_CURSOR, false), null);
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryFilters.class), anyBoolean()))
+        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), anyBoolean()))
                 .thenReturn(window1, window2, emptyWindow);
 
         InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());

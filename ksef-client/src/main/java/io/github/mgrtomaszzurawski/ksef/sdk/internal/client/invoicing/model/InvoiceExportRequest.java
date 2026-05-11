@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -19,7 +19,7 @@ public record InvoiceExportRequest(
         byte[] encryptedSymmetricKey,
         byte[] initVector,
         boolean onlyMetadata,
-        InvoiceQueryFilters filters) {
+        InvoiceQueryRequest filters) {
 
     public InvoiceExportRequest {
         Objects.requireNonNull(encryptedSymmetricKey, "encryptedSymmetricKey");

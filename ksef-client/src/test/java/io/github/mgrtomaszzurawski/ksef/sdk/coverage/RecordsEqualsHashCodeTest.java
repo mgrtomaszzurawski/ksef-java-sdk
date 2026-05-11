@@ -10,7 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicingMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenRequest;
@@ -94,7 +94,7 @@ class RecordsEqualsHashCodeTest {
 
     @Test
     void invoiceQueryFilters_toString_includesSubjectTypeAndInvoicingMode() {
-        String rendered = new InvoiceQueryFilters(
+        String rendered = new InvoiceQueryRequest(
                 InvoiceQuerySubjectType.SUBJECT1, InvoiceQueryDateType.INVOICING,
                 OffsetDateTime.now(), null, null, null, null,
                 InvoicingMode.ONLINE, null, null, false,

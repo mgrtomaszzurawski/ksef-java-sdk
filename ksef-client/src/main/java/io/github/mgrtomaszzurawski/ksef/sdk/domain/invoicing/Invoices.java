@@ -11,9 +11,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
 import java.nio.file.Path;
@@ -85,7 +85,7 @@ public interface Invoices {
      */
     ClearedInvoice clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber);
 
-    InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryFilters query);
+    InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryRequest query);
 
     /**
      * Stream every invoice metadata record matching the filter, walking
@@ -94,7 +94,7 @@ public interface Invoices {
      * caller controls memory pressure by limiting / collecting
      * downstream.
      */
-    java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryFilters query);
+    java.util.stream.Stream<InvoiceMetadata> streamInvoicesByMetadata(InvoiceQueryRequest query);
 
     InvoiceExportStatus getExportStatus(String referenceNumber);
 
@@ -113,7 +113,7 @@ public interface Invoices {
      *     metadata-only
      * @return prepared-export handle
      */
-    PreparedInvoiceExport prepareExport(InvoiceQueryFilters query, boolean fullContent);
+    PreparedInvoiceExport prepareExport(InvoiceQueryRequest query, boolean fullContent);
 
     /**
      * Open an interactive (online) KSeF session for sending invoices.
@@ -170,7 +170,7 @@ public interface Invoices {
      * @param filter required filter (type, status, date ranges, exact ref)
      * @return lazy stream of matching session summary items
      */
-    java.util.stream.Stream<SessionListItem> streamSessions(SessionsQueryFilter filter);
+    java.util.stream.Stream<SessionListItem> streamSessions(SessionsQueryRequest filter);
 
     /**
      * Submit a batch of invoices synchronously. SDK encrypts every invoice with

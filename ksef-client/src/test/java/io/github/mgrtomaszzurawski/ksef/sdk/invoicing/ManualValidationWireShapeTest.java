@@ -17,7 +17,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.CommonSessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -135,7 +135,7 @@ class ManualValidationWireShapeTest {
                         .withBody(EMPTY_SESSIONS_RESPONSE)));
 
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
-            SessionsQueryFilter filter = SessionsQueryFilter.forOnline()
+            SessionsQueryRequest filter = SessionsQueryRequest.forOnline()
                     .statuses(CommonSessionStatus.IN_PROGRESS, CommonSessionStatus.SUCCEEDED)
                     .build();
             List<SessionListItem> result = client.invoices().streamSessions(filter).toList();
@@ -153,7 +153,7 @@ class ManualValidationWireShapeTest {
         // A.2.4 + reviewer CRITICAL — sessionType is required per OpenAPI;
         // record's compact constructor enforces non-null.
         assertThrows(NullPointerException.class,
-                () -> new SessionsQueryFilter(null, null, null, null, null, null, null, null, null));
+                () -> new SessionsQueryRequest(null, null, null, null, null, null, null, null, null));
     }
 
     @Test

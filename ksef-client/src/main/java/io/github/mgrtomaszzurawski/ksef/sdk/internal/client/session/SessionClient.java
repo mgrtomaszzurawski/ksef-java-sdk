@@ -103,7 +103,7 @@ public final class SessionClient {
      * collecting downstream.
      */
     public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem>
-            streamSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter) {
+            streamSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest filter) {
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.cursorStream(continuationToken -> {
             io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw raw = querySessionsPage(filter, continuationToken);
             java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem> items = new java.util.ArrayList<>();
@@ -119,12 +119,12 @@ public final class SessionClient {
 
     @SuppressWarnings("PMD.ConsecutiveAppendsShouldReuse")
     private io.github.mgrtomaszzurawski.ksef.client.model.SessionsQueryResponseRaw querySessionsPage(
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter filter,
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest filter,
             @Nullable String continuationToken) {
         LOGGER.debug(LOG_CALL, OP_QUERY_SESSIONS);
         String token = http.requireToken();
         StringBuilder path = new StringBuilder(ApiPaths.SESSIONS).append(QUERY_PAGE_SIZE).append(SESSION_INVOICES_PAGE_SIZE);
-        // sessionType is required per OpenAPI; SessionsQueryFilter compact
+        // sessionType is required per OpenAPI; SessionsQueryRequest compact
         // constructor enforces non-null so we never need a presence check here.
         path.append(QUERY_PARAM_SEPARATOR).append(PARAM_SESSION_TYPE).append(QUERY_PARAM_EQUALS)
                 .append(filter.sessionType() == io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.KsefSessionType.ONLINE
