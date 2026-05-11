@@ -176,22 +176,19 @@ tasks.jacocoTestCoverageVerification {
     violationRules {
         rule {
             element = "BUNDLE"
-            // F-2 partial: thresholds raised from the post-PR21 floor of
-            // 0.70 / 0.75 to the empirical coverage after the new
-            // KsefExceptionSafeResponseBodyTest landed. Full restoration to
-            // the pre-PR21 0.75 / 0.80 target is parked for a dedicated
-            // session — would need new tests for DecryptedInvoiceSyncSpliterator
-            // (~250 LOC, producer-thread + queue) plus the four typed
-            // InvoiceDocument flat-accessor classes.
+            // Pre-PR21 thresholds restored — F-2 closed via
+            // DecryptedInvoiceSyncSpliteratorTest, KsefExceptionSafeResponseBodyTest,
+            // and four InvoiceDocument flat-accessor tests covering the
+            // read-side of ADR-030.
             limit {
                 counter = "INSTRUCTION"
                 value = "COVEREDRATIO"
-                minimum = "0.73".toBigDecimal()
+                minimum = "0.75".toBigDecimal()
             }
             limit {
                 counter = "METHOD"
                 value = "COVEREDRATIO"
-                minimum = "0.79".toBigDecimal()
+                minimum = "0.80".toBigDecimal()
             }
         }
         rule {
