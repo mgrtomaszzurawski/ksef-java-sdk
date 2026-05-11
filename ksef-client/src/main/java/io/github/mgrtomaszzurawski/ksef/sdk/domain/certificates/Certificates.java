@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @since 1.0.0
  */
-public interface CertificateClient {
+public interface Certificates {
 
     CertificateLimits getLimits();
     CertificateEnrollmentData getEnrollmentData();

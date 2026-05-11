@@ -100,7 +100,7 @@ final class OnlineSessionImpl implements OnlineSession {
             "hashOfOriginal must be exactly %d bytes (SHA-256), got %d";
     private static final String ERR_SEND_INVOICE_REQUIRES_FULL_CTOR =
             "sendInvoice(Invoice) requires the verification-aware constructor (KsefEnvironment + timeout);"
-                    + " InvoiceClientImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
+                    + " InvoicesImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
 
     /** Default verification timeout when none is supplied via the builder. */
     static final Duration DEFAULT_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);

@@ -15,7 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityAdminPermissionGrantBuilder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -128,7 +128,7 @@ public final class VatUeProviderRunner implements DemoRunner {
                             "grantEuEntityAdmin",
                             () -> permissions.getOperationStatus(referenceNumber),
                             opStatus -> opStatus.status() != null
-                                    && opStatus.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
+                                    && opStatus.status().code() >= Permissions.TERMINAL_STATUS_CODE_THRESHOLD,
                             opStatus -> opStatus.status() == null ? null : opStatus.status().code(),
                             GRANT_AWAIT_TIMEOUT,
                             null));

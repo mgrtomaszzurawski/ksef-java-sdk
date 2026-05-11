@@ -86,7 +86,7 @@ import org.slf4j.LoggerFactory;
  * the {@code submitBatch} call in a {@link java.util.concurrent.CompletableFuture}.
  *
  * <p>Internal — module-private. Reachable only from
- * {@code InvoiceClientImpl.submitBatch(...)}.
+ * {@code InvoicesImpl.submitBatch(...)}.
  *
  * @since 1.0.0
  */

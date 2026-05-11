@@ -12,7 +12,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
  * @since 1.0.0
  */
 @SuppressWarnings("PMD.TestClassWithoutTestCases") // Not a test class — manages KSeF test environment data
-public final class TestDataClientImpl implements TestDataClient {
+public final class TestDataAdminImpl implements TestDataAdmin {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestDataClientImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestDataAdminImpl.class);
     private static final String LOG_CALL = "→ {}";
 
     private static final String PATH_SUBJECT = ApiPaths.TESTDATA + "/subject";
@@ -88,7 +88,7 @@ public final class TestDataClientImpl implements TestDataClient {
 
     private final HttpSupport http;
 
-    public TestDataClientImpl(HttpRuntime runtime) {
+    public TestDataAdminImpl(HttpRuntime runtime) {
         this.http = new HttpSupport(runtime);
     }
 

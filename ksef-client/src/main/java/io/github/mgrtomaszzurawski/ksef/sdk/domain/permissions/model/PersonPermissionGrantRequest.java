@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * SDK request for {@code PermissionClient.grantPerson(...)}.
+ * SDK request for {@code Permissions.grantPerson(...)}.
  *
  * @since 1.0.0
  */

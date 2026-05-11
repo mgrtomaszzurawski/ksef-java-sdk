@@ -18,7 +18,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -135,7 +135,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                             "grantAuthorization",
                             () -> permissions.getOperationStatus(referenceNumber),
                             opStatus -> opStatus.status() != null
-                                    && opStatus.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
+                                    && opStatus.status().code() >= Permissions.TERMINAL_STATUS_CODE_THRESHOLD,
                             opStatus -> opStatus.status() == null ? null : opStatus.status().code(),
                             Duration.ofSeconds(GRANT_AWAIT_SECONDS),
                             null));

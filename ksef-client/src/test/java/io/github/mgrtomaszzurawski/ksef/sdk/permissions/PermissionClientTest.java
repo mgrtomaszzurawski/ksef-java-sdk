@@ -36,7 +36,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;

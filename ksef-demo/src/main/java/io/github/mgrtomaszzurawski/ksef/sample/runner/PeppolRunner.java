@@ -15,7 +15,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for PeppolClient operations.
+ * Runner for PeppolProviders operations.
  *
  * <p>Exercises both the no-arg default-page query and the paginated query overload.
  * Requires authentication (AUTH_SAFE+ modes).</p>

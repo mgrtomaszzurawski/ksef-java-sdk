@@ -12,7 +12,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa2InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoiceDocument;
@@ -76,9 +76,9 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public final class InvoiceClientImpl implements InvoiceClient {
+public final class InvoicesImpl implements Invoices {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceClientImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(InvoicesImpl.class);
     private static final String LOG_CALL = "→ {}";
     private static final String LOG_CALL_REF = "→ {} ref={}";
 
@@ -95,7 +95,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String ERR_NULL_SESSION_REF = "sessionReferenceNumber must not be null";
     private static final String ERR_NULL_INVOICE_REF = "invoiceReferenceNumber must not be null";
     private static final String ERR_CLEARED_FROM_ARCHIVE_REQUIRES_FULL_RUNTIME =
-            "clearedFromArchive() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+            "clearedFromArchive() requires the full Invoices runtime — instantiate via the multi-arg constructor";
     private static final String ERR_NOT_ACCEPTED =
             "Invoice has not reached accepted state (code 200) — no UPO available. Current status code: ";
     private static final String ERR_NO_KSEF_NUMBER =
@@ -123,11 +123,11 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String ERR_NULL_ENVIRONMENT = "environment must not be null";
     private static final String ERR_NULL_PUBLIC_KEY_RESOLVER = "publicKeyResolver must not be null";
     private static final String ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME =
-            "openSession() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+            "openSession() requires the full Invoices runtime — instantiate via the multi-arg constructor";
     private static final String ERR_STREAM_SESSIONS_REQUIRES_FULL_RUNTIME =
-            "streamSessions() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+            "streamSessions() requires the full Invoices runtime — instantiate via the multi-arg constructor";
     private static final String ERR_SUBMIT_BATCH_REQUIRES_FULL_RUNTIME =
-            "submitBatch() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+            "submitBatch() requires the full Invoices runtime — instantiate via the multi-arg constructor";
     private static final String ERR_NO_SYMMETRIC_KEY_CERT = "No KSeF public key found for SYMMETRIC_KEY_ENCRYPTION usage";
     private static final String ERR_TRUNCATED_NO_CURSOR =
             "streamInvoicesByMetadata: server returned isTruncated=true but no usable date cursor on the last record "
@@ -152,18 +152,18 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private final @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver;
     private final java.time.Duration invoiceVerificationTimeout;
 
-    public InvoiceClientImpl(HttpRuntime runtime) {
+    public InvoicesImpl(HttpRuntime runtime) {
         this(runtime, null, null, null, DEFAULT_INVOICE_VERIFICATION_TIMEOUT);
     }
 
-    public InvoiceClientImpl(HttpRuntime runtime,
+    public InvoicesImpl(HttpRuntime runtime,
                               @Nullable SessionClient sessionClient,
                               @Nullable KsefEnvironment environment,
                               @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver) {
         this(runtime, sessionClient, environment, publicKeyResolver, DEFAULT_INVOICE_VERIFICATION_TIMEOUT);
     }
 
-    public InvoiceClientImpl(HttpRuntime runtime,
+    public InvoicesImpl(HttpRuntime runtime,
                               @Nullable SessionClient sessionClient,
                               @Nullable KsefEnvironment environment,
                               @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,

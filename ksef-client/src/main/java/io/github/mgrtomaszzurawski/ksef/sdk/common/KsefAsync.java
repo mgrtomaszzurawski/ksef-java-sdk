@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
  * write the timeout / interval / interrupt-handling boilerplate themselves.
  *
  * <p>Typical use (terminal threshold pulled from the relevant client interface
- * — see {@code PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD} for the
+ * — see {@code Permissions.TERMINAL_STATUS_CODE_THRESHOLD} for the
  * documented poll-loop terminal value):
  * <pre>{@code
  * EnrollCertificateResult result = client.certificates().enroll(request);
@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  *         "enrollCertificate",
  *         () -> client.certificates().getEnrollmentStatus(result.referenceNumber()),
  *         status -> status.status() != null
- *                   && status.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
+ *                   && status.status().code() >= Permissions.TERMINAL_STATUS_CODE_THRESHOLD,
  *         status -> status.status() == null ? null : status.status().code(),
  *         Duration.ofMinutes(5),
  *         null));   // null = use default poll interval

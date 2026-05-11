@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * SDK request for {@code TestDataClient.grantPermissions(...)}.
+ * SDK request for {@code TestDataAdmin.grantPermissions(...)}.
  *
  * @since 1.0.0
  */

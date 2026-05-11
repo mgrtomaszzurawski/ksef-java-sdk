@@ -62,7 +62,7 @@ public final class FormCodeDetector {
     /**
      * Same as {@link #detect(byte[])} but throws when the FormCode cannot
      * be determined. Useful for the well-known-schema branch of
-     * {@code InvoiceClient.getByKsefNumber}.
+     * {@code Invoices.getByKsefNumber}.
      *
      * @throws KsefException when root element is unrecognised
      */

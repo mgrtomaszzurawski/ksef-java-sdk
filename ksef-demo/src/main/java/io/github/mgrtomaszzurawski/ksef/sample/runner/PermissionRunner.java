@@ -31,7 +31,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for PermissionClient operations. Exercises every grant variant (person, entity,
+ * Runner for Permissions operations. Exercises every grant variant (person, entity,
  * authorization, indirect, subunit, EU entity admin, EU entity), every query variant
  * (personal, persons, subunits, entities, entity-roles, subordinate-roles, authorizations,
  * EU entities), both revoke variants, and the operation/attachment status endpoints.

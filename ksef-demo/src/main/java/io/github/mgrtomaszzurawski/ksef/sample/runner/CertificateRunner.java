@@ -24,7 +24,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for CertificateClient operations.
+ * Runner for Certificates operations.
  *
  * <p>getLimits works with any auth method (token or XAdES).
  * getEnrollmentData and query require XAdES auth — they run when the SDK was

@@ -9,7 +9,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code TestDataClient.createPerson(...)}.
+ * SDK request for {@code TestDataAdmin.createPerson(...)}.
  *
  * @since 1.0.0
  */

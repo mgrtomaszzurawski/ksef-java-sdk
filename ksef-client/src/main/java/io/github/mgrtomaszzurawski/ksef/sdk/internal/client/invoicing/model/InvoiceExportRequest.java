@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * SDK request payload for {@code InvoiceClient.exportInvoices(...)}.
+ * SDK request payload for {@code Invoices.exportInvoices(...)}.
  * Carries the per-export AES key (RSA-encrypted with KSeF's public key) and
  * the query filters describing which invoices to export.
  *

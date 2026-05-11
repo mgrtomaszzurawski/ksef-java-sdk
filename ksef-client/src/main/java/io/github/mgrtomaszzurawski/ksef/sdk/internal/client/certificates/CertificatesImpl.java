@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.CertificateClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.Certificates;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentDataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateEnrollmentStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.CertificateLimitsResponseRaw;
@@ -39,9 +39,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.mapping
  *
  * @since 1.0.0
  */
-public final class CertificateClientImpl implements CertificateClient {
+public final class CertificatesImpl implements Certificates {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CertificateClientImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CertificatesImpl.class);
     private static final String LOG_CALL = "→ {}";
     private static final String LOG_CALL_REF = "→ {} ref={}";
 
@@ -79,7 +79,7 @@ public final class CertificateClientImpl implements CertificateClient {
     private final HttpSupport http;
     private final HttpRuntime runtime;
 
-    public CertificateClientImpl(HttpRuntime runtime) {
+    public CertificatesImpl(HttpRuntime runtime) {
         this.runtime = runtime;
         this.http = new HttpSupport(runtime);
     }

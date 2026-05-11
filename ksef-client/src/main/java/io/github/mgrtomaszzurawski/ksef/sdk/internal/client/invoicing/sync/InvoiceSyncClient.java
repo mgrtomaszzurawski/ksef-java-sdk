@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportedInvoiceDirectory;
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *
  * <ol>
  *   <li>iterate per-subject-type independently;</li>
- *   <li>per window: open an export job ({@link InvoiceClient#prepareExport})
+ *   <li>per window: open an export job ({@link Invoices#prepareExport})
  *       with the cursor as {@code dateFrom};</li>
  *   <li>poll until terminal, download all parts, verify SHA-256, decrypt,
  *       unzip to {@code outputDirectory}/&lt;subject&gt;/window-&lt;n&gt;/;</li>
@@ -94,10 +94,10 @@ public final class InvoiceSyncClient {
     private static final String ERR_METADATA_MISSING = "Export package reports invoiceCount=%d but the decrypted package has no _metadata.json — refusing to advance the checkpoint (Codex round-9 fresh-review F3 fail-closed)";
     private static final String ERR_METADATA_EMPTY = "Export package reports invoiceCount=%d but _metadata.json is empty — refusing to advance the checkpoint (Codex round-9 fresh-review F3 fail-closed)";
 
-    private final InvoiceClient invoiceClient;
+    private final Invoices invoiceClient;
     private final ObjectMapper objectMapper;
 
-    public InvoiceSyncClient(InvoiceClient invoiceClient, ObjectMapper objectMapper) {
+    public InvoiceSyncClient(Invoices invoiceClient, ObjectMapper objectMapper) {
         this.invoiceClient = Objects.requireNonNull(invoiceClient, "invoiceClient must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     }

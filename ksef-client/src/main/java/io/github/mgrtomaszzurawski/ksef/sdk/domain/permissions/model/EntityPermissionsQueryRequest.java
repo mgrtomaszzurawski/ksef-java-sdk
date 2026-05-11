@@ -8,8 +8,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPer
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request payload for {@code PermissionClient.queryEntities(...)} and
- * {@code PermissionClient.streamEntities(...)}. Captures the optional
+ * SDK request payload for {@code Permissions.queryEntities(...)} and
+ * {@code Permissions.streamEntities(...)}. Captures the optional
  * context identifier filter and paging parameters for
  * {@code POST /permissions/query/entities/grants}.
  *

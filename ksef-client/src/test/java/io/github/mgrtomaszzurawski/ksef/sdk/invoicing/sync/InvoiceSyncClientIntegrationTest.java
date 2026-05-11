@@ -9,7 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -59,7 +59,7 @@ import static org.mockito.Mockito.when;
  * Integration test for {@link InvoiceSyncClient} that wires the
  * orchestrator to a <strong>real</strong> {@link PreparedInvoiceExport}
  * (not a Mockito stub). The export status is provided by a mocked
- * {@link InvoiceClient} so we control the polling outcome, but
+ * {@link Invoices} so we control the polling outcome, but
  * {@code PreparedInvoiceExport.downloadAndDecryptTo(...)} actually
  * downloads encrypted bytes from WireMock-HTTPS, AES-decrypts them,
  * unzips, and writes {@code _metadata.json} to disk. The orchestrator
@@ -111,7 +111,7 @@ class InvoiceSyncClientIntegrationTest {
                 .willReturn(aResponse().withStatus(STATUS_OK).withBody(encryptedZip)));
 
         // Build a real PreparedInvoiceExport whose download actually hits WireMock.
-        InvoiceClient invoiceClient = mock(InvoiceClient.class);
+        Invoices invoiceClient = mock(Invoices.class);
         InvoicePackagePart part = new InvoicePackagePart(1, "part1.bin", "GET",
                 URI.create(wmInfo.getHttpsBaseUrl() + PART_PATH),
                 (long) zipBytes.length, sha256(zipBytes),
@@ -135,7 +135,7 @@ class InvoiceSyncClientIntegrationTest {
                     return realExport;
                 })
                 .thenAnswer(invocation -> {
-                    // Second call: stub the InvoiceClient so awaitReady on this
+                    // Second call: stub the Invoices so awaitReady on this
                     // export returns an empty package and the loop stops.
                     when(invoiceClient.getExportStatus(anyString())).thenReturn(emptyStatus());
                     return emptyExport;

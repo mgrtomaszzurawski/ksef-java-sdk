@@ -15,11 +15,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectLim
 import java.time.LocalDate;
 
 /**
- * Public API for TestDataClient.
+ * Public API for TestDataAdmin.
  *
  * @since 1.0.0
  */
-public interface TestDataClient {
+public interface TestDataAdmin {
 
     void createSubject(TestSubjectCreateRequest request);
 

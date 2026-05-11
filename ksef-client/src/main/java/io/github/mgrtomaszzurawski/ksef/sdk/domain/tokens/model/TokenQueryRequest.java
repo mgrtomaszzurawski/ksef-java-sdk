@@ -8,8 +8,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request payload for {@code TokenClient.list(...)} and
- * {@code TokenClient.streamTokens(...)}. Captures the filter
+ * SDK request payload for {@code Tokens.list(...)} and
+ * {@code Tokens.streamTokens(...)}. Captures the filter
  * parameters defined by the spec for {@code GET /tokens}. All
  * fields optional; a record with no fields populated matches every
  * token visible to the authenticated principal.

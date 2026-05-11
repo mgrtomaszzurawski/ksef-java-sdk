@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.Limits;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveApiRateLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveContextLimitsRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EffectiveSubjectLimitsRaw;
@@ -23,9 +23,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.mapping.Limit
  *
  * @since 1.0.0
  */
-public final class LimitsClientImpl implements LimitsClient {
+public final class LimitsImpl implements Limits {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LimitsClientImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LimitsImpl.class);
     private static final String LOG_CALL = "→ {}";
 
     private static final String PATH_CONTEXT_LIMITS = ApiPaths.LIMITS + "/context";
@@ -38,7 +38,7 @@ public final class LimitsClientImpl implements LimitsClient {
 
     private final HttpSupport http;
 
-    public LimitsClientImpl(HttpRuntime runtime) {
+    public LimitsImpl(HttpRuntime runtime) {
         this.http = new HttpSupport(runtime);
     }
 

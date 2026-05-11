@@ -29,7 +29,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;
  *
  * @since 1.0.0
  */
-public interface LimitsClient {
+public interface Limits {
 
     ContextLimits getContextLimits();
 

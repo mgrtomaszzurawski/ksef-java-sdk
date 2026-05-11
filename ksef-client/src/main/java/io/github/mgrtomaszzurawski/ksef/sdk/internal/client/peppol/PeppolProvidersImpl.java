@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolProviders;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.mapping.PeppolMappers;
@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.0.0
  */
-public final class PeppolClientImpl implements PeppolClient {
+public final class PeppolProvidersImpl implements PeppolProviders {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PeppolClientImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PeppolProvidersImpl.class);
     private static final String LOG_CALL = "→ {} pageOffset={} pageSize={}";
 
     private static final String PATH_PEPPOL_QUERY = ApiPaths.PEPPOL + "/query";
@@ -54,7 +54,7 @@ public final class PeppolClientImpl implements PeppolClient {
 
     private final HttpSupport http;
 
-    public PeppolClientImpl(HttpRuntime runtime) {
+    public PeppolProvidersImpl(HttpRuntime runtime) {
         this.http = new HttpSupport(runtime);
     }
 

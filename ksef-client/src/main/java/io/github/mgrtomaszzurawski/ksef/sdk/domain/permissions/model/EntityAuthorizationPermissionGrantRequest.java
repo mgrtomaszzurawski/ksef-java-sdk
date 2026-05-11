@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 import java.util.Objects;
 
 /**
- * SDK request for {@code PermissionClient.grantAuthorization(...)}.
+ * SDK request for {@code Permissions.grantAuthorization(...)}.
  *
  * @since 1.0.0
  */

@@ -37,7 +37,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPerm
  *
  * @since 1.0.0
  */
-public interface PermissionClient {
+public interface Permissions {
 
     /**
      * KSeF permission-operation status codes are conventionally
@@ -48,7 +48,7 @@ public interface PermissionClient {
      * {@link io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync#awaitTerminal}:
      * <pre>{@code
      * status -> status.status() != null
-     *           && status.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD
+     *           && status.status().code() >= Permissions.TERMINAL_STATUS_CODE_THRESHOLD
      * }</pre>
      */
     int TERMINAL_STATUS_CODE_THRESHOLD = 200;

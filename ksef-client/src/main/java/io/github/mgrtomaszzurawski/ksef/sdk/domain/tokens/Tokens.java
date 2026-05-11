@@ -15,7 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenQueryReques
  *
  * @since 1.0.0
  */
-public interface TokenClient {
+public interface Tokens {
 
     GenerateTokenResult generate(TokenGenerateRequest request);
 

@@ -9,7 +9,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code PermissionClient.queryPersons(...)}.
+ * SDK request for {@code Permissions.queryPersons(...)}.
  *
  * @since 1.0.0
  */

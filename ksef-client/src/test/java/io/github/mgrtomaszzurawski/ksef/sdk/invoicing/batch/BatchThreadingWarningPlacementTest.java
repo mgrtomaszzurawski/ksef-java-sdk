@@ -15,9 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Asserts that the canonical batch-threading warning text from PR11 lives in
  * the five surfaces it must be impossible to miss:
  * <ol>
- *   <li>Method javadoc on {@code submitBatch} (in {@code InvoiceClient}).</li>
+ *   <li>Method javadoc on {@code submitBatch} (in {@code Invoices}).</li>
  *   <li>Method javadoc on {@code submitBatchFromFiles}.</li>
- *   <li>Class-level javadoc on {@code InvoiceClient}.</li>
+ *   <li>Class-level javadoc on {@code Invoices}.</li>
  *   <li>{@code README.md} batch-upload section.</li>
  *   <li>{@code CHANGELOG.md} unreleased / 1.0.0 entry.</li>
  * </ol>
@@ -51,12 +51,12 @@ class BatchThreadingWarningPlacementTest {
         int occurrences = countOccurrences(collapsed, CANONICAL_PHRASE_FRAGMENT_BLOCK);
         final int expectedSurfacesInInvoiceClient = 3;
         assertTrue(occurrences >= expectedSurfacesInInvoiceClient,
-                "InvoiceClient must contain the threading-warning phrase at least 3 times "
+                "Invoices must contain the threading-warning phrase at least 3 times "
                         + "(class-level + submitBatch + submitBatchFromFiles); found " + occurrences);
         assertTrue(collapsed.contains(CANONICAL_PHRASE_FRAGMENT_5GB),
-                "InvoiceClient must mention the 5 GB batch ceiling");
+                "Invoices must mention the 5 GB batch ceiling");
         assertTrue(collapsed.contains(CANONICAL_PHRASE_FRAGMENT_NOT_UI),
-                "InvoiceClient must contain the 'Do not call from UI threads' phrase");
+                "Invoices must contain the 'Do not call from UI threads' phrase");
     }
 
     @Test
@@ -90,7 +90,7 @@ class BatchThreadingWarningPlacementTest {
 
     private static String readInvoiceClientSource() throws IOException {
         Path source = findRepoFile(
-                "ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/sdk/domain/invoicing/InvoiceClient.java");
+                "ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/sdk/domain/invoicing/Invoices.java");
         return Files.readString(source, StandardCharsets.UTF_8);
     }
 

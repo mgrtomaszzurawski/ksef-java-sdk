@@ -171,7 +171,7 @@ class PeppolClientTest {
     @Test
     void streamProviders_walksUntilHasMoreFalse(WireMockRuntimeInfo wmInfo) {
         // given — 2 pages; first reports hasMore=true, second hasMore=false
-        // (stream-page size hardcoded to STREAM_PAGE_SIZE=50 in PeppolClientImpl)
+        // (stream-page size hardcoded to STREAM_PAGE_SIZE=50 in PeppolProvidersImpl)
         String firstPageBody = """
                 {
                   "peppolProviders": [

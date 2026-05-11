@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /**
  * Read-side counterpart of {@link Invoice}. Returned by
- * {@link InvoiceClient#getByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber)}
+ * {@link Invoices#getByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber)}
  * for invoices fetched from KSeF (issued by either the consumer or by a
  * counterparty). Open interface — pattern-match (`instanceof` chain) on
  * the concrete typed subtypes when you need schema-specific accessors.

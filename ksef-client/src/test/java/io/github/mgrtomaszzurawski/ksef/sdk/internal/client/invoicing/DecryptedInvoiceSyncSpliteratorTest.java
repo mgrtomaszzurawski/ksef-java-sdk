@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportedInvoiceDirectory;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -45,7 +45,7 @@ import static org.mockito.Mockito.when;
  * producer-failure propagation through {@code tryAdvance}.
  *
  * <p>Producer thread runs the real {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync.InvoiceSyncClient}
- * over a Mockito-stubbed {@link InvoiceClient#prepareExport}, just like
+ * over a Mockito-stubbed {@link Invoices#prepareExport}, just like
  * {@code InvoiceSyncClientTest} does. The Spliterator's queueing sink is
  * exercised indirectly through that path.
  */
@@ -63,7 +63,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
     @Test
     void tryAdvance_whenProducerEmitsInvoice_drainsItThenReturnsFalse(@TempDir Path tempDir) throws Exception {
         // given — one window with one invoice, then empty window to stop iteration
-        InvoiceClient invoiceClient = mock(InvoiceClient.class);
+        Invoices invoiceClient = mock(Invoices.class);
         Path windowDir = tempDir.resolve("subject1/window-0");
         PreparedInvoiceExport firstWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR),
@@ -94,7 +94,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
     @Test
     void close_whenCalled_stopsFurtherTryAdvance(@TempDir Path tempDir) throws Exception {
         // given — single emitter window, consumer closes after one invoice
-        InvoiceClient invoiceClient = mock(InvoiceClient.class);
+        Invoices invoiceClient = mock(Invoices.class);
         Path windowDir = tempDir.resolve("subject1/window-0");
         PreparedInvoiceExport firstWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR),
@@ -123,12 +123,12 @@ class DecryptedInvoiceSyncSpliteratorTest {
 
     @Test
     void tryAdvance_whenProducerThrowsIllegalState_rethrowsAsIs(@TempDir Path tempDir) {
-        // given — InvoiceClient.prepareExport throws IllegalStateException →
+        // given — Invoices.prepareExport throws IllegalStateException →
         // producer thread fails with that exact type. propagateProducerFailure
         // rethrows RuntimeException subclasses as-is (without wrapping in
         // KsefException), so the test pins that branch by asserting the
         // exact thrown type.
-        InvoiceClient invoiceClient = mock(InvoiceClient.class);
+        Invoices invoiceClient = mock(Invoices.class);
         when(invoiceClient.prepareExport(any(InvoiceQueryFilters.class), anyBoolean()))
                 .thenThrow(new IllegalStateException("simulated upstream failure"));
 
@@ -152,7 +152,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
     @Test
     void tryAdvance_whenActionIsNull_throwsNullPointerException(@TempDir Path tempDir) {
         // given — minimal sync setup (empty window)
-        InvoiceClient invoiceClient = mock(InvoiceClient.class);
+        Invoices invoiceClient = mock(Invoices.class);
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
         when(invoiceClient.prepareExport(any(InvoiceQueryFilters.class), anyBoolean()))
@@ -170,7 +170,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
 
     @Test
     void characteristics_isOrderedAndNonnull(@TempDir Path tempDir) {
-        InvoiceClient invoiceClient = mock(InvoiceClient.class);
+        Invoices invoiceClient = mock(Invoices.class);
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
         when(invoiceClient.prepareExport(any(InvoiceQueryFilters.class), anyBoolean()))

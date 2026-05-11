@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
@@ -36,12 +36,12 @@ import java.util.function.Consumer;
  * runs {@code sync(plan, store, queueingSink)}, and the
  * {@link Consumer}-driven {@link #tryAdvance(Consumer)} polls a bounded
  * blocking queue. This keeps the lazy contract from
- * {@link InvoiceClient#syncAsStream} honest — the paginator stops as
+ * {@link Invoices#syncAsStream} honest — the paginator stops as
  * soon as the consumer breaks out via
  * {@link java.util.stream.Stream#limit(long)} or close.
  *
  * <p>Per-element semantics (matching the docstring on
- * {@link InvoiceClient#syncAsStream}):
+ * {@link Invoices#syncAsStream}):
  * <ul>
  *   <li>Each element handed to {@link #tryAdvance(Consumer)} is the
  *       just-emitted decrypted invoice; the underlying
@@ -54,7 +54,7 @@ import java.util.function.Consumer;
  *       directory the orchestrator opened.</li>
  * </ul>
  *
- * <p>Internal — only constructed by {@code InvoiceClientImpl#syncAsStream}.
+ * <p>Internal — only constructed by {@code InvoicesImpl#syncAsStream}.
  *
  * @since 1.0.0
  */
@@ -85,7 +85,7 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
     private volatile boolean cancelled;
     private boolean producerCompleted;
 
-    DecryptedInvoiceSyncSpliterator(InvoiceClient invoiceClient,
+    DecryptedInvoiceSyncSpliterator(Invoices invoiceClient,
                                     ObjectMapper objectMapper,
                                     IncrementalSyncPlan plan,
                                     CheckpointStore checkpointStore) {

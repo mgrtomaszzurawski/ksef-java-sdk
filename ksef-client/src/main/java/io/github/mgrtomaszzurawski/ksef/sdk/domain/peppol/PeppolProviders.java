@@ -16,7 +16,7 @@ import java.util.stream.Stream;
  *
  * @since 1.0.0
  */
-public interface PeppolClient {
+public interface PeppolProviders {
 
     /**
      * Single page of Peppol providers. Use this for explicit UI pagination

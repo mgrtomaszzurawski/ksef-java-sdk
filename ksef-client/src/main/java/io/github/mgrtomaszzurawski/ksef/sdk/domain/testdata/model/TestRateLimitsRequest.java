@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code TestDataClient.setRateLimits(...)}. Each non-null
+ * SDK request for {@code TestDataAdmin.setRateLimits(...)}. Each non-null
  * field overrides the corresponding category; null leaves the default.
  *
  * @since 1.0.0

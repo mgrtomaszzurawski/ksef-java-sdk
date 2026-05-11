@@ -7,8 +7,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request payload for {@code PermissionClient.querySubordinateRoles(...)} and
- * {@code PermissionClient.streamSubordinateRoles(...)}. Captures the
+ * SDK request payload for {@code Permissions.querySubordinateRoles(...)} and
+ * {@code Permissions.streamSubordinateRoles(...)}. Captures the
  * subordinate entity NIP filter and paging parameters for
  * {@code POST /permissions/query/subordinate-entities/roles}. The spec
  * only defines NIP as the supported identifier type for this endpoint.

@@ -8,7 +8,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code PermissionClient.queryPersonal(...)}.
+ * SDK request for {@code Permissions.queryPersonal(...)}.
  *
  * @since 1.0.0
  */

@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @since 1.0.0
  */
-public interface InvoiceClient {
+public interface Invoices {
 
     /**
      * Retrieve a typed {@link InvoiceDocument} by KSeF number. Validates

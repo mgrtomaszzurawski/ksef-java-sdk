@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * SDK request payload for {@code TokenClient.generate(...)}. Produced by
+ * SDK request payload for {@code Tokens.generate(...)}. Produced by
  * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenGenerateBuilder#build()}.
  *
  * @param description token description (5-256 characters)

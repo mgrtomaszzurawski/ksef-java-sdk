@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.api;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Enforced structurally: {@link OnlineSession#sendTechnicalCorrection(Invoice, byte[])}
  * is the canonical online entry-point. The batch facade
- * ({@code InvoiceClient.submitBatch(...)}) exposes neither a method named
+ * ({@code Invoices.submitBatch(...)}) exposes neither a method named
  * with {@code TechnicalCorrection} nor any signature accepting the hash
  * payload tuple required for korekta techniczna. Reflection scan asserts
  * that.
@@ -44,16 +44,16 @@ class PublicApiKorektaTest {
 
     @Test
     void batchSurface_exposesNoTechnicalCorrectionEntryPoint() {
-        // No batch-related method named sendTechnicalCorrection on InvoiceClient.
-        boolean hasTechnicalCorrectionMethod = Arrays.stream(InvoiceClient.class.getMethods())
+        // No batch-related method named sendTechnicalCorrection on Invoices.
+        boolean hasTechnicalCorrectionMethod = Arrays.stream(Invoices.class.getMethods())
                 .anyMatch(method -> method.getName().toLowerCase(java.util.Locale.ROOT)
                         .contains("technicalcorrection"));
         assertFalse(hasTechnicalCorrectionMethod,
-                "InvoiceClient (batch facade) must NOT expose a technical-correction method (REQ-OFFLINE-005)");
+                "Invoices (batch facade) must NOT expose a technical-correction method (REQ-OFFLINE-005)");
 
         // No batch method accepts the hashOfOriginal byte[] alongside Invoice — that pair
         // only flows through OnlineSession.sendTechnicalCorrection.
-        List<String> batchMethodsTakingInvoiceAndHash = Arrays.stream(InvoiceClient.class.getMethods())
+        List<String> batchMethodsTakingInvoiceAndHash = Arrays.stream(Invoices.class.getMethods())
                 .filter(method -> method.getName().toLowerCase(java.util.Locale.ROOT).contains("batch"))
                 .filter(method -> Arrays.asList(method.getParameterTypes()).contains(Invoice.class)
                         && Arrays.asList(method.getParameterTypes()).contains(byte[].class))

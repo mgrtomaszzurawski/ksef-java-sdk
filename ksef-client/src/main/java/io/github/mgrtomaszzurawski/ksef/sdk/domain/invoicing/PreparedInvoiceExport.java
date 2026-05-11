@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handle for an in-flight invoice export. Returned by
- * {@link InvoiceClient#prepareExport(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters, boolean)
+ * {@link Invoices#prepareExport(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters, boolean)
  * client.invoices().prepareExport(...)}, this class:
  *
  * <ol>
@@ -116,7 +116,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     /** Bounded-copy buffer size for ZIP entry extraction (matches CipherInputStream default block buffer). */
     private static final int COPY_BUFFER_BYTES = 8 * 1024;
 
-    private final InvoiceClient invoices;
+    private final Invoices invoices;
     private final HttpClient httpClient;
     private final String referenceNumber;
     private final byte[] aesKey;
@@ -130,7 +130,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
      * prepare response — passing arbitrary bytes here is undefined
      * behaviour. Constructed via the same-package {@code SessionHandleConstructor} (internal bridge).
      */
-    PreparedInvoiceExport(InvoiceClient invoices,
+    PreparedInvoiceExport(Invoices invoices,
                           HttpClient httpClient,
                           String referenceNumber,
                           byte[] aesKey,

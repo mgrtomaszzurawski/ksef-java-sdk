@@ -19,7 +19,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for TokenClient operations. Generates a token, verifies it, lists all tokens,
+ * Runner for Tokens operations. Generates a token, verifies it, lists all tokens,
  * then revokes the generated token — fully self-cleaning.
  */
 public final class TokenRunner implements DemoRunner {

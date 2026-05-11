@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
 import io.github.mgrtomaszzurawski.ksef.client.model.CheckAttachmentPermissionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.EntityPermissionsQueryRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsOperationResponseRaw;
@@ -70,9 +70,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.mapping.
  *
  * @since 1.0.0
  */
-public final class PermissionClientImpl implements PermissionClient {
+public final class PermissionsImpl implements Permissions {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PermissionClientImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PermissionsImpl.class);
     private static final String LOG_CALL = "→ {}";
     private static final String LOG_CALL_REF = "→ {} ref={}";
 
@@ -133,7 +133,7 @@ public final class PermissionClientImpl implements PermissionClient {
 
     private final HttpSupport http;
 
-    public PermissionClientImpl(HttpRuntime runtime) {
+    public PermissionsImpl(HttpRuntime runtime) {
         this.http = new HttpSupport(runtime);
     }
 

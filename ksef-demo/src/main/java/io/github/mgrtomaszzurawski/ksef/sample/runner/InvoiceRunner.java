@@ -38,7 +38,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for InvoiceClient operations.
+ * Runner for Invoices operations.
  *
  * <p>All operations run in both AUTH_SAFE and FULL modes — they're either
  * read-only (queryInvoicesByMetadata, getExportStatus, getByKsefNumber) or start a
@@ -197,7 +197,7 @@ public final class InvoiceRunner implements DemoRunner {
     }
 
     /**
-     * Smoke-test the {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient#syncAsStream}
+     * Smoke-test the {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices#syncAsStream}
      * stream entry point (PR16): walk up to {@value #SYNC_STREAM_LIMIT}
      * decrypted invoices in a {@value #SYNC_WINDOW_DAYS}-day window
      * ending now, persisting per-window checkpoints into an in-memory
@@ -256,7 +256,7 @@ public final class InvoiceRunner implements DemoRunner {
 
     /**
      * Exercise the typed-doc branch of {@code getByKsefNumber}: the
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient#getByKsefNumber}
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices#getByKsefNumber}
      * overload returning {@link InvoiceDocument} (PR12b). Only runs in
      * FULL mode when a real KSeF number is captured by an earlier probe.
      */

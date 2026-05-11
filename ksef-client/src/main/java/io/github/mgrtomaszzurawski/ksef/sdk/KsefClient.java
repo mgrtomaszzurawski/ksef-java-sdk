@@ -20,28 +20,28 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.Auth;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.CertificateClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.Certificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.Limits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolProviders;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.Tokens;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.CertificateClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoiceClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.LimitsClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.PeppolClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.PermissionClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.CertificatesImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoicesImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.LimitsImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.PeppolProvidersImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.PermissionsImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.TestDataClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.TokenClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.TestDataAdminImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.TokensImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.IdentifierMasking;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
@@ -128,13 +128,13 @@ public final class KsefClient implements AutoCloseable {
     private final AuthClient authClient;
     private final SecurityClient securityClient;
     private final SessionClient sessionClient;
-    private final InvoiceClient invoiceClient;
-    private final TokenClient tokenClient;
-    private final PermissionClient permissionClient;
-    private final CertificateClient certificateClient;
-    private final LimitsClient limitsClient;
-    private final TestDataClient testDataClient;
-    private final PeppolClient peppolClient;
+    private final Invoices invoiceClient;
+    private final Tokens tokenClient;
+    private final Permissions permissionClient;
+    private final Certificates certificateClient;
+    private final Limits limitsClient;
+    private final TestDataAdmin testDataClient;
+    private final PeppolProviders peppolClient;
     private final Auth authImpl;
     private final QrCodeService qrCodeService;
 
@@ -164,15 +164,15 @@ public final class KsefClient implements AutoCloseable {
         this.authClient = new AuthClient(this.runtime);
         this.securityClient = new SecurityClient(this.runtime);
         this.sessionClient = new SessionClient(this.runtime);
-        this.invoiceClient = new InvoiceClientImpl(this.runtime,
+        this.invoiceClient = new InvoicesImpl(this.runtime,
                 this.sessionClient, this.environment, this::getPublicKey,
                 builder.invoiceVerificationTimeout);
-        this.tokenClient = new TokenClientImpl(this.runtime);
-        this.permissionClient = new PermissionClientImpl(this.runtime);
-        this.certificateClient = new CertificateClientImpl(this.runtime);
-        this.limitsClient = new LimitsClientImpl(this.runtime);
-        this.testDataClient = new TestDataClientImpl(this.runtime);
-        this.peppolClient = new PeppolClientImpl(this.runtime);
+        this.tokenClient = new TokensImpl(this.runtime);
+        this.permissionClient = new PermissionsImpl(this.runtime);
+        this.certificateClient = new CertificatesImpl(this.runtime);
+        this.limitsClient = new LimitsImpl(this.runtime);
+        this.testDataClient = new TestDataAdminImpl(this.runtime);
+        this.peppolClient = new PeppolProvidersImpl(this.runtime);
         this.qrCodeService = new QrCodeService();
         this.authImpl = new AuthImpl(
                 this.authClient,
@@ -273,7 +273,7 @@ public final class KsefClient implements AutoCloseable {
      *
      * <p>Requires authentication (lazy auth if needed).
      */
-    public InvoiceClient invoices() {
+    public Invoices invoices() {
         ensureOpen();
         return invoiceClient;
     }
@@ -293,7 +293,7 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access token management operations (generate, list, get status, revoke).
      */
-    public TokenClient tokens() {
+    public Tokens tokens() {
         ensureOpen();
         return tokenClient;
     }
@@ -301,7 +301,7 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access permission management operations (grant, revoke, query permissions).
      */
-    public PermissionClient permissions() {
+    public Permissions permissions() {
         ensureOpen();
         return permissionClient;
     }
@@ -309,7 +309,7 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access certificate management operations (enroll, retrieve, revoke, query).
      */
-    public CertificateClient certificates() {
+    public Certificates certificates() {
         ensureOpen();
         return certificateClient;
     }
@@ -317,7 +317,7 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access session, subject, and rate-limit queries.
      */
-    public LimitsClient limits() {
+    public Limits limits() {
         ensureOpen();
         return limitsClient;
     }
@@ -325,7 +325,7 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access test environment data management operations.
      */
-    public TestDataClient testData() {
+    public TestDataAdmin testData() {
         ensureOpen();
         return testDataClient;
     }
@@ -334,7 +334,7 @@ public final class KsefClient implements AutoCloseable {
      * Access Peppol service provider queries.
      * Requires authentication (lazy auth if needed).
      */
-    public PeppolClient peppol() {
+    public PeppolProviders peppol() {
         ensureOpen();
         return peppolClient;
     }

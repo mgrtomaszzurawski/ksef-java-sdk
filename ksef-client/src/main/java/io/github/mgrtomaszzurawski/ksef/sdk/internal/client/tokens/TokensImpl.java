@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.Tokens;
 import io.github.mgrtomaszzurawski.ksef.client.model.GenerateTokenResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TokenStatusResponseRaw;
@@ -28,9 +28,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.mapping.Token
  *
  * @since 1.0.0
  */
-public final class TokenClientImpl implements TokenClient {
+public final class TokensImpl implements Tokens {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TokenClientImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TokensImpl.class);
     private static final String LOG_CALL = "→ {}";
     private static final String LOG_CALL_REF = "→ {} ref={}";
 
@@ -55,7 +55,7 @@ public final class TokenClientImpl implements TokenClient {
 
     private final HttpSupport http;
 
-    public TokenClientImpl(HttpRuntime runtime) {
+    public TokensImpl(HttpRuntime runtime) {
         this.http = new HttpSupport(runtime);
     }
 

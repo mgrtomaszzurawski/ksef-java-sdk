@@ -16,7 +16,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
 /**
  * Runner for the rate-limits endpoint, exposed via the merged
  * {@code client.limits()} accessor (PR7 — RateLimitClient was folded
- * into LimitsClient since KSeF docs describe both as "limity").
+ * into Limits since KSeF docs describe both as "limity").
  */
 public final class RateLimitRunner implements DemoRunner {
 
