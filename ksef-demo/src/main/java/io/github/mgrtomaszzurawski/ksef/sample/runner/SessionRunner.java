@@ -7,13 +7,18 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -52,10 +57,26 @@ public final class SessionRunner implements DemoRunner {
             "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
     private static final String FAIL_UPO_BYTES_DIFFER =
             "UPO retrieved by invoice ref differs from UPO retrieved by KSeF number";
-    private static final String SKIP_LEGACY_SEND =
-            "demo uses legacy send(byte[]) — no SubmittedInvoice handle to test cleared(SubmittedInvoice) overload";
+    private static final String SKIP_NOT_FULL_MODE =
+            "AUTH_SAFE mode — cleared(SubmittedInvoice) needs a real send first";
     private static final String OK_CONCURRENT_PERMITTED = "server permitted concurrent open";
     private static final String OK_CONCURRENT_REJECTED_PREFIX = "server rejected: ";
+    private static final String DEMO_INVOICE_NUMBER_PREFIX = "DEMO/SESSION/";
+    private static final String DEMO_LOCALITY = "Warszawa";
+    private static final String DEMO_STREET = "Marszalkowska";
+    private static final String DEMO_HOUSE = "10";
+    private static final String DEMO_POSTAL = "00-001";
+    private static final String DEMO_BUYER_LOCALITY = "Krakow";
+    private static final String DEMO_BUYER_HOUSE = "5";
+    private static final String DEMO_BUYER_POSTAL = "00-002";
+    private static final String DEMO_BUYER_NIP = "9876543210";
+    private static final String DEMO_LINE_DESCRIPTION = "Demo service";
+    private static final String DEMO_LINE_UNIT = "szt.";
+    private static final String DEMO_LINE_VAT = "23";
+    private static final BigDecimal DEMO_LINE_NET = new BigDecimal("100.00");
+    private static final BigDecimal DEMO_LINE_GROSS = new BigDecimal("123.00");
+    private static final String DEMO_SELLER_NAME = "Demo Seller sp. z o.o.";
+    private static final String DEMO_BUYER_NAME = "Demo Buyer sp. z o.o.";
     /**
      * KSeF terminal status code on a session that ends without any invoice having
      * been sent (or, for batch, without any part being uploaded). Documented in
@@ -110,20 +131,22 @@ public final class SessionRunner implements DemoRunner {
         }
 
         try (session) {
-            String invoiceRef = null;
+            SubmittedInvoice submitted = null;
             if (fullMode) {
-                invoiceRef = runSendInvoice(context, session, results);
-                if (invoiceRef != null) {
-                    runGetInvoiceStatus(session, invoiceRef, results);
+                submitted = runSendInvoice(context, session, results);
+                if (submitted != null) {
+                    runGetInvoiceStatus(session, submitted.referenceNumber(), results);
                 }
             }
             runGetStatus(session, results);
             runGetInvoices(session, results);
             runGetFailedInvoices(session, results);
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = runArchive(context, session, results);
-            if (fullMode && closed != null && invoiceRef != null) {
-                runGetCleared(closed, invoiceRef, results);
-                runGetClearedBySubmittedInvoice(closed, results);
+            if (fullMode && closed != null && submitted != null) {
+                runGetCleared(closed, submitted.referenceNumber(), results);
+                runGetClearedBySubmittedInvoice(closed, submitted, results);
+            } else if (closed != null) {
+                results.add(RunResult.skip(NAME, OP_CLEARED_BY_SUBMITTED, SKIP_NOT_FULL_MODE));
             }
         }
         return results;
@@ -131,17 +154,22 @@ public final class SessionRunner implements DemoRunner {
 
     /**
      * Probes the {@code closed.cleared(SubmittedInvoice)} typed overload
-     * (PR15). The current happy-path uses the legacy {@code send(byte[])}
-     * entry point which yields a {@code SendInvoiceResult} (reference-only)
-     * — there is no {@code SubmittedInvoice} handle to feed the typed
-     * overload, so the probe records SKIP with a clear reason. When the
-     * demo migrates to {@code session.sendInvoice(Invoice)} the probe will
-     * activate automatically.
+     * (PR15) against the SubmittedInvoice handle produced by
+     * {@code session.sendInvoice(Invoice)} earlier in the run.
      */
     private void runGetClearedBySubmittedInvoice(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed,
+            SubmittedInvoice submitted,
             List<RunResult> results) {
-        results.add(RunResult.skip(NAME, OP_CLEARED_BY_SUBMITTED, SKIP_LEGACY_SEND));
+        long start = System.currentTimeMillis();
+        try {
+            ClearedInvoice cleared = closed.cleared(submitted);
+            results.add(RunResult.ok(NAME, OP_CLEARED_BY_SUBMITTED, elapsed(start),
+                    REF_PREFIX + cleared.submitted().referenceNumber()));
+        } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException exception) {
+            results.add(RunResult.fail(NAME, OP_CLEARED_BY_SUBMITTED, elapsed(start),
+                    errorMessage(exception)));
+        }
     }
 
     /**
@@ -238,22 +266,38 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private String runSendInvoice(DemoContext context, OnlineSession session,
-                                  List<RunResult> results) {
+    private SubmittedInvoice runSendInvoice(DemoContext context, OnlineSession session,
+                                            List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            byte[] invoiceXml = TestInvoiceXml.generate(context.nipIdentifier());
-            SendInvoiceResult sendResult = session.send(invoiceXml);
-            String invoiceRef = sendResult.referenceNumber();
+            Fa3Invoice invoice = buildDemoInvoice(context);
+            SubmittedInvoice submitted = session.sendInvoice(invoice);
+            String invoiceRef = submitted.referenceNumber();
             LOGGER.info(LOG_SENT_INVOICE, NAME, invoiceRef);
             results.add(RunResult.ok(NAME, OP_SEND_INVOICE, elapsed(start),
                     REF_PREFIX + invoiceRef));
-            return invoiceRef;
+            return submitted;
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_SEND_INVOICE, elapsed(start),
                     errorMessage(exception)));
             return null;
         }
+    }
+
+    private static Fa3Invoice buildDemoInvoice(DemoContext context) {
+        String sellerNip = context.nipIdentifier();
+        return Fa3Invoice.builder()
+                .invoiceNumber(DEMO_INVOICE_NUMBER_PREFIX + System.currentTimeMillis())
+                .issueDate(LocalDate.now())
+                .issueLocality(DEMO_LOCALITY)
+                .seller(new InvoiceParty(sellerNip, DEMO_SELLER_NAME, DEMO_POSTAL,
+                        DEMO_LOCALITY, DEMO_STREET, DEMO_HOUSE, null))
+                .buyer(new InvoiceParty(DEMO_BUYER_NIP, DEMO_BUYER_NAME, DEMO_BUYER_POSTAL,
+                        DEMO_BUYER_LOCALITY, null, DEMO_BUYER_HOUSE, null))
+                .totalGrossAmount(DEMO_LINE_GROSS)
+                .addLineItem(new InvoiceLineItem(1, DEMO_LINE_DESCRIPTION, DEMO_LINE_UNIT,
+                        BigDecimal.ONE, DEMO_LINE_NET, DEMO_LINE_NET, DEMO_LINE_VAT))
+                .build();
     }
 
     private void runGetInvoiceStatus(OnlineSession session, String invoiceRef,

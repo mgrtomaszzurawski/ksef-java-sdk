@@ -19,9 +19,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
@@ -56,6 +58,20 @@ public final class OfflineInvoiceRunner implements DemoRunner {
             "AUTH_SAFE — sendOfflineInvoice requires session-write capability";
     private static final String OK_REJECTED_BY_SERVER_PREFIX =
             "server rejected (expected — self-signed offline cert): ";
+    /**
+     * Per-field validation error — server returns this when the certificate
+     * subject / signature chain cannot be matched to a registered entity.
+     */
+    private static final int EXPECTED_CODE_VALIDATION = 21405;
+    /**
+     * JSON-parsing error — server returns this when the encrypted offline
+     * payload structure is rejected before per-field validation runs.
+     */
+    private static final int EXPECTED_CODE_JSON_PARSE = 21001;
+    /** Substring the server may include when the rejection is certificate-related. */
+    private static final String CERT_KEYWORD_EN = "certificate";
+    /** Polish equivalent — production KSeF localises error messages. */
+    private static final String CERT_KEYWORD_PL = "certyfikat";
 
     private static final String CERT_ORG = "KSeF Java SDK Demo Offline";
     private static final String CERT_ORG_ID_PREFIX = "VATPL-";
@@ -201,11 +217,28 @@ public final class OfflineInvoiceRunner implements DemoRunner {
                     ? submitted.status().status().code() : -1;
             results.add(RunResult.ok(NAME, OP_SEND_OFFLINE, elapsed(start),
                     "submitted ref=" + submitted.referenceNumber() + " status=" + statusCode));
-        } catch (Exception exception) {
-            String rejectedClass = exception.getClass().getSimpleName();
-            LOGGER.info("[{}] sendOfflineInvoice rejected: {}", NAME, rejectedClass);
-            results.add(RunResult.ok(NAME, OP_SEND_OFFLINE, elapsed(start),
-                    OK_REJECTED_BY_SERVER_PREFIX + rejectedClass));
+        } catch (KsefException ksefException) {
+            // Self-signed test certificate is expected to be rejected by the
+            // server. Recognise the specific validation codes (21405 per-field
+            // validation, 21001 JSON parse) and require the message to mention
+            // 'certificate' (English) or 'certyfikat' (Polish — production
+            // KSeF localises) — otherwise this is an unexpected error and the
+            // probe must FAIL.
+            Integer code = ksefException.exceptionCode();
+            String body = ksefException.safeResponseBody();
+            boolean expectedCode = code != null && (code == EXPECTED_CODE_VALIDATION
+                    || code == EXPECTED_CODE_JSON_PARSE);
+            String bodyLower = body == null ? "" : body.toLowerCase(Locale.ROOT);
+            boolean mentionsCertificate = bodyLower.contains(CERT_KEYWORD_EN)
+                    || bodyLower.contains(CERT_KEYWORD_PL);
+            if (expectedCode && mentionsCertificate) {
+                LOGGER.info("[{}] sendOfflineInvoice rejected with expected code {}", NAME, code);
+                results.add(RunResult.ok(NAME, OP_SEND_OFFLINE, elapsed(start),
+                        OK_REJECTED_BY_SERVER_PREFIX + "code=" + code));
+            } else {
+                results.add(RunResult.fail(NAME, OP_SEND_OFFLINE, elapsed(start),
+                        "unexpected KsefException code=" + code + " body=" + body));
+            }
         }
     }
 
