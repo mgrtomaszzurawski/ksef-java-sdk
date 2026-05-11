@@ -42,16 +42,15 @@ class PefInvoiceTest {
                 "XML must contain UBL Invoice root: " + xml);
     }
 
-    @org.junit.jupiter.api.Disabled("UBL JAXB unmarshal element-name resolution: JAXB sees the "
-            + "{urn:oasis:Invoice-2}Invoice root but registers expected elements only from "
-            + "cac/cbc/ext sub-packages even with the multi-ObjectFactory context. Marshal path "
-            + "works (asserted by xml_whenInvoiceBuilt_producesUblInvoiceRootElement). Round-trip "
-            + "fix needs deeper UBL JAXB element-registration work — tracked as a follow-up "
-            + "before 1.0.0 release.")
     @Test
     void xml_whenInvoiceBuilt_roundTripsThroughJaxbUnchanged() throws Exception {
         PefInvoice invoice = minimalInvoice();
-        JAXBContext context = JAXBContext.newInstance(InvoiceType.class);
+        // Build context the same way JaxbInvoiceMarshaller does: include
+        // the xml.pef ObjectFactory (carries @XmlElementDecl for the
+        // {urn:oasis:Invoice-2}Invoice root) so the unmarshaller can
+        // resolve the qualified element name.
+        JAXBContext context = JAXBContext.newInstance(
+                io.github.mgrtomaszzurawski.ksef.xml.pef.ObjectFactory.class);
         Unmarshaller unmarshaller = context.createUnmarshaller();
         Object parsed = unmarshaller.unmarshal(new ByteArrayInputStream(invoice.xml()));
         InvoiceType result = parsed instanceof JAXBElement<?> wrapper

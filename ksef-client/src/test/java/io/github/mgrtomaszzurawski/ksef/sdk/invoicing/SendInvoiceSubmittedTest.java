@@ -8,7 +8,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
@@ -17,7 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandl
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
-import java.nio.charset.StandardCharsets;
+import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
@@ -54,8 +53,6 @@ class SendInvoiceSubmittedTest {
     private static final String TEST_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
-    private static final byte[] INVOICE_XML = "<Invoice>x</Invoice>".getBytes(StandardCharsets.UTF_8);
-
     private static final String SEND_RESPONSE = """
             {
               "referenceNumber": "%s"
@@ -95,7 +92,7 @@ class SendInvoiceSubmittedTest {
         stubInvoicePost();
         stubInvoiceStatus(INVOICE_STATUS_ACCEPTED);
         stubCloseAndStatusOk();
-        Invoice invoice = Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
 
         try (OnlineSession session = createSession(wmInfo)) {
 
@@ -124,7 +121,7 @@ class SendInvoiceSubmittedTest {
         stubInvoicePost();
         stubInvoiceStatus(INVOICE_STATUS_REJECTED);
         stubCloseAndStatusOk();
-        Invoice invoice = Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
 
         try (OnlineSession session = createSession(wmInfo)) {
 

@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandl
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
+import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -71,7 +72,7 @@ class OnlineSessionImplTechnicalCorrectionTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(INVOICE_STATUS_OK_RESPONSE)));
 
-        Invoice invoice = Invoice.fromXml(CUSTOM_CODE, TEST_INVOICE_XML);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         byte[] originalHash = new byte[SHA256_LENGTH];
         for (int i = 0; i < originalHash.length; i++) {
             originalHash[i] = (byte) i;
@@ -92,7 +93,7 @@ class OnlineSessionImplTechnicalCorrectionTest {
     @Test
     void sendTechnicalCorrection_whenHashWrongLength_throwsIllegalArgumentException(WireMockRuntimeInfo wmInfo) {
         // given
-        Invoice invoice = Invoice.fromXml(CUSTOM_CODE, TEST_INVOICE_XML);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         byte[] tooShortHash = new byte[SHA256_LENGTH - 1];
         OnlineSession session = createSession(wmInfo);
 

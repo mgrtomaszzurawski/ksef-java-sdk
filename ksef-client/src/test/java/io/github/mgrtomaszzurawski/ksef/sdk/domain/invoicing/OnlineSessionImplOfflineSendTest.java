@@ -18,6 +18,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
+import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -86,7 +87,7 @@ class OnlineSessionImplOfflineSendTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(INVOICE_STATUS_OK_RESPONSE)));
 
-        Invoice invoice = Invoice.fromXml(CUSTOM_CODE, TEST_INVOICE_XML);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate,
                 OfflineMode.OFFLINE_24, QrEnvironment.TEST, QrContextType.NIP,
                 SELLER_NIP, SELLER_NIP, ISSUE_DATE);
