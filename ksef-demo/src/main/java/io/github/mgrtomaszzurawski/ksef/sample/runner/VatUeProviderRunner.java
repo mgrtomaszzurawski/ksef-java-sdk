@@ -162,8 +162,9 @@ public final class VatUeProviderRunner implements DemoRunner {
                 .credentials(creds)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
-            // Drive lazy auth via any authenticated read.
-            client.auth().streamSessions().findAny();
+            // Drive lazy auth via any authenticated read; no-op ifPresent
+            // consumes the Optional per Sonar S2201.
+            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
             LOGGER.info("[{}] {} authenticated as nipVatUe={}", NAME, LABEL, nipVatUe);
             results.add(RunResult.ok(NAME, OP_AUTH + LABEL, elapsed(start),
                     "nipVatUe=" + nipVatUe));

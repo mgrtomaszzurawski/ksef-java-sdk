@@ -6,15 +6,15 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * One UPO (Urzędowe Poświadczenie Odbioru — official KSeF receipt) returned
  * for an accepted invoice in a batch.
  *
- * <p>Placeholder structure for the {@code BatchResult.cleared} list. PR15 will
- * widen the per-element type to {@code ClearedInvoice}, embedding the full
- * {@code SubmittedInvoice} chain. Until then, {@link UpoEntry} carries only
- * the per-invoice reference number and the raw UPO XML bytes.
+ * <p>Carries the per-invoice reference number and the raw UPO XAdES XML
+ * bytes. Use {@link #parsed()} to get a typed {@link UpoSummary} view
+ * without writing the XAdES traversal yourself.
  *
  * @param referenceNumber the KSeF invoice reference number
  *     (server-assigned identifier tying this entry to the input invoice
@@ -41,6 +41,21 @@ public record UpoEntry(String referenceNumber, byte[] xmlBytes) {
     @Override
     public byte[] xmlBytes() {
         return xmlBytes.clone();
+    }
+
+    /**
+     * Lazy typed view of this entry's UPO XML. Parses the XAdES bytes on
+     * every call (cheap single SAX pass); returns {@link Optional#empty()}
+     * when the bytes cannot be parsed as a UPO document. Records cannot
+     * hold non-component memoisation state, and the parse cost is small
+     * enough that re-parsing on each call is the right trade.
+     */
+    public Optional<UpoSummary> parsed() {
+        try {
+            return Optional.of(UpoSummary.parse(xmlBytes));
+        } catch (IllegalStateException | IllegalArgumentException badXml) {
+            return Optional.empty();
+        }
     }
 
     @Override

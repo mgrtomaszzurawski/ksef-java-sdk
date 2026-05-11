@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -15,8 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListIt
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -52,6 +51,39 @@ public interface InvoiceClient {
      * surfaces malformed input at the first opportunity.
      */
     InvoiceDocument getByKsefNumber(KsefNumber ksefNumber);
+
+    /**
+     * Reconstruct a fully recovered {@link ClearedInvoice} from KSeF given
+     * only the {@code (sessionReferenceNumber, invoiceReferenceNumber)} pair
+     * the consumer persisted across a process restart.
+     *
+     * <p>Composes three existing server calls:
+     * <ol>
+     *   <li>{@code GET /sessions/{sessionRef}/invoices/{invoiceRef}} —
+     *       retrieves the session-side {@code SessionInvoiceStatus} (status
+     *       code, ordinal, KSeF number when accepted).</li>
+     *   <li>{@code GET /invoices/ksef/{ksefNumber}} — fetches the archived
+     *       invoice XML and detects the FormCode from its root element.</li>
+     *   <li>{@code GET /sessions/{sessionRef}/invoices/{invoiceRef}/upo} —
+     *       downloads the UPO XAdES bytes.</li>
+     * </ol>
+     *
+     * <p>The returned {@link ClearedInvoice} carries a fresh
+     * {@code SubmittedInvoice} reconstructed from the recovered state; KOD I
+     * and KOD II QR PNGs are left empty in this view (consumers that need
+     * them can regenerate via
+     * {@code KsefClient.qrCode().generateKodIQr(...)} using the recovered
+     * invoice metadata).
+     *
+     * <p>Spec endpoints used: {@code /sessions/{ref}/invoices/{invRef}},
+     * {@code /sessions/{ref}/invoices/{invRef}/upo}, {@code /invoices/ksef/{n}}.
+     *
+     * @throws io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException
+     *     when the invoice has not reached terminal status 200 (success);
+     *     the consumer should not be calling this method for non-accepted
+     *     invoices since no UPO exists yet.
+     */
+    ClearedInvoice clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber);
 
     InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryFilters query);
 
@@ -107,20 +139,6 @@ public interface InvoiceClient {
      * @return an open session — use with try-with-resources
      */
     OnlineSession openSession(FormCode formCode);
-
-    /**
-     * Run an incremental sync over the consumer's invoice store.
-     * Implements the documented HWM-based pagination algorithm from
-     * {@code ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md}.
-     *
-     * <p>Tier 1 workflow API per ADR-021.
-     *
-     * @param plan sync configuration
-     * @param checkpointStore where checkpoints are persisted between runs
-     * @param sink invoice processor — called once per accepted invoice
-     * @return per-subject-type counts and final checkpoints
-     */
-    SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink);
 
     /**
      * Stream-based incremental sync — returns a lazy {@link java.util.stream.Stream}

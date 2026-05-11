@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
  * cooperative cancel via {@link DecryptedInvoiceSyncSpliterator#close()}, and
  * producer-failure propagation through {@code tryAdvance}.
  *
- * <p>Producer thread runs the real {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient}
+ * <p>Producer thread runs the real {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync.InvoiceSyncClient}
  * over a Mockito-stubbed {@link InvoiceClient#prepareExport}, just like
  * {@code InvoiceSyncClientTest} does. The Spliterator's queueing sink is
  * exercised indirectly through that path.

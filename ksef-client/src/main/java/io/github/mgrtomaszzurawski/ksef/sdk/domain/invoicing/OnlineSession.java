@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import java.time.Clock;
 import java.time.Duration;
@@ -27,8 +26,8 @@ import java.util.Optional;
  *
  * <pre>{@code
  * try (OnlineSession os = client.invoices().openSession(FormCode.FA3)) {
- *     SendInvoiceResult r1 = os.send(invoiceXml1);
- *     SendInvoiceResult r2 = os.send(invoiceXml2);
+ *     SubmittedInvoice r1 = os.sendInvoice(invoice1);
+ *     SubmittedInvoice r2 = os.sendInvoice(invoice2);
  *
  *     ClosedSession cs = os.archive();    // explicit transition + close
  *     byte[] upo = cs.upo(r1.referenceNumber());
@@ -39,22 +38,14 @@ import java.util.Optional;
  *
  * <pre>{@code
  * try (OnlineSession os = client.invoices().openSession(FormCode.FA3)) {
- *     for (byte[] xml : invoices) {
- *         os.send(xml);
+ *     for (Invoice invoice : invoices) {
+ *         os.sendInvoice(invoice);
  *     }
  * }   // implicit close() — terminates the session, no archive view
  * }</pre>
  *
  * <p><strong>Threading.</strong> Implementations are not thread-safe.
  * Use one session instance per thread, or coordinate access externally.
- *
- * <h2>Lifecycle of {@code sendInvoice(Invoice)}</h2>
- *
- * <p>The richer {@code sendInvoice(Invoice)} entry point — accepting the
- * {@code Invoice} open interface and returning a synchronous
- * {@code SubmittedInvoice} — is added in PR12a / PR10. Until then the
- * legacy byte-array sends ({@link #send(byte[])} and friends) are the
- * way to dispatch invoices.
  *
  * @since 1.0.0
  */
@@ -143,39 +134,6 @@ public interface OnlineSession extends Session {
      * @throws NullPointerException if any argument is null
      */
     SubmittedInvoice sendTechnicalCorrection(Invoice invoice, byte[] hashOfOriginal);
-
-    /**
-     * Send an invoice within this session.
-     *
-     * <p>The invoice XML is encrypted with the session's AES key, SHA-256 hashes are
-     * computed, and the encrypted payload is sent to KSeF. The consumer never needs
-     * to handle encryption or hashing directly.
-     *
-     * @param invoiceXml raw invoice XML bytes (unencrypted)
-     * @return result containing the invoice reference number
-     * @throws IllegalStateException if the session is already closed or archived
-     */
-    SendInvoiceResult send(byte[] invoiceXml);
-
-    /**
-     * Send an invoice using an explicit command shape (normal vs offline
-     * vs technical correction). REQ-OFFLINE-003.
-     */
-    SendInvoiceResult send(SendInvoiceCommand command);
-
-    /**
-     * Convenience for sending a technical correction (korekta techniczna).
-     * Equivalent to {@link #send(SendInvoiceCommand)} with
-     * {@link SendInvoiceCommand#technicalCorrection(byte[], byte[])}.
-     */
-    SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected);
-
-    /**
-     * Convenience for sending an invoice issued during an offline window.
-     * Equivalent to {@link #send(SendInvoiceCommand)} with
-     * {@link SendInvoiceCommand#offline(byte[])}.
-     */
-    SendInvoiceResult sendOffline(byte[] invoiceXml);
 
     /**
      * Time remaining until {@link Session#validUntil()} relative to the

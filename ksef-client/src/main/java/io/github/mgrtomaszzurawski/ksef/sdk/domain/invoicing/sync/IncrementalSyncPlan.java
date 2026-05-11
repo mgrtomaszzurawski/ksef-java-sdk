@@ -13,7 +13,8 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Plan for an {@link InvoiceSyncClient#sync} call.
+ * Plan for an
+ * {@code InvoiceClient.syncAsStream(plan, checkpointStore)} call.
  *
  * <p>Built via {@link #builder()}. Default {@link #subjectTypes} is all
  * four (SUBJECT1/2/3/AUTHORIZED) per spec recommendation in

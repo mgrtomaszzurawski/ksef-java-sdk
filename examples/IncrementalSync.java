@@ -9,8 +9,8 @@
  *
  * What this shows:
  *   Incremental invoice sync — pull every newly-permanently-stored invoice
- *   for a NIP since the last run, decrypt to disk, hand each off to a sink
- *   for downstream processing.
+ *   for a NIP since the last run as a lazy Stream<DecryptedInvoice>. Each
+ *   element advances the persisted HWM checkpoint atomically.
  *
  * Side effects on KSeF:
  *   Read-only (queryInvoicesByMetadata + export). Writes decrypted XMLs to the local
@@ -26,8 +26,8 @@
  * Sync semantics (see ksef-docs/przyrostowe-pobieranie-faktury.md):
  *   - cursor = permanentStorageHwmDate (PermanentStorage axis)
  *   - dateType is locked to PERMANENT_STORAGE per IncrementalSyncPlan
- *   - sink may receive the same KsefNumber more than once across runs
- *     (process restarts, overlapping windows) — implementations MUST
+ *   - consumer may observe the same KsefNumber more than once across runs
+ *     (process restarts, overlapping windows) — downstream stores MUST
  *     persist by KsefNumber idempotently.
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
@@ -35,12 +35,13 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
+import java.util.stream.Stream;
 
 public final class IncrementalSync {
 
@@ -82,18 +83,20 @@ public final class IncrementalSync {
                     .fullContent(true)
                     .build();
 
-            // Sink is invoked per invoice. Idempotent by KsefNumber:
-            // if you re-run after a restart, the same invoice may arrive
-            // again — your downstream store should upsert by KSeF number.
-            SyncResult result = client.invoices().sync(plan, checkpointStore, (ksefNumber, metadata, xmlPath) -> {
-                System.out.println("Got " + ksefNumber.value()
-                        + " issued=" + metadata.issueDate()
-                        + " xml=" + (xmlPath == null ? "<no XML>" : xmlPath));
-                // adapt: store ksefNumber + xmlPath in your DB / queue / FS
-            });
+            // Stream lazily yields each accepted invoice. try-with-resources
+            // commits the final checkpoint and releases the underlying
+            // paginator. The same KsefNumber may arrive twice across runs
+            // — downstream must upsert idempotently.
+            long processed;
+            try (Stream<DecryptedInvoice> stream = client.invoices().syncAsStream(plan, checkpointStore)) {
+                processed = stream
+                        .peek(decrypted -> System.out.println("Got " + decrypted.ksefNumber().value()
+                                + " issued=" + decrypted.metadata().issueDate()
+                                + " xml=" + decrypted.xmlPath().map(Object::toString).orElse("<no XML>")))
+                        .count();
+            }
 
-            System.out.println("Sync done: " + result.totalProcessed()
-                    + " invoices across " + result.processedCounts().size() + " subject type(s)");
+            System.out.println("Sync done: " + processed + " invoices");
         }
     }
 

@@ -13,11 +13,12 @@ import java.util.concurrent.ConcurrentMap;
  * Persistence boundary for incremental sync checkpoints.
  *
  * <p>Consumers implement this to plug their persistence model
- * (database, file, Redis, etc.) into {@link InvoiceSyncClient}.
+ * (database, file, Redis, etc.) into
+ * {@code InvoiceClient.syncAsStream(plan, checkpointStore)}.
  *
  * <p><b>Commit semantics</b>: {@code save(...)} is called by the sync
  * orchestrator only AFTER each invoice in the current window has been
- * successfully processed by the {@link InvoiceSink}. This guarantees
+ * successfully consumed from the stream. This guarantees
  * that resuming from the saved checkpoint never re-processes an invoice
  * that was already accepted, and never skips an invoice that wasn't.
  *

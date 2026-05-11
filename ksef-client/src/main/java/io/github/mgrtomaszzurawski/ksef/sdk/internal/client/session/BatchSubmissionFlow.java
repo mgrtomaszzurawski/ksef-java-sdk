@@ -16,6 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.Severity;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.ValidationIssue;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
@@ -553,11 +554,17 @@ public final class BatchSubmissionFlow {
             byte[] upo = sessionClient.getUpoByInvoiceReference(sessionRef, invoice.referenceNumber());
             UpoEntry entry = new UpoEntry(invoice.referenceNumber(), upo);
             Invoice placeholder = buildUpoPlaceholderInvoice();
+            // Batch flow doesn't re-fetch the archived XML — surface the
+            // same UPO-only placeholder content as an InvoiceDocument so
+            // ClearedInvoice's typed slot is populated. Consumers needing
+            // the real document call client.invoices().getByKsefNumber(...).
+            InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
+                    placeholder.formCode(), placeholder.xml());
             SubmittedInvoice submitted = new SubmittedInvoice(
                     placeholder, invoice.referenceNumber(), invoice,
                     parseKsefNumberOrEmpty(invoice.ksefNumber()),
                     java.util.Optional.empty(), java.util.Optional.empty(), List.of());
-            cleared.add(new ClearedInvoice(submitted, entry));
+            cleared.add(new ClearedInvoice(submitted, documentPlaceholder, entry));
         }
         // BatchResult invariants: successfulCount == cleared.size(), failedCount == failed.size(),
         // totalCount == successful + failed. Caller-supplied totalCount is the *invoice count*

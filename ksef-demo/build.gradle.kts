@@ -50,6 +50,9 @@ application {
 tasks.named<JavaExec>("run") {
     workingDir = rootProject.projectDir
     systemProperty("demo.mode", project.findProperty("demo.mode") ?: "READ_ONLY")
+    // FULL mode runs XSD validation through Xerces' XSDFACM DFA construction,
+    // which transiently allocates ~300-600 MB on FA(3); default heap OOMs.
+    jvmArgs("-Xmx4g", "-XX:+HeapDumpOnOutOfMemoryError")
 }
 
 tasks.test {

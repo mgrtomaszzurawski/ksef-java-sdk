@@ -29,7 +29,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownExcepti
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
@@ -42,9 +46,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.BatchSubmissionFlow;
@@ -87,7 +88,18 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String PATH_EXPORT_STATUS = ApiPaths.INVOICES + "/exports/";
 
     private static final String OP_GET_BY_KSEF = "getInvoiceByKsefNumber";
+    private static final String OP_CLEARED_FROM_ARCHIVE = "clearedFromArchive";
     private static final String OP_SYNC_AS_STREAM = "syncAsStream";
+    /** KSeF terminal-status code for accepted invoice (`/sessions/{ref}/invoices/{invRef}` status.code). */
+    private static final int STATUS_CODE_ACCEPTED = 200;
+    private static final String ERR_NULL_SESSION_REF = "sessionReferenceNumber must not be null";
+    private static final String ERR_NULL_INVOICE_REF = "invoiceReferenceNumber must not be null";
+    private static final String ERR_CLEARED_FROM_ARCHIVE_REQUIRES_FULL_RUNTIME =
+            "clearedFromArchive() requires the full InvoiceClient runtime — instantiate via the multi-arg constructor";
+    private static final String ERR_NOT_ACCEPTED =
+            "Invoice has not reached accepted state (code 200) — no UPO available. Current status code: ";
+    private static final String ERR_NO_KSEF_NUMBER =
+            "Server returned status 200 but no ksefNumber — cannot recover invoice document from archive.";
     private static final String ERR_NULL_SYNC_PLAN = "plan must not be null";
     private static final String ERR_NULL_CHECKPOINT_STORE = "checkpointStore must not be null";
     private static final String UNKNOWN_FORM_CODE_SYSTEM_CODE = "UNKNOWN";
@@ -98,7 +110,6 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String OP_PREPARE_EXPORT = "prepareInvoiceExport";
     private static final String OP_OPEN_SESSION = "openSession";
     private static final String OP_STREAM_SESSIONS = "streamSessions";
-    private static final String OP_SYNC = "sync";
     private static final String OP_SUBMIT_BATCH = "submitBatch";
     private static final String OP_SUBMIT_BATCH_FROM_FILES = "submitBatchFromFiles";
     private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
@@ -206,6 +217,41 @@ public final class InvoiceClientImpl implements InvoiceClient {
             return PefKorInvoiceDocument.from(xml);
         }
         return InvoiceDocument.fromXml(formCode, xml);
+    }
+
+    @Override
+    public ClearedInvoice clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber) {
+        Objects.requireNonNull(sessionReferenceNumber, ERR_NULL_SESSION_REF);
+        Objects.requireNonNull(invoiceReferenceNumber, ERR_NULL_INVOICE_REF);
+        if (sessionClient == null) {
+            throw new IllegalStateException(ERR_CLEARED_FROM_ARCHIVE_REQUIRES_FULL_RUNTIME);
+        }
+        LOGGER.debug(LOG_CALL_REF, OP_CLEARED_FROM_ARCHIVE, invoiceReferenceNumber);
+
+        SessionInvoiceStatus status = sessionClient.getInvoiceStatus(sessionReferenceNumber, invoiceReferenceNumber);
+        if (status.status() == null || status.status().code() != STATUS_CODE_ACCEPTED) {
+            int code = status.status() == null ? -1 : status.status().code();
+            throw new KsefException(ERR_NOT_ACCEPTED + code, null);
+        }
+        if (status.ksefNumber() == null) {
+            throw new KsefException(ERR_NO_KSEF_NUMBER, null);
+        }
+
+        KsefNumber ksefNumber = KsefNumber.parse(status.ksefNumber());
+        InvoiceDocument document = getByKsefNumber(ksefNumber);
+        byte[] upoBytes = sessionClient.getUpoByInvoiceReference(sessionReferenceNumber, invoiceReferenceNumber);
+        UpoEntry upo = new UpoEntry(invoiceReferenceNumber, upoBytes);
+        Invoice invoice = Invoice.fromXml(document.formCode(), document.xml());
+
+        SubmittedInvoice submitted = new SubmittedInvoice(
+                invoice,
+                invoiceReferenceNumber,
+                status,
+                Optional.of(ksefNumber),
+                Optional.empty(),
+                Optional.empty(),
+                List.of());
+        return new ClearedInvoice(submitted, document, upo);
     }
 
     /**
@@ -462,12 +508,6 @@ public final class InvoiceClientImpl implements InvoiceClient {
         }
         LOGGER.debug(LOG_CALL, OP_STREAM_SESSIONS);
         return sessionClient.streamSessions(filter);
-    }
-
-    @Override
-    public SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink) {
-        LOGGER.debug(LOG_CALL, OP_SYNC);
-        return new InvoiceSyncClient(this, runtime.objectMapper()).sync(plan, checkpointStore, sink);
     }
 
     @Override

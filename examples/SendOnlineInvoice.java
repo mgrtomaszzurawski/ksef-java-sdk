@@ -21,11 +21,13 @@
  *   KSEF_ENV          — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -51,15 +53,13 @@ public final class SendOnlineInvoice {
             try (OnlineSession session = client.invoices().openSession(FormCode.FA3)) {
                 System.out.println("Session opened: " + session.referenceNumber());
 
-                SendInvoiceResult result = session.send(invoiceXml);
-                System.out.println("Invoice sent, ref: " + result.referenceNumber());
-
-                // session.close() (via try-with-resources) closes the session,
-                // polls until processing completes, and the UPO becomes available.
+                // sendInvoice blocks until KSeF reaches a terminal state and
+                // returns the full SubmittedInvoice (KSeF number, KOD I QR PNG,
+                // status, embedded original Invoice).
+                SubmittedInvoice result = session.sendInvoice(Invoice.fromXml(FormCode.FA3, invoiceXml));
+                System.out.println("Invoice accepted, ref: " + result.referenceNumber()
+                        + ", ksefNumber: " + result.ksefNumber().map(KsefNumber::value).orElse("<none>"));
             }
-
-            // After the session closes, fetch the UPO for the invoice.
-            // (In a real app you'd remember the invoice ref before close().)
         }
     }
 

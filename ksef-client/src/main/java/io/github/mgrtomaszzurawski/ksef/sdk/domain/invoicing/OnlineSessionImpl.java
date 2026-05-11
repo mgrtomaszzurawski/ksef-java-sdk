@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.SendInvoiceBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
@@ -304,13 +304,11 @@ final class OnlineSessionImpl implements OnlineSession {
         }
     }
 
-    @Override
-    public SendInvoiceResult send(byte[] invoiceXml) {
+    SendInvoiceResult send(byte[] invoiceXml) {
         return send(SendInvoiceCommand.normal(invoiceXml));
     }
 
-    @Override
-    public SendInvoiceResult send(SendInvoiceCommand command) {
+    SendInvoiceResult send(SendInvoiceCommand command) {
         ensureOpen();
         Objects.requireNonNull(command, "command must not be null");
         // REQ-SESS-41 — KSeF caps a single session at 10,000 invoices. Reject
@@ -333,13 +331,11 @@ final class OnlineSessionImpl implements OnlineSession {
         return sessionClient.sendInvoice(referenceNumber, builder.build());
     }
 
-    @Override
-    public SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
+    SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
         return send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected));
     }
 
-    @Override
-    public SendInvoiceResult sendOffline(byte[] invoiceXml) {
+    SendInvoiceResult sendOffline(byte[] invoiceXml) {
         return send(SendInvoiceCommand.offline(invoiceXml));
     }
 

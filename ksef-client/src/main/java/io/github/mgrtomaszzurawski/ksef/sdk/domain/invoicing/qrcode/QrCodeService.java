@@ -20,6 +20,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.PrivateKey;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Objects;
 import javax.imageio.ImageIO;
@@ -139,6 +141,64 @@ public final class QrCodeService {
      */
     public byte[] generateLabeledQrCode(String payloadUrl, String label) {
         return addLabelToQrCode(generateQrCode(payloadUrl), label);
+    }
+
+    /**
+     * One-shot KOD I (invoice verification) QR-code generator. Composes the
+     * canonical {@code https://qr-{env}.ksef.mf.gov.pl/invoice/{nip}/{date}/{hash}}
+     * verification URL per {@code ksef-docs/kody-qr.md} and renders it as
+     * a labelled PNG.
+     *
+     * <p>The {@code label} is the text drawn below the QR — typically the
+     * KSeF number once assigned (post-acceptance), or
+     * {@link #LABEL_OFFLINE} when the invoice was issued offline and the
+     * canonical KSeF number is not yet available.
+     *
+     * @param environment QR environment whose host is embedded in the URL
+     * @param sellerNip 10-digit NIP of the invoice issuer
+     * @param issueDate invoice issue date
+     * @param invoiceSha256 32-byte SHA-256 hash of the canonical invoice XML
+     * @param label label text rendered below the QR
+     * @return PNG bytes of the labelled KOD I QR
+     */
+    public byte[] generateKodIQr(QrEnvironment environment,
+                                  String sellerNip,
+                                  LocalDate issueDate,
+                                  byte[] invoiceSha256,
+                                  String label) {
+        String verificationUrl = KsefVerificationLinks.buildInvoiceVerificationUrl(
+                environment, sellerNip, issueDate, invoiceSha256);
+        return generateLabeledQrCode(verificationUrl, label);
+    }
+
+    /**
+     * One-shot KOD II (offline-certificate authenticity) QR-code generator.
+     * Composes the canonical KOD II URL by signing the canonical payload
+     * with the consumer's KSeF Offline certificate {@link PrivateKey}, then
+     * renders the URL as a PNG labelled with
+     * {@link #LABEL_CERTIFICATE}. Auto-detects RSASSA-PSS (RSA key) or
+     * ECDSA-P256 with IEEE-P1363 encoding (EC key) per
+     * {@code ksef-docs/kody-qr.md:197-210}.
+     *
+     * <p>Use this overload when you have the private key in-process. If
+     * signing is delegated to an HSM or external signer, build the URL
+     * manually via
+     * {@link KsefVerificationLinks#canonicalCertificateSigningPayload(QrEnvironment, KsefVerificationLinks.CertificateSigningInput)}
+     * then {@link KsefVerificationLinks#buildCertificateVerificationUrl(QrEnvironment, KsefVerificationLinks.CertificateVerificationParams)}
+     * and call {@link #generateLabeledQrCode(String, String)} with
+     * {@link #LABEL_CERTIFICATE}.
+     *
+     * @param environment QR environment whose host is embedded in the URL
+     * @param input certificate-verification parameters (no signature yet)
+     * @param privateKey RSA or EC private key from the seller's KSeF Offline certificate
+     * @return PNG bytes of the labelled KOD II QR
+     */
+    public byte[] generateKodIIQr(QrEnvironment environment,
+                                   KsefVerificationLinks.CertificateSigningInput input,
+                                   PrivateKey privateKey) {
+        String verificationUrl = new QrSigningService()
+                .certificateVerificationUrl(environment, input, privateKey);
+        return generateLabeledQrCode(verificationUrl, LABEL_CERTIFICATE);
     }
 
     private static BufferedImage drawLabelBelow(BufferedImage qrImage, String label) {

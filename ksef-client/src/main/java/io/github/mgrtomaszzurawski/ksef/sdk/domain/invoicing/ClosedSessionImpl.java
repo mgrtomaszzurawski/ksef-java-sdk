@@ -116,7 +116,13 @@ final class ClosedSessionImpl implements ClosedSession {
         Objects.requireNonNull(submitted, ERR_NULL_SUBMITTED);
         byte[] xml = sessionClient.getUpoByInvoiceReference(referenceNumber, submitted.referenceNumber());
         UpoEntry entry = new UpoEntry(submitted.referenceNumber(), xml);
-        return new ClearedInvoice(submitted, entry);
+        // ClosedSession archive flow doesn't refetch the original invoice XML
+        // — surface the SubmittedInvoice's embedded Invoice through the typed
+        // InvoiceDocument slot via the minimal wrapper. Consumers needing the
+        // typed Fa3/Pef/etc. document call client.invoices().getByKsefNumber.
+        InvoiceDocument document = InvoiceDocument.fromXml(
+                submitted.invoice().formCode(), submitted.invoice().xml());
+        return new ClearedInvoice(submitted, document, entry);
     }
 
     /**
@@ -135,13 +141,16 @@ final class ClosedSessionImpl implements ClosedSession {
         byte[] xml = sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
         SessionInvoiceStatus status = sessionClient.getInvoiceStatus(referenceNumber, invoiceReferenceNumber);
         Invoice placeholder = Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
+        InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
+                UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
         SubmittedInvoice submitted = new SubmittedInvoice(
                 placeholder, invoiceReferenceNumber, status,
                 status.ksefNumber() != null
                         ? Optional.of(KsefNumber.parse(status.ksefNumber()))
                         : Optional.empty(),
                 Optional.empty(), Optional.empty(), List.of());
-        return new ClearedInvoice(submitted, new UpoEntry(invoiceReferenceNumber, xml));
+        return new ClearedInvoice(submitted, documentPlaceholder,
+                new UpoEntry(invoiceReferenceNumber, xml));
     }
 
     /**
@@ -176,10 +185,13 @@ final class ClosedSessionImpl implements ClosedSession {
                 SessionInvoiceStatus syntheticStatus = newAcceptedSessionInvoiceStatus(
                         ordinalCounter, invoiceRef, ksefNumber, summary.acceptanceDate());
                 Invoice placeholder = Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
+                InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
+                        UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
                 SubmittedInvoice rebuilt = new SubmittedInvoice(
                         placeholder, invoiceRef, syntheticStatus,
                         Optional.of(ksefNumber), Optional.empty(), Optional.empty(), List.of());
-                bulk.add(new ClearedInvoice(rebuilt, new UpoEntry(invoiceRef, xml)));
+                bulk.add(new ClearedInvoice(rebuilt, documentPlaceholder,
+                        new UpoEntry(invoiceRef, xml)));
             }
         }
         return List.copyOf(bulk);

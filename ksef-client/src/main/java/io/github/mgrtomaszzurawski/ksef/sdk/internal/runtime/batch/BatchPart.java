@@ -70,6 +70,42 @@ public sealed interface BatchPart {
                 // best effort — JVM exit hook is the safety net
             }
         }
+
+        /**
+         * Equality by ordinal + hash + path. Record-default {@code equals}
+         * compares the {@code byte[] hash} by reference (Sonar S6218); we
+         * walk the bytes via {@link Arrays#equals(byte[], byte[])} instead.
+         */
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof OnDiskPart that)) {
+                return false;
+            }
+            return ordinalNumber == that.ordinalNumber
+                    && sizeBytes == that.sizeBytes
+                    && Arrays.equals(hash, that.hash)
+                    && path.equals(that.path);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Integer.hashCode(ordinalNumber);
+            result = 31 * result + Long.hashCode(sizeBytes);
+            result = 31 * result + Arrays.hashCode(hash);
+            result = 31 * result + path.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "OnDiskPart[ordinalNumber=" + ordinalNumber
+                    + ", sizeBytes=" + sizeBytes
+                    + ", hash=byte[" + hash.length + "]"
+                    + ", path=" + path + "]";
+        }
     }
 
     /**
@@ -167,6 +203,19 @@ public sealed interface BatchPart {
             int result = Integer.hashCode(ordinalNumber);
             result = 31 * result + Arrays.hashCode(hash);
             return result;
+        }
+
+        /**
+         * Record-default {@code toString} would call
+         * {@link Object#toString()} on each {@code byte[]} component,
+         * leaking opaque identity hashes (Sonar S6218). Emit the lengths
+         * instead — captures shape without dumping payload.
+         */
+        @Override
+        public String toString() {
+            return "InMemoryPart[ordinalNumber=" + ordinalNumber
+                    + ", hash=byte[" + hash.length + "]"
+                    + ", bytes=byte[" + bytes.length + "]]";
         }
     }
 }

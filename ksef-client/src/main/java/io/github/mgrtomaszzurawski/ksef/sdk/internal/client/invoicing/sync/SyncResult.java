@@ -2,9 +2,10 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncCheckpoint;
 import java.util.Map;
 import java.util.Objects;
 

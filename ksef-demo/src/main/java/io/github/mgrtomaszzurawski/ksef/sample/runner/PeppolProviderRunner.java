@@ -16,6 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
 import java.time.Duration;
@@ -107,8 +108,9 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .credentials(creds)
                 .retryPolicy(io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy.builder().build())
                 .build()) {
-            // Drive lazy auth via any authenticated read.
-            client.auth().streamSessions().findAny();
+            // Drive lazy auth via any authenticated read; no-op ifPresent
+            // consumes the Optional per Sonar S2201.
+            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH, elapsed(start),
                     "peppolId=" + peppolId + " (registered via XAdES self-signed cert)"));
             return true;
@@ -173,8 +175,9 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .credentials(creds)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
-            // Drive lazy auth via any authenticated read.
-            client.auth().streamSessions().findAny();
+            // Drive lazy auth via any authenticated read; no-op ifPresent
+            // consumes the Optional per Sonar S2201.
+            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH + label, elapsed(authStart),
                     "peppolId=" + peppolId));
 
@@ -206,8 +209,8 @@ public final class PeppolProviderRunner implements DemoRunner {
             // PEF UBL templates use {supplier_nip} for the Polish company on whose
             // behalf the Peppol provider sends the invoice. That identity is the
             // owner NIP from the TEST env primary context, NOT the peppolId.
-            byte[] invoice = TestInvoiceXml.generate(formCode, supplierNip, priorKsefNumber);
-            var sendResult = session.send(invoice);
+            byte[] invoiceXml = TestInvoiceXml.generate(formCode, supplierNip, priorKsefNumber);
+            var sendResult = session.sendInvoice(Invoice.fromXml(formCode, invoiceXml));
             results.add(RunResult.ok(NAME, OP_SEND_INVOICE + label, elapsed(start),
                     "invoiceRef=" + sendResult.referenceNumber()));
             return sendResult.referenceNumber();

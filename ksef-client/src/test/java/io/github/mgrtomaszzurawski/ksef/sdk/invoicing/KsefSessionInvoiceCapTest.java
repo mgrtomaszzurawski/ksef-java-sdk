@@ -7,6 +7,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
@@ -46,11 +48,28 @@ class KsefSessionInvoiceCapTest {
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
     private static final int MAX_INVOICES = 10_000;
 
+    /** Distinct from {@link FormCode#FA3} so InvoiceValidationGate skips XSD validation. */
+    private static final FormCode TEST_FORM_CODE = FormCode.custom("FA (TEST)", "test", "FA");
+
     private static final String SEND_INVOICE_RESPONSE = """
             {
               "referenceNumber": "%s"
             }
             """.formatted(TEST_INVOICE_REF);
+
+    private static final String TEST_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
+    private static final String INVOICE_STATUS_ACCEPTED_RESPONSE = """
+            {
+              "ordinalNumber": 1,
+              "invoiceNumber": "FA/001",
+              "ksefNumber": "%s",
+              "referenceNumber": "%s",
+              "invoiceHash": "ZHVtbXktaGFzaA==",
+              "invoicingDate": "2026-04-18T12:00:00+02:00",
+              "acquisitionDate": "2026-04-18T12:00:01+02:00",
+              "status": {"code": 200, "description": "Accepted"}
+            }
+            """.formatted(TEST_KSEF_NUMBER, TEST_INVOICE_REF);
 
     @Test
     void send_when10kInvoicesAlreadySent_throwsBeforeHttpCall(WireMockRuntimeInfo wmInfo) throws Exception {
@@ -61,7 +80,7 @@ class KsefSessionInvoiceCapTest {
 
             // when / then — the 10001st send is rejected before HTTP
             IllegalStateException failure = assertThrows(IllegalStateException.class,
-                    () -> session.send(TEST_INVOICE_XML));
+                    () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
             assertTrue(failure.getMessage().contains("10000"),
                     "Error message should reference the cap; got: " + failure.getMessage());
             assertTrue(failure.getMessage().contains("REQ-SESS-41"),
@@ -77,11 +96,11 @@ class KsefSessionInvoiceCapTest {
             seedCounter(session, MAX_INVOICES - 1);
 
             // when — 10,000th send succeeds
-            assertDoesNotThrow(() -> session.send(TEST_INVOICE_XML));
+            assertDoesNotThrow(() -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
 
             // then — 10,001st send fails fast
             assertThrows(IllegalStateException.class,
-                    () -> session.send(TEST_INVOICE_XML));
+                    () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
         }
     }
 
@@ -94,7 +113,7 @@ class KsefSessionInvoiceCapTest {
 
             // when — invoke many rejected sends
             for (int attempt = 0; attempt < 5; attempt++) {
-                assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+                assertThrows(IllegalStateException.class, () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
             }
 
             // then — counter stays at the cap (rollback on rejection per implementation)
@@ -109,6 +128,13 @@ class KsefSessionInvoiceCapTest {
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SEND_INVOICE_RESPONSE)));
+        // sendInvoice(Invoice) polls /sessions/{ref}/invoices/{invRef} until
+        // terminal — stub a deterministic Accepted response.
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices/" + TEST_INVOICE_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(INVOICE_STATUS_ACCEPTED_RESPONSE)));
         // try-with-resources triggers session.close() which posts to /close + polls status.
         stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/close"))
                 .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
@@ -137,8 +163,12 @@ class KsefSessionInvoiceCapTest {
         var runtime = io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF, OffsetDateTime.now().plusHours(1));
         SessionClient sessionClient = new SessionClient(runtime);
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF,
-                CryptoService.generateAesKey(), CryptoService.generateIv());
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(
+                sessionClient, TEST_SESSION_REF,
+                CryptoService.generateAesKey(), CryptoService.generateIv(),
+                null,
+                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment.TEST,
+                java.time.Duration.ofSeconds(2));
     }
 
     private static void seedCounter(OnlineSession session, int value) throws Exception {
