@@ -465,8 +465,12 @@ public final class Fa3Invoice implements Invoice {
             return podmiot;
         }
 
+        /** {@code Podmiot2/JST} marker — value 1 = invoice IS for a JST sub-unit. */
+        private static final BigInteger PODMIOT2_JST_YES = BigInteger.valueOf(1);
         /** {@code Podmiot2/JST} marker — value 2 = invoice is NOT for a JST sub-unit. */
         private static final BigInteger PODMIOT2_JST_NO = BigInteger.valueOf(2);
+        /** {@code Podmiot2/GV} marker — value 1 = invoice IS for a VAT-group member. */
+        private static final BigInteger PODMIOT2_GV_YES = BigInteger.valueOf(1);
         /** {@code Podmiot2/GV} marker — value 2 = invoice is NOT for a VAT-group member. */
         private static final BigInteger PODMIOT2_GV_NO = BigInteger.valueOf(2);
 
@@ -477,8 +481,8 @@ public final class Fa3Invoice implements Invoice {
             identity.setNazwa(party.name());
             podmiot.setDaneIdentyfikacyjne(identity);
             podmiot.setAdres(buildAddress(party));
-            podmiot.setJST(PODMIOT2_JST_NO);
-            podmiot.setGV(PODMIOT2_GV_NO);
+            podmiot.setJST(party.jst() ? PODMIOT2_JST_YES : PODMIOT2_JST_NO);
+            podmiot.setGV(party.vatGroup() ? PODMIOT2_GV_YES : PODMIOT2_GV_NO);
             return podmiot;
         }
 
