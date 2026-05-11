@@ -53,7 +53,7 @@ class PefKorInvoiceTest {
                 ? (CreditNoteType) wrapper.getValue() : (CreditNoteType) parsed;
         assertNotNull(result);
         assertEquals(CREDIT_NOTE_NUMBER, result.getID().getValue());
-        assertTrue(result.getBillingReference().size() == 1);
+        assertEquals(1, result.getBillingReference().size());
     }
 
     @Test

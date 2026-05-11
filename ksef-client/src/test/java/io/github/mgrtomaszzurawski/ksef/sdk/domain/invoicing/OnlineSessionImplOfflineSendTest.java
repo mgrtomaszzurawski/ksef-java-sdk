@@ -19,7 +19,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoServic
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -46,8 +45,6 @@ class OnlineSessionImplOfflineSendTest {
     private static final String SELLER_NIP = "1111111111";
     private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
-    private static final byte[] TEST_INVOICE_XML = "<Invoice>test</Invoice>".getBytes(StandardCharsets.UTF_8);
-    private static final FormCode CUSTOM_CODE = FormCode.custom("FA (TEST)", "test", "FA");
     private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
 
     private static final String SEND_INVOICE_RESPONSE = """

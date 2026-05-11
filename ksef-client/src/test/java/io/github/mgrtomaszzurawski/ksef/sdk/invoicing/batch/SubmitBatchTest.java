@@ -55,9 +55,6 @@ class SubmitBatchTest {
     private static final byte[] UPO_BYTES_2 = "<UPO>2</UPO>".getBytes(StandardCharsets.UTF_8);
     private static final byte[] UPO_BYTES_3 = "<UPO>3</UPO>".getBytes(StandardCharsets.UTF_8);
 
-    private static final String INVOICE_XML_1 = "<Invoice><Number>1</Number></Invoice>";
-    private static final String INVOICE_XML_2 = "<Invoice><Number>2</Number></Invoice>";
-    private static final String INVOICE_XML_3 = "<Invoice><Number>3</Number></Invoice>";
 
     private static final int EXPECTED_INVOICE_COUNT = 3;
     private static final int EXPECTED_FAILED_FAILURE = 1;

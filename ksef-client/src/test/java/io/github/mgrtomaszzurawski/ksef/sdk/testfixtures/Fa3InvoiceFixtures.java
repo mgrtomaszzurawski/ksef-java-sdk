@@ -50,7 +50,7 @@ public final class Fa3InvoiceFixtures {
                         "Krakow", null, "5", null))
                 .totalGrossAmount(GROSS_AMOUNT)
                 .addLineItem(new InvoiceLineItem(1, DESCRIPTION, UNIT,
-                        new BigDecimal("1"), NET_AMOUNT, NET_AMOUNT, VAT_RATE))
+                        BigDecimal.ONE, NET_AMOUNT, NET_AMOUNT, VAT_RATE))
                 .build();
     }
 }
