@@ -24,4 +24,14 @@ public enum InvoiceType {
     VAT_RR,
     KOR_VAT_RR;
 
+    /**
+     * Whether this type denotes a correction invoice (any of the {@code KOR_*}
+     * variants or the bare {@code KOR}). Lets consumers branch on correction
+     * vs. original without enumerating every {@code KOR_*} constant — the
+     * enum may grow new correction variants in future KSeF schema revisions.
+     */
+    public boolean isCorrection() {
+        return this == KOR || this == KOR_ZAL || this == KOR_ROZ
+                || this == KOR_PEF || this == KOR_VAT_RR;
+    }
 }
