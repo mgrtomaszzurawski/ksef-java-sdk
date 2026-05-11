@@ -42,20 +42,18 @@ class PefKorInvoiceTest {
                 "XML must contain UBL CreditNote root: " + xml);
     }
 
-    @org.junit.jupiter.api.Disabled("Same UBL JAXB unmarshal element-registration limitation as "
-            + "PefInvoiceTest round-trip; marshal succeeds. Tracked as a follow-up before 1.0.0 "
-            + "release.")
     @Test
     void xml_whenCreditNoteBuilt_roundTripsThroughJaxbUnchanged() throws Exception {
         PefKorInvoice creditNote = minimalCreditNote();
-        JAXBContext context = JAXBContext.newInstance(CreditNoteType.class);
+        JAXBContext context = JAXBContext.newInstance(
+                io.github.mgrtomaszzurawski.ksef.xml.pefkor.ObjectFactory.class);
         Unmarshaller unmarshaller = context.createUnmarshaller();
         Object parsed = unmarshaller.unmarshal(new ByteArrayInputStream(creditNote.xml()));
         CreditNoteType result = parsed instanceof JAXBElement<?> wrapper
                 ? (CreditNoteType) wrapper.getValue() : (CreditNoteType) parsed;
         assertNotNull(result);
         assertEquals(CREDIT_NOTE_NUMBER, result.getID().getValue());
-        assertTrue(result.getBillingReference().size() == 1);
+        assertEquals(1, result.getBillingReference().size());
     }
 
     @Test

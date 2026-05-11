@@ -14,7 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandl
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
-import java.nio.charset.StandardCharsets;
+import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
@@ -38,8 +38,6 @@ class OnlineSessionImplTechnicalCorrectionTest {
     private static final String TEST_INVOICE_REF = "20260418-IN-1111111111-ABCDEF1234-02";
     private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
-    private static final byte[] TEST_INVOICE_XML = "<Invoice>test</Invoice>".getBytes(StandardCharsets.UTF_8);
-    private static final FormCode CUSTOM_CODE = FormCode.custom("FA (TEST)", "test", "FA");
     private static final int SHA256_LENGTH = 32;
 
     private static final String SEND_INVOICE_RESPONSE = """
@@ -71,7 +69,7 @@ class OnlineSessionImplTechnicalCorrectionTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(INVOICE_STATUS_OK_RESPONSE)));
 
-        Invoice invoice = Invoice.fromXml(CUSTOM_CODE, TEST_INVOICE_XML);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         byte[] originalHash = new byte[SHA256_LENGTH];
         for (int i = 0; i < originalHash.length; i++) {
             originalHash[i] = (byte) i;
@@ -92,7 +90,7 @@ class OnlineSessionImplTechnicalCorrectionTest {
     @Test
     void sendTechnicalCorrection_whenHashWrongLength_throwsIllegalArgumentException(WireMockRuntimeInfo wmInfo) {
         // given
-        Invoice invoice = Invoice.fromXml(CUSTOM_CODE, TEST_INVOICE_XML);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         byte[] tooShortHash = new byte[SHA256_LENGTH - 1];
         OnlineSession session = createSession(wmInfo);
 

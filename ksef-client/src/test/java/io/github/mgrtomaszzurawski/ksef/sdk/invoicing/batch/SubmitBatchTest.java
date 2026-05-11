@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -54,9 +55,6 @@ class SubmitBatchTest {
     private static final byte[] UPO_BYTES_2 = "<UPO>2</UPO>".getBytes(StandardCharsets.UTF_8);
     private static final byte[] UPO_BYTES_3 = "<UPO>3</UPO>".getBytes(StandardCharsets.UTF_8);
 
-    private static final String INVOICE_XML_1 = "<Invoice><Number>1</Number></Invoice>";
-    private static final String INVOICE_XML_2 = "<Invoice><Number>2</Number></Invoice>";
-    private static final String INVOICE_XML_3 = "<Invoice><Number>3</Number></Invoice>";
 
     private static final int EXPECTED_INVOICE_COUNT = 3;
     private static final int EXPECTED_FAILED_FAILURE = 1;
@@ -79,11 +77,11 @@ class SubmitBatchTest {
             stubUpoFetch(INVOICE_REF_3, UPO_BYTES_3);
 
             List<Invoice> invoices = List.of(
-                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_1.getBytes(StandardCharsets.UTF_8)),
-                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_2.getBytes(StandardCharsets.UTF_8)),
-                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_3.getBytes(StandardCharsets.UTF_8)));
+                    Fa3InvoiceFixtures.minimalValid(),
+                    Fa3InvoiceFixtures.minimalValid(),
+                    Fa3InvoiceFixtures.minimalValid());
 
-            BatchResult result = client.invoices().submitBatch(FormCode.custom("FA (TEST)", "test", "FA"), invoices, FAST_OPTIONS);
+            BatchResult result = client.invoices().submitBatch(FormCode.FA3, invoices, FAST_OPTIONS);
 
             assertEquals(BATCH_REF, result.sessionRef());
             assertEquals(EXPECTED_INVOICE_COUNT, result.totalCount());
@@ -111,11 +109,11 @@ class SubmitBatchTest {
             stubUpoFetch(INVOICE_REF_2, UPO_BYTES_2);
 
             List<Invoice> invoices = List.of(
-                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_1.getBytes(StandardCharsets.UTF_8)),
-                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_2.getBytes(StandardCharsets.UTF_8)),
-                    Invoice.fromXml(FormCode.custom("FA (TEST)", "test", "FA"), INVOICE_XML_3.getBytes(StandardCharsets.UTF_8)));
+                    Fa3InvoiceFixtures.minimalValid(),
+                    Fa3InvoiceFixtures.minimalValid(),
+                    Fa3InvoiceFixtures.minimalValid());
 
-            BatchResult result = client.invoices().submitBatch(FormCode.custom("FA (TEST)", "test", "FA"), invoices, FAST_OPTIONS);
+            BatchResult result = client.invoices().submitBatch(FormCode.FA3, invoices, FAST_OPTIONS);
 
             assertEquals(EXPECTED_CLEARED_PARTIAL, result.successfulCount());
             assertEquals(EXPECTED_FAILED_FAILURE, result.failedCount());
