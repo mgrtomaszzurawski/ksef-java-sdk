@@ -35,8 +35,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerifica
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrSigningService;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.lang.reflect.Type;
 import java.nio.file.Path;
@@ -113,7 +113,7 @@ public final class JpmsConsumerCompileFixture {
                 QrContextType.class,
                 QrSigningService.class,
                 IncrementalSyncPlan.class,
-                InvoiceSyncClient.class,
+                DecryptedInvoice.class,
                 // sdk.exception
                 KsefException.class,
         };

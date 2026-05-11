@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  *     the export's {@code dateRange.to} at the current PermanentStorage HWM;
  *     mandated by the incremental-retrieval spec
  *     ({@code pobieranie-faktur/przyrostowe-pobieranie-faktur.md}). Set by
- *     {@code InvoiceSyncClient} on every export it opens; consumers do not
+ *     the SDK's sync orchestrator on every export it opens; consumers do not
  *     normally need to set this directly. Default {@code false}.
  * @param sortOrder optional sort order for the
  *     {@code POST /invoices/query/metadata} call. Maps to the spec's

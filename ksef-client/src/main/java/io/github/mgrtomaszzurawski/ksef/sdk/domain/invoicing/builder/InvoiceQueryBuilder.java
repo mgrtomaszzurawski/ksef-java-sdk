@@ -135,7 +135,7 @@ public final class InvoiceQueryBuilder {
     }
 
     /**
-     * @apiNote Internal — set automatically by {@code InvoiceSyncClient} on
+     * @apiNote Internal — set automatically by the SDK's sync orchestrator on
      *     every export it opens. Caps the export's {@code dateRange.to} at
      *     the server-side PermanentStorage HWM, per the incremental-retrieval
      *     spec ({@code pobieranie-faktur/przyrostowe-pobieranie-faktur.md},

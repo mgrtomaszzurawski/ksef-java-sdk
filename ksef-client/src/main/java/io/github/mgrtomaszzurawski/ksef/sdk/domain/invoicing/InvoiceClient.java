@@ -16,8 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListIt
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryFilter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -141,20 +139,6 @@ public interface InvoiceClient {
      * @return an open session — use with try-with-resources
      */
     OnlineSession openSession(FormCode formCode);
-
-    /**
-     * Run an incremental sync over the consumer's invoice store.
-     * Implements the documented HWM-based pagination algorithm from
-     * {@code ksef-docs/pobieranie-faktur/przyrostowe-pobieranie-faktur.md}.
-     *
-     * <p>Tier 1 workflow API per ADR-021.
-     *
-     * @param plan sync configuration
-     * @param checkpointStore where checkpoints are persisted between runs
-     * @param sink invoice processor — called once per accepted invoice
-     * @return per-subject-type counts and final checkpoints
-     */
-    SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink);
 
     /**
      * Stream-based incremental sync — returns a lazy {@link java.util.stream.Stream}

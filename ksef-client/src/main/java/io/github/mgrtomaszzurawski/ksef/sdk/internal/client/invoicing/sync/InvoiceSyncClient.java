@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +17,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetada
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncCheckpoint;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.mapping.InvoicingMappers;
 import java.io.IOException;

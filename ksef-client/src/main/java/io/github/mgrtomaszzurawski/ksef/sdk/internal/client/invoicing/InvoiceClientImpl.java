@@ -46,9 +46,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync.InvoiceSyncClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.BatchSubmissionFlow;
@@ -113,7 +111,6 @@ public final class InvoiceClientImpl implements InvoiceClient {
     private static final String OP_PREPARE_EXPORT = "prepareInvoiceExport";
     private static final String OP_OPEN_SESSION = "openSession";
     private static final String OP_STREAM_SESSIONS = "streamSessions";
-    private static final String OP_SYNC = "sync";
     private static final String OP_SUBMIT_BATCH = "submitBatch";
     private static final String OP_SUBMIT_BATCH_FROM_FILES = "submitBatchFromFiles";
     private static final String LOG_OPENED_ONLINE_SESSION = "Opened KSeF session {}, formCode={}";
@@ -512,12 +509,6 @@ public final class InvoiceClientImpl implements InvoiceClient {
         }
         LOGGER.debug(LOG_CALL, OP_STREAM_SESSIONS);
         return sessionClient.streamSessions(filter);
-    }
-
-    @Override
-    public SyncResult sync(IncrementalSyncPlan plan, CheckpointStore checkpointStore, InvoiceSink sink) {
-        LOGGER.debug(LOG_CALL, OP_SYNC);
-        return new InvoiceSyncClient(this, runtime.objectMapper()).sync(plan, checkpointStore, sink);
     }
 
     @Override

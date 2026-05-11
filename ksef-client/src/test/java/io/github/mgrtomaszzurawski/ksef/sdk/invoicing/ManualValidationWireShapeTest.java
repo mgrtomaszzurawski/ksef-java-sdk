@@ -70,7 +70,7 @@ class ManualValidationWireShapeTest {
     @Test
     void invoiceSync_export_carriesRestrictToPermanentStorageHwmDateTrue(WireMockRuntimeInfo wmInfo) {
         // A.1.1 — The key wire-level invariant of the incremental-sync
-        // workflow: every export request issued by InvoiceSyncClient MUST
+        // workflow: every export request issued by the sync orchestrator MUST
         // carry restrictToPermanentStorageHwmDate=true. Verified by direct
         // mapper round-trip: build a query via the internal-marked builder
         // method, run the SDK's request mapper, assert the JSON.

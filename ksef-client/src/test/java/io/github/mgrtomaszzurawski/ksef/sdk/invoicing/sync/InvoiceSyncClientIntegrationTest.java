@@ -19,10 +19,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryD
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSink;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.InvoiceSyncClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncCheckpoint;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync.InvoiceSink;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync.InvoiceSyncClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync.SyncResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
