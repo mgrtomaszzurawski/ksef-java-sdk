@@ -43,8 +43,12 @@ application {
 
 // `mvn exec:java -Ddemo.mode=AUTH_SAFE` equivalent. Gradle resolves the
 // ksef-client dependency from the reactor's build/classes — no install step
-// required.
+// required. workingDir = rootProject so the demo finds ksef-credentials.properties
+// + demo-state.json + ksef-demo.p12 at their original repo-root locations
+// (matching the prior Maven behaviour where the multi-module reactor's
+// CWD is the root pom).
 tasks.named<JavaExec>("run") {
+    workingDir = rootProject.projectDir
     systemProperty("demo.mode", project.findProperty("demo.mode") ?: "READ_ONLY")
 }
 

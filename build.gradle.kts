@@ -9,6 +9,14 @@
 plugins {
     base
     id("org.owasp.dependencycheck") version "11.1.1"
+    id("org.sonarqube") version "5.1.0.4882"
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "ksef-java-sdk")
+        property("sonar.projectName", "KSeF Java SDK")
+    }
 }
 
 allprojects {
