@@ -50,7 +50,8 @@ public interface ClosedSession extends Session {
 
     /**
      * Convenience overload for callers that hold only a reference number
-     * (e.g. legacy {@code SendInvoiceResult.referenceNumber()}). Builds
+     * (e.g. a {@code SubmittedInvoice.referenceNumber()} persisted across
+     * a restart). Builds
      * a synthetic {@link SubmittedInvoice} from the latest server query
      * for the given reference and attaches the UPO entry.
      *

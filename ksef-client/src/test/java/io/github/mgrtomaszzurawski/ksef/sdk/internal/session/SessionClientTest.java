@@ -10,7 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;

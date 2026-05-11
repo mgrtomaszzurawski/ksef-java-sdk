@@ -17,8 +17,7 @@ import java.util.Optional;
  * ({@code OnlineSession.sendOfflineInvoice(OfflineInvoice)},
  * {@code OnlineSession.sendTechnicalCorrection(...)}).
  *
- * <p>Replaces {@code SendInvoiceResult}'s single-field reference number
- * with the full terminal-state shape that consumers actually need:
+ * <p>Carries the full terminal-state shape that consumers need:
  * KSeF number, KOD I QR PNG, KOD II QR PNG (offline path only), error
  * details, and the original {@link Invoice} embedded for downstream
  * chaining.

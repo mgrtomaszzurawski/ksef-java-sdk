@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSessionImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
@@ -86,7 +87,7 @@ class KsefSessionTest {
                         .withBody(SEND_INVOICE_RESPONSE)));
         stubCloseAndStatusOk();
 
-        try (OnlineSession session = createSession(wmInfo)) {
+        try (OnlineSessionImpl session = createSession(wmInfo)) {
             // when
             var result = session.send(TEST_INVOICE_XML);
 
@@ -100,7 +101,7 @@ class KsefSessionTest {
     void send_whenSessionClosed_throwsIllegalStateException(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (OnlineSession session = createSession(wmInfo)) {
+        try (OnlineSessionImpl session = createSession(wmInfo)) {
             session.close();
 
             // when / then
@@ -126,7 +127,7 @@ class KsefSessionTest {
 
         stubStatusOk();
 
-        try (OnlineSession session = createSession(wmInfo)) {
+        try (OnlineSessionImpl session = createSession(wmInfo)) {
             // when — should not throw despite the first 415
             session.close();
 
@@ -139,7 +140,7 @@ class KsefSessionTest {
     void close_whenAlreadyClosed_isNoOp(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (OnlineSession session = createSession(wmInfo)) {
+        try (OnlineSessionImpl session = createSession(wmInfo)) {
             session.close();
 
             // when — second close should be a no-op, no error
@@ -154,7 +155,7 @@ class KsefSessionTest {
     void referenceNumber_returnsSessionRef(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (OnlineSession session = createSession(wmInfo)) {
+        try (OnlineSessionImpl session = createSession(wmInfo)) {
             // when
             String referenceNumber = session.referenceNumber();
 
@@ -189,7 +190,7 @@ class KsefSessionTest {
                                 }
                                 """.formatted(TEST_INVOICE_REF))));
 
-        try (OnlineSession session = createSession(wmInfo)) {
+        try (OnlineSessionImpl session = createSession(wmInfo)) {
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.archive();
 
             // when
@@ -211,7 +212,7 @@ class KsefSessionTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SESSION_STATUS_TERMINAL_FAILURE_RESPONSE)));
 
-        OnlineSession session = createSession(wmInfo);
+        OnlineSessionImpl session = createSession(wmInfo);
 
         // when / then
         KsefSessionTerminalFailureException failure =
@@ -259,7 +260,7 @@ class KsefSessionTest {
                         .withBody(SEND_INVOICE_RESPONSE)));
         stubCloseAndStatusOk();
 
-        try (OnlineSession session = createSession(wmInfo)) {
+        try (OnlineSessionImpl session = createSession(wmInfo)) {
             session.sendOffline(TEST_INVOICE_XML);
 
             verify(postRequestedFor(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
@@ -268,7 +269,7 @@ class KsefSessionTest {
         }
     }
 
-    private static OnlineSession createSession(WireMockRuntimeInfo wmInfo) {
+    private static OnlineSessionImpl createSession(WireMockRuntimeInfo wmInfo) {
         io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime runtime =
                 io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF,

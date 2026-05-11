@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSessionImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import java.time.Duration;
 import java.lang.reflect.Constructor;
@@ -66,16 +67,16 @@ public final class SessionHandleConstructor {
     private static final String ONLINE_SESSION_IMPL_FQN =
             "io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSessionImpl";
 
-    private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR;
-    private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VALID_UNTIL;
-    private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VERIFICATION_AWARE;
+    private static final Constructor<OnlineSessionImpl> ONLINE_SESSION_CTOR;
+    private static final Constructor<OnlineSessionImpl> ONLINE_SESSION_CTOR_VALID_UNTIL;
+    private static final Constructor<OnlineSessionImpl> ONLINE_SESSION_CTOR_VERIFICATION_AWARE;
     private static final Constructor<PreparedInvoiceExport> PREPARED_EXPORT_CTOR;
 
     static {
         try {
             @SuppressWarnings("unchecked")
-            Class<? extends OnlineSession> onlineImpl =
-                    (Class<? extends OnlineSession>) Class.forName(ONLINE_SESSION_IMPL_FQN);
+            Class<OnlineSessionImpl> onlineImpl =
+                    (Class<OnlineSessionImpl>) Class.forName(ONLINE_SESSION_IMPL_FQN);
             ONLINE_SESSION_CTOR = makeAccessible(
                     onlineImpl.getDeclaredConstructor(
                             SessionClient.class, String.class, byte[].class, byte[].class));
@@ -114,7 +115,7 @@ public final class SessionHandleConstructor {
     /**
      * @apiNote Internal — see class-level Javadoc.
      */
-    public static OnlineSession newOnlineSession(SessionClient sessionClient,
+    public static OnlineSessionImpl newOnlineSession(SessionClient sessionClient,
                                                  String referenceNumber,
                                                  byte[] aesKey,
                                                  byte[] initVector) {
@@ -125,7 +126,7 @@ public final class SessionHandleConstructor {
      * @apiNote Internal — F8a variant carrying the open-response
      *     {@code validUntil} into the handle.
      */
-    public static OnlineSession newOnlineSession(SessionClient sessionClient,
+    public static OnlineSessionImpl newOnlineSession(SessionClient sessionClient,
                                                  String referenceNumber,
                                                  byte[] aesKey,
                                                  byte[] initVector,
@@ -141,7 +142,7 @@ public final class SessionHandleConstructor {
      *     (poll {@code invoiceStatus} until terminal, parse KsefNumber,
      *     render KOD I QR).
      */
-    public static OnlineSession newOnlineSession(SessionClient sessionClient,
+    public static OnlineSessionImpl newOnlineSession(SessionClient sessionClient,
                                                  String referenceNumber,
                                                  byte[] aesKey,
                                                  byte[] initVector,
