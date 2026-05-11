@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersQueryRequest;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public final class PeppolRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             PeppolProvidersResult response = context.client().peppol()
-                    .query(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE);
+                    .queryProviders(new PeppolProvidersQueryRequest(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE));
             int count = response.providers() != null ? response.providers().size() : 0;
             LOGGER.info("[{}] default query: {} providers, hasMore={}", NAME, count, response.hasMore());
             results.add(RunResult.ok(NAME, OP_QUERY_DEFAULT, elapsed(start),
@@ -64,7 +65,7 @@ public final class PeppolRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             PeppolProvidersResult response = context.client().peppol()
-                    .query(PAGED_OFFSET, PAGED_SIZE);
+                    .queryProviders(new PeppolProvidersQueryRequest(PAGED_OFFSET, PAGED_SIZE));
             int count = response.providers() != null ? response.providers().size() : 0;
             LOGGER.info("[{}] paged query offset={} size={}: {} providers, hasMore={}",
                     NAME, PAGED_OFFSET, PAGED_SIZE, count, response.hasMore());

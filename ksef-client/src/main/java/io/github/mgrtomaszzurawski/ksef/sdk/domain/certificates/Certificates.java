@@ -44,7 +44,7 @@ public interface Certificates {
      */
     void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
 
-    CertificateQueryResult query(CertificateQueryRequest request);
+    CertificateQueryResult queryCertificates(CertificateQueryRequest request);
 
     /**
      * Stream all certificates matching the filter. Pages are fetched

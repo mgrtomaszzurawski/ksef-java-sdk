@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvider;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
 import java.util.stream.Stream;
 
@@ -24,7 +25,7 @@ public interface PeppolProviders {
      * prefer {@link #streamProviders()}, which lazily walks pages until the
      * server reports {@code hasMore == false}.
      */
-    PeppolProvidersResult query(int pageOffset, int pageSize);
+    PeppolProvidersResult queryProviders(PeppolProvidersQueryRequest request);
 
     /**
      * Stream every Peppol provider registered in KSeF. Pages are fetched

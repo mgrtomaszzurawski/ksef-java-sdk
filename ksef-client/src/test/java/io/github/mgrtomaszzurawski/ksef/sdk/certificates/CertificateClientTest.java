@@ -236,7 +236,7 @@ class CertificateClientTest {
 
             // when
             CertificateQueryResult response =
-                    ksef.certificates().query(CertificateQueryBuilder.create().build());
+                    ksef.certificates().queryCertificates(CertificateQueryBuilder.create().build());
 
             // then
             assertNotNull(response.certificates());

@@ -77,7 +77,7 @@ public final class TokensImpl implements Tokens {
     }
 
     @Override
-    public TokenList list(TokenQueryRequest filter) {
+    public TokenList queryTokens(TokenQueryRequest filter) {
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
         LOGGER.debug(LOG_CALL, OP_LIST);
         String token = http.requireToken();

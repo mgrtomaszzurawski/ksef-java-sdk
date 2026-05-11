@@ -110,7 +110,7 @@ public final class CertProbe {
 
     private static void queryAndRevokeYoungestActive(KsefClient client) {
         section("STEP 3: query active certificates");
-        CertificateQueryResult queryResult = client.certificates().query(CertificateQueryBuilder.create().build());
+        CertificateQueryResult queryResult = client.certificates().queryCertificates(CertificateQueryBuilder.create().build());
         List<CertificateListItem> certs = queryResult.certificates();
         logCertificateInventory(certs);
 

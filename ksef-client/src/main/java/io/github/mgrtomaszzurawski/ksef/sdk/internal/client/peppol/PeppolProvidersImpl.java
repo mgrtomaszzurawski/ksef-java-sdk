@@ -8,11 +8,13 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryPeppolProvidersRespons
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolProviders;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvider;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.mapping.PeppolMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +42,7 @@ public final class PeppolProvidersImpl implements PeppolProviders {
     private static final String QUERY_PARAM_ASSIGN = "=";
     private static final String QUERY_PARAM_SEPARATOR = "&";
 
-    private static final String ERR_PAGE_OFFSET_NEGATIVE = "pageOffset must be >= 0";
-    private static final String ERR_PAGE_SIZE_NOT_POSITIVE = "pageSize must be > 0";
+    private static final String ERR_NULL_REQUEST = "request must not be null";
 
     /**
      * Page size used by {@link #streamProviders()} on each underlying
@@ -61,20 +62,14 @@ public final class PeppolProvidersImpl implements PeppolProviders {
     /**
      * Query a specific page of Peppol service providers.
      *
-     * @param pageOffset zero-based page index (must be {@code >= 0})
-     * @param pageSize number of items per page (must be {@code > 0})
+     * @param request paginated query with zero-based {@code pageOffset} and positive {@code pageSize}
      * @return the requested page of providers
      */
     @Override
-    public PeppolProvidersResult query(int pageOffset, int pageSize) {
-        LOGGER.debug(LOG_CALL, OP_QUERY_PROVIDERS, pageOffset, pageSize);
-        if (pageOffset < 0) {
-            throw new IllegalArgumentException(ERR_PAGE_OFFSET_NEGATIVE);
-        }
-        if (pageSize <= 0) {
-            throw new IllegalArgumentException(ERR_PAGE_SIZE_NOT_POSITIVE);
-        }
-        return fetchPage(pageOffset, pageSize);
+    public PeppolProvidersResult queryProviders(PeppolProvidersQueryRequest request) {
+        Objects.requireNonNull(request, ERR_NULL_REQUEST);
+        LOGGER.debug(LOG_CALL, OP_QUERY_PROVIDERS, request.pageOffset(), request.pageSize());
+        return fetchPage(request.pageOffset(), request.pageSize());
     }
 
     @Override

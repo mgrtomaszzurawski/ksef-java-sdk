@@ -120,7 +120,7 @@ public final class CertificateRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             CertificateQueryResult response = context.client().certificates()
-                    .query(CertificateQueryBuilder.create().build());
+                    .queryCertificates(CertificateQueryBuilder.create().build());
             List<CertificateListItem> certs = response.certificates();
             int count = certs != null ? certs.size() : 0;
             if (LOGGER.isInfoEnabled()) {

@@ -196,7 +196,7 @@ public final class CertificatesImpl implements Certificates {
      * @return matching certificates
      */
     @Override
-    public CertificateQueryResult query(CertificateQueryRequest request) {
+    public CertificateQueryResult queryCertificates(CertificateQueryRequest request) {
         LOGGER.debug(LOG_CALL, OP_QUERY);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();

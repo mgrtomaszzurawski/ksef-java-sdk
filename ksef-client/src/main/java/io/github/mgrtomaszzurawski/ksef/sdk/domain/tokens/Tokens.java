@@ -31,7 +31,7 @@ public interface Tokens {
      * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenQueryBuilder#create()
      * TokenQueryBuilder.create().build()} for an unfiltered query.
      */
-    TokenList list(TokenQueryRequest filter);
+    TokenList queryTokens(TokenQueryRequest filter);
 
     /**
      * Stream every token matching the given filter. Pages are fetched
