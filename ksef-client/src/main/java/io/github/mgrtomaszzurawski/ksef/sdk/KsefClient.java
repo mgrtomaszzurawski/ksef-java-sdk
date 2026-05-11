@@ -195,10 +195,11 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Authenticate with KSeF using the configured credentials. Internal —
-     * exposed only to the runtime auth hooks. Consumers trigger
-     * authentication implicitly via the first call that requires it
-     * (lazy auth).
+     * Authenticate with KSeF using the configured credentials. Optional —
+     * the SDK also triggers authentication implicitly on the first call
+     * that requires it (lazy auth). Long-running consumers (batch jobs,
+     * scheduled workers, app warm-up) call this once at startup to pay
+     * the challenge-response cost outside the critical path.
      *
      * <p>Handles the full authentication flow:
      * <ol>
@@ -210,7 +211,7 @@ public final class KsefClient implements AutoCloseable {
      *
      * <p>Thread-safe. If already authenticated, this is a no-op.
      */
-    private synchronized void authenticate() {
+    public synchronized void authenticate() {
         ensureOpen();
         if (authenticated) {
             return;
