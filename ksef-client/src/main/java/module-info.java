@@ -17,7 +17,7 @@ module io.github.mgrtomaszzurawski.ksef {
     // AuthSessions-session management accessor (KsefClient.auth())
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.auth;
 
-    // Authentication public DTOs (AuthSession returned by KsefClient.auth().streamSessions())
+    // Authentication public DTOs (AuthSession returned by KsefClient.auth().streamAuthSessions())
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model;
 
     // Public crypto facade (REQ-CRYPTO-001..004)

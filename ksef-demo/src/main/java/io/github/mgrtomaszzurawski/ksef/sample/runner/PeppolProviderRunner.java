@@ -19,6 +19,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -110,7 +111,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
+            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH, elapsed(start),
                     "peppolId=" + peppolId + " (registered via XAdES self-signed cert)"));
             return true;
@@ -135,7 +136,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                             "grantAuthorization",
                             () -> permissions.getOperationStatus(referenceNumber),
                             opStatus -> opStatus.status() != null
-                                    && opStatus.status().code() >= Permissions.TERMINAL_STATUS_CODE_THRESHOLD,
+                                    && opStatus.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD,
                             opStatus -> opStatus.status() == null ? null : opStatus.status().code(),
                             Duration.ofSeconds(GRANT_AWAIT_SECONDS),
                             null));
@@ -177,7 +178,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
+            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH + label, elapsed(authStart),
                     "peppolId=" + peppolId));
 

@@ -53,7 +53,7 @@ public final class AuthSessionsImpl implements AuthSessions {
     }
 
     @Override
-    public Stream<AuthSession> streamSessions() {
+    public Stream<AuthSession> streamAuthSessions() {
         ensureOpen.run();
         ensureAuthenticated.run();
         return PagedSpliterator.cursorStream(continuationToken -> {

@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -143,7 +144,7 @@ public final class InvoiceRunner implements DemoRunner {
             // package-decrypt material retention; demo only needs the reference
             // number to drive status polling. fullContent=false → metadata only.
             try (PreparedInvoiceExport export = context.client().invoices().prepareExport(
-                    InvoiceQueryBuilder.seller().invoicingDateFrom(from).build(), false)) {
+                    InvoiceQueryBuilder.seller().invoicingDateFrom(from).build(), ExportScope.METADATA_ONLY)) {
                 String refNum = export.referenceNumber();
                 LOGGER.info("[{}] export started, ref={}", NAME, refNum);
                 context.state().setExportReferenceNumber(refNum);

@@ -392,7 +392,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            ksef.testData().setProductionRateLimits();
+            ksef.testData().applyProductionRateLimitsToTestTenant();
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/rate-limits/production"))

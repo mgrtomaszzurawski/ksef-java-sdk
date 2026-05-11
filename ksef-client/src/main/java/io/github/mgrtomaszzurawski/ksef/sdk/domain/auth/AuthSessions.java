@@ -41,7 +41,7 @@ public interface AuthSessions {
      * {@link Stream#takeWhile(java.util.function.Predicate)}
      * to bound the walk.
      */
-    Stream<AuthSession> streamSessions();
+    Stream<AuthSession> streamAuthSessions();
 
     /**
      * Terminate a specific auth session by its reference number. Useful

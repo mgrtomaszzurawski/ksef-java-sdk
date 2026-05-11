@@ -35,6 +35,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceExportRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -369,7 +370,7 @@ public final class InvoicesImpl implements Invoices {
     /**
      * Get the status of an invoice export job.
      *
-     * @param referenceNumber the export reference number from {@link #prepareExport(InvoiceQueryRequest, boolean)}
+     * @param referenceNumber the export reference number from {@link #prepareExport(InvoiceQueryRequest, ExportScope)}
      * @return export status with download URL when complete
      */
     @Override
@@ -383,7 +384,7 @@ public final class InvoicesImpl implements Invoices {
     }
 
     @Override
-    public PreparedInvoiceExport prepareExport(InvoiceQueryRequest query, boolean fullContent) {
+    public PreparedInvoiceExport prepareExport(InvoiceQueryRequest query, ExportScope scope) {
         LOGGER.debug(LOG_CALL, OP_PREPARE_EXPORT);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
 
@@ -397,8 +398,9 @@ public final class InvoicesImpl implements Invoices {
         byte[] initVector = CryptoService.generateIv();
         byte[] encryptedKey = CryptoService.encryptWithPublicKey(aesKey, symmetricKey);
 
+        boolean onlyMetadata = scope == ExportScope.METADATA_ONLY;
         InvoiceExportRequest request = new InvoiceExportRequest(
-                encryptedKey, initVector, !fullContent, query);
+                encryptedKey, initVector, onlyMetadata, query);
         InvoiceExportRequestRaw rawRequest = InvoicingRequestMappers.toInvoiceExportRequestRaw(request);
         String token = http.requireToken();
         ExportInvoicesResponseRaw rawValue = http.postJsonAuthenticated(PATH_EXPORTS, rawRequest, token,

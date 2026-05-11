@@ -53,6 +53,6 @@ public interface TestDataAdmin {
 
     void resetRateLimits();
 
-    void setProductionRateLimits();
+    void applyProductionRateLimitsToTestTenant();
 
 }

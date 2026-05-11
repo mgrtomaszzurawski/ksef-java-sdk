@@ -215,7 +215,7 @@ public final class PermissionsImpl implements Permissions {
     }
 
     @Override
-    public PermissionOperationResult revokeCommon(String permissionId) {
+    public PermissionOperationResult revokePermission(String permissionId) {
         LOGGER.debug(LOG_CALL_REF, OP_REVOKE_COMMON, permissionId);
         requireSafePathSegment(permissionId);
         String token = http.requireToken();
@@ -428,6 +428,21 @@ public final class PermissionsImpl implements Permissions {
             EntityPermissions page = PermissionsMappers.toEntityPermissions(raw);
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
                     page.permissions(), page.hasMore());
+        });
+    }
+
+    @Override
+    public java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityRole>
+            streamEntityRoles(EntityRolesQueryRequest filter) {
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
+            String token = http.requireToken();
+            QueryEntityRolesResponseRaw raw = http.getAuthenticated(
+                    pagedPath(PATH_QUERY_ENTITY_ROLES, pageOffset),
+                    token, QueryEntityRolesResponseRaw.class, OP_QUERY_ENTITY_ROLES);
+            EntityRoles page = PermissionsMappers.toEntityRoles(raw);
+            return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.Page<>(
+                    page.roles(), page.hasMore());
         });
     }
 

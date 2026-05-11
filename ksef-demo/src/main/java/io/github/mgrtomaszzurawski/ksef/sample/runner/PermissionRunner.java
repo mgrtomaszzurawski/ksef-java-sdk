@@ -62,7 +62,7 @@ public final class PermissionRunner implements DemoRunner {
     private static final String OP_QUERY_AUTHORIZATIONS = "queryAuthorizations";
     private static final String OP_QUERY_EU_ENTITIES = "queryEuEntities";
     private static final String OP_GET_ATTACHMENT = "getAttachmentStatus";
-    private static final String OP_REVOKE_COMMON = "revokeCommon";
+    private static final String OP_REVOKE_COMMON = "revokePermission";
     private static final String OP_REVOKE_AUTHORIZATION = "revokeAuthorization";
 
     private static final String TEST_PERSON_PESEL = "82060411457";
@@ -351,7 +351,7 @@ public final class PermissionRunner implements DemoRunner {
     private void runRevokeCommon(DemoContext context, String permissionId, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            context.client().permissions().revokeCommon(permissionId);
+            context.client().permissions().revokePermission(permissionId);
             LOGGER.info("[{}] revoked permission id={}", NAME, permissionId);
             results.add(RunResult.ok(NAME, OP_REVOKE_COMMON, elapsed(start), "revoked " + permissionId));
         } catch (Exception exception) {

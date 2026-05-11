@@ -77,7 +77,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
     private static final String OP_RESET_SUBJECT_LIMITS = "resetSubjectLimits";
     private static final String OP_SET_RATE_LIMITS = "setRateLimits";
     private static final String OP_RESET_RATE_LIMITS = "resetRateLimits";
-    private static final String OP_SET_PRODUCTION_RATE_LIMITS = "setProductionRateLimits";
+    private static final String OP_SET_PRODUCTION_RATE_LIMITS = "applyProductionRateLimitsToTestTenant";
 
     private static final String ERR_NULL_REQUEST = "request is required";
     private static final String ERR_NULL_SUBJECT_NIP = "subjectNip is required";
@@ -317,7 +317,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      * Set production rate limits in the test environment.
      */
     @Override
-    public void setProductionRateLimits() {
+    public void applyProductionRateLimitsToTestTenant() {
         LOGGER.debug(LOG_CALL, OP_SET_PRODUCTION_RATE_LIMITS);
         String token = http.requireToken();
         http.postNoBodyAuthenticated(PATH_RATE_LIMITS_PRODUCTION, token, OP_SET_PRODUCTION_RATE_LIMITS);

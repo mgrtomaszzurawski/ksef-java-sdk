@@ -385,7 +385,7 @@ public final class SessionRunner implements DemoRunner {
             DemoContext context, OnlineSession session, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.archive();
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.complete();
             LOGGER.info(LOG_SESSION_CLOSED, NAME);
             results.add(RunResult.ok(NAME, OP_CLOSE, elapsed(start)));
             return closed;

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportedInvoiceDirectory;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
@@ -34,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -70,7 +70,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
                 metadataDirWithXml(windowDir, List.of(KSEF_NUMBER_1)));
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), anyBoolean()))
+        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(firstWindow, emptyWindow);
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -101,7 +101,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
                 metadataDirWithXml(windowDir, List.of(KSEF_NUMBER_1)));
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), anyBoolean()))
+        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(firstWindow, emptyWindow);
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -129,7 +129,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
         // KsefException), so the test pins that branch by asserting the
         // exact thrown type.
         Invoices invoiceClient = mock(Invoices.class);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), anyBoolean()))
+        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenThrow(new IllegalStateException("simulated upstream failure"));
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -155,7 +155,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
         Invoices invoiceClient = mock(Invoices.class);
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), anyBoolean()))
+        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(emptyWindow);
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -173,7 +173,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
         Invoices invoiceClient = mock(Invoices.class);
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), anyBoolean()))
+        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(emptyWindow);
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);

@@ -29,7 +29,7 @@ import java.util.Optional;
  *     SubmittedInvoice r1 = os.sendInvoice(invoice1);
  *     SubmittedInvoice r2 = os.sendInvoice(invoice2);
  *
- *     ClosedSession cs = os.archive();    // explicit transition + close
+ *     ClosedSession cs = os.complete();    // explicit transition + close
  *     byte[] upo = cs.upo(r1.referenceNumber());
  * }   // implicit close() via try-with-resources — idempotent, no-op
  * }</pre>
@@ -156,7 +156,7 @@ public interface OnlineSession extends Session {
      *
      * @return the read-only post-close view of this session
      */
-    ClosedSession archive();
+    ClosedSession complete();
 
     /**
      * Returns {@code true} when KSeF would auto-classify an invoice as

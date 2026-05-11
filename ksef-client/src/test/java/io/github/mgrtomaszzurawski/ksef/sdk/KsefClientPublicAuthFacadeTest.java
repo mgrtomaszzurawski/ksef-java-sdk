@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  *
  * <p>Covers:
  * <ul>
- *   <li>{@code client.auth().streamSessions()} — maps the
+ *   <li>{@code client.auth().streamAuthSessions()} — maps the
  *       {@code /v2/auth/sessions} body into {@link AuthSession} records.</li>
  *   <li>{@code client.auth().terminateSession(String)} — DELETE on
  *       {@code /v2/auth/sessions/{referenceNumber}}.</li>
@@ -76,7 +76,7 @@ class KsefClientPublicAuthFacadeTest {
                             .withBody(SESSIONS_LIST_RESPONSE)));
 
             // when
-            List<AuthSession> sessions = client.auth().streamSessions().toList();
+            List<AuthSession> sessions = client.auth().streamAuthSessions().toList();
 
             // then — at minimum the size + reference numbers must round-trip.
             // current()/tokenRedeemed() pass through the OpenAPI raw model setters

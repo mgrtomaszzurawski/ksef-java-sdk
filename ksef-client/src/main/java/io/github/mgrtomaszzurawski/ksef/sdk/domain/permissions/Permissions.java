@@ -39,20 +39,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPerm
  */
 public interface Permissions {
 
-    /**
-     * KSeF permission-operation status codes are conventionally
-     * {@code 100/110} (in-progress), {@code 200} (success), and
-     * {@code 4xx/5xx} (failure). Anything {@code &gt;= 200} is terminal.
-     *
-     * <p>Useful when building a poll predicate for
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync#awaitTerminal}:
-     * <pre>{@code
-     * status -> status.status() != null
-     *           && status.status().code() >= Permissions.TERMINAL_STATUS_CODE_THRESHOLD
-     * }</pre>
-     */
-    int TERMINAL_STATUS_CODE_THRESHOLD = 200;
-
     PermissionOperationResult grantPerson(PersonPermissionGrantRequest request);
     PermissionOperationResult grantEntity(EntityPermissionGrantRequest request);
     PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantRequest request);
@@ -60,7 +46,7 @@ public interface Permissions {
     PermissionOperationResult grantSubunit(SubunitPermissionGrantRequest request);
     PermissionOperationResult grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request);
     PermissionOperationResult grantEuEntity(EuEntityPermissionGrantRequest request);
-    PermissionOperationResult revokeCommon(String permissionId);
+    PermissionOperationResult revokePermission(String permissionId);
     PermissionOperationResult revokeAuthorization(String permissionId);
     PermissionOperationStatus getOperationStatus(String referenceNumber);
     AttachmentPermissionStatus getAttachmentStatus();
@@ -73,12 +59,11 @@ public interface Permissions {
     EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryRequest request);
     EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryRequest request);
 
-    // Stream-based paginators (AWS-SDK-style). Each lazily walks
-    // pageOffset = 0, 1, 2, ... until the server reports hasMore=false,
-    // yielding one record at a time. The SDK never materialises the full
-    // result set — memory pressure is bounded by what the caller pulls
-    // from the stream. For a hard cap, pipe through {@code .limit(N)};
-    // for a snapshot list, pipe through {@code .toList()}.
+    // Stream-based paginators. Each lazily walks pageOffset = 0, 1, 2, ...
+    // until the server reports hasMore=false, yielding one record at a time.
+    // The SDK never materialises the full result set — memory pressure is
+    // bounded by what the caller pulls from the stream. For a hard cap, pipe
+    // through .limit(N); for a snapshot list, pipe through .toList().
 
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission>
             streamPersonal(PersonalPermissionsQueryRequest request);
@@ -88,6 +73,8 @@ public interface Permissions {
             streamSubunits(SubunitPermissionsQueryRequest filter);
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission>
             streamEntities(EntityPermissionsQueryRequest filter);
+    java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityRole>
+            streamEntityRoles(EntityRolesQueryRequest filter);
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole>
             streamSubordinateRoles(SubordinateEntityRolesQueryRequest filter);
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationGrant>

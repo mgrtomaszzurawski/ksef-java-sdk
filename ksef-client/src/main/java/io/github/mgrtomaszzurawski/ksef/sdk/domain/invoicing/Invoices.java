@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -113,7 +114,7 @@ public interface Invoices {
      *     metadata-only
      * @return prepared-export handle
      */
-    PreparedInvoiceExport prepareExport(InvoiceQueryRequest query, boolean fullContent);
+    PreparedInvoiceExport prepareExport(InvoiceQueryRequest query, ExportScope scope);
 
     /**
      * Open an interactive (online) KSeF session for sending invoices.

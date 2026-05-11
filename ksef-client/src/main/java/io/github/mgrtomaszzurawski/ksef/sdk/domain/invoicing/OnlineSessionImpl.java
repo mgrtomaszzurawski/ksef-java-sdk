@@ -389,7 +389,7 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public ClosedSession archive() {
+    public ClosedSession complete() {
         ClosedSessionImpl existing = archiveView.get();
         if (existing != null) {
             return existing;

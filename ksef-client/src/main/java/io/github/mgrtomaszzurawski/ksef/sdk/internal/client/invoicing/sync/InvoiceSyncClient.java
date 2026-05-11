@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.Expo
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
@@ -176,7 +177,7 @@ public final class InvoiceSyncClient {
             query.dateTo(plan.to());
         }
 
-        try (PreparedInvoiceExport export = invoiceClient.prepareExport(query.build(), plan.fullContent())) {
+        try (PreparedInvoiceExport export = invoiceClient.prepareExport(query.build(), plan.fullContent() ? ExportScope.FULL_CONTENT : ExportScope.METADATA_ONLY)) {
             InvoiceExportStatus status = export.awaitReady();
             InvoicePackage pkg = status.invoicePackage();
             if (pkg == null || pkg.invoiceCount() == null || pkg.invoiceCount() == 0L) {

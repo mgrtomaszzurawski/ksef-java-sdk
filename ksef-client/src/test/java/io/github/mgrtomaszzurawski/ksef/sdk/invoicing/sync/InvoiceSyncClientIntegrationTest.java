@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -50,7 +51,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -129,7 +130,7 @@ class InvoiceSyncClientIntegrationTest {
         // download/decrypt; the second call returns an empty package so the loop stops.
         PreparedInvoiceExport emptyExport = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceClient, insecureHttpClient(),
                 EXPORT_REF, CryptoService.generateAesKey(), CryptoService.generateIv());
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), anyBoolean()))
+        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenAnswer(invocation -> {
                     // Capture the builder for later argument-shape assertions
                     return realExport;
@@ -167,7 +168,7 @@ class InvoiceSyncClientIntegrationTest {
         // Verify the InvoiceQueryRequest argument actually carried subject + cursor
         ArgumentCaptor<InvoiceQueryRequest> queryCaptor = ArgumentCaptor.forClass(InvoiceQueryRequest.class);
         org.mockito.Mockito.verify(invoiceClient, org.mockito.Mockito.atLeastOnce())
-                .prepareExport(queryCaptor.capture(), anyBoolean());
+                .prepareExport(queryCaptor.capture(), any(ExportScope.class));
         // Both calls captured. The first one must mention the subject type by name
         // somewhere in its toString so we know the orchestrator built it for SUBJECT1.
         String firstQueryShape = queryCaptor.getAllValues().get(0).toString();
