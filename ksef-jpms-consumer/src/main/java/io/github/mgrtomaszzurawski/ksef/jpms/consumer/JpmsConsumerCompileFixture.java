@@ -25,7 +25,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSess
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.SendInvoiceCommand;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
@@ -101,7 +100,6 @@ public final class JpmsConsumerCompileFixture {
                 FormCode.class,
                 OnlineSession.class,
                 PreparedInvoiceExport.class,
-                SendInvoiceCommand.class,
                 InvoiceQueryBuilder.class,
                 // PR11 — batch submission API surface (model package)
                 BatchOptions.class,

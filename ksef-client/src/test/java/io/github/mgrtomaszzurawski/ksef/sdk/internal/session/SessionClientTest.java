@@ -8,8 +8,8 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SendInvoiceRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
@@ -104,7 +104,7 @@ class SessionClientTest {
         HttpRuntime runtime = activatedRuntime(wmInfo);
 
         // when
-        OnlineSession response = new SessionClient(runtime).openOnline(new OpenOnlineSessionRequestRaw());
+        OnlineSessionOpenResult response = new SessionClient(runtime).openOnline(new OpenOnlineSessionRequestRaw());
 
         // then
         assertEquals(TEST_SESSION_REF, response.referenceNumber());

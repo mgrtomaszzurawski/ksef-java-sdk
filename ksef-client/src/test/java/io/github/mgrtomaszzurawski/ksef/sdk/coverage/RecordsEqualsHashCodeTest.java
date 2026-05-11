@@ -13,8 +13,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryD
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicingMode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSessionOpenRequest;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenGenerateRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;

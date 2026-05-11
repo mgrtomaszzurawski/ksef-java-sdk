@@ -9,13 +9,13 @@ import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionResponseRaw
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SendInvoiceRequest;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoiceStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.BatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
@@ -178,7 +178,7 @@ public final class SessionClient {
      * @param request session opening parameters (form code, encryption info)
      * @return response with session reference number and validity period
      */
-    public OnlineSession openOnline(OpenOnlineSessionRequestRaw request) {
+    public OnlineSessionOpenResult openOnline(OpenOnlineSessionRequestRaw request) {
         LOGGER.debug(LOG_CALL, OP_OPEN_ONLINE);
         String token = http.requireToken();
         OpenOnlineSessionResponseRaw rawValue = http.postJsonAuthenticated(PATH_ONLINE, request, token,

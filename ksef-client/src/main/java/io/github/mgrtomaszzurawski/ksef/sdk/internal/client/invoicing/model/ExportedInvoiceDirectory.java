@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model;
 
 import java.nio.file.Path;
 import java.util.List;

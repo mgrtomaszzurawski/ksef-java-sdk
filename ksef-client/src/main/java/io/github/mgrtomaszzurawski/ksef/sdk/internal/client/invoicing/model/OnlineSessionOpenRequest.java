@@ -2,14 +2,16 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
 
 import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * SDK request payload returned by
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.OnlineSessionBuilder#build()}.
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.builder.OnlineSessionBuilder#build()}.
  * <p>Includes the AES key and IV in plaintext so the caller can encrypt
  * invoices within the session; {@code encryptedSymmetricKey} is the same key
  * RSA-encrypted with KSeF's public key (sent on the open-session request).

@@ -30,11 +30,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExpo
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceExportRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -469,7 +469,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
                         .encryptedSymmetricKey(encryptedKey)
                         .initializationVector(initVector));
 
-        io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession openResult =
+        io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenResult openResult =
                 sessionClient.openOnline(request);
         LOGGER.debug(LOG_OPENED_ONLINE_SESSION, openResult.referenceNumber(), formCode);
         guardAgainstCooldown(openResult.referenceNumber());

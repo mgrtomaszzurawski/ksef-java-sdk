@@ -30,10 +30,10 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.ThirdSubjectIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UpoPageResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UpoResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSessionLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.BatchSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.BatchSessionLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BuyerIdentifierType;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportInvoicesResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceBuyer;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -46,9 +46,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceStatus
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceThirdSubject;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicingMode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OnlineSessionLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartUploadRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
@@ -253,8 +253,8 @@ public final class InvoicingMappers {
         };
     }
 
-    public static OnlineSession toOnlineSession(OpenOnlineSessionResponseRaw rawValue) {
-        return new OnlineSession(rawValue.getReferenceNumber(), rawValue.getValidUntil());
+    public static OnlineSessionOpenResult toOnlineSession(OpenOnlineSessionResponseRaw rawValue) {
+        return new OnlineSessionOpenResult(rawValue.getReferenceNumber(), rawValue.getValidUntil());
     }
 
     public static @Nullable OnlineSessionLimits toOnlineSessionLimits(@Nullable OnlineSessionEffectiveContextLimitsRaw rawValue) {
