@@ -20,26 +20,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UpoEntryParsedTest {
 
-    private static final String REF = "20260509-SE-1111111111-AABBCC-99";
+    private static final String INVOICE_REF = "20260509-SE-1111111111-AABBCC-99";
     private static final String SESSION_REF = "20260509-SE-1111111111-AABBCC-00";
     private static final String KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final String RECEIVING = "Ministerstwo Finansów";
 
     @Test
     void parsed_returnsEmpty_whenBytesAreGarbage() {
-        UpoEntry entry = new UpoEntry(REF, "<not-a-upo/>".getBytes(StandardCharsets.UTF_8));
+        UpoEntry entry = new UpoEntry(INVOICE_REF, "<not-a-upo/>".getBytes(StandardCharsets.UTF_8));
         assertTrue(entry.parsed().isEmpty());
     }
 
     @Test
     void parsed_returnsEmpty_whenBytesAreEmpty() {
-        UpoEntry entry = new UpoEntry(REF, new byte[0]);
+        UpoEntry entry = new UpoEntry(INVOICE_REF, new byte[0]);
         assertTrue(entry.parsed().isEmpty());
     }
 
     @Test
     void parsed_returnsSummary_whenBytesAreValidUpo() throws Exception {
-        UpoEntry entry = new UpoEntry(REF, minimalUpoXml());
+        UpoEntry entry = new UpoEntry(INVOICE_REF, minimalUpoXml());
         Optional<UpoSummary> summary = entry.parsed();
         assertTrue(summary.isPresent());
         assertEquals(SESSION_REF, summary.get().upoReferenceNumber());
@@ -50,7 +50,7 @@ class UpoEntryParsedTest {
     @Test
     void xmlBytes_returnsDefensiveCopy_afterAccessor() {
         byte[] original = "abc".getBytes(StandardCharsets.UTF_8);
-        UpoEntry entry = new UpoEntry(REF, original);
+        UpoEntry entry = new UpoEntry(INVOICE_REF, original);
         byte[] firstView = entry.xmlBytes();
         firstView[0] = 'Z';
         byte[] secondView = entry.xmlBytes();

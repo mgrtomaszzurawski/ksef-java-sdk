@@ -21,6 +21,7 @@
  *   KSEF_ENV          — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
@@ -57,7 +58,7 @@ public final class SendOnlineInvoice {
                 // status, embedded original Invoice).
                 SubmittedInvoice result = session.sendInvoice(Invoice.fromXml(FormCode.FA3, invoiceXml));
                 System.out.println("Invoice accepted, ref: " + result.referenceNumber()
-                        + ", ksefNumber: " + result.ksefNumber().map(n -> n.value()).orElse("<none>"));
+                        + ", ksefNumber: " + result.ksefNumber().map(KsefNumber::value).orElse("<none>"));
             }
         }
     }

@@ -22,15 +22,16 @@ class QrCodeServiceKodFacadeTest {
     private static final String CERTIFICATE_SERIAL = "0123456789ABCDEF";
     private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
     private static final int RSA_KEY_SIZE = 2048;
+    private static final int SHA_256_HASH_LENGTH = 32;
     private static final byte[] PNG_MAGIC_HEADER = new byte[] {(byte) 0x89, 'P', 'N', 'G'};
 
     @Test
     void generateKodIQr_returnsLabelledPngBytes() {
         QrCodeService service = new QrCodeService();
-        byte[] invoiceSha256 = new byte[32];
+        byte[] invoiceSha256 = new byte[SHA_256_HASH_LENGTH];
         new SecureRandom().nextBytes(invoiceSha256);
 
-        byte[] qrCodePng =service.generateKodIQr(QrEnvironment.TEST, SELLER_NIP, ISSUE_DATE, invoiceSha256,
+        byte[] qrCodePng = service.generateKodIQr(QrEnvironment.TEST, SELLER_NIP, ISSUE_DATE, invoiceSha256,
                 QrCodeService.LABEL_OFFLINE);
 
         assertNotNull(qrCodePng);
@@ -46,12 +47,12 @@ class QrCodeServiceKodFacadeTest {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
         generator.initialize(RSA_KEY_SIZE, new SecureRandom());
         KeyPair keyPair = generator.generateKeyPair();
-        byte[] invoiceSha256 = new byte[32];
+        byte[] invoiceSha256 = new byte[SHA_256_HASH_LENGTH];
         new SecureRandom().nextBytes(invoiceSha256);
         KsefVerificationLinks.CertificateSigningInput input = new KsefVerificationLinks.CertificateSigningInput(
                 QrContextType.NIP, SELLER_NIP, SELLER_NIP, CERTIFICATE_SERIAL, invoiceSha256);
 
-        byte[] qrCodePng =service.generateKodIIQr(QrEnvironment.TEST, input, keyPair.getPrivate());
+        byte[] qrCodePng = service.generateKodIIQr(QrEnvironment.TEST, input, keyPair.getPrivate());
 
         assertNotNull(qrCodePng);
         assertTrue(qrCodePng.length > PNG_MAGIC_HEADER.length, "KOD II QR PNG must be non-trivially sized");
