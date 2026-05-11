@@ -18,9 +18,10 @@ import java.util.Objects;
  * leaves room for future schemas the SDK has not modelled yet.
  *
  * <p>Use {@link #fromXml(FormCode, byte[])} as the minimal escape
- * hatch — it wraps a pre-rendered XML byte array. PR12b will add
- * per-schema typed builders ({@code Fa3Invoice.builder()} etc.) that
- * also implement this interface.
+ * hatch — it wraps a pre-rendered XML byte array. The per-schema typed
+ * builders ({@link Fa2Invoice#builder()}, {@link Fa3Invoice#builder()},
+ * {@link PefInvoice#builder()}, {@link PefKorInvoice#builder()}) also
+ * implement this interface.
  *
  * <p>Implementations must:
  * <ul>

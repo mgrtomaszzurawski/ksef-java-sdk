@@ -23,7 +23,7 @@ as-is.
 | `Handle401Refresh.java` | Demonstrate auto re-authentication on token expiry. |
 | `QrCodeGeneration.java` | KOD I — generate online-invoice verification QR (SHA-256-only, no signing). |
 | `QrCertificateGeneration.java` | KOD II — generate offline-certificate verification QR; loads PKCS#12 keystore, signs with PrivateKey (RSA-PSS / ECDSA-P1363 auto-detected per ADR-019). |
-| `IncrementalSync.java` | Incremental invoice sync via `InvoiceSyncClient` with checkpoint persistence. |
+| `IncrementalSync.java` | Incremental invoice sync via `client.invoices().sync().asStream(...)` with checkpoint persistence. |
 
 ## Notes
 
