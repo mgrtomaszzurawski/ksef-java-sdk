@@ -71,7 +71,7 @@ public record SubmittedInvoice(
 
     /**
      * Compact constructor — defensive-copies the QR bytes. Optional and
-     * List components must be supplied non-null per Sonar S2789 / S2293
+     * List components must be supplied non-null per Sonar S2789
      * (use {@link Optional#empty()} and {@link List#of()} for absent values).
      */
     public SubmittedInvoice {
