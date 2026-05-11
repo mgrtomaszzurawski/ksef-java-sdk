@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -52,6 +53,39 @@ public interface InvoiceClient {
      * surfaces malformed input at the first opportunity.
      */
     InvoiceDocument getByKsefNumber(KsefNumber ksefNumber);
+
+    /**
+     * Reconstruct a fully recovered {@link ClearedInvoice} from KSeF given
+     * only the {@code (sessionReferenceNumber, invoiceReferenceNumber)} pair
+     * the consumer persisted across a process restart.
+     *
+     * <p>Composes three existing server calls:
+     * <ol>
+     *   <li>{@code GET /sessions/{sessionRef}/invoices/{invoiceRef}} —
+     *       retrieves the session-side {@code SessionInvoiceStatus} (status
+     *       code, ordinal, KSeF number when accepted).</li>
+     *   <li>{@code GET /invoices/ksef/{ksefNumber}} — fetches the archived
+     *       invoice XML and detects the FormCode from its root element.</li>
+     *   <li>{@code GET /sessions/{sessionRef}/invoices/{invoiceRef}/upo} —
+     *       downloads the UPO XAdES bytes.</li>
+     * </ol>
+     *
+     * <p>The returned {@link ClearedInvoice} carries a fresh
+     * {@code SubmittedInvoice} reconstructed from the recovered state; KOD I
+     * and KOD II QR PNGs are left empty in this view (consumers that need
+     * them can regenerate via
+     * {@code KsefClient.qrCode().generateKodIQr(...)} using the recovered
+     * invoice metadata).
+     *
+     * <p>Spec endpoints used: {@code /sessions/{ref}/invoices/{invRef}},
+     * {@code /sessions/{ref}/invoices/{invRef}/upo}, {@code /invoices/ksef/{n}}.
+     *
+     * @throws io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException
+     *     when the invoice has not reached terminal status 200 (success);
+     *     the consumer should not be calling this method for non-accepted
+     *     invoices since no UPO exists yet.
+     */
+    ClearedInvoice clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber);
 
     InvoiceMetadataResult queryInvoicesByMetadata(InvoiceQueryFilters query);
 
