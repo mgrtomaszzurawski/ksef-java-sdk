@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsRevokeBuilder;
@@ -147,7 +148,7 @@ public final class TestDataRunner implements DemoRunner {
      */
     private static boolean testDataEndpointsAvailable(TestDataAdmin testData) {
         try {
-            testData.removeSubject(generateTestNip());
+            testData.removeSubject(KsefIdentifier.nip(generateTestNip()));
             // 200/204 — endpoint exists (probably no-op for nonexistent NIP)
             return true;
         } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException notFound) {
@@ -182,7 +183,7 @@ public final class TestDataRunner implements DemoRunner {
 
         long removeStart = System.currentTimeMillis();
         try {
-            testData.removeSubject(subjectNip);
+            testData.removeSubject(KsefIdentifier.nip(subjectNip));
             LOGGER.info("[{}] removed test subject nip={}", NAME, subjectNip);
             results.add(RunResult.ok(NAME, OP_REMOVE_SUBJECT, elapsed(removeStart), NIP_PREFIX + subjectNip));
         } catch (Exception exception) {
@@ -216,7 +217,7 @@ public final class TestDataRunner implements DemoRunner {
 
         long removeStart = System.currentTimeMillis();
         try {
-            testData.removePerson(personNip);
+            testData.removePerson(KsefIdentifier.nip(personNip));
             LOGGER.info("[{}] removed test person nip={}", NAME, personNip);
             results.add(RunResult.ok(NAME, OP_REMOVE_PERSON, elapsed(removeStart), NIP_PREFIX + personNip));
         } catch (Exception exception) {
@@ -275,7 +276,7 @@ public final class TestDataRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         boolean grantedOk = false;
         try {
-            testData.grantAttachment(attachmentNip);
+            testData.grantAttachment(KsefIdentifier.nip(attachmentNip));
             LOGGER.info("[{}] granted test attachment nip={}", NAME, attachmentNip);
             results.add(RunResult.ok(NAME, OP_GRANT_ATTACHMENT, elapsed(start), NIP_PREFIX + attachmentNip));
             grantedOk = true;
@@ -291,7 +292,7 @@ public final class TestDataRunner implements DemoRunner {
 
         long revokeStart = System.currentTimeMillis();
         try {
-            testData.revokeAttachment(attachmentNip, java.time.LocalDate.now());
+            testData.revokeAttachment(KsefIdentifier.nip(attachmentNip), java.time.LocalDate.now());
             LOGGER.info("[{}] revoked test attachment nip={}", NAME, attachmentNip);
             results.add(RunResult.ok(NAME, OP_REVOKE_ATTACHMENT, elapsed(revokeStart),
                     NIP_PREFIX + attachmentNip));

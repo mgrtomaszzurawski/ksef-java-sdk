@@ -16,6 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import java.nio.file.Path;
@@ -152,7 +153,7 @@ public final class CertProbe {
                     youngestSerial, youngest.validFrom(), youngest.name());
         }
         try {
-            client.certificates().revoke(youngestSerial, CertificateRevocationReason.UNSPECIFIED);
+            client.certificates().revoke(CertificateSerialNumber.parse(youngestSerial), CertificateRevocationReason.UNSPECIFIED);
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("REVOKE OK serial={}", youngestSerial);
             }
@@ -202,7 +203,7 @@ public final class CertProbe {
         }
         section("STEP 9: cleanup — revoke newly enrolled cert");
         try {
-            client.certificates().revoke(enrolledSerial, CertificateRevocationReason.UNSPECIFIED);
+            client.certificates().revoke(CertificateSerialNumber.parse(enrolledSerial), CertificateRevocationReason.UNSPECIFIED);
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("CLEANUP REVOKE OK serial={}", enrolledSerial);
             }

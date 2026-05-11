@@ -21,6 +21,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
@@ -66,6 +67,7 @@ public final class CertificatesImpl implements Certificates {
 
     private static final String ERR_NULL_REQUEST = "request is required";
     private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBERS = "certificateSerialNumbers is required";
+    private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBER = "certificateSerialNumber must not be null";
     private static final String ERR_NULL_REVOCATION_REASON = "revocationReason is required";
 
     private static final String PARAM_PAGE_OFFSET_PREFIX = "?pageOffset=";
@@ -160,11 +162,12 @@ public final class CertificatesImpl implements Certificates {
      * @return response with certificate details
      */
     @Override
-    public RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers) {
+    public RetrieveCertificatesResult retrieve(List<CertificateSerialNumber> certificateSerialNumbers) {
         LOGGER.debug(LOG_CALL, OP_RETRIEVE);
         Objects.requireNonNull(certificateSerialNumbers, ERR_NULL_CERTIFICATE_SERIAL_NUMBERS);
         RetrieveCertificatesRequestRaw rawRequest = new RetrieveCertificatesRequestRaw();
-        rawRequest.setCertificateSerialNumbers(certificateSerialNumbers);
+        rawRequest.setCertificateSerialNumbers(certificateSerialNumbers.stream()
+                .map(CertificateSerialNumber::value).toList());
         String token = http.requireToken();
         RetrieveCertificatesResponseRaw rawValue = http.postJsonAuthenticated(PATH_RETRIEVE, rawRequest, token,
                 RetrieveCertificatesResponseRaw.class, OP_RETRIEVE);
@@ -178,14 +181,14 @@ public final class CertificatesImpl implements Certificates {
      * @param revocationReason reason for revocation (Unspecified, Superseded, KeyCompromise)
      */
     @Override
-    public void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason) {
-        LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber);
-        requireSafePathSegment(certificateSerialNumber);
+    public void revoke(CertificateSerialNumber certificateSerialNumber, CertificateRevocationReason revocationReason) {
+        Objects.requireNonNull(certificateSerialNumber, ERR_NULL_CERTIFICATE_SERIAL_NUMBER);
+        LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber.value());
         Objects.requireNonNull(revocationReason, ERR_NULL_REVOCATION_REASON);
         RevokeCertificateRequestRaw rawRequest = new RevokeCertificateRequestRaw();
         rawRequest.setRevocationReason(CertificatesMappers.toCertificateRevocationReasonRaw(revocationReason));
         String token = http.requireToken();
-        String path = ApiPaths.subPath(PATH_CERTIFICATES, certificateSerialNumber) + SEGMENT_REVOKE;
+        String path = ApiPaths.subPath(PATH_CERTIFICATES, certificateSerialNumber.value()) + SEGMENT_REVOKE;
         http.postJsonAuthenticatedNoContent(path, rawRequest, token, OP_REVOKE);
     }
 

@@ -17,6 +17,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
@@ -196,7 +197,7 @@ class CertificateClientTest {
 
             // when
             RetrieveCertificatesResult response =
-                    ksef.certificates().retrieve(List.of(TEST_CERT_SERIAL));
+                    ksef.certificates().retrieve(List.of(CertificateSerialNumber.parse(TEST_CERT_SERIAL)));
 
             // then
             assertNotNull(response.certificates());
@@ -214,7 +215,7 @@ class CertificateClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            ksef.certificates().revoke(TEST_CERT_SERIAL, CertificateRevocationReason.UNSPECIFIED);
+            ksef.certificates().revoke(CertificateSerialNumber.parse(TEST_CERT_SERIAL), CertificateRevocationReason.UNSPECIFIED);
 
             // then
             verify(postRequestedFor(urlEqualTo(revokePath))

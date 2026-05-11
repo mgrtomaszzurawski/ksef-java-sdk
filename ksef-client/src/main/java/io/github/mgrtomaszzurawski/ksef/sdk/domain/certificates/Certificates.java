@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
 import java.util.List;
@@ -34,7 +35,7 @@ public interface Certificates {
     CertificateEnrollmentData getEnrollmentData();
     EnrollCertificateResult enroll(CertificateEnrollRequest request);
     CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber);
-    RetrieveCertificatesResult retrieve(List<String> certificateSerialNumbers);
+    RetrieveCertificatesResult retrieve(List<CertificateSerialNumber> certificateSerialNumbers);
 
     /**
      * Revoke a certificate. The reason is required — every revocation must
@@ -42,7 +43,7 @@ public interface Certificates {
      * {@link CertificateRevocationReason#UNSPECIFIED} only when no specific
      * reason applies and the audit log entry "unspecified" is acceptable.
      */
-    void revoke(String certificateSerialNumber, CertificateRevocationReason revocationReason);
+    void revoke(CertificateSerialNumber certificateSerialNumber, CertificateRevocationReason revocationReason);
 
     CertificateQueryResult queryCertificates(CertificateQueryRequest request);
 

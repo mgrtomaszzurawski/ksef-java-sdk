@@ -12,6 +12,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
@@ -80,8 +81,10 @@ public final class TestDataAdminImpl implements TestDataAdmin {
     private static final String OP_SET_PRODUCTION_RATE_LIMITS = "applyProductionRateLimitsToTestTenant";
 
     private static final String ERR_NULL_REQUEST = "request is required";
-    private static final String ERR_NULL_SUBJECT_NIP = "subjectNip is required";
-    private static final String ERR_NULL_NIP = "nip is required";
+    private static final String ERR_NULL_SUBJECT_NIP = "subjectIdentifier is required";
+    private static final String ERR_NULL_NIP = "identifier is required";
+    private static final String ERR_NON_NIP_IDENTIFIER =
+            "TestDataAdmin operations require a NIP-typed KsefIdentifier but got: ";
     private static final String ERR_NULL_IDENTIFIER_TYPE = "identifierType is required";
     private static final String ERR_NULL_IDENTIFIER_VALUE = "identifierValue is required";
     private static final String ERR_NULL_EXPECTED_END_DATE = "expectedEndDate is required";
@@ -111,11 +114,11 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      * @param subjectNip NIP of the subject to remove
      */
     @Override
-    public void removeSubject(String subjectNip) {
+    public void removeSubject(KsefIdentifier subjectIdentifier) {
         LOGGER.debug(LOG_CALL, OP_REMOVE_SUBJECT);
-        Objects.requireNonNull(subjectNip, ERR_NULL_SUBJECT_NIP);
+        String nipValue = requireNipValue(subjectIdentifier, ERR_NULL_SUBJECT_NIP);
         SubjectRemoveRequestRaw request = new SubjectRemoveRequestRaw();
-        request.setSubjectNip(subjectNip);
+        request.setSubjectNip(nipValue);
         http.postJsonNoContent(PATH_SUBJECT_REMOVE, request, OP_REMOVE_SUBJECT);
     }
 
@@ -138,11 +141,11 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      * @param nip NIP of the person to remove
      */
     @Override
-    public void removePerson(String nip) {
+    public void removePerson(KsefIdentifier personIdentifier) {
         LOGGER.debug(LOG_CALL, OP_REMOVE_PERSON);
-        Objects.requireNonNull(nip, ERR_NULL_NIP);
+        String nipValue = requireNipValue(personIdentifier, ERR_NULL_NIP);
         PersonRemoveRequestRaw request = new PersonRemoveRequestRaw();
-        request.setNip(nip);
+        request.setNip(nipValue);
         http.postJsonNoContent(PATH_PERSON_REMOVE, request, OP_REMOVE_PERSON);
     }
 
@@ -178,11 +181,11 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      * @param nip NIP of the subject to grant attachment permissions to
      */
     @Override
-    public void grantAttachment(String nip) {
+    public void grantAttachment(KsefIdentifier subjectIdentifier) {
         LOGGER.debug(LOG_CALL, OP_GRANT_ATTACHMENT);
-        Objects.requireNonNull(nip, ERR_NULL_NIP);
+        String nipValue = requireNipValue(subjectIdentifier, ERR_NULL_NIP);
         AttachmentPermissionGrantRequestRaw request = new AttachmentPermissionGrantRequestRaw();
-        request.setNip(nip);
+        request.setNip(nipValue);
         http.postJsonNoContent(PATH_ATTACHMENT, request, OP_GRANT_ATTACHMENT);
     }
 
@@ -193,14 +196,23 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      * @param expectedEndDate expected end date for the revocation
      */
     @Override
-    public void revokeAttachment(String nip, LocalDate expectedEndDate) {
+    public void revokeAttachment(KsefIdentifier subjectIdentifier, LocalDate attachmentExpiryDate) {
         LOGGER.debug(LOG_CALL, OP_REVOKE_ATTACHMENT);
-        Objects.requireNonNull(nip, ERR_NULL_NIP);
-        Objects.requireNonNull(expectedEndDate, ERR_NULL_EXPECTED_END_DATE);
+        String nipValue = requireNipValue(subjectIdentifier, ERR_NULL_NIP);
+        Objects.requireNonNull(attachmentExpiryDate, ERR_NULL_EXPECTED_END_DATE);
         AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
-        request.setNip(nip);
-        request.setExpectedEndDate(expectedEndDate);
+        request.setNip(nipValue);
+        request.setExpectedEndDate(attachmentExpiryDate);
         http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, request, OP_REVOKE_ATTACHMENT);
+    }
+
+    private static String requireNipValue(KsefIdentifier identifier, String nullMessage) {
+        Objects.requireNonNull(identifier, nullMessage);
+        if (identifier.type() != KsefIdentifier.Type.NIP) {
+            throw new IllegalArgumentException(
+                    ERR_NON_NIP_IDENTIFIER + identifier.type());
+        }
+        return identifier.value();
     }
 
     /**

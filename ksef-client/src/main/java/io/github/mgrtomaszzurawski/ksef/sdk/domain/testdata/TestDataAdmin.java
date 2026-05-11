@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
@@ -23,19 +24,27 @@ public interface TestDataAdmin {
 
     void createSubject(TestSubjectCreateRequest request);
 
-    void removeSubject(String subjectNip);
+    void removeSubject(KsefIdentifier subjectIdentifier);
 
     void createPerson(TestPersonCreateRequest request);
 
-    void removePerson(String nip);
+    void removePerson(KsefIdentifier personIdentifier);
 
     void grantPermissions(TestPermissionsGrantRequest request);
 
     void revokePermissions(TestPermissionsRevokeRequest request);
 
-    void grantAttachment(String nip);
+    void grantAttachment(KsefIdentifier subjectIdentifier);
 
-    void revokeAttachment(String nip, LocalDate expectedEndDate);
+    /**
+     * Revoke a previously granted attachment permission for the given subject.
+     *
+     * @param subjectIdentifier the subject whose attachment permission is revoked
+     * @param attachmentExpiryDate the date originally supplied to
+     *     {@link #grantAttachment(KsefIdentifier)} for this permission — KSeF
+     *     uses it to disambiguate the specific permission grant being revoked
+     */
+    void revokeAttachment(KsefIdentifier subjectIdentifier, LocalDate attachmentExpiryDate);
 
     void blockContext(TestDataIdentifierType identifierType, String identifierValue);
 

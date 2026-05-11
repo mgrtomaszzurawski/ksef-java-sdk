@@ -62,6 +62,19 @@ class KsefEnvironmentTest {
     }
 
     @Test
+    void custom_whenHttpAndLoopback_succeeds() {
+        // localhost / 127.0.0.1 / ::1 are explicit loopback exceptions for WireMock + dev
+        assertNotNull(KsefEnvironment.custom("http://localhost:8080/v2"));
+        assertNotNull(KsefEnvironment.custom("http://127.0.0.1:8080/v2"));
+    }
+
+    @Test
+    void custom_whenHttpAndNonLoopbackHost_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+                () -> KsefEnvironment.custom("http://api.example.com/v2"));
+    }
+
+    @Test
     void test_concatWithApiPathsAuth_producesValidChallengeUri() {
         assertEquals(EXPECTED_TEST_AUTH,
                 KsefEnvironment.TEST.baseUrl() + ApiPaths.AUTH + CHALLENGE_PATH);
