@@ -170,7 +170,7 @@ public final class BatchSubmissionFlow {
     private static final FormCode UPO_PLACEHOLDER_FORM_CODE = FormCode.custom("UPO", "1", "UPO");
     /** Empty payload for the UPO-only placeholder invoice. The original FA(3)/PEF/PEFKOR
      *  XML is not retained server-side after batch close; consumers needing the canonical
-     *  invoice payload must call {@code client.invoices().getByKsefNumber(...)}. */
+     *  invoice payload must call {@code client.invoices().archive().getByKsefNumber(...)}. */
     private static final byte[] UPO_PLACEHOLDER_XML = new byte[0];
 
     private static final java.util.regex.Pattern IP_LITERAL_PATTERN = java.util.regex.Pattern.compile(
@@ -557,7 +557,7 @@ public final class BatchSubmissionFlow {
             // Batch flow doesn't re-fetch the archived XML — surface the
             // same UPO-only placeholder content as an InvoiceDocument so
             // ClearedInvoice's typed slot is populated. Consumers needing
-            // the real document call client.invoices().getByKsefNumber(...).
+            // the real document call client.invoices().archive().getByKsefNumber(...).
             InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
                     placeholder.formCode(), placeholder.xml());
             SubmittedInvoice submitted = new SubmittedInvoice(
@@ -587,7 +587,7 @@ public final class BatchSubmissionFlow {
      * which lied about the placeholder content — UPO XAdES bytes are NOT a
      * valid FA/PEF invoice payload. The sentinel below makes the placeholder
      * shape explicit; consumers needing the original invoice XML must call
-     * {@code client.invoices().getByKsefNumber(...)}.
+     * {@code client.invoices().archive().getByKsefNumber(...)}.
      */
     private static Invoice buildUpoPlaceholderInvoice() {
         return Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);

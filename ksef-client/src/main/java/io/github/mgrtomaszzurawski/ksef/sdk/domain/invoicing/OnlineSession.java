@@ -25,7 +25,7 @@ import java.util.Optional;
  * <p>Idiomatic usage with try-with-resources + explicit archive:
  *
  * <pre>{@code
- * try (OnlineSession os = client.invoices().openSession(FormCode.FA3)) {
+ * try (OnlineSession os = client.invoices().sessions().open(FormCode.FA3)) {
  *     SubmittedInvoice r1 = os.sendInvoice(invoice1);
  *     SubmittedInvoice r2 = os.sendInvoice(invoice2);
  *
@@ -37,7 +37,7 @@ import java.util.Optional;
  * <p>Fire-and-forget (no UPO retrieval needed):
  *
  * <pre>{@code
- * try (OnlineSession os = client.invoices().openSession(FormCode.FA3)) {
+ * try (OnlineSession os = client.invoices().sessions().open(FormCode.FA3)) {
  *     for (Invoice invoice : invoices) {
  *         os.sendInvoice(invoice);
  *     }

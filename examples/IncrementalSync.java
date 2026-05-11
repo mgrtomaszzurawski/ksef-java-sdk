@@ -88,7 +88,7 @@ public final class IncrementalSync {
             // paginator. The same KsefNumber may arrive twice across runs
             // — downstream must upsert idempotently.
             long processed;
-            try (Stream<DecryptedInvoice> stream = client.invoices().syncAsStream(plan, checkpointStore)) {
+            try (Stream<DecryptedInvoice> stream = client.invoices().sync().asStream(plan, checkpointStore)) {
                 processed = stream
                         .peek(decrypted -> System.out.println("Got " + decrypted.ksefNumber().value()
                                 + " issued=" + decrypted.metadata().issueDate()

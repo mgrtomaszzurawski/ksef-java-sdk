@@ -23,6 +23,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefCryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefEncryptionInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
@@ -98,6 +104,12 @@ public final class JpmsConsumerCompileFixture {
                 AuthSession.class,
                 // sdk.domain.invoicing + builder + qrcode + sync
                 FormCode.class,
+                Invoices.class,
+                InvoiceArchive.class,
+                InvoiceSessions.class,
+                InvoiceBatch.class,
+                InvoiceExport.class,
+                InvoiceSync.class,
                 OnlineSession.class,
                 PreparedInvoiceExport.class,
                 InvoiceQueryBuilder.class,

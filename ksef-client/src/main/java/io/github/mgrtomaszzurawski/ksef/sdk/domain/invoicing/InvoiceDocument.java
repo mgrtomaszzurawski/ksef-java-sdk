@@ -14,7 +14,7 @@ import java.util.Objects;
  * the concrete typed subtypes when you need schema-specific accessors.
  *
  * <pre>{@code
- * InvoiceDocument doc = client.invoices().getByKsefNumber(num);
+ * InvoiceDocument doc = client.invoices().archive().getByKsefNumber(num);
  * if (doc instanceof Fa3InvoiceDocument fa3) {
  *     processFa3(fa3.faktura());
  * } else if (doc instanceof Fa2InvoiceDocument fa2) {

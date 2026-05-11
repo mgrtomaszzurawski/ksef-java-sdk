@@ -211,7 +211,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
             return;
         }
         long start = System.currentTimeMillis();
-        try (OnlineSession session = context.client().invoices().openSession(FormCode.FA3)) {
+        try (OnlineSession session = context.client().invoices().sessions().open(FormCode.FA3)) {
             SubmittedInvoice submitted = session.sendOfflineInvoice(offline);
             int statusCode = submitted.status().status() != null
                     ? submitted.status().status().code() : -1;

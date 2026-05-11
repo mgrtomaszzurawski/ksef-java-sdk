@@ -6,9 +6,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportedInvoiceDirectory;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoiceDirectory;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
@@ -63,14 +63,14 @@ class DecryptedInvoiceSyncSpliteratorTest {
     @Test
     void tryAdvance_whenProducerEmitsInvoice_drainsItThenReturnsFalse(@TempDir Path tempDir) throws Exception {
         // given — one window with one invoice, then empty window to stop iteration
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         Path windowDir = tempDir.resolve("subject1/window-0");
         PreparedInvoiceExport firstWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR),
                 metadataDirWithXml(windowDir, List.of(KSEF_NUMBER_1)));
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(firstWindow, emptyWindow);
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -79,7 +79,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
         // when — collect the stream
         AtomicInteger emitted = new AtomicInteger();
         try (DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
-                invoiceClient, jacksonMapper(), plan, store)) {
+                invoiceExport, jacksonMapper(), plan, store)) {
             while (spliterator.tryAdvance(invoice -> emitted.incrementAndGet())) {
                 // drain
             }
@@ -94,20 +94,20 @@ class DecryptedInvoiceSyncSpliteratorTest {
     @Test
     void close_whenCalled_stopsFurtherTryAdvance(@TempDir Path tempDir) throws Exception {
         // given — single emitter window, consumer closes after one invoice
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         Path windowDir = tempDir.resolve("subject1/window-0");
         PreparedInvoiceExport firstWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR),
                 metadataDirWithXml(windowDir, List.of(KSEF_NUMBER_1)));
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(firstWindow, emptyWindow);
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
         DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
-                invoiceClient, jacksonMapper(), plan, store);
+                invoiceExport, jacksonMapper(), plan, store);
 
         // when — drain one, close, attempt another
         AtomicInteger emitted = new AtomicInteger();
@@ -128,15 +128,15 @@ class DecryptedInvoiceSyncSpliteratorTest {
         // rethrows RuntimeException subclasses as-is (without wrapping in
         // KsefException), so the test pins that branch by asserting the
         // exact thrown type.
-        Invoices invoiceClient = mock(Invoices.class);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        when(invoiceExport.prepare(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenThrow(new IllegalStateException("simulated upstream failure"));
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
 
         try (DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
-                invoiceClient, jacksonMapper(), plan, store)) {
+                invoiceExport, jacksonMapper(), plan, store)) {
             assertThrows(IllegalStateException.class,
                     () -> drainAll(spliterator),
                     "IllegalStateException from producer must propagate as-is, not wrapped");
@@ -152,10 +152,10 @@ class DecryptedInvoiceSyncSpliteratorTest {
     @Test
     void tryAdvance_whenActionIsNull_throwsNullPointerException(@TempDir Path tempDir) {
         // given — minimal sync setup (empty window)
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(emptyWindow);
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -163,24 +163,24 @@ class DecryptedInvoiceSyncSpliteratorTest {
 
         // when / then
         try (DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
-                invoiceClient, jacksonMapper(), plan, store)) {
+                invoiceExport, jacksonMapper(), plan, store)) {
             assertThrows(NullPointerException.class, () -> spliterator.tryAdvance(null));
         }
     }
 
     @Test
     void characteristics_isOrderedAndNonnull(@TempDir Path tempDir) {
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
-        when(invoiceClient.prepareExport(any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(emptyWindow);
 
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
 
         try (DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
-                invoiceClient, jacksonMapper(), plan, store)) {
+                invoiceExport, jacksonMapper(), plan, store)) {
             int characteristics = spliterator.characteristics();
             assertTrue((characteristics & java.util.Spliterator.ORDERED) != 0, "ORDERED bit set");
             assertTrue((characteristics & java.util.Spliterator.NONNULL) != 0, "NONNULL bit set");

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
@@ -112,7 +112,7 @@ class InvoiceSyncClientIntegrationTest {
                 .willReturn(aResponse().withStatus(STATUS_OK).withBody(encryptedZip)));
 
         // Build a real PreparedInvoiceExport whose download actually hits WireMock.
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InvoicePackagePart part = new InvoicePackagePart(1, "part1.bin", "GET",
                 URI.create(wmInfo.getHttpsBaseUrl() + PART_PATH),
                 (long) zipBytes.length, sha256(zipBytes),
@@ -122,15 +122,15 @@ class InvoiceSyncClientIntegrationTest {
         InvoiceExportStatus terminalStatus = new InvoiceExportStatus(
                 new StatusInfo(STATUS_OK, "OK", List.of()), null, null, pkg);
 
-        when(invoiceClient.getExportStatus(anyString())).thenReturn(terminalStatus);
-        PreparedInvoiceExport realExport = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceClient, insecureHttpClient(),
+        when(invoiceExport.getStatus(anyString())).thenReturn(terminalStatus);
+        PreparedInvoiceExport realExport = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceExport, insecureHttpClient(),
                 EXPORT_REF, aesKey, iv);
 
         // First call to prepareExport returns the real handle that drives a real
         // download/decrypt; the second call returns an empty package so the loop stops.
-        PreparedInvoiceExport emptyExport = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceClient, insecureHttpClient(),
+        PreparedInvoiceExport emptyExport = io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceExport, insecureHttpClient(),
                 EXPORT_REF, CryptoService.generateAesKey(), CryptoService.generateIv());
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenAnswer(invocation -> {
                     // Capture the builder for later argument-shape assertions
                     return realExport;
@@ -138,7 +138,7 @@ class InvoiceSyncClientIntegrationTest {
                 .thenAnswer(invocation -> {
                     // Second call: stub the Invoices so awaitReady on this
                     // export returns an empty package and the loop stops.
-                    when(invoiceClient.getExportStatus(anyString())).thenReturn(emptyStatus());
+                    when(invoiceExport.getStatus(anyString())).thenReturn(emptyStatus());
                     return emptyExport;
                 });
 
@@ -151,7 +151,7 @@ class InvoiceSyncClientIntegrationTest {
 
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
         RecordingSink sink = new RecordingSink();
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
 
         // when
         SyncResult result = client.sync(plan, store, sink);
@@ -167,8 +167,8 @@ class InvoiceSyncClientIntegrationTest {
 
         // Verify the InvoiceQueryRequest argument actually carried subject + cursor
         ArgumentCaptor<InvoiceQueryRequest> queryCaptor = ArgumentCaptor.forClass(InvoiceQueryRequest.class);
-        org.mockito.Mockito.verify(invoiceClient, org.mockito.Mockito.atLeastOnce())
-                .prepareExport(queryCaptor.capture(), any(ExportScope.class));
+        org.mockito.Mockito.verify(invoiceExport, org.mockito.Mockito.atLeastOnce())
+                .prepare(queryCaptor.capture(), any(ExportScope.class));
         // Both calls captured. The first one must mention the subject type by name
         // somewhere in its toString so we know the orchestrator built it for SUBJECT1.
         String firstQueryShape = queryCaptor.getAllValues().get(0).toString();

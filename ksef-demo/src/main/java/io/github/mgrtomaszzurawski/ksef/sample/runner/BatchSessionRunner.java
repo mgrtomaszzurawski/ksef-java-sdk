@@ -90,8 +90,7 @@ public final class BatchSessionRunner implements DemoRunner {
 
         long start = System.currentTimeMillis();
         try {
-            BatchResult result = context.client().invoices()
-                    .submitBatch(formCode, invoices, BatchOptions.defaults());
+            BatchResult result = context.client().invoices().batch().submit(formCode, invoices, BatchOptions.defaults());
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("[{}] {} submitted batch ref={}, total={}, cleared={}, failed={}",
                         NAME, formCodeLabel, result.sessionRef(), result.totalCount(),

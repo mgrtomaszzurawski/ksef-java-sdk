@@ -52,7 +52,7 @@ public final class QueryInvoiceMetadata {
                     .invoicingDateFrom(OffsetDateTime.now().minusDays(days))
                     .dateTo(OffsetDateTime.now());
 
-            List<InvoiceMetadata> all = client.invoices().streamInvoicesByMetadata(query.build())
+            List<InvoiceMetadata> all = client.invoices().archive().streamByMetadata(query.build())
                     .limit(MAX_RESULTS)
                     .toList();
             System.out.println("Found " + all.size() + " invoices in the last " + days + " days");

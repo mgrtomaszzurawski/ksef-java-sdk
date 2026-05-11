@@ -31,7 +31,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.ThirdSubjectIdentifierTypeR
 import io.github.mgrtomaszzurawski.ksef.client.model.UpoPageResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UpoResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.BatchSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.BatchSessionLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.BatchSessionLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BuyerIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportInvoicesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
@@ -47,7 +47,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceThirdS
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicingMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.OnlineSessionLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.PartUploadRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;

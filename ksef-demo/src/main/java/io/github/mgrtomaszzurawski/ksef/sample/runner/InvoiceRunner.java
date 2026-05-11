@@ -118,7 +118,7 @@ public final class InvoiceRunner implements DemoRunner {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(from);
 
-            InvoiceMetadataResult response = context.client().invoices().queryInvoicesByMetadata(query.build());
+            InvoiceMetadataResult response = context.client().invoices().archive().queryByMetadata(query.build());
             int count = response.invoices() != null ? response.invoices().size() : 0;
             boolean hasMore = response.hasMore();
             if (LOGGER.isInfoEnabled()) {
@@ -143,7 +143,7 @@ public final class InvoiceRunner implements DemoRunner {
             // prepareExport handles symmetric-key fetch, AES-key generation, and
             // package-decrypt material retention; demo only needs the reference
             // number to drive status polling. fullContent=false → metadata only.
-            try (PreparedInvoiceExport export = context.client().invoices().prepareExport(
+            try (PreparedInvoiceExport export = context.client().invoices().export().prepare(
                     InvoiceQueryBuilder.seller().invoicingDateFrom(from).build(), ExportScope.METADATA_ONLY)) {
                 String refNum = export.referenceNumber();
                 LOGGER.info("[{}] export started, ref={}", NAME, refNum);
@@ -162,8 +162,7 @@ public final class InvoiceRunner implements DemoRunner {
         int delay = POLL_INITIAL_DELAY_MS;
         try {
             while (elapsed(start) < POLL_TIMEOUT_MS) {
-                InvoiceExportStatus response = context.client().invoices()
-                        .getExportStatus(exportRef);
+                InvoiceExportStatus response = context.client().invoices().export().getStatus(exportRef);
                 Integer code = response.status() != null ? response.status().code() : null;
                 LOGGER.info("[{}] export status: code={}", NAME, code);
                 if (code != null && code == EXPORT_STATUS_OK) {
@@ -187,7 +186,7 @@ public final class InvoiceRunner implements DemoRunner {
     private void runGetByKsefNumber(DemoContext context, String ksefNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            InvoiceDocument invoiceDocument = context.client().invoices().getByKsefNumber(KsefNumber.parse(ksefNumber));
+            InvoiceDocument invoiceDocument = context.client().invoices().archive().getByKsefNumber(KsefNumber.parse(ksefNumber));
             int xmlLength = invoiceDocument.xml().length;
             LOGGER.info("[{}] retrieved invoice by KSeF number, size={} bytes", NAME, xmlLength);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF, elapsed(start),
@@ -221,7 +220,7 @@ public final class InvoiceRunner implements DemoRunner {
             CheckpointStore store = CheckpointStore.inMemory();
             long count;
             try (Stream<DecryptedInvoice> stream =
-                         context.client().invoices().syncAsStream(plan, store)) {
+                         context.client().invoices().sync().asStream(plan, store)) {
                 count = stream.limit(SYNC_STREAM_LIMIT).count();
             }
             LOGGER.info("[{}] syncAsStream walked {} invoices (limit {})", NAME, count, SYNC_STREAM_LIMIT);
@@ -272,8 +271,7 @@ public final class InvoiceRunner implements DemoRunner {
         }
         long start = System.currentTimeMillis();
         try {
-            InvoiceDocument invoiceDocument = context.client().invoices()
-                    .getByKsefNumber(KsefNumber.parse(ksefNumber));
+            InvoiceDocument invoiceDocument = context.client().invoices().archive().getByKsefNumber(KsefNumber.parse(ksefNumber));
             String typeName = labelFor(invoiceDocument);
             LOGGER.info("[{}] typed invoice document: {}", NAME, typeName);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF_TYPED, elapsed(start), typeName));

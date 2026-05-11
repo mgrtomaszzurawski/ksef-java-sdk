@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportedInvoiceDirectory;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoiceDirectory;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
@@ -74,7 +74,7 @@ class InvoiceSyncClientTest {
     @Test
     void sync_dispatchesEachInvoiceOnce_andAdvancesCheckpoint(@TempDir Path tempDir) throws Exception {
         // given — one window with one invoice; second poll returns empty package → stop.
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
         RecordingSink sink = new RecordingSink();
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -85,10 +85,10 @@ class InvoiceSyncClientTest {
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR, false), null);
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(firstWindow, emptyWindow);
 
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
 
         // when
         SyncResult result = client.sync(plan, store, sink);
@@ -108,7 +108,7 @@ class InvoiceSyncClientTest {
         // only fires when the plan has fullContent=true. The directory carries
         // one XML file keyed by {ksefNumber}.xml so the helper resolves it on
         // the first lookup branch.
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
         RecordingSink sink = new RecordingSink();
         IncrementalSyncPlan plan = singleSubjectPlanFullContent(tempDir);
@@ -119,10 +119,10 @@ class InvoiceSyncClientTest {
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR, false), null);
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(firstWindow, emptyWindow);
 
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
 
         // when
         SyncResult result = client.sync(plan, store, sink);
@@ -137,7 +137,7 @@ class InvoiceSyncClientTest {
     @Test
     void sync_whenSinkThrows_doesNotAdvanceCheckpoint(@TempDir Path tempDir) throws Exception {
         // given — sink throws on the first invoice; no checkpoint should be saved
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
         InvoiceSink throwingSink = (number, metadata, xmlPath) -> {
             throw new IllegalStateException("sink failure");
@@ -148,10 +148,10 @@ class InvoiceSyncClientTest {
                 exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR, false),
                 metadataDir(tempDir.resolve("subject1/window-0"), List.of(VALID_KSEF_NUMBER)));
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(firstWindow);
 
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
 
         // when / then
         assertThrows(IllegalStateException.class, () -> client.sync(plan, store, throwingSink));
@@ -162,7 +162,7 @@ class InvoiceSyncClientTest {
     @Test
     void sync_whenCursorDoesNotAdvance_stopsWindowLoop(@TempDir Path tempDir) throws Exception {
         // given — cursor returned by package equals current cursor → stop
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
         RecordingSink sink = new RecordingSink();
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -171,10 +171,10 @@ class InvoiceSyncClientTest {
                 exportStatus(INVOICE_COUNT_ONE, START_CURSOR, false),
                 metadataDir(tempDir.resolve("subject1/window-0"), List.of(VALID_KSEF_NUMBER)));
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(stuckWindow);
 
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
 
         // when
         SyncResult result = client.sync(plan, store, sink);
@@ -186,7 +186,7 @@ class InvoiceSyncClientTest {
     @Test
     void sync_dedupesInvoicesAcrossOverlappingWindows(@TempDir Path tempDir) throws Exception {
         // given — two windows that both report the same invoice; the sink must see it once
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
         RecordingSink sink = new RecordingSink();
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
@@ -200,10 +200,10 @@ class InvoiceSyncClientTest {
         PreparedInvoiceExport emptyWindow = stubExport(
                 exportStatus(INVOICE_COUNT_ZERO, FAR_CURSOR, false), null);
 
-        when(invoiceClient.prepareExport(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
+        when(invoiceExport.prepare(org.mockito.ArgumentMatchers.any(InvoiceQueryRequest.class), any(ExportScope.class)))
                 .thenReturn(window1, window2, emptyWindow);
 
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
 
         // when
         SyncResult result = client.sync(plan, store, sink);
@@ -216,8 +216,8 @@ class InvoiceSyncClientTest {
 
     @Test
     void sync_withNullPlan_throwsNullPointerException() {
-        Invoices invoiceClient = mock(Invoices.class);
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
         RecordingSink sink = new RecordingSink();
 
@@ -226,8 +226,8 @@ class InvoiceSyncClientTest {
 
     @Test
     void sync_withNullCheckpointStore_throwsNullPointerException(@TempDir Path tempDir) {
-        Invoices invoiceClient = mock(Invoices.class);
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
         RecordingSink sink = new RecordingSink();
 
@@ -236,8 +236,8 @@ class InvoiceSyncClientTest {
 
     @Test
     void sync_withNullSink_throwsNullPointerException(@TempDir Path tempDir) {
-        Invoices invoiceClient = mock(Invoices.class);
-        InvoiceSyncClient client = new InvoiceSyncClient(invoiceClient, jacksonMapper());
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        InvoiceSyncClient client = new InvoiceSyncClient(invoiceExport, jacksonMapper());
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
 

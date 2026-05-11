@@ -107,7 +107,7 @@ class ManualValidationWireShapeTest {
                     .currencyCodes("PLN", "EUR")
                     .formType(InvoiceFormType.FA)
                     .invoiceTypes(InvoiceType.VAT, InvoiceType.KOR);
-            client.invoices().queryInvoicesByMetadata(query.build());
+            client.invoices().archive().queryByMetadata(query.build());
 
             verify(postRequestedFor(urlPathEqualTo(QUERY_METADATA_PATH))
                     .withRequestBody(matchingJsonPath("$.amount.type", equalTo("Brutto")))
@@ -138,7 +138,7 @@ class ManualValidationWireShapeTest {
             SessionsQueryRequest filter = SessionsQueryRequest.forOnline()
                     .statuses(CommonSessionStatus.IN_PROGRESS, CommonSessionStatus.SUCCEEDED)
                     .build();
-            List<SessionListItem> result = client.invoices().streamSessions(filter).toList();
+            List<SessionListItem> result = client.invoices().sessions().stream(filter).toList();
 
             assertNotNull(result, "streamSessions returns empty list, not null, on no results");
             verify(getRequestedFor(urlPathEqualTo(SESSIONS_PATH))
@@ -235,7 +235,7 @@ class ManualValidationWireShapeTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .permanentStorageDateFrom(OffsetDateTime.parse("2026-04-01T00:00:00Z"));
-            client.invoices().streamInvoicesByMetadata(query.build()).toList();
+            client.invoices().archive().streamByMetadata(query.build()).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(QUERY_METADATA_PATH)));
             assertEquals(2, requests.size());

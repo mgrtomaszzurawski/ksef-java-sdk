@@ -7,9 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.ExportedInvoiceDirectory;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoiceDirectory;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoicePackage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
  * zeroization on close.
  *
  * <p>WireMock serves package-part bytes on a relative URL the SDK then GETs
- * directly via the bundled {@link HttpClient}. The {@link Invoices}
+ * directly via the bundled {@link HttpClient}. The {@link InvoiceExport}
  * dependency is mocked to drive {@code awaitReady()} state transitions
  * without round-tripping a real session.
  *
@@ -96,8 +96,8 @@ class PreparedInvoiceExportWorkflowTest {
         // given
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
-        Invoices invoiceClient = mock(Invoices.class);
-        try (PreparedInvoiceExport handle = newHandle(invoiceClient, aesKey.clone(), initVector.clone())) {
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        try (PreparedInvoiceExport handle = newHandle(invoiceExport, aesKey.clone(), initVector.clone())) {
 
             // when
             handle.close();
@@ -117,8 +117,8 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void close_isIdempotent(WireMockRuntimeInfo wmInfo) {
         // given
-        Invoices invoiceClient = mock(Invoices.class);
-        PreparedInvoiceExport handle = newHandle(invoiceClient, CryptoService.generateAesKey(), CryptoService.generateIv());
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, CryptoService.generateAesKey(), CryptoService.generateIv());
 
         // when — first and second close on same handle
         handle.close();
@@ -130,8 +130,8 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void downloadAndDecrypt_afterClose_throwsIllegalState() {
         // given
-        Invoices invoiceClient = mock(Invoices.class);
-        PreparedInvoiceExport handle = newHandle(invoiceClient, CryptoService.generateAesKey(), CryptoService.generateIv());
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, CryptoService.generateAesKey(), CryptoService.generateIv());
         InvoiceExportStatus dummy = okStatus(List.of());
         handle.close();
 
@@ -142,10 +142,10 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void awaitReady_whenStatus200_returnsTerminalStatus() {
         // given
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InvoiceExportStatus terminal = okStatus(List.of());
-        when(invoiceClient.getExportStatus(anyString())).thenReturn(terminal);
-        PreparedInvoiceExport handle = newHandle(invoiceClient, CryptoService.generateAesKey(), CryptoService.generateIv());
+        when(invoiceExport.getStatus(anyString())).thenReturn(terminal);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, CryptoService.generateAesKey(), CryptoService.generateIv());
 
         // when
         InvoiceExportStatus result = handle.awaitReady();
@@ -157,12 +157,12 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void awaitReady_whenTerminalFailure_throwsTerminalFailureException() {
         // given
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InvoiceExportStatus failure = new InvoiceExportStatus(
                 new StatusInfo(STATUS_TERMINAL_FAILURE, "Schema invalid", List.of()),
                 null, null, null);
-        when(invoiceClient.getExportStatus(anyString())).thenReturn(failure);
-        PreparedInvoiceExport handle = newHandle(invoiceClient, CryptoService.generateAesKey(), CryptoService.generateIv());
+        when(invoiceExport.getStatus(anyString())).thenReturn(failure);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, CryptoService.generateAesKey(), CryptoService.generateIv());
 
         // when / then
         KsefSessionTerminalFailureException ex = assertThrows(KsefSessionTerminalFailureException.class,
@@ -173,11 +173,11 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void downloadAndDecrypt_whenNonHttpsUrl_throwsKsefException() {
         // given — http:// instead of https://
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InvoicePackagePart part = new InvoicePackagePart(1, "part1.bin", "GET",
                 URI.create("http://example.com/x.bin"), null, null, null, null, null);
         InvoiceExportStatus status = okStatus(List.of(part));
-        PreparedInvoiceExport handle = newHandle(invoiceClient, CryptoService.generateAesKey(), CryptoService.generateIv());
+        PreparedInvoiceExport handle = newHandle(invoiceExport, CryptoService.generateAesKey(), CryptoService.generateIv());
 
         // when / then
         KsefException ex = assertThrows(KsefException.class, () -> handle.downloadAndDecrypt(status));
@@ -189,11 +189,11 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void downloadAndDecrypt_whenUnsupportedMethod_throwsKsefException() {
         // given — POST instead of GET
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         InvoicePackagePart part = new InvoicePackagePart(1, "part1.bin", "POST",
                 URI.create("https://example.com/x.bin"), null, null, null, null, null);
         InvoiceExportStatus status = okStatus(List.of(part));
-        PreparedInvoiceExport handle = newHandle(invoiceClient, CryptoService.generateAesKey(), CryptoService.generateIv());
+        PreparedInvoiceExport handle = newHandle(invoiceExport, CryptoService.generateAesKey(), CryptoService.generateIv());
 
         // when / then
         KsefException ex = assertThrows(KsefException.class, () -> handle.downloadAndDecrypt(status));
@@ -205,7 +205,7 @@ class PreparedInvoiceExportWorkflowTest {
     void downloadAndDecrypt_whenHashMismatch_throwsKsefException(WireMockRuntimeInfo wmInfo) {
         // given — server returns bytes whose SHA-256 does NOT match the
         // declared encryptedPartHash. The SDK must reject before even attempting decrypt.
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] iv = CryptoService.generateIv();
         byte[] zipBytes = buildZip();
@@ -223,7 +223,7 @@ class PreparedInvoiceExportWorkflowTest {
                 (long) zipBytes.length, sha256(zipBytes),
                 (long) encryptedZip.length, wrongHash, null);
         InvoiceExportStatus status = okStatus(List.of(part));
-        PreparedInvoiceExport handle = newHandle(invoiceClient, aesKey, iv);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, aesKey, iv);
 
         // when / then
         KsefException ex = assertThrows(KsefException.class, () -> handle.downloadAndDecrypt(status));
@@ -236,7 +236,7 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void downloadAndDecrypt_happyPath_returnsParsedPackage(WireMockRuntimeInfo wmInfo) {
         // given
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] iv = CryptoService.generateIv();
         byte[] zipBytes = buildZip();
@@ -252,7 +252,7 @@ class PreparedInvoiceExportWorkflowTest {
                 (long) zipBytes.length, sha256(zipBytes),
                 (long) encryptedZip.length, sha256(encryptedZip), null);
         InvoiceExportStatus status = okStatus(List.of(part));
-        PreparedInvoiceExport handle = newHandle(invoiceClient, aesKey, iv);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, aesKey, iv);
 
         // when
         ExportedInvoicePackage result = handle.downloadAndDecrypt(status);
@@ -268,7 +268,7 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void downloadAndDecryptTo_writesEntriesToDirectory(WireMockRuntimeInfo wmInfo, @TempDir Path tempDir) {
         // given
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] iv = CryptoService.generateIv();
         byte[] zipBytes = buildZip();
@@ -282,7 +282,7 @@ class PreparedInvoiceExportWorkflowTest {
                 (long) zipBytes.length, sha256(zipBytes),
                 (long) encryptedZip.length, sha256(encryptedZip), null);
         InvoiceExportStatus status = okStatus(List.of(part));
-        PreparedInvoiceExport handle = newHandle(invoiceClient, aesKey, iv);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, aesKey, iv);
 
         Path outputDir = tempDir.resolve("export");
 
@@ -304,7 +304,7 @@ class PreparedInvoiceExportWorkflowTest {
     void downloadAndDecrypt_whenZipSlipEntryName_throwsKsefException(WireMockRuntimeInfo wmInfo, @TempDir Path tempDir) {
         // given — ZIP entry attempts to write outside the output directory.
         // We craft a ZIP whose entry name is "../escape.txt".
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] iv = CryptoService.generateIv();
         byte[] zipBytes = buildMaliciousZipSlip();
@@ -318,7 +318,7 @@ class PreparedInvoiceExportWorkflowTest {
                 (long) zipBytes.length, sha256(zipBytes),
                 (long) encryptedZip.length, sha256(encryptedZip), null);
         InvoiceExportStatus status = okStatus(List.of(part));
-        PreparedInvoiceExport handle = newHandle(invoiceClient, aesKey, iv);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, aesKey, iv);
 
         Path outputDir = tempDir.resolve("export");
 
@@ -332,7 +332,7 @@ class PreparedInvoiceExportWorkflowTest {
     @Test
     void downloadAndDecrypt_whenServerReturns404_throwsKsefException(WireMockRuntimeInfo wmInfo) {
         // given
-        Invoices invoiceClient = mock(Invoices.class);
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] iv = CryptoService.generateIv();
 
@@ -343,7 +343,7 @@ class PreparedInvoiceExportWorkflowTest {
                 URI.create(wmInfo.getHttpsBaseUrl() + PART_PATH),
                 null, null, null, null, null);
         InvoiceExportStatus status = okStatus(List.of(part));
-        PreparedInvoiceExport handle = newHandle(invoiceClient, aesKey, iv);
+        PreparedInvoiceExport handle = newHandle(invoiceExport, aesKey, iv);
 
         // when / then
         KsefException ex = assertThrows(KsefException.class, () -> handle.downloadAndDecrypt(status));
@@ -393,8 +393,8 @@ class PreparedInvoiceExportWorkflowTest {
         }
     }
 
-    private static PreparedInvoiceExport newHandle(Invoices invoiceClient, byte[] aesKey, byte[] iv) {
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceClient, insecureHttpClient(), EXPORT_REF, aesKey, iv);
+    private static PreparedInvoiceExport newHandle(InvoiceExport invoiceExport, byte[] aesKey, byte[] iv) {
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newPreparedExport(invoiceExport, insecureHttpClient(), EXPORT_REF, aesKey, iv);
     }
 
     /**
