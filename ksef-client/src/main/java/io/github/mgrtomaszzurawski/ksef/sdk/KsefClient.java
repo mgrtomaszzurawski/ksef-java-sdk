@@ -133,6 +133,8 @@ public final class KsefClient implements AutoCloseable {
     private final SecurityClient securityClient;
     private final SessionClient sessionClient;
     private final Invoices invoiceClient;
+    private final io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.@Nullable OfflineSigningProvider
+            offlineSigningProvider;
     private final Tokens tokenClient;
     private final Permissions permissionClient;
     private final Certificates certificateClient;
@@ -171,6 +173,7 @@ public final class KsefClient implements AutoCloseable {
         this.invoiceClient = new InvoicesImpl(this.runtime,
                 this.sessionClient, this.environment, this::getPublicKey,
                 builder.invoiceVerificationTimeout);
+        this.offlineSigningProvider = builder.offlineSigningProvider;
         this.tokenClient = new TokensImpl(this.runtime);
         this.permissionClient = new PermissionsImpl(this.runtime);
         this.certificateClient = new CertificatesImpl(this.runtime);
@@ -369,6 +372,20 @@ public final class KsefClient implements AutoCloseable {
     public KsefEnvironment environment() { return environment; }
 
     /**
+     * The {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider}
+     * registered via {@link Builder#offlineSigning}, or empty when the
+     * client was built without one. Consumers using the offline path
+     * with a configured provider can let the SDK sign and package the
+     * invoice; consumers without one fall back to the lower-level
+     * {@code OfflineInvoice.fromInvoice(...)} factory.
+     */
+    public java.util.Optional<
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider>
+            offlineSigningProvider() {
+        return java.util.Optional.ofNullable(offlineSigningProvider);
+    }
+
+    /**
      * Pre-load the per-schema JAXBContext + XSD validation caches for every
      * KSeF-supported invoice form (FA(2), FA(3), PEF(3), PEF_KOR(3)).
      *
@@ -416,6 +433,8 @@ public final class KsefClient implements AutoCloseable {
         private RetryPolicy retryPolicy = RetryPolicy.builder().build();
         private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
         private Duration invoiceVerificationTimeout = DEFAULT_INVOICE_VERIFICATION_TIMEOUT;
+        private io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.@Nullable OfflineSigningProvider
+                offlineSigningProvider;
 
         private Builder() { }
 
@@ -494,6 +513,25 @@ public final class KsefClient implements AutoCloseable {
         public Builder invoiceVerificationTimeout(Duration invoiceVerificationTimeout) {
             this.invoiceVerificationTimeout = Objects.requireNonNull(invoiceVerificationTimeout,
                     "invoiceVerificationTimeout must not be null");
+            return this;
+        }
+
+        /**
+         * Register an {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider}
+         * that the offline-send flow consults to sign and package
+         * invoices. The provider owns the KSeF Offline certificate and
+         * the private key (or HSM/KMS connection) that signs KOD II.
+         *
+         * <p>Defaults to {@code null} — consumers using the offline path
+         * without a provider must use the lower-level
+         * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice#fromInvoice(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice, io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType, String, String, java.time.LocalDate)}
+         * factory and pass the result to
+         * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession#sendOfflineInvoice(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice)}.
+         */
+        public Builder offlineSigning(
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider provider) {
+            this.offlineSigningProvider = Objects.requireNonNull(provider,
+                    "offline signing provider must not be null");
             return this;
         }
 
