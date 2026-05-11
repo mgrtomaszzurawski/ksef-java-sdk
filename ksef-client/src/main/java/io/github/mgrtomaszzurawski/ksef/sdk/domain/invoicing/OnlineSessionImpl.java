@@ -282,7 +282,7 @@ final class OnlineSessionImpl implements OnlineSession {
             }
         }
         return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
-                ksefNumber, kodIQr, errorDetails);
+                ksefNumber, kodIQr, Optional.empty(), errorDetails);
     }
 
     private byte[] renderKodIQr(KsefNumber ksefNumber, byte[] invoiceSha256) {

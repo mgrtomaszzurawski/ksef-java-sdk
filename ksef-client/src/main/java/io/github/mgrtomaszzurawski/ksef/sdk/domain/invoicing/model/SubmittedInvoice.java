@@ -91,22 +91,6 @@ public record SubmittedInvoice(
     }
 
     /**
-     * Compatibility constructor — pre-PR13 5-arg form (no
-     * {@code kodIIQr}) used by online-only sends. Preserved so existing
-     * online-send call sites compile unchanged. The new 6th parameter
-     * defaults to {@link Optional#empty()}.
-     */
-    public SubmittedInvoice(Invoice invoice,
-                            String referenceNumber,
-                            SessionInvoiceStatus status,
-                            Optional<KsefNumber> ksefNumber,
-                            Optional<byte[]> kodIQr,
-                            List<String> errorDetails) {
-        this(invoice, referenceNumber, status, ksefNumber, kodIQr,
-                Optional.empty(), errorDetails);
-    }
-
-    /**
      * Returns a fresh defensive copy of the KOD I QR-code bytes so
      * callers cannot mutate the cached array through repeated access.
      * Empty when {@link #ksefNumber()} is empty (not Accepted) and the
