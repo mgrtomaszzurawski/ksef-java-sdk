@@ -191,6 +191,19 @@ public final class KsefXmlValidator {
     }
 
     /**
+     * Pre-load and cache the bundled XSDs for every supported {@link FormCode}
+     * (FA(2), FA(3), PEF(3), PEF_KOR(3)). Called by {@code KsefClient.warmup()}
+     * so the Xerces DFA construction cost is paid once at application start-up
+     * instead of on the first invoice send. Idempotent — subsequent calls
+     * return immediately from the schema cache.
+     */
+    public static void warmupAll() {
+        for (String systemCode : SCHEMA_RESOURCE_BY_SYSTEM_CODE.keySet()) {
+            SCHEMA_CACHE.computeIfAbsent(systemCode, KsefXmlValidator::loadSchemaOrThrow);
+        }
+    }
+
+    /**
      * Pre-flight check for the W3C XML 1.0 banned-codepoint set per
      * {@code ksef-docs/faktury/weryfikacja-faktury.md} (api-changelog
      * v2.4.0, effective on PROD 2026-07-16). Rejects control
