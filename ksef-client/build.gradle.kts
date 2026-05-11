@@ -33,29 +33,37 @@ val wiremockVersion = "3.12.1"
 val mockitoVersion = "5.14.2"
 
 dependencies {
-    // Generated REST + XML models — own modules, cached as JAR deps so that
-    // editing handwritten SDK code does not retrigger XJC or OpenAPI generation.
+    // Generated XML models — JAXB-generated invoice types are surfaced
+    // through the *Invoice / *InvoiceDocument escape hatch (unsafeJaxbView /
+    // toJaxbCopy), so consumers compile against them transitively.
     api(project(":ksef-xml-models"))
-    api(project(":ksef-rest-models"))
+    // Generated REST models — *Raw types are internal per ADR-005;
+    // PublicApiSurfaceTest enforces zero leakage into the public surface.
+    implementation(project(":ksef-rest-models"))
 
-    // JAXB API surfaced through ksef-xml-models; pull the runtime in here
-    // for ksef-client's own marshal/unmarshal callers.
+    // JAXB API: surfaced through ksef-xml-models JAXB roots that consumers
+    // can reach via unsafeJaxbView() / toJaxbCopy().
     api("jakarta.xml.bind:jakarta.xml.bind-api:$jakartaXmlBindVersion")
 
-    // Crypto (AES-GCM, RSA-OAEP, ECDH)
-    api("org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion")
-    api("org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion")
+    // Crypto (AES-GCM, RSA-OAEP, ECDH) — used internally for invoice
+    // encryption and ECDSA-P → IEEE-P1363 signature reformatting in
+    // QrSigningService. No BouncyCastle type appears in a public signature.
+    implementation("org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion")
+    implementation("org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion")
 
-    // XAdES signing
-    api("eu.europa.ec.joinup.sd-dss:dss-xades:$dssVersion")
-    api("eu.europa.ec.joinup.sd-dss:dss-token:$dssVersion")
-    api("eu.europa.ec.joinup.sd-dss:dss-utils-apache-commons:$dssVersion")
+    // XAdES signing via DSS — wrapped behind SigningService; no DSS type
+    // is exposed on the public surface.
+    implementation("eu.europa.ec.joinup.sd-dss:dss-xades:$dssVersion")
+    implementation("eu.europa.ec.joinup.sd-dss:dss-token:$dssVersion")
+    implementation("eu.europa.ec.joinup.sd-dss:dss-utils-apache-commons:$dssVersion")
 
-    // QR code
-    api("com.google.zxing:core:$zxingVersion")
-    api("com.google.zxing:javase:$zxingVersion")
+    // QR code (ZXing) — wrapped behind QrCodeService; consumers receive
+    // byte[] PNGs, never raw ZXing types.
+    implementation("com.google.zxing:core:$zxingVersion")
+    implementation("com.google.zxing:javase:$zxingVersion")
 
-    // Logging
+    // Logging — kept as api so consumers configure their own SLF4J
+    // backend without re-declaring the API dependency.
     api("org.slf4j:slf4j-api:$slf4jVersion")
 
     // Null-safety annotations (JSpecify, ADR-017)
