@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TNaglowek;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TPodmiot1;
@@ -25,8 +26,10 @@ import javax.xml.datatype.XMLGregorianCalendar;
  * Construct via {@link #from(byte[])}.
  *
  * <p>Public accessors are flat primitives that read through to the
- * underlying JAXB tree on demand. The {@link #faktura()} escape-hatch
- * provides direct access to fields the flat accessors do not surface.
+ * underlying JAXB tree on demand. Two escape hatches expose fields the
+ * flat accessors do not surface: {@link #unsafeJaxbView()} returns the
+ * live JAXB root (read-only by contract), and {@link #toJaxbCopy()}
+ * returns a mutable deep clone.
  *
  * @since 1.0.0
  */
@@ -62,13 +65,26 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
     }
 
     /**
-     * Underlying JAXB tree — escape-hatch for fields the flat
-     * accessors do not surface (footer, advance payments, KOR_ROZ
-     * breakdowns, EU cross-border attachments). Read-only access — do
-     * not mutate.
+     * Direct reference to the internal JAXB {@link Faktura} root —
+     * escape-hatch for fields the flat accessors do not surface (footer,
+     * advance payments, KOR_ROZ breakdowns, EU cross-border attachments).
+     *
+     * <p><strong>Read-only by contract.</strong> Mutations are not
+     * reflected in the {@link #xml()} bytes. For a mutable disconnected
+     * copy use {@link #toJaxbCopy()}.
      */
-    public Faktura faktura() {
+    public Faktura unsafeJaxbView() {
         return faktura;
+    }
+
+    /**
+     * Deep-clone of the internal JAXB tree via a marshal/unmarshal
+     * round-trip. The returned object is mutable but shares no
+     * references with this document — mutations do not affect
+     * {@link #xml()}.
+     */
+    public Faktura toJaxbCopy() {
+        return JaxbDeepClone.clone(faktura, Faktura.class);
     }
 
     /** Form-systemCode token from {@code Naglowek/KodFormularza/@kodSystemowy}. */

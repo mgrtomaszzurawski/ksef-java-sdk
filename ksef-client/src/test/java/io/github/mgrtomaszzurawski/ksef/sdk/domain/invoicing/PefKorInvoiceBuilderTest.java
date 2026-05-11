@@ -55,7 +55,7 @@ class PefKorInvoiceBuilderTest {
                 .payableAmount(AMOUNT)
                 .originalInvoiceNumber("PEF/2025/0001")
                 .build();
-        assertTrue(creditNote.creditNote().getBillingReference().size() == 1);
+        assertTrue(creditNote.unsafeJaxbView().getBillingReference().size() == 1);
         assertTrue(creditNote.lines().size() == 1);
     }
 

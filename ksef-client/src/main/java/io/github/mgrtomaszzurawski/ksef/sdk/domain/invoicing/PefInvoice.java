@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefAddress;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefInvoiceLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefParty;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.pef.InvoiceType;
 import io.github.mgrtomaszzurawski.ksef.xml.ubl.cac.AddressType;
 import io.github.mgrtomaszzurawski.ksef.xml.ubl.cac.CountryType;
@@ -42,6 +43,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -52,10 +54,14 @@ import javax.xml.datatype.XMLGregorianCalendar;
  * accessors alongside the {@link Invoice} contract.
  *
  * <p>Construct via {@link #builder()} for a minimally-valid Peppol
- * BIS-style invoice. Use the {@link #invoice()} escape-hatch for any
- * UBL feature not surfaced by the flat accessors (allowance/charges,
- * tax breakdowns, payment means details, EU cross-border
- * attachments).
+ * BIS-style invoice.
+ *
+ * <p><strong>Escape hatches.</strong> UBL features not surfaced by flat
+ * accessors (allowance/charges, tax breakdowns, payment means details,
+ * EU cross-border attachments) are reachable through
+ * {@link #unsafeJaxbView()} (live JAXB root, read-only) and
+ * {@link #toJaxbCopy()} (mutable deep clone). For build-time
+ * customisation use {@link Builder#customizeJaxb(Consumer)}.
  *
  * @since 1.0.0
  */
@@ -91,11 +97,24 @@ public final class PefInvoice implements Invoice {
     }
 
     /**
-     * Underlying UBL JAXB tree — escape-hatch for fields the flat
-     * accessors do not surface. Read-only access — do not mutate.
+     * Direct reference to the internal UBL JAXB {@link InvoiceType} root —
+     * escape-hatch for fields the flat accessors do not surface.
+     *
+     * <p><strong>Read-only by contract.</strong> Mutations are not
+     * reflected in {@link #xml()} bytes. For a mutable disconnected
+     * copy use {@link #toJaxbCopy()}; for build-time customisation use
+     * {@link Builder#customizeJaxb(Consumer)}.
      */
-    public InvoiceType invoice() {
+    public InvoiceType unsafeJaxbView() {
         return invoiceType;
+    }
+
+    /**
+     * Deep-clone of the internal UBL JAXB tree via a marshal/unmarshal
+     * round-trip.
+     */
+    public InvoiceType toJaxbCopy() {
+        return JaxbDeepClone.clone(invoiceType, InvoiceType.class);
     }
 
     /** Invoice number from {@code <cbc:ID>}. */
@@ -251,6 +270,7 @@ public final class PefInvoice implements Invoice {
         private static final String ERR_NULL_CUSTOMER = "customer must not be null";
         private static final String ERR_NULL_LINE = "line must not be null";
         private static final String ERR_NULL_PAYABLE = "payableAmount must not be null";
+        private static final String ERR_NULL_CUSTOMIZER = "customizer must not be null";
         private static final String ERR_BAD_DATATYPE_FACTORY = "DatatypeFactory unavailable";
         private static final String UBL_TAX_SCHEME_ID_VAT = "VAT";
         private static final String DEFAULT_CURRENCY_CODE_PLN = "PLN";
@@ -263,8 +283,24 @@ public final class PefInvoice implements Invoice {
         private PefParty customer;
         private final List<PefInvoiceLine> lines = new ArrayList<>();
         private BigDecimal payableAmount;
+        private Consumer<InvoiceType> customizer;
 
         Builder() {
+        }
+
+        /**
+         * Customise the assembled UBL JAXB tree before marshalling — escape
+         * hatch for fields the builder does not surface (allowance/charges,
+         * tax breakdowns, payment means details). The consumer runs after
+         * typed setters have populated the root, immediately before XML
+         * marshalling. Multiple calls compose by appending.
+         */
+        public Builder customizeJaxb(Consumer<InvoiceType> jaxbCustomizer) {
+            Objects.requireNonNull(jaxbCustomizer, ERR_NULL_CUSTOMIZER);
+            this.customizer = this.customizer == null
+                    ? jaxbCustomizer
+                    : this.customizer.andThen(jaxbCustomizer);
+            return this;
         }
 
         /** Invoice number (cbc:ID). */
@@ -323,6 +359,9 @@ public final class PefInvoice implements Invoice {
             Objects.requireNonNull(customer, ERR_NULL_CUSTOMER);
             Objects.requireNonNull(payableAmount, ERR_NULL_PAYABLE);
             InvoiceType invoice = assembleInvoice();
+            if (customizer != null) {
+                customizer.accept(invoice);
+            }
             jakarta.xml.bind.JAXBElement<InvoiceType> root =
                     new io.github.mgrtomaszzurawski.ksef.xml.pef.ObjectFactory().createInvoice(invoice);
             byte[] xml = JaxbInvoiceMarshaller.marshal(root, InvoiceType.class);

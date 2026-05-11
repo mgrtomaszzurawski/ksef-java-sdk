@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefInvoiceLine;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.pef.InvoiceType;
 import io.github.mgrtomaszzurawski.ksef.xml.ubl.cac.CustomerPartyType;
 import io.github.mgrtomaszzurawski.ksef.xml.ubl.cac.InvoiceLineType;
@@ -29,9 +30,10 @@ import javax.xml.datatype.XMLGregorianCalendar;
  * Construct via {@link #from(byte[])}.
  *
  * <p>Public accessors are flat primitives that read through to the
- * underlying UBL JAXB tree on demand. The {@link #invoice()}
- * escape-hatch provides direct access to fields the flat accessors
- * do not surface.
+ * underlying UBL JAXB tree on demand. Two escape hatches expose fields
+ * the flat accessors do not surface: {@link #unsafeJaxbView()} returns
+ * the live JAXB root (read-only by contract), and {@link #toJaxbCopy()}
+ * returns a mutable deep clone.
  *
  * @since 1.0.0
  */
@@ -63,11 +65,23 @@ public final class PefInvoiceDocument implements InvoiceDocument {
     }
 
     /**
-     * Underlying UBL JAXB tree — escape-hatch for fields the flat
-     * accessors do not surface. Read-only access — do not mutate.
+     * Direct reference to the internal UBL JAXB {@link InvoiceType} root —
+     * escape-hatch for fields the flat accessors do not surface.
+     *
+     * <p><strong>Read-only by contract.</strong> Mutations are not
+     * reflected in the {@link #xml()} bytes. For a mutable disconnected
+     * copy use {@link #toJaxbCopy()}.
      */
-    public InvoiceType invoice() {
+    public InvoiceType unsafeJaxbView() {
         return invoice;
+    }
+
+    /**
+     * Deep-clone of the internal UBL JAXB tree via a marshal/unmarshal
+     * round-trip.
+     */
+    public InvoiceType toJaxbCopy() {
+        return JaxbDeepClone.clone(invoice, InvoiceType.class);
     }
 
     /** Invoice number from {@code <cbc:ID>}. */

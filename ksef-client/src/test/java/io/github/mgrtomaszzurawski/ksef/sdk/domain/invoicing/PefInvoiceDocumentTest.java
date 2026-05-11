@@ -49,7 +49,7 @@ class PefInvoiceDocumentTest {
     @Test
     void from_whenValidPefXml_exposesJaxbEscapeHatch() {
         PefInvoiceDocument doc = PefInvoiceDocument.from(minimalInvoice().xml());
-        assertNotNull(doc.invoice(), "JAXB escape hatch invoice() must not return null");
+        assertNotNull(doc.unsafeJaxbView(), "JAXB escape hatch unsafeJaxbView() must not return null");
     }
 
     @Test
