@@ -43,11 +43,7 @@ dependencies {
 val xsdRoot = layout.projectDirectory.dir("../ksef-client/xsd")
 val bindingsRoot = layout.projectDirectory.dir("jaxb-bindings")
 
-// Heap and XML parser knobs for every XJC fork.
-//
-// -Xmx2g — PEF / PEF_KOR XJC walks ~1300 generated classes per schema in
-// the JVM and emits ~700 MB of CodeModel intermediate state; the JVM
-// default heap (~256 MB) reliably OOMs.
+// XML parser knobs shared across every XJC fork.
 //
 // jdk.xml.* set to 0 disables the JDK's safe-default XML parser ceilings
 // (max-occur 5000, entity-expansion 64000) that the KSeF FA(2)/FA(3)/PEF
@@ -55,13 +51,21 @@ val bindingsRoot = layout.projectDirectory.dir("jaxb-bindings")
 // from CIRFMF/ksef-docs; the unrestricted parser is build-time only and
 // does NOT relax runtime XML validation (ADR-029 keeps StAX hardening on
 // the consumer side).
-private val xjcJvmArgs = listOf(
-    "-Xmx2g",
+private val xjcXmlArgs = listOf(
     "-DentityExpansionLimit=0",
     "-Djdk.xml.entityExpansionLimit=0",
     "-Djdk.xml.maxOccurLimit=0",
     "-Djdk.xml.totalEntitySizeLimit=0",
 )
+
+// Heap sizing per XJC fork. The PEF+PEF_KOR consolidated task walks the
+// full UBL 2.1 + Polish PEPPOL world (~1300 classes, ~700 MB CodeModel
+// peak) so it gets 2 GB. The other four schemas (FA2 ~50 classes, FA3
+// ~80 classes, UPO ~3 classes, AUTH ~5 classes) fit comfortably in 1 GB
+// — explicit sizing avoids the iter-1 finding where every XJC fork
+// claimed 2 GB and parallel runs over-committed memory in CI.
+private val XJC_HEAP_LARGE = "-Xmx2g"
+private val XJC_HEAP_SMALL = "-Xmx1g"
 
 fun registerXjc(
     name: String,
@@ -71,40 +75,40 @@ fun registerXjc(
     pkg: String? = null,
     outputDirName: String,
     transitiveSchemaDirs: List<Provider<Directory>> = emptyList(),
+    heapArg: String = XJC_HEAP_SMALL,
 ): TaskProvider<JavaExec> = tasks.register<JavaExec>(name) {
     group = "build"
     description = "Generates JAXB classes for $outputDirName"
     classpath = xjcTool
     mainClass.set("com.sun.tools.xjc.XJCFacade")
 
-    jvmArgs(xjcJvmArgs)
+    jvmArgs(heapArg)
+    jvmArgs(xjcXmlArgs)
 
     val outputDir = layout.buildDirectory.dir("generated-sources/$outputDirName")
     outputs.dir(outputDir)
     outputs.cacheIf { true }
 
-    val schemaInputs = mutableListOf<File>()
-    schemas.forEach { schemaInputs += it.get().asFile }
-    if (schemaDir != null) {
-        // fileTree(dir).matching{} is a lazy FileCollection — Gradle
-        // resolves it at task-execution time, so adding new .xsd files to
-        // the directory invalidates the configuration cache properly.
-        // Using .files here would freeze the list at config time.
-        val tree = fileTree(schemaDir).matching { include("*.xsd") }
+    // Schema files: explicit schemas listed at config time go in inputs.file()
+    // immediately. Directory-based schemas (UPO, AUTH) use a lazy FileCollection
+    // so adding a new .xsd to the dir is detected; the schema list passed to
+    // XJC at execution is rebuilt fresh from the dir at task-execution time.
+    schemas.forEach { inputs.file(it) }
+    bindingFile?.let { inputs.file(it) }
+
+    val schemaDirTree = schemaDir?.let { dir ->
+        val tree = fileTree(dir).matching { include("*.xsd") }
         inputs.files(tree)
-            .withPropertyName("schemaDir-${schemaDir.get().asFile.name}")
+            .withPropertyName("schemaDir-${dir.get().asFile.name}")
             .withPathSensitivity(PathSensitivity.RELATIVE)
-        schemaInputs += tree.files
+        tree
     }
-    schemaInputs.filter { schemaDir == null || it.parentFile.name != schemaDir.get().asFile.name }
-        .forEach { inputs.file(it) }
-    bindingFile?.let { inputs.file(it.get().asFile) }
 
     // Schemas reached transitively via xs:import / xs:include — FA2/FA3
     // import bazowe/StrukturyDanych_v10-0E.xsd; PEF/PEF_KOR import the
-    // PEF/bazowe content; UPO imports from upo/. Without these as
-    // declared inputs, editing a base schema produces stale generated
-    // classes that the build cache happily reuses.
+    // PEF/bazowe content. Without these as declared inputs, editing a
+    // base schema produces stale generated classes that the build cache
+    // happily reuses.
     transitiveSchemaDirs.forEach { dir ->
         inputs.files(fileTree(dir).matching { include("**/*.xsd") })
             .withPropertyName("transitiveSchemas-${dir.get().asFile.name}")
@@ -129,7 +133,10 @@ fun registerXjc(
         bindingFile?.let {
             args += listOf("-b", it.get().asFile.absolutePath)
         }
-        args += schemaInputs.map { it.absolutePath }
+        // Resolve schema file paths at execution time so a new .xsd added
+        // to a schemaDir between configs gets picked up on the next run.
+        schemas.forEach { args += it.get().asFile.absolutePath }
+        schemaDirTree?.files?.forEach { args += it.absolutePath }
         args
     }
 }
@@ -171,6 +178,7 @@ val xjcPefUbl = registerXjc(
     bindingFile = bindingsRoot.file("PEF/pef-ubl-bindings.xjb").let { providers.provider { it } },
     outputDirName = "xjc-pef-ubl",
     transitiveSchemaDirs = listOf(pefBazowe),
+    heapArg = XJC_HEAP_LARGE,
 )
 
 val xjcUpo = registerXjc(

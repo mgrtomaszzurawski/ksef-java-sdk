@@ -92,11 +92,13 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
-    // The UBL JAXBContext (PEF + PEF_KOR) is the test heap dominator.
-    // Empirically: 2 GB OOMs on JAXBContextTest; 4 GB clears with margin.
-    // After the planned PEF/PEF_KOR consolidation under xml.ubl.* the
-    // context halves and this can drop back to 2 GB × more forks. Until
-    // then, two forks × 4 GB stays inside an 8 GB workstation budget.
+    // Two heap dominators run concurrently in tests:
+    //   - UBL JAXBContext (~150-300 MB post-consolidation)
+    //   - Xerces FA(3) XSD content-model DFA (~300-600 MB transient peak
+    //     during Fa3InvoiceBuilder validation tests)
+    // Plus JaCoCo instrumentation overhead. 2 GB per fork OOMs on
+    // XSDFACM.calcFollowList; 4 GB clears with margin. 2 forks × 4 GB
+    // = 8 GB committed when tests run alone, inside a workstation budget.
     maxParallelForks = 2
     forkEvery = 0L
     jvmArgs("-Xmx4g", "-XX:+HeapDumpOnOutOfMemoryError")

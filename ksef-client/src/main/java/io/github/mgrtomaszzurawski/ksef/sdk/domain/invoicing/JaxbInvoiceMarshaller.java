@@ -10,8 +10,6 @@ import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Internal helper for marshalling and unmarshalling invoice JAXB
@@ -57,7 +55,20 @@ final class JaxbInvoiceMarshaller {
             "udt",
             "xades132", "xades141", "xmldsig"
     };
-    private static final ConcurrentMap<Class<?>, JAXBContext> CONTEXT_CACHE = new ConcurrentHashMap<>();
+    /**
+     * Per-root-class JAXBContext cache. {@link ClassValue} ties the cache
+     * lifetime to the keying Class's ClassLoader — in a hot-redeploy
+     * container the redeployed app's class graph is collected with its
+     * loader, the context goes with it. A static ConcurrentMap would
+     * pin both the Class and the ClassLoader as GC roots, leaking memory
+     * across redeploys.
+     */
+    private static final ClassValue<JAXBContext> CONTEXT_CACHE = new ClassValue<>() {
+        @Override
+        protected JAXBContext computeValue(Class<?> rootClass) {
+            return buildContext(rootClass);
+        }
+    };
     private static final javax.xml.stream.XMLInputFactory XML_INPUT_FACTORY = createHardenedXmlInputFactory();
 
     private JaxbInvoiceMarshaller() {
@@ -103,7 +114,7 @@ final class JaxbInvoiceMarshaller {
     }
 
     private static JAXBContext contextFor(Class<?> rootClass) {
-        return CONTEXT_CACHE.computeIfAbsent(rootClass, JaxbInvoiceMarshaller::buildContext);
+        return CONTEXT_CACHE.get(rootClass);
     }
 
     private static JAXBContext buildContext(Class<?> rootClass) {
@@ -135,7 +146,7 @@ final class JaxbInvoiceMarshaller {
         if (rootFactory != null) {
             factories.add(rootFactory);
         }
-        if (rootPackage.equals(PEF_ROOT_PACKAGE) || rootPackage.equals(PEFKOR_ROOT_PACKAGE)) {
+        if (PEF_ROOT_PACKAGE.equals(rootPackage) || PEFKOR_ROOT_PACKAGE.equals(rootPackage)) {
             for (String subPackage : UBL_SUB_PACKAGES) {
                 Class<?> subFactory = loadObjectFactory(loader, UBL_ROOT_PACKAGE + '.' + subPackage);
                 if (subFactory != null) {

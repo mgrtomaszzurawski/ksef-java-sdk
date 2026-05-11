@@ -48,3 +48,4 @@ credentials.*
 ksef-credentials.properties
 demo-state.json
 logs/
+*.hprof

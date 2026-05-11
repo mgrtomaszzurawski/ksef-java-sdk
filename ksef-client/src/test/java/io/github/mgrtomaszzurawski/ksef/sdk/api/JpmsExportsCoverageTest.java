@@ -47,26 +47,29 @@ class JpmsExportsCoverageTest {
     private static final String MODULE_INFO_PATH = "src/main/java/module-info.java";
     private static final String SDK_ROOT_PACKAGE = "io.github.mgrtomaszzurawski.ksef.sdk";
     private static final String INTERNAL_PACKAGE_PREFIX = SDK_ROOT_PACKAGE + ".internal";
+    private static final String GRADLE_CLASSES_DIR = "build/classes/java/main";
+    private static final String MAVEN_CLASSES_DIR = "target/classes";
     /**
-     * Resolved at first access — auto-detect Gradle ({@code build/classes/java/main})
-     * or Maven ({@code target/classes}) layout so the test runs from either build
-     * tool without per-tool configuration.
+     * Resolved at first access — auto-detect Gradle ({@link #GRADLE_CLASSES_DIR})
+     * or Maven ({@link #MAVEN_CLASSES_DIR}) layout so the test runs from either
+     * build tool without per-tool configuration. Gradle takes precedence when
+     * both directories exist.
      */
     private static final String CLASSES_DIR = resolveClassesDir();
-
-    private static String resolveClassesDir() {
-        Path gradle = Paths.get("build/classes/java/main");
-        if (Files.isDirectory(gradle)) {
-            return gradle.toString();
-        }
-        return "target/classes";
-    }
     private static final String JAVA_PACKAGE_SEPARATOR = ".";
     private static final String FS_SEPARATOR = "/";
     private static final String CLASS_FILE_SUFFIX = ".class";
     private static final String INNER_CLASS_MARKER = "$";
     private static final String MODULE_INFO_CLASS = "module-info.class";
     private static final String PACKAGE_INFO_CLASS = "package-info.class";
+
+    private static String resolveClassesDir() {
+        Path gradle = Paths.get(GRADLE_CLASSES_DIR);
+        if (Files.isDirectory(gradle)) {
+            return gradle.toString();
+        }
+        return MAVEN_CLASSES_DIR;
+    }
     /**
      * Matches {@code exports a.b.c;} declarations. Tolerates surrounding
      * whitespace; the no-target form (without a trailing {@code to ...}) is

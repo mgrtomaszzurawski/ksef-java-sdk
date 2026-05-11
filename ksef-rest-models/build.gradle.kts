@@ -57,11 +57,19 @@ openApiGenerate {
 // Cache the OpenAPI generator output across `clean build` runs — keyed on
 // the spec file + generator config. Without this the 303-class generation
 // re-runs every time the build/ directory is wiped, even when the spec is
-// unchanged.
+// unchanged. doFirst clears stale generated files before each run so a
+// removed schema definition does not leave orphan *Raw classes behind.
 tasks.named("openApiGenerate") {
     inputs.file(specFile).withPathSensitivity(PathSensitivity.RELATIVE)
-    outputs.dir(layout.buildDirectory.dir("generated-sources/openapi"))
+    val outDir = layout.buildDirectory.dir("generated-sources/openapi")
+    outputs.dir(outDir)
     outputs.cacheIf { true }
+    doFirst {
+        outDir.get().asFile.also {
+            it.deleteRecursively()
+            it.mkdirs()
+        }
+    }
 }
 
 sourceSets.main {
