@@ -76,7 +76,8 @@ public final class AuthRunner implements DemoRunner {
         try {
             // Drive lazy auth via any authenticated read — streamSessions()
             // hits /v2/auth/sessions which forces the full challenge flow.
-            context.client().auth().streamSessions().findAny();
+            // No-op ifPresent consumes the Optional per Sonar S2201.
+            context.client().auth().streamSessions().findAny().ifPresent(authSession -> { });
             String nip = context.nipIdentifier();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_AUTHENTICATED, NAME, nip);
@@ -103,8 +104,9 @@ public final class AuthRunner implements DemoRunner {
         long reAuthStart = System.currentTimeMillis();
         try {
             // Lazy re-auth — any authenticated read after terminate() drives
-            // the full challenge-response cycle again.
-            context.client().auth().streamSessions().findAny();
+            // the full challenge-response cycle again. No-op ifPresent
+            // consumes the Optional per Sonar S2201.
+            context.client().auth().streamSessions().findAny().ifPresent(authSession -> { });
             LOGGER.info(LOG_RE_AUTHENTICATED, NAME);
             results.add(RunResult.ok(NAME, OP_RE_AUTHENTICATE, elapsed(reAuthStart),
                     NIP_PREFIX + context.nipIdentifier()));
@@ -153,8 +155,9 @@ public final class AuthRunner implements DemoRunner {
 
         long reAuthStart = System.currentTimeMillis();
         try {
-            // Lazy re-auth after terminate-by-ref.
-            client.auth().streamSessions().findAny();
+            // Lazy re-auth after terminate-by-ref. No-op ifPresent consumes
+            // the Optional per Sonar S2201.
+            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
             LOGGER.info(LOG_RE_AUTHENTICATED_AFTER_BY_REF, NAME);
             results.add(RunResult.ok(NAME, OP_RE_AUTHENTICATE_AFTER_TERMINATE_BY_REF,
                     elapsed(reAuthStart), NIP_PREFIX + context.nipIdentifier()));

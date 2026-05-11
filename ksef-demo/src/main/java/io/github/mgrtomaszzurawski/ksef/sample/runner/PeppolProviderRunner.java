@@ -108,8 +108,9 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .credentials(creds)
                 .retryPolicy(io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy.builder().build())
                 .build()) {
-            // Drive lazy auth via any authenticated read.
-            client.auth().streamSessions().findAny();
+            // Drive lazy auth via any authenticated read; no-op ifPresent
+            // consumes the Optional per Sonar S2201.
+            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH, elapsed(start),
                     "peppolId=" + peppolId + " (registered via XAdES self-signed cert)"));
             return true;
@@ -174,8 +175,9 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .credentials(creds)
                 .retryPolicy(RetryPolicy.builder().build())
                 .build()) {
-            // Drive lazy auth via any authenticated read.
-            client.auth().streamSessions().findAny();
+            // Drive lazy auth via any authenticated read; no-op ifPresent
+            // consumes the Optional per Sonar S2201.
+            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH + label, elapsed(authStart),
                     "peppolId=" + peppolId));
 

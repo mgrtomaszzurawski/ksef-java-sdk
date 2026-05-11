@@ -64,26 +64,30 @@ public record SubmittedInvoice(
     private static final String ERR_INVOICE_NULL = "invoice must not be null";
     private static final String ERR_REF_NULL = "referenceNumber must not be null";
     private static final String ERR_STATUS_NULL = "status must not be null";
+    private static final String ERR_KSEF_NUMBER_NULL = "ksefNumber must not be null (use Optional.empty())";
+    private static final String ERR_KOD_I_NULL = "kodIQr must not be null (use Optional.empty())";
+    private static final String ERR_KOD_II_NULL = "kodIIQr must not be null (use Optional.empty())";
+    private static final String ERR_ERROR_DETAILS_NULL = "errorDetails must not be null (use List.of())";
 
     /**
-     * Compact constructor — normalises the optional/list inputs and
-     * defensive-copies the QR bytes.
+     * Compact constructor — defensive-copies the QR bytes. Optional and
+     * List components must be supplied non-null per Sonar S2789 / S2293
+     * (use {@link Optional#empty()} and {@link List#of()} for absent values).
      */
     public SubmittedInvoice {
         Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
         Objects.requireNonNull(referenceNumber, ERR_REF_NULL);
         Objects.requireNonNull(status, ERR_STATUS_NULL);
-        ksefNumber = ksefNumber == null ? Optional.empty() : ksefNumber;
+        Objects.requireNonNull(ksefNumber, ERR_KSEF_NUMBER_NULL);
+        Objects.requireNonNull(kodIQr, ERR_KOD_I_NULL);
+        Objects.requireNonNull(kodIIQr, ERR_KOD_II_NULL);
+        Objects.requireNonNull(errorDetails, ERR_ERROR_DETAILS_NULL);
         // Defensive copy at construction so a caller-supplied byte[] cannot
         // be mutated through the SubmittedInvoice. Match the Optional
         // contract — Optional<byte[]> with a fresh array when present.
-        kodIQr = kodIQr == null
-                ? Optional.empty()
-                : kodIQr.map(byte[]::clone);
-        kodIIQr = kodIIQr == null
-                ? Optional.empty()
-                : kodIIQr.map(byte[]::clone);
-        errorDetails = errorDetails == null ? List.of() : List.copyOf(errorDetails);
+        kodIQr = kodIQr.map(byte[]::clone);
+        kodIIQr = kodIIQr.map(byte[]::clone);
+        errorDetails = List.copyOf(errorDetails);
     }
 
     /**
