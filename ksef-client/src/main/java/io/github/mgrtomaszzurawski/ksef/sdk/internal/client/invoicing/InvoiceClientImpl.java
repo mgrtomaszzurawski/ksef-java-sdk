@@ -251,7 +251,7 @@ public final class InvoiceClientImpl implements InvoiceClient {
                 Optional.empty(),
                 Optional.empty(),
                 List.of());
-        return new ClearedInvoice(submitted, upo);
+        return new ClearedInvoice(submitted, document, upo);
     }
 
     /**

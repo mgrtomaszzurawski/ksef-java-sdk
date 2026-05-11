@@ -27,16 +27,16 @@ class QrCodeServiceKodFacadeTest {
     @Test
     void generateKodIQr_returnsLabelledPngBytes() {
         QrCodeService service = new QrCodeService();
-        byte[] sha = new byte[32];
-        new SecureRandom().nextBytes(sha);
+        byte[] invoiceSha256 = new byte[32];
+        new SecureRandom().nextBytes(invoiceSha256);
 
-        byte[] png = service.generateKodIQr(QrEnvironment.TEST, SELLER_NIP, ISSUE_DATE, sha,
+        byte[] qrCodePng =service.generateKodIQr(QrEnvironment.TEST, SELLER_NIP, ISSUE_DATE, invoiceSha256,
                 QrCodeService.LABEL_OFFLINE);
 
-        assertNotNull(png);
-        assertTrue(png.length > PNG_MAGIC_HEADER.length, "KOD I QR PNG must be non-trivially sized");
+        assertNotNull(qrCodePng);
+        assertTrue(qrCodePng.length > PNG_MAGIC_HEADER.length, "KOD I QR PNG must be non-trivially sized");
         for (int i = 0; i < PNG_MAGIC_HEADER.length; i++) {
-            assertTrue(png[i] == PNG_MAGIC_HEADER[i], "byte " + i + " must match PNG magic header");
+            assertTrue(qrCodePng[i] == PNG_MAGIC_HEADER[i], "byte " + i + " must match PNG magic header");
         }
     }
 
@@ -46,17 +46,17 @@ class QrCodeServiceKodFacadeTest {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
         generator.initialize(RSA_KEY_SIZE, new SecureRandom());
         KeyPair keyPair = generator.generateKeyPair();
-        byte[] sha = new byte[32];
-        new SecureRandom().nextBytes(sha);
+        byte[] invoiceSha256 = new byte[32];
+        new SecureRandom().nextBytes(invoiceSha256);
         KsefVerificationLinks.CertificateSigningInput input = new KsefVerificationLinks.CertificateSigningInput(
-                QrContextType.NIP, SELLER_NIP, SELLER_NIP, CERTIFICATE_SERIAL, sha);
+                QrContextType.NIP, SELLER_NIP, SELLER_NIP, CERTIFICATE_SERIAL, invoiceSha256);
 
-        byte[] png = service.generateKodIIQr(QrEnvironment.TEST, input, keyPair.getPrivate());
+        byte[] qrCodePng =service.generateKodIIQr(QrEnvironment.TEST, input, keyPair.getPrivate());
 
-        assertNotNull(png);
-        assertTrue(png.length > PNG_MAGIC_HEADER.length, "KOD II QR PNG must be non-trivially sized");
+        assertNotNull(qrCodePng);
+        assertTrue(qrCodePng.length > PNG_MAGIC_HEADER.length, "KOD II QR PNG must be non-trivially sized");
         for (int i = 0; i < PNG_MAGIC_HEADER.length; i++) {
-            assertTrue(png[i] == PNG_MAGIC_HEADER[i], "byte " + i + " must match PNG magic header");
+            assertTrue(qrCodePng[i] == PNG_MAGIC_HEADER[i], "byte " + i + " must match PNG magic header");
         }
     }
 }

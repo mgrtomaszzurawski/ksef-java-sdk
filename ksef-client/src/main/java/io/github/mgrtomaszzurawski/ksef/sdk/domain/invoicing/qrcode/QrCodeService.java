@@ -166,9 +166,9 @@ public final class QrCodeService {
                                   LocalDate issueDate,
                                   byte[] invoiceSha256,
                                   String label) {
-        String url = KsefVerificationLinks.buildInvoiceVerificationUrl(
+        String verificationUrl = KsefVerificationLinks.buildInvoiceVerificationUrl(
                 environment, sellerNip, issueDate, invoiceSha256);
-        return generateLabeledQrCode(url, label);
+        return generateLabeledQrCode(verificationUrl, label);
     }
 
     /**
@@ -196,8 +196,9 @@ public final class QrCodeService {
     public byte[] generateKodIIQr(QrEnvironment environment,
                                    KsefVerificationLinks.CertificateSigningInput input,
                                    PrivateKey privateKey) {
-        String url = new QrSigningService().certificateVerificationUrl(environment, input, privateKey);
-        return generateLabeledQrCode(url, LABEL_CERTIFICATE);
+        String verificationUrl = new QrSigningService()
+                .certificateVerificationUrl(environment, input, privateKey);
+        return generateLabeledQrCode(verificationUrl, LABEL_CERTIFICATE);
     }
 
     private static BufferedImage drawLabelBelow(BufferedImage qrImage, String label) {

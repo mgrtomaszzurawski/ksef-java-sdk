@@ -16,7 +16,6 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UpoEntryParsedTest {
@@ -52,10 +51,12 @@ class UpoEntryParsedTest {
     void xmlBytes_returnsDefensiveCopy_afterAccessor() {
         byte[] original = "abc".getBytes(StandardCharsets.UTF_8);
         UpoEntry entry = new UpoEntry(REF, original);
-        byte[] first = entry.xmlBytes();
-        first[0] = 'Z';
-        assertFalse(first[0] == entry.xmlBytes()[0],
-                "mutating returned array must not affect entry state");
+        byte[] firstView = entry.xmlBytes();
+        firstView[0] = 'Z';
+        byte[] secondView = entry.xmlBytes();
+        assertEquals((byte) 'a', secondView[0],
+                "subsequent accessor must return a fresh copy unaffected by caller mutation");
+        assertEquals(3, secondView.length);
     }
 
     private static byte[] minimalUpoXml() throws Exception {

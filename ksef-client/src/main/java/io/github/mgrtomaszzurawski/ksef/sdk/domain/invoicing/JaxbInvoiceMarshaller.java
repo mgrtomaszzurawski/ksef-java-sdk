@@ -10,6 +10,7 @@ import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Internal helper for marshalling and unmarshalling invoice JAXB
@@ -96,15 +97,20 @@ final class JaxbInvoiceMarshaller {
         };
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         for (String name : rootClassNames) {
-            try {
-                Class<?> rootClass = Class.forName(name, false, loader);
+            // Generated root absent in this consumer's classpath -> skip the
+            // root quietly so a lean-jar deployment still warms what it ships.
+            Class<?> rootClass = loadClassOrNull(loader, name);
+            if (rootClass != null) {
                 contextFor(rootClass);
-            } catch (ClassNotFoundException missing) {
-                // Generated root not present in this consumer's classpath — skip
-                // silently so a consumer running a lean jar still benefits from
-                // warmup for the roots they do ship.
-                continue;
             }
+        }
+    }
+
+    private static @Nullable Class<?> loadClassOrNull(ClassLoader loader, String name) {
+        try {
+            return Class.forName(name, false, loader);
+        } catch (ClassNotFoundException missing) {
+            return null;
         }
     }
 

@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FailedInvoice;
@@ -96,6 +97,7 @@ class BatchResultTest {
 
     private static ClearedInvoice sampleCleared(String referenceNumber) {
         Invoice placeholder = Invoice.fromXml(FormCode.FA3, UPO_BYTES);
+        InvoiceDocument document = InvoiceDocument.fromXml(FormCode.FA3, UPO_BYTES);
         SessionInvoiceStatus status = new SessionInvoiceStatus(
                 1, "FV/1", null, referenceNumber, null, null,
                 STARTED, STARTED, null, null, null, null,
@@ -103,6 +105,6 @@ class BatchResultTest {
         SubmittedInvoice submitted = new SubmittedInvoice(
                 placeholder, referenceNumber, status,
                 Optional.empty(), Optional.empty(), Optional.empty(), List.of());
-        return new ClearedInvoice(submitted, new UpoEntry(referenceNumber, UPO_BYTES));
+        return new ClearedInvoice(submitted, document, new UpoEntry(referenceNumber, UPO_BYTES));
     }
 }

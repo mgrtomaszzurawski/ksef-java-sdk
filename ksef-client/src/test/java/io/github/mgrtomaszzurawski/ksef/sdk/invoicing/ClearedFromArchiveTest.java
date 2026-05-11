@@ -77,6 +77,7 @@ class ClearedFromArchiveTest {
             assertEquals(INVOICE_REF, cleared.submitted().referenceNumber());
             assertEquals(KSEF_NUMBER, cleared.submitted().ksefNumber().orElseThrow().value());
             assertArrayEquals(INVOICE_XML, cleared.submitted().invoice().xml());
+            assertArrayEquals(INVOICE_XML, cleared.document().xml());
             assertEquals(INVOICE_REF, cleared.upo().referenceNumber());
             assertArrayEquals(UPO_XML, cleared.upo().xmlBytes());
         }
