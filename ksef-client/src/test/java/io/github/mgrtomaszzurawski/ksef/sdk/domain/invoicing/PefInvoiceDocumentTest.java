@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Read-side parity test for {@link PefInvoiceDocument}: build a known
@@ -32,6 +31,7 @@ class PefInvoiceDocumentTest {
     private static final String CUSTOMER_NIP = "9876543210";
     private static final String SUPPLIER_NAME = "Acme";
     private static final String CUSTOMER_NAME = "Customer";
+    private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
 
     @Test
     void from_whenValidPefXml_parsesFormCodePef3() {
@@ -83,22 +83,22 @@ class PefInvoiceDocumentTest {
     }
 
     @Test
-    void from_whenValidPefXml_issueDateNotNull() {
+    void from_whenValidPefXml_issueDateRoundTripsExactly() {
         PefInvoiceDocument doc = PefInvoiceDocument.from(minimalInvoice().xml());
-        assertNotNull(doc.issueDate());
+        assertEquals(ISSUE_DATE, doc.issueDate());
     }
 
     @Test
-    void from_whenValidPefXml_linesNonEmpty() {
+    void from_whenValidPefXml_emitsExactlyOneLine() {
         PefInvoiceDocument doc = PefInvoiceDocument.from(minimalInvoice().xml());
-        assertTrue(doc.lines().size() >= 1);
+        assertEquals(1, doc.lines().size());
     }
 
     private static PefInvoice minimalInvoice() {
         PefAddress address = new PefAddress("Marszalkowska 10", "Warszawa", "00-001", "PL");
         return PefInvoice.builder()
                 .invoiceNumber(INVOICE_NUMBER)
-                .issueDate(LocalDate.of(2026, 5, 9))
+                .issueDate(ISSUE_DATE)
                 .currencyCode(CURRENCY)
                 .supplier(new PefParty(SUPPLIER_NIP, null, SUPPLIER_NAME, SUPPLIER_NIP, address))
                 .customer(new PefParty(CUSTOMER_NIP, null, CUSTOMER_NAME, CUSTOMER_NIP, address))

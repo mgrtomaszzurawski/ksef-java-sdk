@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Read-side parity test for {@link PefKorInvoiceDocument}: build a known
@@ -31,6 +30,7 @@ class PefKorInvoiceDocumentTest {
     private static final String CUSTOMER_NIP = "9876543210";
     private static final String SUPPLIER_NAME = "Acme";
     private static final String CUSTOMER_NAME = "Customer";
+    private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
 
     @Test
     void from_whenValidPefKorXml_parsesFormCodePefKor3() {
@@ -76,22 +76,22 @@ class PefKorInvoiceDocumentTest {
     }
 
     @Test
-    void from_whenValidPefKorXml_issueDateNotNull() {
+    void from_whenValidPefKorXml_issueDateRoundTripsExactly() {
         PefKorInvoiceDocument doc = PefKorInvoiceDocument.from(minimalCreditNote().xml());
-        assertNotNull(doc.issueDate());
+        assertEquals(ISSUE_DATE, doc.issueDate());
     }
 
     @Test
-    void from_whenValidPefKorXml_linesNonEmpty() {
+    void from_whenValidPefKorXml_emitsExactlyOneLine() {
         PefKorInvoiceDocument doc = PefKorInvoiceDocument.from(minimalCreditNote().xml());
-        assertTrue(doc.lines().size() >= 1);
+        assertEquals(1, doc.lines().size());
     }
 
     private static PefKorInvoice minimalCreditNote() {
         PefAddress address = new PefAddress("Marszalkowska 10", "Warszawa", "00-001", "PL");
         return PefKorInvoice.builder()
                 .creditNoteNumber(CREDIT_NOTE_NUMBER)
-                .issueDate(LocalDate.of(2026, 5, 9))
+                .issueDate(ISSUE_DATE)
                 .supplier(new PefParty(SUPPLIER_NIP, null, SUPPLIER_NAME, SUPPLIER_NIP, address))
                 .customer(new PefParty(CUSTOMER_NIP, null, CUSTOMER_NAME, CUSTOMER_NIP, address))
                 .addLine(new PefInvoiceLine("1", BigDecimal.ONE, UNIT_CODE,

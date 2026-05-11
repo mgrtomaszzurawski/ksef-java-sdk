@@ -93,7 +93,7 @@ class DecryptedInvoiceSyncSpliteratorTest {
 
     @Test
     void close_whenCalled_stopsFurtherTryAdvance(@TempDir Path tempDir) throws Exception {
-        // given — single emitter window, but consumer closes after one invoice
+        // given — single emitter window, consumer closes after one invoice
         InvoiceClient invoiceClient = mock(InvoiceClient.class);
         Path windowDir = tempDir.resolve("subject1/window-0");
         PreparedInvoiceExport firstWindow = stubExport(
@@ -111,18 +111,23 @@ class DecryptedInvoiceSyncSpliteratorTest {
 
         // when — drain one, close, attempt another
         AtomicInteger emitted = new AtomicInteger();
-        spliterator.tryAdvance(invoice -> emitted.incrementAndGet());
+        boolean firstAdvanced = spliterator.tryAdvance(invoice -> emitted.incrementAndGet());
         spliterator.close();
-        boolean advanced = spliterator.tryAdvance(invoice -> emitted.incrementAndGet());
+        boolean secondAdvanced = spliterator.tryAdvance(invoice -> emitted.incrementAndGet());
 
-        // then — second tryAdvance returns false; producer aborted cooperatively
-        assertFalse(advanced, "tryAdvance after close must return false");
-        assertTrue(emitted.get() >= 1, "At least one invoice should have been emitted before close");
+        // then — first tryAdvance succeeded; second returns false post-close
+        assertTrue(firstAdvanced, "first tryAdvance must succeed");
+        assertFalse(secondAdvanced, "tryAdvance after close must return false");
+        assertEquals(1, emitted.get(), "exactly one invoice emitted before close");
     }
 
     @Test
-    void tryAdvance_whenProducerThrows_surfacesExceptionThroughTryAdvance(@TempDir Path tempDir) {
-        // given — InvoiceClient.prepareExport throws → producer thread fails
+    void tryAdvance_whenProducerThrowsIllegalState_rethrowsAsIs(@TempDir Path tempDir) {
+        // given — InvoiceClient.prepareExport throws IllegalStateException →
+        // producer thread fails with that exact type. propagateProducerFailure
+        // rethrows RuntimeException subclasses as-is (without wrapping in
+        // KsefException), so the test pins that branch by asserting the
+        // exact thrown type.
         InvoiceClient invoiceClient = mock(InvoiceClient.class);
         when(invoiceClient.prepareExport(any(InvoiceQueryFilters.class), anyBoolean()))
                 .thenThrow(new IllegalStateException("simulated upstream failure"));
@@ -130,17 +135,17 @@ class DecryptedInvoiceSyncSpliteratorTest {
         IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
         InMemoryCheckpointStore store = new InMemoryCheckpointStore();
 
-        // when / then — tryAdvance propagates the failure once the producer
-        // future completes exceptionally
         try (DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
                 invoiceClient, jacksonMapper(), plan, store)) {
-            assertThrows(RuntimeException.class,
-                    () -> {
-                        while (spliterator.tryAdvance(invoice -> { /* no-op */ })) {
-                            // intentionally empty — surface should hit on next attempt
-                        }
-                    },
-                    "Producer failure must surface through tryAdvance");
+            assertThrows(IllegalStateException.class,
+                    () -> drainAll(spliterator),
+                    "IllegalStateException from producer must propagate as-is, not wrapped");
+        }
+    }
+
+    private static void drainAll(DecryptedInvoiceSyncSpliterator spliterator) {
+        while (spliterator.tryAdvance(invoice -> { /* no-op */ })) {
+            // drain until producer completes or fails
         }
     }
 

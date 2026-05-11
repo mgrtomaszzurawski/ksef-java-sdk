@@ -6,10 +6,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Read-side parity test for {@link Fa3InvoiceDocument}: build a known
@@ -25,6 +25,8 @@ class Fa3InvoiceDocumentTest {
 
     private static final String SELLER_NIP_EXPECTED = "1111111111";
     private static final String BUYER_NIP_EXPECTED = "9876543210";
+    private static final String INVOICE_NUMBER_EXPECTED = "FA/2026/FIXTURE/0001";
+    private static final LocalDate ISSUE_DATE_EXPECTED = LocalDate.of(2026, 5, 11);
     private static final String CURRENCY_PLN = "PLN";
     private static final BigDecimal GROSS_EXPECTED = new BigDecimal("123.00");
 
@@ -68,8 +70,7 @@ class Fa3InvoiceDocumentTest {
     void from_whenValidFa3Xml_invoiceNumberRoundTrips() {
         Fa3Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         Fa3InvoiceDocument doc = Fa3InvoiceDocument.from(invoice.xml());
-        assertTrue(doc.invoiceNumber() != null && !doc.invoiceNumber().isBlank(),
-                "invoiceNumber must round-trip with non-blank value");
+        assertEquals(INVOICE_NUMBER_EXPECTED, doc.invoiceNumber());
     }
 
     @Test
@@ -88,17 +89,16 @@ class Fa3InvoiceDocumentTest {
     }
 
     @Test
-    void from_whenValidFa3Xml_issueDateNotNull() {
+    void from_whenValidFa3Xml_issueDateRoundTripsExactly() {
         Fa3Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         Fa3InvoiceDocument doc = Fa3InvoiceDocument.from(invoice.xml());
-        assertNotNull(doc.issueDate(), "issueDate must round-trip non-null");
+        assertEquals(ISSUE_DATE_EXPECTED, doc.issueDate());
     }
 
     @Test
-    void from_whenValidFa3Xml_lineItemsNonEmpty() {
+    void from_whenValidFa3Xml_emitsExactlyOneLineItem() {
         Fa3Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         Fa3InvoiceDocument doc = Fa3InvoiceDocument.from(invoice.xml());
-        assertTrue(doc.lineItems().size() >= 1,
-                "at least one line item must round-trip; got " + doc.lineItems().size());
+        assertEquals(1, doc.lineItems().size());
     }
 }

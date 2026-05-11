@@ -11,7 +11,6 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Read-side parity test for {@link Fa2InvoiceDocument}: build a known
@@ -28,6 +27,7 @@ class Fa2InvoiceDocumentTest {
     private static final BigDecimal GROSS_AMOUNT = new BigDecimal("123.00");
     private static final String VAT_RATE = "23";
     private static final String CURRENCY_PLN = "PLN";
+    private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
 
     @Test
     void from_whenValidFa2Xml_parsesFormCodeFa2() {
@@ -79,21 +79,21 @@ class Fa2InvoiceDocumentTest {
     }
 
     @Test
-    void from_whenValidFa2Xml_issueDateNotNull() {
+    void from_whenValidFa2Xml_issueDateRoundTripsExactly() {
         Fa2InvoiceDocument doc = Fa2InvoiceDocument.from(minimalInvoice().xml());
-        assertNotNull(doc.issueDate());
+        assertEquals(ISSUE_DATE, doc.issueDate());
     }
 
     @Test
-    void from_whenValidFa2Xml_lineItemsNonEmpty() {
+    void from_whenValidFa2Xml_emitsExactlyOneLineItem() {
         Fa2InvoiceDocument doc = Fa2InvoiceDocument.from(minimalInvoice().xml());
-        assertTrue(doc.lineItems().size() >= 1);
+        assertEquals(1, doc.lineItems().size());
     }
 
     private static Fa2Invoice minimalInvoice() {
         return Fa2Invoice.builder()
                 .invoiceNumber(INVOICE_NUMBER)
-                .issueDate(LocalDate.of(2026, 5, 9))
+                .issueDate(ISSUE_DATE)
                 .seller(new InvoiceParty(SELLER_NIP, "Acme", "00-001", "Warszawa", "Marszalkowska", "10", null))
                 .buyer(new InvoiceParty(BUYER_NIP, "Customer", "00-002", "Krakow", null, "5", null))
                 .totalGrossAmount(GROSS_AMOUNT)
