@@ -23,7 +23,7 @@ class UpoEntryParsedTest {
 
     private static final String REF = "20260509-SE-1111111111-AABBCC-99";
     private static final String SESSION_REF = "20260509-SE-1111111111-AABBCC-00";
-    private static final String KSEF_NUMBER = "1111111111-20260509-9F86D081884C-CC";
+    private static final String KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final String RECEIVING = "Ministerstwo Finansów";
 
     @Test
@@ -45,7 +45,7 @@ class UpoEntryParsedTest {
         assertTrue(summary.isPresent());
         assertEquals(SESSION_REF, summary.get().upoReferenceNumber());
         assertEquals(1, summary.get().ksefNumbers().size());
-        assertEquals(KSEF_NUMBER, summary.get().ksefNumbers().get(0).asString());
+        assertEquals(KSEF_NUMBER, summary.get().ksefNumbers().get(0).value());
     }
 
     @Test

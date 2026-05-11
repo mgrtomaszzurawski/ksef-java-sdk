@@ -28,7 +28,7 @@ class ClearedFromArchiveTest {
     private static final String TEST_NIP = "1111111111";
     private static final String SESSION_REF = "20260509-SE-1111111111-AABBCC1234-01";
     private static final String INVOICE_REF = "20260509-EE-1111111111-DDEEFF5678-22";
-    private static final String KSEF_NUMBER = "5265877635-20260509-010080DD2B5E-26";
+    private static final String KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final byte[] INVOICE_XML = "<Faktura>recovered</Faktura>".getBytes(StandardCharsets.UTF_8);
     private static final byte[] UPO_XML = "<Potwierdzenie>upo bytes</Potwierdzenie>".getBytes(StandardCharsets.UTF_8);
 

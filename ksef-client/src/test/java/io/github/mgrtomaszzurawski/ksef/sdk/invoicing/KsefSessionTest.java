@@ -10,23 +10,19 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSessionImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
-import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -55,6 +51,20 @@ class KsefSessionTest {
             }
             """;
 
+    private static final String TEST_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
+    private static final String INVOICE_STATUS_ACCEPTED_RESPONSE = """
+            {
+              "ordinalNumber": 1,
+              "invoiceNumber": "FA/001",
+              "ksefNumber": "%s",
+              "referenceNumber": "%s",
+              "invoiceHash": "ZHVtbXktaGFzaA==",
+              "invoicingDate": "2026-04-18T12:00:00+02:00",
+              "acquisitionDate": "2026-04-18T12:00:01+02:00",
+              "status": {"code": 200, "description": "Accepted"}
+            }
+            """.formatted(TEST_KSEF_NUMBER, TEST_INVOICE_REF);
+
     private static final int TERMINAL_FAILURE_CODE = 415;
     private static final String TERMINAL_FAILURE_DESCRIPTION = "Schema validation rejected";
     private static final String SESSION_STATUS_TERMINAL_FAILURE_RESPONSE = """
@@ -76,20 +86,27 @@ class KsefSessionTest {
     private static final String STATE_STARTED = "Started";
     private static final String STATE_RETRY = "retry";
     private static final String OCTET_STREAM = "application/octet-stream";
+    /** Distinct from {@link FormCode#FA3} so {@code InvoiceValidationGate} skips the XSD check — these tests gate session lifecycle, not invoice content. */
+    private static final FormCode TEST_FORM_CODE = FormCode.custom("FA (TEST)", "test", "FA");
 
     @Test
-    void send_whenSessionOpen_returnsInvoiceResult(WireMockRuntimeInfo wmInfo) {
+    void sendInvoice_whenSessionOpen_returnsSubmittedInvoice(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_ACCEPTED)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SEND_INVOICE_RESPONSE)));
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF + "/invoices/" + TEST_INVOICE_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(INVOICE_STATUS_ACCEPTED_RESPONSE)));
         stubCloseAndStatusOk();
 
-        try (OnlineSessionImpl session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             // when
-            var result = session.send(TEST_INVOICE_XML);
+            var result = session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML));
 
             // then
             assertNotNull(result);
@@ -101,11 +118,11 @@ class KsefSessionTest {
     void send_whenSessionClosed_throwsIllegalStateException(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (OnlineSessionImpl session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             session.close();
 
             // when / then
-            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            assertThrows(IllegalStateException.class, () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
         }
     }
 
@@ -127,12 +144,12 @@ class KsefSessionTest {
 
         stubStatusOk();
 
-        try (OnlineSessionImpl session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             // when — should not throw despite the first 415
             session.close();
 
             // then — session is closed, send should fail
-            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            assertThrows(IllegalStateException.class, () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
         }
     }
 
@@ -140,14 +157,14 @@ class KsefSessionTest {
     void close_whenAlreadyClosed_isNoOp(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (OnlineSessionImpl session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             session.close();
 
             // when — second close should be a no-op, no error
             session.close();
 
             // then — still closed
-            assertThrows(IllegalStateException.class, () -> session.send(TEST_INVOICE_XML));
+            assertThrows(IllegalStateException.class, () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
         }
     }
 
@@ -155,7 +172,7 @@ class KsefSessionTest {
     void referenceNumber_returnsSessionRef(WireMockRuntimeInfo wmInfo) {
         // given
         stubCloseAndStatusOk();
-        try (OnlineSessionImpl session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             // when
             String referenceNumber = session.referenceNumber();
 
@@ -190,7 +207,7 @@ class KsefSessionTest {
                                 }
                                 """.formatted(TEST_INVOICE_REF))));
 
-        try (OnlineSessionImpl session = createSession(wmInfo)) {
+        try (OnlineSession session = createSession(wmInfo)) {
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.archive();
 
             // when
@@ -212,7 +229,7 @@ class KsefSessionTest {
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(SESSION_STATUS_TERMINAL_FAILURE_RESPONSE)));
 
-        OnlineSessionImpl session = createSession(wmInfo);
+        OnlineSession session = createSession(wmInfo);
 
         // when / then
         KsefSessionTerminalFailureException failure =
@@ -248,28 +265,14 @@ class KsefSessionTest {
         assertEquals(java.util.Optional.empty(), session.timeToExpiry(java.time.Clock.systemUTC()));
     }
 
-    @Test
-    void sendOffline_postsOfflineModeTrueAndNoCorrectionHash(WireMockRuntimeInfo wmInfo) {
-        // Codex 2026-05-05 F1 — public offline send must reach the wire as
-        // offlineMode=true and MUST NOT carry hashOfCorrectedInvoice (that
-        // field is reserved for technical-correction, REQ-OFFLINE-004).
-        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(SEND_INVOICE_RESPONSE)));
-        stubCloseAndStatusOk();
+    // The byte[] offline-send wire-shape gate moved to
+    // OnlineSessionImplOfflineSendTest after N-7 removed raw bytes
+    // (sendOffline(byte[]) / send(SendInvoiceCommand)) from the
+    // OnlineSession public interface. The typed sendOfflineInvoice(OfflineInvoice)
+    // pipeline exercised there asserts the same offlineMode=true /
+    // no-hashOfCorrectedInvoice wire invariants (REQ-OFFLINE-004).
 
-        try (OnlineSessionImpl session = createSession(wmInfo)) {
-            session.sendOffline(TEST_INVOICE_XML);
-
-            verify(postRequestedFor(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
-                    .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true")))
-                    .withRequestBody(notMatching("(?s).*hashOfCorrectedInvoice.*")));
-        }
-    }
-
-    private static OnlineSessionImpl createSession(WireMockRuntimeInfo wmInfo) {
+    private static OnlineSession createSession(WireMockRuntimeInfo wmInfo) {
         io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime runtime =
                 io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime.forWireMock(wmInfo);
         runtime.sessionContext().activate(TEST_TOKEN, TEST_SESSION_REF,
@@ -277,7 +280,13 @@ class KsefSessionTest {
         SessionClient sessionClient = new SessionClient(runtime);
         byte[] aesKey = CryptoService.generateAesKey();
         byte[] initVector = CryptoService.generateIv();
-        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(sessionClient, TEST_SESSION_REF, aesKey, initVector);
+        // Verification-aware constructor — needed by sendInvoice(Invoice) to
+        // render KOD I QR and drive the terminal-state poll.
+        return io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionHandleConstructor.newOnlineSession(
+                sessionClient, TEST_SESSION_REF, aesKey, initVector,
+                null,
+                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment.TEST,
+                java.time.Duration.ofSeconds(2));
     }
 
     private static void stubCloseAndStatusOk() {

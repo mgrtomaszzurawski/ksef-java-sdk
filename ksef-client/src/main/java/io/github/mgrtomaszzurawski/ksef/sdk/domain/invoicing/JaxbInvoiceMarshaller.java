@@ -100,7 +100,10 @@ final class JaxbInvoiceMarshaller {
                 Class<?> rootClass = Class.forName(name, false, loader);
                 contextFor(rootClass);
             } catch (ClassNotFoundException missing) {
-                // Generated root not present in this consumer's classpath — skip.
+                // Generated root not present in this consumer's classpath — skip
+                // silently so a consumer running a lean jar still benefits from
+                // warmup for the roots they do ship.
+                continue;
             }
         }
     }

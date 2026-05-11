@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.sync;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.SyncCheckpoint;
 import java.util.Map;
 import java.util.Objects;
 

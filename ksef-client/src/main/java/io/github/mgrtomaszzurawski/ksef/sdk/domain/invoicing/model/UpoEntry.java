@@ -53,7 +53,7 @@ public record UpoEntry(String referenceNumber, byte[] xmlBytes) {
     public Optional<UpoSummary> parsed() {
         try {
             return Optional.of(UpoSummary.parse(xmlBytes));
-        } catch (IllegalStateException badXml) {
+        } catch (IllegalStateException | IllegalArgumentException badXml) {
             return Optional.empty();
         }
     }

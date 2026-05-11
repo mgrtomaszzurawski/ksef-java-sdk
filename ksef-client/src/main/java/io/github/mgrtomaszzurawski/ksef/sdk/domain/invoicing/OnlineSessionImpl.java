@@ -304,11 +304,11 @@ final class OnlineSessionImpl implements OnlineSession {
         }
     }
 
-    public SendInvoiceResult send(byte[] invoiceXml) {
+    SendInvoiceResult send(byte[] invoiceXml) {
         return send(SendInvoiceCommand.normal(invoiceXml));
     }
 
-    public SendInvoiceResult send(SendInvoiceCommand command) {
+    SendInvoiceResult send(SendInvoiceCommand command) {
         ensureOpen();
         Objects.requireNonNull(command, "command must not be null");
         // REQ-SESS-41 — KSeF caps a single session at 10,000 invoices. Reject
@@ -331,11 +331,11 @@ final class OnlineSessionImpl implements OnlineSession {
         return sessionClient.sendInvoice(referenceNumber, builder.build());
     }
 
-    public SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
+    SendInvoiceResult sendTechnicalCorrection(byte[] invoiceXml, byte[] hashOfCorrected) {
         return send(SendInvoiceCommand.technicalCorrection(invoiceXml, hashOfCorrected));
     }
 
-    public SendInvoiceResult sendOffline(byte[] invoiceXml) {
+    SendInvoiceResult sendOffline(byte[] invoiceXml) {
         return send(SendInvoiceCommand.offline(invoiceXml));
     }
 
