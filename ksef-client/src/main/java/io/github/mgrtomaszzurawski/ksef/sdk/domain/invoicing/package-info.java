@@ -4,7 +4,7 @@
  */
 /**
  * Online and batch invoicing — session abstractions and {@code FormCode}
- * (the typed invoice form-code enum used by {@code openSession}).
+ * (the typed invoice form-code enum used by {@code sessions().open}).
  */
 @org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;

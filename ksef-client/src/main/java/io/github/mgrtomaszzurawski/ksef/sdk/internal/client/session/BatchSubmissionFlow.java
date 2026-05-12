@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Synchronous batch submission flow used by
- * {@code Invoices.submitBatch(...)} / {@code submitBatchFromFiles(...)}.
+ * {@code Invoices.batch().submit(...)} / {@code Invoices.batch().submitFromFiles(...)}.
  *
  * <p>End-to-end pipeline:
  * <ol>
@@ -86,7 +86,7 @@ import org.slf4j.LoggerFactory;
  * the {@code submitBatch} call in a {@link java.util.concurrent.CompletableFuture}.
  *
  * <p>Internal — module-private. Reachable only from
- * {@code InvoicesImpl.submitBatch(...)}.
+ * {@code Invoices.batch().submit(...)}.
  *
  * @since 1.0.0
  */

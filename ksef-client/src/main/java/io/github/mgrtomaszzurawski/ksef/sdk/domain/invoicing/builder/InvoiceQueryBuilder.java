@@ -140,7 +140,7 @@ public final class InvoiceQueryBuilder {
      *     the server-side PermanentStorage HWM, per the incremental-retrieval
      *     spec ({@code pobieranie-faktur/przyrostowe-pobieranie-faktur.md},
      *     "Kluczowe znaczenie daty PermanentStorage"). Consumers do not
-     *     normally need to call this; one-shot {@code prepareExport(...)}
+     *     normally need to call this; one-shot {@code export().prepare(...)}
      *     calls intentionally omit the flag so the server returns the full
      *     requested range.
      */

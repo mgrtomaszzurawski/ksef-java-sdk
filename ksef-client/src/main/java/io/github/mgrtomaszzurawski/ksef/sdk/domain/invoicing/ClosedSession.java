@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * The post-close, read-only handle to a KSeF interactive session.
  *
- * <p>Returned by {@link OnlineSession#archive()} as the explicit
+ * <p>Returned by {@link OnlineSession#complete()} as the explicit
  * transition verb that closes the underlying session and surfaces a
  * type-state-distinct view for read operations and UPO retrieval. Once
  * a session is closed, no new invoices can be sent — the type system

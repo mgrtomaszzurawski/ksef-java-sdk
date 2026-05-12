@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Outcome of a synchronous batch submission via {@code Invoices.submitBatch(...)}.
+ * Outcome of a synchronous batch submission via {@code Invoices.batch().submit(...)}.
  *
  * <p>Carries one entry in {@code cleared} for every successfully accepted
  * invoice and one entry in {@code failed} for every rejection. Returned

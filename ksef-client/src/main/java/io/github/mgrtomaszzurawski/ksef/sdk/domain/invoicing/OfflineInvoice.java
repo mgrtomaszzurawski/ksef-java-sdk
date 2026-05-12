@@ -89,7 +89,7 @@ public final class OfflineInvoice {
 
     /**
      * The wrapped {@link Invoice}. Consumers keep access to typed
-     * accessors (e.g. {@code Fa3Invoice.faktura()},
+     * accessors (e.g. {@code Fa3Invoice.unsafeJaxbView()},
      * {@code PefInvoice.invoice()}) through this handle.
      */
     public Invoice underlyingInvoice() {

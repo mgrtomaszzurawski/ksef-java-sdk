@@ -15,7 +15,7 @@ import java.util.Optional;
 /**
  * A pre-close, write-capable KSeF interactive session.
  *
- * <p>Returned by {@link Invoices#openSession(FormCode)} when the
+ * <p>Returned by {@link InvoiceSessions#open(FormCode)} when the
  * SDK opens a fresh session — the AES session key + IV are held in JVM
  * memory, so invoice content can be encrypted and submitted. After the
  * session is closed, the AES material is zeroised; the only way to keep

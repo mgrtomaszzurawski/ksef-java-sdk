@@ -16,9 +16,9 @@ import java.util.Objects;
  * <pre>{@code
  * InvoiceDocument doc = client.invoices().archive().getByKsefNumber(num);
  * if (doc instanceof Fa3InvoiceDocument fa3) {
- *     processFa3(fa3.faktura());
+ *     processFa3(fa3.unsafeJaxbView());
  * } else if (doc instanceof Fa2InvoiceDocument fa2) {
- *     processFa2(fa2.faktura());
+ *     processFa2(fa2.unsafeJaxbView());
  * } else if (doc instanceof PefInvoiceDocument pef) {
  *     processPef(pef.invoice());
  * } else if (doc instanceof PefKorInvoiceDocument pefKor) {

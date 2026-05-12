@@ -13,7 +13,7 @@ import java.util.Objects;
  *
  * <p>Used by {@link BatchPackageBuilder} to publish the assembled package's
  * size + SHA-256 hash to the open-batch HTTP request body. NOT part of the
- * public SDK surface — consumers go through {@code Invoices.submitBatch(...)}
+ * public SDK surface — consumers go through {@code Invoices.batch().submit(...)}
  * which encapsulates the whole flow.
  *
  * @param fileSize total file size in bytes (max 5 GB)

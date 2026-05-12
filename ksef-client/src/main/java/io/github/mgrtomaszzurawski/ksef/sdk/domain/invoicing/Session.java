@@ -22,7 +22,7 @@ import java.util.Optional;
  * single fat interface could not:
  *
  * <ol>
- *   <li>Sessions enumerated via {@code streamSessions} (recovered from
+ *   <li>Sessions enumerated via {@code sessions().stream} (recovered from
  *       the server with no AES key in JVM memory) cannot send invoices —
  *       {@code sendInvoice} lives only on {@link OnlineSession}.</li>
  *   <li>UPO retrieval — only meaningful after the session is closed — is
@@ -110,7 +110,7 @@ public interface Session extends AutoCloseable {
      * session's AES key + IV from the heap). For {@link ClosedSession}
      * (already-closed view) this is a pure no-op.
      *
-     * <p>Use {@link OnlineSession#archive()} when you also need the
+     * <p>Use {@link OnlineSession#complete()} when you also need the
      * read-only handle for UPO retrieval after close.
      */
     @Override

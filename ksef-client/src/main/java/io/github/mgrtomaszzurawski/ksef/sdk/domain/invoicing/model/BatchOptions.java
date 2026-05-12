@@ -8,9 +8,9 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
- * Tunables for {@code Invoices.submitBatch(...)} / {@code submitBatchFromFiles(...)}.
+ * Tunables for {@code Invoices.batch().submit(...)} / {@code Invoices.batch().submitFromFiles(...)}.
  *
- * <p>{@code timeout} bounds the entire synchronous {@code submitBatch} call —
+ * <p>{@code timeout} bounds the entire synchronous {@code batch().submit} call —
  * encryption + upload + close + status polling + UPO fetch. The SDK enforces
  * the deadline against a monotonic clock. Set generously: KSeF batch processing
  * can take minutes to hours depending on invoice count and server load.
@@ -25,10 +25,10 @@ import java.util.Objects;
  * <p><strong>No progress listener.</strong> Per ADR-008/D1, callback-style
  * "SDK calls your function on each event" inverts control of the consumer's
  * thread context. Callers needing progress UI should wrap the synchronous
- * {@code submitBatch} call in {@link java.util.concurrent.CompletableFuture#supplyAsync}
+ * {@code batch().submit} call in {@link java.util.concurrent.CompletableFuture#supplyAsync}
  * or equivalent, owning their own executor and progress mechanism.
  *
- * @param timeout overall budget for the whole {@code submitBatch} call
+ * @param timeout overall budget for the whole {@code batch().submit} call
  * @param parallelism number of concurrent part-upload workers (clamped to
  *     [{@value #MIN_PARALLELISM}, {@value #MAX_PARALLELISM}])
  *

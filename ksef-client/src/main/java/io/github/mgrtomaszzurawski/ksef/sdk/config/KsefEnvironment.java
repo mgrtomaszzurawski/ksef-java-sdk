@@ -26,8 +26,14 @@ public final class KsefEnvironment {
     private static final String LOOPBACK_LOCALHOST = "localhost";
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private static final String LOOPBACK_V4 = "127.0.0.1";
+    /**
+     * IPv6 loopback as returned by {@code URI.getHost()}. Java's URI host
+     * accessor returns the bracketed form for IPv6 literals (per
+     * RFC 3986 §3.2.2), so the bare {@code ::1} string is never returned —
+     * the comparison must include the brackets.
+     */
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    private static final String LOOPBACK_V6 = "::1";
+    private static final String LOOPBACK_V6 = "[::1]";
 
     /** TEST environment — full integration playground; accepts FA(2) and FA(3). */
     public static final KsefEnvironment TEST = new KsefEnvironment(TEST_URL);

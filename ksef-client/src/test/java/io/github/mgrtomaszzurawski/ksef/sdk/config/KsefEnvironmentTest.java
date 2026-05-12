@@ -63,9 +63,11 @@ class KsefEnvironmentTest {
 
     @Test
     void custom_whenHttpAndLoopback_succeeds() {
-        // localhost / 127.0.0.1 / ::1 are explicit loopback exceptions for WireMock + dev
+        // localhost / 127.0.0.1 / ::1 are explicit loopback exceptions for WireMock + dev.
+        // IPv6 literals must be bracketed per RFC 3986 §3.2.2 so URI.getHost() returns "[::1]".
         assertNotNull(KsefEnvironment.custom("http://localhost:8080/v2"));
         assertNotNull(KsefEnvironment.custom("http://127.0.0.1:8080/v2"));
+        assertNotNull(KsefEnvironment.custom("http://[::1]:8080/v2"));
     }
 
     @Test

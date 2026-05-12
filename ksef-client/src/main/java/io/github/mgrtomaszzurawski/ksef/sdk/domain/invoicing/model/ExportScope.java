@@ -7,9 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 /**
  * Scope of a KSeF invoice export. Replaces the prior
  * {@code boolean fullContent} parameter on
- * {@code Invoices.prepareExport(...)} so call sites read as
- * {@code prepareExport(query, ExportScope.FULL_CONTENT)} rather than
- * the boolean-trap {@code prepareExport(query, true)}.
+ * {@code Invoices.export().prepare(...)} so call sites read as
+ * {@code export().prepare(query, ExportScope.FULL_CONTENT)} rather than
+ * the boolean-trap {@code export().prepare(query, true)}.
  *
  * @since 1.0.0
  */

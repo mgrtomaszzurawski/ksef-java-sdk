@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * One decrypted invoice produced by {@code Invoices.syncAsStream(...)}.
+ * One decrypted invoice produced by {@code Invoices.sync().asStream(...)}.
  * Carries the {@link KsefNumber}, the metadata record returned by the
  * server's incremental sync endpoint, the decrypted XML bytes, and an
  * optional file path when the caller's

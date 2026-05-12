@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * <p>Consumers implement this to plug their persistence model
  * (database, file, Redis, etc.) into
- * {@code Invoices.syncAsStream(plan, checkpointStore)}.
+ * {@code Invoices.sync().asStream(plan, checkpointStore)}.
  *
  * <p><b>Commit semantics</b>: {@code save(...)} is called by the sync
  * orchestrator only AFTER each invoice in the current window has been
