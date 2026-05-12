@@ -4,8 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.BatchSessionLimits;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.OnlineSessionLimits;
 import org.jspecify.annotations.Nullable;
 
 /**

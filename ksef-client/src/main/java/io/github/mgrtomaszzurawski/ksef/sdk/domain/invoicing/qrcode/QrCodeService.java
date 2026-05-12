@@ -63,6 +63,7 @@ public final class QrCodeService implements QrCodes {
      * @param payloadUrl URL to encode (typically built via {@link KsefVerificationLinks})
      * @return PNG image bytes
      */
+    @Override
     public byte[] generateQrCode(String payloadUrl) {
         return generateQrCode(payloadUrl, DEFAULT_QR_SIZE);
     }
@@ -74,6 +75,7 @@ public final class QrCodeService implements QrCodes {
      * @param size width and height of the QR code in pixels (positive, &le; {@value #MAX_QR_SIZE})
      * @return PNG image bytes
      */
+    @Override
     public byte[] generateQrCode(String payloadUrl, int size) {
         Objects.requireNonNull(payloadUrl, ERR_PAYLOAD_NULL);
         if (payloadUrl.isEmpty()) {
@@ -115,6 +117,7 @@ public final class QrCodeService implements QrCodes {
      * @param label label text rendered below the code
      * @return PNG bytes of the QR plus label panel
      */
+    @Override
     public byte[] addLabelToQrCode(byte[] qrPng, String label) {
         Objects.requireNonNull(qrPng, ERR_QR_PNG_NULL);
         Objects.requireNonNull(label, ERR_LABEL_NULL);
@@ -139,6 +142,7 @@ public final class QrCodeService implements QrCodes {
      * Convenience: render a QR PNG for {@code payloadUrl} and append the
      * supplied {@code label} below it.
      */
+    @Override
     public byte[] generateLabeledQrCode(String payloadUrl, String label) {
         return addLabelToQrCode(generateQrCode(payloadUrl), label);
     }
@@ -161,6 +165,7 @@ public final class QrCodeService implements QrCodes {
      * @param label label text rendered below the QR
      * @return PNG bytes of the labelled KOD I QR
      */
+    @Override
     public byte[] generateKodIQr(QrEnvironment environment,
                                   String sellerNip,
                                   LocalDate issueDate,
@@ -193,6 +198,7 @@ public final class QrCodeService implements QrCodes {
      * @param privateKey RSA or EC private key from the seller's KSeF Offline certificate
      * @return PNG bytes of the labelled KOD II QR
      */
+    @Override
     public byte[] generateKodIIQr(QrEnvironment environment,
                                    KsefVerificationLinks.CertificateSigningInput input,
                                    PrivateKey privateKey) {

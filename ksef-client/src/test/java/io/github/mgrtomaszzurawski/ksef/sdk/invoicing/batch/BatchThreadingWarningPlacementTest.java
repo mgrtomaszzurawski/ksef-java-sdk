@@ -15,9 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Asserts that the canonical batch-threading warning text from PR11 lives in
  * the five surfaces it must be impossible to miss:
  * <ol>
- *   <li>Method javadoc on {@code submitBatch} (in {@code Invoices}).</li>
- *   <li>Method javadoc on {@code submitBatchFromFiles}.</li>
- *   <li>Class-level javadoc on {@code Invoices}.</li>
+ *   <li>Method javadoc on {@code submit} (in {@code InvoiceBatch}).</li>
+ *   <li>Method javadoc on {@code submitFromFiles}.</li>
+ *   <li>Class-level javadoc on {@code InvoiceBatch}.</li>
  *   <li>{@code README.md} batch-upload section.</li>
  *   <li>{@code CHANGELOG.md} unreleased / 1.0.0 entry.</li>
  * </ol>
@@ -42,21 +42,21 @@ class BatchThreadingWarningPlacementTest {
     private static final Path PROJECT_ROOT = Path.of("").toAbsolutePath();
 
     @Test
-    void invoiceClientSourceFile_containsThreadingWarningOnBothBatchMethods() throws IOException {
-        String collapsed = collapseWhitespace(readInvoiceClientSource());
+    void invoiceBatchSourceFile_containsThreadingWarningOnBothBatchMethods() throws IOException {
+        String collapsed = collapseWhitespace(readInvoiceBatchSource());
         // Three distinct occurrences expected:
-        //   - class-level javadoc
-        //   - submitBatch method javadoc
-        //   - submitBatchFromFiles method javadoc
+        //   - class-level javadoc on InvoiceBatch
+        //   - submit method javadoc
+        //   - submitFromFiles method javadoc
         int occurrences = countOccurrences(collapsed, CANONICAL_PHRASE_FRAGMENT_BLOCK);
-        final int expectedSurfacesInInvoiceClient = 3;
-        assertTrue(occurrences >= expectedSurfacesInInvoiceClient,
-                "Invoices must contain the threading-warning phrase at least 3 times "
-                        + "(class-level + submitBatch + submitBatchFromFiles); found " + occurrences);
+        final int expectedSurfacesInInvoiceBatch = 3;
+        assertTrue(occurrences >= expectedSurfacesInInvoiceBatch,
+                "InvoiceBatch must contain the threading-warning phrase at least 3 times "
+                        + "(class-level + submit + submitFromFiles); found " + occurrences);
         assertTrue(collapsed.contains(CANONICAL_PHRASE_FRAGMENT_5GB),
-                "Invoices must mention the 5 GB batch ceiling");
+                "InvoiceBatch must mention the 5 GB batch ceiling");
         assertTrue(collapsed.contains(CANONICAL_PHRASE_FRAGMENT_NOT_UI),
-                "Invoices must contain the 'Do not call from UI threads' phrase");
+                "InvoiceBatch must contain the 'Do not call from UI threads' phrase");
     }
 
     @Test
@@ -88,9 +88,9 @@ class BatchThreadingWarningPlacementTest {
         return input.replaceAll("[\\s>*]+", " ");
     }
 
-    private static String readInvoiceClientSource() throws IOException {
+    private static String readInvoiceBatchSource() throws IOException {
         Path source = findRepoFile(
-                "ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/sdk/domain/invoicing/Invoices.java");
+                "ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/sdk/domain/invoicing/InvoiceBatch.java");
         return Files.readString(source, StandardCharsets.UTF_8);
     }
 

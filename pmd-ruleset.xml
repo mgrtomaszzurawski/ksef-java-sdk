@@ -161,7 +161,7 @@
     and not(@Name = ('raw','nip','NIP','VAT','id','pkg','url','in','out','obj','o',
                      'csr','zip','upo','der','seq','key','iv','crc','xml','sum','fa',
                      'FA','FA2','FA3','PEF','RR','ROZ','KOR','JST','ZAL','UPR',
-                     'ASC','DESC',
+                     'jst','ASC','DESC',
                      'i','j','k','x','y','b','r','s','ch','cp','to','off','len',
                      'dir','all','rsa','ec','qrX','p','e','ex'))
     and not(ancestor::ForStatement)

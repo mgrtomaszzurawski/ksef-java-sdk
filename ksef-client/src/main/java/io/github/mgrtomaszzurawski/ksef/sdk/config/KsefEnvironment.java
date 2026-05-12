@@ -24,7 +24,9 @@ public final class KsefEnvironment {
     private static final String SCHEME_HTTP = "http";
     private static final String SCHEME_HTTPS = "https";
     private static final String LOOPBACK_LOCALHOST = "localhost";
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private static final String LOOPBACK_V4 = "127.0.0.1";
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private static final String LOOPBACK_V6 = "::1";
 
     /** TEST environment — full integration playground; accepts FA(2) and FA(3). */

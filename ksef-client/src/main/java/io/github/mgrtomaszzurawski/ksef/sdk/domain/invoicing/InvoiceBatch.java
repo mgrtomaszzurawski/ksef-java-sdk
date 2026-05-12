@@ -35,6 +35,12 @@ public interface InvoiceBatch {
      * <p>By the time this method returns, every accepted invoice's UPO is
      * already in {@link BatchResult#cleared()}.
      *
+     * <p><strong>Warning:</strong> This method blocks the calling thread for
+     * minutes to hours, depending on batch size and upload bandwidth. KSeF
+     * batch can be up to 5 GB. Do not call from UI threads, HTTP request
+     * handlers, or reactive framework dispatch threads. Wrap with a dedicated
+     * executor for async use.
+     *
      * @param formCode form code for the batch — must match every invoice's own
      *     {@link Invoice#formCode()}
      * @param invoices invoices to submit (non-empty)
@@ -49,6 +55,12 @@ public interface InvoiceBatch {
      * materialised as a {@code byte[]} in heap. Use this for large batches —
      * e.g. the spec cap of 10 000 invoices (REQ-SESS-41) — so peak heap stays
      * bounded by the chunk-encryption buffer.
+     *
+     * <p><strong>Warning:</strong> This method blocks the calling thread for
+     * minutes to hours, depending on batch size and upload bandwidth. KSeF
+     * batch can be up to 5 GB. Do not call from UI threads, HTTP request
+     * handlers, or reactive framework dispatch threads. Wrap with a dedicated
+     * executor for async use.
      *
      * @param formCode form code for the batch
      * @param files non-empty list of paths to invoice XML files
