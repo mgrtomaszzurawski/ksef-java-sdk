@@ -90,7 +90,7 @@ public final class TestPersonCreateBuilder {
     /**
      * Build the person creation request.
      *
-     * @return the request ready to pass to {@code TestDataClient.createPerson()}
+     * @return the request ready to pass to {@code TestDataAdmin.createPerson()}
      *
      * @apiNote internal — SDK plumbing only; do not call from consumer code (see ADR-018).
      */

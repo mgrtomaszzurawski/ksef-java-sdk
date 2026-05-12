@@ -72,7 +72,7 @@ class ClearedFromArchiveTest {
                         .withBody(UPO_XML)));
 
         try (KsefClient ksef = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, TEST_NIP)) {
-            ClearedInvoice cleared = ksef.invoices().clearedFromArchive(SESSION_REF, INVOICE_REF);
+            ClearedInvoice cleared = ksef.invoices().archive().clearedFromArchive(SESSION_REF, INVOICE_REF);
 
             assertEquals(INVOICE_REF, cleared.submitted().referenceNumber());
             assertEquals(KSEF_NUMBER, cleared.submitted().ksefNumber().orElseThrow().value());
@@ -92,8 +92,8 @@ class ClearedFromArchiveTest {
                         .withBody(STATUS_PROCESSING_RESPONSE)));
 
         try (KsefClient ksef = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, TEST_NIP)) {
-            var invoices = ksef.invoices();
-            assertThrows(KsefException.class, () -> invoices.clearedFromArchive(SESSION_REF, INVOICE_REF));
+            var archive = ksef.invoices().archive();
+            assertThrows(KsefException.class, () -> archive.clearedFromArchive(SESSION_REF, INVOICE_REF));
         }
     }
 }

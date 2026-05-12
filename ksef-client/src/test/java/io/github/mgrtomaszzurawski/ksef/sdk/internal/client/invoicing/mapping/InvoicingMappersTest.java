@@ -20,7 +20,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoicingModeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.ThirdSubjectIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UpoPageResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchSessionLimits;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.BatchSessionLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BuyerIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceBuyer;

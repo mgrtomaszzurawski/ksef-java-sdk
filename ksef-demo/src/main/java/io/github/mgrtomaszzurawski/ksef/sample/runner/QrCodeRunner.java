@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -48,7 +49,7 @@ public final class QrCodeRunner implements DemoRunner {
         List<RunResult> results = new ArrayList<>();
         boolean isTestEnv = context.environment().contains(ENV_DEMO) || context.environment().contains(ENV_TEST);
         QrEnvironment qrEnv = isTestEnv ? QrEnvironment.TEST : QrEnvironment.PROD;
-        QrCodeService service = context.client().qrCode();
+        QrCodes service = context.client().qrCode();
 
         long start = System.currentTimeMillis();
         String verificationUrl = null;
@@ -88,7 +89,7 @@ public final class QrCodeRunner implements DemoRunner {
                                          List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            QrCodeService accessorService = context.client().qrCode();
+            QrCodes accessorService = context.client().qrCode();
             if (accessorService == null) {
                 results.add(RunResult.fail(NAME, OP_CLIENT_ACCESSOR, elapsed(start),
                         FAIL_NULL_QR_CODE_ACCESSOR));

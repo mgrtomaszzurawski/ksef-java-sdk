@@ -5,7 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
@@ -36,12 +37,12 @@ import java.util.function.Consumer;
  * runs {@code sync(plan, store, queueingSink)}, and the
  * {@link Consumer}-driven {@link #tryAdvance(Consumer)} polls a bounded
  * blocking queue. This keeps the lazy contract from
- * {@link InvoiceClient#syncAsStream} honest — the paginator stops as
+ * {@link InvoiceSync#asStream} honest — the paginator stops as
  * soon as the consumer breaks out via
  * {@link java.util.stream.Stream#limit(long)} or close.
  *
  * <p>Per-element semantics (matching the docstring on
- * {@link InvoiceClient#syncAsStream}):
+ * {@link InvoiceSync#asStream}):
  * <ul>
  *   <li>Each element handed to {@link #tryAdvance(Consumer)} is the
  *       just-emitted decrypted invoice; the underlying
@@ -54,7 +55,7 @@ import java.util.function.Consumer;
  *       directory the orchestrator opened.</li>
  * </ul>
  *
- * <p>Internal — only constructed by {@code InvoiceClientImpl#syncAsStream}.
+ * <p>Internal — only constructed by {@code InvoiceSyncImpl#asStream}.
  *
  * @since 1.0.0
  */
@@ -71,7 +72,7 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
 
     private static final String ERR_READ_XML_FAILED = "Failed to read decrypted invoice XML at ";
     private static final String ERR_INTERRUPTED = "Interrupted while waiting for next decrypted invoice";
-    private static final String ERR_NULL_INVOICE_CLIENT = "invoiceClient must not be null";
+    private static final String ERR_NULL_INVOICE_EXPORT = "invoiceExport must not be null";
     private static final String ERR_NULL_OBJECT_MAPPER = "objectMapper must not be null";
     private static final String ERR_NULL_PLAN = "plan must not be null";
     private static final String ERR_NULL_CHECKPOINT_STORE = "checkpointStore must not be null";
@@ -85,11 +86,11 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
     private volatile boolean cancelled;
     private boolean producerCompleted;
 
-    DecryptedInvoiceSyncSpliterator(InvoiceClient invoiceClient,
+    DecryptedInvoiceSyncSpliterator(InvoiceExport invoiceExport,
                                     ObjectMapper objectMapper,
                                     IncrementalSyncPlan plan,
                                     CheckpointStore checkpointStore) {
-        Objects.requireNonNull(invoiceClient, ERR_NULL_INVOICE_CLIENT);
+        Objects.requireNonNull(invoiceExport, ERR_NULL_INVOICE_EXPORT);
         Objects.requireNonNull(objectMapper, ERR_NULL_OBJECT_MAPPER);
         Objects.requireNonNull(plan, ERR_NULL_PLAN);
         Objects.requireNonNull(checkpointStore, ERR_NULL_CHECKPOINT_STORE);
@@ -100,7 +101,7 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
         });
         InvoiceSink queueingSink = newQueueingSink();
         this.producerFuture = CompletableFuture.runAsync(
-                () -> new InvoiceSyncClient(invoiceClient, objectMapper).sync(plan, checkpointStore, queueingSink),
+                () -> new InvoiceSyncClient(invoiceExport, objectMapper).sync(plan, checkpointStore, queueingSink),
                 executor)
                 .whenComplete((unused, failure) -> {
                     if (failure != null) {

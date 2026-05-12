@@ -60,7 +60,7 @@ public final class GrantAndRevokePermission {
             // permission ID via permissions().queryPersons(...) and pass that in).
             try {
                 PermissionOperationResult revoked = client.permissions()
-                        .revokeCommon(granted.referenceNumber());
+                        .revokePermission(granted.referenceNumber());
                 System.out.println("Revoke submitted, ref: " + revoked.referenceNumber());
             } catch (Exception revokeFailed) {
                 System.out.println("Revoke skipped: " + revokeFailed.getMessage());

@@ -15,7 +15,7 @@ import java.util.Optional;
 /**
  * A pre-close, write-capable KSeF interactive session.
  *
- * <p>Returned by {@link InvoiceClient#openSession(FormCode)} when the
+ * <p>Returned by {@link InvoiceSessions#open(FormCode)} when the
  * SDK opens a fresh session — the AES session key + IV are held in JVM
  * memory, so invoice content can be encrypted and submitted. After the
  * session is closed, the AES material is zeroised; the only way to keep
@@ -25,11 +25,11 @@ import java.util.Optional;
  * <p>Idiomatic usage with try-with-resources + explicit archive:
  *
  * <pre>{@code
- * try (OnlineSession os = client.invoices().openSession(FormCode.FA3)) {
+ * try (OnlineSession os = client.invoices().sessions().open(FormCode.FA3)) {
  *     SubmittedInvoice r1 = os.sendInvoice(invoice1);
  *     SubmittedInvoice r2 = os.sendInvoice(invoice2);
  *
- *     ClosedSession cs = os.archive();    // explicit transition + close
+ *     ClosedSession cs = os.complete();    // explicit transition + close
  *     byte[] upo = cs.upo(r1.referenceNumber());
  * }   // implicit close() via try-with-resources — idempotent, no-op
  * }</pre>
@@ -37,7 +37,7 @@ import java.util.Optional;
  * <p>Fire-and-forget (no UPO retrieval needed):
  *
  * <pre>{@code
- * try (OnlineSession os = client.invoices().openSession(FormCode.FA3)) {
+ * try (OnlineSession os = client.invoices().sessions().open(FormCode.FA3)) {
  *     for (Invoice invoice : invoices) {
  *         os.sendInvoice(invoice);
  *     }
@@ -156,7 +156,7 @@ public interface OnlineSession extends Session {
      *
      * @return the read-only post-close view of this session
      */
-    ClosedSession archive();
+    ClosedSession complete();
 
     /**
      * Returns {@code true} when KSeF would auto-classify an invoice as

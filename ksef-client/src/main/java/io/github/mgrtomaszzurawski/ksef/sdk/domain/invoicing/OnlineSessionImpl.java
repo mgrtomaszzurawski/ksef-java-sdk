@@ -6,8 +6,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.SendInvoiceBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.builder.SendInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceCommand;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
@@ -99,7 +100,7 @@ final class OnlineSessionImpl implements OnlineSession {
             "hashOfOriginal must be exactly %d bytes (SHA-256), got %d";
     private static final String ERR_SEND_INVOICE_REQUIRES_FULL_CTOR =
             "sendInvoice(Invoice) requires the verification-aware constructor (KsefEnvironment + timeout);"
-                    + " InvoiceClientImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
+                    + " InvoicesImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
 
     /** Default verification timeout when none is supplied via the builder. */
     static final Duration DEFAULT_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);
@@ -281,7 +282,7 @@ final class OnlineSessionImpl implements OnlineSession {
             }
         }
         return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
-                ksefNumber, kodIQr, errorDetails);
+                ksefNumber, kodIQr, Optional.empty(), errorDetails);
     }
 
     private byte[] renderKodIQr(KsefNumber ksefNumber, byte[] invoiceSha256) {
@@ -388,7 +389,7 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public ClosedSession archive() {
+    public ClosedSession complete() {
         ClosedSessionImpl existing = archiveView.get();
         if (existing != null) {
             return existing;

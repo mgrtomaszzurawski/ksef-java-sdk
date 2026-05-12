@@ -48,7 +48,7 @@ class PefKorInvoiceDocumentTest {
     @Test
     void from_whenValidPefKorXml_exposesJaxbEscapeHatch() {
         PefKorInvoiceDocument doc = PefKorInvoiceDocument.from(minimalCreditNote().xml());
-        assertNotNull(doc.creditNote(), "JAXB escape hatch creditNote() must not return null");
+        assertNotNull(doc.unsafeJaxbView(), "JAXB escape hatch unsafeJaxbView() must not return null");
     }
 
     @Test

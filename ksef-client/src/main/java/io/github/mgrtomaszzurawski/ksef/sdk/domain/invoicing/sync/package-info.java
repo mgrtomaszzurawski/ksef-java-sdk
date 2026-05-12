@@ -20,7 +20,7 @@
  *       — decrypted per-invoice element produced by the streaming sync.</li>
  * </ul>
  *
- * <p>Driven through {@code InvoiceClient.syncAsStream(plan, checkpointStore)}.
+ * <p>Driven through {@code Invoices.sync().asStream(plan, checkpointStore)}.
  * The sync uses {@code InvoiceQueryDateType.PERMANENT_STORAGE}
  * exclusively — see
  * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan}

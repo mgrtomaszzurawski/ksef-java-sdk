@@ -15,7 +15,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityAdminPermissionGrantBuilder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -46,7 +47,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorM
  *       {@link CertificateSubjectIdentifier#fingerprint(String)}
  *       (NOT subject DN — KSeF resolves the entity by the SHA-256
  *       registered in step 1).</li>
- *   <li>Auth succeeds because KSeF now recognises the fingerprint
+ *   <li>AuthSessions succeeds because KSeF now recognises the fingerprint
  *       in the NipVatUe context.</li>
  * </ol>
  *
@@ -128,7 +129,7 @@ public final class VatUeProviderRunner implements DemoRunner {
                             "grantEuEntityAdmin",
                             () -> permissions.getOperationStatus(referenceNumber),
                             opStatus -> opStatus.status() != null
-                                    && opStatus.status().code() >= PermissionClient.TERMINAL_STATUS_CODE_THRESHOLD,
+                                    && opStatus.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD,
                             opStatus -> opStatus.status() == null ? null : opStatus.status().code(),
                             GRANT_AWAIT_TIMEOUT,
                             null));
@@ -164,7 +165,7 @@ public final class VatUeProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
+            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
             LOGGER.info("[{}] {} authenticated as nipVatUe={}", NAME, LABEL, nipVatUe);
             results.add(RunResult.ok(NAME, OP_AUTH + LABEL, elapsed(start),
                     "nipVatUe=" + nipVatUe));

@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request payload for {@code PermissionClient.queryEntityRoles(...)}.
+ * SDK request payload for {@code Permissions.queryEntityRoles(...)}.
  * The endpoint takes no body — only paging query parameters
  * {@code pageOffset} and {@code pageSize}.
  *

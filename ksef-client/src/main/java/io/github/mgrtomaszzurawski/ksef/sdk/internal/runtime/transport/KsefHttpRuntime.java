@@ -109,7 +109,7 @@ public final class KsefHttpRuntime implements HttpRuntime {
     }
 
     /**
-     * Auth/session collaborators — session-context store and the two
+     * AuthSessions/session collaborators — session-context store and the two
      * lifecycle callbacks the runtime invokes when auth needs to happen
      * proactively (no token yet) or reactively (401 response).
      *

@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code TestDataClient.setSubjectLimits(...)}.
+ * SDK request for {@code TestDataAdmin.setSubjectLimits(...)}.
  *
  * @param subjectIdentifierType type of subject identifier
  * @param maxEnrollments override for enrollment count limit (null = leave default)

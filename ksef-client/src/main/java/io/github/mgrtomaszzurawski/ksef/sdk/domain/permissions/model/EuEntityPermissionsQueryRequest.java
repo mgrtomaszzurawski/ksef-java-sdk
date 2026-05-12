@@ -8,7 +8,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code PermissionClient.queryEuEntities(...)}.
+ * SDK request for {@code Permissions.queryEuEntities(...)}.
  *
  * @since 1.0.0
  */

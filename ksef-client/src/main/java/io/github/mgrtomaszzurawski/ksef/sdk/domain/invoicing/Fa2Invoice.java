@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TAdresFa2;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TKodFormularza;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -36,9 +38,13 @@ import javax.xml.datatype.XMLGregorianCalendar;
  *
  * <p>FA(2) is accepted only on the KSeF TEST environment per
  * {@code ksef-docs/srodowiska.md}. Construct via {@link #builder()}
- * for common-case sales invoices; use the {@link #faktura()}
- * escape-hatch for any FA(2) feature that the flat accessors do not
- * surface.
+ * for common-case sales invoices.
+ *
+ * <p><strong>Escape hatches.</strong> Rare fields are reachable through
+ * two methods: {@link #unsafeJaxbView()} returns the live JAXB root
+ * (read-only by contract), {@link #toJaxbCopy()} returns a mutable
+ * disconnected deep clone. For build-time customisation use
+ * {@link Builder#customizeJaxb(Consumer)}.
  *
  * @since 1.0.0
  */
@@ -74,11 +80,24 @@ public final class Fa2Invoice implements Invoice {
     }
 
     /**
-     * Underlying JAXB tree — escape-hatch for fields the flat
-     * accessors do not surface. Read-only access — do not mutate.
+     * Direct reference to the internal JAXB {@link Faktura} root —
+     * escape-hatch for fields the flat accessors do not surface.
+     *
+     * <p><strong>Read-only by contract.</strong> Mutations are not
+     * reflected in {@link #xml()} bytes. For a mutable disconnected
+     * copy use {@link #toJaxbCopy()}; for build-time customisation use
+     * {@link Builder#customizeJaxb(Consumer)}.
      */
-    public Faktura faktura() {
+    public Faktura unsafeJaxbView() {
         return faktura;
+    }
+
+    /**
+     * Deep-clone of the internal JAXB tree via a marshal/unmarshal
+     * round-trip.
+     */
+    public Faktura toJaxbCopy() {
+        return JaxbDeepClone.clone(faktura, Faktura.class);
     }
 
     /** Form-systemCode token from {@code Naglowek/KodFormularza/@kodSystemowy}. */
@@ -252,6 +271,7 @@ public final class Fa2Invoice implements Invoice {
         private static final String ERR_NULL_TOTAL = "totalGrossAmount must not be null";
         private static final String ERR_NULL_CORRECTION_REF = "correctionReference must not be null";
         private static final String ERR_NULL_RODZAJ = "rodzajFaktury must not be null";
+        private static final String ERR_NULL_CUSTOMIZER = "customizer must not be null";
         private static final String ERR_BAD_DATATYPE_FACTORY = "DatatypeFactory unavailable";
         private static final String ERR_CORRECTION_REQUIRED =
                 "FA(2) correction invoices (RodzajFaktury KOR / KOR_ZAL / KOR_ROZ) require"
@@ -270,8 +290,24 @@ public final class Fa2Invoice implements Invoice {
         private final List<InvoiceLineItem> lineItems = new ArrayList<>();
         private final List<InvoiceCorrectionReference> correctionReferences = new ArrayList<>();
         private BigDecimal totalGrossAmount;
+        private Consumer<Faktura> customizer;
 
         Builder() {
+        }
+
+        /**
+         * Customise the assembled JAXB tree before marshalling — escape-hatch
+         * for fields the builder does not surface as typed setters. The
+         * consumer runs after typed setters have populated the root,
+         * immediately before XML marshalling. Multiple calls compose by
+         * appending.
+         */
+        public Builder customizeJaxb(Consumer<Faktura> jaxbCustomizer) {
+            Objects.requireNonNull(jaxbCustomizer, ERR_NULL_CUSTOMIZER);
+            this.customizer = this.customizer == null
+                    ? jaxbCustomizer
+                    : this.customizer.andThen(jaxbCustomizer);
+            return this;
         }
 
         public Builder issueDate(LocalDate value) {
@@ -334,6 +370,9 @@ public final class Fa2Invoice implements Invoice {
                 throw new IllegalStateException(ERR_CORRECTION_REQUIRED);
             }
             Faktura faktura = assembleFaktura();
+            if (customizer != null) {
+                customizer.accept(faktura);
+            }
             byte[] xml = JaxbInvoiceMarshaller.marshal(faktura, Faktura.class);
             return new Fa2Invoice(faktura, xml);
         }

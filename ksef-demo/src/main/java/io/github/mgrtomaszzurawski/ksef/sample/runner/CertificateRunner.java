@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
@@ -24,7 +25,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for CertificateClient operations.
+ * Runner for Certificates operations.
  *
  * <p>getLimits works with any auth method (token or XAdES).
  * getEnrollmentData and query require XAdES auth — they run when the SDK was
@@ -120,7 +121,7 @@ public final class CertificateRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         try {
             CertificateQueryResult response = context.client().certificates()
-                    .query(CertificateQueryBuilder.create().build());
+                    .queryCertificates(CertificateQueryBuilder.create().build());
             List<CertificateListItem> certs = response.certificates();
             int count = certs != null ? certs.size() : 0;
             if (LOGGER.isInfoEnabled()) {
@@ -225,7 +226,8 @@ public final class CertificateRunner implements DemoRunner {
     private void runRevoke(DemoContext context, String serialNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            context.client().certificates().revoke(serialNumber, CertificateRevocationReason.UNSPECIFIED);
+            context.client().certificates().revoke(CertificateSerialNumber.parse(serialNumber),
+                    CertificateRevocationReason.UNSPECIFIED);
             LOGGER.info("[{}] revoked certificate serial={}", NAME, serialNumber);
             results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start), "serial=" + serialNumber));
         } catch (Exception exception) {

@@ -208,7 +208,7 @@ class KsefSessionTest {
                                 """.formatted(TEST_INVOICE_REF))));
 
         try (OnlineSession session = createSession(wmInfo)) {
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.archive();
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.complete();
 
             // when
             byte[] upoBytes = closed.cleared(TEST_INVOICE_REF).upo().xmlBytes();

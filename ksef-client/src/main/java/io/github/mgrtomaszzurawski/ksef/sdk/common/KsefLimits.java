@@ -10,9 +10,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
  * budgets without hard-coding values.
  *
  * <p>Pagination is exposed via lazy {@link java.util.stream.Stream}
- * paginators ({@code streamInvoicesByMetadata}, {@code streamPersons},
+ * paginators ({@code archive().streamByMetadata}, {@code streamPersons},
  * {@code streamCertificates}, {@code streamTokens},
- * {@code streamSessions}, ...). The SDK never imposes an upper bound
+ * {@code sessions().stream}, ...). The SDK never imposes an upper bound
  * on stream length — caller controls memory by piping through
  * {@code .limit(N)} or {@code .toList()} as appropriate. Equivalent
  * in spirit to AWS SDK V2 paginators.

@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import java.time.Duration;
@@ -90,7 +90,7 @@ public final class SessionHandleConstructor {
                             KsefEnvironment.class, Duration.class));
             PREPARED_EXPORT_CTOR = makeAccessible(
                     PreparedInvoiceExport.class.getDeclaredConstructor(
-                            InvoiceClient.class, HttpClient.class, String.class,
+                            InvoiceExport.class, HttpClient.class, String.class,
                             byte[].class, byte[].class));
         } catch (NoSuchMethodException | ClassNotFoundException ex) {
             throw new ExceptionInInitializerError(ex);
@@ -155,12 +155,12 @@ public final class SessionHandleConstructor {
     /**
      * @apiNote Internal — see class-level Javadoc.
      */
-    public static PreparedInvoiceExport newPreparedExport(InvoiceClient invoices,
+    public static PreparedInvoiceExport newPreparedExport(InvoiceExport invoiceExport,
                                                             HttpClient httpClient,
                                                             String referenceNumber,
                                                             byte[] aesKey,
                                                             byte[] initVector) {
-        return invoke(PREPARED_EXPORT_CTOR, invoices, httpClient, referenceNumber, aesKey, initVector);
+        return invoke(PREPARED_EXPORT_CTOR, invoiceExport, httpClient, referenceNumber, aesKey, initVector);
     }
 
     private static <T> T invoke(Constructor<T> ctor, @Nullable Object... args) {

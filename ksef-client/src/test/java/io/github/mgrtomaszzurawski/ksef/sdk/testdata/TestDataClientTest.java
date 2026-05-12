@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
@@ -122,7 +123,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            ksef.testData().removeSubject(TEST_NIP);
+            ksef.testData().removeSubject(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/subject/remove")));
@@ -155,7 +156,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            ksef.testData().removePerson(TEST_NIP);
+            ksef.testData().removePerson(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/person/remove")));
@@ -208,7 +209,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            ksef.testData().grantAttachment(TEST_NIP);
+            ksef.testData().grantAttachment(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/attachment")));
@@ -226,7 +227,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            ksef.testData().revokeAttachment(TEST_NIP, REVOKE_END_DATE);
+            ksef.testData().revokeAttachment(KsefIdentifier.nip(TEST_NIP), REVOKE_END_DATE);
 
             // then
             verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))
@@ -392,7 +393,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            ksef.testData().setProductionRateLimits();
+            ksef.testData().applyProductionRateLimitsToTestTenant();
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/rate-limits/production"))

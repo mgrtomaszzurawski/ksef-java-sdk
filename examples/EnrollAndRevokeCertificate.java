@@ -28,6 +28,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import java.nio.file.Files;
@@ -56,7 +57,7 @@ public final class EnrollAndRevokeCertificate {
             // Drive lazy auth via any authenticated read so the PKCS#12
             // material is consumed up-front; then zero the password buffer
             // so a heap dump cannot recover it.
-            client.auth().streamSessions().findAny();
+            client.auth().streamAuthSessions().findAny();
             java.util.Arrays.fill(p12Password, '\0');
             System.out.println("XAdES authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
@@ -73,7 +74,7 @@ public final class EnrollAndRevokeCertificate {
             }
             System.out.println("Certificate issued, serial: " + serial);
 
-            client.certificates().revoke(serial, CertificateRevocationReason.UNSPECIFIED);
+            client.certificates().revoke(CertificateSerialNumber.parse(serial), CertificateRevocationReason.UNSPECIFIED);
             System.out.println("Certificate revoked");
         } finally {
             java.util.Arrays.fill(p12Password, '\0');

@@ -8,8 +8,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPe
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request payload for {@code PermissionClient.querySubunits(...)} and
- * {@code PermissionClient.streamSubunits(...)}. Captures the optional
+ * SDK request payload for {@code Permissions.querySubunits(...)} and
+ * {@code Permissions.streamSubunits(...)}. Captures the optional
  * subunit identifier filter and paging parameters for
  * {@code POST /permissions/query/subunits/grants}.
  *

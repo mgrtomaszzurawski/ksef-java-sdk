@@ -19,7 +19,7 @@ Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-do
   (`streamInvoicesByMetadata`)
 - Download invoice content + UPO by KSeF number
 - Incremental sync of newly-permanently-stored invoices using a HWM
-  cursor (`InvoiceSyncClient`)
+  cursor (`client.invoices().sync().asStream(...)`)
 - Manage permissions, KSeF tokens, certificates (enrol / revoke / query)
 - Generate KOD I + KOD II invoice-verification QR codes
 - Authenticate as: NIP / EU-entity (VAT-UE) / Peppol provider / sub-unit
@@ -112,7 +112,7 @@ List<Invoice> invoices = List.of(
         Invoice.fromXml(FormCode.FA3, invoice2Xml),
         Invoice.fromXml(FormCode.FA3, invoice3Xml));
 
-BatchResult result = client.invoices().submitBatch(
+BatchResult result = client.invoices().batch().submit(
         FormCode.FA3, invoices, BatchOptions.defaults());
 
 // By the time submitBatch returns, every accepted invoice has its UPO downloaded.
@@ -125,7 +125,7 @@ For async use, wrap in a `CompletableFuture`:
 ```java
 ExecutorService executor = Executors.newSingleThreadExecutor();
 CompletableFuture<BatchResult> future = CompletableFuture.supplyAsync(
-        () -> client.invoices().submitBatch(FormCode.FA3, invoices, BatchOptions.defaults()),
+        () -> client.invoices().batch().submit(FormCode.FA3, invoices, BatchOptions.defaults()),
         executor);
 ```
 
@@ -226,7 +226,7 @@ against the strict profile and you want server-side enforcement.
 Plus session-level helpers on `KsefClient` itself:
 
 - `client.authenticate()` / `client.reauthenticate()` / `client.terminateAuth()`
-- `client.invoices().openSession(FormCode)` / `client.invoices().submitBatch(...)`
+- `client.invoices().sessions().open(FormCode)` / `client.invoices().batch().submit(...)`
 - `client.invoiceSync(IncrementalSyncPlan, CheckpointStore, InvoiceSink)` —
   HWM-based incremental sync with content download and per-invoice sink
 - `client.streamSessions(filter)` — paginate online + batch sessions
@@ -328,7 +328,7 @@ For high-concurrency producers, throttle at the call site:
 ApiRateLimits limits = client.rateLimits().getRateLimits();
 int permits = limits.invoiceMetadata().perSecond();
 Semaphore slot = new Semaphore(permits);
-client.invoices().streamInvoicesByMetadata(filter)
+client.invoices().archive().streamByMetadata(filter)
     .parallel()
     .forEach(invoice -> {
         slot.acquireUninterruptibly();
@@ -337,7 +337,7 @@ client.invoices().streamInvoicesByMetadata(filter)
     });
 ```
 
-For incremental sync (preferred path: `client.invoices().syncAsStream(plan, store)` returning a lazy `Stream<DecryptedInvoice>`): spec recommends a **15 minute interval** between runs (`przyrostowe-pobieranie-faktur.md`) — schedule via cron / queue worker, not a tight loop.
+For incremental sync (preferred path: `client.invoices().sync().asStream(plan, store)` returning a lazy `Stream<DecryptedInvoice>`): spec recommends a **15 minute interval** between runs (`przyrostowe-pobieranie-faktur.md`) — schedule via cron / queue worker, not a tight loop.
 
 ## Architecture
 

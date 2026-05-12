@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TAdresFa3;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TKodFormularza;
@@ -25,9 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Typed FA(3) invoice: wraps the JAXB-generated {@link Faktura} root
@@ -36,10 +39,25 @@ import javax.xml.datatype.XMLGregorianCalendar;
  *
  * <p>Construct via {@link #builder()}. The builder mirrors the
  * minimum-viable subset of the FA(3) XSD — header, seller, buyer,
- * line items, currency, totals, correction reference. Rare fields
- * (advance payments, tourism margin, KOR_ROZ breakdowns, EU
- * cross-border attachments) are reachable through the
- * {@link #faktura()} escape-hatch.
+ * line items, currency, totals, correction reference.
+ *
+ * <p><strong>Escape hatches.</strong> Rare fields (advance payments,
+ * tourism margin, KOR_ROZ breakdowns, EU cross-border attachments) are
+ * reachable through two methods:
+ *
+ * <ul>
+ *   <li>{@link #unsafeJaxbView()} — direct reference to the internal
+ *       JAXB root. <em>Read-only</em>: mutations are not reflected in
+ *       the {@link #xml()} bytes nor in the flat accessors (which
+ *       snapshot at construction).</li>
+ *   <li>{@link #toJaxbCopy()} — deep clone. Mutable but disconnected
+ *       from this invoice's state.</li>
+ * </ul>
+ *
+ * <p>For build-time customisation use
+ * {@link Builder#customizeJaxb(Consumer)} — the consumer runs on the
+ * assembled tree before XML marshalling, so its effects are captured
+ * in the resulting bytes and flat accessors.
  *
  * @since 1.0.0
  */
@@ -58,10 +76,96 @@ public final class Fa3Invoice implements Invoice {
 
     private final Faktura faktura;
     private final byte[] xmlBytes;
+    private final @Nullable String systemCode;
+    private final @Nullable String formVersion;
+    private final @Nullable OffsetDateTime issuedAt;
+    private final @Nullable String sellerNip;
+    private final @Nullable String sellerName;
+    private final @Nullable String buyerNip;
+    private final @Nullable String buyerName;
+    private final @Nullable String invoiceNumber;
+    private final @Nullable LocalDate issueDate;
+    private final @Nullable String currency;
+    private final @Nullable BigDecimal grossTotal;
+    private final Optional<BigDecimal> netTotal;
+    private final @Nullable String invoiceTypeCode;
+    private final List<InvoiceLineItem> lineItems;
 
     Fa3Invoice(Faktura faktura, byte[] xmlBytes) {
         this.faktura = Objects.requireNonNull(faktura, ERR_NULL_FAKTURA);
         this.xmlBytes = xmlBytes.clone();
+        HeaderSnapshot header = HeaderSnapshot.from(faktura.getNaglowek());
+        this.systemCode = header.systemCode;
+        this.formVersion = header.formVersion;
+        this.issuedAt = header.issuedAt;
+        PartySnapshot seller = PartySnapshot.fromSeller(faktura.getPodmiot1());
+        this.sellerNip = seller.nip;
+        this.sellerName = seller.name;
+        PartySnapshot buyer = PartySnapshot.fromBuyer(faktura.getPodmiot2());
+        this.buyerNip = buyer.nip;
+        this.buyerName = buyer.name;
+        FaSnapshot fa = FaSnapshot.from(faktura.getFa());
+        this.invoiceNumber = fa.invoiceNumber;
+        this.issueDate = fa.issueDate;
+        this.currency = fa.currency;
+        this.grossTotal = fa.grossTotal;
+        this.netTotal = fa.netTotal;
+        this.invoiceTypeCode = fa.invoiceTypeCode;
+        this.lineItems = fa.lineItems;
+    }
+
+    private record HeaderSnapshot(@Nullable String systemCode,
+                                  @Nullable String formVersion,
+                                  @Nullable OffsetDateTime issuedAt) {
+        static HeaderSnapshot from(@Nullable TNaglowek header) {
+            if (header == null) {
+                return new HeaderSnapshot(null, null, null);
+            }
+            TNaglowek.KodFormularza kodFormularza = header.getKodFormularza();
+            String systemCode = kodFormularza != null ? kodFormularza.getKodSystemowy() : null;
+            String formVersion = kodFormularza != null ? kodFormularza.getWersjaSchemy() : null;
+            OffsetDateTime issuedAt = header.getDataWytworzeniaFa() != null
+                    ? toOffsetDateTime(header.getDataWytworzeniaFa()) : null;
+            return new HeaderSnapshot(systemCode, formVersion, issuedAt);
+        }
+    }
+
+    private record PartySnapshot(@Nullable String nip, @Nullable String name) {
+        static PartySnapshot fromSeller(Faktura.@Nullable Podmiot1 podmiot) {
+            TPodmiot1 identity = podmiot != null ? podmiot.getDaneIdentyfikacyjne() : null;
+            return new PartySnapshot(
+                    identity != null ? identity.getNIP() : null,
+                    identity != null ? identity.getNazwa() : null);
+        }
+
+        static PartySnapshot fromBuyer(Faktura.@Nullable Podmiot2 podmiot) {
+            TPodmiot2 identity = podmiot != null ? podmiot.getDaneIdentyfikacyjne() : null;
+            return new PartySnapshot(
+                    identity != null ? identity.getNIP() : null,
+                    identity != null ? identity.getNazwa() : null);
+        }
+    }
+
+    private record FaSnapshot(@Nullable String invoiceNumber,
+                              @Nullable LocalDate issueDate,
+                              @Nullable String currency,
+                              @Nullable BigDecimal grossTotal,
+                              Optional<BigDecimal> netTotal,
+                              @Nullable String invoiceTypeCode,
+                              List<InvoiceLineItem> lineItems) {
+        static FaSnapshot from(Faktura.@Nullable Fa faContent) {
+            if (faContent == null) {
+                return new FaSnapshot(null, null, null, null, Optional.empty(), null, List.of());
+            }
+            return new FaSnapshot(
+                    faContent.getP2(),
+                    faContent.getP1() != null ? toLocalDate(faContent.getP1()) : null,
+                    faContent.getKodWaluty() != null ? faContent.getKodWaluty().value() : null,
+                    faContent.getP15(),
+                    Optional.ofNullable(faContent.getP131()),
+                    faContent.getRodzajFaktury() != null ? faContent.getRodzajFaktury().value() : null,
+                    snapshotLineItems(faContent));
+        }
     }
 
     @Override
@@ -75,119 +179,107 @@ public final class Fa3Invoice implements Invoice {
     }
 
     /**
-     * Underlying JAXB tree — escape-hatch for fields the flat
-     * accessors do not surface (footer, advance payments, KOR_ROZ
-     * breakdowns, EU cross-border attachments). Read-only access — do
-     * not mutate.
+     * Direct reference to the internal JAXB {@link Faktura} root —
+     * escape-hatch for fields the flat accessors do not surface (footer,
+     * advance payments, KOR_ROZ breakdowns, EU cross-border attachments).
+     *
+     * <p><strong>Read-only by contract.</strong> Mutations are not
+     * reflected in {@link #xml()} bytes nor in the flat accessors below,
+     * which snapshot at construction. For a mutable disconnected copy use
+     * {@link #toJaxbCopy()}; for build-time customisation use
+     * {@link Builder#customizeJaxb(Consumer)}.
      */
-    public Faktura faktura() {
+    public Faktura unsafeJaxbView() {
         return faktura;
     }
 
+    /**
+     * Deep-clone of the internal JAXB tree via a marshal/unmarshal
+     * round-trip. The returned object is mutable but shares no
+     * references with this invoice — neither {@link #xml()} bytes nor
+     * the flat accessors observe mutations to the clone.
+     */
+    public Faktura toJaxbCopy() {
+        return JaxbDeepClone.clone(faktura, Faktura.class);
+    }
+
     /** Form-systemCode token from {@code Naglowek/KodFormularza/@kodSystemowy}. */
-    public String systemCode() {
-        TNaglowek header = faktura.getNaglowek();
-        if (header == null || header.getKodFormularza() == null) {
-            return null;
-        }
-        return header.getKodFormularza().getKodSystemowy();
+    public @Nullable String systemCode() {
+        return systemCode;
     }
 
     /** Schema version token from {@code Naglowek/KodFormularza/@wersjaSchemy}. */
-    public String formVersion() {
-        TNaglowek header = faktura.getNaglowek();
-        if (header == null || header.getKodFormularza() == null) {
-            return null;
-        }
-        return header.getKodFormularza().getWersjaSchemy();
+    public @Nullable String formVersion() {
+        return formVersion;
     }
 
     /** Issue timestamp from {@code Naglowek/DataWytworzeniaFa}. */
-    public OffsetDateTime issuedAt() {
-        TNaglowek header = faktura.getNaglowek();
-        if (header == null || header.getDataWytworzeniaFa() == null) {
-            return null;
-        }
-        return toOffsetDateTime(header.getDataWytworzeniaFa());
+    public @Nullable OffsetDateTime issuedAt() {
+        return issuedAt;
     }
 
     /** Seller NIP from {@code Podmiot1/DaneIdentyfikacyjne/NIP}. */
-    public String sellerNip() {
-        TPodmiot1 identity = sellerIdentityInternal();
-        return identity != null ? identity.getNIP() : null;
+    public @Nullable String sellerNip() {
+        return sellerNip;
     }
 
     /** Seller name from {@code Podmiot1/DaneIdentyfikacyjne/Nazwa}. */
-    public String sellerName() {
-        TPodmiot1 identity = sellerIdentityInternal();
-        return identity != null ? identity.getNazwa() : null;
+    public @Nullable String sellerName() {
+        return sellerName;
     }
 
     /** Buyer NIP from {@code Podmiot2/DaneIdentyfikacyjne/NIP}. */
-    public String buyerNip() {
-        TPodmiot2 identity = buyerIdentityInternal();
-        return identity != null ? identity.getNIP() : null;
+    public @Nullable String buyerNip() {
+        return buyerNip;
     }
 
     /** Buyer name from {@code Podmiot2/DaneIdentyfikacyjne/Nazwa}. */
-    public String buyerName() {
-        TPodmiot2 identity = buyerIdentityInternal();
-        return identity != null ? identity.getNazwa() : null;
+    public @Nullable String buyerName() {
+        return buyerName;
     }
 
     /** Invoice number from {@code Fa/P_2}. */
-    public String invoiceNumber() {
-        Faktura.Fa faContent = faktura.getFa();
-        return faContent != null ? faContent.getP2() : null;
+    public @Nullable String invoiceNumber() {
+        return invoiceNumber;
     }
 
     /** Issue date from {@code Fa/P_1}. */
-    public LocalDate issueDate() {
-        Faktura.Fa faContent = faktura.getFa();
-        if (faContent == null || faContent.getP1() == null) {
-            return null;
-        }
-        return toLocalDate(faContent.getP1());
+    public @Nullable LocalDate issueDate() {
+        return issueDate;
     }
 
     /** ISO 4217 currency code from {@code Fa/KodWaluty}. */
-    public String currency() {
-        Faktura.Fa faContent = faktura.getFa();
-        if (faContent == null || faContent.getKodWaluty() == null) {
-            return null;
-        }
-        return faContent.getKodWaluty().value();
+    public @Nullable String currency() {
+        return currency;
     }
 
     /** Gross total from {@code Fa/P_15}. */
-    public BigDecimal grossTotal() {
-        Faktura.Fa faContent = faktura.getFa();
-        return faContent != null ? faContent.getP15() : null;
+    public @Nullable BigDecimal grossTotal() {
+        return grossTotal;
     }
 
     /** Optional net total from {@code Fa/P_13_1}. */
     public Optional<BigDecimal> netTotal() {
-        Faktura.Fa faContent = faktura.getFa();
-        return faContent != null ? Optional.ofNullable(faContent.getP131()) : Optional.empty();
+        return netTotal;
     }
 
     /** Invoice type code from {@code Fa/RodzajFaktury}. */
-    public String invoiceTypeCode() {
-        Faktura.Fa faContent = faktura.getFa();
-        if (faContent == null || faContent.getRodzajFaktury() == null) {
-            return null;
-        }
-        return faContent.getRodzajFaktury().value();
+    public @Nullable String invoiceTypeCode() {
+        return invoiceTypeCode;
     }
 
     /**
      * Line items mapped from {@code Fa/FaWiersz} entries to SDK
      * records. Returns an empty list when the underlying JAXB tree
-     * has no line items. Lines whose JAXB element lacks the required
-     * fields {@code P_7}, {@code P_11} or {@code P_12} are skipped.
+     * had no line items at construction. Lines whose JAXB element
+     * lacked the required fields {@code P_7}, {@code P_11} or
+     * {@code P_12} were skipped.
      */
     public List<InvoiceLineItem> lineItems() {
-        Faktura.Fa faContent = faktura.getFa();
+        return lineItems;
+    }
+
+    private static List<InvoiceLineItem> snapshotLineItems(Faktura.@Nullable Fa faContent) {
         if (faContent == null || faContent.getFaWiersz() == null) {
             return List.of();
         }
@@ -201,15 +293,7 @@ public final class Fa3Invoice implements Invoice {
         return List.copyOf(mapped);
     }
 
-    private TPodmiot1 sellerIdentityInternal() {
-        return faktura.getPodmiot1() != null ? faktura.getPodmiot1().getDaneIdentyfikacyjne() : null;
-    }
-
-    private TPodmiot2 buyerIdentityInternal() {
-        return faktura.getPodmiot2() != null ? faktura.getPodmiot2().getDaneIdentyfikacyjne() : null;
-    }
-
-    private static InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
+    private static @Nullable InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
         if (wiersz == null || wiersz.getP7() == null
                 || wiersz.getP11() == null || wiersz.getP12() == null) {
             return null;
@@ -244,6 +328,12 @@ public final class Fa3Invoice implements Invoice {
      * standard sale, services, line items with VAT, totals, and
      * (when the {@code RodzajFaktury} is a correction type) one or
      * more correction references.
+     *
+     * <p>For fields the builder does not surface (footer, advance
+     * payments, KOR_ROZ breakdowns), supply a {@link Consumer} via
+     * {@link #customizeJaxb(Consumer)}. The consumer runs on the
+     * assembled JAXB root immediately before XML marshalling, so its
+     * effects are captured in the resulting bytes and flat accessors.
      */
     public static final class Builder {
 
@@ -259,6 +349,7 @@ public final class Fa3Invoice implements Invoice {
         private static final String ERR_NULL_TOTAL = "totalGrossAmount must not be null";
         private static final String ERR_NULL_CORRECTION_REF = "correctionReference must not be null";
         private static final String ERR_NULL_RODZAJ = "rodzajFaktury must not be null";
+        private static final String ERR_NULL_CUSTOMIZER = "customizer must not be null";
         private static final String ERR_BAD_DATATYPE_FACTORY = "DatatypeFactory unavailable";
         private static final String ERR_CORRECTION_REQUIRED =
                 "FA(3) correction invoices (RodzajFaktury KOR / KOR_ZAL / KOR_ROZ) require"
@@ -267,16 +358,17 @@ public final class Fa3Invoice implements Invoice {
         private static final byte FLAG_FALSE = 2;
         private static final byte FLAG_TRUE = 1;
 
-        private LocalDate issueDate;
-        private String issueLocality;
-        private String invoiceNumber;
+        private @Nullable LocalDate issueDate;
+        private @Nullable String issueLocality;
+        private @Nullable String invoiceNumber;
         private TKodWaluty currency = TKodWaluty.PLN;
         private TRodzajFaktury rodzajFaktury = TRodzajFaktury.VAT;
-        private InvoiceParty seller;
-        private InvoiceParty buyer;
+        private @Nullable InvoiceParty seller;
+        private @Nullable InvoiceParty buyer;
         private final List<InvoiceLineItem> lineItems = new ArrayList<>();
         private final List<InvoiceCorrectionReference> correctionReferences = new ArrayList<>();
-        private BigDecimal totalGrossAmount;
+        private @Nullable BigDecimal totalGrossAmount;
+        private @Nullable Consumer<Faktura> customizer;
 
         Builder() {
         }
@@ -345,6 +437,26 @@ public final class Fa3Invoice implements Invoice {
             return this;
         }
 
+        /**
+         * Customise the assembled JAXB tree before marshalling — escape-hatch
+         * for fields the builder does not surface as typed setters
+         * (advance-payment metadata, tourism margin, footer, KOR_ROZ
+         * breakdowns, EU cross-border attachments).
+         *
+         * <p>The consumer runs after all typed setters have populated the
+         * root, immediately before XML marshalling. Its effects appear in
+         * both the resulting {@link #xml()} bytes and the flat accessors
+         * (which snapshot at construction). Multiple {@code customizeJaxb}
+         * calls compose by appending — later customisations see earlier ones.
+         */
+        public Builder customizeJaxb(Consumer<Faktura> jaxbCustomizer) {
+            Objects.requireNonNull(jaxbCustomizer, ERR_NULL_CUSTOMIZER);
+            this.customizer = this.customizer == null
+                    ? jaxbCustomizer
+                    : this.customizer.andThen(jaxbCustomizer);
+            return this;
+        }
+
         /** Build the typed invoice. */
         public Fa3Invoice build() {
             Objects.requireNonNull(issueDate, ERR_NULL_ISSUE_DATE);
@@ -356,6 +468,9 @@ public final class Fa3Invoice implements Invoice {
                 throw new IllegalStateException(ERR_CORRECTION_REQUIRED);
             }
             Faktura faktura = assembleFaktura();
+            if (customizer != null) {
+                customizer.accept(faktura);
+            }
             byte[] xml = JaxbInvoiceMarshaller.marshal(faktura, Faktura.class);
             return new Fa3Invoice(faktura, xml);
         }
@@ -369,8 +484,8 @@ public final class Fa3Invoice implements Invoice {
         private Faktura assembleFaktura() {
             Faktura faktura = new Faktura();
             faktura.setNaglowek(buildHeader());
-            faktura.setPodmiot1(buildSeller(seller));
-            faktura.setPodmiot2(buildBuyer(buyer));
+            faktura.setPodmiot1(buildSeller(Objects.requireNonNull(seller, ERR_NULL_SELLER)));
+            faktura.setPodmiot2(buildBuyer(Objects.requireNonNull(buyer, ERR_NULL_BUYER)));
             faktura.setFa(buildFa());
             return faktura;
         }
@@ -383,7 +498,7 @@ public final class Fa3Invoice implements Invoice {
             kodFormularza.setWersjaSchemy(FA3_WERSJA_SCHEMY);
             header.setKodFormularza(kodFormularza);
             header.setWariantFormularza(FA3_WARIANT_FORMULARZA);
-            header.setDataWytworzeniaFa(toGregorianDateTime(issueDate));
+            header.setDataWytworzeniaFa(toGregorianDateTime(Objects.requireNonNull(issueDate, ERR_NULL_ISSUE_DATE)));
             return header;
         }
 
@@ -397,8 +512,12 @@ public final class Fa3Invoice implements Invoice {
             return podmiot;
         }
 
+        /** {@code Podmiot2/JST} marker — value 1 = invoice IS for a JST sub-unit. */
+        private static final BigInteger PODMIOT2_JST_YES = BigInteger.valueOf(1);
         /** {@code Podmiot2/JST} marker — value 2 = invoice is NOT for a JST sub-unit. */
         private static final BigInteger PODMIOT2_JST_NO = BigInteger.valueOf(2);
+        /** {@code Podmiot2/GV} marker — value 1 = invoice IS for a VAT-group member. */
+        private static final BigInteger PODMIOT2_GV_YES = BigInteger.valueOf(1);
         /** {@code Podmiot2/GV} marker — value 2 = invoice is NOT for a VAT-group member. */
         private static final BigInteger PODMIOT2_GV_NO = BigInteger.valueOf(2);
 
@@ -409,12 +528,8 @@ public final class Fa3Invoice implements Invoice {
             identity.setNazwa(party.name());
             podmiot.setDaneIdentyfikacyjne(identity);
             podmiot.setAdres(buildAddress(party));
-            // FA(3) XSD marks JST and GV as required on the Podmiot2 wrapper.
-            // Default to "2" (No) for both — the builder targets the common
-            // non-JST, non-VAT-group buyer; consumers needing the alternative
-            // values reach for the {@link Fa3Invoice#faktura()} escape-hatch.
-            podmiot.setJST(PODMIOT2_JST_NO);
-            podmiot.setGV(PODMIOT2_GV_NO);
+            podmiot.setJST(party.jst() ? PODMIOT2_JST_YES : PODMIOT2_JST_NO);
+            podmiot.setGV(party.vatGroup() ? PODMIOT2_GV_YES : PODMIOT2_GV_NO);
             return podmiot;
         }
 
@@ -439,7 +554,7 @@ public final class Fa3Invoice implements Invoice {
         private Faktura.Fa buildFa() {
             Faktura.Fa faContent = new Faktura.Fa();
             faContent.setKodWaluty(currency);
-            faContent.setP1(toGregorianDate(issueDate));
+            faContent.setP1(toGregorianDate(Objects.requireNonNull(issueDate, ERR_NULL_ISSUE_DATE)));
             if (issueLocality != null) {
                 faContent.setP1M(issueLocality);
             }

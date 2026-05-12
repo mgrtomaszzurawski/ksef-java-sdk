@@ -46,7 +46,7 @@ final class ClosedSessionImpl implements ClosedSession {
     private static final FormCode UPO_PLACEHOLDER_FORM_CODE = FormCode.custom("UPO", "1", "UPO");
     /** Empty payload for the UPO-only placeholder — the real invoice is unavailable
      *  through the UPO archive path; consumers needing the original XML must call
-     *  {@code client.invoices().getByKsefNumber(...)}. */
+     *  {@code client.invoices().archive().getByKsefNumber(...)}. */
     private static final byte[] UPO_PLACEHOLDER_XML = new byte[0];
     /** Synthetic terminal-status code recorded on rebuilt {@link SessionInvoiceStatus}
      *  entries — UPO only contains accepted invoices, so the status is always 200-Ok. */
@@ -132,7 +132,7 @@ final class ClosedSessionImpl implements ClosedSession {
      * <p>The embedded {@link Invoice} is the {@link #UPO_PLACEHOLDER_FORM_CODE}
      * sentinel — the original FA(3)/PEF/PEFKOR invoice XML is not retained on
      * the session-archive path, so consumers needing the canonical invoice
-     * payload must call {@code client.invoices().getByKsefNumber(...)} with the
+     * payload must call {@code client.invoices().archive().getByKsefNumber(...)} with the
      * {@link SubmittedInvoice#ksefNumber()} value when present.
      */
     @Override

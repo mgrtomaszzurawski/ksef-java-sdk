@@ -91,14 +91,30 @@
         <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.internal\.runtime\.batch\.BatchPackageBuilder\$BatchPackage"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
-    <!-- Typed Invoice/Document classes expose a single JAXB escape-hatch
-         accessor (faktura()/invoice()/creditNote()/invoiceType()) per the
-         PR12b/PR14 architecture. The wrapped JAXB tree is bound to the
-         outer Invoice's lifetime and intentionally shared with consumers
-         that need direct introspection — defensive copy of a JAXB tree is
-         not feasible (no clone() contract on JAXB types). -->
+    <!-- Typed Invoice/Document classes expose JAXB escape-hatch accessors
+         (unsafeJaxbView() + toJaxbCopy()) per the Bundle B contract. The
+         wrapped JAXB tree is bound to the outer Invoice's lifetime and
+         intentionally shared with consumers that need direct introspection;
+         the read-only contract is enforced via javadoc + a deep-clone
+         alternative, not via defensive copy of the JAXB tree (which has no
+         clone() contract). -->
     <Match>
         <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.(Fa2|Fa3|Pef|PefKor)Invoice(Document)?"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Internal session records — package-internal data carriers, not
+         consumer-facing. PartUploadRequest and BatchSession exist only to
+         shuttle data between the batch-submission flow and its caller; the
+         flow is the sole owner for the call's lifetime. -->
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- InvoicesImpl is the Bundle L coordinator — its accessors return the
+         five sub-impls (InvoiceArchive/InvoiceSessions/InvoiceBatch/
+         InvoiceExport/InvoiceSync) by reference, which is the contract. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoicesImpl"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
 </FindBugsFilter>

@@ -8,13 +8,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoiceDirectory;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
  *
  * <ol>
  *   <li>iterate per-subject-type independently;</li>
- *   <li>per window: open an export job ({@link InvoiceClient#prepareExport})
+ *   <li>per window: open an export job ({@link InvoiceExport#prepare})
  *       with the cursor as {@code dateFrom};</li>
  *   <li>poll until terminal, download all parts, verify SHA-256, decrypt,
  *       unzip to {@code outputDirectory}/&lt;subject&gt;/window-&lt;n&gt;/;</li>
@@ -94,11 +95,11 @@ public final class InvoiceSyncClient {
     private static final String ERR_METADATA_MISSING = "Export package reports invoiceCount=%d but the decrypted package has no _metadata.json — refusing to advance the checkpoint (Codex round-9 fresh-review F3 fail-closed)";
     private static final String ERR_METADATA_EMPTY = "Export package reports invoiceCount=%d but _metadata.json is empty — refusing to advance the checkpoint (Codex round-9 fresh-review F3 fail-closed)";
 
-    private final InvoiceClient invoiceClient;
+    private final InvoiceExport invoiceExport;
     private final ObjectMapper objectMapper;
 
-    public InvoiceSyncClient(InvoiceClient invoiceClient, ObjectMapper objectMapper) {
-        this.invoiceClient = Objects.requireNonNull(invoiceClient, "invoiceClient must not be null");
+    public InvoiceSyncClient(InvoiceExport invoiceExport, ObjectMapper objectMapper) {
+        this.invoiceExport = Objects.requireNonNull(invoiceExport, "invoiceExport must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     }
 
@@ -176,7 +177,7 @@ public final class InvoiceSyncClient {
             query.dateTo(plan.to());
         }
 
-        try (PreparedInvoiceExport export = invoiceClient.prepareExport(query.build(), plan.fullContent())) {
+        try (PreparedInvoiceExport export = invoiceExport.prepare(query.build(), plan.fullContent() ? ExportScope.FULL_CONTENT : ExportScope.METADATA_ONLY)) {
             InvoiceExportStatus status = export.awaitReady();
             InvoicePackage pkg = status.invoicePackage();
             if (pkg == null || pkg.invoiceCount() == null || pkg.invoiceCount() == 0L) {

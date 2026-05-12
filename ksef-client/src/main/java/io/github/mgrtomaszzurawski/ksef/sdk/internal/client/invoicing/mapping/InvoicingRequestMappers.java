@@ -12,12 +12,12 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQuerySubjectTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoicingModeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SendInvoiceRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceExportRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicingMode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SendInvoiceRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SendInvoiceRequest;
 import java.util.List;
 
 /**
@@ -39,7 +39,7 @@ public final class InvoicingRequestMappers {
                 .filters(toInvoiceQueryFiltersRaw(request.filters()));
     }
 
-    public static InvoiceQueryFiltersRaw toInvoiceQueryFiltersRaw(InvoiceQueryFilters filters) {
+    public static InvoiceQueryFiltersRaw toInvoiceQueryFiltersRaw(InvoiceQueryRequest filters) {
         InvoiceQueryFiltersRaw rawValue = new InvoiceQueryFiltersRaw()
                 .subjectType(toInvoiceQuerySubjectTypeRaw(filters.subjectType()))
                 .dateRange(buildDateRange(filters));
@@ -86,7 +86,7 @@ public final class InvoicingRequestMappers {
         };
     }
 
-    private static InvoiceQueryDateRangeRaw buildDateRange(InvoiceQueryFilters filters) {
+    private static InvoiceQueryDateRangeRaw buildDateRange(InvoiceQueryRequest filters) {
         InvoiceQueryDateRangeRaw dateRange = new InvoiceQueryDateRangeRaw()
                 .dateType(toInvoiceQueryDateTypeRaw(filters.dateType()))
                 .from(filters.dateFrom());
@@ -104,7 +104,7 @@ public final class InvoicingRequestMappers {
         return dateRange;
     }
 
-    private static void applyIdentifierFilters(InvoiceQueryFiltersRaw rawValue, InvoiceQueryFilters filters) {
+    private static void applyIdentifierFilters(InvoiceQueryFiltersRaw rawValue, InvoiceQueryRequest filters) {
         if (filters.ksefNumber() != null) {
             rawValue.ksefNumber(filters.ksefNumber());
         }
@@ -116,7 +116,7 @@ public final class InvoicingRequestMappers {
         }
     }
 
-    private static void applyMetadataFilters(InvoiceQueryFiltersRaw rawValue, InvoiceQueryFilters filters) {
+    private static void applyMetadataFilters(InvoiceQueryFiltersRaw rawValue, InvoiceQueryRequest filters) {
         if (filters.invoicingMode() != null) {
             rawValue.invoicingMode(toInvoicingModeRaw(filters.invoicingMode()));
         }

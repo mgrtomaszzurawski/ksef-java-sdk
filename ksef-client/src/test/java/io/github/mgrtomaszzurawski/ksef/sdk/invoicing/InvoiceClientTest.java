@@ -87,8 +87,7 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            byte[] invoiceXml = ksef.invoices()
-                    .getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER))
+            byte[] invoiceXml = ksef.invoices().archive().getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER))
                     .xml();
 
             // then
@@ -105,9 +104,9 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // then
-            var invoices = ksef.invoices();
+            var archive = ksef.invoices().archive();
 
-            assertThrows(KsefNotFoundException.class, () -> invoices.getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER)));
+            assertThrows(KsefNotFoundException.class, () -> archive.getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER)));
         }
     }
 
@@ -127,7 +126,7 @@ class InvoiceClientTest {
             // when
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1));
-            InvoiceMetadataResult response = ksef.invoices().queryInvoicesByMetadata(query.build());
+            InvoiceMetadataResult response = ksef.invoices().archive().queryByMetadata(query.build());
 
             // then
             assertEquals(1, response.invoices().size());
@@ -179,7 +178,7 @@ class InvoiceClientTest {
                     .onlineOnly()
                     .selfInvoicing(true)
                     .hasAttachment(true);
-            ksef.invoices().streamInvoicesByMetadata(query.build()).toList();
+            ksef.invoices().archive().streamByMetadata(query.build()).toList();
 
             // then — both POSTs hit. Page 2 body carries the same caller filters,
             // and the spec-conformant algorithm advanced pageOffset (not the
@@ -247,7 +246,7 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"));
-            ksef.invoices().streamInvoicesByMetadata(query.build()).toList();
+            ksef.invoices().archive().streamByMetadata(query.build()).toList();
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata")));
             assertEquals(2, requests.size());
@@ -286,7 +285,7 @@ class InvoiceClientTest {
             io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException thrown =
                     org.junit.jupiter.api.Assertions.assertThrows(
                             io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException.class,
-                            () -> ksef.invoices().streamInvoicesByMetadata(query.build()).toList());
+                            () -> ksef.invoices().archive().streamByMetadata(query.build()).toList());
             assertTrue(thrown.getMessage().contains("isTruncated"),
                     "exception message must explain truncation, was: " + thrown.getMessage());
         }
@@ -305,7 +304,7 @@ class InvoiceClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            InvoiceExportStatus response = ksef.invoices().getExportStatus(TEST_EXPORT_REF);
+            InvoiceExportStatus response = ksef.invoices().export().getStatus(TEST_EXPORT_REF);
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
@@ -332,8 +331,8 @@ class InvoiceClientTest {
 
             // when — first protected domain call must trigger auth via requireToken()
             // BEFORE any HTTP request to the protected endpoint.
-            var invoices = ksef.invoices();
-            assertThrows(RuntimeException.class, () -> invoices.getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER)));
+            var archive = ksef.invoices().archive();
+            assertThrows(RuntimeException.class, () -> archive.getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER)));
 
             // then — proactive auth attempt observed at /security/public-key-certificates,
             // and the protected domain endpoint was NEVER called (old behavior would have
@@ -364,7 +363,7 @@ class InvoiceClientTest {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1))
                     .sortOrder(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder.DESC);
-            InvoiceMetadataResult response = ksef.invoices().queryInvoicesByMetadata(query.build());
+            InvoiceMetadataResult response = ksef.invoices().archive().queryByMetadata(query.build());
 
             // then
             assertEquals(1, response.invoices().size());
@@ -388,7 +387,7 @@ class InvoiceClientTest {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1))
                     .sortOrder(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SortOrder.ASC);
-            ksef.invoices().queryInvoicesByMetadata(query.build());
+            ksef.invoices().archive().queryByMetadata(query.build());
 
             // then
             verify(postRequestedFor(urlPathEqualTo(INVOICES_BASE + "/query/metadata"))

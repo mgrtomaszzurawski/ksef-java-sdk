@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefAddress;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefCreditNoteLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefInvoiceLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefParty;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.pefkor.CreditNoteType;
 import io.github.mgrtomaszzurawski.ksef.xml.ubl.cac.AddressType;
 import io.github.mgrtomaszzurawski.ksef.xml.ubl.cac.BillingReferenceType;
@@ -45,6 +46,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -93,12 +95,25 @@ public final class PefKorInvoice implements Invoice {
     }
 
     /**
-     * Underlying UBL JAXB tree — escape-hatch for fields the flat
-     * accessors do not surface (BillingReference details, allowance/
-     * charges, tax breakdowns). Read-only access — do not mutate.
+     * Direct reference to the internal UBL JAXB {@link CreditNoteType}
+     * root — escape-hatch for fields the flat accessors do not surface
+     * (BillingReference details, allowance/charges, tax breakdowns).
+     *
+     * <p><strong>Read-only by contract.</strong> Mutations are not
+     * reflected in {@link #xml()} bytes. For a mutable disconnected
+     * copy use {@link #toJaxbCopy()}; for build-time customisation use
+     * {@link Builder#customizeJaxb(Consumer)}.
      */
-    public CreditNoteType creditNote() {
+    public CreditNoteType unsafeJaxbView() {
         return creditNote;
+    }
+
+    /**
+     * Deep-clone of the internal UBL JAXB tree via a marshal/unmarshal
+     * round-trip.
+     */
+    public CreditNoteType toJaxbCopy() {
+        return JaxbDeepClone.clone(creditNote, CreditNoteType.class);
     }
 
     /** Credit-note number from {@code <cbc:ID>}. */
@@ -255,6 +270,7 @@ public final class PefKorInvoice implements Invoice {
         private static final String ERR_NULL_LINE = "line must not be null";
         private static final String ERR_NULL_PAYABLE = "payableAmount must not be null";
         private static final String ERR_NULL_ORIGINAL = "originalInvoiceNumber must not be null";
+        private static final String ERR_NULL_CUSTOMIZER = "customizer must not be null";
         private static final String ERR_BAD_DATATYPE_FACTORY = "DatatypeFactory unavailable";
         private static final String UBL_TAX_SCHEME_ID_VAT = "VAT";
         private static final String DEFAULT_CURRENCY_CODE_PLN = "PLN";
@@ -268,8 +284,23 @@ public final class PefKorInvoice implements Invoice {
         private final List<PefInvoiceLine> lines = new ArrayList<>();
         private BigDecimal payableAmount;
         private String originalInvoiceNumber;
+        private Consumer<CreditNoteType> customizer;
 
         Builder() {
+        }
+
+        /**
+         * Customise the assembled UBL JAXB tree before marshalling — escape
+         * hatch for fields the builder does not surface. The consumer runs
+         * after typed setters have populated the root, immediately before
+         * XML marshalling. Multiple calls compose by appending.
+         */
+        public Builder customizeJaxb(Consumer<CreditNoteType> jaxbCustomizer) {
+            Objects.requireNonNull(jaxbCustomizer, ERR_NULL_CUSTOMIZER);
+            this.customizer = this.customizer == null
+                    ? jaxbCustomizer
+                    : this.customizer.andThen(jaxbCustomizer);
+            return this;
         }
 
         /** Credit-note number (cbc:ID). */
@@ -335,6 +366,9 @@ public final class PefKorInvoice implements Invoice {
             Objects.requireNonNull(payableAmount, ERR_NULL_PAYABLE);
             Objects.requireNonNull(originalInvoiceNumber, ERR_NULL_ORIGINAL);
             CreditNoteType creditNote = assembleCreditNote();
+            if (customizer != null) {
+                customizer.accept(creditNote);
+            }
             jakarta.xml.bind.JAXBElement<CreditNoteType> root =
                     new io.github.mgrtomaszzurawski.ksef.xml.pefkor.ObjectFactory().createCreditNote(creditNote);
             byte[] xml = JaxbInvoiceMarshaller.marshal(root, CreditNoteType.class);

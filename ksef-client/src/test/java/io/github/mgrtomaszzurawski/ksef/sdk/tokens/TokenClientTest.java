@@ -107,7 +107,7 @@ class TokenClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            TokenList response = ksef.tokens().list(TokenQueryBuilder.create().build());
+            TokenList response = ksef.tokens().queryTokens(TokenQueryBuilder.create().build());
 
             // then
             assertNotNull(response.tokens());

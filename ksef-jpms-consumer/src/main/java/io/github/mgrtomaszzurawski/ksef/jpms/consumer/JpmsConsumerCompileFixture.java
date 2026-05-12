@@ -23,9 +23,14 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefCryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefEncryptionInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.SendInvoiceCommand;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
@@ -99,9 +104,14 @@ public final class JpmsConsumerCompileFixture {
                 AuthSession.class,
                 // sdk.domain.invoicing + builder + qrcode + sync
                 FormCode.class,
+                Invoices.class,
+                InvoiceArchive.class,
+                InvoiceSessions.class,
+                InvoiceBatch.class,
+                InvoiceExport.class,
+                InvoiceSync.class,
                 OnlineSession.class,
                 PreparedInvoiceExport.class,
-                SendInvoiceCommand.class,
                 InvoiceQueryBuilder.class,
                 // PR11 — batch submission API surface (model package)
                 BatchOptions.class,
@@ -168,7 +178,7 @@ public final class JpmsConsumerCompileFixture {
         // Reference Stream<AuthSession> as a public return shape (now via
         // the client.auth() accessor — PR6 trim).
         java.util.function.Function<KsefClient, java.util.stream.Stream<AuthSession>> streamSessions =
-                client -> client.auth().streamSessions();
+                client -> client.auth().streamAuthSessions();
         if (streamSessions == null) {
             throw new IllegalStateException("streamSessions was null");
         }

@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -38,7 +39,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for InvoiceClient operations.
+ * Runner for Invoices operations.
  *
  * <p>All operations run in both AUTH_SAFE and FULL modes — they're either
  * read-only (queryInvoicesByMetadata, getExportStatus, getByKsefNumber) or start a
@@ -117,7 +118,7 @@ public final class InvoiceRunner implements DemoRunner {
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(from);
 
-            InvoiceMetadataResult response = context.client().invoices().queryInvoicesByMetadata(query.build());
+            InvoiceMetadataResult response = context.client().invoices().archive().queryByMetadata(query.build());
             int count = response.invoices() != null ? response.invoices().size() : 0;
             boolean hasMore = response.hasMore();
             if (LOGGER.isInfoEnabled()) {
@@ -142,8 +143,8 @@ public final class InvoiceRunner implements DemoRunner {
             // prepareExport handles symmetric-key fetch, AES-key generation, and
             // package-decrypt material retention; demo only needs the reference
             // number to drive status polling. fullContent=false → metadata only.
-            try (PreparedInvoiceExport export = context.client().invoices().prepareExport(
-                    InvoiceQueryBuilder.seller().invoicingDateFrom(from).build(), false)) {
+            try (PreparedInvoiceExport export = context.client().invoices().export().prepare(
+                    InvoiceQueryBuilder.seller().invoicingDateFrom(from).build(), ExportScope.METADATA_ONLY)) {
                 String refNum = export.referenceNumber();
                 LOGGER.info("[{}] export started, ref={}", NAME, refNum);
                 context.state().setExportReferenceNumber(refNum);
@@ -161,8 +162,7 @@ public final class InvoiceRunner implements DemoRunner {
         int delay = POLL_INITIAL_DELAY_MS;
         try {
             while (elapsed(start) < POLL_TIMEOUT_MS) {
-                InvoiceExportStatus response = context.client().invoices()
-                        .getExportStatus(exportRef);
+                InvoiceExportStatus response = context.client().invoices().export().getStatus(exportRef);
                 Integer code = response.status() != null ? response.status().code() : null;
                 LOGGER.info("[{}] export status: code={}", NAME, code);
                 if (code != null && code == EXPORT_STATUS_OK) {
@@ -186,7 +186,7 @@ public final class InvoiceRunner implements DemoRunner {
     private void runGetByKsefNumber(DemoContext context, String ksefNumber, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            InvoiceDocument invoiceDocument = context.client().invoices().getByKsefNumber(KsefNumber.parse(ksefNumber));
+            InvoiceDocument invoiceDocument = context.client().invoices().archive().getByKsefNumber(KsefNumber.parse(ksefNumber));
             int xmlLength = invoiceDocument.xml().length;
             LOGGER.info("[{}] retrieved invoice by KSeF number, size={} bytes", NAME, xmlLength);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF, elapsed(start),
@@ -197,7 +197,7 @@ public final class InvoiceRunner implements DemoRunner {
     }
 
     /**
-     * Smoke-test the {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient#syncAsStream}
+     * Smoke-test the {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices#syncAsStream}
      * stream entry point (PR16): walk up to {@value #SYNC_STREAM_LIMIT}
      * decrypted invoices in a {@value #SYNC_WINDOW_DAYS}-day window
      * ending now, persisting per-window checkpoints into an in-memory
@@ -220,7 +220,7 @@ public final class InvoiceRunner implements DemoRunner {
             CheckpointStore store = CheckpointStore.inMemory();
             long count;
             try (Stream<DecryptedInvoice> stream =
-                         context.client().invoices().syncAsStream(plan, store)) {
+                         context.client().invoices().sync().asStream(plan, store)) {
                 count = stream.limit(SYNC_STREAM_LIMIT).count();
             }
             LOGGER.info("[{}] syncAsStream walked {} invoices (limit {})", NAME, count, SYNC_STREAM_LIMIT);
@@ -256,7 +256,7 @@ public final class InvoiceRunner implements DemoRunner {
 
     /**
      * Exercise the typed-doc branch of {@code getByKsefNumber}: the
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient#getByKsefNumber}
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices#getByKsefNumber}
      * overload returning {@link InvoiceDocument} (PR12b). Only runs in
      * FULL mode when a real KSeF number is captured by an earlier probe.
      */
@@ -271,8 +271,7 @@ public final class InvoiceRunner implements DemoRunner {
         }
         long start = System.currentTimeMillis();
         try {
-            InvoiceDocument invoiceDocument = context.client().invoices()
-                    .getByKsefNumber(KsefNumber.parse(ksefNumber));
+            InvoiceDocument invoiceDocument = context.client().invoices().archive().getByKsefNumber(KsefNumber.parse(ksefNumber));
             String typeName = labelFor(invoiceDocument);
             LOGGER.info("[{}] typed invoice document: {}", NAME, typeName);
             results.add(RunResult.ok(NAME, OP_GET_BY_KSEF_TYPED, elapsed(start), typeName));

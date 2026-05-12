@@ -8,7 +8,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code PermissionClient.grantSubunit(...)}.
+ * SDK request for {@code Permissions.grantSubunit(...)}.
  *
  * @since 1.0.0
  */

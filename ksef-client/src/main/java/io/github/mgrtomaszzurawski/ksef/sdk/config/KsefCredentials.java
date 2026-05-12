@@ -60,13 +60,12 @@ public sealed interface KsefCredentials
      * <p>Convenience accessor for NIP-typed credentials. Returns
      * {@code identifier().value()} only when the underlying identifier type is
      * {@link KsefIdentifier.Type#NIP}; otherwise throws {@link IllegalStateException}.
+     * For non-NIP identifier types (PESEL, internal, VATUE, peppol), use
+     * {@link #identifier()} directly.
      *
      * @return 10-digit NIP string
      * @throws IllegalStateException if the identifier type is not {@code NIP}
-     * @deprecated use {@link #identifier()} — supports all four KSeF identifier types
      */
-    @SuppressWarnings("java:S1133") // forRemoval=false: intentional permanent deprecation for backward-compat ergonomics.
-    @Deprecated(since = "1.0.0", forRemoval = false)
     default String nip() {
         KsefIdentifier identifier = identifier();
         if (identifier.type() != KsefIdentifier.Type.NIP) {

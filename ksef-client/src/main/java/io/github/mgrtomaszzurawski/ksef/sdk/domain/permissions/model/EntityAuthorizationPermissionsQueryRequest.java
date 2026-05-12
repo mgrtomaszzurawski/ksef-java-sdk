@@ -9,7 +9,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code PermissionClient.queryAuthorizations(...)}.
+ * SDK request for {@code Permissions.queryAuthorizations(...)}.
  * <p>{@code authorizingType} is implicitly NIP-only (KSeF spec). The
  * {@code authorizedType} accepts {@link EntityAuthorizationIdentifierType}
  * (NIP or PEPPOL_ID).

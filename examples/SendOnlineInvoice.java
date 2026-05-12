@@ -24,9 +24,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,16 +52,23 @@ public final class SendOnlineInvoice {
             // Authentication is lazy — opening a session triggers it.
             System.out.println("Connecting as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
-            try (OnlineSession session = client.invoices().openSession(FormCode.FA3)) {
-                System.out.println("Session opened: " + session.referenceNumber());
+            OnlineSession session = client.invoices().sessions().open(FormCode.FA3);
+            System.out.println("Session opened: " + session.referenceNumber());
 
-                // sendInvoice blocks until KSeF reaches a terminal state and
-                // returns the full SubmittedInvoice (KSeF number, KOD I QR PNG,
-                // status, embedded original Invoice).
-                SubmittedInvoice result = session.sendInvoice(Invoice.fromXml(FormCode.FA3, invoiceXml));
-                System.out.println("Invoice accepted, ref: " + result.referenceNumber()
-                        + ", ksefNumber: " + result.ksefNumber().map(KsefNumber::value).orElse("<none>"));
-            }
+            // sendInvoice blocks until KSeF reaches a terminal state and
+            // returns the full SubmittedInvoice (KSeF number, KOD I QR PNG,
+            // status, embedded original Invoice).
+            SubmittedInvoice submitted = session.sendInvoice(Invoice.fromXml(FormCode.FA3, invoiceXml));
+            System.out.println("Invoice accepted, ref: " + submitted.referenceNumber()
+                    + ", ksefNumber: " + submitted.ksefNumber().map(KsefNumber::value).orElse("<none>"));
+
+            // Transition the session to terminal state (KSeF emits one UPO per
+            // accepted invoice once the session is closed) and retrieve the UPO
+            // for the invoice we just submitted.
+            ClosedSession closed = session.complete();
+            ClearedInvoice cleared = closed.cleared(submitted);
+            System.out.println("UPO bytes for ref " + submitted.referenceNumber()
+                    + ": " + cleared.upo().xmlBytes().length);
         }
     }
 

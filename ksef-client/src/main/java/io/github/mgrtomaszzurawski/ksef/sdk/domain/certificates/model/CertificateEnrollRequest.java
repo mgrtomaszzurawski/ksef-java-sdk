@@ -10,7 +10,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request payload for {@code CertificateClient.enroll(...)}.
+ * SDK request payload for {@code Certificates.enroll(...)}.
  *
  * @param certificateName human-readable certificate name
  * @param certificateType Authentication or Offline

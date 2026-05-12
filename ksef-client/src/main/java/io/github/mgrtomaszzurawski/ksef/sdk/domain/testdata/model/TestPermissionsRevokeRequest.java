@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 import java.util.Objects;
 
 /**
- * SDK request for {@code TestDataClient.revokePermissions(...)}.
+ * SDK request for {@code TestDataAdmin.revokePermissions(...)}.
  *
  * @since 1.0.0
  */

@@ -37,8 +37,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handle for an in-flight invoice export. Returned by
- * {@link InvoiceClient#prepareExport(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryFilters, boolean)
- * client.invoices().prepareExport(...)}, this class:
+ * {@link InvoiceExport#prepare(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope)
+ * client.invoices().export().prepare(...)}, this class:
  *
  * <ol>
  *   <li>retains the plaintext AES key and IV generated for the export so the
@@ -80,7 +80,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     private static final String ERR_NULL_REFERENCE = "referenceNumber must not be null";
     private static final String ERR_NULL_AES_KEY = "aesKey must not be null";
     private static final String ERR_NULL_INIT_VECTOR = "initVector must not be null";
-    private static final String ERR_NULL_INVOICES = "invoices must not be null";
+    private static final String ERR_NULL_INVOICE_EXPORT = "invoiceExport must not be null";
     private static final String ERR_NULL_HTTP_CLIENT = "httpClient must not be null";
     private static final String ERR_NULL_STATUS = "status must not be null";
     private static final String ERR_NULL_PARTS = "status.packageParts must not be null";
@@ -116,7 +116,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     /** Bounded-copy buffer size for ZIP entry extraction (matches CipherInputStream default block buffer). */
     private static final int COPY_BUFFER_BYTES = 8 * 1024;
 
-    private final InvoiceClient invoices;
+    private final InvoiceExport invoiceExport;
     private final HttpClient httpClient;
     private final String referenceNumber;
     private final byte[] aesKey;
@@ -130,12 +130,12 @@ public final class PreparedInvoiceExport implements AutoCloseable {
      * prepare response — passing arbitrary bytes here is undefined
      * behaviour. Constructed via the same-package {@code SessionHandleConstructor} (internal bridge).
      */
-    PreparedInvoiceExport(InvoiceClient invoices,
+    PreparedInvoiceExport(InvoiceExport invoiceExport,
                           HttpClient httpClient,
                           String referenceNumber,
                           byte[] aesKey,
                           byte[] initVector) {
-        this.invoices = Objects.requireNonNull(invoices, ERR_NULL_INVOICES);
+        this.invoiceExport = Objects.requireNonNull(invoiceExport, ERR_NULL_INVOICE_EXPORT);
         this.httpClient = Objects.requireNonNull(httpClient, ERR_NULL_HTTP_CLIENT);
         this.referenceNumber = Objects.requireNonNull(referenceNumber, ERR_NULL_REFERENCE);
         Objects.requireNonNull(aesKey, ERR_NULL_AES_KEY);
@@ -184,7 +184,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
         Integer lastCode = null;
         for (int attempt = 0; attempt < STATUS_POLL_MAX_ATTEMPTS; attempt++) {
             sleep(STATUS_POLL_DELAY_MS);
-            InvoiceExportStatus status = invoices.getExportStatus(referenceNumber);
+            InvoiceExportStatus status = invoiceExport.getStatus(referenceNumber);
             Integer code = status.status() != null ? status.status().code() : null;
             if (code != null && code >= STATUS_TERMINAL_FLOOR) {
                 if (code == STATUS_CODE_OK) {

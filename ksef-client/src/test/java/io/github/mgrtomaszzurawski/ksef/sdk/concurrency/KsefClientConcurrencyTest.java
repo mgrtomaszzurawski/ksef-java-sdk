@@ -71,7 +71,7 @@ class KsefClientConcurrencyTest {
                     futures.add(executor.submit(() -> {
                         for (int call = 0; call < CALLS_PER_THREAD; call++) {
                             try {
-                                TokenList result = client.tokens().list(TokenQueryBuilder.create().build());
+                                TokenList result = client.tokens().queryTokens(TokenQueryBuilder.create().build());
                                 if (result.tokens() == null) {
                                     errors.incrementAndGet();
                                 }

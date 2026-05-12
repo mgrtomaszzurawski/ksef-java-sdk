@@ -14,7 +14,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for LimitsClient operations.
+ * Runner for Limits operations.
  */
 public final class LimitsRunner implements DemoRunner {
 

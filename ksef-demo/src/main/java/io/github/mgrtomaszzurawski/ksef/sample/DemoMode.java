@@ -11,7 +11,7 @@ package io.github.mgrtomaszzurawski.ksef.sample;
  */
 public enum DemoMode {
 
-    /** Unauthenticated operations only: SecurityClient, QrCodeService, TestDataClient (create+remove pairs). */
+    /** Unauthenticated operations only: SecurityClient, QrCodeService, TestDataAdmin (create+remove pairs). */
     READ_ONLY,
 
     /** Authenticate + all read queries + reversible CRUD (token, permission, certificate generate+revoke). */

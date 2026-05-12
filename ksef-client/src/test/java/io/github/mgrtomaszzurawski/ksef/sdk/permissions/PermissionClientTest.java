@@ -36,7 +36,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -270,7 +270,7 @@ class PermissionClientTest {
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-            PermissionOperationResult response = ksef.permissions().revokeCommon(TEST_PERMISSION_ID);
+            PermissionOperationResult response = ksef.permissions().revokePermission(TEST_PERMISSION_ID);
 
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
@@ -466,7 +466,7 @@ class PermissionClientTest {
 
             var permissions = ksef.permissions();
 
-            assertThrows(IllegalArgumentException.class, () -> permissions.revokeCommon("../../../etc/passwd"));
+            assertThrows(IllegalArgumentException.class, () -> permissions.revokePermission("../../../etc/passwd"));
         }
     }
 

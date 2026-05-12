@@ -110,7 +110,7 @@ public final class ValidationProbe {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional return per Sonar S2201 — the side effect
             // (lazy authentication) is the actual goal.
-            client.auth().streamSessions().findAny().ifPresent(authSession -> { });
+            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
             LOGGER.info("Authenticated successfully");
 
             String bearer = extractBearerToken(client);

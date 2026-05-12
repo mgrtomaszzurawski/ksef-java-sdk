@@ -97,7 +97,7 @@ public final class TokenGenerateBuilder {
     /**
      * Build the token generation request. Validates description length and permissions.
      *
-     * @return the request ready to pass to {@code TokenClient.generate()}
+     * @return the request ready to pass to {@code Tokens.generate()}
      * @throws IllegalStateException if validation fails
      */
     public TokenGenerateRequest build() {

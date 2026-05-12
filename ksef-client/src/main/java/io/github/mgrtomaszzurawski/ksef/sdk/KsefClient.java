@@ -19,29 +19,31 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.Auth;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.CertificateClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.LimitsClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.AuthSessions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.Certificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.Limits;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.PermissionClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.TokenClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodes;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.PeppolProviders;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.Tokens;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.AuthSessionsImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.CertificateClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoiceClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.LimitsClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.PeppolClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.PermissionClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.CertificatesImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoicesImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.limits.LimitsImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.peppol.PeppolProvidersImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.PermissionsImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.TestDataClientImpl;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.TokenClientImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.TestDataAdminImpl;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.tokens.TokensImpl;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.IdentifierMasking;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
@@ -78,7 +80,7 @@ import org.slf4j.LoggerFactory;
  *         .credentials(credentials)
  *         .build()) {
  *
- *     try (OnlineSession session = client.invoices().openSession(FormCode.FA3)) {
+ *     try (OnlineSession session = client.invoices().sessions().open(FormCode.FA3)) {
  *         session.send(invoiceXmlBytes);
  *     }
  * }
@@ -91,6 +93,9 @@ public final class KsefClient implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(KsefClient.class);
 
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
+    private static final String ERR_TEST_DATA_ON_PROD =
+            "Test-data API is not available on KsefEnvironment.PROD — "
+                    + "use TEST or DEMO for test-tenant operations.";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
@@ -128,15 +133,16 @@ public final class KsefClient implements AutoCloseable {
     private final AuthClient authClient;
     private final SecurityClient securityClient;
     private final SessionClient sessionClient;
-    private final InvoiceClient invoiceClient;
-    private final TokenClient tokenClient;
-    private final PermissionClient permissionClient;
-    private final CertificateClient certificateClient;
-    private final LimitsClient limitsClient;
-    private final TestDataClient testDataClient;
-    private final PeppolClient peppolClient;
-    private final Auth authImpl;
-    private final QrCodeService qrCodeService;
+    private final Invoices invoiceClient;
+    private final @Nullable OfflineSigningProvider offlineSigningProvider;
+    private final Tokens tokenClient;
+    private final Permissions permissionClient;
+    private final Certificates certificateClient;
+    private final Limits limitsClient;
+    private final TestDataAdmin testDataClient;
+    private final PeppolProviders peppolClient;
+    private final AuthSessions authImpl;
+    private final QrCodes qrCodeService;
 
     private final Map<PublicKeyCertificateUsage, PublicKey> publicKeyCache = new ConcurrentHashMap<>();
     private volatile boolean authenticated;
@@ -164,17 +170,18 @@ public final class KsefClient implements AutoCloseable {
         this.authClient = new AuthClient(this.runtime);
         this.securityClient = new SecurityClient(this.runtime);
         this.sessionClient = new SessionClient(this.runtime);
-        this.invoiceClient = new InvoiceClientImpl(this.runtime,
+        this.invoiceClient = new InvoicesImpl(this.runtime,
                 this.sessionClient, this.environment, this::getPublicKey,
                 builder.invoiceVerificationTimeout);
-        this.tokenClient = new TokenClientImpl(this.runtime);
-        this.permissionClient = new PermissionClientImpl(this.runtime);
-        this.certificateClient = new CertificateClientImpl(this.runtime);
-        this.limitsClient = new LimitsClientImpl(this.runtime);
-        this.testDataClient = new TestDataClientImpl(this.runtime);
-        this.peppolClient = new PeppolClientImpl(this.runtime);
+        this.offlineSigningProvider = builder.offlineSigningProvider;
+        this.tokenClient = new TokensImpl(this.runtime);
+        this.permissionClient = new PermissionsImpl(this.runtime);
+        this.certificateClient = new CertificatesImpl(this.runtime);
+        this.limitsClient = new LimitsImpl(this.runtime);
+        this.testDataClient = new TestDataAdminImpl(this.runtime);
+        this.peppolClient = new PeppolProvidersImpl(this.runtime);
         this.qrCodeService = new QrCodeService();
-        this.authImpl = new AuthImpl(
+        this.authImpl = new AuthSessionsImpl(
                 this.authClient,
                 this::ensureOpen,
                 this::ensureAuthenticated,
@@ -191,10 +198,11 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Authenticate with KSeF using the configured credentials. Internal —
-     * exposed only to the runtime auth hooks. Consumers trigger
-     * authentication implicitly via the first call that requires it
-     * (lazy auth).
+     * Authenticate with KSeF using the configured credentials. Optional —
+     * the SDK also triggers authentication implicitly on the first call
+     * that requires it (lazy auth). Long-running consumers (batch jobs,
+     * scheduled workers, app warm-up) call this once at startup to pay
+     * the challenge-response cost outside the critical path.
      *
      * <p>Handles the full authentication flow:
      * <ol>
@@ -206,7 +214,7 @@ public final class KsefClient implements AutoCloseable {
      *
      * <p>Thread-safe. If already authenticated, this is a no-op.
      */
-    private synchronized void authenticate() {
+    public synchronized void authenticate() {
         ensureOpen();
         if (authenticated) {
             return;
@@ -222,8 +230,8 @@ public final class KsefClient implements AutoCloseable {
 
     /**
      * Internal: terminate the current auth session — invoked by
-     * {@link Auth#terminate()} via the lifecycle hook supplied to
-     * {@link AuthImpl}. Clears local auth state on success.
+     * {@link AuthSessions#terminate()} via the lifecycle hook supplied to
+     * {@link AuthSessionsImpl}. Clears local auth state on success.
      */
     private synchronized void terminateAuthInternal() {
         ensureOpen();
@@ -273,7 +281,7 @@ public final class KsefClient implements AutoCloseable {
      *
      * <p>Requires authentication (lazy auth if needed).
      */
-    public InvoiceClient invoices() {
+    public Invoices invoices() {
         ensureOpen();
         return invoiceClient;
     }
@@ -285,7 +293,7 @@ public final class KsefClient implements AutoCloseable {
      * <p>Authentication itself is lazy and handled internally; this
      * accessor exposes the explicit session-management verbs.
      */
-    public Auth auth() {
+    public AuthSessions auth() {
         ensureOpen();
         return authImpl;
     }
@@ -293,7 +301,7 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access token management operations (generate, list, get status, revoke).
      */
-    public TokenClient tokens() {
+    public Tokens tokens() {
         ensureOpen();
         return tokenClient;
     }
@@ -301,7 +309,7 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access permission management operations (grant, revoke, query permissions).
      */
-    public PermissionClient permissions() {
+    public Permissions permissions() {
         ensureOpen();
         return permissionClient;
     }
@@ -309,7 +317,7 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access certificate management operations (enroll, retrieve, revoke, query).
      */
-    public CertificateClient certificates() {
+    public Certificates certificates() {
         ensureOpen();
         return certificateClient;
     }
@@ -317,16 +325,26 @@ public final class KsefClient implements AutoCloseable {
     /**
      * Access session, subject, and rate-limit queries.
      */
-    public LimitsClient limits() {
+    public Limits limits() {
         ensureOpen();
         return limitsClient;
     }
 
     /**
      * Access test environment data management operations.
+     *
+     * @throws IllegalStateException when the client is configured for
+     *     {@link KsefEnvironment#PROD} — the test-data API is not exposed
+     *     in production. The check is environment-equality based, so
+     *     {@code custom(productionUrl)} bypasses it on purpose; the rule
+     *     here exists to stop accidental PROD calls from code paths that
+     *     wire {@link KsefEnvironment#PROD} explicitly.
      */
-    public TestDataClient testData() {
+    public TestDataAdmin testData() {
         ensureOpen();
+        if (KsefEnvironment.PROD.equals(environment)) {
+            throw new IllegalStateException(ERR_TEST_DATA_ON_PROD);
+        }
         return testDataClient;
     }
 
@@ -334,7 +352,7 @@ public final class KsefClient implements AutoCloseable {
      * Access Peppol service provider queries.
      * Requires authentication (lazy auth if needed).
      */
-    public PeppolClient peppol() {
+    public PeppolProviders peppol() {
         ensureOpen();
         return peppolClient;
     }
@@ -344,14 +362,26 @@ public final class KsefClient implements AutoCloseable {
      * variants. Stateless instance shared across the client lifecycle;
      * the service does not require authentication.
      *
-     * @return the shared {@link QrCodeService}
+     * @return the shared {@link QrCodes} default implementation
      */
-    public QrCodeService qrCode() {
+    public QrCodes qrCode() {
         return qrCodeService;
     }
 
     /** Configured KSeF environment for this client. */
     public KsefEnvironment environment() { return environment; }
+
+    /**
+     * The {@link OfflineSigningProvider} registered via
+     * {@link Builder#offlineSigning}, or empty when the client was built
+     * without one. Consumers using the offline path with a configured
+     * provider can let the SDK sign and package the invoice; consumers
+     * without one fall back to the lower-level
+     * {@code OfflineInvoice.fromInvoice(...)} factory.
+     */
+    public Optional<OfflineSigningProvider> offlineSigningProvider() {
+        return Optional.ofNullable(offlineSigningProvider);
+    }
 
     /**
      * Pre-load the per-schema JAXBContext + XSD validation caches for every
@@ -401,6 +431,7 @@ public final class KsefClient implements AutoCloseable {
         private RetryPolicy retryPolicy = RetryPolicy.builder().build();
         private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
         private Duration invoiceVerificationTimeout = DEFAULT_INVOICE_VERIFICATION_TIMEOUT;
+        private @Nullable OfflineSigningProvider offlineSigningProvider;
 
         private Builder() { }
 
@@ -479,6 +510,23 @@ public final class KsefClient implements AutoCloseable {
         public Builder invoiceVerificationTimeout(Duration invoiceVerificationTimeout) {
             this.invoiceVerificationTimeout = Objects.requireNonNull(invoiceVerificationTimeout,
                     "invoiceVerificationTimeout must not be null");
+            return this;
+        }
+
+        /**
+         * Register an {@link OfflineSigningProvider} that the offline-send
+         * flow consults to sign and package invoices. The provider owns
+         * the KSeF Offline certificate and the private key (or HSM/KMS
+         * connection) that signs KOD II.
+         *
+         * <p>Defaults to {@code null} — consumers using the offline path
+         * without a provider must use the lower-level
+         * {@code OfflineInvoice.fromInvoice(...)} factory and pass the
+         * result to {@code OnlineSession.sendOfflineInvoice(...)}.
+         */
+        public Builder offlineSigning(OfflineSigningProvider provider) {
+            this.offlineSigningProvider = Objects.requireNonNull(provider,
+                    "offline signing provider must not be null");
             return this;
         }
 

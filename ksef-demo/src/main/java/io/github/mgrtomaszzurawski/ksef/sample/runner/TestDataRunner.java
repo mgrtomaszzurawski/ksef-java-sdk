@@ -6,7 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsRevokeBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPersonCreateBuilder;
@@ -27,7 +28,7 @@ import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapse
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.errorMessage;
 
 /**
- * Runner for {@link TestDataClient} operations. Exercises every test-data endpoint
+ * Runner for {@link TestDataAdmin} operations. Exercises every test-data endpoint
  * pair (create+remove, grant+revoke, block+unblock) and the one-shot limit setters.
  *
  * <p>This runner only operates against KSeF test environments
@@ -112,7 +113,7 @@ public final class TestDataRunner implements DemoRunner {
             return results;
         }
 
-        TestDataClient testData = context.client().testData();
+        TestDataAdmin testData = context.client().testData();
 
         // Probe first: testdata endpoints exist in OpenAPI spec but are not deployed to
         // every test environment (e.g. api-demo returns 404 — they live on api-test).
@@ -145,9 +146,9 @@ public final class TestDataRunner implements DemoRunner {
      * Probe a single testdata endpoint to confirm the env exposes them.
      * Returns false if the first call returns 404 (route not deployed).
      */
-    private static boolean testDataEndpointsAvailable(TestDataClient testData) {
+    private static boolean testDataEndpointsAvailable(TestDataAdmin testData) {
         try {
-            testData.removeSubject(generateTestNip());
+            testData.removeSubject(KsefIdentifier.nip(generateTestNip()));
             // 200/204 — endpoint exists (probably no-op for nonexistent NIP)
             return true;
         } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException notFound) {
@@ -161,7 +162,7 @@ public final class TestDataRunner implements DemoRunner {
         }
     }
 
-    private void runSubjectPair(TestDataClient testData, List<RunResult> results) {
+    private void runSubjectPair(TestDataAdmin testData, List<RunResult> results) {
         String subjectNip = generateTestNip();
         long start = System.currentTimeMillis();
         boolean createdOk = false;
@@ -182,7 +183,7 @@ public final class TestDataRunner implements DemoRunner {
 
         long removeStart = System.currentTimeMillis();
         try {
-            testData.removeSubject(subjectNip);
+            testData.removeSubject(KsefIdentifier.nip(subjectNip));
             LOGGER.info("[{}] removed test subject nip={}", NAME, subjectNip);
             results.add(RunResult.ok(NAME, OP_REMOVE_SUBJECT, elapsed(removeStart), NIP_PREFIX + subjectNip));
         } catch (Exception exception) {
@@ -193,7 +194,7 @@ public final class TestDataRunner implements DemoRunner {
         }
     }
 
-    private void runPersonPair(TestDataClient testData, List<RunResult> results) {
+    private void runPersonPair(TestDataAdmin testData, List<RunResult> results) {
         String personNip = generateTestNip();
         String pesel = generateTestPesel();
         long start = System.currentTimeMillis();
@@ -216,7 +217,7 @@ public final class TestDataRunner implements DemoRunner {
 
         long removeStart = System.currentTimeMillis();
         try {
-            testData.removePerson(personNip);
+            testData.removePerson(KsefIdentifier.nip(personNip));
             LOGGER.info("[{}] removed test person nip={}", NAME, personNip);
             results.add(RunResult.ok(NAME, OP_REMOVE_PERSON, elapsed(removeStart), NIP_PREFIX + personNip));
         } catch (Exception exception) {
@@ -227,7 +228,7 @@ public final class TestDataRunner implements DemoRunner {
         }
     }
 
-    private void runPermissionsPair(TestDataClient testData, DemoContext context,
+    private void runPermissionsPair(TestDataAdmin testData, DemoContext context,
                                     List<RunResult> results) {
         String contextNip = context.nipIdentifier();
         String authorizedNip = generateTestNip();
@@ -270,12 +271,12 @@ public final class TestDataRunner implements DemoRunner {
         }
     }
 
-    private void runAttachmentPair(TestDataClient testData, List<RunResult> results) {
+    private void runAttachmentPair(TestDataAdmin testData, List<RunResult> results) {
         String attachmentNip = generateTestNip();
         long start = System.currentTimeMillis();
         boolean grantedOk = false;
         try {
-            testData.grantAttachment(attachmentNip);
+            testData.grantAttachment(KsefIdentifier.nip(attachmentNip));
             LOGGER.info("[{}] granted test attachment nip={}", NAME, attachmentNip);
             results.add(RunResult.ok(NAME, OP_GRANT_ATTACHMENT, elapsed(start), NIP_PREFIX + attachmentNip));
             grantedOk = true;
@@ -291,7 +292,7 @@ public final class TestDataRunner implements DemoRunner {
 
         long revokeStart = System.currentTimeMillis();
         try {
-            testData.revokeAttachment(attachmentNip, java.time.LocalDate.now());
+            testData.revokeAttachment(KsefIdentifier.nip(attachmentNip), java.time.LocalDate.now());
             LOGGER.info("[{}] revoked test attachment nip={}", NAME, attachmentNip);
             results.add(RunResult.ok(NAME, OP_REVOKE_ATTACHMENT, elapsed(revokeStart),
                     NIP_PREFIX + attachmentNip));
@@ -303,7 +304,7 @@ public final class TestDataRunner implements DemoRunner {
         }
     }
 
-    private void runContextBlockPair(TestDataClient testData, List<RunResult> results) {
+    private void runContextBlockPair(TestDataAdmin testData, List<RunResult> results) {
         String blockNip = generateTestNip();
         long start = System.currentTimeMillis();
         boolean blockedOk = false;
@@ -336,7 +337,7 @@ public final class TestDataRunner implements DemoRunner {
         }
     }
 
-    private void runSetSessionLimits(TestDataClient testData, List<RunResult> results) {
+    private void runSetSessionLimits(TestDataAdmin testData, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             testData.setSessionLimits(TestSessionLimitsBuilder.create()
@@ -355,7 +356,7 @@ public final class TestDataRunner implements DemoRunner {
         }
     }
 
-    private void runSetSubjectLimits(TestDataClient testData, List<RunResult> results) {
+    private void runSetSubjectLimits(TestDataAdmin testData, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             testData.setSubjectLimits(TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP)
@@ -370,7 +371,7 @@ public final class TestDataRunner implements DemoRunner {
         }
     }
 
-    private void runSetRateLimits(TestDataClient testData, List<RunResult> results) {
+    private void runSetRateLimits(TestDataAdmin testData, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             testData.setRateLimits(TestRateLimitsBuilder.create()

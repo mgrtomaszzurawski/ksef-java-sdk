@@ -49,7 +49,7 @@ class Fa3InvoiceDocumentTest {
     void from_whenValidFa3Xml_exposesJaxbEscapeHatch() {
         Fa3Invoice invoice = Fa3InvoiceFixtures.minimalValid();
         Fa3InvoiceDocument doc = Fa3InvoiceDocument.from(invoice.xml());
-        assertNotNull(doc.faktura(), "JAXB escape hatch faktura() must not return null");
+        assertNotNull(doc.unsafeJaxbView(), "JAXB escape hatch unsafeJaxbView() must not return null");
     }
 
     @Test

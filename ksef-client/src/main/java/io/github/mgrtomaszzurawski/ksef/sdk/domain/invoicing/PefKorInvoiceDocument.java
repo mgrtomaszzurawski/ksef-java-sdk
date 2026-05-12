@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefCreditNoteLine;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.pefkor.CreditNoteType;
 import io.github.mgrtomaszzurawski.ksef.xml.ubl.cac.CreditNoteLineType;
 import io.github.mgrtomaszzurawski.ksef.xml.ubl.cac.CustomerPartyType;
@@ -29,10 +30,11 @@ import javax.xml.datatype.XMLGregorianCalendar;
  * Construct via {@link #from(byte[])}.
  *
  * <p>Public accessors are flat primitives that read through to the
- * underlying UBL JAXB tree on demand. The {@link #creditNote()}
- * escape-hatch provides direct access to fields the flat accessors do
- * not surface (BillingReference details, allowance/charges, tax
- * breakdowns).
+ * underlying UBL JAXB tree on demand. Two escape hatches expose fields
+ * the flat accessors do not surface (BillingReference details,
+ * allowance/charges, tax breakdowns): {@link #unsafeJaxbView()} returns
+ * the live JAXB root (read-only by contract), and
+ * {@link #toJaxbCopy()} returns a mutable deep clone.
  *
  * @since 1.0.0
  */
@@ -64,11 +66,23 @@ public final class PefKorInvoiceDocument implements InvoiceDocument {
     }
 
     /**
-     * Underlying UBL JAXB tree — escape-hatch for fields the flat
-     * accessors do not surface. Read-only access — do not mutate.
+     * Direct reference to the internal UBL JAXB {@link CreditNoteType}
+     * root — escape-hatch for fields the flat accessors do not surface.
+     *
+     * <p><strong>Read-only by contract.</strong> Mutations are not
+     * reflected in the {@link #xml()} bytes. For a mutable disconnected
+     * copy use {@link #toJaxbCopy()}.
      */
-    public CreditNoteType creditNote() {
+    public CreditNoteType unsafeJaxbView() {
         return creditNote;
+    }
+
+    /**
+     * Deep-clone of the internal UBL JAXB tree via a marshal/unmarshal
+     * round-trip.
+     */
+    public CreditNoteType toJaxbCopy() {
+        return JaxbDeepClone.clone(creditNote, CreditNoteType.class);
     }
 
     /** Credit-note number from {@code <cbc:ID>}. */

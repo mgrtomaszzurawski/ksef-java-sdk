@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.peppol.model.PeppolProvidersResult;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -83,7 +84,7 @@ class PeppolClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PeppolProvidersResult result = ksef.peppol().query(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE);
+            PeppolProvidersResult result = ksef.peppol().queryProviders(new PeppolProvidersQueryRequest(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE));
 
             // then
             assertNotNull(result);
@@ -111,7 +112,7 @@ class PeppolClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PeppolProvidersResult result = ksef.peppol().query(CUSTOM_PAGE_OFFSET, CUSTOM_PAGE_SIZE);
+            PeppolProvidersResult result = ksef.peppol().queryProviders(new PeppolProvidersQueryRequest(CUSTOM_PAGE_OFFSET, CUSTOM_PAGE_SIZE));
 
             // then
             assertNotNull(result);
@@ -135,7 +136,7 @@ class PeppolClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PeppolProvidersResult result = ksef.peppol().query(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE);
+            PeppolProvidersResult result = ksef.peppol().queryProviders(new PeppolProvidersQueryRequest(DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE));
 
             // then
             assertNotNull(result);
@@ -145,33 +146,21 @@ class PeppolClientTest {
     }
 
     @Test
-    void query_whenPageOffsetNegative_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
-        // given
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            // then
-            var peppol = ksef.peppol();
-
-            assertThrows(IllegalArgumentException.class, () -> peppol.query(-1, CUSTOM_PAGE_SIZE));
-        }
+    void peppolProvidersQueryRequest_whenPageOffsetNegative_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new PeppolProvidersQueryRequest(-1, CUSTOM_PAGE_SIZE));
     }
 
     @Test
-    void query_whenPageSizeZero_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
-        // given
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            // then
-            var peppol = ksef.peppol();
-
-            assertThrows(IllegalArgumentException.class, () -> peppol.query(CUSTOM_PAGE_OFFSET, 0));
-        }
+    void peppolProvidersQueryRequest_whenPageSizeZero_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new PeppolProvidersQueryRequest(CUSTOM_PAGE_OFFSET, 0));
     }
 
     @Test
     void streamProviders_walksUntilHasMoreFalse(WireMockRuntimeInfo wmInfo) {
         // given — 2 pages; first reports hasMore=true, second hasMore=false
-        // (stream-page size hardcoded to STREAM_PAGE_SIZE=50 in PeppolClientImpl)
+        // (stream-page size hardcoded to STREAM_PAGE_SIZE=50 in PeppolProvidersImpl)
         String firstPageBody = """
                 {
                   "peppolProviders": [

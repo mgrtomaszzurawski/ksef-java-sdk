@@ -17,6 +17,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
@@ -44,7 +45,7 @@ class CertificateClientTest {
     private static final String TEST_TOKEN = "test-access-token";
     private static final String TEST_ENROLLMENT_REF = "20260404-CE-1111111111-ABCDEF1234-08";
     private static final String TEST_CERT_SERIAL = "ABC123DEF456";
-    private static final String TEST_CERT_NAME = "Test Auth Certificate";
+    private static final String TEST_CERT_NAME = "Test AuthSessions Certificate";
     private static final byte[] TEST_CSR = new byte[]{0x30, 0x42};
     private static final int KSEF_STATUS_OK = 200;
     private static final String CREDENTIALS_TOKEN = "test-token";
@@ -196,7 +197,7 @@ class CertificateClientTest {
 
             // when
             RetrieveCertificatesResult response =
-                    ksef.certificates().retrieve(List.of(TEST_CERT_SERIAL));
+                    ksef.certificates().retrieve(List.of(CertificateSerialNumber.parse(TEST_CERT_SERIAL)));
 
             // then
             assertNotNull(response.certificates());
@@ -214,7 +215,7 @@ class CertificateClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            ksef.certificates().revoke(TEST_CERT_SERIAL, CertificateRevocationReason.UNSPECIFIED);
+            ksef.certificates().revoke(CertificateSerialNumber.parse(TEST_CERT_SERIAL), CertificateRevocationReason.UNSPECIFIED);
 
             // then
             verify(postRequestedFor(urlEqualTo(revokePath))
@@ -236,7 +237,7 @@ class CertificateClientTest {
 
             // when
             CertificateQueryResult response =
-                    ksef.certificates().query(CertificateQueryBuilder.create().build());
+                    ksef.certificates().queryCertificates(CertificateQueryBuilder.create().build());
 
             // then
             assertNotNull(response.certificates());
