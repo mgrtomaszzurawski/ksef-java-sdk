@@ -15,7 +15,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestRateLimi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
 import java.security.SecureRandom;
@@ -309,7 +309,7 @@ public final class TestDataRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         boolean blockedOk = false;
         try {
-            testData.blockContext(TestDataIdentifierType.NIP, blockNip);
+            testData.blockContext(KsefIdentifier.nip(blockNip));
             LOGGER.info("[{}] blocked context nip={}", NAME, blockNip);
             results.add(RunResult.ok(NAME, OP_BLOCK_CONTEXT, elapsed(start), NIP_PREFIX + blockNip));
             blockedOk = true;
@@ -325,7 +325,7 @@ public final class TestDataRunner implements DemoRunner {
 
         long unblockStart = System.currentTimeMillis();
         try {
-            testData.unblockContext(TestDataIdentifierType.NIP, blockNip);
+            testData.unblockContext(KsefIdentifier.nip(blockNip));
             LOGGER.info("[{}] unblocked context nip={}", NAME, blockNip);
             results.add(RunResult.ok(NAME, OP_UNBLOCK_CONTEXT, elapsed(unblockStart),
                     NIP_PREFIX + blockNip));

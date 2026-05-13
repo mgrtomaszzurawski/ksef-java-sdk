@@ -220,7 +220,7 @@ public final class OfflineInvoice {
         KsefVerificationLinks.CertificateSigningInput signingInput =
                 new KsefVerificationLinks.CertificateSigningInput(
                         contextType, contextValue, sellerNip,
-                        certificate.serialNumber(), invoiceHash);
+                        certificate.serialNumber().value(), invoiceHash);
         String url = new QrSigningService().certificateVerificationUrl(
                 environment, signingInput, certificate.privateKey());
         return new QrCodeService().generateQrCode(url);

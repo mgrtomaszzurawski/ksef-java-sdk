@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.Certific
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityAuthorizationPermissionGrantBuilder;
@@ -126,14 +127,15 @@ class AllBuildersSmokeTest {
 
     @Test
     void certificateQueryBuilder_whenAllFiltersSet_preservesEachField() {
+        CertificateSerialNumber serial = CertificateSerialNumber.parse(CERTIFICATE_SERIAL);
         CertificateQueryRequest request = CertificateQueryBuilder.create()
-                .serialNumber(CERTIFICATE_SERIAL)
+                .serialNumber(serial)
                 .name(CERTIFICATE_NAME)
                 .type(KsefCertificateType.OFFLINE)
                 .status(CertificateStatus.ACTIVE)
                 .expiresAfter(OffsetDateTime.now())
                 .toBuilder().build();
-        assertEquals(CERTIFICATE_SERIAL, request.serialNumber());
+        assertEquals(serial, request.serialNumber());
         assertEquals(CertificateStatus.ACTIVE, request.status());
         assertEquals(KsefCertificateType.OFFLINE, request.type());
     }

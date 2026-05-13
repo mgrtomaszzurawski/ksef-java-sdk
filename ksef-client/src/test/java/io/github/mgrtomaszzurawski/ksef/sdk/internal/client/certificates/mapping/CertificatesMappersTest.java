@@ -333,7 +333,8 @@ class CertificatesMappersTest {
     void toQueryCertificatesRequestRaw_setsAllOptionalFields() {
         // given
         var request = new io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest(
-                SERIAL, NAME, KsefCertificateType.AUTHENTICATION,
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber.parse(SERIAL),
+                NAME, KsefCertificateType.AUTHENTICATION,
                 CertificateStatus.ACTIVE, java.time.OffsetDateTime.parse(DATE_ISO), null, null);
 
         // when

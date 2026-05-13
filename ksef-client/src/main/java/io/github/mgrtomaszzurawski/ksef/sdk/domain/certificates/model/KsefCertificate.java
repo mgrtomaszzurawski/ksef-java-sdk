@@ -58,12 +58,14 @@ public final class KsefCertificate {
     }
 
     /**
-     * X.509 serial number as the canonical hex-uppercase string that
-     * KSeF embeds into KOD II URLs. Computed from the parsed
-     * certificate so it always matches the wrapped X.509 material.
+     * X.509 serial number as the canonical hex-uppercase
+     * {@link CertificateSerialNumber} that KSeF embeds into KOD II URLs.
+     * Computed from the parsed certificate so it always matches the
+     * wrapped X.509 material.
      */
-    public String serialNumber() {
-        return certificate.getSerialNumber().toString(16).toUpperCase(java.util.Locale.ROOT);
+    public CertificateSerialNumber serialNumber() {
+        return CertificateSerialNumber.parse(
+                certificate.getSerialNumber().toString(16).toUpperCase(java.util.Locale.ROOT));
     }
 
     @Override

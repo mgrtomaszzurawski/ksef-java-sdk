@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.coverage;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
@@ -47,7 +48,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestRateLimi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
@@ -99,7 +100,7 @@ class AllMappersSmokeTest {
     private static final int RATE_PER_HOUR = 3;
     private static final int MAX_ENROLLMENTS = 10;
     private static final int MAX_CERTIFICATES = 5;
-    private static final String QUERY_SERIAL = "test-serial";
+    private static final String QUERY_SERIAL = "ABCDEF0123";
     private static final String QUERY_NAME = "test-name";
     private static final String QUERY_KSEF_NUMBER = "test-ksef-1";
     private static final String QUERY_INVOICE_NUMBER = "test-invoice-1";
@@ -139,7 +140,7 @@ class AllMappersSmokeTest {
     @Test
     void certificatesMappers_toQueryCertificatesRequestRaw_preservesSerialNumber() {
         var querySdk = CertificateQueryBuilder.create()
-                .serialNumber(QUERY_SERIAL).name(QUERY_NAME)
+                .serialNumber(CertificateSerialNumber.parse(QUERY_SERIAL)).name(QUERY_NAME)
                 .type(KsefCertificateType.OFFLINE).status(CertificateStatus.ACTIVE)
                 .expiresAfter(OffsetDateTime.now()).build();
         var queryRaw = CertificatesMappers.toQueryCertificatesRequestRaw(querySdk);
@@ -281,7 +282,7 @@ class AllMappersSmokeTest {
         for (TestSubjectType type : TestSubjectType.values()) {
             assertEquals(type.name(), TestdataMappers.toSubjectTypeRaw(type).name());
         }
-        for (TestDataIdentifierType type : TestDataIdentifierType.values()) {
+        for (KsefIdentifier.Type type : KsefIdentifier.Type.values()) {
             assertEquals(type.name(),
                     TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(type).name());
         }

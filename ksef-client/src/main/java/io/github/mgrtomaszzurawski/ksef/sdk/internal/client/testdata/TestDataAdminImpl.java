@@ -14,7 +14,6 @@ import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticatio
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest;
@@ -85,8 +84,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
     private static final String ERR_NULL_NIP = "identifier is required";
     private static final String ERR_NON_NIP_IDENTIFIER =
             "TestDataAdmin operations require a NIP-typed KsefIdentifier but got: ";
-    private static final String ERR_NULL_IDENTIFIER_TYPE = "identifierType is required";
-    private static final String ERR_NULL_IDENTIFIER_VALUE = "identifierValue is required";
+    private static final String ERR_NULL_IDENTIFIER = "identifier must not be null";
     private static final String ERR_NULL_EXPECTED_END_DATE = "expectedEndDate is required";
 
     private final HttpSupport http;
@@ -218,38 +216,34 @@ public final class TestDataAdminImpl implements TestDataAdmin {
     /**
      * Block authentication for a context in the test environment.
      *
-     * @param identifierType type of context identifier
-     * @param identifierValue value of context identifier (e.g., NIP)
+     * @param identifier the context identifier (type + value)
      */
     @Override
-    public void blockContext(TestDataIdentifierType identifierType, String identifierValue) {
+    public void blockContext(KsefIdentifier identifier) {
         LOGGER.debug(LOG_CALL, OP_BLOCK_CONTEXT);
-        Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
-        Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
-        TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
-        identifier.setType(TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(identifierType));
-        identifier.setValue(identifierValue);
+        Objects.requireNonNull(identifier, ERR_NULL_IDENTIFIER);
+        TestDataAuthenticationContextIdentifierRaw raw = new TestDataAuthenticationContextIdentifierRaw();
+        raw.setType(TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(identifier.type()));
+        raw.setValue(identifier.value());
         BlockContextAuthenticationRequestRaw request = new BlockContextAuthenticationRequestRaw();
-        request.setContextIdentifier(identifier);
+        request.setContextIdentifier(raw);
         http.postJsonNoContent(PATH_CONTEXT_BLOCK, request, OP_BLOCK_CONTEXT);
     }
 
     /**
      * Unblock authentication for a context in the test environment.
      *
-     * @param identifierType type of context identifier
-     * @param identifierValue value of context identifier (e.g., NIP)
+     * @param identifier the context identifier (type + value)
      */
     @Override
-    public void unblockContext(TestDataIdentifierType identifierType, String identifierValue) {
+    public void unblockContext(KsefIdentifier identifier) {
         LOGGER.debug(LOG_CALL, OP_UNBLOCK_CONTEXT);
-        Objects.requireNonNull(identifierType, ERR_NULL_IDENTIFIER_TYPE);
-        Objects.requireNonNull(identifierValue, ERR_NULL_IDENTIFIER_VALUE);
-        TestDataAuthenticationContextIdentifierRaw identifier = new TestDataAuthenticationContextIdentifierRaw();
-        identifier.setType(TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(identifierType));
-        identifier.setValue(identifierValue);
+        Objects.requireNonNull(identifier, ERR_NULL_IDENTIFIER);
+        TestDataAuthenticationContextIdentifierRaw raw = new TestDataAuthenticationContextIdentifierRaw();
+        raw.setType(TestdataMappers.toTestDataAuthenticationContextIdentifierTypeRaw(identifier.type()));
+        raw.setValue(identifier.value());
         UnblockContextAuthenticationRequestRaw request = new UnblockContextAuthenticationRequestRaw();
-        request.setContextIdentifier(identifier);
+        request.setContextIdentifier(raw);
         http.postJsonNoContent(PATH_CONTEXT_UNBLOCK, request, OP_UNBLOCK_CONTEXT);
     }
 
