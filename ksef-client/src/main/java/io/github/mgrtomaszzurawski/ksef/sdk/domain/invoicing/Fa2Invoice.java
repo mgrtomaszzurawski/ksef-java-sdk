@@ -63,10 +63,63 @@ public final class Fa2Invoice implements Invoice {
 
     private final Faktura faktura;
     private final byte[] xmlBytes;
+    private final @org.jspecify.annotations.Nullable String systemCode;
+    private final @org.jspecify.annotations.Nullable String formVersion;
+    private final @org.jspecify.annotations.Nullable OffsetDateTime issuedAt;
+    private final @org.jspecify.annotations.Nullable String sellerNip;
+    private final @org.jspecify.annotations.Nullable String sellerName;
+    private final @org.jspecify.annotations.Nullable String buyerNip;
+    private final @org.jspecify.annotations.Nullable String buyerName;
+    private final @org.jspecify.annotations.Nullable String invoiceNumber;
+    private final @org.jspecify.annotations.Nullable LocalDate issueDate;
+    private final @org.jspecify.annotations.Nullable String currency;
+    private final @org.jspecify.annotations.Nullable BigDecimal grossTotal;
+    private final Optional<BigDecimal> netTotal;
+    private final @org.jspecify.annotations.Nullable String invoiceTypeCode;
+    private final List<InvoiceLineItem> lineItems;
 
     Fa2Invoice(Faktura faktura, byte[] xmlBytes) {
         this.faktura = Objects.requireNonNull(faktura, ERR_NULL_FAKTURA);
         this.xmlBytes = xmlBytes.clone();
+        TNaglowek header = faktura.getNaglowek();
+        TNaglowek.KodFormularza kodFormularza = header != null ? header.getKodFormularza() : null;
+        this.systemCode = kodFormularza != null ? kodFormularza.getKodSystemowy() : null;
+        this.formVersion = kodFormularza != null ? kodFormularza.getWersjaSchemy() : null;
+        this.issuedAt = header != null && header.getDataWytworzeniaFa() != null
+                ? toOffsetDateTime(header.getDataWytworzeniaFa()) : null;
+        TPodmiot1 sellerIdentity = faktura.getPodmiot1() != null
+                ? faktura.getPodmiot1().getDaneIdentyfikacyjne() : null;
+        this.sellerNip = sellerIdentity != null ? sellerIdentity.getNIP() : null;
+        this.sellerName = sellerIdentity != null ? sellerIdentity.getNazwa() : null;
+        TPodmiot2 buyerIdentity = faktura.getPodmiot2() != null
+                ? faktura.getPodmiot2().getDaneIdentyfikacyjne() : null;
+        this.buyerNip = buyerIdentity != null ? buyerIdentity.getNIP() : null;
+        this.buyerName = buyerIdentity != null ? buyerIdentity.getNazwa() : null;
+        Faktura.Fa faContent = faktura.getFa();
+        this.invoiceNumber = faContent != null ? faContent.getP2() : null;
+        this.issueDate = faContent != null && faContent.getP1() != null
+                ? toLocalDate(faContent.getP1()) : null;
+        this.currency = faContent != null && faContent.getKodWaluty() != null
+                ? faContent.getKodWaluty().value() : null;
+        this.grossTotal = faContent != null ? faContent.getP15() : null;
+        this.netTotal = faContent != null ? Optional.ofNullable(faContent.getP131()) : Optional.empty();
+        this.invoiceTypeCode = faContent != null && faContent.getRodzajFaktury() != null
+                ? faContent.getRodzajFaktury().value() : null;
+        this.lineItems = snapshotLineItems(faContent);
+    }
+
+    private static List<InvoiceLineItem> snapshotLineItems(Faktura.@org.jspecify.annotations.Nullable Fa faContent) {
+        if (faContent == null || faContent.getFaWiersz() == null) {
+            return List.of();
+        }
+        List<InvoiceLineItem> mapped = new ArrayList<>(faContent.getFaWiersz().size());
+        for (Faktura.Fa.FaWiersz wiersz : faContent.getFaWiersz()) {
+            InvoiceLineItem item = mapLineItem(wiersz);
+            if (item != null) {
+                mapped.add(item);
+            }
+        }
+        return List.copyOf(mapped);
     }
 
     @Override
@@ -101,129 +154,52 @@ public final class Fa2Invoice implements Invoice {
     }
 
     /** Form-systemCode token from {@code Naglowek/KodFormularza/@kodSystemowy}. */
-    public String systemCode() {
-        TNaglowek header = faktura.getNaglowek();
-        if (header == null || header.getKodFormularza() == null) {
-            return null;
-        }
-        return header.getKodFormularza().getKodSystemowy();
-    }
+    public @org.jspecify.annotations.Nullable String systemCode() { return systemCode; }
 
     /** Schema version token from {@code Naglowek/KodFormularza/@wersjaSchemy}. */
-    public String formVersion() {
-        TNaglowek header = faktura.getNaglowek();
-        if (header == null || header.getKodFormularza() == null) {
-            return null;
-        }
-        return header.getKodFormularza().getWersjaSchemy();
-    }
+    public @org.jspecify.annotations.Nullable String formVersion() { return formVersion; }
 
     /** Issue timestamp from {@code Naglowek/DataWytworzeniaFa}. */
-    public OffsetDateTime issuedAt() {
-        TNaglowek header = faktura.getNaglowek();
-        if (header == null || header.getDataWytworzeniaFa() == null) {
-            return null;
-        }
-        return toOffsetDateTime(header.getDataWytworzeniaFa());
-    }
+    public @org.jspecify.annotations.Nullable OffsetDateTime issuedAt() { return issuedAt; }
 
     /** Seller NIP from {@code Podmiot1/DaneIdentyfikacyjne/NIP}. */
-    public String sellerNip() {
-        TPodmiot1 identity = sellerIdentityInternal();
-        return identity != null ? identity.getNIP() : null;
-    }
+    public @org.jspecify.annotations.Nullable String sellerNip() { return sellerNip; }
 
     /** Seller name from {@code Podmiot1/DaneIdentyfikacyjne/Nazwa}. */
-    public String sellerName() {
-        TPodmiot1 identity = sellerIdentityInternal();
-        return identity != null ? identity.getNazwa() : null;
-    }
+    public @org.jspecify.annotations.Nullable String sellerName() { return sellerName; }
 
     /** Buyer NIP from {@code Podmiot2/DaneIdentyfikacyjne/NIP}. */
-    public String buyerNip() {
-        TPodmiot2 identity = buyerIdentityInternal();
-        return identity != null ? identity.getNIP() : null;
-    }
+    public @org.jspecify.annotations.Nullable String buyerNip() { return buyerNip; }
 
     /** Buyer name from {@code Podmiot2/DaneIdentyfikacyjne/Nazwa}. */
-    public String buyerName() {
-        TPodmiot2 identity = buyerIdentityInternal();
-        return identity != null ? identity.getNazwa() : null;
-    }
+    public @org.jspecify.annotations.Nullable String buyerName() { return buyerName; }
 
     /** Invoice number from {@code Fa/P_2}. */
-    public String invoiceNumber() {
-        Faktura.Fa faContent = faktura.getFa();
-        return faContent != null ? faContent.getP2() : null;
-    }
+    public @org.jspecify.annotations.Nullable String invoiceNumber() { return invoiceNumber; }
 
     /** Issue date from {@code Fa/P_1}. */
-    public LocalDate issueDate() {
-        Faktura.Fa faContent = faktura.getFa();
-        if (faContent == null || faContent.getP1() == null) {
-            return null;
-        }
-        return toLocalDate(faContent.getP1());
-    }
+    public @org.jspecify.annotations.Nullable LocalDate issueDate() { return issueDate; }
 
     /** ISO 4217 currency code from {@code Fa/KodWaluty}. */
-    public String currency() {
-        Faktura.Fa faContent = faktura.getFa();
-        if (faContent == null || faContent.getKodWaluty() == null) {
-            return null;
-        }
-        return faContent.getKodWaluty().value();
-    }
+    public @org.jspecify.annotations.Nullable String currency() { return currency; }
 
     /** Gross total from {@code Fa/P_15}. */
-    public BigDecimal grossTotal() {
-        Faktura.Fa faContent = faktura.getFa();
-        return faContent != null ? faContent.getP15() : null;
-    }
+    public @org.jspecify.annotations.Nullable BigDecimal grossTotal() { return grossTotal; }
 
     /** Optional net total from {@code Fa/P_13_1}. */
-    public Optional<BigDecimal> netTotal() {
-        Faktura.Fa faContent = faktura.getFa();
-        return faContent != null ? Optional.ofNullable(faContent.getP131()) : Optional.empty();
-    }
+    public Optional<BigDecimal> netTotal() { return netTotal; }
 
     /** Invoice type code from {@code Fa/RodzajFaktury}. */
-    public String invoiceTypeCode() {
-        Faktura.Fa faContent = faktura.getFa();
-        if (faContent == null || faContent.getRodzajFaktury() == null) {
-            return null;
-        }
-        return faContent.getRodzajFaktury().value();
-    }
+    public @org.jspecify.annotations.Nullable String invoiceTypeCode() { return invoiceTypeCode; }
 
     /**
      * Line items mapped from {@code Fa/FaWiersz} entries to SDK
      * records. Returns an empty list when the underlying JAXB tree
-     * has no line items. Lines whose JAXB element lacks the required
-     * fields {@code P_7}, {@code P_11} or {@code P_12} are skipped.
+     * had no line items at construction. Lines whose JAXB element
+     * lacked the required fields {@code P_7}, {@code P_11} or
+     * {@code P_12} were skipped.
      */
-    public List<InvoiceLineItem> lineItems() {
-        Faktura.Fa faContent = faktura.getFa();
-        if (faContent == null || faContent.getFaWiersz() == null) {
-            return List.of();
-        }
-        List<InvoiceLineItem> mapped = new ArrayList<>(faContent.getFaWiersz().size());
-        for (Faktura.Fa.FaWiersz wiersz : faContent.getFaWiersz()) {
-            InvoiceLineItem item = mapLineItem(wiersz);
-            if (item != null) {
-                mapped.add(item);
-            }
-        }
-        return List.copyOf(mapped);
-    }
-
-    private TPodmiot1 sellerIdentityInternal() {
-        return faktura.getPodmiot1() != null ? faktura.getPodmiot1().getDaneIdentyfikacyjne() : null;
-    }
-
-    private TPodmiot2 buyerIdentityInternal() {
-        return faktura.getPodmiot2() != null ? faktura.getPodmiot2().getDaneIdentyfikacyjne() : null;
-    }
+    public List<InvoiceLineItem> lineItems() { return lineItems; }
 
     private static InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
         if (wiersz == null || wiersz.getP7() == null
