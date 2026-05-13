@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionCooldownException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
@@ -23,6 +24,7 @@ import java.security.PublicKey;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,16 +49,22 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
     private final KsefEnvironment environment;
     private final Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver;
     private final java.time.Duration invoiceVerificationTimeout;
+    @Nullable private final OfflineSigningProvider offlineSigningProvider;
+    @Nullable private final String sellerNip;
 
     public InvoiceSessionsImpl(SessionClient sessionClient,
                                KsefEnvironment environment,
                                Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
-                               java.time.Duration invoiceVerificationTimeout) {
+                               java.time.Duration invoiceVerificationTimeout,
+                               @Nullable OfflineSigningProvider offlineSigningProvider,
+                               @Nullable String sellerNip) {
         this.sessionClient = Objects.requireNonNull(sessionClient, "sessionClient must not be null");
         this.environment = Objects.requireNonNull(environment, "environment must not be null");
         this.publicKeyResolver = Objects.requireNonNull(publicKeyResolver, "publicKeyResolver must not be null");
         this.invoiceVerificationTimeout = Objects.requireNonNull(invoiceVerificationTimeout,
                 "invoiceVerificationTimeout must not be null");
+        this.offlineSigningProvider = offlineSigningProvider;
+        this.sellerNip = sellerNip;
     }
 
     @Override
@@ -86,7 +94,8 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
 
         return SessionHandleConstructor.newOnlineSession(
                 sessionClient, openResult.referenceNumber(), aesKey, initVector,
-                openResult.validUntil(), environment, invoiceVerificationTimeout);
+                openResult.validUntil(), environment, invoiceVerificationTimeout,
+                offlineSigningProvider, sellerNip);
     }
 
     @Override

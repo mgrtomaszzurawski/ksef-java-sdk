@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import java.time.Duration;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -69,6 +70,7 @@ public final class SessionHandleConstructor {
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR;
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VALID_UNTIL;
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VERIFICATION_AWARE;
+    private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_OFFLINE_AWARE;
     private static final Constructor<PreparedInvoiceExport> PREPARED_EXPORT_CTOR;
 
     static {
@@ -88,6 +90,12 @@ public final class SessionHandleConstructor {
                             SessionClient.class, String.class, byte[].class, byte[].class,
                             java.time.OffsetDateTime.class,
                             KsefEnvironment.class, Duration.class));
+            ONLINE_SESSION_CTOR_OFFLINE_AWARE = makeAccessible(
+                    onlineImpl.getDeclaredConstructor(
+                            SessionClient.class, String.class, byte[].class, byte[].class,
+                            java.time.OffsetDateTime.class,
+                            KsefEnvironment.class, Duration.class,
+                            OfflineSigningProvider.class, String.class));
             PREPARED_EXPORT_CTOR = makeAccessible(
                     PreparedInvoiceExport.class.getDeclaredConstructor(
                             InvoiceExport.class, HttpClient.class, String.class,
@@ -150,6 +158,28 @@ public final class SessionHandleConstructor {
                                                  Duration invoiceVerificationTimeout) {
         return invoke(ONLINE_SESSION_CTOR_VERIFICATION_AWARE, sessionClient,
                 referenceNumber, aesKey, initVector, validUntil, environment, invoiceVerificationTimeout);
+    }
+
+    /**
+     * @apiNote Internal — Bundle F-2 variant carrying an optional
+     *     {@link OfflineSigningProvider} + seller NIP, which power the
+     *     {@code sendOffline(Invoice, OfflineMode)} convenience overload
+     *     on {@link OnlineSession}. {@code provider} / {@code sellerNip}
+     *     may be {@code null} (provider not configured), in which case
+     *     the overload throws {@link IllegalStateException} on use.
+     */
+    public static OnlineSession newOnlineSession(SessionClient sessionClient,
+                                                 String referenceNumber,
+                                                 byte[] aesKey,
+                                                 byte[] initVector,
+                                                 java.time.@Nullable OffsetDateTime validUntil,
+                                                 KsefEnvironment environment,
+                                                 Duration invoiceVerificationTimeout,
+                                                 @Nullable OfflineSigningProvider provider,
+                                                 @Nullable String sellerNip) {
+        return invoke(ONLINE_SESSION_CTOR_OFFLINE_AWARE, sessionClient,
+                referenceNumber, aesKey, initVector, validUntil, environment,
+                invoiceVerificationTimeout, provider, sellerNip);
     }
 
     /**

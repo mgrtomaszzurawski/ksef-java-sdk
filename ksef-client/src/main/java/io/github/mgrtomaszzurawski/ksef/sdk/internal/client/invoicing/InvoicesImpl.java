@@ -12,6 +12,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import java.security.PublicKey;
@@ -49,14 +50,15 @@ public final class InvoicesImpl implements Invoices {
     private final InvoiceBatch batch;
 
     public InvoicesImpl(HttpRuntime runtime) {
-        this(runtime, null, null, null, DEFAULT_INVOICE_VERIFICATION_TIMEOUT);
+        this(runtime, null, null, null, DEFAULT_INVOICE_VERIFICATION_TIMEOUT, null, null);
     }
 
     public InvoicesImpl(HttpRuntime runtime,
                         @Nullable SessionClient sessionClient,
                         @Nullable KsefEnvironment environment,
                         @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver) {
-        this(runtime, sessionClient, environment, publicKeyResolver, DEFAULT_INVOICE_VERIFICATION_TIMEOUT);
+        this(runtime, sessionClient, environment, publicKeyResolver, DEFAULT_INVOICE_VERIFICATION_TIMEOUT,
+                null, null);
     }
 
     public InvoicesImpl(HttpRuntime runtime,
@@ -64,13 +66,24 @@ public final class InvoicesImpl implements Invoices {
                         @Nullable KsefEnvironment environment,
                         @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
                         java.time.Duration invoiceVerificationTimeout) {
+        this(runtime, sessionClient, environment, publicKeyResolver, invoiceVerificationTimeout, null, null);
+    }
+
+    public InvoicesImpl(HttpRuntime runtime,
+                        @Nullable SessionClient sessionClient,
+                        @Nullable KsefEnvironment environment,
+                        @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
+                        java.time.Duration invoiceVerificationTimeout,
+                        @Nullable OfflineSigningProvider offlineSigningProvider,
+                        @Nullable String sellerNip) {
         Objects.requireNonNull(runtime, "runtime must not be null");
         Objects.requireNonNull(invoiceVerificationTimeout, "invoiceVerificationTimeout must not be null");
         this.archive = new InvoiceArchiveImpl(runtime, sessionClient);
         this.export = new InvoiceExportImpl(runtime);
         this.sync = new InvoiceSyncImpl(runtime, this.export);
         this.sessions = (sessionClient != null && environment != null && publicKeyResolver != null)
-                ? new InvoiceSessionsImpl(sessionClient, environment, publicKeyResolver, invoiceVerificationTimeout)
+                ? new InvoiceSessionsImpl(sessionClient, environment, publicKeyResolver,
+                        invoiceVerificationTimeout, offlineSigningProvider, sellerNip)
                 : new UnavailableSessions();
         this.batch = (sessionClient != null && environment != null && publicKeyResolver != null)
                 ? new InvoiceBatchImpl(sessionClient, runtime.httpClient(), environment, publicKeyResolver)

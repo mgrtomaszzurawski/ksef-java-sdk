@@ -112,6 +112,35 @@ public interface OnlineSession extends Session {
     SubmittedInvoice sendOfflineInvoice(OfflineInvoice offline);
 
     /**
+     * Convenience overload that signs and packages the invoice on the
+     * caller's behalf using the
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider}
+     * registered on {@code KsefClient.Builder.offlineSigning(...)}.
+     * Equivalent to building an {@link OfflineInvoice} via the provider
+     * and passing it to {@link #sendOfflineInvoice(OfflineInvoice)}.
+     *
+     * <p>Context defaults used by the SDK:
+     * <ul>
+     *   <li>{@code environment} — derived from the active
+     *       {@code KsefEnvironment} configured on the client;</li>
+     *   <li>{@code contextType} = {@code NIP}, {@code contextValue} =
+     *       seller NIP from the authenticated credentials;</li>
+     *   <li>{@code issueDate} = today (UTC).</li>
+     * </ul>
+     *
+     * <p>If a different context kind or non-NIP context value is needed
+     * (e.g. EU-entity offline issuance), use
+     * {@link #sendOfflineInvoice(OfflineInvoice)} with an explicitly-built
+     * {@link OfflineInvoice} via
+     * {@code OfflineInvoice.fromInvoice(...)} or a custom
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider}.
+     *
+     * @throws IllegalStateException if no {@code OfflineSigningProvider}
+     *     was configured on the client builder
+     */
+    SubmittedInvoice sendOffline(Invoice invoice, OfflineMode mode);
+
+    /**
      * Send a technical correction (korekta techniczna) within this
      * session. The {@code hashOfOriginal} is the SHA-256 (32 bytes) of
      * the corrected invoice's XML; KSeF requires it on every technical
