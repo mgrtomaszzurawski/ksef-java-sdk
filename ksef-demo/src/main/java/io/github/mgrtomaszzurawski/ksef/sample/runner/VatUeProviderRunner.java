@@ -125,7 +125,7 @@ public final class VatUeProviderRunner implements DemoRunner {
             var permissions = context.client().permissions();
             var status = KsefAsync.awaitTerminal(
                     new KsefAsync.Config<>(
-                            "grantEuEntityAdmin",
+                            OP_GRANT,
                             () -> permissions.getOperationStatus(referenceNumber),
                             opStatus -> opStatus.status() != null
                                     && opStatus.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD,

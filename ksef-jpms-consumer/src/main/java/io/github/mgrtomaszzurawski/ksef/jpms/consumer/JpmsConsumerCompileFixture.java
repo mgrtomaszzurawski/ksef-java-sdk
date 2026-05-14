@@ -69,6 +69,8 @@ import java.time.OffsetDateTime;
  */
 public final class JpmsConsumerCompileFixture {
 
+    private static final String FIXTURE_NIP = "1234567890";
+
     private JpmsConsumerCompileFixture() {
         // not instantiable
     }
@@ -139,7 +141,7 @@ public final class JpmsConsumerCompileFixture {
     @SuppressWarnings("unused")
     public static void referencePublicMethods() {
         KsefClient.Builder builder = KsefClient.builder().environment(KsefEnvironment.DEMO)
-                .credentials(new KsefTokenCredentials("token", "1234567890"))
+                .credentials(new KsefTokenCredentials("token", FIXTURE_NIP))
                 .retryPolicy(RetryPolicy.builder().build())
                 .features(FeaturePolicy.defaults());
 
@@ -168,7 +170,7 @@ public final class JpmsConsumerCompileFixture {
         // Reference QR signing public-key payload helper without invoking it.
         KsefVerificationLinks.CertificateSigningInput input =
                 new KsefVerificationLinks.CertificateSigningInput(
-                        QrContextType.NIP, "1234567890", "1234567890",
+                        QrContextType.NIP, FIXTURE_NIP, FIXTURE_NIP,
                         "0123456789ABCDEF", new byte[32]);
         if (input == null) {
             throw new IllegalStateException("input was null");
