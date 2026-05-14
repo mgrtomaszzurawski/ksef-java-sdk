@@ -41,10 +41,7 @@ class OfflineInvoiceTest {
         Invoice invoice = Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML);
 
         // when
-        OfflineInvoice offline = OfflineInvoice.fromInvoice(
-                invoice, certificate, OfflineMode.OFFLINE_24,
-                QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE,
-                SELLER_NIP, ISSUE_DATE);
+        OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24, new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE, SELLER_NIP, ISSUE_DATE));
 
         // then
         assertNotNull(offline.kodIQrPng());
@@ -133,10 +130,7 @@ class OfflineInvoiceTest {
     void offlineMode_whenAccessed_returnsConfiguredValue() {
         // given
         Invoice invoice = Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML);
-        OfflineInvoice offline = OfflineInvoice.fromInvoice(
-                invoice, certificate, OfflineMode.KSEF_EMERGENCY,
-                QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE,
-                SELLER_NIP, ISSUE_DATE);
+        OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.KSEF_EMERGENCY, new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE, SELLER_NIP, ISSUE_DATE));
 
         // then
         assertEquals(OfflineMode.KSEF_EMERGENCY, offline.offlineMode());
@@ -152,7 +146,6 @@ class OfflineInvoiceTest {
     }
 
     private static OfflineInvoice newOfflineInvoice(Invoice invoice) {
-        return OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24,
-                QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE, SELLER_NIP, ISSUE_DATE);
+        return OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24, new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE, SELLER_NIP, ISSUE_DATE));
     }
 }

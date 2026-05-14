@@ -10,10 +10,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnavailableException;
-import java.time.LocalDate;
 
 /**
  * Convert-after-failure pattern: catch
@@ -48,16 +46,11 @@ public final class OfflineFallbackPattern {
      * unavailability window, and {@link OfflineMode#KSEF_EMERGENCY}
      * when KSeF entered emergency mode.
      */
-    @SuppressWarnings("PMD.UseObjectForClearerAPI")
     public static SubmittedInvoice sendWithOfflineFallback(OnlineSession session,
                                                            Invoice invoice,
                                                            KsefCertificate certificate,
                                                            OfflineMode mode,
-                                                           QrEnvironment environment,
-                                                           QrContextType contextType,
-                                                           String contextValue,
-                                                           String sellerNip,
-                                                           LocalDate issueDate) {
+                                                           OfflineSigningContext context) {
         if (session == null) {
             throw new NullPointerException(ERR_NULL_SESSION);
         }
@@ -70,9 +63,7 @@ public final class OfflineFallbackPattern {
         try {
             return session.sendInvoice(invoice);
         } catch (KsefUnavailableException unavailable) {
-            OfflineInvoice offline = OfflineInvoice.fromInvoice(
-                    invoice, certificate, mode, environment, contextType,
-                    contextValue, sellerNip, issueDate);
+            OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
             return session.sendOfflineInvoice(offline);
         }
     }

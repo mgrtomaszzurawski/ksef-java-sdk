@@ -8,7 +8,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertif
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode;
-import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -42,20 +41,10 @@ public interface OfflineSigningProvider {
      *
      * @param invoice the underlying invoice (non-null)
      * @param mode the offline-mode classification (non-null)
-     * @param environment the QR environment used to render verification URLs
-     * @param contextType authorising context identifier kind
-     * @param contextValue authorising context identifier value
-     * @param sellerNip 10-digit seller NIP
-     * @param issueDate calendar date embedded in the KOD I URL
+     * @param context KOD I + KOD II authorisation context bundle (non-null)
      * @return self-contained {@link OfflineInvoice}
      */
-    OfflineInvoice signAndPackage(Invoice invoice,
-                                  OfflineMode mode,
-                                  QrEnvironment environment,
-                                  QrContextType contextType,
-                                  String contextValue,
-                                  String sellerNip,
-                                  LocalDate issueDate);
+    OfflineInvoice signAndPackage(Invoice invoice, OfflineMode mode, OfflineSigningContext context);
 
     /**
      * In-process provider: signs with the private key already held by
@@ -64,8 +53,7 @@ public interface OfflineSigningProvider {
      */
     static OfflineSigningProvider fromPrivateKey(KsefCertificate certificate) {
         Objects.requireNonNull(certificate, "certificate must not be null");
-        return (invoice, mode, environment, contextType, contextValue, sellerNip, issueDate) ->
-                OfflineInvoice.fromInvoice(invoice, certificate, mode, environment,
-                        contextType, contextValue, sellerNip, issueDate);
+        return (invoice, mode, context) ->
+                OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
     }
 }

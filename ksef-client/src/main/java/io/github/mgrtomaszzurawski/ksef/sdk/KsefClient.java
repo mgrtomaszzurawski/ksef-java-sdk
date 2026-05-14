@@ -582,8 +582,11 @@ public final class KsefClient implements AutoCloseable {
                                              @Nullable AuthorizationPolicy policy) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
         this.lastChallengeClientIp = challenge.clientIp();
-        authClient.authenticateWithXades(challenge.challenge(), certificate, privateKey, identifier,
-                subjectIdentifier, signingOptions, policy, challenge.clientIp());
+        authClient.authenticateWithXades(
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.XadesAuthRequest(
+                        challenge.challenge(), identifier, subjectIdentifier, policy, challenge.clientIp()),
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.XadesSigningMaterial(
+                        certificate, privateKey, signingOptions));
         pollAuthStatus();
         authClient.redeemTokens();
     }

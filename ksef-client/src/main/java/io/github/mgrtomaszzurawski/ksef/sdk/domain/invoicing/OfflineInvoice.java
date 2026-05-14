@@ -169,49 +169,30 @@ public final class OfflineInvoice {
      * non-today issue date, HSM signing pipelines that bypass the
      * provider interface).
      *
-     * <p>The {@code contextType} + {@code contextValue} pair embedded in
-     * the KOD II URL identifies the authorising context KSeF uses to
-     * verify the offline certificate (typically {@code Nip} +
-     * {@code sellerNip}). The {@code issueDate} is the calendar date
-     * embedded in the KOD I URL.
-     *
      * @param invoice the underlying invoice (non-null); the SDK reads
      *     {@link Invoice#xml()} once
      * @param certificate the KSeF Offline certificate that signs KOD II
      *     (non-null)
      * @param mode the offline-mode classification (non-null)
-     * @param environment the QR environment whose host is embedded into
-     *     the KOD I + KOD II URLs (non-null)
-     * @param contextType authorising context identifier kind (non-null)
-     * @param contextValue authorising context identifier value (non-null)
-     * @param sellerNip 10-digit seller NIP (non-null)
-     * @param issueDate calendar date used in the KOD I URL (non-null)
+     * @param context KOD I + KOD II authorisation context bundle (non-null)
      * @return immutable {@link OfflineInvoice}
      */
-    @SuppressWarnings("PMD.UseObjectForClearerAPI")
     public static OfflineInvoice fromInvoice(Invoice invoice,
                                               KsefCertificate certificate,
                                               OfflineMode mode,
-                                              QrEnvironment environment,
-                                              QrContextType contextType,
-                                              String contextValue,
-                                              String sellerNip,
-                                              LocalDate issueDate) {
+                                              io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext context) {
         Objects.requireNonNull(invoice, ERR_NULL_INVOICE);
         Objects.requireNonNull(certificate, ERR_NULL_CERTIFICATE);
         Objects.requireNonNull(mode, ERR_NULL_OFFLINE_MODE);
-        Objects.requireNonNull(environment, ERR_NULL_QR_ENV);
-        Objects.requireNonNull(contextType, ERR_NULL_CONTEXT_TYPE);
-        Objects.requireNonNull(contextValue, ERR_NULL_CONTEXT_VALUE);
-        Objects.requireNonNull(sellerNip, ERR_NULL_SELLER_NIP);
-        Objects.requireNonNull(issueDate, ERR_NULL_ISSUE_DATE);
+        Objects.requireNonNull(context, "context must not be null");
 
         byte[] invoiceXml = invoice.xml();
         byte[] invoiceHash = computeSha256(invoiceXml);
 
-        byte[] kodIPng = renderKodI(environment, sellerNip, issueDate, invoiceHash);
-        byte[] kodIIPng = renderKodII(environment, contextType, contextValue, sellerNip,
-                certificate, invoiceHash);
+        byte[] kodIPng = renderKodI(context.environment(), context.sellerNip(),
+                context.issueDate(), invoiceHash);
+        byte[] kodIIPng = renderKodII(context.environment(), context.contextType(),
+                context.contextValue(), context.sellerNip(), certificate, invoiceHash);
 
         return new OfflineInvoice(invoice, invoiceXml, kodIPng, kodIIPng,
                 mode, certificate, null);
