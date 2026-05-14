@@ -82,30 +82,20 @@ public final class KsefHttpRuntime implements HttpRuntime {
      * are intentionally shared by reference — defensive copy makes no
      * sense for an HTTP client or JSON mapper.
      */
-    public static final class Transport {
-        private final KsefEnvironment environment;
-        private final HttpClient httpClient;
-        private final ObjectMapper objectMapper;
-        private final RetryHandler retryHandler;
-        private final Duration readTimeout;
+    public record Transport(
+            KsefEnvironment environment,
+            HttpClient httpClient,
+            ObjectMapper objectMapper,
+            RetryHandler retryHandler,
+            Duration readTimeout) {
 
-        public Transport(KsefEnvironment environment,
-                          HttpClient httpClient,
-                          ObjectMapper objectMapper,
-                          RetryHandler retryHandler,
-                          Duration readTimeout) {
-            this.environment = Objects.requireNonNull(environment, "environment must not be null");
-            this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
-            this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-            this.retryHandler = Objects.requireNonNull(retryHandler, "retryHandler must not be null");
-            this.readTimeout = Objects.requireNonNull(readTimeout, "readTimeout must not be null");
+        public Transport {
+            Objects.requireNonNull(environment, "environment must not be null");
+            Objects.requireNonNull(httpClient, "httpClient must not be null");
+            Objects.requireNonNull(objectMapper, "objectMapper must not be null");
+            Objects.requireNonNull(retryHandler, "retryHandler must not be null");
+            Objects.requireNonNull(readTimeout, "readTimeout must not be null");
         }
-
-        KsefEnvironment environment() { return environment; }
-        HttpClient httpClient() { return httpClient; }
-        ObjectMapper objectMapper() { return objectMapper; }
-        RetryHandler retryHandler() { return retryHandler; }
-        Duration readTimeout() { return readTimeout; }
     }
 
     /**
@@ -115,27 +105,18 @@ public final class KsefHttpRuntime implements HttpRuntime {
      *
      * <p>Same rationale as {@link Transport} for not using a {@code record}.
      */
-    public static final class AuthHooks {
-        private final SessionContext sessionContext;
-        private final Runnable reauthHook;
-        private final Runnable proactiveAuthHook;
-        private final java.util.function.BooleanSupplier certificateAuthCheck;
+    public record AuthHooks(
+            SessionContext sessionContext,
+            Runnable reauthHook,
+            Runnable proactiveAuthHook,
+            java.util.function.BooleanSupplier certificateAuthCheck) {
 
-        public AuthHooks(SessionContext sessionContext,
-                          Runnable reauthHook,
-                          Runnable proactiveAuthHook,
-                          java.util.function.BooleanSupplier certificateAuthCheck) {
-            this.sessionContext = Objects.requireNonNull(sessionContext, "sessionContext must not be null");
-            this.reauthHook = Objects.requireNonNull(reauthHook, "reauthHook must not be null");
-            this.proactiveAuthHook = Objects.requireNonNull(proactiveAuthHook, "proactiveAuthHook must not be null");
-            this.certificateAuthCheck = Objects.requireNonNull(certificateAuthCheck,
-                    "certificateAuthCheck must not be null");
+        public AuthHooks {
+            Objects.requireNonNull(sessionContext, "sessionContext must not be null");
+            Objects.requireNonNull(reauthHook, "reauthHook must not be null");
+            Objects.requireNonNull(proactiveAuthHook, "proactiveAuthHook must not be null");
+            Objects.requireNonNull(certificateAuthCheck, "certificateAuthCheck must not be null");
         }
-
-        SessionContext sessionContext() { return sessionContext; }
-        Runnable reauthHook() { return reauthHook; }
-        Runnable proactiveAuthHook() { return proactiveAuthHook; }
-        java.util.function.BooleanSupplier certificateAuthCheck() { return certificateAuthCheck; }
     }
 
     @Override
