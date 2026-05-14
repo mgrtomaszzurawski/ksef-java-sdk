@@ -8,6 +8,15 @@
 
 plugins {
     `java-library`
+    `maven-publish`
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
 }
 
 description = "JAXB-generated XML models for KSeF schemas (FA2, FA3, PEF, PEF_KOR, UPO, AUTH)"

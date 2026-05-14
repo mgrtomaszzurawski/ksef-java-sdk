@@ -5,7 +5,16 @@
 
 plugins {
     `java-library`
+    `maven-publish`
     id("org.openapi.generator") version "7.12.0"
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
 }
 
 description = "OpenAPI-generated REST models (*Raw) for KSeF API v2"
