@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Typed FA(2) invoice: wraps the JAXB-generated {@link Faktura} root
@@ -63,19 +64,19 @@ public final class Fa2Invoice implements Invoice {
 
     private final Faktura faktura;
     private final byte[] xmlBytes;
-    private final @org.jspecify.annotations.Nullable String systemCode;
-    private final @org.jspecify.annotations.Nullable String formVersion;
-    private final @org.jspecify.annotations.Nullable OffsetDateTime issuedAt;
-    private final @org.jspecify.annotations.Nullable String sellerNip;
-    private final @org.jspecify.annotations.Nullable String sellerName;
-    private final @org.jspecify.annotations.Nullable String buyerNip;
-    private final @org.jspecify.annotations.Nullable String buyerName;
-    private final @org.jspecify.annotations.Nullable String invoiceNumber;
-    private final @org.jspecify.annotations.Nullable LocalDate issueDate;
-    private final @org.jspecify.annotations.Nullable String currency;
-    private final @org.jspecify.annotations.Nullable BigDecimal grossTotal;
+    private final @Nullable String systemCode;
+    private final @Nullable String formVersion;
+    private final @Nullable OffsetDateTime issuedAt;
+    private final @Nullable String sellerNip;
+    private final @Nullable String sellerName;
+    private final @Nullable String buyerNip;
+    private final @Nullable String buyerName;
+    private final @Nullable String invoiceNumber;
+    private final @Nullable LocalDate issueDate;
+    private final @Nullable String currency;
+    private final @Nullable BigDecimal grossTotal;
     private final Optional<BigDecimal> netTotal;
-    private final @org.jspecify.annotations.Nullable String invoiceTypeCode;
+    private final @Nullable String invoiceTypeCode;
     private final List<InvoiceLineItem> lineItems;
 
     Fa2Invoice(Faktura faktura, byte[] xmlBytes) {
@@ -101,10 +102,10 @@ public final class Fa2Invoice implements Invoice {
         this.lineItems = fa.lineItems;
     }
 
-    private record HeaderSnapshot(@org.jspecify.annotations.Nullable String systemCode,
-                                  @org.jspecify.annotations.Nullable String formVersion,
-                                  @org.jspecify.annotations.Nullable OffsetDateTime issuedAt) {
-        static HeaderSnapshot from(@org.jspecify.annotations.Nullable TNaglowek header) {
+    private record HeaderSnapshot(@Nullable String systemCode,
+                                  @Nullable String formVersion,
+                                  @Nullable OffsetDateTime issuedAt) {
+        static HeaderSnapshot from(@Nullable TNaglowek header) {
             if (header == null) {
                 return new HeaderSnapshot(null, null, null);
             }
@@ -117,16 +118,16 @@ public final class Fa2Invoice implements Invoice {
         }
     }
 
-    private record PartySnapshot(@org.jspecify.annotations.Nullable String nip,
-                                 @org.jspecify.annotations.Nullable String name) {
-        static PartySnapshot fromSeller(Faktura.@org.jspecify.annotations.Nullable Podmiot1 podmiot) {
+    private record PartySnapshot(@Nullable String nip,
+                                 @Nullable String name) {
+        static PartySnapshot fromSeller(Faktura.@Nullable Podmiot1 podmiot) {
             TPodmiot1 identity = podmiot != null ? podmiot.getDaneIdentyfikacyjne() : null;
             return new PartySnapshot(
                     identity != null ? identity.getNIP() : null,
                     identity != null ? identity.getNazwa() : null);
         }
 
-        static PartySnapshot fromBuyer(Faktura.@org.jspecify.annotations.Nullable Podmiot2 podmiot) {
+        static PartySnapshot fromBuyer(Faktura.@Nullable Podmiot2 podmiot) {
             TPodmiot2 identity = podmiot != null ? podmiot.getDaneIdentyfikacyjne() : null;
             return new PartySnapshot(
                     identity != null ? identity.getNIP() : null,
@@ -134,14 +135,14 @@ public final class Fa2Invoice implements Invoice {
         }
     }
 
-    private record FaSnapshot(@org.jspecify.annotations.Nullable String invoiceNumber,
-                              @org.jspecify.annotations.Nullable LocalDate issueDate,
-                              @org.jspecify.annotations.Nullable String currency,
-                              @org.jspecify.annotations.Nullable BigDecimal grossTotal,
+    private record FaSnapshot(@Nullable String invoiceNumber,
+                              @Nullable LocalDate issueDate,
+                              @Nullable String currency,
+                              @Nullable BigDecimal grossTotal,
                               Optional<BigDecimal> netTotal,
-                              @org.jspecify.annotations.Nullable String invoiceTypeCode,
+                              @Nullable String invoiceTypeCode,
                               List<InvoiceLineItem> lineItems) {
-        static FaSnapshot from(Faktura.@org.jspecify.annotations.Nullable Fa faContent) {
+        static FaSnapshot from(Faktura.@Nullable Fa faContent) {
             if (faContent == null) {
                 return new FaSnapshot(null, null, null, null, Optional.empty(), null, List.of());
             }
@@ -156,7 +157,7 @@ public final class Fa2Invoice implements Invoice {
         }
     }
 
-    private static List<InvoiceLineItem> snapshotLineItems(Faktura.@org.jspecify.annotations.Nullable Fa faContent) {
+    private static List<InvoiceLineItem> snapshotLineItems(Faktura.@Nullable Fa faContent) {
         if (faContent == null || faContent.getFaWiersz() == null) {
             return List.of();
         }
@@ -202,43 +203,43 @@ public final class Fa2Invoice implements Invoice {
     }
 
     /** Form-systemCode token from {@code Naglowek/KodFormularza/@kodSystemowy}. */
-    public @org.jspecify.annotations.Nullable String systemCode() { return systemCode; }
+    public @Nullable String systemCode() { return systemCode; }
 
     /** Schema version token from {@code Naglowek/KodFormularza/@wersjaSchemy}. */
-    public @org.jspecify.annotations.Nullable String formVersion() { return formVersion; }
+    public @Nullable String formVersion() { return formVersion; }
 
     /** Issue timestamp from {@code Naglowek/DataWytworzeniaFa}. */
-    public @org.jspecify.annotations.Nullable OffsetDateTime issuedAt() { return issuedAt; }
+    public @Nullable OffsetDateTime issuedAt() { return issuedAt; }
 
     /** Seller NIP from {@code Podmiot1/DaneIdentyfikacyjne/NIP}. */
-    public @org.jspecify.annotations.Nullable String sellerNip() { return sellerNip; }
+    public @Nullable String sellerNip() { return sellerNip; }
 
     /** Seller name from {@code Podmiot1/DaneIdentyfikacyjne/Nazwa}. */
-    public @org.jspecify.annotations.Nullable String sellerName() { return sellerName; }
+    public @Nullable String sellerName() { return sellerName; }
 
     /** Buyer NIP from {@code Podmiot2/DaneIdentyfikacyjne/NIP}. */
-    public @org.jspecify.annotations.Nullable String buyerNip() { return buyerNip; }
+    public @Nullable String buyerNip() { return buyerNip; }
 
     /** Buyer name from {@code Podmiot2/DaneIdentyfikacyjne/Nazwa}. */
-    public @org.jspecify.annotations.Nullable String buyerName() { return buyerName; }
+    public @Nullable String buyerName() { return buyerName; }
 
     /** Invoice number from {@code Fa/P_2}. */
-    public @org.jspecify.annotations.Nullable String invoiceNumber() { return invoiceNumber; }
+    public @Nullable String invoiceNumber() { return invoiceNumber; }
 
     /** Issue date from {@code Fa/P_1}. */
-    public @org.jspecify.annotations.Nullable LocalDate issueDate() { return issueDate; }
+    public @Nullable LocalDate issueDate() { return issueDate; }
 
     /** ISO 4217 currency code from {@code Fa/KodWaluty}. */
-    public @org.jspecify.annotations.Nullable String currency() { return currency; }
+    public @Nullable String currency() { return currency; }
 
     /** Gross total from {@code Fa/P_15}. */
-    public @org.jspecify.annotations.Nullable BigDecimal grossTotal() { return grossTotal; }
+    public @Nullable BigDecimal grossTotal() { return grossTotal; }
 
     /** Optional net total from {@code Fa/P_13_1}. */
     public Optional<BigDecimal> netTotal() { return netTotal; }
 
     /** Invoice type code from {@code Fa/RodzajFaktury}. */
-    public @org.jspecify.annotations.Nullable String invoiceTypeCode() { return invoiceTypeCode; }
+    public @Nullable String invoiceTypeCode() { return invoiceTypeCode; }
 
     /**
      * Line items mapped from {@code Fa/FaWiersz} entries to SDK

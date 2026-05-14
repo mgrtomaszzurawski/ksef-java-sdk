@@ -67,6 +67,22 @@ class UnsafeJaxbViewMutationIsolationTest {
     }
 
     @Test
+    void fa3InvoiceDocument_mutatingUnsafeJaxbView_doesNotAffectFlatAccessorsOrXmlBytes() {
+        Fa3InvoiceDocument document = Fa3InvoiceDocument.from(buildFa3Invoice().xml());
+        byte[] xmlBefore = document.xml();
+        String sellerNipBefore = document.sellerNip();
+        assertEquals(ORIGINAL_SELLER_NIP, sellerNipBefore);
+
+        document.unsafeJaxbView().getPodmiot1().getDaneIdentyfikacyjne().setNIP(MUTATED_SELLER_NIP);
+
+        assertEquals(sellerNipBefore, document.sellerNip(),
+                "Fa3InvoiceDocument flat accessor must snapshot at construction");
+        byte[] xmlAfter = document.xml();
+        assertEquals(new String(xmlBefore), new String(xmlAfter),
+                "Fa3InvoiceDocument.xml() must not reflect JAXB tree mutations");
+    }
+
+    @Test
     void toJaxbCopy_returnsDisconnectedTreeThatCanBeMutatedSafely() {
         Fa3Invoice invoice = buildFa3Invoice();
         var clone = invoice.toJaxbCopy();
@@ -80,22 +96,35 @@ class UnsafeJaxbViewMutationIsolationTest {
     }
 
     @Test
-    void pefInvoice_flatAccessorsSnapshotAtConstruction() {
+    void pefInvoice_mutatingUnsafeJaxbView_doesNotAffectFlatAccessorsOrXmlBytes() {
         PefInvoice invoice = buildPefInvoice();
-        assertNotNull(invoice.invoiceNumber());
-        // PefInvoice uses UBL types; we just exercise the snapshot path by
-        // re-reading the flat accessor and confirming it is stable across
-        // calls (i.e. served from the cached field, not recomputed).
-        assertEquals(invoice.invoiceNumber(), invoice.invoiceNumber());
-        assertEquals(invoice.supplierName(), invoice.supplierName());
+        byte[] xmlBefore = invoice.xml();
+        String invoiceNumberBefore = invoice.invoiceNumber();
+        assertNotNull(invoiceNumberBefore);
+
+        invoice.unsafeJaxbView().getID().setValue("MUTATED");
+
+        assertEquals(invoiceNumberBefore, invoice.invoiceNumber(),
+                "PefInvoice flat accessor must snapshot at construction");
+        byte[] xmlAfter = invoice.xml();
+        assertEquals(new String(xmlBefore), new String(xmlAfter),
+                "PefInvoice.xml() must not reflect UBL JAXB tree mutations");
     }
 
     @Test
-    void pefKorInvoice_flatAccessorsSnapshotAtConstruction() {
+    void pefKorInvoice_mutatingUnsafeJaxbView_doesNotAffectFlatAccessorsOrXmlBytes() {
         PefKorInvoice invoice = buildPefKorInvoice();
-        assertNotNull(invoice.invoiceNumber());
-        assertEquals(invoice.invoiceNumber(), invoice.invoiceNumber());
-        assertEquals(invoice.supplierName(), invoice.supplierName());
+        byte[] xmlBefore = invoice.xml();
+        String invoiceNumberBefore = invoice.invoiceNumber();
+        assertNotNull(invoiceNumberBefore);
+
+        invoice.unsafeJaxbView().getID().setValue("MUTATED");
+
+        assertEquals(invoiceNumberBefore, invoice.invoiceNumber(),
+                "PefKorInvoice flat accessor must snapshot at construction");
+        byte[] xmlAfter = invoice.xml();
+        assertEquals(new String(xmlBefore), new String(xmlAfter),
+                "PefKorInvoice.xml() must not reflect UBL JAXB tree mutations");
     }
 
     private static Fa3Invoice buildFa3Invoice() {
