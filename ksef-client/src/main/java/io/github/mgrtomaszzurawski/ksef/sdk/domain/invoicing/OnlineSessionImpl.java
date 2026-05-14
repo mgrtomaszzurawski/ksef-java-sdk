@@ -14,7 +14,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
@@ -94,6 +96,11 @@ final class OnlineSessionImpl implements OnlineSession {
     private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 not available";
     private static final String ERR_INVOICE_NULL = "invoice must not be null";
     private static final String ERR_OFFLINE_INVOICE_NULL = "offline must not be null";
+    private static final String ERR_OFFLINE_MODE_NULL = "mode must not be null";
+    private static final String ERR_SEND_OFFLINE_REQUIRES_PROVIDER =
+            "sendOffline(Invoice, OfflineMode) requires an OfflineSigningProvider configured via"
+                    + " KsefClient.Builder.offlineSigning(...); fall back to sendOfflineInvoice(OfflineInvoice)"
+                    + " if you want to build the OfflineInvoice yourself";
     private static final String ERR_HASH_NULL = "hashOfOriginal must not be null";
     private static final int SHA256_LENGTH_BYTES = 32;
     private static final String ERR_HASH_LENGTH_TEMPLATE =
@@ -117,6 +124,8 @@ final class OnlineSessionImpl implements OnlineSession {
     @Nullable private final KsefEnvironment environment;
     private final Duration invoiceVerificationTimeout;
     private final QrCodeService qrCodeService;
+    @Nullable private final OfflineSigningProvider offlineSigningProvider;
+    @Nullable private final String sellerNip;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -131,13 +140,15 @@ final class OnlineSessionImpl implements OnlineSession {
 
     OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
-        this(sessionClient, referenceNumber, aesKey, initVector, null, null, DEFAULT_VERIFICATION_TIMEOUT);
+        this(sessionClient, referenceNumber, aesKey, initVector, null, null,
+                DEFAULT_VERIFICATION_TIMEOUT, null, null);
     }
 
     OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector,
                 @Nullable OffsetDateTime validUntil) {
-        this(sessionClient, referenceNumber, aesKey, initVector, validUntil, null, DEFAULT_VERIFICATION_TIMEOUT);
+        this(sessionClient, referenceNumber, aesKey, initVector, validUntil, null,
+                DEFAULT_VERIFICATION_TIMEOUT, null, null);
     }
 
     OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
@@ -145,6 +156,17 @@ final class OnlineSessionImpl implements OnlineSession {
                 @Nullable OffsetDateTime validUntil,
                 @Nullable KsefEnvironment environment,
                 Duration invoiceVerificationTimeout) {
+        this(sessionClient, referenceNumber, aesKey, initVector, validUntil, environment,
+                invoiceVerificationTimeout, null, null);
+    }
+
+    OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
+                byte[] aesKey, byte[] initVector,
+                @Nullable OffsetDateTime validUntil,
+                @Nullable KsefEnvironment environment,
+                Duration invoiceVerificationTimeout,
+                @Nullable OfflineSigningProvider offlineSigningProvider,
+                @Nullable String sellerNip) {
         this.sessionClient = sessionClient;
         this.referenceNumber = referenceNumber;
         this.aesKey = aesKey;
@@ -154,6 +176,8 @@ final class OnlineSessionImpl implements OnlineSession {
         this.invoiceVerificationTimeout = Objects.requireNonNull(invoiceVerificationTimeout,
                 "invoiceVerificationTimeout must not be null");
         this.qrCodeService = new QrCodeService();
+        this.offlineSigningProvider = offlineSigningProvider;
+        this.sellerNip = sellerNip;
     }
 
     @Override
@@ -201,6 +225,21 @@ final class OnlineSessionImpl implements OnlineSession {
         SessionInvoiceStatus terminalStatus = pollUntilVerified(sendResult.referenceNumber());
         return buildOfflineSubmittedInvoice(underlying, sendResult.referenceNumber(),
                 terminalStatus, offline.kodIQrPng(), offline.kodIIQrPng());
+    }
+
+    @Override
+    public SubmittedInvoice sendOffline(Invoice invoice, OfflineMode mode) {
+        Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
+        Objects.requireNonNull(mode, ERR_OFFLINE_MODE_NULL);
+        if (offlineSigningProvider == null || environment == null || sellerNip == null) {
+            throw new IllegalStateException(ERR_SEND_OFFLINE_REQUIRES_PROVIDER);
+        }
+        QrEnvironment qrEnvironment = QrEnvironment.fromKsefEnvironment(environment);
+        OfflineInvoice offline = offlineSigningProvider.signAndPackage(
+                invoice, mode, qrEnvironment,
+                QrContextType.NIP,
+                sellerNip, sellerNip, java.time.LocalDate.now(java.time.ZoneOffset.UTC));
+        return sendOfflineInvoice(offline);
     }
 
     @Override

@@ -170,10 +170,13 @@ public final class KsefClient implements AutoCloseable {
         this.authClient = new AuthClient(this.runtime);
         this.securityClient = new SecurityClient(this.runtime);
         this.sessionClient = new SessionClient(this.runtime);
+        this.offlineSigningProvider = builder.offlineSigningProvider;
+        String resolvedSellerNip = credentials.identifier().type() == KsefIdentifier.Type.NIP
+                ? credentials.identifier().value() : null;
         this.invoiceClient = new InvoicesImpl(this.runtime,
                 this.sessionClient, this.environment, this::getPublicKey,
-                builder.invoiceVerificationTimeout);
-        this.offlineSigningProvider = builder.offlineSigningProvider;
+                builder.invoiceVerificationTimeout,
+                this.offlineSigningProvider, resolvedSellerNip);
         this.tokenClient = new TokensImpl(this.runtime);
         this.permissionClient = new PermissionsImpl(this.runtime);
         this.certificateClient = new CertificatesImpl(this.runtime);

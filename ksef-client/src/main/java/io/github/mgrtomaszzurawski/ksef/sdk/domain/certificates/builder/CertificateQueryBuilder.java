@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import java.time.OffsetDateTime;
@@ -17,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class CertificateQueryBuilder {
 
-    private @Nullable String serialNumber;
+    private @Nullable CertificateSerialNumber serialNumber;
     private @Nullable String name;
     private @Nullable KsefCertificateType type;
     private @Nullable CertificateStatus status;
@@ -31,7 +32,10 @@ public final class CertificateQueryBuilder {
         return new CertificateQueryBuilder();
     }
 
-    public CertificateQueryBuilder serialNumber(String serialNumber) { this.serialNumber = serialNumber; return this; }
+    public CertificateQueryBuilder serialNumber(CertificateSerialNumber serialNumber) {
+        this.serialNumber = serialNumber;
+        return this;
+    }
     public CertificateQueryBuilder name(String name) { this.name = name; return this; }
     public CertificateQueryBuilder type(KsefCertificateType type) { this.type = type; return this; }
     public CertificateQueryBuilder status(CertificateStatus status) { this.status = status; return this; }

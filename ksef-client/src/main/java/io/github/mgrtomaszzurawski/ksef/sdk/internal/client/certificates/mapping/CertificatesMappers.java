@@ -60,7 +60,7 @@ public final class CertificatesMappers {
     public static QueryCertificatesRequestRaw toQueryCertificatesRequestRaw(CertificateQueryRequest request) {
         QueryCertificatesRequestRaw rawValue = new QueryCertificatesRequestRaw();
         if (request.serialNumber() != null) {
-            rawValue.setCertificateSerialNumber(request.serialNumber());
+            rawValue.setCertificateSerialNumber(request.serialNumber().value());
         }
         if (request.name() != null) {
             rawValue.setName(request.name());

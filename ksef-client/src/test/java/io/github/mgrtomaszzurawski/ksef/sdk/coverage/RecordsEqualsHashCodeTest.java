@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.coverage;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
@@ -36,7 +37,7 @@ class RecordsEqualsHashCodeTest {
     private static final int TERMINAL_STATUS_CODE = 415;
     private static final String CERT_NAME_LEFT = "left-cert";
     private static final String CERT_NAME_RIGHT = "right-cert";
-    private static final String QUERY_SERIAL = "serial-1";
+    private static final String QUERY_SERIAL = "ABCDEF01";
     private static final String QUERY_NAME = "name-1";
     private static final String TOKEN_DESCRIPTION = "token-desc";
     private static final String SYSTEM_CODE = "FA";
@@ -77,7 +78,7 @@ class RecordsEqualsHashCodeTest {
 
     @Test
     void certificateQueryRequest_toString_includesSerialAndName() {
-        String rendered = new CertificateQueryRequest(QUERY_SERIAL, QUERY_NAME,
+        String rendered = new CertificateQueryRequest(CertificateSerialNumber.parse(QUERY_SERIAL), QUERY_NAME,
                 KsefCertificateType.AUTHENTICATION, CertificateStatus.ACTIVE,
                 OffsetDateTime.now(), null, null).toString();
         assertTrue(rendered.contains(QUERY_SERIAL));

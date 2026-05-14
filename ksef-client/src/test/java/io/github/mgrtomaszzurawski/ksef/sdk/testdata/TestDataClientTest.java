@@ -18,7 +18,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestRateLimi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
@@ -246,7 +246,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            ksef.testData().blockContext(TestDataIdentifierType.NIP, TEST_NIP);
+            ksef.testData().blockContext(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/context/block")));
@@ -262,7 +262,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            ksef.testData().unblockContext(TestDataIdentifierType.NIP, TEST_NIP);
+            ksef.testData().unblockContext(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/context/unblock")));

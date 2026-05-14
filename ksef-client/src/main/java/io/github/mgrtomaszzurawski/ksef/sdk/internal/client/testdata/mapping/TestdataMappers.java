@@ -8,7 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubjectIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubjectTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
@@ -169,7 +169,7 @@ public final class TestdataMappers {
         return rawValue;
     }
 
-    public static TestDataAuthenticationContextIdentifierTypeRaw toTestDataAuthenticationContextIdentifierTypeRaw(TestDataIdentifierType value) {
+    public static TestDataAuthenticationContextIdentifierTypeRaw toTestDataAuthenticationContextIdentifierTypeRaw(KsefIdentifier.Type value) {
         return switch (value) {
             case NIP -> TestDataAuthenticationContextIdentifierTypeRaw.NIP;
             case INTERNAL_ID -> TestDataAuthenticationContextIdentifierTypeRaw.INTERNAL_ID;

@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest;
@@ -46,9 +45,19 @@ public interface TestDataAdmin {
      */
     void revokeAttachment(KsefIdentifier subjectIdentifier, LocalDate attachmentExpiryDate);
 
-    void blockContext(TestDataIdentifierType identifierType, String identifierValue);
+    /**
+     * Block authentication for a KSeF auth-context (identified by NIP /
+     * INTERNAL_ID / NIP_VAT_UE / PEPPOL_ID per
+     * {@link KsefIdentifier.Type}). After the call any auth attempt
+     * targeting that context returns the KSeF "context blocked" error.
+     */
+    void blockContext(KsefIdentifier identifier);
 
-    void unblockContext(TestDataIdentifierType identifierType, String identifierValue);
+    /**
+     * Reverse a previous {@link #blockContext(KsefIdentifier)} for the
+     * given context identifier.
+     */
+    void unblockContext(KsefIdentifier identifier);
 
     void setSessionLimits(TestSessionLimitsRequest request);
 

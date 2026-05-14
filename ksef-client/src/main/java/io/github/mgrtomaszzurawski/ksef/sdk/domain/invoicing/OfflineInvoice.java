@@ -154,10 +154,20 @@ public final class OfflineInvoice {
     }
 
     /**
-     * One-shot factory: build an {@link OfflineInvoice} for a regular
+     * Lower-level factory: build an {@link OfflineInvoice} for a regular
      * (non-correction) offline issuance. Computes the invoice hash,
      * builds KOD I, signs the canonical KOD II payload with the
      * supplied certificate, and renders both QR codes as PNG bytes.
+     *
+     * <p><strong>Prefer the higher-level path</strong> — configure an
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider}
+     * on {@code KsefClient.Builder.offlineSigning(...)} and call
+     * {@code session.sendOffline(invoice, mode)}, which derives the
+     * environment / context / seller NIP / issue date from the
+     * authenticated client. This factory exists for advanced flows that
+     * need a fully-customised {@link OfflineInvoice} (non-NIP context,
+     * non-today issue date, HSM signing pipelines that bypass the
+     * provider interface).
      *
      * <p>The {@code contextType} + {@code contextValue} pair embedded in
      * the KOD II URL identifies the authorising context KSeF uses to
@@ -220,7 +230,7 @@ public final class OfflineInvoice {
         KsefVerificationLinks.CertificateSigningInput signingInput =
                 new KsefVerificationLinks.CertificateSigningInput(
                         contextType, contextValue, sellerNip,
-                        certificate.serialNumber(), invoiceHash);
+                        certificate.serialNumber().value(), invoiceHash);
         String url = new QrSigningService().certificateVerificationUrl(
                 environment, signingInput, certificate.privateKey());
         return new QrCodeService().generateQrCode(url);

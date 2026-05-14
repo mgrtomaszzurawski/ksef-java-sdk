@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * @since 1.0.0
  */
 public record CertificateQueryRequest(
-        @Nullable String serialNumber,
+        @Nullable CertificateSerialNumber serialNumber,
         @Nullable String name,
         @Nullable KsefCertificateType type,
         @Nullable CertificateStatus status,
