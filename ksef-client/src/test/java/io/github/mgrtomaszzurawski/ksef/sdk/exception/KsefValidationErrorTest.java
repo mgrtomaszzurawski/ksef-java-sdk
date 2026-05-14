@@ -24,8 +24,9 @@ class KsefValidationErrorTest {
 
     @Test
     void constructor_whenDescriptionNull_throwsNullPointerException() {
+        List<String> emptyDetails = List.of();
         assertThrows(NullPointerException.class,
-                () -> new KsefValidationError(TEST_CODE, null, List.of()));
+                () -> new KsefValidationError(TEST_CODE, null, emptyDetails));
     }
 
     @Test

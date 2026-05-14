@@ -200,10 +200,11 @@ class KsefCryptoServiceTest {
     void parsePrivateKey_rejectsLegacyPkcs1WithDiagnostic() {
         // given — legacy PKCS#1 PEM marker that we explicitly do not handle
         String legacyRsaPem = "-----BEGIN RSA PRIVATE KEY-----\nABCD\n-----END RSA PRIVATE KEY-----\n";
+        byte[] legacyRsaPemBytes = legacyRsaPem.getBytes(StandardCharsets.US_ASCII);
 
         // when / then
         KsefCryptoException ex = assertThrows(KsefCryptoException.class,
-                () -> crypto.parsePrivateKey(legacyRsaPem.getBytes(StandardCharsets.US_ASCII)));
+                () -> crypto.parsePrivateKey(legacyRsaPemBytes));
         assertTrue(ex.getMessage().contains("PKCS#8"),
                 "diagnostic should mention PKCS#8 conversion path: " + ex.getMessage());
     }

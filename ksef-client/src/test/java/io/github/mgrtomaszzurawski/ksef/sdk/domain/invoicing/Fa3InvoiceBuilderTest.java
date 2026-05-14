@@ -30,28 +30,28 @@ class Fa3InvoiceBuilderTest {
 
     @Test
     void build_whenIssueDateMissing_throwsNpe() {
+        // given
+        var builder = Fa3Invoice.builder()
+                .invoiceNumber(INVOICE_NUMBER)
+                .seller(seller())
+                .buyer(buyer())
+                .totalGrossAmount(GROSS_AMOUNT)
+                .addLineItem(lineItem());
         // when / then
-        assertThrows(NullPointerException.class,
-                () -> Fa3Invoice.builder()
-                        .invoiceNumber(INVOICE_NUMBER)
-                        .seller(seller())
-                        .buyer(buyer())
-                        .totalGrossAmount(GROSS_AMOUNT)
-                        .addLineItem(lineItem())
-                        .build());
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test
     void build_whenSellerMissing_throwsNpe() {
+        // given
+        var builder = Fa3Invoice.builder()
+                .invoiceNumber(INVOICE_NUMBER)
+                .issueDate(LocalDate.of(2026, 5, 9))
+                .buyer(buyer())
+                .totalGrossAmount(GROSS_AMOUNT)
+                .addLineItem(lineItem());
         // when / then
-        assertThrows(NullPointerException.class,
-                () -> Fa3Invoice.builder()
-                        .invoiceNumber(INVOICE_NUMBER)
-                        .issueDate(LocalDate.of(2026, 5, 9))
-                        .buyer(buyer())
-                        .totalGrossAmount(GROSS_AMOUNT)
-                        .addLineItem(lineItem())
-                        .build());
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test
@@ -78,17 +78,17 @@ class Fa3InvoiceBuilderTest {
 
     @Test
     void build_whenCorrectionTypeWithoutReference_throwsIllegalState() {
+        // given
+        var builder = Fa3Invoice.builder()
+                .invoiceNumber(INVOICE_NUMBER)
+                .issueDate(LocalDate.of(2026, 5, 9))
+                .seller(seller())
+                .buyer(buyer())
+                .rodzajFaktury(TRodzajFaktury.KOR)
+                .totalGrossAmount(GROSS_AMOUNT)
+                .addLineItem(lineItem());
         // when / then
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> Fa3Invoice.builder()
-                        .invoiceNumber(INVOICE_NUMBER)
-                        .issueDate(LocalDate.of(2026, 5, 9))
-                        .seller(seller())
-                        .buyer(buyer())
-                        .rodzajFaktury(TRodzajFaktury.KOR)
-                        .totalGrossAmount(GROSS_AMOUNT)
-                        .addLineItem(lineItem())
-                        .build());
+        IllegalStateException ex = assertThrows(IllegalStateException.class, builder::build);
         assertTrue(ex.getMessage().contains("correction"),
                 "Diagnostic must mention correction-invoice rule: " + ex.getMessage());
     }

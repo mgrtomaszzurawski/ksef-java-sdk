@@ -106,7 +106,8 @@ class InvoiceClientTest {
             // then
             var archive = ksef.invoices().archive();
 
-            assertThrows(KsefNotFoundException.class, () -> archive.getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER)));
+            KsefNumber ksefNumber = KsefNumber.parse(TEST_KSEF_NUMBER);
+            assertThrows(KsefNotFoundException.class, () -> archive.getByKsefNumber(ksefNumber));
         }
     }
 
@@ -332,7 +333,8 @@ class InvoiceClientTest {
             // when — first protected domain call must trigger auth via requireToken()
             // BEFORE any HTTP request to the protected endpoint.
             var archive = ksef.invoices().archive();
-            assertThrows(RuntimeException.class, () -> archive.getByKsefNumber(KsefNumber.parse(TEST_KSEF_NUMBER)));
+            KsefNumber ksefNumber = KsefNumber.parse(TEST_KSEF_NUMBER);
+            assertThrows(RuntimeException.class, () -> archive.getByKsefNumber(ksefNumber));
 
             // then — proactive auth attempt observed at /security/public-key-certificates,
             // and the protected domain endpoint was NEVER called (old behavior would have

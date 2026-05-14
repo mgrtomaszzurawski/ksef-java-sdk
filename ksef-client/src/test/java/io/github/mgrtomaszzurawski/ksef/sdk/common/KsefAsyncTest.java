@@ -51,17 +51,18 @@ class KsefAsyncTest {
 
     @Test
     void awaitTerminal_whenDeadlineExceeded_throwsWithOperationNameAndLastStatus() {
+        // given
+        KsefAsync.Config<Integer> neverTerminal = new KsefAsync.Config<>(
+                "neverTerminal",
+                () -> LAST_SEEN_VALUE,
+                value -> false,
+                value -> value,
+                TIGHT_TIMEOUT,
+                STANDARD_POLL);
         // when
         KsefAsyncTimeoutException ex = assertThrows(
                 KsefAsyncTimeoutException.class,
-                () -> KsefAsync.awaitTerminal(
-                        new KsefAsync.Config<>(
-                                "neverTerminal",
-                                () -> LAST_SEEN_VALUE,
-                                value -> false,
-                                value -> value,
-                                TIGHT_TIMEOUT,
-                                STANDARD_POLL)));
+                () -> KsefAsync.awaitTerminal(neverTerminal));
 
         // then
         assertTrue(ex.getMessage().contains("neverTerminal"),

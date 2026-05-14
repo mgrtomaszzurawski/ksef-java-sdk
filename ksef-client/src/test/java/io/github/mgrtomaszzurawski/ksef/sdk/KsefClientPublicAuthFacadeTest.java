@@ -115,7 +115,8 @@ class KsefClientPublicAuthFacadeTest {
     @Test
     void terminateSession_rejectsNullReference(WireMockRuntimeInfo wmInfo) {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
-            assertThrows(NullPointerException.class, () -> client.auth().terminateSession(null));
+            var auth = client.auth();
+            assertThrows(NullPointerException.class, () -> auth.terminateSession(null));
         }
     }
 }

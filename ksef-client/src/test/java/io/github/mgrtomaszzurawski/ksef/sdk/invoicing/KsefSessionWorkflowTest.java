@@ -214,8 +214,9 @@ class KsefSessionWorkflowTest {
             session.close();
 
             // when / then
+            Invoice invoice = Invoice.fromXml(TEST_FORM_CODE, INVOICE_XML);
             IllegalStateException failure = assertThrows(IllegalStateException.class,
-                    () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, INVOICE_XML)));
+                    () -> session.sendInvoice(invoice));
             assertTrue(failure.getMessage().toLowerCase(java.util.Locale.ROOT).contains("closed"),
                     "Expected closed-session error; got: " + failure.getMessage());
         }

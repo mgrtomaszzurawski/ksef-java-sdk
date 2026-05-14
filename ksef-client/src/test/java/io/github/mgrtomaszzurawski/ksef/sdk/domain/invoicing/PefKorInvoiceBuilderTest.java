@@ -21,28 +21,26 @@ class PefKorInvoiceBuilderTest {
 
     @Test
     void build_whenCreditNoteNumberMissing_throwsNpe() {
-        assertThrows(NullPointerException.class,
-                () -> PefKorInvoice.builder()
-                        .issueDate(LocalDate.of(2026, 5, 9))
-                        .supplier(party("1111111111", "Acme"))
-                        .customer(party("9876543210", "Customer"))
-                        .addLine(line())
-                        .payableAmount(AMOUNT)
-                        .originalInvoiceNumber("PEF/2025/0001")
-                        .build());
+        var builder = PefKorInvoice.builder()
+                .issueDate(LocalDate.of(2026, 5, 9))
+                .supplier(party("1111111111", "Acme"))
+                .customer(party("9876543210", "Customer"))
+                .addLine(line())
+                .payableAmount(AMOUNT)
+                .originalInvoiceNumber("PEF/2025/0001");
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test
     void build_whenOriginalInvoiceNumberMissing_throwsNpe() {
-        assertThrows(NullPointerException.class,
-                () -> PefKorInvoice.builder()
-                        .creditNoteNumber("PEFKOR/0001")
-                        .issueDate(LocalDate.of(2026, 5, 9))
-                        .supplier(party("1111111111", "Acme"))
-                        .customer(party("9876543210", "Customer"))
-                        .addLine(line())
-                        .payableAmount(AMOUNT)
-                        .build());
+        var builder = PefKorInvoice.builder()
+                .creditNoteNumber("PEFKOR/0001")
+                .issueDate(LocalDate.of(2026, 5, 9))
+                .supplier(party("1111111111", "Acme"))
+                .customer(party("9876543210", "Customer"))
+                .addLine(line())
+                .payableAmount(AMOUNT);
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test

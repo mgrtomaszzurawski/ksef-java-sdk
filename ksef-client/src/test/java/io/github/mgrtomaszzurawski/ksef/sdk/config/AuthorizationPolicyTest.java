@@ -52,24 +52,36 @@ class AuthorizationPolicyTest {
 
     @Test
     void canonicalConstructor_rejectsInvalidAddress() {
+        // given
+        List<String> invalidAddrs = List.of("not-an-ip");
+        List<String> emptyRanges = List.of();
+        List<String> emptyMasks = List.of();
         // when / then
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> new AuthorizationPolicy(List.of("not-an-ip"), List.of(), List.of()));
+                () -> new AuthorizationPolicy(invalidAddrs, emptyRanges, emptyMasks));
         assertTrue(ex.getMessage().contains("not a valid IPv4 address"));
     }
 
     @Test
     void canonicalConstructor_rejectsInvalidRange() {
+        // given
+        List<String> emptyAddrs = List.of();
+        List<String> invalidRanges = List.of("10.0.0.1-bad");
+        List<String> emptyMasks = List.of();
         // when / then
         assertThrows(IllegalArgumentException.class,
-                () -> new AuthorizationPolicy(List.of(), List.of("10.0.0.1-bad"), List.of()));
+                () -> new AuthorizationPolicy(emptyAddrs, invalidRanges, emptyMasks));
     }
 
     @Test
     void canonicalConstructor_rejectsInvalidCidr() {
+        // given
+        List<String> emptyAddrs = List.of();
+        List<String> emptyRanges = List.of();
+        List<String> invalidMasks = List.of("10.0.0.0/33");
         // when / then
         assertThrows(IllegalArgumentException.class,
-                () -> new AuthorizationPolicy(List.of(), List.of(), List.of("10.0.0.0/33")));
+                () -> new AuthorizationPolicy(emptyAddrs, emptyRanges, invalidMasks));
     }
 
     @Test
@@ -77,10 +89,12 @@ class AuthorizationPolicyTest {
         // given
         List<String> eleven = List.of("1.1.1.1", "1.1.1.2", "1.1.1.3", "1.1.1.4", "1.1.1.5",
                 "1.1.1.6", "1.1.1.7", "1.1.1.8", "1.1.1.9", "1.1.1.10", "1.1.1.11");
+        List<String> emptyRanges = List.of();
+        List<String> emptyMasks = List.of();
 
         // when / then
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> new AuthorizationPolicy(eleven, List.of(), List.of()));
+                () -> new AuthorizationPolicy(eleven, emptyRanges, emptyMasks));
         assertTrue(ex.getMessage().contains("exceeds spec limit"));
     }
 }

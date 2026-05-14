@@ -56,27 +56,30 @@ class BatchResultTest {
 
     @Test
     void constructor_whenSuccessfulCountMismatchesClearedSize_throws() {
+        List<ClearedInvoice> cleared = List.of(sampleCleared("inv-1"));
+        List<FailedInvoice> failed = List.of();
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                new BatchResult(REF, List.of(sampleCleared("inv-1")),
-                        List.of(), 1, 0, 0, STARTED, COMPLETED));
+                new BatchResult(REF, cleared, failed, 1, 0, 0, STARTED, COMPLETED));
 
         assertTrue(ex.getMessage().contains("successfulCount"));
     }
 
     @Test
     void constructor_whenFailedCountMismatchesFailedSize_throws() {
+        List<ClearedInvoice> cleared = List.of();
+        List<FailedInvoice> failed = List.of(new FailedInvoice("inv-1", "err", List.of()));
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                new BatchResult(REF, List.of(),
-                        List.of(new FailedInvoice("inv-1", "err", List.of())),
-                        1, 0, 0, STARTED, COMPLETED));
+                new BatchResult(REF, cleared, failed, 1, 0, 0, STARTED, COMPLETED));
 
         assertTrue(ex.getMessage().contains("failedCount"));
     }
 
     @Test
     void constructor_whenTotalCountMismatchesSum_throws() {
+        List<ClearedInvoice> cleared = List.of();
+        List<FailedInvoice> failed = List.of();
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                new BatchResult(REF, List.of(), List.of(), 5, 0, 0, STARTED, COMPLETED));
+                new BatchResult(REF, cleared, failed, 5, 0, 0, STARTED, COMPLETED));
 
         assertTrue(ex.getMessage().contains("totalCount"));
     }
