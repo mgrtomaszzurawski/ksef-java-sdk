@@ -15,7 +15,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestRateLimi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
 import java.security.SecureRandom;

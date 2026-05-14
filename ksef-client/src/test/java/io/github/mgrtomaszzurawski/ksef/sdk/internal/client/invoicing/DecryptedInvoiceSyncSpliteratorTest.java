@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -182,8 +183,8 @@ class DecryptedInvoiceSyncSpliteratorTest {
         try (DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
                 invoiceExport, jacksonMapper(), plan, store)) {
             int characteristics = spliterator.characteristics();
-            assertTrue((characteristics & java.util.Spliterator.ORDERED) != 0, "ORDERED bit set");
-            assertTrue((characteristics & java.util.Spliterator.NONNULL) != 0, "NONNULL bit set");
+            assertNotEquals(0, characteristics & java.util.Spliterator.ORDERED, "ORDERED bit set");
+            assertNotEquals(0, characteristics & java.util.Spliterator.NONNULL, "NONNULL bit set");
         }
     }
 

@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefParty;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,8 +56,8 @@ class PefKorInvoiceBuilderTest {
                 .payableAmount(AMOUNT)
                 .originalInvoiceNumber("PEF/2025/0001")
                 .build();
-        assertTrue(creditNote.unsafeJaxbView().getBillingReference().size() == 1);
-        assertTrue(creditNote.lines().size() == 1);
+        assertEquals(1, creditNote.unsafeJaxbView().getBillingReference().size());
+        assertEquals(1, creditNote.lines().size());
     }
 
     private static PefParty party(String taxId, String name) {

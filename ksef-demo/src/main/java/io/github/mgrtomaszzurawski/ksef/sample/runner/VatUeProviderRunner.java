@@ -15,7 +15,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityAdminPermissionGrantBuilder;
 import java.security.MessageDigest;

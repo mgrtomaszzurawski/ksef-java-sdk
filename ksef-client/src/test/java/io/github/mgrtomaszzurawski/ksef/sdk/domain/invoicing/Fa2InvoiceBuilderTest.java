@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Fa2InvoiceBuilderTest {
@@ -44,7 +45,7 @@ class Fa2InvoiceBuilderTest {
                 .totalGrossAmount(GROSS_AMOUNT)
                 .addLineItem(line())
                 .build();
-        assertTrue(invoice.lineItems().size() == 1);
+        assertEquals(1, invoice.lineItems().size());
     }
 
     @Test

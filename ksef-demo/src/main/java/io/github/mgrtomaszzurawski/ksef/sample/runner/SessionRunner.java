@@ -49,14 +49,9 @@ public final class SessionRunner implements DemoRunner {
     private static final String OP_GET_FAILED = "getFailedInvoices";
     private static final String OP_CLOSE = "close";
     private static final String OP_UPO = "getUpo";
-    private static final String OP_UPO_BY_KSEF = "getUpoByKsefNumber";
     private static final String OP_STALE_SESSION_RECOVERY = "staleSessionRecovery";
     private static final String OP_CLEARED_BY_SUBMITTED = "getClearedBySubmittedInvoice";
 
-    private static final String SKIP_NO_KSEF_NUMBER =
-            "invoice has no ksefNumber (likely rejected) — cannot fetch UPO by KSeF number";
-    private static final String FAIL_UPO_BYTES_DIFFER =
-            "UPO retrieved by invoice ref differs from UPO retrieved by KSeF number";
     private static final String SKIP_NOT_FULL_MODE =
             "AUTH_SAFE mode — cleared(SubmittedInvoice) needs a real send first";
     private static final String OK_CONCURRENT_PERMITTED = "server permitted concurrent open";
@@ -93,7 +88,6 @@ public final class SessionRunner implements DemoRunner {
     private static final String INVOICES_LABEL = " invoices";
     private static final String FAILED_LABEL = " failed";
     private static final String BYTES_LABEL = " bytes";
-    private static final String BYTES_MATCHES_LABEL = " bytes, matches by-ref UPO";
     private static final String INVOICE_STATUS_LABEL = "invoice status";
     private static final String FAILED_INVOICE_LABEL = "failed invoice";
     private static final String NO_STATUS_PLACEHOLDER = "<no status>";

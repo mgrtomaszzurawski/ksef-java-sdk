@@ -46,7 +46,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Compile-only fixture (TC-ARCH-001) that names every public package the
@@ -147,7 +146,7 @@ public final class JpmsConsumerCompileFixture {
         // Reference KsefClient public methods that return types from each domain.
         // No actual KsefClient is constructed (would require live network /
         // credentials) — the cast keeps the compiler honest about return types.
-        Class<? extends KsefClient> clientClass = KsefClient.class;
+        Class<KsefClient> clientClass = KsefClient.class;
         for (java.lang.reflect.Method method : clientClass.getMethods()) {
             Type returnType = method.getGenericReturnType();
             if (returnType.getTypeName().contains(".internal.")

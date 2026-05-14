@@ -13,6 +13,7 @@ import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,7 +38,7 @@ class QrCodeServiceKodFacadeTest {
         assertNotNull(qrCodePng);
         assertTrue(qrCodePng.length > PNG_MAGIC_HEADER.length, "KOD I QR PNG must be non-trivially sized");
         for (int i = 0; i < PNG_MAGIC_HEADER.length; i++) {
-            assertTrue(qrCodePng[i] == PNG_MAGIC_HEADER[i], "byte " + i + " must match PNG magic header");
+            assertEquals(PNG_MAGIC_HEADER[i], qrCodePng[i], "byte " + i + " must match PNG magic header");
         }
     }
 
@@ -57,7 +58,7 @@ class QrCodeServiceKodFacadeTest {
         assertNotNull(qrCodePng);
         assertTrue(qrCodePng.length > PNG_MAGIC_HEADER.length, "KOD II QR PNG must be non-trivially sized");
         for (int i = 0; i < PNG_MAGIC_HEADER.length; i++) {
-            assertTrue(qrCodePng[i] == PNG_MAGIC_HEADER[i], "byte " + i + " must match PNG magic header");
+            assertEquals(PNG_MAGIC_HEADER[i], qrCodePng[i], "byte " + i + " must match PNG magic header");
         }
     }
 }
