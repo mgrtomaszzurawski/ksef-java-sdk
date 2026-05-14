@@ -12,8 +12,15 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClien
  * Bundles four parameters that flow together through the online-session
  * lifecycle.
  *
+ * <p>Internal handoff record — instances flow once from session-open into
+ * {@code OnlineSessionImpl}'s constructor and are not compared or hashed
+ * anywhere. Default record equality (reference equality on {@code byte[]}
+ * components) is therefore harmless here; suppressing S6218 keeps the
+ * carrier free of boilerplate equals/hashCode/toString that would never run.
+ *
  * @since 1.0.0
  */
+@SuppressWarnings("java:S6218")
 public record SessionHandle(
         SessionClient client,
         String referenceNumber,

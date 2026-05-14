@@ -86,6 +86,7 @@ public final class InvoicingRequestMappers {
         };
     }
 
+    @SuppressWarnings("java:S125")
     private static InvoiceQueryDateRangeRaw buildDateRange(InvoiceQueryRequest filters) {
         InvoiceQueryDateRangeRaw dateRange = new InvoiceQueryDateRangeRaw()
                 .dateType(toInvoiceQueryDateTypeRaw(filters.dateType()))

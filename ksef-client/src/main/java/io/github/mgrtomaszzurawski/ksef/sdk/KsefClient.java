@@ -409,6 +409,7 @@ public final class KsefClient implements AutoCloseable {
 
 
     @Override
+    @SuppressWarnings("java:S125")
     public synchronized void close() {
         closed = true;
         /*

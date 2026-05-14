@@ -137,7 +137,7 @@ public final class PagedSpliterator {
          * a Spliterator returning null from trySplit means single-thread.
          */
         @Override
-        @SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
+        @SuppressWarnings({"PMD.EmptyMethodInAbstractClassShouldBeAbstract", "java:S125"})
         public final @Nullable Spliterator<T> trySplit() {
             return null;
         }
