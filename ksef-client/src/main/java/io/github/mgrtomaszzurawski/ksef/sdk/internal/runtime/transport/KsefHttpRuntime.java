@@ -76,11 +76,12 @@ public final class KsefHttpRuntime implements HttpRuntime {
      * Plain transport-layer collaborators — environment URL, HTTP client,
      * JSON mapper, retry handler, read timeout. No auth/session state.
      *
-     * <p>Plain {@code final class} (not a {@code record}) so SpotBugs does
-     * not flag the mutable fields ({@link HttpClient}, {@link ObjectMapper},
-     * {@link RetryHandler}) as {@code EI_EXPOSE_REP}. These collaborators
-     * are intentionally shared by reference — defensive copy makes no
-     * sense for an HTTP client or JSON mapper.
+     * <p>The mutable collaborators ({@link HttpClient}, {@link ObjectMapper},
+     * {@link RetryHandler}) are intentionally shared by reference —
+     * defensive copy makes no sense for an HTTP client or JSON mapper.
+     * SpotBugs' {@code EI_EXPOSE_REP/REP2} on the auto-generated record
+     * accessors is silenced via the {@code KsefHttpRuntime$.*} entry in
+     * {@code spotbugs-exclude.xml}.
      */
     public record Transport(
             KsefEnvironment environment,
@@ -103,7 +104,10 @@ public final class KsefHttpRuntime implements HttpRuntime {
      * lifecycle callbacks the runtime invokes when auth needs to happen
      * proactively (no token yet) or reactively (401 response).
      *
-     * <p>Same rationale as {@link Transport} for not using a {@code record}.
+     * <p>Reference-sharing semantics as {@link Transport}; the
+     * {@code EI_EXPOSE_REP/REP2} SpotBugs reports on the auto-generated
+     * accessors are suppressed via the same {@code KsefHttpRuntime$.*}
+     * exclusion in {@code spotbugs-exclude.xml}.
      */
     public record AuthHooks(
             SessionContext sessionContext,

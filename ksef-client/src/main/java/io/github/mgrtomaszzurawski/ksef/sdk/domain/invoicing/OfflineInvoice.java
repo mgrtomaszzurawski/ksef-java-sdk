@@ -57,6 +57,7 @@ public final class OfflineInvoice {
     private static final String ERR_NULL_KOD_II = "kodIIQrPng must not be null";
     private static final String ERR_NULL_OFFLINE_MODE = "offlineMode must not be null";
     private static final String ERR_NULL_CERTIFICATE = "signingCertificate must not be null";
+    private static final String ERR_NULL_CONTEXT = "context must not be null";
     private static final String BYTES_LABEL = " bytes";
 
     private final Invoice underlyingInvoice;
@@ -179,7 +180,7 @@ public final class OfflineInvoice {
         Objects.requireNonNull(invoice, ERR_NULL_INVOICE);
         Objects.requireNonNull(certificate, ERR_NULL_CERTIFICATE);
         Objects.requireNonNull(mode, ERR_NULL_OFFLINE_MODE);
-        Objects.requireNonNull(context, "context must not be null");
+        Objects.requireNonNull(context, ERR_NULL_CONTEXT);
 
         byte[] invoiceXml = invoice.xml();
         byte[] invoiceHash = computeSha256(invoiceXml);
