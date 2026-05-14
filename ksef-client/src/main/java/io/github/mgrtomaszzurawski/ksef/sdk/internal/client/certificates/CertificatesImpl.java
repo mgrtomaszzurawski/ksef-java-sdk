@@ -183,7 +183,9 @@ public final class CertificatesImpl implements Certificates {
     @Override
     public void revoke(CertificateSerialNumber certificateSerialNumber, CertificateRevocationReason revocationReason) {
         Objects.requireNonNull(certificateSerialNumber, ERR_NULL_CERTIFICATE_SERIAL_NUMBER);
-        LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber.value());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber.value());
+        }
         Objects.requireNonNull(revocationReason, ERR_NULL_REVOCATION_REASON);
         RevokeCertificateRequestRaw rawRequest = new RevokeCertificateRequestRaw();
         rawRequest.setRevocationReason(CertificatesMappers.toCertificateRevocationReasonRaw(revocationReason));

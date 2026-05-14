@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
+@SuppressWarnings("java:S110")
 public class KsefSessionPollingTimeoutException extends KsefTimeoutException {
 
     @Serial

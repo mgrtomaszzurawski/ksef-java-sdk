@@ -296,14 +296,17 @@ public final class KsefCryptoService {
         }
         byte[] derBytes = looksLikePem(bytes) ? decodePem(bytes, PEM_PRIVATE_KEY_LABEL) : bytes;
         try {
-            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(derBytes);
-            try {
-                return KeyFactory.getInstance(RSA_KEY_ALGORITHM).generatePrivate(spec);
-            } catch (InvalidKeySpecException notRsa) {
-                return KeyFactory.getInstance(EC_KEY_ALGORITHM).generatePrivate(spec);
-            }
+            return decodeRsaOrEcPrivateKey(new PKCS8EncodedKeySpec(derBytes));
         } catch (GeneralSecurityException ex) {
             throw new KsefCryptoException(ERR_PRIVATE_KEY_PARSE, ex);
+        }
+    }
+
+    private static PrivateKey decodeRsaOrEcPrivateKey(PKCS8EncodedKeySpec spec) throws GeneralSecurityException {
+        try {
+            return KeyFactory.getInstance(RSA_KEY_ALGORITHM).generatePrivate(spec);
+        } catch (InvalidKeySpecException notRsa) {
+            return KeyFactory.getInstance(EC_KEY_ALGORITHM).generatePrivate(spec);
         }
     }
 

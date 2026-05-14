@@ -130,6 +130,7 @@ public final class ValidationProbe {
      * (PR6) — auth state is internal — but the probe still needs a
      * valid token to test endpoints with the SDK out of the picture.
      */
+    @SuppressWarnings("java:S3011")
     private static String extractBearerToken(KsefClient client) {
         try {
             java.lang.reflect.Field field = KsefClient.class.getDeclaredField("sessionContext");

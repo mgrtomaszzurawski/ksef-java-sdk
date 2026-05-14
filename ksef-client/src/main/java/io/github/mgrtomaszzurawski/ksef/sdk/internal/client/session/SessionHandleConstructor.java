@@ -113,7 +113,7 @@ public final class SessionHandleConstructor {
      * AvoidAccessibilityAlteration rule is the right default for most
      * code, but here it would defeat the design.
      */
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
+    @SuppressWarnings({"PMD.AvoidAccessibilityAlteration", "java:S3011"})
     private static <T> Constructor<T> makeAccessible(Constructor<T> ctor) {
         ctor.setAccessible(true);
         return ctor;

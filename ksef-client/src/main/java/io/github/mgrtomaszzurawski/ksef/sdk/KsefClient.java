@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
@@ -410,11 +411,13 @@ public final class KsefClient implements AutoCloseable {
     @Override
     public synchronized void close() {
         closed = true;
-        // Lifecycle hygiene (Codex round-9 F6) — clear cached public keys and
-        // bearer/refresh tokens so they are eligible for GC immediately rather
-        // than only when the KsefClient itself becomes unreachable. The
-        // close-flag check above already prevents any further protected calls;
-        // this just makes the secret material unreachable sooner.
+        /*
+         * Lifecycle hygiene (Codex round-9 F6) — clear cached public keys and
+         * bearer/refresh tokens so they are eligible for GC immediately rather
+         * than only when the KsefClient itself becomes unreachable. The
+         * close-flag check above already prevents any further protected calls;
+         * this just makes the secret material unreachable sooner.
+         */
         publicKeyCache.clear();
         sessionContext.clear();
         authenticated = false;
@@ -612,26 +615,33 @@ public final class KsefClient implements AutoCloseable {
         for (int attempt = 0; attempt < AUTH_POLL_MAX_ATTEMPTS; attempt++) {
             sleep();
             AuthenticationStatus status = authClient.getStatus(refNumber);
-            if (status.status() == null) {
-                continue;
-            }
-            int code = status.status().code();
-            if (code == STATUS_CODE_OK) {
+            if (status.status() != null && isTerminalAuthStatus(status.status().code())) {
+                handleTerminalAuthStatus(status.status());
                 return;
             }
-            if (code == AUTH_STATUS_CODE_PROCESSING || code == AUTH_STATUS_CODE_VERIFYING_CERT) {
-                continue;
-            }
-            // Codex round-9 manual validation A.4.2.2: any other terminal
-            // status code (e.g. 400 — invalid signature, revoked cert, no
-            // permissions for context) is reported with the actual reason
-            // instead of being swallowed as a generic poll timeout.
-            throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException(
-                    ERR_AUTH_FAILED_PREFIX + code + ERR_AUTH_FAILED_SEPARATOR
-                            + status.status().description() + ERR_AUTH_FAILED_SUFFIX,
-                    null, code, null);
         }
         throw new IllegalStateException(ERR_AUTH_TIMEOUT);
+    }
+
+    private static boolean isTerminalAuthStatus(int code) {
+        return code != AUTH_STATUS_CODE_PROCESSING && code != AUTH_STATUS_CODE_VERIFYING_CERT;
+    }
+
+    private static void handleTerminalAuthStatus(StatusInfo status) {
+        int code = status.code();
+        if (code == STATUS_CODE_OK) {
+            return;
+        }
+        /*
+         * Codex round-9 manual validation A.4.2.2: any other terminal
+         * status code (e.g. 400 — invalid signature, revoked cert, no
+         * permissions for context) is reported with the actual reason
+         * instead of being swallowed as a generic poll timeout.
+         */
+        throw new io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException(
+                ERR_AUTH_FAILED_PREFIX + code + ERR_AUTH_FAILED_SEPARATOR
+                        + status.description() + ERR_AUTH_FAILED_SUFFIX,
+                null, code, null);
     }
 
     private PublicKey getPublicKey(PublicKeyCertificateUsage usage) {

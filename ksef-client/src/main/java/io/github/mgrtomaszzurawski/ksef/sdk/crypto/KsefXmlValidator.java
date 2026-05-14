@@ -270,15 +270,19 @@ public final class KsefXmlValidator {
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            try {
-                factory.setProperty(ORACLE_JAXP_MAX_OCCUR_LIMIT, 0);
-            } catch (SAXException ignored) {
-                // Property unsupported in some JAXP impls — schema may still load.
-            }
+            setMaxOccurLimitIfSupported(factory);
             factory.setResourceResolver(new ClasspathResourceResolver(systemCode));
             return factory.newSchema(new StreamSource(stream));
         } catch (SAXException | IOException ex) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode + " — " + ex.getMessage(), List.of());
+        }
+    }
+
+    private static void setMaxOccurLimitIfSupported(SchemaFactory factory) {
+        try {
+            factory.setProperty(ORACLE_JAXP_MAX_OCCUR_LIMIT, 0);
+        } catch (SAXException ignored) {
+            // Property unsupported in some JAXP impls — schema may still load.
         }
     }
 
@@ -309,6 +313,7 @@ public final class KsefXmlValidator {
         }
     }
 
+    @SuppressWarnings("java:S6206")
     private static final class ClasspathLsInput implements org.w3c.dom.ls.LSInput {
 
         private final @Nullable String systemId;

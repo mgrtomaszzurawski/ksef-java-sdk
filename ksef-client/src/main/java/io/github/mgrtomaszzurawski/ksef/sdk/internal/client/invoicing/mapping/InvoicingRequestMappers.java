@@ -94,11 +94,13 @@ public final class InvoicingRequestMappers {
             dateRange.to(filters.dateTo());
         }
         if (filters.restrictToPermanentStorageHwm()) {
-            // Codex round-9 manual-validation A.1.1 — incremental-sync workflow
-            // mandates this flag (przyrostowe-pobieranie-faktur.md). The SDK
-            // toggles it only when the sync orchestrator builds the export query;
-            // ad-hoc one-shot prepareExport calls leave it false so the server
-            // returns the full requested range.
+            /*
+             * Codex round-9 manual-validation A.1.1 — incremental-sync workflow
+             * mandates this flag (przyrostowe-pobieranie-faktur.md). The SDK
+             * toggles it only when the sync orchestrator builds the export query;
+             * ad-hoc one-shot prepareExport calls leave it false so the server
+             * returns the full requested range.
+             */
             dateRange.restrictToPermanentStorageHwmDate(Boolean.TRUE);
         }
         return dateRange;

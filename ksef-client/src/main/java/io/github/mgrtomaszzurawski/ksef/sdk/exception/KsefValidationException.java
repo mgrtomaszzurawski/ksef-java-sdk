@@ -39,6 +39,7 @@ public class KsefValidationException extends KsefException {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @SuppressWarnings("java:S1948")
     private final List<KsefValidationError> errors;
 
     public KsefValidationException(String message, @Nullable Throwable cause, int statusCode,
