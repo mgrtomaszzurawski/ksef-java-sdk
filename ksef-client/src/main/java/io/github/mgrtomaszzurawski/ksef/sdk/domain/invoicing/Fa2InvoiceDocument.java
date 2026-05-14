@@ -57,31 +57,78 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     Fa2InvoiceDocument(Faktura faktura, byte[] xmlBytes) {
         this.faktura = Objects.requireNonNull(faktura, InvoiceDocumentMessages.ERR_NULL_FAKTURA);
         this.xmlBytes = xmlBytes.clone();
-        TNaglowek header = faktura.getNaglowek();
-        TNaglowek.KodFormularza kodFormularza = header != null ? header.getKodFormularza() : null;
-        this.systemCode = kodFormularza != null ? kodFormularza.getKodSystemowy() : null;
-        this.formVersion = kodFormularza != null ? kodFormularza.getWersjaSchemy() : null;
-        this.issuedAt = header != null && header.getDataWytworzeniaFa() != null
-                ? toOffsetDateTime(header.getDataWytworzeniaFa()) : null;
-        TPodmiot1 sellerIdentity = faktura.getPodmiot1() != null
-                ? faktura.getPodmiot1().getDaneIdentyfikacyjne() : null;
-        this.sellerNip = sellerIdentity != null ? sellerIdentity.getNIP() : null;
-        this.sellerName = sellerIdentity != null ? sellerIdentity.getNazwa() : null;
-        TPodmiot2 buyerIdentity = faktura.getPodmiot2() != null
-                ? faktura.getPodmiot2().getDaneIdentyfikacyjne() : null;
-        this.buyerNip = buyerIdentity != null ? buyerIdentity.getNIP() : null;
-        this.buyerName = buyerIdentity != null ? buyerIdentity.getNazwa() : null;
-        Faktura.Fa faContent = faktura.getFa();
-        this.invoiceNumber = faContent != null ? faContent.getP2() : null;
-        this.issueDate = faContent != null && faContent.getP1() != null
-                ? toLocalDate(faContent.getP1()) : null;
-        this.currency = faContent != null && faContent.getKodWaluty() != null
-                ? faContent.getKodWaluty().value() : null;
-        this.grossTotal = faContent != null ? faContent.getP15() : null;
-        this.netTotal = faContent != null ? Optional.ofNullable(faContent.getP131()) : Optional.empty();
-        this.invoiceTypeCode = faContent != null && faContent.getRodzajFaktury() != null
-                ? faContent.getRodzajFaktury().value() : null;
-        this.lineItems = snapshotLineItems(faContent);
+        HeaderSnapshot header = HeaderSnapshot.from(faktura.getNaglowek());
+        this.systemCode = header.systemCode;
+        this.formVersion = header.formVersion;
+        this.issuedAt = header.issuedAt;
+        PartySnapshot seller = PartySnapshot.fromSeller(faktura.getPodmiot1());
+        this.sellerNip = seller.nip;
+        this.sellerName = seller.name;
+        PartySnapshot buyer = PartySnapshot.fromBuyer(faktura.getPodmiot2());
+        this.buyerNip = buyer.nip;
+        this.buyerName = buyer.name;
+        FaSnapshot fa = FaSnapshot.from(faktura.getFa());
+        this.invoiceNumber = fa.invoiceNumber;
+        this.issueDate = fa.issueDate;
+        this.currency = fa.currency;
+        this.grossTotal = fa.grossTotal;
+        this.netTotal = fa.netTotal;
+        this.invoiceTypeCode = fa.invoiceTypeCode;
+        this.lineItems = fa.lineItems;
+    }
+
+    private record HeaderSnapshot(@Nullable String systemCode,
+                                  @Nullable String formVersion,
+                                  @Nullable OffsetDateTime issuedAt) {
+        static HeaderSnapshot from(@Nullable TNaglowek header) {
+            if (header == null) {
+                return new HeaderSnapshot(null, null, null);
+            }
+            TNaglowek.KodFormularza kodFormularza = header.getKodFormularza();
+            String systemCode = kodFormularza != null ? kodFormularza.getKodSystemowy() : null;
+            String formVersion = kodFormularza != null ? kodFormularza.getWersjaSchemy() : null;
+            OffsetDateTime issuedAt = header.getDataWytworzeniaFa() != null
+                    ? toOffsetDateTime(header.getDataWytworzeniaFa()) : null;
+            return new HeaderSnapshot(systemCode, formVersion, issuedAt);
+        }
+    }
+
+    private record PartySnapshot(@Nullable String nip, @Nullable String name) {
+        static PartySnapshot fromSeller(Faktura.@Nullable Podmiot1 podmiot) {
+            TPodmiot1 identity = podmiot != null ? podmiot.getDaneIdentyfikacyjne() : null;
+            return new PartySnapshot(
+                    identity != null ? identity.getNIP() : null,
+                    identity != null ? identity.getNazwa() : null);
+        }
+
+        static PartySnapshot fromBuyer(Faktura.@Nullable Podmiot2 podmiot) {
+            TPodmiot2 identity = podmiot != null ? podmiot.getDaneIdentyfikacyjne() : null;
+            return new PartySnapshot(
+                    identity != null ? identity.getNIP() : null,
+                    identity != null ? identity.getNazwa() : null);
+        }
+    }
+
+    private record FaSnapshot(@Nullable String invoiceNumber,
+                              @Nullable LocalDate issueDate,
+                              @Nullable String currency,
+                              @Nullable BigDecimal grossTotal,
+                              Optional<BigDecimal> netTotal,
+                              @Nullable String invoiceTypeCode,
+                              List<InvoiceLineItem> lineItems) {
+        static FaSnapshot from(Faktura.@Nullable Fa faContent) {
+            if (faContent == null) {
+                return new FaSnapshot(null, null, null, null, Optional.empty(), null, List.of());
+            }
+            return new FaSnapshot(
+                    faContent.getP2(),
+                    faContent.getP1() != null ? toLocalDate(faContent.getP1()) : null,
+                    faContent.getKodWaluty() != null ? faContent.getKodWaluty().value() : null,
+                    faContent.getP15(),
+                    Optional.ofNullable(faContent.getP131()),
+                    faContent.getRodzajFaktury() != null ? faContent.getRodzajFaktury().value() : null,
+                    snapshotLineItems(faContent));
+        }
     }
 
     /** Parse FA(2) XML bytes into a typed document. */

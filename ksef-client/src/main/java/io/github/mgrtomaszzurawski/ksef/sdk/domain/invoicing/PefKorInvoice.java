@@ -190,16 +190,6 @@ public final class PefKorInvoice implements Invoice {
      */
     public List<PefCreditNoteLine> lines() { return lines; }
 
-    private PartyType supplierParty() {
-        SupplierPartyType supplier = creditNote.getAccountingSupplierParty();
-        return supplier != null ? supplier.getParty() : null;
-    }
-
-    private PartyType customerParty() {
-        CustomerPartyType customer = creditNote.getAccountingCustomerParty();
-        return customer != null ? customer.getParty() : null;
-    }
-
     private static String firstPartyName(PartyType party) {
         if (party == null || party.getPartyName() == null || party.getPartyName().isEmpty()) {
             return null;

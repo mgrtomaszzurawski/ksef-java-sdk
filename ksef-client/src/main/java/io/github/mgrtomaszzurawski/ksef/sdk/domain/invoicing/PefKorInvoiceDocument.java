@@ -158,11 +158,6 @@ public final class PefKorInvoiceDocument implements InvoiceDocument {
      */
     public List<PefCreditNoteLine> lines() { return lines; }
 
-    private PartyType customerParty() {
-        CustomerPartyType customer = creditNote.getAccountingCustomerParty();
-        return customer != null ? customer.getParty() : null;
-    }
-
     private static String firstPartyName(PartyType party) {
         if (party == null || party.getPartyName() == null || party.getPartyName().isEmpty()) {
             return null;

@@ -14,7 +14,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.KsefVerificationLinks;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeService;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
@@ -122,8 +124,7 @@ final class OnlineSessionImpl implements OnlineSession {
     @Nullable private final KsefEnvironment environment;
     private final Duration invoiceVerificationTimeout;
     private final QrCodeService qrCodeService;
-    private final io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.@Nullable OfflineSigningProvider
-            offlineSigningProvider;
+    @Nullable private final OfflineSigningProvider offlineSigningProvider;
     @Nullable private final String sellerNip;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
@@ -164,8 +165,7 @@ final class OnlineSessionImpl implements OnlineSession {
                 @Nullable OffsetDateTime validUntil,
                 @Nullable KsefEnvironment environment,
                 Duration invoiceVerificationTimeout,
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.@Nullable OfflineSigningProvider
-                        offlineSigningProvider,
+                @Nullable OfflineSigningProvider offlineSigningProvider,
                 @Nullable String sellerNip) {
         this.sessionClient = sessionClient;
         this.referenceNumber = referenceNumber;
@@ -234,12 +234,10 @@ final class OnlineSessionImpl implements OnlineSession {
         if (offlineSigningProvider == null || environment == null || sellerNip == null) {
             throw new IllegalStateException(ERR_SEND_OFFLINE_REQUIRES_PROVIDER);
         }
-        io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment qrEnvironment =
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment
-                        .fromKsefEnvironment(environment);
+        QrEnvironment qrEnvironment = QrEnvironment.fromKsefEnvironment(environment);
         OfflineInvoice offline = offlineSigningProvider.signAndPackage(
                 invoice, mode, qrEnvironment,
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType.NIP,
+                QrContextType.NIP,
                 sellerNip, sellerNip, java.time.LocalDate.now(java.time.ZoneOffset.UTC));
         return sendOfflineInvoice(offline);
     }
