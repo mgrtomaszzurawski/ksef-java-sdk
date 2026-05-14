@@ -14,7 +14,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
@@ -79,7 +78,7 @@ public final class BatchSessionRunner implements DemoRunner {
         return results;
     }
 
-    private static @Nullable String resolveSkipReason(FormCode formCode, KsefEnvironment env) {
+    private static String resolveSkipReason(FormCode formCode, KsefEnvironment env) {
         try {
             formCode.assertAllowedOn(env);
         } catch (IllegalArgumentException notAllowed) {

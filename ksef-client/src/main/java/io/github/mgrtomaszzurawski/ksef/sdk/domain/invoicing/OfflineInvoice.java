@@ -57,11 +57,6 @@ public final class OfflineInvoice {
     private static final String ERR_NULL_KOD_II = "kodIIQrPng must not be null";
     private static final String ERR_NULL_OFFLINE_MODE = "offlineMode must not be null";
     private static final String ERR_NULL_CERTIFICATE = "signingCertificate must not be null";
-    private static final String ERR_NULL_QR_ENV = "qrEnvironment must not be null";
-    private static final String ERR_NULL_CONTEXT_TYPE = "contextType must not be null";
-    private static final String ERR_NULL_CONTEXT_VALUE = "contextValue must not be null";
-    private static final String ERR_NULL_SELLER_NIP = "sellerNip must not be null";
-    private static final String ERR_NULL_ISSUE_DATE = "issueDate must not be null";
     private static final String BYTES_LABEL = " bytes";
 
     private final Invoice underlyingInvoice;
