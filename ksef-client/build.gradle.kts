@@ -244,6 +244,35 @@ tasks.javadoc {
     isFailOnError = false
 }
 
+// Internal-aware Javadoc — generates the full HTML tree including the
+// non-exported sdk.internal.* packages so SDK developers can browse the
+// transport, crypto, batch, signing, and other plumbing classes locally.
+// NOT used for the Maven Central javadoc-jar (which keeps the JPMS-exported
+// surface only via the standard `javadoc` task above).
+//
+// Usage:  ./gradlew :ksef-client:javadocAll
+// Output: ksef-client/build/docs/javadoc-internal/index.html
+tasks.register<Javadoc>("javadocAll") {
+    group = "documentation"
+    description = "Generates Javadoc HTML for the full source tree, including sdk.internal.*."
+    source = sourceSets.main.get().allJava
+    classpath = sourceSets.main.get().compileClasspath
+    setDestinationDir(layout.buildDirectory.dir("docs/javadoc-internal").get().asFile)
+    options.encoding = "UTF-8"
+    (options as StandardJavadocDocletOptions).apply {
+        encoding = "UTF-8"
+        charSet = "UTF-8"
+        docEncoding = "UTF-8"
+        tags(
+            "apiNote:a:API Note:",
+            "implSpec:a:Implementation Requirements:",
+            "implNote:a:Implementation Note:",
+        )
+        addStringOption("Xdoclint:none", "-quiet")
+    }
+    isFailOnError = false
+}
+
 // ---------- Maven Central publication ----------
 
 publishing {
