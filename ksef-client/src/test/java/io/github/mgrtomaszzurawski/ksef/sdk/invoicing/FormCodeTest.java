@@ -195,8 +195,7 @@ class FormCodeTest {
         FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, DUMMY_XSD_BYTES);
 
         // then
-        org.junit.jupiter.api.Assertions.assertNotNull(formCode.customXsdBytes());
-        assertEquals(DUMMY_XSD_BYTES.length, formCode.customXsdBytes().length);
+        org.junit.jupiter.api.Assertions.assertArrayEquals(DUMMY_XSD_BYTES, formCode.customXsdBytes());
     }
 
     @Test

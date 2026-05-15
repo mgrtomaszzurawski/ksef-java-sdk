@@ -401,8 +401,12 @@ public final class KsefClient implements AutoCloseable {
      * reclaims it via GC together with this {@code KsefClient}.
      *
      * <p>Idempotent — calling close on an already-closed client is a
-     * no-op. Thread-safe (synchronized). Any subsequent call to a
-     * protected accessor throws {@link IllegalStateException}.
+     * no-op. Thread-safe (synchronized). Any subsequent call to any of
+     * the SDK accessors ({@link #invoices()}, {@link #permissions()},
+     * {@link #tokens()}, {@link #certificates()}, {@link #peppol()},
+     * {@link #limits()}, {@link #authSessions()}, or
+     * {@link KsefTestData#of(KsefClient)}) throws
+     * {@link IllegalStateException}.
      */
     @Override
     @SuppressWarnings("java:S125")

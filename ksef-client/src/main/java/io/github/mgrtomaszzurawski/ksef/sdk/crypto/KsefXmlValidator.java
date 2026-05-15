@@ -11,7 +11,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -58,6 +61,10 @@ public final class KsefXmlValidator {
     private static final String ERR_NULL_FORM = "formCode must not be null";
     private static final String ERR_SCHEMA_LOAD = "Failed to load XSD schema for form code: ";
     private static final String ERR_VALIDATION_FAILED = "Invoice XML failed XSD validation: ";
+    private static final String ERR_SCHEMA_LOAD_HINT_USE_CUSTOM =
+            "; use FormCode.custom(..., xsdBytes) to attach a custom XSD)";
+    private static final String ERR_CUSTOM_XSD_PARSE_FAILED =
+            " (custom XSD failed to parse) — ";
     private static final String ISSUE_SEPARATOR = " — ";
     private static final String LINE_LABEL = " line ";
     private static final String COLUMN_LABEL = ":";
@@ -74,7 +81,7 @@ public final class KsefXmlValidator {
     private static final int NONCHARACTER_FFFF = 0xFFFF;
 
     /** Resource path inside the SDK jar for each {@link FormCode#systemCode()}. */
-    private static final java.util.Map<String, String> SCHEMA_RESOURCE_BY_SYSTEM_CODE = java.util.Map.of(
+    private static final Map<String, String> SCHEMA_RESOURCE_BY_SYSTEM_CODE = Map.of(
             "FA (2)", "/xsd/FA/schemat_FA(2)_v1-0E.xsd",
             "FA (3)", "/xsd/FA/schemat_FA(3)_v1-0E.xsd",
             "PEF (3)", "/xsd/PEF/Schemat_PEF(3)_v2-1.xsd",
@@ -97,13 +104,21 @@ public final class KsefXmlValidator {
      * Identity-keyed cache for custom-XSD form codes. A consumer's typical
      * pattern is {@code static final FormCode MY = FormCode.custom(..., bytes)},
      * so the same FormCode instance flows through every validate call and an
-     * identity lookup avoids re-loading the Xerces DFA. {@code Collections
-     * .synchronizedMap(new IdentityHashMap<>())} gives us identity semantics
-     * + thread-safe writes; reads are also synchronized which is fine given
-     * the rate (one entry per custom FormCode, ~once per app lifetime).
+     * identity lookup avoids re-loading the Xerces DFA.
+     *
+     * <p>Uses {@link IdentityHashMap} so two FormCodes that are wire-equal
+     * (same triplet) but were constructed with different XSD bytes get
+     * distinct cache entries — the equality contract on {@link FormCode}
+     * is intentionally based on the wire shape only.
+     *
+     * <p>Reads + writes guarded by {@code synchronized (CUSTOM_SCHEMA_CACHE)}
+     * to make the get-or-load operation atomic (a plain
+     * {@code synchronizedMap} wrapper would race on the check-then-put).
+     * Synchronisation is cheap here: each FormCode goes through the slow
+     * path exactly once.
      */
-    private static final java.util.Map<FormCode, Schema> CUSTOM_SCHEMA_CACHE =
-            java.util.Collections.synchronizedMap(new java.util.IdentityHashMap<>());
+    private static final Map<FormCode, Schema> CUSTOM_SCHEMA_CACHE =
+            Collections.synchronizedMap(new IdentityHashMap<>());
 
     /** Severity reported by the SAX-driven XSD validator. */
     public enum Severity {
@@ -256,13 +271,14 @@ public final class KsefXmlValidator {
     private static Schema resolveSchema(FormCode formCode) {
         byte[] customXsd = formCode.customXsdBytes();
         if (customXsd != null) {
-            Schema cached = CUSTOM_SCHEMA_CACHE.get(formCode);
-            if (cached != null) {
+            synchronized (CUSTOM_SCHEMA_CACHE) {
+                Schema cached = CUSTOM_SCHEMA_CACHE.get(formCode);
+                if (cached == null) {
+                    cached = loadSchemaFromBytes(customXsd, formCode.systemCode());
+                    CUSTOM_SCHEMA_CACHE.put(formCode, cached);
+                }
                 return cached;
             }
-            Schema fresh = loadSchemaFromBytes(customXsd, formCode.systemCode());
-            CUSTOM_SCHEMA_CACHE.put(formCode, fresh);
-            return fresh;
         }
         return SCHEMA_CACHE.computeIfAbsent(formCode.systemCode(),
                 KsefXmlValidator::loadBundledSchemaOrThrow);
@@ -273,7 +289,7 @@ public final class KsefXmlValidator {
         if (resource == null) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode + " (no bundled XSD; supported: "
                     + SCHEMA_RESOURCE_BY_SYSTEM_CODE.keySet()
-                    + "; use FormCode.custom(..., xsdBytes) to attach a custom XSD)", List.of());
+                    + ERR_SCHEMA_LOAD_HINT_USE_CUSTOM, List.of());
         }
         try (InputStream stream = KsefXmlValidator.class.getResourceAsStream(resource)) {
             if (stream == null) {
@@ -291,10 +307,21 @@ public final class KsefXmlValidator {
     private static Schema loadSchemaFromBytes(byte[] xsdBytes, String systemCode) {
         try {
             SchemaFactory factory = newHardenedSchemaFactory();
+            // Custom XSDs do not have a classpath neighborhood the SDK
+            // controls, but the hardened ACCESS_EXTERNAL_SCHEMA="" rule
+            // already blocks xs:include/xs:import; install a throwing
+            // resolver as defense-in-depth so any attempt to reach
+            // outside the supplied bytes surfaces as a clear validation
+            // error rather than silently failing in JAXP.
+            factory.setResourceResolver((type, namespaceURI, publicId, systemId, baseURI) -> {
+                throw new IllegalArgumentException(
+                        "Custom XSDs cannot reference external resources (xs:include / xs:import); "
+                                + "self-contained XSD required");
+            });
             return factory.newSchema(new StreamSource(new ByteArrayInputStream(xsdBytes)));
         } catch (SAXException ex) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode
-                    + " (custom XSD failed to parse) — " + ex.getMessage(), List.of());
+                    + ERR_CUSTOM_XSD_PARSE_FAILED + ex.getMessage(), List.of());
         }
     }
 

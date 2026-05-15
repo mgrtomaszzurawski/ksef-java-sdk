@@ -188,6 +188,23 @@ public final class FormCode {
         }
     }
 
+    /**
+     * Equality is based on the <strong>wire triplet</strong>
+     * ({@code systemCode}, {@code schemaVersion}, {@code value}). The
+     * attached XSD bytes ({@link #customXsdBytes()}) are <em>not</em>
+     * part of the equality contract — two FormCodes that describe the
+     * same KSeF wire shape but carry different XSDs are still "equal"
+     * for purposes of {@code Set.contains} /
+     * {@code KNOWN_FORM_CODES.contains(this)} checks. The validator's
+     * own cache keys by object identity ({@link java.util.IdentityHashMap})
+     * to keep schema lookups disambiguated.
+     *
+     * <p>This means that putting two {@code FormCode.custom(..., xsdA)}
+     * and {@code FormCode.custom(..., xsdB)} instances with identical
+     * triplets into a regular {@code HashSet} collapses them to one
+     * bucket — typically a non-issue because consumers create one
+     * FormCode per logical schema and hold the instance.
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
