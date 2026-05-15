@@ -93,6 +93,18 @@ public final class KsefXmlValidator {
 
     private static final ConcurrentMap<String, Schema> SCHEMA_CACHE = new ConcurrentHashMap<>();
 
+    /**
+     * Identity-keyed cache for custom-XSD form codes. A consumer's typical
+     * pattern is {@code static final FormCode MY = FormCode.custom(..., bytes)},
+     * so the same FormCode instance flows through every validate call and an
+     * identity lookup avoids re-loading the Xerces DFA. {@code Collections
+     * .synchronizedMap(new IdentityHashMap<>())} gives us identity semantics
+     * + thread-safe writes; reads are also synchronized which is fine given
+     * the rate (one entry per custom FormCode, ~once per app lifetime).
+     */
+    private static final java.util.Map<FormCode, Schema> CUSTOM_SCHEMA_CACHE =
+            java.util.Collections.synchronizedMap(new java.util.IdentityHashMap<>());
+
     /** Severity reported by the SAX-driven XSD validator. */
     public enum Severity {
         /** SAX warning — schema-level note, not a document defect. */
@@ -135,8 +147,7 @@ public final class KsefXmlValidator {
     public static List<ValidationIssue> validate(byte[] invoiceXml, FormCode formCode) {
         Objects.requireNonNull(invoiceXml, ERR_NULL_XML);
         Objects.requireNonNull(formCode, ERR_NULL_FORM);
-        Schema schema = SCHEMA_CACHE.computeIfAbsent(formCode.systemCode(),
-                KsefXmlValidator::loadSchemaOrThrow);
+        Schema schema = resolveSchema(formCode);
         List<ValidationIssue> issues = new ArrayList<>();
         Validator validator = schema.newValidator();
         try {
@@ -242,27 +253,58 @@ public final class KsefXmlValidator {
         return new ValidationIssue(severity, ex.getLineNumber(), ex.getColumnNumber(), ex.getMessage());
     }
 
-    private static Schema loadSchemaOrThrow(String systemCode) {
+    private static Schema resolveSchema(FormCode formCode) {
+        byte[] customXsd = formCode.customXsdBytes();
+        if (customXsd != null) {
+            Schema cached = CUSTOM_SCHEMA_CACHE.get(formCode);
+            if (cached != null) {
+                return cached;
+            }
+            Schema fresh = loadSchemaFromBytes(customXsd, formCode.systemCode());
+            CUSTOM_SCHEMA_CACHE.put(formCode, fresh);
+            return fresh;
+        }
+        return SCHEMA_CACHE.computeIfAbsent(formCode.systemCode(),
+                KsefXmlValidator::loadBundledSchemaOrThrow);
+    }
+
+    private static Schema loadBundledSchemaOrThrow(String systemCode) {
         String resource = SCHEMA_RESOURCE_BY_SYSTEM_CODE.get(systemCode);
         if (resource == null) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode + " (no bundled XSD; supported: "
-                    + SCHEMA_RESOURCE_BY_SYSTEM_CODE.keySet() + ")", List.of());
+                    + SCHEMA_RESOURCE_BY_SYSTEM_CODE.keySet()
+                    + "; use FormCode.custom(..., xsdBytes) to attach a custom XSD)", List.of());
         }
         try (InputStream stream = KsefXmlValidator.class.getResourceAsStream(resource)) {
             if (stream == null) {
                 throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode
                         + " (resource not found on classpath: " + resource + ")", List.of());
             }
-            SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            setMaxOccurLimitIfSupported(factory);
+            SchemaFactory factory = newHardenedSchemaFactory();
             factory.setResourceResolver(new ClasspathResourceResolver(systemCode));
             return factory.newSchema(new StreamSource(stream));
         } catch (SAXException | IOException ex) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode + " — " + ex.getMessage(), List.of());
         }
+    }
+
+    private static Schema loadSchemaFromBytes(byte[] xsdBytes, String systemCode) {
+        try {
+            SchemaFactory factory = newHardenedSchemaFactory();
+            return factory.newSchema(new StreamSource(new java.io.ByteArrayInputStream(xsdBytes)));
+        } catch (SAXException ex) {
+            throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode
+                    + " (custom XSD failed to parse) — " + ex.getMessage(), List.of());
+        }
+    }
+
+    private static SchemaFactory newHardenedSchemaFactory() throws SAXException {
+        SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        setMaxOccurLimitIfSupported(factory);
+        return factory;
     }
 
     private static void setMaxOccurLimitIfSupported(SchemaFactory factory) {
