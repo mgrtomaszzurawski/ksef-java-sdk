@@ -202,23 +202,17 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Authenticate with KSeF using the configured credentials. Optional —
-     * the SDK also triggers authentication implicitly on the first call
-     * that requires it (lazy auth). Long-running consumers (batch jobs,
-     * scheduled workers, app warm-up) call this once at startup to pay
-     * the challenge-response cost outside the critical path.
+     * Internal — explicit authentication path used by both lazy
+     * {@link #ensureAuthenticated()} and the public
+     * {@link AuthSessions#ensureLoggedIn()} hook on the auth-session
+     * facade. Idempotent (no-op when already authenticated). Thread-safe
+     * (synchronized).
      *
-     * <p>Handles the full authentication flow:
-     * <ol>
-     *   <li>Request challenge from KSeF</li>
-     *   <li>Encrypt token / sign with XAdES (depending on credential type)</li>
-     *   <li>Poll authentication status until ready</li>
-     *   <li>Redeem operation token for access + refresh tokens</li>
-     * </ol>
-     *
-     * <p>Thread-safe. If already authenticated, this is a no-op.
+     * <p>Performs the full KSeF challenge-response handshake: request
+     * challenge → encrypt token or XAdES-sign → poll auth status →
+     * redeem operation token for access+refresh tokens.
      */
-    public synchronized void authenticate() {
+    synchronized void authenticateInternal() {
         ensureOpen();
         if (authenticated) {
             return;
@@ -259,7 +253,7 @@ public final class KsefClient implements AutoCloseable {
         publicKeyCache.clear();
         sessionContext.clear();
         lastChallengeClientIp = null;
-        authenticate();
+        authenticateInternal();
         LOGGER.debug(LOG_REAUTHENTICATED);
     }
 
@@ -291,13 +285,18 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Access auth-session management — terminate, list, terminate by
-     * reference, and the diagnostic last-challenge client-IP hook.
+     * Access the full auth-session lifecycle for this client: explicit
+     * login ({@link AuthSessions#ensureLoggedIn()}), terminate own session,
+     * list active sessions, terminate by reference, and the diagnostic
+     * last-challenge client-IP hook.
      *
-     * <p>Authentication itself is lazy and handled internally; this
-     * accessor exposes the explicit session-management verbs.
+     * <p>Authentication itself is lazy by default — the first call to any
+     * domain accessor that needs a session token triggers a login. Call
+     * {@link AuthSessions#ensureLoggedIn()} from this facade to drive the
+     * challenge-response cost outside the critical path (preflight
+     * credentials check, batch job startup, scheduled worker bootstrap).
      */
-    public AuthSessions auth() {
+    public AuthSessions authSessions() {
         ensureOpen();
         return authImpl;
     }
@@ -531,7 +530,7 @@ public final class KsefClient implements AutoCloseable {
 
     private void ensureAuthenticated() {
         if (!authenticated) {
-            authenticate();
+            authenticateInternal();
         }
     }
 

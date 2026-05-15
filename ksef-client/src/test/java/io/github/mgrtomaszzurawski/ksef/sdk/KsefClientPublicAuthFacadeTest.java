@@ -23,13 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Public-facade WireMock tests for the auth-session management methods
- * exposed via {@code KsefClient.auth()} after the PR6 surface trim.
+ * exposed via {@code KsefClient.authSessions()} after the PR6 surface trim.
  *
  * <p>Covers:
  * <ul>
- *   <li>{@code client.auth().streamAuthSessions()} — maps the
+ *   <li>{@code client.authSessions().streamAuthSessions()} — maps the
  *       {@code /v2/auth/sessions} body into {@link AuthSession} records.</li>
- *   <li>{@code client.auth().terminateSession(String)} — DELETE on
+ *   <li>{@code client.authSessions().terminateSession(String)} — DELETE on
  *       {@code /v2/auth/sessions/{referenceNumber}}.</li>
  * </ul>
  */
@@ -76,7 +76,7 @@ class KsefClientPublicAuthFacadeTest {
                             .withBody(SESSIONS_LIST_RESPONSE)));
 
             // when
-            List<AuthSession> sessions = client.auth().streamAuthSessions().toList();
+            List<AuthSession> sessions = client.authSessions().streamAuthSessions().toList();
 
             // then — at minimum the size + reference numbers must round-trip.
             // current()/tokenRedeemed() pass through the OpenAPI raw model setters
@@ -103,7 +103,7 @@ class KsefClientPublicAuthFacadeTest {
                     .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
 
             // when
-            client.auth().terminateSession(targetRef);
+            client.authSessions().terminateSession(targetRef);
 
             // then
             verify(deleteRequestedFor(urlEqualTo(AUTH_SESSIONS + "/" + targetRef))
@@ -115,7 +115,7 @@ class KsefClientPublicAuthFacadeTest {
     @Test
     void terminateSession_rejectsNullReference(WireMockRuntimeInfo wmInfo) {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
-            var auth = client.auth();
+            var auth = client.authSessions();
             assertThrows(NullPointerException.class, () -> auth.terminateSession(null));
         }
     }

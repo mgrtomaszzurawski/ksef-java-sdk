@@ -57,7 +57,7 @@ public final class EnrollAndRevokeCertificate {
             // Drive lazy auth via any authenticated read so the PKCS#12
             // material is consumed up-front; then zero the password buffer
             // so a heap dump cannot recover it.
-            client.auth().streamAuthSessions().findAny();
+            client.authSessions().streamAuthSessions().findAny();
             java.util.Arrays.fill(p12Password, '\0');
             System.out.println("XAdES authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
