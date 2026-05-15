@@ -32,8 +32,11 @@ import java.util.Objects;
 public final class KsefVerificationLinks {
 
     private static final DateTimeFormatter DATE_DD_MM_YYYY = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    @SuppressWarnings("java:S1075")
     private static final String INVOICE_PATH = "/invoice/%s/%s/%s";
+    @SuppressWarnings("java:S1075")
     private static final String CERTIFICATE_PATH = "/certificate/%s/%s/%s/%s/%s/%s";
+    @SuppressWarnings("java:S1075")
     private static final String CERTIFICATE_SIGNING_PAYLOAD = "/certificate/%s/%s/%s/%s/%s";
     private static final String HTTPS_PREFIX = "https://";
 

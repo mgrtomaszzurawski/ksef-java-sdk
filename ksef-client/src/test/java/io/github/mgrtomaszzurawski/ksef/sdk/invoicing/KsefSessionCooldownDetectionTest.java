@@ -85,9 +85,10 @@ class KsefSessionCooldownDetectionTest {
                             .withBody(COOLDOWN_STATUS_RESPONSE)));
 
             // when / then
+            var sessions = client.invoices().sessions();
             KsefSessionCooldownException cooldown =
                     assertThrows(KsefSessionCooldownException.class,
-                            () -> client.invoices().sessions().open(FormCode.FA3));
+                            () -> sessions.open(FormCode.FA3));
 
             assertEquals(KsefSessionCooldownException.TYPICAL_COOLDOWN, cooldown.suggestedRetryAfter());
             // Wire-shape pin: both calls of the cooldown detection sequence

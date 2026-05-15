@@ -16,9 +16,18 @@
     </Match>
     <!-- KsefHttpRuntime is the internal HttpRuntime adapter — its accessors
          exist to share the same ObjectMapper/SessionContext across domain
-         clients within the SDK module. The package is non-exported via JPMS. -->
+         clients within the SDK module. The package is non-exported via JPMS.
+         Pattern covers the outer class and its nested Transport/AuthHooks records. -->
     <Match>
-        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefHttpRuntime"/>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.internal\.runtime\.transport\.KsefHttpRuntime(\$.*)?"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Internal auth request/material records (XadesAuthRequest, XadesSigningMaterial)
+         — package-internal handoff records that carry an X509Certificate + PrivateKey
+         reference plus signing options into AuthClient.authenticateWithXades. The auth
+         call owns these for the request's lifetime; defensive copies add noise. -->
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
     <!-- PagedSpliterator.{Page,CursorPage} are internal records that briefly

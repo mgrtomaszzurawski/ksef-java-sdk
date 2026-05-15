@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 /**
  * Public API surface for KSeF authentication-session management.
  *
- * <p>Obtain an instance via {@code KsefClient.auth()}. Authentication
+ * <p>Obtain an instance via {@code KsefClient.authSessions()}. Authentication
  * itself is handled lazily by {@code KsefClient} on the first call that
  * needs it; this accessor exposes the explicit session-management
  * verbs (terminate, list, terminate-by-reference) and the diagnostic
@@ -22,6 +22,23 @@ import java.util.stream.Stream;
  * @since 1.0.0
  */
 public interface AuthSessions {
+
+    /**
+     * Drive the KSeF challenge-response handshake now rather than on the
+     * first protected call. Idempotent — no-op when already logged in.
+     * Thread-safe.
+     *
+     * <p>Optional: the SDK authenticates lazily on the first call that
+     * needs a session token, so this method exists for consumers who
+     * want predictable startup latency or a fail-fast credentials check
+     * (batch jobs, scheduled workers, Spring {@code @PostConstruct}
+     * smoke tests).
+     *
+     * <p>Performs the full flow: request challenge → encrypt token or
+     * sign with XAdES → poll auth status → redeem operation token for
+     * access + refresh tokens.
+     */
+    void ensureLoggedIn();
 
     /**
      * Terminate the current authentication session.

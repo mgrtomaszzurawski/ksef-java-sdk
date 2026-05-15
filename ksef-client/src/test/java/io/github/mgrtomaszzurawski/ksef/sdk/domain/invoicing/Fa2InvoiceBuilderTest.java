@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Fa2InvoiceBuilderTest {
@@ -24,14 +25,13 @@ class Fa2InvoiceBuilderTest {
 
     @Test
     void build_whenInvoiceNumberMissing_throwsNpe() {
-        assertThrows(NullPointerException.class,
-                () -> Fa2Invoice.builder()
-                        .issueDate(LocalDate.of(2026, 5, 9))
-                        .seller(seller())
-                        .buyer(buyer())
-                        .totalGrossAmount(GROSS_AMOUNT)
-                        .addLineItem(line())
-                        .build());
+        var builder = Fa2Invoice.builder()
+                .issueDate(LocalDate.of(2026, 5, 9))
+                .seller(seller())
+                .buyer(buyer())
+                .totalGrossAmount(GROSS_AMOUNT)
+                .addLineItem(line());
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test
@@ -44,21 +44,20 @@ class Fa2InvoiceBuilderTest {
                 .totalGrossAmount(GROSS_AMOUNT)
                 .addLineItem(line())
                 .build();
-        assertTrue(invoice.lineItems().size() == 1);
+        assertEquals(1, invoice.lineItems().size());
     }
 
     @Test
     void build_whenCorrectionTypeWithoutReference_throwsIllegalState() {
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> Fa2Invoice.builder()
-                        .invoiceNumber(INVOICE_NUMBER)
-                        .issueDate(LocalDate.of(2026, 5, 9))
-                        .seller(seller())
-                        .buyer(buyer())
-                        .rodzajFaktury(TRodzajFaktury.KOR)
-                        .totalGrossAmount(GROSS_AMOUNT)
-                        .addLineItem(line())
-                        .build());
+        var builder = Fa2Invoice.builder()
+                .invoiceNumber(INVOICE_NUMBER)
+                .issueDate(LocalDate.of(2026, 5, 9))
+                .seller(seller())
+                .buyer(buyer())
+                .rodzajFaktury(TRodzajFaktury.KOR)
+                .totalGrossAmount(GROSS_AMOUNT)
+                .addLineItem(line());
+        IllegalStateException ex = assertThrows(IllegalStateException.class, builder::build);
         assertTrue(ex.getMessage().contains("correction"));
     }
 

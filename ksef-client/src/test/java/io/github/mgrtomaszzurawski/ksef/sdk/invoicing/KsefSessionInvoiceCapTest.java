@@ -79,8 +79,9 @@ class KsefSessionInvoiceCapTest {
             seedCounter(session, MAX_INVOICES);
 
             // when / then — the 10001st send is rejected before HTTP
+            Invoice invoice = Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML);
             IllegalStateException failure = assertThrows(IllegalStateException.class,
-                    () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
+                    () -> session.sendInvoice(invoice));
             assertTrue(failure.getMessage().contains("10000"),
                     "Error message should reference the cap; got: " + failure.getMessage());
             assertTrue(failure.getMessage().contains("REQ-SESS-41"),
@@ -99,8 +100,9 @@ class KsefSessionInvoiceCapTest {
             assertDoesNotThrow(() -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
 
             // then — 10,001st send fails fast
+            Invoice secondInvoice = Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML);
             assertThrows(IllegalStateException.class,
-                    () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
+                    () -> session.sendInvoice(secondInvoice));
         }
     }
 
@@ -110,10 +112,11 @@ class KsefSessionInvoiceCapTest {
         stubInvoiceEndpoint();
         try (OnlineSession session = createSession(wmInfo)) {
             seedCounter(session, MAX_INVOICES);
+            Invoice invoice = Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML);
 
             // when — invoke many rejected sends
             for (int attempt = 0; attempt < 5; attempt++) {
-                assertThrows(IllegalStateException.class, () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
+                assertThrows(IllegalStateException.class, () -> session.sendInvoice(invoice));
             }
 
             // then — counter stays at the cap (rollback on rejection per implementation)

@@ -93,9 +93,12 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
         guardAgainstCooldown(openResult.referenceNumber());
 
         return SessionHandleConstructor.newOnlineSession(
-                sessionClient, openResult.referenceNumber(), aesKey, initVector,
-                openResult.validUntil(), environment, invoiceVerificationTimeout,
-                offlineSigningProvider, sellerNip);
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SessionHandle(
+                        sessionClient, openResult.referenceNumber(), aesKey, initVector),
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceVerificationConfig(
+                        openResult.validUntil(), environment, invoiceVerificationTimeout),
+                new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OfflineSendHook(
+                        offlineSigningProvider, sellerNip));
     }
 
     @Override

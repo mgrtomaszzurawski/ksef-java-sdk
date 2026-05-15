@@ -76,36 +76,27 @@ public final class KsefHttpRuntime implements HttpRuntime {
      * Plain transport-layer collaborators — environment URL, HTTP client,
      * JSON mapper, retry handler, read timeout. No auth/session state.
      *
-     * <p>Plain {@code final class} (not a {@code record}) so SpotBugs does
-     * not flag the mutable fields ({@link HttpClient}, {@link ObjectMapper},
-     * {@link RetryHandler}) as {@code EI_EXPOSE_REP}. These collaborators
-     * are intentionally shared by reference — defensive copy makes no
-     * sense for an HTTP client or JSON mapper.
+     * <p>The mutable collaborators ({@link HttpClient}, {@link ObjectMapper},
+     * {@link RetryHandler}) are intentionally shared by reference —
+     * defensive copy makes no sense for an HTTP client or JSON mapper.
+     * SpotBugs' {@code EI_EXPOSE_REP/REP2} on the auto-generated record
+     * accessors is silenced via the {@code KsefHttpRuntime$.*} entry in
+     * {@code spotbugs-exclude.xml}.
      */
-    public static final class Transport {
-        private final KsefEnvironment environment;
-        private final HttpClient httpClient;
-        private final ObjectMapper objectMapper;
-        private final RetryHandler retryHandler;
-        private final Duration readTimeout;
+    public record Transport(
+            KsefEnvironment environment,
+            HttpClient httpClient,
+            ObjectMapper objectMapper,
+            RetryHandler retryHandler,
+            Duration readTimeout) {
 
-        public Transport(KsefEnvironment environment,
-                          HttpClient httpClient,
-                          ObjectMapper objectMapper,
-                          RetryHandler retryHandler,
-                          Duration readTimeout) {
-            this.environment = Objects.requireNonNull(environment, "environment must not be null");
-            this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
-            this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-            this.retryHandler = Objects.requireNonNull(retryHandler, "retryHandler must not be null");
-            this.readTimeout = Objects.requireNonNull(readTimeout, "readTimeout must not be null");
+        public Transport {
+            Objects.requireNonNull(environment, "environment must not be null");
+            Objects.requireNonNull(httpClient, "httpClient must not be null");
+            Objects.requireNonNull(objectMapper, "objectMapper must not be null");
+            Objects.requireNonNull(retryHandler, "retryHandler must not be null");
+            Objects.requireNonNull(readTimeout, "readTimeout must not be null");
         }
-
-        KsefEnvironment environment() { return environment; }
-        HttpClient httpClient() { return httpClient; }
-        ObjectMapper objectMapper() { return objectMapper; }
-        RetryHandler retryHandler() { return retryHandler; }
-        Duration readTimeout() { return readTimeout; }
     }
 
     /**
@@ -113,29 +104,23 @@ public final class KsefHttpRuntime implements HttpRuntime {
      * lifecycle callbacks the runtime invokes when auth needs to happen
      * proactively (no token yet) or reactively (401 response).
      *
-     * <p>Same rationale as {@link Transport} for not using a {@code record}.
+     * <p>Reference-sharing semantics as {@link Transport}; the
+     * {@code EI_EXPOSE_REP/REP2} SpotBugs reports on the auto-generated
+     * accessors are suppressed via the same {@code KsefHttpRuntime$.*}
+     * exclusion in {@code spotbugs-exclude.xml}.
      */
-    public static final class AuthHooks {
-        private final SessionContext sessionContext;
-        private final Runnable reauthHook;
-        private final Runnable proactiveAuthHook;
-        private final java.util.function.BooleanSupplier certificateAuthCheck;
+    public record AuthHooks(
+            SessionContext sessionContext,
+            Runnable reauthHook,
+            Runnable proactiveAuthHook,
+            java.util.function.BooleanSupplier certificateAuthCheck) {
 
-        public AuthHooks(SessionContext sessionContext,
-                          Runnable reauthHook,
-                          Runnable proactiveAuthHook,
-                          java.util.function.BooleanSupplier certificateAuthCheck) {
-            this.sessionContext = Objects.requireNonNull(sessionContext, "sessionContext must not be null");
-            this.reauthHook = Objects.requireNonNull(reauthHook, "reauthHook must not be null");
-            this.proactiveAuthHook = Objects.requireNonNull(proactiveAuthHook, "proactiveAuthHook must not be null");
-            this.certificateAuthCheck = Objects.requireNonNull(certificateAuthCheck,
-                    "certificateAuthCheck must not be null");
+        public AuthHooks {
+            Objects.requireNonNull(sessionContext, "sessionContext must not be null");
+            Objects.requireNonNull(reauthHook, "reauthHook must not be null");
+            Objects.requireNonNull(proactiveAuthHook, "proactiveAuthHook must not be null");
+            Objects.requireNonNull(certificateAuthCheck, "certificateAuthCheck must not be null");
         }
-
-        SessionContext sessionContext() { return sessionContext; }
-        Runnable reauthHook() { return reauthHook; }
-        Runnable proactiveAuthHook() { return proactiveAuthHook; }
-        java.util.function.BooleanSupplier certificateAuthCheck() { return certificateAuthCheck; }
     }
 
     @Override

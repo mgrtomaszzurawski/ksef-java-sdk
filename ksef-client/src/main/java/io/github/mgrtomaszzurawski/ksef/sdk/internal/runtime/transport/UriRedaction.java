@@ -34,7 +34,7 @@ public final class UriRedaction {
     private static final String QUERY_SEPARATOR = "?";
     private static final String REDACTED_PLACEHOLDER = "<redacted>";
     private static final String PATH_SEPARATOR = "/";
-    private static final Pattern NIP_PREFIX_SEGMENT = Pattern.compile("^[0-9]{10}[-A-Z0-9]*$");
+    private static final Pattern NIP_PREFIX_SEGMENT = Pattern.compile("^\\d{10}[-A-Z0-9]*$");
 
     private UriRedaction() { }
 

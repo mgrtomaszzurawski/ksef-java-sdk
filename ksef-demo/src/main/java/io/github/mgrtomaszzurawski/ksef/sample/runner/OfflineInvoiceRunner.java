@@ -144,10 +144,9 @@ public final class OfflineInvoiceRunner implements DemoRunner {
                                                   LocalDate issueDate, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            OfflineInvoice offline = OfflineInvoice.fromInvoice(
-                    invoice, certificate, OfflineMode.OFFLINE_24,
-                    qrEnvironment, QrContextType.NIP, sellerNip,
-                    sellerNip, issueDate);
+            OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24,
+                    new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(
+                            qrEnvironment, QrContextType.NIP, sellerNip, sellerNip, issueDate));
             String message = assertQrPresent(OP_STATIC_FACTORY, offline, results, start);
             if (message == null) {
                 return null;

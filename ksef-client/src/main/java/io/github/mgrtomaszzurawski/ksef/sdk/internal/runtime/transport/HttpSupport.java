@@ -44,9 +44,12 @@ public final class HttpSupport {
     private static final String X_KSEF_FEATURE_HEADER = "X-KSeF-Feature";
     private static final String UPO_V4_3_FEATURE = "upo-v4-3";
     private static final String ENFORCE_XADES_COMPLIANCE_FEATURE = "enforce-xades-compliance";
+    @SuppressWarnings("java:S1075")
     private static final String AUTH_XADES_PATH_FRAGMENT = "/auth/xades-signature";
+    @SuppressWarnings("java:S1075")
     private static final String AUTH_KSEF_TOKEN_PATH_FRAGMENT = "/auth/ksef-token";
     /** Substring matched against request path to detect UPO-related calls (REQ-MISC; FeaturePolicy). */
+    @SuppressWarnings("java:S1075")
     private static final String UPO_PATH_FRAGMENT = "/upo";
     private static final String RETRY_AFTER_HEADER = "Retry-After";
 

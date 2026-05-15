@@ -28,7 +28,6 @@ public final class PefKorInvoiceExamples {
     private static final String CURRENCY_PLN = "PLN";
     private static final String UNIT_PIECE = "C62";
     private static final BigDecimal CORRECTION_AMOUNT = new BigDecimal("100.00");
-    private static final BigDecimal QUANTITY_REFUND = new BigDecimal("100.00");
     private static final BigDecimal CORRECTION_PAYABLE = new BigDecimal("123.00");
     private static final BigDecimal PARTIAL_REFUND_AMOUNT = new BigDecimal("50.00");
     private static final BigDecimal PARTIAL_REFUND_PAYABLE = new BigDecimal("61.50");

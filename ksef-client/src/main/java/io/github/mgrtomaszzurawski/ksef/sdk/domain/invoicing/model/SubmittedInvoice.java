@@ -68,6 +68,7 @@ public record SubmittedInvoice(
     private static final String ERR_KOD_I_NULL = "kodIQr must not be null (use Optional.empty())";
     private static final String ERR_KOD_II_NULL = "kodIIQr must not be null (use Optional.empty())";
     private static final String ERR_ERROR_DETAILS_NULL = "errorDetails must not be null (use List.of())";
+    private static final String ABSENT_PLACEHOLDER = "<absent>";
 
     /**
      * Compact constructor — defensive-copies the QR bytes. Optional and
@@ -140,9 +141,9 @@ public record SubmittedInvoice(
     @Override
     public String toString() {
         return "SubmittedInvoice[referenceNumber=" + referenceNumber
-                + ", ksefNumber=" + ksefNumber.map(KsefNumber::value).orElse("<absent>")
-                + ", kodIQr=" + kodIQr.map(bytes -> bytes.length + " bytes").orElse("<absent>")
-                + ", kodIIQr=" + kodIIQr.map(bytes -> bytes.length + " bytes").orElse("<absent>")
+                + ", ksefNumber=" + ksefNumber.map(KsefNumber::value).orElse(ABSENT_PLACEHOLDER)
+                + ", kodIQr=" + kodIQr.map(bytes -> bytes.length + " bytes").orElse(ABSENT_PLACEHOLDER)
+                + ", kodIIQr=" + kodIIQr.map(bytes -> bytes.length + " bytes").orElse(ABSENT_PLACEHOLDER)
                 + ", errorDetails=" + errorDetails.size() + " entries"
                 + ", statusCode="
                 + (status.status() == null ? "<unknown>" : Integer.toString(status.status().code()))

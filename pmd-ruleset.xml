@@ -122,6 +122,10 @@
         <exclude name="AvoidUsingVolatile"/>
         <!-- synchronized methods on KsefClient are intentional — guards single-flight auth. -->
         <exclude name="AvoidSynchronizedAtMethodLevel"/>
+        <!-- synchronized blocks on KsefXmlValidator.CUSTOM_SCHEMA_CACHE are intentional —
+             make the IdentityHashMap get-or-load atomic. ReentrantLock would add ceremony
+             without behavioural gain (single-FormCode lock taken once per schema). -->
+        <exclude name="AvoidSynchronizedStatement"/>
         <!-- UseConcurrentHashMap is overly aggressive: it flags every HashMap usage,
              including single-threaded local maps. SDK records use HashMap for short-lived
              local state; concurrent variants would be a cargo-cult anti-pattern here. -->

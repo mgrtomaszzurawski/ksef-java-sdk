@@ -120,9 +120,10 @@ class KsefSessionTest {
         stubCloseAndStatusOk();
         try (OnlineSession session = createSession(wmInfo)) {
             session.close();
+            Invoice invoice = Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML);
 
             // when / then
-            assertThrows(IllegalStateException.class, () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
+            assertThrows(IllegalStateException.class, () -> session.sendInvoice(invoice));
         }
     }
 
@@ -149,7 +150,8 @@ class KsefSessionTest {
             session.close();
 
             // then — session is closed, send should fail
-            assertThrows(IllegalStateException.class, () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
+            Invoice invoice = Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML);
+            assertThrows(IllegalStateException.class, () -> session.sendInvoice(invoice));
         }
     }
 
@@ -164,7 +166,8 @@ class KsefSessionTest {
             session.close();
 
             // then — still closed
-            assertThrows(IllegalStateException.class, () -> session.sendInvoice(Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML)));
+            Invoice invoice = Invoice.fromXml(TEST_FORM_CODE, TEST_INVOICE_XML);
+            assertThrows(IllegalStateException.class, () -> session.sendInvoice(invoice));
         }
     }
 

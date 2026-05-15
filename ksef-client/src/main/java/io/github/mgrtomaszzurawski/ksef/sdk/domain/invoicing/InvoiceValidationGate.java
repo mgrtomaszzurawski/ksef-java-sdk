@@ -34,12 +34,15 @@ final class InvoiceValidationGate {
     }
 
     /**
-     * Validate {@code invoiceXml} against the bundled XSD for {@code formCode}.
-     * Custom form codes (no bundled XSD) are skipped. Throws
-     * {@link KsefXmlValidator.KsefXmlValidationException} on hard errors.
+     * Validate {@code invoiceXml} against the bundled XSD for {@code formCode},
+     * OR against the per-FormCode custom XSD when one was attached via
+     * {@link FormCode#custom(String, String, String, byte[])}. Custom form
+     * codes with no attached XSD are skipped — the SDK has no schema to
+     * validate against, and KSeF server validation remains authoritative.
+     * Throws {@link KsefXmlValidator.KsefXmlValidationException} on hard errors.
      */
     static void validate(FormCode formCode, byte[] invoiceXml) {
-        if (!KNOWN_FORM_CODES.contains(formCode)) {
+        if (!KNOWN_FORM_CODES.contains(formCode) && formCode.customXsdBytes() == null) {
             return;
         }
         List<ValidationIssue> issues = KsefXmlValidator.validate(invoiceXml, formCode);

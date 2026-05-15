@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * wrong-type fields, and the Problem-Details-wins-over-legacy precedence
  * when both shapes appear in the same body.
  */
+@SuppressWarnings("java:S5976")
 class ServerErrorParserTest {
 
     private static final int CODE_FIELD_VALIDATION = 21405;

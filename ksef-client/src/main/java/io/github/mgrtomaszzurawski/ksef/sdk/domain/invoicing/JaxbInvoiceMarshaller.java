@@ -10,7 +10,6 @@ import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Internal helper for marshalling and unmarshalling invoice JAXB
@@ -73,45 +72,6 @@ final class JaxbInvoiceMarshaller {
     private static final javax.xml.stream.XMLInputFactory XML_INPUT_FACTORY = createHardenedXmlInputFactory();
 
     private JaxbInvoiceMarshaller() {
-    }
-
-    /**
-     * Pre-build the JAXBContext for every root class the SDK ships builders
-     * for (FA2, FA3, PEF Invoice, PEF_KOR CreditNote). Called by
-     * {@code KsefClient.warmup()} so the consumer can choose when the
-     * one-time per-schema construction cost is paid. Idempotent — each root
-     * class is held in the {@link #CONTEXT_CACHE} {@code ClassValue} after
-     * first computation; subsequent calls are a cache hit.
-     *
-     * <p>Roots are loaded reflectively to avoid forcing an eager import of
-     * the generated JAXB classes; missing roots (e.g. consumer running a
-     * lean jar where some generated packages were stripped) are skipped
-     * silently rather than failing warmup.
-     */
-    static void warmupAll() {
-        String[] rootClassNames = {
-                "io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura",
-                "io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura",
-                "io.github.mgrtomaszzurawski.ksef.xml.pef.InvoiceType",
-                "io.github.mgrtomaszzurawski.ksef.xml.pefkor.CreditNoteType",
-        };
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        for (String name : rootClassNames) {
-            // Generated root absent in this consumer's classpath -> skip the
-            // root quietly so a lean-jar deployment still warms what it ships.
-            Class<?> rootClass = loadClassOrNull(loader, name);
-            if (rootClass != null) {
-                contextFor(rootClass);
-            }
-        }
-    }
-
-    private static @Nullable Class<?> loadClassOrNull(ClassLoader loader, String name) {
-        try {
-            return Class.forName(name, false, loader);
-        } catch (ClassNotFoundException missing) {
-            return null;
-        }
     }
 
     static byte[] marshal(Object jaxbRoot, Class<?> rootClass) {

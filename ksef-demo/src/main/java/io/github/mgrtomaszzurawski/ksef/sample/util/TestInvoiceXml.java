@@ -118,12 +118,6 @@ public final class TestInvoiceXml {
         return filled.getBytes(StandardCharsets.UTF_8);
     }
 
-    /** @deprecated kept for callers that have not migrated to {@link #generate(FormCode, String)}. */
-    @Deprecated
-    public static byte[] generate(String sellerNip) {
-        return generate(FormCode.FA3, sellerNip);
-    }
-
     private static void assertNoUnresolvedPlaceholders(String filled, FormCode formCode) {
         Matcher matcher = UNRESOLVED_PLACEHOLDER_PATTERN.matcher(filled);
         if (matcher.find()) {

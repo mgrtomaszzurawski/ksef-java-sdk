@@ -18,7 +18,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.Permissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,6 +51,8 @@ public final class PeppolProviderRunner implements DemoRunner {
     private static final String OP_OPEN_SESSION = "openSession";
     private static final String OP_SEND_INVOICE = "sendInvoice";
     private static final String OP_CLOSE = "close";
+    private static final String OP_GRANT_PEF_INVOICING = "grantPefInvoicingToProvider";
+    private static final String LABEL_PEPPOL_ID = "peppolId=";
     /** KSeF terminal-success status code on permission grant operations. */
     private static final int GRANT_SUCCESS_STATUS_CODE = 200;
     /** Wall-clock budget for the grant-authorization poll loop. */
@@ -111,9 +112,9 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH, elapsed(start),
-                    "peppolId=" + peppolId + " (registered via XAdES self-signed cert)"));
+                    LABEL_PEPPOL_ID + peppolId + " (registered via XAdES self-signed cert)"));
             return true;
         } catch (Exception ex) {
             results.add(RunResult.fail(NAME, OP_AUTH, elapsed(start), errorMessage(ex)));
@@ -142,15 +143,15 @@ public final class PeppolProviderRunner implements DemoRunner {
                             null));
             int code = status.status() == null ? -1 : status.status().code();
             if (code == GRANT_SUCCESS_STATUS_CODE) {
-                results.add(RunResult.ok(NAME, "grantPefInvoicingToProvider", elapsed(start),
-                        "peppolId=" + peppolId));
+                results.add(RunResult.ok(NAME, OP_GRANT_PEF_INVOICING, elapsed(start),
+                        LABEL_PEPPOL_ID + peppolId));
                 return true;
             }
-            results.add(RunResult.fail(NAME, "grantPefInvoicingToProvider", elapsed(start),
+            results.add(RunResult.fail(NAME, OP_GRANT_PEF_INVOICING, elapsed(start),
                     "grant terminal status code=" + code));
             return false;
         } catch (Exception ex) {
-            results.add(RunResult.fail(NAME, "grantPefInvoicingToProvider", elapsed(start), errorMessage(ex)));
+            results.add(RunResult.fail(NAME, OP_GRANT_PEF_INVOICING, elapsed(start), errorMessage(ex)));
             return false;
         }
     }
@@ -178,9 +179,9 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH + label, elapsed(authStart),
-                    "peppolId=" + peppolId));
+                    LABEL_PEPPOL_ID + peppolId));
 
             long openStart = System.currentTimeMillis();
             try (OnlineSession session = client.invoices().sessions().open(formCode)) {

@@ -68,20 +68,26 @@ public final class BatchSessionRunner implements DemoRunner {
         KsefEnvironment env = resolveEnv(context.environment());
         for (FormCode formCode : FORM_CODES) {
             String formCodeLabel = formCodeLabel(formCode);
-            try {
-                formCode.assertAllowedOn(env);
-            } catch (IllegalArgumentException notAllowed) {
-                results.add(RunResult.skip(NAME, OP_SUBMIT_BATCH + formCodeLabel,
-                        SKIP_REASON_PREFIX + notAllowed.getMessage()));
-                continue;
+            String skipReason = resolveSkipReason(formCode, env);
+            if (skipReason != null) {
+                results.add(RunResult.skip(NAME, OP_SUBMIT_BATCH + formCodeLabel, skipReason));
+            } else {
+                runOnce(context, formCode, formCodeLabel, results);
             }
-            if (requiresPeppolProviderAuth(formCode)) {
-                results.add(RunResult.skip(NAME, OP_SUBMIT_BATCH + formCodeLabel, SKIP_REASON_PEF_AUTH));
-                continue;
-            }
-            runOnce(context, formCode, formCodeLabel, results);
         }
         return results;
+    }
+
+    private static String resolveSkipReason(FormCode formCode, KsefEnvironment env) {
+        try {
+            formCode.assertAllowedOn(env);
+        } catch (IllegalArgumentException notAllowed) {
+            return SKIP_REASON_PREFIX + notAllowed.getMessage();
+        }
+        if (requiresPeppolProviderAuth(formCode)) {
+            return SKIP_REASON_PEF_AUTH;
+        }
+        return null;
     }
 
     private void runOnce(DemoContext context, FormCode formCode, String formCodeLabel,

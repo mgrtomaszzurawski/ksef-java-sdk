@@ -46,7 +46,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Compile-only fixture (TC-ARCH-001) that names every public package the
@@ -69,6 +68,8 @@ import java.util.List;
  * reflection-only check did not catch).
  */
 public final class JpmsConsumerCompileFixture {
+
+    private static final String FIXTURE_NIP = "1234567890";
 
     private JpmsConsumerCompileFixture() {
         // not instantiable
@@ -140,14 +141,14 @@ public final class JpmsConsumerCompileFixture {
     @SuppressWarnings("unused")
     public static void referencePublicMethods() {
         KsefClient.Builder builder = KsefClient.builder().environment(KsefEnvironment.DEMO)
-                .credentials(new KsefTokenCredentials("token", "1234567890"))
+                .credentials(new KsefTokenCredentials("token", FIXTURE_NIP))
                 .retryPolicy(RetryPolicy.builder().build())
                 .features(FeaturePolicy.defaults());
 
         // Reference KsefClient public methods that return types from each domain.
         // No actual KsefClient is constructed (would require live network /
         // credentials) — the cast keeps the compiler honest about return types.
-        Class<? extends KsefClient> clientClass = KsefClient.class;
+        Class<KsefClient> clientClass = KsefClient.class;
         for (java.lang.reflect.Method method : clientClass.getMethods()) {
             Type returnType = method.getGenericReturnType();
             if (returnType.getTypeName().contains(".internal.")
@@ -169,16 +170,16 @@ public final class JpmsConsumerCompileFixture {
         // Reference QR signing public-key payload helper without invoking it.
         KsefVerificationLinks.CertificateSigningInput input =
                 new KsefVerificationLinks.CertificateSigningInput(
-                        QrContextType.NIP, "1234567890", "1234567890",
+                        QrContextType.NIP, FIXTURE_NIP, FIXTURE_NIP,
                         "0123456789ABCDEF", new byte[32]);
         if (input == null) {
             throw new IllegalStateException("input was null");
         }
 
         // Reference Stream<AuthSession> as a public return shape (now via
-        // the client.auth() accessor — PR6 trim).
+        // the client.authSessions() accessor — PR6 trim).
         java.util.function.Function<KsefClient, java.util.stream.Stream<AuthSession>> streamSessions =
-                client -> client.auth().streamAuthSessions();
+                client -> client.authSessions().streamAuthSessions();
         if (streamSessions == null) {
             throw new IllegalStateException("streamSessions was null");
         }

@@ -183,8 +183,9 @@ public final class AuthClient {
             String challenge, X509Certificate certificate, PrivateKey privateKey,
             KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier,
             io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
-        return authenticateWithXades(challenge, certificate, privateKey,
-                identifier, subjectIdentifier, signingOptions, null, null);
+        return authenticateWithXades(
+                new XadesAuthRequest(challenge, identifier, subjectIdentifier, null, null),
+                new XadesSigningMaterial(certificate, privateKey, signingOptions));
     }
 
     /**
@@ -199,17 +200,13 @@ public final class AuthClient {
      *
      * @since 1.0.0
      */
-    public AuthenticationInit authenticateWithXades(
-            String challenge, X509Certificate certificate, PrivateKey privateKey,
-            KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier,
-            io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions,
-            @Nullable AuthorizationPolicy policy,
-            @Nullable String defaultClientIp) {
+    public AuthenticationInit authenticateWithXades(XadesAuthRequest request, XadesSigningMaterial signing) {
         LOGGER.debug(LOG_CALL, OP_AUTH_XADES);
-        String authXml = buildAuthTokenRequestXml(challenge, identifier, subjectIdentifier,
-                policy, defaultClientIp);
+        String authXml = buildAuthTokenRequestXml(request.challenge(), request.identifier(),
+                request.subjectIdentifier(), request.policy(), request.defaultClientIp());
         String signedXml = SigningService.signXml(
-                authXml.getBytes(StandardCharsets.UTF_8), certificate, privateKey, signingOptions);
+                authXml.getBytes(StandardCharsets.UTF_8),
+                signing.certificate(), signing.privateKey(), signing.signingOptions());
         AuthenticationInitResponseRaw response = http.postXml(
                 PATH_XADES_SIGNATURE, signedXml, AuthenticationInitResponseRaw.class, OP_AUTH_XADES);
         activateSession(response);

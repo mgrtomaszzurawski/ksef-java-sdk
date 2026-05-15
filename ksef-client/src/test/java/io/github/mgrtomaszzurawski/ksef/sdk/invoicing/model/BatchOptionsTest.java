@@ -60,8 +60,9 @@ class BatchOptionsTest {
 
     @Test
     void constructor_whenTimeoutNegative_throws() {
+        Duration negativeTimeout = Duration.ofMinutes(-1);
         assertThrows(IllegalArgumentException.class, () ->
-                new BatchOptions(Duration.ofMinutes(-1), BatchOptions.MIN_PARALLELISM));
+                new BatchOptions(negativeTimeout, BatchOptions.MIN_PARALLELISM));
     }
 
     @Test

@@ -46,6 +46,12 @@ public final class AuthSessionsImpl implements AuthSessions {
     }
 
     @Override
+    public void ensureLoggedIn() {
+        ensureOpen.run();
+        ensureAuthenticated.run();
+    }
+
+    @Override
     public void terminate() {
         ensureOpen.run();
         authClient.terminateCurrentSession();

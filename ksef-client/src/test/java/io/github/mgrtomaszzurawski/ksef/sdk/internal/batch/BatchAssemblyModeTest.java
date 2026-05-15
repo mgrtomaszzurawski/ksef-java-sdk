@@ -140,12 +140,15 @@ class BatchAssemblyModeTest {
 
     @Test
     void inMemory_capExceeded_failsFast() {
-        // when / then — tiny cap + small chunk size guarantees the second chunk's emit
+        // given — tiny cap + small chunk size guarantees the second chunk's emit
         // pushes total above the cap.
+        var invoices = threeInvoices();
+        byte[] key = aesKey();
+        byte[] iv = aesIv();
+        BatchAssemblyMode mode = BatchAssemblyMode.inMemory(50);
+        // when / then
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> BatchPackageBuilder.build(
-                        threeInvoices(), aesKey(), aesIv(),
-                        SMALL_PART_SIZE, BatchAssemblyMode.inMemory(50)));
+                () -> BatchPackageBuilder.build(invoices, key, iv, SMALL_PART_SIZE, mode));
         assertTrue(ex.getMessage().contains("in-memory assembly cap"),
                 "exception must explain the cap, was: " + ex.getMessage());
     }

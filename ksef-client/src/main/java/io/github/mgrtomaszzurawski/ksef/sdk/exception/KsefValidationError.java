@@ -32,7 +32,11 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public record KsefValidationError(int code, String description, List<String> details) {
+public record KsefValidationError(int code, String description, List<String> details)
+        implements java.io.Serializable {
+
+    @java.io.Serial
+    private static final long serialVersionUID = 1L;
 
     private static final String ERR_NULL_DESCRIPTION = "description must not be null";
     private static final String ERR_NULL_DETAILS = "details must not be null";

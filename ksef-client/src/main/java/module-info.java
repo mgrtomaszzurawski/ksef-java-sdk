@@ -14,10 +14,10 @@ module io.github.mgrtomaszzurawski.ksef {
     // Common shared types (StatusInfo, TokenInfo, KsefNumber, public-key models)
     exports io.github.mgrtomaszzurawski.ksef.sdk.common;
 
-    // AuthSessions-session management accessor (KsefClient.auth())
+    // Auth-session management accessor (KsefClient.authSessions())
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.auth;
 
-    // Authentication public DTOs (AuthSession returned by KsefClient.auth().streamAuthSessions())
+    // Authentication public DTOs (AuthSession returned by KsefClient.authSessions().streamAuthSessions())
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model;
 
     // Public crypto facade (REQ-CRYPTO-001..004)

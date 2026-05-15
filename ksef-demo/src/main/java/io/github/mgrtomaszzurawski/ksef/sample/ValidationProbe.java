@@ -110,7 +110,7 @@ public final class ValidationProbe {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional return per Sonar S2201 — the side effect
             // (lazy authentication) is the actual goal.
-            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
             LOGGER.info("Authenticated successfully");
 
             String bearer = extractBearerToken(client);
@@ -118,7 +118,7 @@ public final class ValidationProbe {
             ValidationProbe probe = new ValidationProbe(ksefUrl, bearer);
             probe.runAllProbes();
 
-            client.auth().terminate();
+            client.authSessions().terminate();
             LOGGER.info("Session terminated. Probe complete.");
         }
     }
@@ -130,6 +130,7 @@ public final class ValidationProbe {
      * (PR6) — auth state is internal — but the probe still needs a
      * valid token to test endpoints with the SDK out of the picture.
      */
+    @SuppressWarnings("java:S3011")
     private static String extractBearerToken(KsefClient client) {
         try {
             java.lang.reflect.Field field = KsefClient.class.getDeclaredField("sessionContext");

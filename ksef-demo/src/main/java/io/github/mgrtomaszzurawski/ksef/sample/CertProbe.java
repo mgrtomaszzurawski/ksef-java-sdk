@@ -76,7 +76,7 @@ public final class CertProbe {
             // Drive lazy auth via any authenticated read; the Optional is
             // intentionally consumed with a no-op ifPresent — only the side
             // effect (KsefClient lazy-authenticates) matters here.
-            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
             run(client);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();

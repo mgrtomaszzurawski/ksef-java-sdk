@@ -9,6 +9,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceVerificationConfig;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OfflineSendHook;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SessionHandle;
 import java.time.Duration;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -92,10 +95,7 @@ public final class SessionHandleConstructor {
                             KsefEnvironment.class, Duration.class));
             ONLINE_SESSION_CTOR_OFFLINE_AWARE = makeAccessible(
                     onlineImpl.getDeclaredConstructor(
-                            SessionClient.class, String.class, byte[].class, byte[].class,
-                            java.time.OffsetDateTime.class,
-                            KsefEnvironment.class, Duration.class,
-                            OfflineSigningProvider.class, String.class));
+                            SessionHandle.class, InvoiceVerificationConfig.class, OfflineSendHook.class));
             PREPARED_EXPORT_CTOR = makeAccessible(
                     PreparedInvoiceExport.class.getDeclaredConstructor(
                             InvoiceExport.class, HttpClient.class, String.class,
@@ -113,7 +113,7 @@ public final class SessionHandleConstructor {
      * AvoidAccessibilityAlteration rule is the right default for most
      * code, but here it would defeat the design.
      */
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
+    @SuppressWarnings({"PMD.AvoidAccessibilityAlteration", "java:S3011"})
     private static <T> Constructor<T> makeAccessible(Constructor<T> ctor) {
         ctor.setAccessible(true);
         return ctor;
@@ -168,18 +168,10 @@ public final class SessionHandleConstructor {
      *     may be {@code null} (provider not configured), in which case
      *     the overload throws {@link IllegalStateException} on use.
      */
-    public static OnlineSession newOnlineSession(SessionClient sessionClient,
-                                                 String referenceNumber,
-                                                 byte[] aesKey,
-                                                 byte[] initVector,
-                                                 java.time.@Nullable OffsetDateTime validUntil,
-                                                 KsefEnvironment environment,
-                                                 Duration invoiceVerificationTimeout,
-                                                 @Nullable OfflineSigningProvider provider,
-                                                 @Nullable String sellerNip) {
-        return invoke(ONLINE_SESSION_CTOR_OFFLINE_AWARE, sessionClient,
-                referenceNumber, aesKey, initVector, validUntil, environment,
-                invoiceVerificationTimeout, provider, sellerNip);
+    public static OnlineSession newOnlineSession(SessionHandle handle,
+                                                 InvoiceVerificationConfig verification,
+                                                 OfflineSendHook offline) {
+        return invoke(ONLINE_SESSION_CTOR_OFFLINE_AWARE, handle, verification, offline);
     }
 
     /**

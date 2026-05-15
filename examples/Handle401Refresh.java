@@ -48,15 +48,15 @@ public final class Handle401Refresh {
             // the SDK runs lazy auth again on the next authenticated call.
             // In production, the SDK does this transparently in response
             // to a 401 from any authenticated call (HttpRuntime.reauthenticate()).
-            client.auth().terminate();
+            client.authSessions().terminate();
             System.out.println("Forced reauth: terminated current session");
 
             ContextLimits limits2 = client.limits().getContextLimits();
             System.out.println("Second call OK — onlineSession.maxInvoiceSizeInMB: "
                     + limits2.onlineSession().maxInvoiceSizeInMB());
 
-            client.auth().terminate();
-            System.out.println("AuthSessions session terminated");
+            client.authSessions().terminate();
+            System.out.println("Auth session terminated");
         }
     }
 

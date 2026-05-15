@@ -22,26 +22,24 @@ class PefInvoiceBuilderTest {
 
     @Test
     void build_whenInvoiceNumberMissing_throwsNpe() {
-        assertThrows(NullPointerException.class,
-                () -> PefInvoice.builder()
-                        .issueDate(LocalDate.of(2026, 5, 9))
-                        .supplier(party("1111111111", "Acme"))
-                        .customer(party("9876543210", "Customer"))
-                        .addLine(line())
-                        .payableAmount(AMOUNT)
-                        .build());
+        var builder = PefInvoice.builder()
+                .issueDate(LocalDate.of(2026, 5, 9))
+                .supplier(party("1111111111", "Acme"))
+                .customer(party("9876543210", "Customer"))
+                .addLine(line())
+                .payableAmount(AMOUNT);
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test
     void build_whenSupplierMissing_throwsNpe() {
-        assertThrows(NullPointerException.class,
-                () -> PefInvoice.builder()
-                        .invoiceNumber("PEF/0001")
-                        .issueDate(LocalDate.of(2026, 5, 9))
-                        .customer(party("9876543210", "Customer"))
-                        .addLine(line())
-                        .payableAmount(AMOUNT)
-                        .build());
+        var builder = PefInvoice.builder()
+                .invoiceNumber("PEF/0001")
+                .issueDate(LocalDate.of(2026, 5, 9))
+                .customer(party("9876543210", "Customer"))
+                .addLine(line())
+                .payableAmount(AMOUNT);
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test
@@ -55,7 +53,7 @@ class PefInvoiceBuilderTest {
                 .payableAmount(AMOUNT)
                 .build();
 
-        assertTrue(invoice.lines().size() == 1);
+        assertEquals(1, invoice.lines().size());
         assertEquals(1, invoice.unsafeJaxbView().getAccountingSupplierParty()
                 .getParty().getPartyTaxScheme().size());
     }

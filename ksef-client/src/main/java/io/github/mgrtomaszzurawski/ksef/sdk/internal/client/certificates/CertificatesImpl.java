@@ -183,7 +183,9 @@ public final class CertificatesImpl implements Certificates {
     @Override
     public void revoke(CertificateSerialNumber certificateSerialNumber, CertificateRevocationReason revocationReason) {
         Objects.requireNonNull(certificateSerialNumber, ERR_NULL_CERTIFICATE_SERIAL_NUMBER);
-        LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber.value());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(LOG_CALL_REF, OP_REVOKE, certificateSerialNumber.value());
+        }
         Objects.requireNonNull(revocationReason, ERR_NULL_REVOCATION_REASON);
         RevokeCertificateRequestRaw rawRequest = new RevokeCertificateRequestRaw();
         rawRequest.setRevocationReason(CertificatesMappers.toCertificateRevocationReasonRaw(revocationReason));
@@ -218,8 +220,8 @@ public final class CertificatesImpl implements Certificates {
                 ? CERTIFICATE_QUERY_MAX_PAGE_SIZE : request.pageSize();
         return io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.stream(pageOffset -> {
             String token = http.requireToken();
-            String pagedPath = PATH_QUERY + "?pageOffset=" + pageOffset
-                    + "&pageSize=" + effectivePageSize;
+            String pagedPath = PATH_QUERY + PARAM_PAGE_OFFSET_PREFIX + pageOffset
+                    + PARAM_PAGE_SIZE_AFTER_FIRST + effectivePageSize;
             QueryCertificatesResponseRaw raw = http.postJsonAuthenticated(pagedPath,
                     CertificatesMappers.toQueryCertificatesRequestRaw(request),
                     token, QueryCertificatesResponseRaw.class, OP_QUERY);

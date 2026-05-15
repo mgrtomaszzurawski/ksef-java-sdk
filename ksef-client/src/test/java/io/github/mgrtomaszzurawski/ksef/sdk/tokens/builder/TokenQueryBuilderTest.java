@@ -46,8 +46,9 @@ class TokenQueryBuilderTest {
 
     @Test
     void description_whenTooShort_throwsIllegalArgumentException() {
+        TokenQueryBuilder builder = TokenQueryBuilder.create();
         assertThrows(IllegalArgumentException.class,
-                () -> TokenQueryBuilder.create().description("ab"));
+                () -> builder.description("ab"));
     }
 
     @Test
@@ -74,10 +75,12 @@ class TokenQueryBuilderTest {
 
     @Test
     void pageSize_whenOutOfRange_throwsIllegalArgumentException() {
+        TokenQueryBuilder builderForTooSmall = TokenQueryBuilder.create();
         assertThrows(IllegalArgumentException.class,
-                () -> TokenQueryBuilder.create().pageSize(PAGE_SIZE_TOO_SMALL));
+                () -> builderForTooSmall.pageSize(PAGE_SIZE_TOO_SMALL));
+        TokenQueryBuilder builderForTooLarge = TokenQueryBuilder.create();
         assertThrows(IllegalArgumentException.class,
-                () -> TokenQueryBuilder.create().pageSize(PAGE_SIZE_TOO_LARGE));
+                () -> builderForTooLarge.pageSize(PAGE_SIZE_TOO_LARGE));
     }
 
     @Test

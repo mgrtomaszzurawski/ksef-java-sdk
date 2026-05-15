@@ -26,6 +26,7 @@ import java.util.Objects;
  *
  * @since 1.0.0
  */
+@SuppressWarnings("java:S6206")
 public final class KsefCertificate {
 
     private static final String ERR_NULL_CERTIFICATE = "certificate must not be null";
