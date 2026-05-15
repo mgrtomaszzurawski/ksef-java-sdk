@@ -74,7 +74,7 @@ public final class AuthRunner implements DemoRunner {
     private void runAuthenticate(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            // Drive lazy auth via any authenticated read — streamSessions()
+            // Drive lazy auth via any authenticated read — streamAuthSessions()
             // hits /v2/auth/sessions which forces the full challenge flow.
             // No-op ifPresent consumes the Optional per Sonar S2201.
             context.client().authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });

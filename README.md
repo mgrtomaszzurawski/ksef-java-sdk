@@ -220,22 +220,24 @@ against the strict profile and you want server-side enforcement.
 - `client.certificates()` — enrollment, revocation, query
 - `client.peppol()` — Peppol provider directory query
 - `client.limits()` — context + subject limits
-- `client.rateLimits()` — current rate limits
-- `client.testData()` — test-environment helpers (subjects, persons, permissions)
+- `client.authSessions()` — explicit login (`ensureLoggedIn()`), list / terminate
+  active auth sessions, and the diagnostic `lastChallengeClientIp()`
+  hook for `AuthorizationPolicy` IP-pinning
+- `KsefTestData.of(client)` — TEST/DEMO-only test-data administration
+  (subjects, persons, permissions, session and rate-limit overrides);
+  opt-in factory kept off `KsefClient` so PROD consumers do not see it
 
-Plus session-level helpers on `KsefClient` itself:
+Plus invoice-flow entry points reached via `client.invoices()`:
 
-- `client.authenticate()` / `client.reauthenticate()` / `client.terminateAuth()`
-- `client.invoices().sessions().open(FormCode)` / `client.invoices().batch().submit(...)`
-- `client.invoiceSync(IncrementalSyncPlan, CheckpointStore, InvoiceSink)` —
-  HWM-based incremental sync with content download and per-invoice sink
-- `client.streamSessions(filter)` — paginate online + batch sessions
-- `client.listAuthSessions()` / `client.terminateAuthSession(ref)` /
-  `client.refreshAuthToken()`
-- `client.publicKeyCertificates()` — fetch KSeF symmetric-key + token
-  encryption public keys
-- `client.lastChallengeClientIp()` — IP returned by `/auth/challenge`,
-  input to `AuthorizationPolicy` IP-pinning
+- `client.invoices().sessions().open(FormCode)` — open an online session;
+  per-invoice `send` + UPO retrieval via try-with-resources
+- `client.invoices().batch().submit(...)` — synchronous batch flow
+  (pre-built parts uploaded, status polled until terminal)
+- `client.invoices().sync(plan, store, sink)` — HWM-based incremental
+  sync with content download and per-invoice sink
+- `client.invoices().archive()` — retrieve invoice / UPO by KSeF number
+- `client.invoices().export(...)` — kick off and poll long-running
+  export jobs
 
 ## Examples
 
