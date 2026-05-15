@@ -11,7 +11,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -58,6 +61,13 @@ public final class KsefXmlValidator {
     private static final String ERR_NULL_FORM = "formCode must not be null";
     private static final String ERR_SCHEMA_LOAD = "Failed to load XSD schema for form code: ";
     private static final String ERR_VALIDATION_FAILED = "Invoice XML failed XSD validation: ";
+    private static final String ERR_SCHEMA_LOAD_HINT_USE_CUSTOM =
+            "; use FormCode.custom(..., xsdBytes) to attach a custom XSD)";
+    private static final String ERR_CUSTOM_XSD_PARSE_FAILED =
+            " (custom XSD failed to parse) — ";
+    private static final String ERR_CUSTOM_XSD_EXTERNAL_REF =
+            "Custom XSDs cannot reference external resources (xs:include / xs:import); "
+                    + "self-contained XSD required";
     private static final String ISSUE_SEPARATOR = " — ";
     private static final String LINE_LABEL = " line ";
     private static final String COLUMN_LABEL = ":";
@@ -74,7 +84,7 @@ public final class KsefXmlValidator {
     private static final int NONCHARACTER_FFFF = 0xFFFF;
 
     /** Resource path inside the SDK jar for each {@link FormCode#systemCode()}. */
-    private static final java.util.Map<String, String> SCHEMA_RESOURCE_BY_SYSTEM_CODE = java.util.Map.of(
+    private static final Map<String, String> SCHEMA_RESOURCE_BY_SYSTEM_CODE = Map.of(
             "FA (2)", "/xsd/FA/schemat_FA(2)_v1-0E.xsd",
             "FA (3)", "/xsd/FA/schemat_FA(3)_v1-0E.xsd",
             "PEF (3)", "/xsd/PEF/Schemat_PEF(3)_v2-1.xsd",
@@ -92,6 +102,26 @@ public final class KsefXmlValidator {
     private static final String PEF_SYSTEM_CODE_PREFIX = "PEF";
 
     private static final ConcurrentMap<String, Schema> SCHEMA_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * Identity-keyed cache for custom-XSD form codes. A consumer's typical
+     * pattern is {@code static final FormCode MY = FormCode.custom(..., bytes)},
+     * so the same FormCode instance flows through every validate call and an
+     * identity lookup avoids re-loading the Xerces DFA.
+     *
+     * <p>Uses {@link IdentityHashMap} so two FormCodes that are wire-equal
+     * (same triplet) but were constructed with different XSD bytes get
+     * distinct cache entries — the equality contract on {@link FormCode}
+     * is intentionally based on the wire shape only.
+     *
+     * <p>Reads + writes guarded by {@code synchronized (CUSTOM_SCHEMA_CACHE)}
+     * to make the get-or-load operation atomic (a plain
+     * {@code synchronizedMap} wrapper would race on the check-then-put).
+     * Synchronisation is cheap here: each FormCode goes through the slow
+     * path exactly once.
+     */
+    private static final Map<FormCode, Schema> CUSTOM_SCHEMA_CACHE =
+            Collections.synchronizedMap(new IdentityHashMap<>());
 
     /** Severity reported by the SAX-driven XSD validator. */
     public enum Severity {
@@ -135,8 +165,7 @@ public final class KsefXmlValidator {
     public static List<ValidationIssue> validate(byte[] invoiceXml, FormCode formCode) {
         Objects.requireNonNull(invoiceXml, ERR_NULL_XML);
         Objects.requireNonNull(formCode, ERR_NULL_FORM);
-        Schema schema = SCHEMA_CACHE.computeIfAbsent(formCode.systemCode(),
-                KsefXmlValidator::loadSchemaOrThrow);
+        Schema schema = resolveSchema(formCode);
         List<ValidationIssue> issues = new ArrayList<>();
         Validator validator = schema.newValidator();
         try {
@@ -187,19 +216,6 @@ public final class KsefXmlValidator {
             throw new KsefXmlValidationException(
                     ERR_VALIDATION_FAILED + String.join("; ", failureMessages),
                     List.copyOf(failureMessages));
-        }
-    }
-
-    /**
-     * Pre-load and cache the bundled XSDs for every supported {@link FormCode}
-     * (FA(2), FA(3), PEF(3), PEF_KOR(3)). Called by {@code KsefClient.warmup()}
-     * so the Xerces DFA construction cost is paid once at application start-up
-     * instead of on the first invoice send. Idempotent — subsequent calls
-     * return immediately from the schema cache.
-     */
-    public static void warmupAll() {
-        for (String systemCode : SCHEMA_RESOURCE_BY_SYSTEM_CODE.keySet()) {
-            SCHEMA_CACHE.computeIfAbsent(systemCode, KsefXmlValidator::loadSchemaOrThrow);
         }
     }
 
@@ -255,27 +271,70 @@ public final class KsefXmlValidator {
         return new ValidationIssue(severity, ex.getLineNumber(), ex.getColumnNumber(), ex.getMessage());
     }
 
-    private static Schema loadSchemaOrThrow(String systemCode) {
+    private static Schema resolveSchema(FormCode formCode) {
+        byte[] customXsd = formCode.customXsdBytes();
+        if (customXsd != null) {
+            synchronized (CUSTOM_SCHEMA_CACHE) {
+                Schema cached = CUSTOM_SCHEMA_CACHE.get(formCode);
+                if (cached == null) {
+                    cached = loadSchemaFromBytes(customXsd, formCode.systemCode());
+                    CUSTOM_SCHEMA_CACHE.put(formCode, cached);
+                }
+                return cached;
+            }
+        }
+        return SCHEMA_CACHE.computeIfAbsent(formCode.systemCode(),
+                KsefXmlValidator::loadBundledSchemaOrThrow);
+    }
+
+    private static Schema loadBundledSchemaOrThrow(String systemCode) {
         String resource = SCHEMA_RESOURCE_BY_SYSTEM_CODE.get(systemCode);
         if (resource == null) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode + " (no bundled XSD; supported: "
-                    + SCHEMA_RESOURCE_BY_SYSTEM_CODE.keySet() + ")", List.of());
+                    + SCHEMA_RESOURCE_BY_SYSTEM_CODE.keySet()
+                    + ERR_SCHEMA_LOAD_HINT_USE_CUSTOM, List.of());
         }
         try (InputStream stream = KsefXmlValidator.class.getResourceAsStream(resource)) {
             if (stream == null) {
                 throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode
                         + " (resource not found on classpath: " + resource + ")", List.of());
             }
-            SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            setMaxOccurLimitIfSupported(factory);
+            SchemaFactory factory = newHardenedSchemaFactory();
             factory.setResourceResolver(new ClasspathResourceResolver(systemCode));
             return factory.newSchema(new StreamSource(stream));
         } catch (SAXException | IOException ex) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode + " — " + ex.getMessage(), List.of());
         }
+    }
+
+    private static Schema loadSchemaFromBytes(byte[] xsdBytes, String systemCode) {
+        try {
+            SchemaFactory factory = newHardenedSchemaFactory();
+            // Defense in depth: ACCESS_EXTERNAL_SCHEMA="" already blocks
+            // xs:include / xs:import resolution at the JAXP property level
+            // (and JAXP throws on attempt). Installing a throwing resolver
+            // here makes the SDK-side failure path explicit — the
+            // IllegalArgumentException carries a domain-specific message
+            // pointing at the "self-contained XSD required" contract,
+            // rather than leaving the surface as a generic SAXException
+            // about external access.
+            factory.setResourceResolver((type, namespaceURI, publicId, systemId, baseURI) -> {
+                throw new IllegalArgumentException(ERR_CUSTOM_XSD_EXTERNAL_REF);
+            });
+            return factory.newSchema(new StreamSource(new ByteArrayInputStream(xsdBytes)));
+        } catch (SAXException ex) {
+            throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode
+                    + ERR_CUSTOM_XSD_PARSE_FAILED + ex.getMessage(), List.of());
+        }
+    }
+
+    private static SchemaFactory newHardenedSchemaFactory() throws SAXException {
+        SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        setMaxOccurLimitIfSupported(factory);
+        return factory;
     }
 
     private static void setMaxOccurLimitIfSupported(SchemaFactory factory) {

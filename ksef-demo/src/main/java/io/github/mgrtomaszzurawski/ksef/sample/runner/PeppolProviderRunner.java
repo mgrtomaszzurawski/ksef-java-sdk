@@ -112,7 +112,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH, elapsed(start),
                     LABEL_PEPPOL_ID + peppolId + " (registered via XAdES self-signed cert)"));
             return true;
@@ -179,7 +179,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.auth().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH + label, elapsed(authStart),
                     LABEL_PEPPOL_ID + peppolId));
 

@@ -67,10 +67,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Main entry point for the KSeF Java SDK.
+ * Connects to the KSeF REST API and exposes typed accessors for every
+ * KSeF operational domain — invoice send/query, batch submission,
+ * authentication-session lifecycle, permission grants, certificate
+ * enrollment, token management, Peppol provider registration, and
+ * KSeF-managed limits.
  *
- * <p>Provides lazy authentication and access to domain-specific clients
- * for each KSeF API area. Use with try-with-resources.
+ * <p>Authenticates lazily on the first call that needs a session token,
+ * and re-authenticates automatically on HTTP 401 via the refresh-token
+ * flow (with a fall-back to a full challenge-response handshake when
+ * the refresh token has also expired). Hold one instance per
+ * {@code (environment, credentials)} pair for the lifetime of the
+ * work; close via try-with-resources to scrub session state and
+ * cached crypto material.
  *
  * <p>Example:
  * <pre>{@code
@@ -87,6 +96,9 @@ import org.slf4j.LoggerFactory;
  * }
  * }</pre>
  *
+ * <p>All accessor methods are no-op-cheap — they return the same
+ * sub-facade instance for the lifetime of the client. Thread-safe.
+ *
  * @since 1.0.0
  */
 public final class KsefClient implements AutoCloseable {
@@ -94,9 +106,6 @@ public final class KsefClient implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(KsefClient.class);
 
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
-    private static final String ERR_TEST_DATA_ON_PROD =
-            "Test-data API is not available on KsefEnvironment.PROD — "
-                    + "use TEST or DEMO for test-tenant operations.";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
@@ -134,13 +143,13 @@ public final class KsefClient implements AutoCloseable {
     private final AuthClient authClient;
     private final SecurityClient securityClient;
     private final SessionClient sessionClient;
-    private final Invoices invoiceClient;
+    private final Invoices invoices;
     private final @Nullable OfflineSigningProvider offlineSigningProvider;
-    private final Tokens tokenClient;
-    private final Permissions permissionClient;
-    private final Certificates certificateClient;
-    private final Limits limitsClient;
-    private final TestDataAdmin testDataClient;
+    private final Tokens tokens;
+    private final Permissions permissions;
+    private final Certificates certificates;
+    private final Limits limits;
+    private final TestDataAdmin testData;
     private final PeppolProviders peppolClient;
     private final AuthSessions authImpl;
     private final QrCodes qrCodeService;
@@ -174,15 +183,15 @@ public final class KsefClient implements AutoCloseable {
         this.offlineSigningProvider = builder.offlineSigningProvider;
         String resolvedSellerNip = credentials.identifier().type() == KsefIdentifier.Type.NIP
                 ? credentials.identifier().value() : null;
-        this.invoiceClient = new InvoicesImpl(this.runtime,
+        this.invoices = new InvoicesImpl(this.runtime,
                 this.sessionClient, this.environment, this::getPublicKey,
                 builder.invoiceVerificationTimeout,
                 this.offlineSigningProvider, resolvedSellerNip);
-        this.tokenClient = new TokensImpl(this.runtime);
-        this.permissionClient = new PermissionsImpl(this.runtime);
-        this.certificateClient = new CertificatesImpl(this.runtime);
-        this.limitsClient = new LimitsImpl(this.runtime);
-        this.testDataClient = new TestDataAdminImpl(this.runtime);
+        this.tokens = new TokensImpl(this.runtime);
+        this.permissions = new PermissionsImpl(this.runtime);
+        this.certificates = new CertificatesImpl(this.runtime);
+        this.limits = new LimitsImpl(this.runtime);
+        this.testData = new TestDataAdminImpl(this.runtime);
         this.peppolClient = new PeppolProvidersImpl(this.runtime);
         this.qrCodeService = new QrCodeService();
         this.authImpl = new AuthSessionsImpl(
@@ -202,23 +211,17 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Authenticate with KSeF using the configured credentials. Optional —
-     * the SDK also triggers authentication implicitly on the first call
-     * that requires it (lazy auth). Long-running consumers (batch jobs,
-     * scheduled workers, app warm-up) call this once at startup to pay
-     * the challenge-response cost outside the critical path.
+     * Internal — explicit authentication path used by both lazy
+     * {@link #ensureAuthenticated()} and the public
+     * {@link AuthSessions#ensureLoggedIn()} hook on the auth-session
+     * facade. Idempotent (no-op when already authenticated). Thread-safe
+     * (synchronized).
      *
-     * <p>Handles the full authentication flow:
-     * <ol>
-     *   <li>Request challenge from KSeF</li>
-     *   <li>Encrypt token / sign with XAdES (depending on credential type)</li>
-     *   <li>Poll authentication status until ready</li>
-     *   <li>Redeem operation token for access + refresh tokens</li>
-     * </ol>
-     *
-     * <p>Thread-safe. If already authenticated, this is a no-op.
+     * <p>Performs the full KSeF challenge-response handshake: request
+     * challenge → encrypt token or XAdES-sign → poll auth status →
+     * redeem operation token for access+refresh tokens.
      */
-    public synchronized void authenticate() {
+    synchronized void authenticateInternal() {
         ensureOpen();
         if (authenticated) {
             return;
@@ -259,7 +262,7 @@ public final class KsefClient implements AutoCloseable {
         publicKeyCache.clear();
         sessionContext.clear();
         lastChallengeClientIp = null;
-        authenticate();
+        authenticateInternal();
         LOGGER.debug(LOG_REAUTHENTICATED);
     }
 
@@ -287,17 +290,22 @@ public final class KsefClient implements AutoCloseable {
      */
     public Invoices invoices() {
         ensureOpen();
-        return invoiceClient;
+        return invoices;
     }
 
     /**
-     * Access auth-session management — terminate, list, terminate by
-     * reference, and the diagnostic last-challenge client-IP hook.
+     * Access the full auth-session lifecycle for this client: explicit
+     * login ({@link AuthSessions#ensureLoggedIn()}), terminate own session,
+     * list active sessions, terminate by reference, and the diagnostic
+     * last-challenge client-IP hook.
      *
-     * <p>Authentication itself is lazy and handled internally; this
-     * accessor exposes the explicit session-management verbs.
+     * <p>Authentication itself is lazy by default — the first call to any
+     * domain accessor that needs a session token triggers a login. Call
+     * {@link AuthSessions#ensureLoggedIn()} from this facade to drive the
+     * challenge-response cost outside the critical path (preflight
+     * credentials check, batch job startup, scheduled worker bootstrap).
      */
-    public AuthSessions auth() {
+    public AuthSessions authSessions() {
         ensureOpen();
         return authImpl;
     }
@@ -307,7 +315,7 @@ public final class KsefClient implements AutoCloseable {
      */
     public Tokens tokens() {
         ensureOpen();
-        return tokenClient;
+        return tokens;
     }
 
     /**
@@ -315,7 +323,7 @@ public final class KsefClient implements AutoCloseable {
      */
     public Permissions permissions() {
         ensureOpen();
-        return permissionClient;
+        return permissions;
     }
 
     /**
@@ -323,7 +331,7 @@ public final class KsefClient implements AutoCloseable {
      */
     public Certificates certificates() {
         ensureOpen();
-        return certificateClient;
+        return certificates;
     }
 
     /**
@@ -331,25 +339,18 @@ public final class KsefClient implements AutoCloseable {
      */
     public Limits limits() {
         ensureOpen();
-        return limitsClient;
+        return limits;
     }
 
     /**
-     * Access test environment data management operations.
-     *
-     * @throws IllegalStateException when the client is configured for
-     *     {@link KsefEnvironment#PROD} — the test-data API is not exposed
-     *     in production. The check is environment-equality based, so
-     *     {@code custom(productionUrl)} bypasses it on purpose; the rule
-     *     here exists to stop accidental PROD calls from code paths that
-     *     wire {@link KsefEnvironment#PROD} explicitly.
+     * Internal — package-private friend accessor used by
+     * {@link KsefTestData#of(KsefClient)}. The env check + PROD guard
+     * live on the factory so the public API surface stays free of
+     * environment-restricted accessors that PROD consumers never need.
      */
-    public TestDataAdmin testData() {
+    TestDataAdmin testDataInternal() {
         ensureOpen();
-        if (KsefEnvironment.PROD.equals(environment)) {
-            throw new IllegalStateException(ERR_TEST_DATA_ON_PROD);
-        }
-        return testDataClient;
+        return testData;
     }
 
     /**
@@ -388,26 +389,25 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Pre-load the per-schema JAXBContext + XSD validation caches for every
-     * KSeF-supported invoice form (FA(2), FA(3), PEF(3), PEF_KOR(3)).
+     * Release the client's in-process resources: clear cached public
+     * keys, scrub the access and refresh tokens, reset the authentication
+     * flag, and mark the client unusable for further calls.
      *
-     * <p>Strategy A from the F-7 architecture (see ADR-031) pays the
-     * JAXBContext + Xerces XSD DFA construction cost lazily, on first use of
-     * a given schema. That keeps the FA(3)-only consumer's resident memory
-     * around ~30 MB but pushes a transient construction spike onto the first
-     * invoice send. Calling {@code warmup()} at application start-up moves
-     * the spike to a controlled window so steady-state requests stay flat.
+     * <p>Does <strong>not</strong> terminate the server-side authentication
+     * session — to log out from KSeF, call
+     * {@code authSessions().terminate()} <em>before</em> close. Does
+     * <strong>not</strong> close the underlying
+     * {@link java.net.http.HttpClient}: the SDK does not own it, so the JVM
+     * reclaims it via GC together with this {@code KsefClient}.
      *
-     * <p>Idempotent — subsequent calls hit the existing caches and return
-     * immediately. Optional — every invoicing path warms the cache itself
-     * on first use; this is purely for consumers who want predictable
-     * first-request latency.
+     * <p>Idempotent — calling close on an already-closed client is a
+     * no-op. Thread-safe (synchronized). Any subsequent call to any of
+     * the SDK accessors ({@link #invoices()}, {@link #permissions()},
+     * {@link #tokens()}, {@link #certificates()}, {@link #peppol()},
+     * {@link #limits()}, {@link #authSessions()}, or
+     * {@link KsefTestData#of(KsefClient)}) throws
+     * {@link IllegalStateException}.
      */
-    public void warmup() {
-        io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceMarshallingPreheat.preheatAll();
-    }
-
-
     @Override
     @SuppressWarnings("java:S125")
     public synchronized void close() {
@@ -425,6 +425,18 @@ public final class KsefClient implements AutoCloseable {
         lastChallengeClientIp = null;
     }
 
+    /**
+     * Begin configuring a new {@code KsefClient} instance.
+     *
+     * <p>At minimum the builder requires a {@link KsefEnvironment} and a
+     * {@link KsefCredentials}. Optional wiring covers retry policy,
+     * connect/read timeouts, feature-policy toggles, an
+     * {@link OfflineSigningProvider} for KOD-I+KOD-II offline signing,
+     * and the synchronous-send polling timeout. See {@link Builder} for
+     * the full surface.
+     *
+     * @return a fresh builder
+     */
     public static Builder builder() {
         return new Builder();
     }
@@ -552,7 +564,7 @@ public final class KsefClient implements AutoCloseable {
 
     private void ensureAuthenticated() {
         if (!authenticated) {
-            authenticate();
+            authenticateInternal();
         }
     }
 

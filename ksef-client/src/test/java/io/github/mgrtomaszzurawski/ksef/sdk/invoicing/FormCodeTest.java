@@ -186,4 +186,67 @@ class FormCodeTest {
         assertThrows(NullPointerException.class,
                 () -> FormCode.FA2.assertAllowedOn(null));
     }
+
+    private static final byte[] DUMMY_XSD_BYTES = "<xs:schema/>".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+    @Test
+    void custom_withXsd_returnsCustomXsdBytes() {
+        // given / when
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, DUMMY_XSD_BYTES);
+
+        // then
+        org.junit.jupiter.api.Assertions.assertArrayEquals(DUMMY_XSD_BYTES, formCode.customXsdBytes());
+    }
+
+    @Test
+    void custom_withXsd_takesDefensiveCopyOnInput() {
+        // given
+        byte[] source = DUMMY_XSD_BYTES.clone();
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, source);
+
+        // when — caller mutates source after construction
+        source[0] = (byte) 0xFF;
+
+        // then — internal copy unaffected
+        assertEquals((byte) '<', formCode.customXsdBytes()[0]);
+    }
+
+    @Test
+    void custom_withXsd_takesDefensiveCopyOnAccess() {
+        // given
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, DUMMY_XSD_BYTES);
+
+        // when — caller mutates returned array
+        byte[] returned = formCode.customXsdBytes();
+        org.junit.jupiter.api.Assertions.assertNotNull(returned);
+        returned[0] = (byte) 0xFF;
+
+        // then — subsequent accessor returns clean copy
+        assertEquals((byte) '<', formCode.customXsdBytes()[0]);
+    }
+
+    @Test
+    void custom_withoutXsd_returnsNullForCustomXsdBytes() {
+        // given / when
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA);
+
+        // then
+        org.junit.jupiter.api.Assertions.assertNull(formCode.customXsdBytes());
+    }
+
+    @Test
+    void custom_withNullXsdBytes_throwsNullPointerException() {
+        // when / then
+        assertThrows(NullPointerException.class,
+                () -> FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, null));
+    }
+
+    @Test
+    void predefined_constants_haveNullCustomXsdBytes() {
+        // then — predefined forms use bundled XSD, not per-FormCode attached XSD
+        org.junit.jupiter.api.Assertions.assertNull(FormCode.FA2.customXsdBytes());
+        org.junit.jupiter.api.Assertions.assertNull(FormCode.FA3.customXsdBytes());
+        org.junit.jupiter.api.Assertions.assertNull(FormCode.PEF3.customXsdBytes());
+        org.junit.jupiter.api.Assertions.assertNull(FormCode.PEF_KOR3.customXsdBytes());
+    }
 }

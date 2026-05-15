@@ -278,20 +278,13 @@ class AuthAutoRefreshTest {
     }
 
     /**
-     * Drive lazy auth at a precise point in the test setup. The
-     * {@code authenticate()} method on {@link KsefClient} is not
-     * exposed publicly (lazy auth is the documented API); reflection
-     * is the test seam for forcing the flow before the test body
-     * checks state.
+     * Drive lazy auth at a precise point in the test setup. With the F-2
+     * API rename, the explicit-auth entry point lives on
+     * {@code AuthSessions.ensureLoggedIn()} — call it directly instead
+     * of reflection.
      */
     private static void forceAuthenticate(KsefClient ksef) {
-        try {
-            java.lang.reflect.Method method = KsefClient.class.getDeclaredMethod("authenticate");
-            method.setAccessible(true);
-            method.invoke(ksef);
-        } catch (ReflectiveOperationException reflectiveFailure) {
-            throw new IllegalStateException("Test could not force lazy auth", reflectiveFailure);
-        }
+        ksef.authSessions().ensureLoggedIn();
     }
 
     private static KsefClient createClientWithStaleSessionAndRefreshToken(WireMockRuntimeInfo wmInfo) {
