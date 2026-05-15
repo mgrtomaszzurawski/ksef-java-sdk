@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 /**
  * Public API surface for KSeF authentication-session management.
  *
- * <p>Obtain an instance via {@code KsefClient.auth()}. Authentication
+ * <p>Obtain an instance via {@code KsefClient.authSessions()}. Authentication
  * itself is handled lazily by {@code KsefClient} on the first call that
  * needs it; this accessor exposes the explicit session-management
  * verbs (terminate, list, terminate-by-reference) and the diagnostic

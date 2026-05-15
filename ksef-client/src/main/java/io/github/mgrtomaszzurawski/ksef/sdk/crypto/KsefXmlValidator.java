@@ -65,6 +65,9 @@ public final class KsefXmlValidator {
             "; use FormCode.custom(..., xsdBytes) to attach a custom XSD)";
     private static final String ERR_CUSTOM_XSD_PARSE_FAILED =
             " (custom XSD failed to parse) — ";
+    private static final String ERR_CUSTOM_XSD_EXTERNAL_REF =
+            "Custom XSDs cannot reference external resources (xs:include / xs:import); "
+                    + "self-contained XSD required";
     private static final String ISSUE_SEPARATOR = " — ";
     private static final String LINE_LABEL = " line ";
     private static final String COLUMN_LABEL = ":";
@@ -307,16 +310,16 @@ public final class KsefXmlValidator {
     private static Schema loadSchemaFromBytes(byte[] xsdBytes, String systemCode) {
         try {
             SchemaFactory factory = newHardenedSchemaFactory();
-            // Custom XSDs do not have a classpath neighborhood the SDK
-            // controls, but the hardened ACCESS_EXTERNAL_SCHEMA="" rule
-            // already blocks xs:include/xs:import; install a throwing
-            // resolver as defense-in-depth so any attempt to reach
-            // outside the supplied bytes surfaces as a clear validation
-            // error rather than silently failing in JAXP.
+            // Defense in depth: ACCESS_EXTERNAL_SCHEMA="" already blocks
+            // xs:include / xs:import resolution at the JAXP property level
+            // (and JAXP throws on attempt). Installing a throwing resolver
+            // here makes the SDK-side failure path explicit — the
+            // IllegalArgumentException carries a domain-specific message
+            // pointing at the "self-contained XSD required" contract,
+            // rather than leaving the surface as a generic SAXException
+            // about external access.
             factory.setResourceResolver((type, namespaceURI, publicId, systemId, baseURI) -> {
-                throw new IllegalArgumentException(
-                        "Custom XSDs cannot reference external resources (xs:include / xs:import); "
-                                + "self-contained XSD required");
+                throw new IllegalArgumentException(ERR_CUSTOM_XSD_EXTERNAL_REF);
             });
             return factory.newSchema(new StreamSource(new ByteArrayInputStream(xsdBytes)));
         } catch (SAXException ex) {
