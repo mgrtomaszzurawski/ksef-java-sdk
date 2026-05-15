@@ -387,27 +387,6 @@ public final class KsefClient implements AutoCloseable {
         return Optional.ofNullable(offlineSigningProvider);
     }
 
-    /**
-     * Pre-load the per-schema JAXBContext + XSD validation caches for every
-     * KSeF-supported invoice form (FA(2), FA(3), PEF(3), PEF_KOR(3)).
-     *
-     * <p>Strategy A from the F-7 architecture (see ADR-031) pays the
-     * JAXBContext + Xerces XSD DFA construction cost lazily, on first use of
-     * a given schema. That keeps the FA(3)-only consumer's resident memory
-     * around ~30 MB but pushes a transient construction spike onto the first
-     * invoice send. Calling {@code warmup()} at application start-up moves
-     * the spike to a controlled window so steady-state requests stay flat.
-     *
-     * <p>Idempotent — subsequent calls hit the existing caches and return
-     * immediately. Optional — every invoicing path warms the cache itself
-     * on first use; this is purely for consumers who want predictable
-     * first-request latency.
-     */
-    public void warmup() {
-        io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceMarshallingPreheat.preheatAll();
-    }
-
-
     @Override
     @SuppressWarnings("java:S125")
     public synchronized void close() {
