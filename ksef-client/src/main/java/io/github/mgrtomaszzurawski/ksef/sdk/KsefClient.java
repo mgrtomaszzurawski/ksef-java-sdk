@@ -94,9 +94,6 @@ public final class KsefClient implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(KsefClient.class);
 
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
-    private static final String ERR_TEST_DATA_ON_PROD =
-            "Test-data API is not available on KsefEnvironment.PROD — "
-                    + "use TEST or DEMO for test-tenant operations.";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
     private static final String ERR_CLOSED = "KsefClient has been closed";
     private static final String ERR_AUTH_TIMEOUT = "Authentication polling timed out";
@@ -334,20 +331,13 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Access test environment data management operations.
-     *
-     * @throws IllegalStateException when the client is configured for
-     *     {@link KsefEnvironment#PROD} — the test-data API is not exposed
-     *     in production. The check is environment-equality based, so
-     *     {@code custom(productionUrl)} bypasses it on purpose; the rule
-     *     here exists to stop accidental PROD calls from code paths that
-     *     wire {@link KsefEnvironment#PROD} explicitly.
+     * Internal — package-private friend accessor used by
+     * {@link KsefTestData#of(KsefClient)}. The env check + PROD guard
+     * live on the factory so the public API surface stays free of
+     * environment-restricted accessors that PROD consumers never need.
      */
-    public TestDataAdmin testData() {
+    TestDataAdmin testDataInternal() {
         ensureOpen();
-        if (KsefEnvironment.PROD.equals(environment)) {
-            throw new IllegalStateException(ERR_TEST_DATA_ON_PROD);
-        }
         return testData;
     }
 
