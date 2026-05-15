@@ -134,13 +134,13 @@ public final class KsefClient implements AutoCloseable {
     private final AuthClient authClient;
     private final SecurityClient securityClient;
     private final SessionClient sessionClient;
-    private final Invoices invoiceClient;
+    private final Invoices invoices;
     private final @Nullable OfflineSigningProvider offlineSigningProvider;
-    private final Tokens tokenClient;
-    private final Permissions permissionClient;
-    private final Certificates certificateClient;
-    private final Limits limitsClient;
-    private final TestDataAdmin testDataClient;
+    private final Tokens tokens;
+    private final Permissions permissions;
+    private final Certificates certificates;
+    private final Limits limits;
+    private final TestDataAdmin testData;
     private final PeppolProviders peppolClient;
     private final AuthSessions authImpl;
     private final QrCodes qrCodeService;
@@ -174,15 +174,15 @@ public final class KsefClient implements AutoCloseable {
         this.offlineSigningProvider = builder.offlineSigningProvider;
         String resolvedSellerNip = credentials.identifier().type() == KsefIdentifier.Type.NIP
                 ? credentials.identifier().value() : null;
-        this.invoiceClient = new InvoicesImpl(this.runtime,
+        this.invoices = new InvoicesImpl(this.runtime,
                 this.sessionClient, this.environment, this::getPublicKey,
                 builder.invoiceVerificationTimeout,
                 this.offlineSigningProvider, resolvedSellerNip);
-        this.tokenClient = new TokensImpl(this.runtime);
-        this.permissionClient = new PermissionsImpl(this.runtime);
-        this.certificateClient = new CertificatesImpl(this.runtime);
-        this.limitsClient = new LimitsImpl(this.runtime);
-        this.testDataClient = new TestDataAdminImpl(this.runtime);
+        this.tokens = new TokensImpl(this.runtime);
+        this.permissions = new PermissionsImpl(this.runtime);
+        this.certificates = new CertificatesImpl(this.runtime);
+        this.limits = new LimitsImpl(this.runtime);
+        this.testData = new TestDataAdminImpl(this.runtime);
         this.peppolClient = new PeppolProvidersImpl(this.runtime);
         this.qrCodeService = new QrCodeService();
         this.authImpl = new AuthSessionsImpl(
@@ -287,7 +287,7 @@ public final class KsefClient implements AutoCloseable {
      */
     public Invoices invoices() {
         ensureOpen();
-        return invoiceClient;
+        return invoices;
     }
 
     /**
@@ -307,7 +307,7 @@ public final class KsefClient implements AutoCloseable {
      */
     public Tokens tokens() {
         ensureOpen();
-        return tokenClient;
+        return tokens;
     }
 
     /**
@@ -315,7 +315,7 @@ public final class KsefClient implements AutoCloseable {
      */
     public Permissions permissions() {
         ensureOpen();
-        return permissionClient;
+        return permissions;
     }
 
     /**
@@ -323,7 +323,7 @@ public final class KsefClient implements AutoCloseable {
      */
     public Certificates certificates() {
         ensureOpen();
-        return certificateClient;
+        return certificates;
     }
 
     /**
@@ -331,7 +331,7 @@ public final class KsefClient implements AutoCloseable {
      */
     public Limits limits() {
         ensureOpen();
-        return limitsClient;
+        return limits;
     }
 
     /**
@@ -349,7 +349,7 @@ public final class KsefClient implements AutoCloseable {
         if (KsefEnvironment.PROD.equals(environment)) {
             throw new IllegalStateException(ERR_TEST_DATA_ON_PROD);
         }
-        return testDataClient;
+        return testData;
     }
 
     /**
