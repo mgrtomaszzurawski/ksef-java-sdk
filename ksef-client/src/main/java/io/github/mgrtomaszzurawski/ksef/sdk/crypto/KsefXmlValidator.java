@@ -291,7 +291,7 @@ public final class KsefXmlValidator {
     private static Schema loadSchemaFromBytes(byte[] xsdBytes, String systemCode) {
         try {
             SchemaFactory factory = newHardenedSchemaFactory();
-            return factory.newSchema(new StreamSource(new java.io.ByteArrayInputStream(xsdBytes)));
+            return factory.newSchema(new StreamSource(new ByteArrayInputStream(xsdBytes)));
         } catch (SAXException ex) {
             throw new KsefXmlValidationException(ERR_SCHEMA_LOAD + systemCode
                     + " (custom XSD failed to parse) — " + ex.getMessage(), List.of());

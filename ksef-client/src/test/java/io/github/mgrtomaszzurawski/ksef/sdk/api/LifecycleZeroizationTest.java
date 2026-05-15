@@ -92,10 +92,10 @@ class LifecycleZeroizationTest {
     @Test
     void ksefClient_close_clearsSessionContextAndPublicKeyCache(WireMockRuntimeInfo wmInfo) throws Exception {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
-            // given — force lazy auth so sessionContext + publicKeyCache are populated.
-            // authenticate() is not exposed on the public surface; the test
-            // forces it via reflection.
-            invokeAuthenticate(client);
+            // given — force lazy auth so sessionContext + publicKeyCache are
+            // populated. With the F-2 API rename, the explicit-auth entry
+            // point lives on AuthSessions.ensureLoggedIn().
+            client.authSessions().ensureLoggedIn();
             // sanity precondition — bearer token is held in sessionContext
             Object sessionContextBefore = readObjectField(client, "sessionContext");
             Object tokenBefore = sessionContextBefore.getClass().getMethod("token").invoke(sessionContextBefore);
@@ -116,11 +116,6 @@ class LifecycleZeroizationTest {
         }
     }
 
-    private static void invokeAuthenticate(KsefClient client) throws Exception {
-        java.lang.reflect.Method method = KsefClient.class.getDeclaredMethod("authenticate");
-        method.setAccessible(true);
-        method.invoke(client);
-    }
 
     private static void stubCloseAndStatusOk() {
         stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/close"))
