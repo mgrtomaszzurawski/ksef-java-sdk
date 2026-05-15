@@ -67,10 +67,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Main entry point for the KSeF Java SDK.
+ * Connects to the KSeF REST API and exposes typed accessors for every
+ * KSeF operational domain — invoice send/query, batch submission,
+ * authentication-session lifecycle, permission grants, certificate
+ * enrollment, token management, Peppol provider registration, and
+ * KSeF-managed limits.
  *
- * <p>Provides lazy authentication and access to domain-specific clients
- * for each KSeF API area. Use with try-with-resources.
+ * <p>Authenticates lazily on the first call that needs a session token,
+ * and re-authenticates automatically on HTTP 401 via the refresh-token
+ * flow (with a fall-back to a full challenge-response handshake when
+ * the refresh token has also expired). Hold one instance per
+ * {@code (environment, credentials)} pair for the lifetime of the
+ * work; close via try-with-resources to scrub session state and
+ * cached crypto material.
  *
  * <p>Example:
  * <pre>{@code
@@ -86,6 +95,9 @@ import org.slf4j.LoggerFactory;
  *     }
  * }
  * }</pre>
+ *
+ * <p>All accessor methods are no-op-cheap — they return the same
+ * sub-facade instance for the lifetime of the client. Thread-safe.
  *
  * @since 1.0.0
  */
@@ -376,6 +388,22 @@ public final class KsefClient implements AutoCloseable {
         return Optional.ofNullable(offlineSigningProvider);
     }
 
+    /**
+     * Release the client's in-process resources: clear cached public
+     * keys, scrub the access and refresh tokens, reset the authentication
+     * flag, and mark the client unusable for further calls.
+     *
+     * <p>Does <strong>not</strong> terminate the server-side authentication
+     * session — to log out from KSeF, call
+     * {@code authSessions().terminate()} <em>before</em> close. Does
+     * <strong>not</strong> close the underlying
+     * {@link java.net.http.HttpClient}: the SDK does not own it, so the JVM
+     * reclaims it via GC together with this {@code KsefClient}.
+     *
+     * <p>Idempotent — calling close on an already-closed client is a
+     * no-op. Thread-safe (synchronized). Any subsequent call to a
+     * protected accessor throws {@link IllegalStateException}.
+     */
     @Override
     @SuppressWarnings("java:S125")
     public synchronized void close() {
@@ -393,6 +421,18 @@ public final class KsefClient implements AutoCloseable {
         lastChallengeClientIp = null;
     }
 
+    /**
+     * Begin configuring a new {@code KsefClient} instance.
+     *
+     * <p>At minimum the builder requires a {@link KsefEnvironment} and a
+     * {@link KsefCredentials}. Optional wiring covers retry policy,
+     * connect/read timeouts, feature-policy toggles, an
+     * {@link OfflineSigningProvider} for KOD-I+KOD-II offline signing,
+     * and the synchronous-send polling timeout. See {@link Builder} for
+     * the full surface.
+     *
+     * @return a fresh builder
+     */
     public static Builder builder() {
         return new Builder();
     }
