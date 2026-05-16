@@ -263,6 +263,14 @@ tasks.register<Javadoc>("javadocAll") {
         encoding = "UTF-8"
         charSet = "UTF-8"
         docEncoding = "UTF-8"
+        // JPMS-aware tooling defaults to showing only exported packages /
+        // public+protected members. The two `--show-*=all` flags override
+        // that filter (non-exported packages enter the navigation), and
+        // `-private` surfaces package-private + private members so internal
+        // collaborators are also clickable from internal call sites.
+        addStringOption("-show-module-contents", "all")
+        addStringOption("-show-packages", "all")
+        addBooleanOption("private", true)
         tags(
             "apiNote:a:API Note:",
             "implSpec:a:Implementation Requirements:",
