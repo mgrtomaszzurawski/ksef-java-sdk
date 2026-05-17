@@ -91,8 +91,13 @@ public final class PefKorInvoiceDocument implements InvoiceDocument {
         return List.copyOf(mapped);
     }
 
-    /** Parse PEF_KOR UBL CreditNote XML bytes into a typed document. */
-    public static PefKorInvoiceDocument from(byte[] xml) {
+    /**
+     * Parse PEF_KOR UBL CreditNote XML bytes into a typed document.
+     * Package-private — SDK orchestrates construction from archive
+     * responses; cross-package SDK access via
+     * {@code InvoiceDocumentConstructor}.
+     */
+    static PefKorInvoiceDocument from(byte[] xml) {
         Objects.requireNonNull(xml, InvoiceDocumentMessages.ERR_NULL_XML);
         CreditNoteType jaxb = JaxbInvoiceMarshaller.unmarshal(xml, CreditNoteType.class);
         return new PefKorInvoiceDocument(jaxb, xml);

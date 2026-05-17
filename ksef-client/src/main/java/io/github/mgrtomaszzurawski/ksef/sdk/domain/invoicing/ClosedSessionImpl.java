@@ -120,7 +120,7 @@ final class ClosedSessionImpl implements ClosedSession {
         // — surface the SubmittedInvoice's embedded Invoice through the typed
         // InvoiceDocument slot via the minimal wrapper. Consumers needing the
         // typed Fa3/Pef/etc. document call client.invoices().getByKsefNumber.
-        InvoiceDocument document = InvoiceDocument.fromXml(
+        InvoiceDocument document = InvoiceDocuments.anonymousFromXml(
                 submitted.invoice().formCode(), submitted.invoice().xml());
         return new ClearedInvoice(submitted, document, entry);
     }
@@ -141,7 +141,7 @@ final class ClosedSessionImpl implements ClosedSession {
         byte[] xml = sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
         SessionInvoiceStatus status = sessionClient.getInvoiceStatus(referenceNumber, invoiceReferenceNumber);
         Invoice placeholder = Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
-        InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
+        InvoiceDocument documentPlaceholder = InvoiceDocuments.anonymousFromXml(
                 UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
         SubmittedInvoice submitted = new SubmittedInvoice(
                 placeholder, invoiceReferenceNumber, status,
@@ -185,7 +185,7 @@ final class ClosedSessionImpl implements ClosedSession {
                 SessionInvoiceStatus syntheticStatus = newAcceptedSessionInvoiceStatus(
                         ordinalCounter, invoiceRef, ksefNumber, summary.acceptanceDate());
                 Invoice placeholder = Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
-                InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
+                InvoiceDocument documentPlaceholder = InvoiceDocuments.anonymousFromXml(
                         UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
                 SubmittedInvoice rebuilt = new SubmittedInvoice(
                         placeholder, invoiceRef, syntheticStatus,

@@ -89,8 +89,12 @@ public final class PefInvoiceDocument implements InvoiceDocument {
         return List.copyOf(mapped);
     }
 
-    /** Parse PEF UBL Invoice XML bytes into a typed document. */
-    public static PefInvoiceDocument from(byte[] xml) {
+    /**
+     * Parse PEF UBL Invoice XML bytes into a typed document. Package-private —
+     * SDK orchestrates construction from archive responses; cross-package
+     * SDK access via {@code InvoiceDocumentConstructor}.
+     */
+    static PefInvoiceDocument from(byte[] xml) {
         Objects.requireNonNull(xml, InvoiceDocumentMessages.ERR_NULL_XML);
         InvoiceType jaxb = JaxbInvoiceMarshaller.unmarshal(xml, InvoiceType.class);
         return new PefInvoiceDocument(jaxb, xml);

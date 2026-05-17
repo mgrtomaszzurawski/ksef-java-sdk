@@ -19,6 +19,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoiceDocumentConstructor;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FailedInvoice;
@@ -567,7 +568,7 @@ public final class BatchSubmissionFlow {
             // same UPO-only placeholder content as an InvoiceDocument so
             // ClearedInvoice's typed slot is populated. Consumers needing
             // the real document call client.invoices().archive().getByKsefNumber(...).
-            InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
+            InvoiceDocument documentPlaceholder = InvoiceDocumentConstructor.newAnonymousDocument(
                     placeholder.formCode(), placeholder.xml());
             SubmittedInvoice submitted = new SubmittedInvoice(
                     placeholder, invoice.referenceNumber(), invoice,

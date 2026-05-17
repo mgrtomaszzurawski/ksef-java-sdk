@@ -31,6 +31,42 @@ import java.util.Objects;
  *       the invoice content after construction.</li>
  * </ul>
  *
+ * <h2>Custom invoice types</h2>
+ *
+ * <p>The SDK ships typed builders for the four KSeF-recognised schemas
+ * (FA(2), FA(3), PEF(3), PEF_KOR(3)). When KSeF adds a new schema before
+ * the SDK ships matching typed support, write a thin
+ * {@link Invoice} implementation against
+ * {@link FormCode#custom(String, String, String, byte[]) FormCode.custom(...)}
+ * and submit it through the normal session flow:
+ *
+ * <pre>{@code
+ * byte[] myXsd = MyApp.class.getResourceAsStream("/xsd/my-schema.xsd").readAllBytes();
+ * FormCode myForm = FormCode.custom("MY (1)", "1-0E", "MY", myXsd);
+ *
+ * final class MyCustomInvoice implements Invoice {
+ *     private final byte[] xmlBytes;
+ *     MyCustomInvoice(byte[] xmlBytes) { this.xmlBytes = xmlBytes.clone(); }
+ *     @Override public FormCode formCode() { return myForm; }
+ *     @Override public byte[] xml() { return xmlBytes.clone(); }
+ * }
+ *
+ * try (var session = client.invoices().sessions().open(myForm)) {
+ *     session.sendInvoice(new MyCustomInvoice(myXmlBytes));
+ * }
+ * }</pre>
+ *
+ * <p>Two SDK guarantees apply to custom forms:
+ * <ul>
+ *   <li>{@code FormCode.custom(..., xsdBytes)} drives client-side XSD
+ *       validation (Phase 2 preflight) before the encrypted upload
+ *       starts — the SDK does not transport invalid XML to KSeF.</li>
+ *   <li>The four-arity {@code FormCode.custom(systemCode, schemaVersion, type, xsdBytes)}
+ *       is the only form that enables XSD preflight; the three-arity
+ *       overload skips Phase 2 and relies on server-side validation
+ *       alone.</li>
+ * </ul>
+ *
  * @since 1.0.0
  */
 public interface Invoice {

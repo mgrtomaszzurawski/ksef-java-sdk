@@ -50,7 +50,7 @@ public final class FormCodeDetector {
      * Best-effort detection from the XML body. Returns empty when the
      * root element / namespace is not recognised. Caller decides how to
      * handle the unknown case (typically: wrap as {@code FormCode.custom}
-     * + {@code InvoiceDocument.fromXml(...)}).
+     * + {@code InvoiceDocumentConstructor.newAnonymousDocument(...)}).
      *
      * @throws KsefException if the bytes cannot be parsed as XML at all
      */

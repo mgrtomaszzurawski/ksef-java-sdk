@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceStatus
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoiceDocumentConstructor;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -100,7 +101,8 @@ class BatchResultTest {
 
     private static ClearedInvoice sampleCleared(String referenceNumber) {
         Invoice placeholder = Invoice.fromXml(FormCode.FA3, UPO_BYTES);
-        InvoiceDocument document = InvoiceDocument.fromXml(FormCode.FA3, UPO_BYTES);
+        InvoiceDocument document = InvoiceDocumentConstructor.newAnonymousDocument(
+                FormCode.FA3, UPO_BYTES);
         SessionInvoiceStatus status = new SessionInvoiceStatus(
                 1, "FV/1", null, referenceNumber, null, null,
                 STARTED, STARTED, null, null, null, null,

@@ -131,8 +131,12 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         }
     }
 
-    /** Parse FA(2) XML bytes into a typed document. */
-    public static Fa2InvoiceDocument from(byte[] xml) {
+    /**
+     * Parse FA(2) XML bytes into a typed document. Package-private —
+     * SDK orchestrates construction from archive responses; cross-package
+     * SDK access via {@code InvoiceDocumentConstructor}.
+     */
+    static Fa2InvoiceDocument from(byte[] xml) {
         Objects.requireNonNull(xml, InvoiceDocumentMessages.ERR_NULL_XML);
         Faktura jaxb = JaxbInvoiceMarshaller.unmarshal(xml, Faktura.class);
         return new Fa2InvoiceDocument(jaxb, xml);
