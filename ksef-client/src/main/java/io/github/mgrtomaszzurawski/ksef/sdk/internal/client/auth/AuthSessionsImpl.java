@@ -6,6 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.AuthSessions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionListResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator;
 import java.util.List;
@@ -66,6 +68,16 @@ public final class AuthSessionsImpl implements AuthSessions {
             // just primes lazy auth correctly.
             onTerminate.run();
         }
+    }
+
+    @Override
+    public AuthSessionListResult queryAuthSessions(AuthSessionsQueryRequest filter) {
+        ensureOpen.run();
+        ensureAuthenticated.run();
+        Objects.requireNonNull(filter, "filter must not be null");
+        var page = authClient.listSessions(filter.continuationToken());
+        List<AuthSession> mapped = page.items().stream().map(AuthSessionsImpl::toAuthSession).toList();
+        return new AuthSessionListResult(mapped, page.continuationToken());
     }
 
     @Override

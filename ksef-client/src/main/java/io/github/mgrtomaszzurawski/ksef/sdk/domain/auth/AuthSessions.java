@@ -5,6 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.auth;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionListResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest;
 import java.util.stream.Stream;
 
 /**
@@ -57,6 +59,20 @@ public interface AuthSessions {
      * call regardless of what the local flag says.
      */
     void terminate();
+
+    /**
+     * Single-page auth-session query. Cursor-based paging — pass
+     * {@code null} continuationToken for the first page, then re-issue
+     * with the {@link AuthSessionListResult#continuationToken()} from
+     * the previous response. Unlike the offset-based {@code query*}
+     * methods on other facades, KSeF's {@code GET /auth/sessions}
+     * endpoint exposes only cursor paging (R1-13 audit confirmed in
+     * the OpenAPI spec).
+     *
+     * @param filter cursor + page size (page size 10–100; server default 10)
+     * @return one page of sessions plus the next-page cursor
+     */
+    AuthSessionListResult queryAuthSessions(AuthSessionsQueryRequest filter);
 
     /**
      * Lazily paginate every active auth session for this consumer's KSeF
