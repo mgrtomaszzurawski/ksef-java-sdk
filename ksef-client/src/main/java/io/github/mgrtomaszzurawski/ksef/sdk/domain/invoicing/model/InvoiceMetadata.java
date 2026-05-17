@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -38,7 +39,7 @@ import org.jspecify.annotations.Nullable;
  * @since 1.0.0
  */
 public record InvoiceMetadata(
-        String ksefNumber,
+        KsefNumber ksefNumber,
         String invoiceNumber,
         LocalDate issueDate,
         OffsetDateTime invoicingDate,

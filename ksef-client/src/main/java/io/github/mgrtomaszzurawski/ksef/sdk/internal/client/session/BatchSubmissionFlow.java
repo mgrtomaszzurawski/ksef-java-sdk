@@ -516,16 +516,11 @@ public final class BatchSubmissionFlow {
     }
 
     private static java.util.Optional<io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber>
-            parseKsefNumberOrEmpty(String value) {
-        if (value == null || value.isBlank()) {
-            return java.util.Optional.empty();
-        }
-        try {
-            return java.util.Optional.of(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(value));
-        } catch (IllegalArgumentException malformed) {
-            LOGGER.warn("Skipping malformed KSeF number {}: {}", value, malformed.getMessage());
-            return java.util.Optional.empty();
-        }
+            optionalKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.@org.jspecify.annotations.Nullable KsefNumber value) {
+        // After R1-17 SessionInvoiceStatus.ksefNumber is already typed —
+        // parse failures fired at mapping time, so any non-null value
+        // here is guaranteed valid.
+        return value == null ? java.util.Optional.empty() : java.util.Optional.of(value);
     }
 
     private BatchResult collectResult(String sessionRef, int totalCount, OffsetDateTime startedAt) {
@@ -562,7 +557,7 @@ public final class BatchSubmissionFlow {
                     placeholder.formCode(), placeholder.xml());
             SubmittedInvoice submitted = new SubmittedInvoice(
                     placeholder, invoice.referenceNumber(), invoice,
-                    parseKsefNumberOrEmpty(invoice.ksefNumber()),
+                    optionalKsefNumber(invoice.ksefNumber()),
                     java.util.Optional.empty(), java.util.Optional.empty(), List.of());
             cleared.add(new ClearedInvoice(submitted, documentPlaceholder, entry));
         }

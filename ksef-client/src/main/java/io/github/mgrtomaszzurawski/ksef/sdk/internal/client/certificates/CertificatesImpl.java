@@ -227,7 +227,7 @@ public final class CertificatesImpl implements Certificates {
         }
 
         // Step 5: retrieve the DER bytes for the freshly-issued certificate.
-        CertificateSerialNumber serial = CertificateSerialNumber.parse(terminal.certificateSerialNumber());
+        CertificateSerialNumber serial = terminal.certificateSerialNumber();
         RetrieveCertificatesResult retrieved = retrieve(List.of(serial));
         if (retrieved.certificates().isEmpty()) {
             throw new KsefException(ERR_RETRIEVE_EMPTY + " for serial=" + serial.value(), null);

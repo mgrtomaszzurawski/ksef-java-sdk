@@ -29,7 +29,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrievedCertificate;
 import java.nio.file.Path;
 import java.security.KeyPair;
@@ -65,9 +64,7 @@ public final class EnrollAndRevokeCertificate {
             RetrievedCertificate cert = client.certificates().requestNewCertificate(keyPair);
             System.out.println("Certificate issued, serial: " + cert.certificateSerialNumber());
 
-            client.certificates().revoke(
-                    CertificateSerialNumber.parse(cert.certificateSerialNumber()),
-                    CertificateRevocationReason.UNSPECIFIED);
+            client.certificates().revoke(cert.certificateSerialNumber(), CertificateRevocationReason.UNSPECIFIED);
             System.out.println("Certificate revoked");
         } finally {
             java.util.Arrays.fill(p12Password, '\0');

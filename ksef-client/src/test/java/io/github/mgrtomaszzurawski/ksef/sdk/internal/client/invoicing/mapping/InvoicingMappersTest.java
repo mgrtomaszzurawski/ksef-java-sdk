@@ -429,7 +429,7 @@ class InvoicingMappersTest {
         InvoiceMetadata result = InvoicingMappers.toInvoiceMetadata(raw);
 
         // then
-        assertEquals(KSEF_NUMBER, result.ksefNumber());
+        assertEquals(KSEF_NUMBER, result.ksefNumber().value());
         assertEquals(INVOICE_NUMBER, result.invoiceNumber());
         assertNotNull(result.seller());
         assertEquals(SELLER_NAME, result.seller().name());

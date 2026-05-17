@@ -215,8 +215,7 @@ public final class PeppolProviderRunner implements DemoRunner {
     private String queryAssignedKsefNumber(OnlineSession session, String invoiceRef) {
         try {
             var status = session.invoiceStatus(invoiceRef);
-            String ksefNumber = status.ksefNumber();
-            return ksefNumber == null || ksefNumber.isBlank() ? null : ksefNumber;
+            return status.ksefNumber() == null ? null : status.ksefNumber().value();
         } catch (Exception ignored) {
             // Best-effort: KSeF rejected the invoice or status query failed —
             // either way, we cannot chain a correction.

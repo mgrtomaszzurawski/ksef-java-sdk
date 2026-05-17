@@ -40,13 +40,13 @@ public final class RetrievedCertificate {
     private final byte[] der;
     private final X509Certificate certificate;
     private final String certificateName;
-    private final String certificateSerialNumber;
+    private final CertificateSerialNumber certificateSerialNumber;
     private final KsefCertificateType certificateType;
 
     private RetrievedCertificate(byte[] der,
                                   X509Certificate certificate,
                                   String certificateName,
-                                  String certificateSerialNumber,
+                                  CertificateSerialNumber certificateSerialNumber,
                                   KsefCertificateType certificateType) {
         this.der = der;
         this.certificate = certificate;
@@ -63,7 +63,7 @@ public final class RetrievedCertificate {
      */
     public static RetrievedCertificate from(byte[] der,
                                               String certificateName,
-                                              String certificateSerialNumber,
+                                              CertificateSerialNumber certificateSerialNumber,
                                               KsefCertificateType certificateType) {
         Objects.requireNonNull(der, ERR_NULL_DER);
         Objects.requireNonNull(certificateName, ERR_NULL_NAME);
@@ -102,8 +102,8 @@ public final class RetrievedCertificate {
         return certificateName;
     }
 
-    /** X.509 serial number as reported by the server (hex string). */
-    public String certificateSerialNumber() {
+    /** X.509 serial number as reported by the server (validated hex). */
+    public CertificateSerialNumber certificateSerialNumber() {
         return certificateSerialNumber;
     }
 

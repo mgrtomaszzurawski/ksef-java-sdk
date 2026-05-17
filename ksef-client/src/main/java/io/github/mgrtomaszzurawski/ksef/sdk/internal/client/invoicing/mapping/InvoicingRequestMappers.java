@@ -109,7 +109,7 @@ public final class InvoicingRequestMappers {
 
     private static void applyIdentifierFilters(InvoiceQueryFiltersRaw rawValue, InvoiceQueryRequest filters) {
         if (filters.ksefNumber() != null) {
-            rawValue.ksefNumber(filters.ksefNumber());
+            rawValue.ksefNumber(filters.ksefNumber().value());
         }
         if (filters.invoiceNumber() != null) {
             rawValue.invoiceNumber(filters.invoiceNumber());

@@ -146,7 +146,7 @@ final class ClosedSessionImpl implements ClosedSession {
         SubmittedInvoice submitted = new SubmittedInvoice(
                 placeholder, invoiceReferenceNumber, status,
                 status.ksefNumber() != null
-                        ? Optional.of(KsefNumber.parse(status.ksefNumber()))
+                        ? Optional.of(status.ksefNumber())
                         : Optional.empty(),
                 Optional.empty(), Optional.empty(), List.of());
         return new ClearedInvoice(submitted, documentPlaceholder,
@@ -209,7 +209,7 @@ final class ClosedSessionImpl implements ClosedSession {
         InvoiceStatusInfo statusInfo = new InvoiceStatusInfo(
                 UPO_ACCEPTED_STATUS_CODE, UPO_ACCEPTED_STATUS_DESCRIPTION, List.of(), Map.of());
         return new SessionInvoiceStatus(
-                ordinal, invoiceRef, ksefNumber.value(), invoiceRef,
+                ordinal, invoiceRef, ksefNumber, invoiceRef,
                 null, null, acceptedAt, acceptedAt, null, null, null, null, statusInfo);
     }
 

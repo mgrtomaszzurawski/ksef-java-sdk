@@ -317,7 +317,7 @@ public final class SessionRunner implements DemoRunner {
         }
         Integer code = invoice.status().code();
         String description = invoice.status().description();
-        String ksefNumber = invoice.ksefNumber();
+        String ksefNumber = invoice.ksefNumber() == null ? null : invoice.ksefNumber().value();
         LOGGER.info(LOG_INVOICE_STATUS, NAME, label, code, description, ksefNumber);
         List<String> details = invoice.status().details();
         if (details != null && !details.isEmpty()) {

@@ -118,7 +118,8 @@ public final class CertificateRunner implements DemoRunner {
             keyGen.initialize(RSA_KEY_SIZE);
             KeyPair keyPair = keyGen.generateKeyPair();
             RetrievedCertificate retrieved = context.client().certificates().requestNewCertificate(keyPair);
-            String serial = retrieved.certificateSerialNumber();
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber serial =
+                    retrieved.certificateSerialNumber();
             LOGGER.info("[{}] requested new certificate, serial={}", NAME, serial);
             results.add(RunResult.ok(NAME, OP_REQUEST_NEW, elapsed(start), "serial=" + serial));
             runRevoke(context, serial, results);
@@ -128,14 +129,14 @@ public final class CertificateRunner implements DemoRunner {
         }
     }
 
-    private void runRevoke(DemoContext context, String serialNumber, List<RunResult> results) {
+    private void runRevoke(DemoContext context,
+                           io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber serial,
+                           List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            context.client().certificates().revoke(
-                    io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber.parse(serialNumber),
-                    CertificateRevocationReason.UNSPECIFIED);
-            LOGGER.info("[{}] revoked certificate, serial={}", NAME, serialNumber);
-            results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start), "serial=" + serialNumber));
+            context.client().certificates().revoke(serial, CertificateRevocationReason.UNSPECIFIED);
+            LOGGER.info("[{}] revoked certificate, serial={}", NAME, serial);
+            results.add(RunResult.ok(NAME, OP_REVOKE, elapsed(start), "serial=" + serial));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_REVOKE, elapsed(start), errorMessage(exception)));
         }

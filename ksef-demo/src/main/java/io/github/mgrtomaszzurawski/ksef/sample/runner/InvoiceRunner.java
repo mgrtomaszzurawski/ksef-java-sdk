@@ -94,7 +94,7 @@ public final class InvoiceRunner implements DemoRunner {
         // metadata result so AUTH_SAFE can exercise getByKsefNumber against an existing invoice.
         String ksefNumber = context.invoiceKsefNumber();
         if (ksefNumber == null && metadata != null && metadata.invoices() != null && !metadata.invoices().isEmpty()) {
-            ksefNumber = metadata.invoices().get(0).ksefNumber();
+            ksefNumber = metadata.invoices().get(0).ksefNumber().value();
         }
         if (ksefNumber != null) {
             runGetByKsefNumber(context, ksefNumber, results);

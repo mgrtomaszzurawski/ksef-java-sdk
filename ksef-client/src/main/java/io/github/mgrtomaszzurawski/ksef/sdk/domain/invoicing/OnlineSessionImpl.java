@@ -272,7 +272,7 @@ final class OnlineSessionImpl implements OnlineSession {
         Optional<KsefNumber> ksefNumber = Optional.empty();
         List<String> errorDetails = List.of();
         if (accepted && terminalStatus.ksefNumber() != null) {
-            ksefNumber = Optional.of(KsefNumber.parse(terminalStatus.ksefNumber()));
+            ksefNumber = Optional.of(terminalStatus.ksefNumber());
         } else if (terminalStatus.status() != null && terminalStatus.status().details() != null) {
             errorDetails = new ArrayList<>(terminalStatus.status().details());
             if (terminalStatus.status().description() != null && errorDetails.isEmpty()) {
@@ -312,7 +312,7 @@ final class OnlineSessionImpl implements OnlineSession {
         Optional<byte[]> kodIQr = Optional.empty();
         List<String> errorDetails = List.of();
         if (accepted && terminalStatus.ksefNumber() != null) {
-            KsefNumber number = KsefNumber.parse(terminalStatus.ksefNumber());
+            KsefNumber number = terminalStatus.ksefNumber();
             ksefNumber = Optional.of(number);
             kodIQr = Optional.of(renderKodIQr(number, invoiceSha256));
         } else if (terminalStatus.status() != null && terminalStatus.status().details() != null) {

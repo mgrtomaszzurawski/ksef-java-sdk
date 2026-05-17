@@ -138,7 +138,7 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
             throw new KsefException(ERR_NO_KSEF_NUMBER, null);
         }
 
-        KsefNumber ksefNumber = KsefNumber.parse(status.ksefNumber());
+        KsefNumber ksefNumber = status.ksefNumber();
         InvoiceDocument document = getByKsefNumber(ksefNumber);
         byte[] upoBytes = sessionClient.getUpoByInvoiceReference(sessionReferenceNumber, invoiceReferenceNumber);
         UpoEntry upo = new UpoEntry(invoiceReferenceNumber, upoBytes);
