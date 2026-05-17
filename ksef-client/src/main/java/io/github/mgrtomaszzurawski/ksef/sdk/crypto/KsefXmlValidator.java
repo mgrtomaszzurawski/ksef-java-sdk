@@ -165,6 +165,27 @@ public final class KsefXmlValidator {
     public static List<ValidationIssue> validate(byte[] invoiceXml, FormCode formCode) {
         Objects.requireNonNull(invoiceXml, ERR_NULL_XML);
         Objects.requireNonNull(formCode, ERR_NULL_FORM);
+        return validateStream(new ByteArrayInputStream(invoiceXml), formCode);
+    }
+
+    /**
+     * Streaming variant of {@link #validate(byte[], FormCode)} — accepts
+     * an {@link InputStream} so the caller can validate file content
+     * without materialising the full payload as a byte array. The stream
+     * is consumed by the underlying SAX-based JAXP validator and is
+     * <strong>not</strong> closed by this method; callers own the
+     * stream lifecycle.
+     *
+     * <p>R1-19 Phase 2: this is the entry point
+     * {@code BatchSubmissionFlow.submitFromFiles} uses to keep the
+     * memory-bounded streaming property of the file-batch path.
+     *
+     * @throws KsefXmlValidationException when the form code has no
+     *     bundled XSD or the XSD itself fails to load.
+     */
+    public static List<ValidationIssue> validateStream(InputStream invoiceXmlStream, FormCode formCode) {
+        Objects.requireNonNull(invoiceXmlStream, ERR_NULL_XML);
+        Objects.requireNonNull(formCode, ERR_NULL_FORM);
         Schema schema = resolveSchema(formCode);
         List<ValidationIssue> issues = new ArrayList<>();
         Validator validator = schema.newValidator();
@@ -189,7 +210,7 @@ public final class KsefXmlValidator {
             }
         });
         try {
-            validator.validate(new StreamSource(new ByteArrayInputStream(invoiceXml)));
+            validator.validate(new StreamSource(invoiceXmlStream));
         } catch (SAXException | IOException ex) {
             issues.add(new ValidationIssue(Severity.FATAL, -1, -1, ex.getMessage()));
         }

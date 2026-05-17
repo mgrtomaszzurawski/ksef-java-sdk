@@ -36,6 +36,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchAssembly
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchFileSpec;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPackageBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.InvoiceFileMetadataReader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -142,6 +143,13 @@ public final class BatchSubmissionFlow {
     private static final String ERR_NULL_INVOICE = "invoice must not be null";
     private static final String ERR_FORM_CODE_MISMATCH =
             "Invoice at index %d declares formCode=%s but the batch is for formCode=%s";
+    private static final String ERR_FILE_FORM_CODE_MISMATCH =
+            "File %s declares formCode=%s but the batch is for formCode=%s";
+    private static final String ERR_FILE_FORM_CODE_UNRECOGNISED =
+            "File %s root element does not match any of FA(2), FA(3), PEF(3), PEF_KOR(3); "
+                    + "submitFromFiles requires KSeF-recognised schemas (custom forms must use submit(List<Invoice>, BatchOptions))";
+    private static final String ERR_FILE_XSD_VALIDATION_FAILED =
+            "File %s failed XSD validation: %s";
     private static final String ERR_UPLOAD_FAILED = "Failed to upload batch part %d: HTTP %d";
     private static final String ERR_UPLOAD_INTERRUPTED = "Interrupted while uploading batch parts";
     private static final String ERR_UPLOAD_IO = "I/O error uploading batch part %d";
@@ -245,10 +253,69 @@ public final class BatchSubmissionFlow {
             throw new IllegalArgumentException(ERR_FILES_EMPTY);
         }
         formCode.assertAllowedOn(environment);
+        preflightFiles(formCode, files);
         return runFlow(formCode, options, files.size(),
                 aesKey -> aesIv -> BatchPackageBuilder.buildFromFiles(files, aesKey, aesIv,
                         BatchAssemblyMode.onDisk()),
                 null);
+    }
+
+    /**
+     * Two-phase per-file preflight for {@link #submitFromFiles} (R1-19 sub).
+     *
+     * <p>Phase 1A — cheap: SAX-stream the first root element of each file
+     * to derive its declared form code, and fast-fail with the file path
+     * if any file's root namespace does not match the batch-level
+     * {@code expected} (typical FA2-vs-FA3 confusion). Microseconds per
+     * file, no full XML in heap.
+     *
+     * <p>Phase 2 — expensive but bounded: stream-XSD-validate every file
+     * via {@link KsefXmlValidator#validateStream}. JAXP loads the file
+     * one chunk at a time through {@link StreamSource}; peak heap stays
+     * dominated by the single largest file being validated, not the
+     * sum of all batch files. Skips custom form codes (the four
+     * KSeF-bundled schemas are the only ones submitFromFiles accepts —
+     * see the unrecognised-namespace error in Phase 1A).
+     */
+    private static void preflightFiles(FormCode expected, List<Path> files) {
+        // Phase 1A: cheap SAX root-element check across the whole list.
+        for (Path file : files) {
+            Objects.requireNonNull(file, "file must not be null");
+            FormCode declared = InvoiceFileMetadataReader.readFormCode(file).orElseThrow(() ->
+                    new IllegalArgumentException(String.format(java.util.Locale.ROOT,
+                            ERR_FILE_FORM_CODE_UNRECOGNISED, file)));
+            if (!Objects.equals(declared, expected)) {
+                throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
+                        ERR_FILE_FORM_CODE_MISMATCH, file, declared, expected));
+            }
+        }
+        // Phase 2: full XSD validation per file, streamed via SAX.
+        if (!XSD_VALIDATED_FORM_CODES.contains(expected)) {
+            return;
+        }
+        for (Path file : files) {
+            try (java.io.InputStream stream = java.nio.file.Files.newInputStream(file)) {
+                List<ValidationIssue> issues = KsefXmlValidator.validateStream(stream, expected);
+                List<String> failureMessages = new ArrayList<>();
+                boolean hasFailure = false;
+                for (ValidationIssue issue : issues) {
+                    failureMessages.add(issue.toString());
+                    if (issue.severity() == Severity.ERROR || issue.severity() == Severity.FATAL) {
+                        hasFailure = true;
+                    }
+                }
+                if (hasFailure) {
+                    throw new KsefXmlValidator.KsefXmlValidationException(
+                            String.format(java.util.Locale.ROOT, ERR_FILE_XSD_VALIDATION_FAILED,
+                                    file, String.join("; ", failureMessages)),
+                            List.copyOf(failureMessages));
+                }
+            } catch (java.io.IOException ioFailure) {
+                throw new KsefNetworkException(
+                        String.format(java.util.Locale.ROOT, ERR_FILE_XSD_VALIDATION_FAILED,
+                                file, ioFailure.getMessage()), ioFailure);
+            }
+        }
     }
 
     private static final java.util.Set<FormCode> XSD_VALIDATED_FORM_CODES = java.util.Set.of(
