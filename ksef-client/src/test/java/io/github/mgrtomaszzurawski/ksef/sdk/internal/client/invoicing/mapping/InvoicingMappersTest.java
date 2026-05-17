@@ -55,7 +55,7 @@ class InvoicingMappersTest {
             .registerModule(new JavaTimeModule())
             .registerModule(new JsonNullableModule());
 
-    private static final String KSEF_NUMBER = "20260404-FA-0000000000-AAAAAAAAAA-12";
+    private static final String KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final String INVOICE_NUMBER = "FV/2026/04/001";
     private static final String NIP = "1111111111";
     private static final String SELLER_NAME = "Acme Sp. z o.o.";

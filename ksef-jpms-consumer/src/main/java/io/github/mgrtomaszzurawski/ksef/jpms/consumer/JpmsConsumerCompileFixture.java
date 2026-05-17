@@ -6,7 +6,6 @@ package io.github.mgrtomaszzurawski.ksef.jpms.consumer;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -17,10 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CsrRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CsrResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.EncryptionMaterial;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.FileMetadata;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.KsefCryptoService;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.KsefEncryptionInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
@@ -93,12 +88,9 @@ public final class JpmsConsumerCompileFixture {
                 SigningOptions.class,
                 KsefNumber.class,
                 StatusInfo.class,
-                PublicKeyCertificate.class,
-                // sdk.crypto
-                KsefCryptoService.class,
-                EncryptionMaterial.class,
-                KsefEncryptionInfo.class,
-                FileMetadata.class,
+                // sdk.crypto — KsefCryptoService + EncryptionMaterial + FileMetadata +
+                // KsefEncryptionInfo + PublicKeyCertificate moved to sdk.internal.runtime.crypto
+                // per R1-5 (no longer visible to JPMS consumers — that is the point).
                 CsrRequest.class,
                 CsrResult.class,
                 // sdk.domain.auth.model — verify exported (gap caught earlier)

@@ -129,13 +129,13 @@ class SubmitBatchTest {
                 {
                   "totalCount": 3,
                   "invoices": [
-                    {"ordinalNumber":1,"invoiceNumber":"FV/1","ksefNumber":"K1","referenceNumber":"%s","invoiceFileName":"invoice-1.xml",
+                    {"ordinalNumber":1,"invoiceNumber":"FV/1","ksefNumber":"5265877635-20250826-0100001AF629-AF","referenceNumber":"%s","invoiceFileName":"invoice-1.xml",
                      "acquisitionDate":"2026-05-09T12:00:00+00:00","invoicingDate":"2026-05-09T12:00:00+00:00",
                      "status":{"code":200,"description":"Accepted"}},
-                    {"ordinalNumber":2,"invoiceNumber":"FV/2","ksefNumber":"K2","referenceNumber":"%s","invoiceFileName":"invoice-2.xml",
+                    {"ordinalNumber":2,"invoiceNumber":"FV/2","ksefNumber":"5265877635-20250826-0100001AF629-AF","referenceNumber":"%s","invoiceFileName":"invoice-2.xml",
                      "acquisitionDate":"2026-05-09T12:00:00+00:00","invoicingDate":"2026-05-09T12:00:00+00:00",
                      "status":{"code":200,"description":"Accepted"}},
-                    {"ordinalNumber":3,"invoiceNumber":"FV/3","ksefNumber":"K3","referenceNumber":"%s","invoiceFileName":"invoice-3.xml",
+                    {"ordinalNumber":3,"invoiceNumber":"FV/3","ksefNumber":"5265877635-20250826-0100001AF629-AF","referenceNumber":"%s","invoiceFileName":"invoice-3.xml",
                      "acquisitionDate":"2026-05-09T12:00:00+00:00","invoicingDate":"2026-05-09T12:00:00+00:00",
                      "status":{"code":200,"description":"Accepted"}}
                   ]

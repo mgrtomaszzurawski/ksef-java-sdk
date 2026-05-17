@@ -100,6 +100,7 @@ public final class CertificatesImpl implements Certificates {
     private static final String DN_SURNAME_PREFIX = ",SURNAME=";
     private static final String DN_SERIAL_NUMBER_PREFIX = ",SERIALNUMBER=";
     private static final String DN_ORGANIZATION_PREFIX = ",O=";
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP") // X.500 OID 2.5.4.97 — not an IP literal
     private static final String OID_ORGANIZATION_IDENTIFIER = "2.5.4.97";
     private static final String DN_ORGANIZATION_IDENTIFIER_PREFIX = "," + OID_ORGANIZATION_IDENTIFIER + "=";
 
@@ -237,9 +238,9 @@ public final class CertificatesImpl implements Certificates {
 
     private static byte[] buildCsr(CertificateEnrollmentData subject, KeyPair keyPair)
             throws OperatorCreationException, IOException {
-        StringBuilder subjectDn = new StringBuilder();
-        subjectDn.append(DN_CN_PREFIX).append(subject.commonName());
-        subjectDn.append(DN_COUNTRY_PREFIX).append(subject.countryName());
+        StringBuilder subjectDn = new StringBuilder()
+                .append(DN_CN_PREFIX).append(subject.commonName())
+                .append(DN_COUNTRY_PREFIX).append(subject.countryName());
         if (subject.givenName() != null) {
             subjectDn.append(DN_GIVEN_NAME_PREFIX).append(subject.givenName());
         }
