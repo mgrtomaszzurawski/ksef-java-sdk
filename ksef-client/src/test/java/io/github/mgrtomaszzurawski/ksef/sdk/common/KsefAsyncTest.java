@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.common;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsync;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;

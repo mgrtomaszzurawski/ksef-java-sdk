@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 /**
  * Thrown by
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync#awaitTerminal}
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsync#awaitTerminal}
  * when the configured timeout elapses before the polled status reaches a
  * terminal state.
  *

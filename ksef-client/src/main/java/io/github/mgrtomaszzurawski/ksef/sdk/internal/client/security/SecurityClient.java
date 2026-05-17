@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;

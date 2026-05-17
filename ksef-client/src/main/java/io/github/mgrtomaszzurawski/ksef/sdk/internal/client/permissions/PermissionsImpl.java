@@ -40,8 +40,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityAdm
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissionsQueryRequest;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsync;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;

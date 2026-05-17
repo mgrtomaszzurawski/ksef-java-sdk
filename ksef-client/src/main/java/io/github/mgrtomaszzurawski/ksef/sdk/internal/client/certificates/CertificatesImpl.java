@@ -14,8 +14,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRa
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsync;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;

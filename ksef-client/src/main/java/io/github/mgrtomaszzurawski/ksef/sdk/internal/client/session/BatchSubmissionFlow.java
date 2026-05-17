@@ -9,7 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenBatchSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.BatchFileInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.BatchFilePartInfoRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.Severity;

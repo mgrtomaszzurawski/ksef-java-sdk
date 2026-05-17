@@ -50,7 +50,7 @@ class OnlineSessionImplTechnicalCorrectionTest {
             {
               "status": {"code": 200, "description": "Accepted"},
               "invoiceNumber": "20260418-FA-1111111111-AAAAAA-FF",
-              "ksefNumber": "20260418-FA-1111111111-AAAAAA-FF"
+              "ksefNumber": "5265877635-20250826-0100001AF629-AF"
             }
             """;
 

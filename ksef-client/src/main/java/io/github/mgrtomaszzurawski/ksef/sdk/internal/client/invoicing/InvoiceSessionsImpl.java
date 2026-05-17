@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;

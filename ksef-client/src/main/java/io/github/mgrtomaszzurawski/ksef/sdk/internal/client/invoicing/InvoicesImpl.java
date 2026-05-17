@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
