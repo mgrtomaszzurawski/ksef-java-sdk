@@ -21,19 +21,45 @@ import java.util.List;
  *
  * <p>Reached via {@code KsefClient.certificates()}.
  *
- * <p><strong>Authentication requirement:</strong> all endpoints in this
+ * <p><strong>Authentication requirement</strong>: all endpoints in this
  * client require certificate-based authentication (XAdES, via
  * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials}
  * or
  * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials}).
  * Token-authenticated callers will receive HTTP 403 from the server.
  *
- * <p>Per ADR-032 enrollment is exposed only as a workflow wrapper —
- * {@link #requestNewCertificate(KeyPair)}. The SDK pulls limits,
- * pulls the required CSR subject from the current auth session,
- * builds the CSR locally from the supplied key pair, submits enroll,
- * polls until terminal, and retrieves the DER bytes — returning a
- * fully-typed {@link RetrievedCertificate}.
+ * <p><strong>Typical flow</strong>:
+ *
+ * <ol>
+ *   <li>Optional pre-flight: {@link #getLimits()} to check the monthly
+ *       enrollment quota (spec cap 12/month per subject; max 6 concurrent
+ *       active). The SDK does not auto-block enrollment when the quota
+ *       is exhausted — the server returns a typed error and the
+ *       consumer decides whether to surface it.</li>
+ *   <li>{@link #requestNewCertificate(KeyPair)} — single workflow call.
+ *       Internally the SDK pulls the required CSR subject from the
+ *       current auth session, builds the PKCS#10 CSR locally from the
+ *       supplied {@link KeyPair}, submits enroll, polls until terminal,
+ *       and retrieves the DER bytes — returning a fully-typed
+ *       {@link RetrievedCertificate}. Use the {@code (KeyPair, Duration)}
+ *       overload to override the default 5-minute polling timeout
+ *       (ADR-032).</li>
+ *   <li>{@link #retrieve(java.util.List)} — fetch DER bytes for
+ *       previously enrolled certificates by serial number (e.g. when
+ *       you persisted the serial across a process restart).</li>
+ *   <li>{@link #revoke(CertificateSerialNumber, CertificateRevocationReason)}
+ *       — revoke a certificate with a documented reason
+ *       (audit / compliance requirement).</li>
+ *   <li>{@link #queryCertificates(CertificateQueryRequest)} /
+ *       {@link #streamCertificates(CertificateQueryRequest)} — list
+ *       certificates with filters; query returns a single page with
+ *       paging metadata, stream walks pages lazily.</li>
+ * </ol>
+ *
+ * <p>Per ADR-032 the raw async endpoints (submit-CSR-and-poll
+ * separately, fetch enrollment status, fetch CSR subject) are not on
+ * the public surface — they were dead surface pre-1.0 and consumers
+ * who wrote the poll loop themselves only duplicated SDK logic.
  *
  * @since 1.0.0
  */

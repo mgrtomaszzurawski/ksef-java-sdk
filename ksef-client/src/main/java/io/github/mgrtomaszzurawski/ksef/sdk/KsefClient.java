@@ -447,6 +447,19 @@ public final class KsefClient implements AutoCloseable {
         return new Builder();
     }
 
+    /**
+     * Fluent builder for {@link KsefClient}.
+     *
+     * <p>Two fields are required: {@link #environment(KsefEnvironment)}
+     * and {@link #credentials(KsefCredentials)}. Everything else has a
+     * sensible default (timeouts, retry with exponential backoff +
+     * jitter, default feature policy). Call {@link #build()} once at
+     * the end to materialise the client.
+     *
+     * <p>Not thread-safe — instantiate a builder per client. Once
+     * {@code build()} returns, the builder is logically spent;
+     * subsequent setter calls will not mutate the constructed client.
+     */
     public static final class Builder {
 
         private @Nullable KsefEnvironment environment;
@@ -483,6 +496,20 @@ public final class KsefClient implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Set the TCP connection-establishment timeout. Bounds how long
+         * the SDK waits for the underlying socket handshake (TCP + TLS)
+         * before failing the request. Distinct from
+         * {@link #readTimeout(Duration)}, which bounds how long the SDK
+         * waits for the server's response once the connection is open.
+         *
+         * <p>Default 30s. Set this lower for fail-fast probes against
+         * unreachable hosts; raise it when running over high-latency
+         * links (mobile, geo-distant networks).
+         *
+         * @param connectTimeout the handshake budget (must not be null)
+         * @return this builder
+         */
         public Builder connectTimeout(Duration connectTimeout) {
             this.connectTimeout = connectTimeout;
             return this;
@@ -500,6 +527,26 @@ public final class KsefClient implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Configure the retry policy used for idempotent HTTP operations
+         * (GETs, polling, the SDK's session/operation status checks).
+         *
+         * <p>Default: enabled with exponential backoff + jitter and a
+         * bounded attempt count, suitable for transient network or 5xx
+         * errors. Use {@code RetryPolicy.builder().enabled(false).build()}
+         * to disable retries entirely (e.g. inside WireMock-backed
+         * tests where every retry creates noise). Use the builder's
+         * other knobs to tune attempt count, base delay, and max
+         * backoff per consumer needs.
+         *
+         * <p>Non-idempotent operations (sending an invoice, granting a
+         * permission) are <strong>not</strong> retried regardless of
+         * this policy — repeating those would risk duplicate side
+         * effects on KSeF.
+         *
+         * @param retryPolicy the policy (must not be null)
+         * @return this builder
+         */
         public Builder retryPolicy(RetryPolicy retryPolicy) {
             this.retryPolicy = retryPolicy;
             return this;

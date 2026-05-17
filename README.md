@@ -60,6 +60,16 @@ This repo is a Maven multi-module reactor. Only one module ships:
 
 Consumers depend on `ksef-client` only; the other three modules exist to keep the SDK honest during development and never ship to Maven Central.
 
+## Importing in IntelliJ IDEA
+
+This project uses Gradle, not Maven. To open it in IntelliJ:
+
+1. **File → Open → select `build.gradle.kts`** (the file at the repo root, not the folder).
+2. Pick **"Open as Project"** at the prompt; trust the project.
+3. Wait 3–5 minutes for the initial Gradle sync (it pulls plugins, generates JAXB + OpenAPI sources, and wires up the multi-module classpath).
+
+Opening the folder via `File → Open Project` skips the Gradle import — sub-modules and generated sources stay unresolved. After a correct import you should see a **Gradle tool window** in the right sidebar (equivalent to the Maven tool window for Maven projects); if it's missing you opened it as a plain folder.
+
 ## Quick start
 
 ### Maven

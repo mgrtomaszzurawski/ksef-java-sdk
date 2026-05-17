@@ -18,6 +18,55 @@ import java.util.stream.Stream;
  *
  * <p>Reached via {@link Invoices#archive()}.
  *
+ * <p><strong>Typical flows</strong>:
+ *
+ * <ol>
+ *   <li><b>Direct lookup by ksefNumber</b> — when you have only the
+ *       KSeF-assigned invoice number (e.g. from
+ *       {@link #queryByMetadata(InvoiceQueryRequest)} or an external
+ *       system), use {@link #getByKsefNumber(KsefNumber)}. Returns the
+ *       typed {@link InvoiceDocument} (XML view); UPO is <em>not</em>
+ *       included because KSeF exposes UPO only via session-bound
+ *       endpoints. To obtain UPO you need the session/invoice
+ *       reference pair persisted at submission time.</li>
+ *
+ *   <li><b>Recovery from persisted state</b> — when you persisted the
+ *       {@code (sessionReferenceNumber, invoiceReferenceNumber)} pair
+ *       at submission time and want to recover the full
+ *       {@link ClearedInvoice} (document + UPO), use
+ *       {@link #clearedFromArchive(String, String)}. Composes three
+ *       server calls under the hood. Throws if the invoice has not
+ *       reached terminal accepted status (no UPO exists yet).</li>
+ *
+ *   <li><b>Bulk discovery</b> — to walk many invoices by filter (date
+ *       range, party, amount, etc.), use
+ *       {@link #queryByMetadata(InvoiceQueryRequest)} (single page
+ *       with {@code hasMore}/{@code totalCount}) or
+ *       {@link #streamByMetadata(InvoiceQueryRequest)} (lazy paging
+ *       across full result set). Both return {@link InvoiceMetadata}
+ *       summaries <em>without</em> XML — server-side optimisation
+ *       against bandwidth blowup. To fetch full documents for query
+ *       results, iterate and call {@link #getByKsefNumber} per item:
+ *       <pre>{@code
+ *       List<InvoiceDocument> docs = client.invoices().archive()
+ *               .streamByMetadata(query)
+ *               .map(meta -> client.invoices().archive()
+ *                       .getByKsefNumber(meta.ksefNumber()))
+ *               .toList();
+ *       }</pre>
+ *       For mass-archival download, prefer the async export flow
+ *       (KSeF spec: {@code POST /invoices/async/exports}) which bundles
+ *       up to 10000 invoices / 1 GB into a single encrypted ZIP.</li>
+ * </ol>
+ *
+ * <p><strong>Why no {@code getClearedByKsefNumber}?</strong> KSeF does
+ * not expose UPO retrieval by ksefNumber — every UPO endpoint requires
+ * the original session reference. From a ksefNumber alone, UPO is
+ * server-side unreachable, so the SDK does not provide a fake
+ * composite that would always return a half-empty result. UPO is a
+ * compliance artefact of the submitting session; persist the UPO
+ * bytes (and the session/invoice ref pair) at submission time.
+ *
  * @since 1.0.0
  */
 public interface InvoiceArchive {
@@ -86,6 +135,11 @@ public interface InvoiceArchive {
      * {@code POST /invoices/query/metadata}. Pages are fetched lazily;
      * caller controls memory pressure by limiting / collecting
      * downstream.
+     *
+     * <p>{@code query.pageOffset()} is <em>ignored</em> — the paginator
+     * always starts from page 0 and iterates until the server reports
+     * {@code hasMore == false}. Use {@link #queryByMetadata} for a
+     * snapshot at a specific offset.
      */
     Stream<InvoiceMetadata> streamByMetadata(InvoiceQueryRequest query);
 }
