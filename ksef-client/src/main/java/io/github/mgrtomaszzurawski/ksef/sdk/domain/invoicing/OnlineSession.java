@@ -52,6 +52,17 @@ import java.util.Optional;
 public interface OnlineSession extends Session {
 
     /**
+     * The {@link FormCode} this session was opened with. Each subsequent
+     * {@code sendInvoice*} call must supply an {@link Invoice} whose
+     * {@link Invoice#formCode()} matches this value — the SDK fails
+     * fast with {@link IllegalArgumentException} on mismatch before
+     * any wire traffic (R1-19).
+     *
+     * @return the session's declared form code
+     */
+    FormCode formCode();
+
+    /**
      * Send an invoice (the open {@link Invoice} interface) within this
      * session and synchronously wait for KSeF terminal verification.
      *

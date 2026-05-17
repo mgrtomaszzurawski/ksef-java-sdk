@@ -94,7 +94,7 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
 
         return SessionHandleConstructor.newOnlineSession(
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SessionHandle(
-                        sessionClient, openResult.referenceNumber(), aesKey, initVector),
+                        sessionClient, openResult.referenceNumber(), aesKey, initVector, formCode),
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceVerificationConfig(
                         openResult.validUntil(), environment, invoiceVerificationTimeout),
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OfflineSendHook(

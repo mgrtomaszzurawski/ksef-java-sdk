@@ -245,8 +245,18 @@ public final class BatchSubmissionFlow {
     private static final java.util.Set<FormCode> XSD_VALIDATED_FORM_CODES = java.util.Set.of(
             FormCode.FA2, FormCode.FA3, FormCode.PEF3, FormCode.PEF_KOR3);
 
+    /**
+     * Two-phase preflight (R1-19):
+     *   Phase 1 — cheap loop verifying every invoice's formCode metadata
+     *     matches the batch-level expected formCode. Fails fast on the
+     *     first mismatch with the index in the message, before any XSD
+     *     parsing.
+     *   Phase 2 — expensive XSD validation per invoice (only after
+     *     Phase 1 passes for every element). Skips custom form codes
+     *     without bundled XSD.
+     */
     private static List<byte[]> extractAndValidateXmls(FormCode expected, List<Invoice> invoices) {
-        List<byte[]> result = new ArrayList<>(invoices.size());
+        // Phase 1: cheap formCode-match check across the whole list.
         for (int index = 0; index < invoices.size(); index++) {
             Invoice invoice = invoices.get(index);
             Objects.requireNonNull(invoice, ERR_NULL_INVOICE);
@@ -255,8 +265,12 @@ public final class BatchSubmissionFlow {
                 throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
                         ERR_FORM_CODE_MISMATCH, index, declared, expected));
             }
+        }
+        // Phase 2: XSD validation per invoice, then collect XML bytes.
+        List<byte[]> result = new ArrayList<>(invoices.size());
+        for (Invoice invoice : invoices) {
             byte[] xml = invoice.xml();
-            preFlightValidate(declared, xml);
+            preFlightValidate(expected, xml);
             result.add(xml);
         }
         return result;

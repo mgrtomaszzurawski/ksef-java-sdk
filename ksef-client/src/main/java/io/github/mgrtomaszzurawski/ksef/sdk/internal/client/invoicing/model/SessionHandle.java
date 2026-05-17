@@ -4,13 +4,22 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The wire-side state of an open KSeF online session: server reference
- * number plus the symmetric encryption material agreed at session open.
- * Bundles four parameters that flow together through the online-session
- * lifecycle.
+ * number plus the symmetric encryption material agreed at session open,
+ * plus the session's declared {@link FormCode} so per-invoice preflight
+ * (R1-19) can verify each {@code Invoice.formCode()} matches the
+ * session before any wire traffic.
+ *
+ * <p>{@code formCode} is nullable on purpose — legacy test fixtures
+ * still build sessions without the form-code context (they use
+ * {@code send(byte[])} directly instead of {@code sendInvoice(Invoice)}).
+ * Production paths in {@code InvoiceSessionsImpl.open(FormCode)} always
+ * supply it.
  *
  * <p>Internal handoff record — instances flow once from session-open into
  * {@code OnlineSessionImpl}'s constructor and are not compared or hashed
@@ -25,5 +34,6 @@ public record SessionHandle(
         SessionClient client,
         String referenceNumber,
         byte[] aesKey,
-        byte[] initVector) {
+        byte[] initVector,
+        @Nullable FormCode formCode) {
 }
