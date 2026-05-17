@@ -39,7 +39,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchPart;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.InvoiceFileMetadataReader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.http.HttpClient;
+import java.nio.file.Files;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
@@ -294,7 +296,7 @@ public final class BatchSubmissionFlow {
             return;
         }
         for (Path file : files) {
-            try (java.io.InputStream stream = java.nio.file.Files.newInputStream(file)) {
+            try (InputStream stream = Files.newInputStream(file)) {
                 List<ValidationIssue> issues = KsefXmlValidator.validateStream(stream, expected);
                 List<String> failureMessages = new ArrayList<>();
                 boolean hasFailure = false;
@@ -310,7 +312,7 @@ public final class BatchSubmissionFlow {
                                     file, String.join("; ", failureMessages)),
                             List.copyOf(failureMessages));
                 }
-            } catch (java.io.IOException ioFailure) {
+            } catch (IOException ioFailure) {
                 throw new KsefNetworkException(
                         String.format(java.util.Locale.ROOT, ERR_FILE_XSD_VALIDATION_FAILED,
                                 file, ioFailure.getMessage()), ioFailure);
@@ -608,7 +610,7 @@ public final class BatchSubmissionFlow {
     }
 
     private static java.util.Optional<io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber>
-            optionalKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.@org.jspecify.annotations.Nullable KsefNumber value) {
+            optionalKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.@Nullable KsefNumber value) {
         // After R1-17 SessionInvoiceStatus.ksefNumber is already typed —
         // parse failures fired at mapping time, so any non-null value
         // here is guaranteed valid.
