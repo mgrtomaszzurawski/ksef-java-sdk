@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.auth;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import java.util.Optional;
 import java.util.stream.Stream;
 

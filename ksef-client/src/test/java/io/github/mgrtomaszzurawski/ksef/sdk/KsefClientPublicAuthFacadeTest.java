@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;

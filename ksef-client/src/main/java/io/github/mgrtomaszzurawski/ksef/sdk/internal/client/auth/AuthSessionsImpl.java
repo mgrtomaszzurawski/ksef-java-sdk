@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.AuthSessions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator;
 import java.util.List;

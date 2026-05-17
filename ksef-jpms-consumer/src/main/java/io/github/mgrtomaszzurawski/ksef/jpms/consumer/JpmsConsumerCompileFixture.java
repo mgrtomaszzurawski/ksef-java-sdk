@@ -21,7 +21,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.crypto.EncryptionMaterial;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.FileMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefCryptoService;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefEncryptionInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
@@ -101,7 +101,7 @@ public final class JpmsConsumerCompileFixture {
                 FileMetadata.class,
                 CsrRequest.class,
                 CsrResult.class,
-                // sdk.domain.authentication.model — verify exported (gap caught earlier)
+                // sdk.domain.auth.model — verify exported (gap caught earlier)
                 AuthSession.class,
                 // sdk.domain.invoicing + builder + qrcode + sync
                 FormCode.class,
