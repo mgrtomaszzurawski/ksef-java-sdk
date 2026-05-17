@@ -223,9 +223,10 @@ against the strict profile and you want server-side enforcement.
 - `client.authSessions()` — explicit login (`ensureLoggedIn()`), list / terminate
   active auth sessions, and the diagnostic `lastChallengeClientIp()`
   hook for `AuthorizationPolicy` IP-pinning
-- `KsefTestData.of(client)` — TEST/DEMO-only test-data administration
+- `client.testData()` — TEST/DEMO-only test-data administration
   (subjects, persons, permissions, session and rate-limit overrides);
-  opt-in factory kept off `KsefClient` so PROD consumers do not see it
+  every method on this facade throws `KsefUnsupportedEnvironmentException`
+  when wired to `KsefEnvironment.PROD`
 
 Plus invoice-flow entry points reached via `client.invoices()`:
 

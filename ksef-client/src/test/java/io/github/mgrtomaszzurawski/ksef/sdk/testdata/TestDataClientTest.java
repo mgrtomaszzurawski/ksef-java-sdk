@@ -7,7 +7,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.testdata;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefTestData;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
@@ -19,10 +18,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestRateLimi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -72,7 +71,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).createSubject(
+            ksef.testData().createSubject(
                     TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION).build());
 
             // then
@@ -93,7 +92,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).createSubject(
+            ksef.testData().createSubject(
                     TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.VAT_GROUP, TEST_DESCRIPTION)
                             .addSubunit(SUBUNIT_NIP_ONE, SUBUNIT_DESCRIPTION_ONE)
                             .addSubunit(SUBUNIT_NIP_TWO, SUBUNIT_DESCRIPTION_TWO)
@@ -124,7 +123,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).removeSubject(KsefIdentifier.nip(TEST_NIP));
+            ksef.testData().removeSubject(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/subject/remove")));
@@ -140,7 +139,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).createPerson(
+            ksef.testData().createPerson(
                     TestPersonCreateBuilder.create(TEST_NIP, TEST_PESEL, false, TEST_DESCRIPTION).build());
 
             // then
@@ -157,7 +156,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).removePerson(KsefIdentifier.nip(TEST_NIP));
+            ksef.testData().removePerson(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/person/remove")));
@@ -173,7 +172,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).grantPermissions(TestPermissionsGrantBuilder.create(TEST_NIP)
+            ksef.testData().grantPermissions(TestPermissionsGrantBuilder.create(TEST_NIP)
                     .authorizedNip(TEST_AUTHORIZED_NIP)
                     .invoiceRead()
                     .build());
@@ -192,7 +191,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).revokePermissions(TestPermissionsRevokeBuilder.create(TEST_NIP)
+            ksef.testData().revokePermissions(TestPermissionsRevokeBuilder.create(TEST_NIP)
                     .authorizedNip(TEST_AUTHORIZED_NIP)
                     .build());
 
@@ -210,7 +209,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).grantAttachment(KsefIdentifier.nip(TEST_NIP));
+            ksef.testData().grantAttachment(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/attachment")));
@@ -228,7 +227,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).revokeAttachment(KsefIdentifier.nip(TEST_NIP), REVOKE_END_DATE);
+            ksef.testData().revokeAttachment(KsefIdentifier.nip(TEST_NIP), REVOKE_END_DATE);
 
             // then
             verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))
@@ -247,7 +246,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).blockContext(KsefIdentifier.nip(TEST_NIP));
+            ksef.testData().blockContext(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/context/block")));
@@ -263,7 +262,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).unblockContext(KsefIdentifier.nip(TEST_NIP));
+            ksef.testData().unblockContext(KsefIdentifier.nip(TEST_NIP));
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/context/unblock")));
@@ -280,7 +279,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).setSessionLimits(TestSessionLimitsBuilder.create()
+            ksef.testData().setSessionLimits(TestSessionLimitsBuilder.create()
                     .onlineSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_ONLINE)
                     .batchSession(LIMIT_INVOICE_SIZE_MB, LIMIT_INVOICE_WITH_ATTACHMENT_SIZE_MB, LIMIT_MAX_INVOICES_BATCH)
                     .build());
@@ -301,7 +300,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).resetSessionLimits();
+            ksef.testData().resetSessionLimits();
 
             // then
             verify(deleteRequestedFor(urlEqualTo("/v2/testdata/limits/context/session"))
@@ -319,7 +318,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).setSubjectLimits(
+            ksef.testData().setSubjectLimits(
                     TestSubjectLimitsBuilder.create(TestSubjectIdentifierType.NIP).build());
 
             // then
@@ -338,7 +337,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).resetSubjectLimits();
+            ksef.testData().resetSubjectLimits();
 
             // then
             verify(deleteRequestedFor(urlEqualTo("/v2/testdata/limits/subject/certificate"))
@@ -356,7 +355,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).setRateLimits(TestRateLimitsBuilder.create()
+            ksef.testData().setRateLimits(TestRateLimitsBuilder.create()
                     .onlineSession(RATE_PER_SECOND, RATE_PER_MINUTE, RATE_PER_HOUR)
                     .build());
 
@@ -376,7 +375,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).resetRateLimits();
+            ksef.testData().resetRateLimits();
 
             // then
             verify(deleteRequestedFor(urlEqualTo("/v2/testdata/rate-limits"))
@@ -394,7 +393,7 @@ class TestDataClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            KsefTestData.of(ksef).applyProductionRateLimitsToTestTenant();
+            ksef.testData().applyProductionRateLimitsToTestTenant();
 
             // then
             verify(postRequestedFor(urlEqualTo("/v2/testdata/rate-limits/production"))
@@ -411,9 +410,27 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // then
-            var testData = KsefTestData.of(ksef);
+            var testData = ksef.testData();
             var request = TestSubjectCreateBuilder.create(TEST_NIP, TestSubjectType.JST, TEST_DESCRIPTION).build();
             assertThrows(KsefServerException.class, () -> testData.createSubject(request));
+        }
+    }
+
+    @Test
+    void testData_whenWiredToProd_eachMethodThrowsKsefUnsupportedEnvironmentException() {
+        try (KsefClient ksef = KsefClient.builder()
+                .environment(KsefEnvironment.PROD)
+                .credentials(new KsefTokenCredentials("test-token", TEST_NIP))
+                .retryPolicy(RetryPolicy.builder().enabled(false).build())
+                .build()) {
+            // resetSessionLimits takes no args — exercises the guard without touching
+            // any request validation or wire path.
+            assertThrows(KsefUnsupportedEnvironmentException.class,
+                    () -> ksef.testData().resetSessionLimits());
+            assertThrows(KsefUnsupportedEnvironmentException.class,
+                    () -> ksef.testData().resetSubjectLimits());
+            assertThrows(KsefUnsupportedEnvironmentException.class,
+                    () -> ksef.testData().resetRateLimits());
         }
     }
 

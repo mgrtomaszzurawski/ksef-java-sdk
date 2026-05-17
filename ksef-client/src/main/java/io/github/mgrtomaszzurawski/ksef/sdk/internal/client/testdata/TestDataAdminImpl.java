@@ -12,8 +12,10 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubjectRemoveRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.UnblockContextAuthenticationRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest;
@@ -86,11 +88,36 @@ public final class TestDataAdminImpl implements TestDataAdmin {
             "TestDataAdmin operations require a NIP-typed KsefIdentifier but got: ";
     private static final String ERR_NULL_IDENTIFIER = "identifier must not be null";
     private static final String ERR_NULL_EXPECTED_END_DATE = "expectedEndDate is required";
+    private static final String ERR_NULL_ENVIRONMENT = "environment must not be null";
+    private static final String ERR_PROD =
+            "Test-data API is not available on KsefEnvironment.PROD — "
+                    + "use TEST or DEMO for test-tenant operations.";
 
     private final HttpSupport http;
+    private final KsefEnvironment environment;
 
-    public TestDataAdminImpl(HttpRuntime runtime) {
+    public TestDataAdminImpl(HttpRuntime runtime, KsefEnvironment environment) {
         this.http = new HttpSupport(runtime);
+        this.environment = Objects.requireNonNull(environment, ERR_NULL_ENVIRONMENT);
+    }
+
+    /**
+     * Fail-fast guard before any wire traffic. PROD has no test-data
+     * endpoints; calling this surface there would resolve to HTTP 404
+     * at the server. Throwing a typed exception locally gives consumers
+     * a clear message and lets them branch on
+     * {@link KsefUnsupportedEnvironmentException} instead of parsing
+     * server error bodies.
+     *
+     * <p>Reference-equality guard: only catches {@link KsefEnvironment#PROD}
+     * singleton. Custom URLs targeting the PROD host bypass on purpose —
+     * the caller chose {@code custom(url)} deliberately and the SDK
+     * does not pattern-match URLs.
+     */
+    private void ensureNotProd() {
+        if (KsefEnvironment.PROD.equals(environment)) {
+            throw new KsefUnsupportedEnvironmentException(ERR_PROD);
+        }
     }
 
     /**
@@ -100,6 +127,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void createSubject(TestSubjectCreateRequest request) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_CREATE_SUBJECT);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
         http.postJsonNoContent(PATH_SUBJECT,
@@ -113,6 +141,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void removeSubject(KsefIdentifier subjectIdentifier) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_REMOVE_SUBJECT);
         String nipValue = requireNipValue(subjectIdentifier, ERR_NULL_SUBJECT_NIP);
         SubjectRemoveRequestRaw request = new SubjectRemoveRequestRaw();
@@ -127,6 +156,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void createPerson(TestPersonCreateRequest request) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_CREATE_PERSON);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
         http.postJsonNoContent(PATH_PERSON,
@@ -140,6 +170,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void removePerson(KsefIdentifier personIdentifier) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_REMOVE_PERSON);
         String nipValue = requireNipValue(personIdentifier, ERR_NULL_NIP);
         PersonRemoveRequestRaw request = new PersonRemoveRequestRaw();
@@ -154,6 +185,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void grantPermissions(TestPermissionsGrantRequest request) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_GRANT_PERMISSIONS);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
         http.postJsonNoContent(PATH_PERMISSIONS,
@@ -167,6 +199,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void revokePermissions(TestPermissionsRevokeRequest request) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_REVOKE_PERMISSIONS);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
         http.postJsonNoContent(PATH_PERMISSIONS_REVOKE,
@@ -180,6 +213,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void grantAttachment(KsefIdentifier subjectIdentifier) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_GRANT_ATTACHMENT);
         String nipValue = requireNipValue(subjectIdentifier, ERR_NULL_NIP);
         AttachmentPermissionGrantRequestRaw request = new AttachmentPermissionGrantRequestRaw();
@@ -195,6 +229,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void revokeAttachment(KsefIdentifier subjectIdentifier, LocalDate attachmentExpiryDate) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_REVOKE_ATTACHMENT);
         String nipValue = requireNipValue(subjectIdentifier, ERR_NULL_NIP);
         Objects.requireNonNull(attachmentExpiryDate, ERR_NULL_EXPECTED_END_DATE);
@@ -220,6 +255,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void blockContext(KsefIdentifier identifier) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_BLOCK_CONTEXT);
         Objects.requireNonNull(identifier, ERR_NULL_IDENTIFIER);
         TestDataAuthenticationContextIdentifierRaw raw = new TestDataAuthenticationContextIdentifierRaw();
@@ -237,6 +273,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void unblockContext(KsefIdentifier identifier) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_UNBLOCK_CONTEXT);
         Objects.requireNonNull(identifier, ERR_NULL_IDENTIFIER);
         TestDataAuthenticationContextIdentifierRaw raw = new TestDataAuthenticationContextIdentifierRaw();
@@ -254,6 +291,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void setSessionLimits(TestSessionLimitsRequest request) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_SET_SESSION_LIMITS);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();
@@ -266,6 +304,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void resetSessionLimits() {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_RESET_SESSION_LIMITS);
         String token = http.requireToken();
         http.deleteAuthenticated(PATH_SESSION_LIMITS, token, OP_RESET_SESSION_LIMITS);
@@ -278,6 +317,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void setSubjectLimits(TestSubjectLimitsRequest request) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_SET_SUBJECT_LIMITS);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();
@@ -290,6 +330,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void resetSubjectLimits() {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_RESET_SUBJECT_LIMITS);
         String token = http.requireToken();
         http.deleteAuthenticated(PATH_SUBJECT_LIMITS, token, OP_RESET_SUBJECT_LIMITS);
@@ -302,6 +343,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void setRateLimits(TestRateLimitsRequest request) {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_SET_RATE_LIMITS);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
         String token = http.requireToken();
@@ -314,6 +356,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void resetRateLimits() {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_RESET_RATE_LIMITS);
         String token = http.requireToken();
         http.deleteAuthenticated(PATH_RATE_LIMITS, token, OP_RESET_RATE_LIMITS);
@@ -324,6 +367,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
      */
     @Override
     public void applyProductionRateLimitsToTestTenant() {
+        ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_SET_PRODUCTION_RATE_LIMITS);
         String token = http.requireToken();
         http.postNoBodyAuthenticated(PATH_RATE_LIMITS_PRODUCTION, token, OP_SET_PRODUCTION_RATE_LIMITS);

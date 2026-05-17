@@ -3,18 +3,14 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 /**
- * Root package of the KSeF SDK public API.
- *
- * <p>Contains {@link io.github.mgrtomaszzurawski.ksef.sdk.KsefClient} —
- * the sole entry point — and its configuration {@code Builder}, plus
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.KsefTestData} — an opt-in
- * factory for the TEST/DEMO-only test-data administration surface kept
- * off the main accessor list so PROD consumers do not see it.
+ * Root package of the KSeF SDK public API. The single entry point is
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.KsefClient} (with its
+ * configuration {@code Builder}).
  *
  * <p>Operational APIs live in {@code sdk.domain.<feature>} sub-packages,
  * reached via accessor methods on {@code KsefClient} (for example
  * {@code client.invoices()}, {@code client.permissions()},
- * {@code client.authSessions()}).
+ * {@code client.authSessions()}, {@code client.testData()}).
  *
  * <p>Configuration types (environment, credentials, retry policy, feature
  * policy, authorization policy) live in {@code sdk.config}; shared value

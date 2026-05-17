@@ -191,7 +191,7 @@ public final class KsefClient implements AutoCloseable {
         this.permissions = new PermissionsImpl(this.runtime);
         this.certificates = new CertificatesImpl(this.runtime);
         this.limits = new LimitsImpl(this.runtime);
-        this.testData = new TestDataAdminImpl(this.runtime);
+        this.testData = new TestDataAdminImpl(this.runtime, this.environment);
         this.peppolClient = new PeppolProvidersImpl(this.runtime);
         this.qrCodeService = new QrCodeService();
         this.authImpl = new AuthSessionsImpl(
@@ -343,12 +343,18 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Internal — package-private friend accessor used by
-     * {@link KsefTestData#of(KsefClient)}. The env check + PROD guard
-     * live on the factory so the public API surface stays free of
-     * environment-restricted accessors that PROD consumers never need.
+     * Access KSeF test-environment data administration (create/remove
+     * test subjects, grant test permissions, override limits, etc.).
+     *
+     * <p>The returned facade fails fast with
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException}
+     * on every method when this client is wired to
+     * {@link KsefEnvironment#PROD} — KSeF test-data endpoints do not
+     * exist on PROD. The guard is per-method (not on this accessor)
+     * so the failure surfaces at the call site with full Javadoc
+     * visibility for IDE quick-doc / hover hints.
      */
-    TestDataAdmin testDataInternal() {
+    public TestDataAdmin testData() {
         ensureOpen();
         return testData;
     }
@@ -405,7 +411,7 @@ public final class KsefClient implements AutoCloseable {
      * the SDK accessors ({@link #invoices()}, {@link #permissions()},
      * {@link #tokens()}, {@link #certificates()}, {@link #peppol()},
      * {@link #limits()}, {@link #authSessions()}, or
-     * {@link KsefTestData#of(KsefClient)}) throws
+     * {@link #testData()}) throws
      * {@link IllegalStateException}.
      */
     @Override
