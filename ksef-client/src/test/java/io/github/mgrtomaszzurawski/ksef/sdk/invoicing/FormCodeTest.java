@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -141,14 +142,14 @@ class FormCodeTest {
     @Test
     void assertAllowedOn_fa2OnDemo_throws() {
         // when / then
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(KsefUnsupportedEnvironmentException.class,
                 () -> FormCode.FA2.assertAllowedOn(KsefEnvironment.DEMO));
     }
 
     @Test
     void assertAllowedOn_fa2OnProd_throws() {
         // when / then
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(KsefUnsupportedEnvironmentException.class,
                 () -> FormCode.FA2.assertAllowedOn(KsefEnvironment.PROD));
     }
 
