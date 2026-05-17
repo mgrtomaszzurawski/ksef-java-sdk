@@ -14,7 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenGenerateReq
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import java.util.Objects;
