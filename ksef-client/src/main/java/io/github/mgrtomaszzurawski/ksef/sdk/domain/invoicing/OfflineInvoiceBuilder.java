@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public final class OfflineInvoiceBuilder {
+public final class OfflineInvoiceBuilder<I extends Invoice> {
 
     private static final String ERR_NULL_INVOICE = "underlyingInvoice must not be null";
     private static final String ERR_NULL_CERT = "signingCertificate must not be null";
@@ -65,7 +65,7 @@ public final class OfflineInvoiceBuilder {
             "hashOfCorrectedInvoice must be exactly " + SHA256_LENGTH_BYTES
                     + " bytes (SHA-256), got %d";
 
-    private final Invoice underlyingInvoice;
+    private final I underlyingInvoice;
     private @Nullable KsefCertificate signingCertificate;
     private @Nullable OfflineMode offlineMode;
     private @Nullable QrEnvironment qrEnvironment;
@@ -75,53 +75,53 @@ public final class OfflineInvoiceBuilder {
     private @Nullable LocalDate issueDate;
     private byte @Nullable [] hashOfCorrectedInvoice;
 
-    private OfflineInvoiceBuilder(Invoice invoice) {
+    private OfflineInvoiceBuilder(I invoice) {
         this.underlyingInvoice = Objects.requireNonNull(invoice, ERR_NULL_INVOICE);
     }
 
     /** Entry point: start building an {@link OfflineInvoice} for {@code invoice}. */
-    public static OfflineInvoiceBuilder forInvoice(Invoice invoice) {
-        return new OfflineInvoiceBuilder(invoice);
+    public static <I extends Invoice> OfflineInvoiceBuilder<I> forInvoice(I invoice) {
+        return new OfflineInvoiceBuilder<>(invoice);
     }
 
     /** Required: KSeF Offline certificate that signs the KOD II QR. */
-    public OfflineInvoiceBuilder signingCertificate(KsefCertificate value) {
+    public OfflineInvoiceBuilder<I> signingCertificate(KsefCertificate value) {
         this.signingCertificate = Objects.requireNonNull(value, ERR_NULL_CERT);
         return this;
     }
 
     /** Required: offline-mode classification (consumer-chosen / unavailability / emergency). */
-    public OfflineInvoiceBuilder offlineMode(OfflineMode value) {
+    public OfflineInvoiceBuilder<I> offlineMode(OfflineMode value) {
         this.offlineMode = Objects.requireNonNull(value, ERR_NULL_MODE);
         return this;
     }
 
     /** Required: QR environment whose host is embedded into KOD I + KOD II URLs. */
-    public OfflineInvoiceBuilder qrEnvironment(QrEnvironment value) {
+    public OfflineInvoiceBuilder<I> qrEnvironment(QrEnvironment value) {
         this.qrEnvironment = Objects.requireNonNull(value, ERR_NULL_QR_ENV);
         return this;
     }
 
     /** Required: authorising context identifier kind for KOD II URL. */
-    public OfflineInvoiceBuilder contextType(QrContextType value) {
+    public OfflineInvoiceBuilder<I> contextType(QrContextType value) {
         this.contextType = Objects.requireNonNull(value, ERR_NULL_CONTEXT_TYPE);
         return this;
     }
 
     /** Required: authorising context identifier value for KOD II URL. */
-    public OfflineInvoiceBuilder contextValue(String value) {
+    public OfflineInvoiceBuilder<I> contextValue(String value) {
         this.contextValue = Objects.requireNonNull(value, ERR_NULL_CONTEXT_VALUE);
         return this;
     }
 
     /** Required: 10-digit seller NIP embedded in KOD I + KOD II URLs. */
-    public OfflineInvoiceBuilder sellerNip(String value) {
+    public OfflineInvoiceBuilder<I> sellerNip(String value) {
         this.sellerNip = Objects.requireNonNull(value, ERR_NULL_SELLER_NIP);
         return this;
     }
 
     /** Required: calendar issue date embedded in KOD I URL. */
-    public OfflineInvoiceBuilder issueDate(LocalDate value) {
+    public OfflineInvoiceBuilder<I> issueDate(LocalDate value) {
         this.issueDate = Objects.requireNonNull(value, ERR_NULL_ISSUE_DATE);
         return this;
     }
@@ -131,7 +131,7 @@ public final class OfflineInvoiceBuilder {
      * this offline issuance is also a technical correction. Must be
      * exactly 32 bytes (SHA-256 length); rejected otherwise.
      */
-    public OfflineInvoiceBuilder hashOfCorrectedInvoice(byte[] value) {
+    public OfflineInvoiceBuilder<I> hashOfCorrectedInvoice(byte[] value) {
         Objects.requireNonNull(value, ERR_NULL_HASH);
         if (value.length != SHA256_LENGTH_BYTES) {
             throw new IllegalArgumentException(String.format(ERR_HASH_LENGTH, value.length));
@@ -148,7 +148,7 @@ public final class OfflineInvoiceBuilder {
      *
      * @throws IllegalStateException if a required field has not been set
      */
-    public OfflineInvoice build() {
+    public OfflineInvoice<I> build() {
         KsefCertificate certificate = required(signingCertificate, ERR_REQUIRED_CERT);
         OfflineMode mode = required(offlineMode, ERR_REQUIRED_MODE);
         QrEnvironment environment = required(qrEnvironment, ERR_REQUIRED_QR_ENV);
@@ -164,7 +164,7 @@ public final class OfflineInvoiceBuilder {
         byte[] kodIIPng = OfflineInvoice.renderKodII(environment, type, value, nip,
                 certificate, invoiceHash);
 
-        return new OfflineInvoice(underlyingInvoice, invoiceXml, kodIPng, kodIIPng,
+        return new OfflineInvoice<>(underlyingInvoice, invoiceXml, kodIPng, kodIIPng,
                 mode, certificate, hashOfCorrectedInvoice);
     }
 

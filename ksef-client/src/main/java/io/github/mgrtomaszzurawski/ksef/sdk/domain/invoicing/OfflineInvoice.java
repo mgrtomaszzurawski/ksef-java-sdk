@@ -45,9 +45,13 @@ import org.jspecify.annotations.Nullable;
  * {@code ksef-docs/offline/awaria-i-niedostepnosc.md},
  * {@code ksef-docs/kody-qr.md}.
  *
+ * @param <I> the static {@link Invoice} subtype wrapped by this offline
+ *     handle; preserved so {@link #underlyingInvoice()} returns the
+ *     typed invoice (e.g. {@code Fa3Invoice}) without downcast
+ *
  * @since 1.0.0
  */
-public final class OfflineInvoice {
+public final class OfflineInvoice<I extends Invoice> {
 
     private static final String SHA_256_ALGORITHM = "SHA-256";
     private static final String ERR_SHA256_UNAVAILABLE = "SHA-256 not available";
@@ -60,7 +64,7 @@ public final class OfflineInvoice {
     private static final String ERR_NULL_CONTEXT = "context must not be null";
     private static final String BYTES_LABEL = " bytes";
 
-    private final Invoice underlyingInvoice;
+    private final I underlyingInvoice;
     private final byte[] xml;
     private final byte[] kodIQrPng;
     private final byte[] kodIIQrPng;
@@ -68,7 +72,7 @@ public final class OfflineInvoice {
     private final KsefCertificate signingCertificate;
     private final byte @Nullable [] hashOfCorrectedInvoice;
 
-    OfflineInvoice(Invoice underlyingInvoice, byte[] xml,
+    OfflineInvoice(I underlyingInvoice, byte[] xml,
                    byte[] kodIQrPng, byte[] kodIIQrPng,
                    OfflineMode offlineMode, KsefCertificate signingCertificate,
                    byte @Nullable [] hashOfCorrectedInvoice) {
@@ -88,7 +92,7 @@ public final class OfflineInvoice {
      * accessors (e.g. {@code Fa3Invoice.unsafeJaxbView()},
      * {@code PefInvoice.invoice()}) through this handle.
      */
-    public Invoice underlyingInvoice() {
+    public I underlyingInvoice() {
         return underlyingInvoice;
     }
 
@@ -173,7 +177,7 @@ public final class OfflineInvoice {
      * @param context KOD I + KOD II authorisation context bundle (non-null)
      * @return immutable {@link OfflineInvoice}
      */
-    public static OfflineInvoice fromInvoice(Invoice invoice,
+    public static <I extends Invoice> OfflineInvoice<I> fromInvoice(I invoice,
                                               KsefCertificate certificate,
                                               OfflineMode mode,
                                               io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext context) {
@@ -190,7 +194,7 @@ public final class OfflineInvoice {
         byte[] kodIIPng = renderKodII(context.environment(), context.contextType(),
                 context.contextValue(), context.sellerNip(), certificate, invoiceHash);
 
-        return new OfflineInvoice(invoice, invoiceXml, kodIPng, kodIIPng,
+        return new OfflineInvoice<>(invoice, invoiceXml, kodIPng, kodIIPng,
                 mode, certificate, null);
     }
 
@@ -227,7 +231,7 @@ public final class OfflineInvoice {
         if (this == other) {
             return true;
         }
-        if (!(other instanceof OfflineInvoice that)) {
+        if (!(other instanceof OfflineInvoice<?> that)) {
             return false;
         }
         return Objects.equals(underlyingInvoice, that.underlyingInvoice)

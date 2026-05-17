@@ -41,7 +41,7 @@ class OfflineInvoiceTest {
         Invoice invoice = Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML);
 
         // when
-        OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24, new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE, SELLER_NIP, ISSUE_DATE));
+        var offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24, new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE, SELLER_NIP, ISSUE_DATE));
 
         // then
         assertNotNull(offline.kodIQrPng());
@@ -54,7 +54,7 @@ class OfflineInvoiceTest {
     void xml_whenAccessed_returnsUnderlyingInvoiceContent() {
         // given
         Invoice invoice = Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML);
-        OfflineInvoice offline = newOfflineInvoice(invoice);
+        var offline = newOfflineInvoice(invoice);
 
         // when
         byte[] xmlOut = offline.xml();
@@ -67,7 +67,7 @@ class OfflineInvoiceTest {
     @Test
     void xml_whenCalledTwice_returnsDefensiveCopies() {
         // given
-        OfflineInvoice offline = newOfflineInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML));
+        var offline = newOfflineInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML));
 
         // when
         byte[] firstCopy = offline.xml();
@@ -81,7 +81,7 @@ class OfflineInvoiceTest {
     @Test
     void kodIQrPng_whenCalledTwice_returnsDefensiveCopies() {
         // given
-        OfflineInvoice offline = newOfflineInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML));
+        var offline = newOfflineInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML));
 
         // when
         byte[] firstCopy = offline.kodIQrPng();
@@ -95,7 +95,7 @@ class OfflineInvoiceTest {
     @Test
     void kodIIQrPng_whenCalledTwice_returnsDefensiveCopies() {
         // given
-        OfflineInvoice offline = newOfflineInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML));
+        var offline = newOfflineInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML));
 
         // when
         byte[] firstCopy = offline.kodIIQrPng();
@@ -110,7 +110,7 @@ class OfflineInvoiceTest {
     void formCode_whenAccessed_delegatesToUnderlyingInvoice() {
         // given
         Invoice invoice = Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML);
-        OfflineInvoice offline = newOfflineInvoice(invoice);
+        var offline = newOfflineInvoice(invoice);
 
         // then
         assertEquals(CUSTOM_CODE, offline.formCode());
@@ -120,7 +120,7 @@ class OfflineInvoiceTest {
     void underlyingInvoice_whenAccessed_returnsSameReference() {
         // given
         Invoice invoice = Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML);
-        OfflineInvoice offline = newOfflineInvoice(invoice);
+        var offline = newOfflineInvoice(invoice);
 
         // then
         assertSame(invoice, offline.underlyingInvoice());
@@ -130,7 +130,7 @@ class OfflineInvoiceTest {
     void offlineMode_whenAccessed_returnsConfiguredValue() {
         // given
         Invoice invoice = Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML);
-        OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.KSEF_EMERGENCY, new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE, SELLER_NIP, ISSUE_DATE));
+        var offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.KSEF_EMERGENCY, new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(QrEnvironment.TEST, QrContextType.NIP, CONTEXT_VALUE, SELLER_NIP, ISSUE_DATE));
 
         // then
         assertEquals(OfflineMode.KSEF_EMERGENCY, offline.offlineMode());
@@ -139,7 +139,7 @@ class OfflineInvoiceTest {
     @Test
     void hashOfCorrectedInvoice_whenNotSet_returnsEmpty() {
         // given
-        OfflineInvoice offline = newOfflineInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML));
+        var offline = newOfflineInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML));
 
         // then
         assertTrue(offline.hashOfCorrectedInvoice().isEmpty());

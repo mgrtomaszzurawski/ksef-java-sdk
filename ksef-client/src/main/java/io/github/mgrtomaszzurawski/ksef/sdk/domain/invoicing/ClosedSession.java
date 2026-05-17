@@ -46,7 +46,7 @@ public interface ClosedSession extends Session {
      * @throws io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException
      *     if the UPO is not available within the configured retrieval timeout
      */
-    ClearedInvoice cleared(SubmittedInvoice submitted);
+    <I extends Invoice> ClearedInvoice<I> cleared(SubmittedInvoice<I> submitted);
 
     /**
      * Convenience overload for callers that hold only a reference number
@@ -58,7 +58,7 @@ public interface ClosedSession extends Session {
      * @param invoiceReferenceNumber the SDK-assigned reference number
      * @return the cleared-invoice record
      */
-    ClearedInvoice cleared(String invoiceReferenceNumber);
+    ClearedInvoice<? extends Invoice> cleared(String invoiceReferenceNumber);
 
     /**
      * Bulk-fetch every {@link ClearedInvoice} for this session — covers
@@ -71,7 +71,7 @@ public interface ClosedSession extends Session {
      * @return one {@link ClearedInvoice} per accepted invoice; empty
      *     list when the session has no UPO yet
      */
-    List<ClearedInvoice> allCleared();
+    List<ClearedInvoice<? extends Invoice>> allCleared();
 
     /**
      * AutoCloseable contract — for an already-closed session this is a

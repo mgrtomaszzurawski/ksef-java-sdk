@@ -219,7 +219,7 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public SubmittedInvoice sendInvoice(Invoice invoice) {
+    public <I extends Invoice> SubmittedInvoice<I> sendInvoice(I invoice) {
         Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
         ensureFormCodeMatches(invoice);
         if (environment == null) {
@@ -244,9 +244,9 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public SubmittedInvoice sendOfflineInvoice(OfflineInvoice offline) {
+    public <I extends Invoice> SubmittedInvoice<I> sendOfflineInvoice(OfflineInvoice<I> offline) {
         Objects.requireNonNull(offline, ERR_OFFLINE_INVOICE_NULL);
-        Invoice underlying = offline.underlyingInvoice();
+        I underlying = offline.underlyingInvoice();
         ensureFormCodeMatches(underlying);
         byte[] invoiceXml = offline.xml();
         InvoiceValidationGate.validate(offline.formCode(), invoiceXml);
@@ -257,7 +257,7 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public SubmittedInvoice sendOffline(Invoice invoice, OfflineMode mode) {
+    public <I extends Invoice> SubmittedInvoice<I> sendOffline(I invoice, OfflineMode mode) {
         Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
         Objects.requireNonNull(mode, ERR_OFFLINE_MODE_NULL);
         ensureFormCodeMatches(invoice);
@@ -269,12 +269,12 @@ final class OnlineSessionImpl implements OnlineSession {
                 new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(
                         qrEnvironment, QrContextType.NIP, sellerNip, sellerNip,
                         java.time.LocalDate.now(java.time.ZoneOffset.UTC));
-        OfflineInvoice offline = offlineSigningProvider.signAndPackage(invoice, mode, context);
+        OfflineInvoice<I> offline = offlineSigningProvider.signAndPackage(invoice, mode, context);
         return sendOfflineInvoice(offline);
     }
 
     @Override
-    public SubmittedInvoice sendTechnicalCorrection(Invoice invoice, byte[] hashOfOriginal) {
+    public <I extends Invoice> SubmittedInvoice<I> sendTechnicalCorrection(I invoice, byte[] hashOfOriginal) {
         Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
         Objects.requireNonNull(hashOfOriginal, ERR_HASH_NULL);
         ensureFormCodeMatches(invoice);
@@ -290,14 +290,15 @@ final class OnlineSessionImpl implements OnlineSession {
         // not synthesise a KOD II here — the caller is responsible for
         // pairing this submission with a KOD II if visualisation is
         // required (the certificate isn't available at this layer).
-        return new SubmittedInvoice(invoice, sendResult.referenceNumber(),
+        return new SubmittedInvoice<>(invoice, sendResult.referenceNumber(),
                 terminalStatus, Optional.empty(), Optional.empty(),
                 Optional.empty(), List.of());
     }
 
-    private SubmittedInvoice buildOfflineSubmittedInvoice(Invoice invoice, String invoiceRef,
-                                                          SessionInvoiceStatus terminalStatus,
-                                                          byte[] kodIPng, byte[] kodIIPng) {
+    private static <I extends Invoice> SubmittedInvoice<I> buildOfflineSubmittedInvoice(
+            I invoice, String invoiceRef,
+            SessionInvoiceStatus terminalStatus,
+            byte[] kodIPng, byte[] kodIIPng) {
         Integer code = terminalStatus.status() != null ? terminalStatus.status().code() : null;
         boolean accepted = code != null && code == STATUS_CODE_OK;
         Optional<KsefNumber> ksefNumber = Optional.empty();
@@ -313,7 +314,7 @@ final class OnlineSessionImpl implements OnlineSession {
         // KOD I + KOD II were rendered at OfflineInvoice construction
         // time — propagate them verbatim. The visualisation must show
         // both QRs on the offline path even on rejection.
-        return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
+        return new SubmittedInvoice<>(invoice, invoiceRef, terminalStatus,
                 ksefNumber, Optional.of(kodIPng), Optional.of(kodIIPng), errorDetails);
     }
 
@@ -334,7 +335,7 @@ final class OnlineSessionImpl implements OnlineSession {
         throw new KsefSessionPollingTimeoutException(invoiceRef, attempts, lastCode);
     }
 
-    private SubmittedInvoice buildSubmittedInvoice(Invoice invoice, String invoiceRef,
+    private <I extends Invoice> SubmittedInvoice<I> buildSubmittedInvoice(I invoice, String invoiceRef,
                                                    SessionInvoiceStatus terminalStatus,
                                                    byte[] invoiceSha256) {
         Integer code = terminalStatus.status() != null ? terminalStatus.status().code() : null;
@@ -352,7 +353,7 @@ final class OnlineSessionImpl implements OnlineSession {
                 errorDetails.add(terminalStatus.status().description());
             }
         }
-        return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
+        return new SubmittedInvoice<>(invoice, invoiceRef, terminalStatus,
                 ksefNumber, kodIQr, Optional.empty(), errorDetails);
     }
 

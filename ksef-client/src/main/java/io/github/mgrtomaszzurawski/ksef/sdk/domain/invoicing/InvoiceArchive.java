@@ -119,7 +119,7 @@ public interface InvoiceArchive {
      *     the consumer should not be calling this method for non-accepted
      *     invoices since no UPO exists yet.
      */
-    ClearedInvoice clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber);
+    ClearedInvoice<Invoice> clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber);
 
     /**
      * Query invoice metadata with filters (date range, buyer/seller, amounts, etc.).

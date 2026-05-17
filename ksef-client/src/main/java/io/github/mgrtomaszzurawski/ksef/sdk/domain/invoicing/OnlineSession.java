@@ -94,7 +94,7 @@ public interface OnlineSession extends Session {
      * @throws IllegalStateException if the session is already closed or archived
      * @throws NullPointerException if {@code invoice} is null
      */
-    SubmittedInvoice sendInvoice(Invoice invoice);
+    <I extends Invoice> SubmittedInvoice<I> sendInvoice(I invoice);
 
     /**
      * Send a pre-built {@link OfflineInvoice} within this session.
@@ -120,7 +120,7 @@ public interface OnlineSession extends Session {
      * @throws IllegalStateException if the session is already closed or archived
      * @throws NullPointerException if {@code offline} is null
      */
-    SubmittedInvoice sendOfflineInvoice(OfflineInvoice offline);
+    <I extends Invoice> SubmittedInvoice<I> sendOfflineInvoice(OfflineInvoice<I> offline);
 
     /**
      * Convenience overload that signs and packages the invoice on the
@@ -149,7 +149,7 @@ public interface OnlineSession extends Session {
      * @throws IllegalStateException if no {@code OfflineSigningProvider}
      *     was configured on the client builder
      */
-    SubmittedInvoice sendOffline(Invoice invoice, OfflineMode mode);
+    <I extends Invoice> SubmittedInvoice<I> sendOffline(I invoice, OfflineMode mode);
 
     /**
      * Send a technical correction (korekta techniczna) within this
@@ -173,7 +173,7 @@ public interface OnlineSession extends Session {
      * @throws IllegalStateException if the session is already closed or archived
      * @throws NullPointerException if any argument is null
      */
-    SubmittedInvoice sendTechnicalCorrection(Invoice invoice, byte[] hashOfOriginal);
+    <I extends Invoice> SubmittedInvoice<I> sendTechnicalCorrection(I invoice, byte[] hashOfOriginal);
 
     /**
      * Time remaining until {@link Session#validUntil()} relative to the

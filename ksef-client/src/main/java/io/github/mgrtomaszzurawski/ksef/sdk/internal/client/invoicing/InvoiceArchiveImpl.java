@@ -106,7 +106,7 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
     }
 
     @Override
-    public ClearedInvoice clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber) {
+    public ClearedInvoice<Invoice> clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber) {
         Objects.requireNonNull(sessionReferenceNumber, ERR_NULL_SESSION_REF);
         Objects.requireNonNull(invoiceReferenceNumber, ERR_NULL_INVOICE_REF);
         if (sessionClient == null) {
@@ -129,7 +129,7 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
         UpoEntry upo = new UpoEntry(invoiceReferenceNumber, upoBytes);
         Invoice invoice = Invoice.fromXml(document.formCode(), document.xml());
 
-        SubmittedInvoice submitted = new SubmittedInvoice(
+        SubmittedInvoice<Invoice> submitted = new SubmittedInvoice<>(
                 invoice,
                 invoiceReferenceNumber,
                 status,
@@ -137,7 +137,7 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
                 Optional.empty(),
                 Optional.empty(),
                 List.of());
-        return new ClearedInvoice(submitted, document, upo);
+        return new ClearedInvoice<>(submitted, document, upo);
     }
 
     @Override

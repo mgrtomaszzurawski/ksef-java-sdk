@@ -58,6 +58,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,13 +207,15 @@ public final class BatchSubmissionFlow {
      * Submit {@code invoices} as a single KSeF batch. Blocking — by the time
      * the call returns, every accepted invoice already has its UPO downloaded.
      *
-     * @param formCode wire form code for the batch
+     * @param formCode wire form code for the batch (derived from the first
+     *     invoice's own {@link Invoice#formCode()} at the call site)
      * @param invoices invoices to send (each must declare a {@link FormCode}
      *     matching {@code formCode})
      * @param options runtime tunables (timeout + parallelism)
-     * @return populated {@link BatchResult}
+     * @return populated {@link BatchResult} with each {@code SubmittedInvoice}
+     *     anchored to the original typed input via {@code ordinalNumber}
      */
-    public BatchResult submit(FormCode formCode, List<Invoice> invoices, BatchOptions options) {
+    public <I extends Invoice> BatchResult<I> submit(FormCode formCode, List<I> invoices, BatchOptions options) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(invoices, ERR_INVOICES_NULL);
         Objects.requireNonNull(options, ERR_OPTIONS_NULL);
@@ -221,16 +224,20 @@ public final class BatchSubmissionFlow {
         }
         formCode.assertAllowedOn(environment);
         List<byte[]> invoiceXmls = extractAndValidateXmls(formCode, invoices);
+        List<I> typedInputs = List.copyOf(invoices);
         return runFlow(formCode, options, invoices.size(),
                 aesKey -> aesIv -> BatchPackageBuilder.build(invoiceXmls, aesKey, aesIv,
-                        BatchAssemblyMode.onDisk()));
+                        BatchAssemblyMode.onDisk()),
+                typedInputs);
     }
 
     /**
      * Submit invoice files as a single KSeF batch. Streams from disk —
-     * suitable for large batches.
+     * suitable for large batches. Files do not carry an inline typed
+     * invoice, so the result is raw-typed {@code BatchResult<Invoice>}
+     * with each {@code SubmittedInvoice} backed by the UPO-only placeholder.
      */
-    public BatchResult submitFromFiles(FormCode formCode, List<Path> files, BatchOptions options) {
+    public BatchResult<Invoice> submitFromFiles(FormCode formCode, List<Path> files, BatchOptions options) {
         Objects.requireNonNull(formCode, ERR_FORM_CODE_NULL);
         Objects.requireNonNull(files, ERR_FILES_NULL);
         Objects.requireNonNull(options, ERR_OPTIONS_NULL);
@@ -240,7 +247,8 @@ public final class BatchSubmissionFlow {
         formCode.assertAllowedOn(environment);
         return runFlow(formCode, options, files.size(),
                 aesKey -> aesIv -> BatchPackageBuilder.buildFromFiles(files, aesKey, aesIv,
-                        BatchAssemblyMode.onDisk()));
+                        BatchAssemblyMode.onDisk()),
+                null);
     }
 
     private static final java.util.Set<FormCode> XSD_VALIDATED_FORM_CODES = java.util.Set.of(
@@ -256,10 +264,11 @@ public final class BatchSubmissionFlow {
      *     Phase 1 passes for every element). Skips custom form codes
      *     without bundled XSD.
      */
-    private static List<byte[]> extractAndValidateXmls(FormCode expected, List<Invoice> invoices) {
+    private static <I extends Invoice> List<byte[]> extractAndValidateXmls(
+            FormCode expected, List<I> invoices) {
         // Phase 1: cheap formCode-match check across the whole list.
         for (int index = 0; index < invoices.size(); index++) {
-            Invoice invoice = invoices.get(index);
+            I invoice = invoices.get(index);
             Objects.requireNonNull(invoice, ERR_NULL_INVOICE);
             FormCode declared = invoice.formCode();
             if (!Objects.equals(declared, expected)) {
@@ -269,7 +278,7 @@ public final class BatchSubmissionFlow {
         }
         // Phase 2: XSD validation per invoice, then collect XML bytes.
         List<byte[]> result = new ArrayList<>(invoices.size());
-        for (Invoice invoice : invoices) {
+        for (I invoice : invoices) {
             byte[] xml = invoice.xml();
             preFlightValidate(expected, xml);
             result.add(xml);
@@ -301,8 +310,9 @@ public final class BatchSubmissionFlow {
     }
 
     @SuppressWarnings("java:S2629")
-    private BatchResult runFlow(FormCode formCode, BatchOptions options, int invoiceCount,
-                                Function<byte[], Function<byte[], BatchPackageBuilder.BatchPackage>> packagerFactory) {
+    private <I extends Invoice> BatchResult<I> runFlow(FormCode formCode, BatchOptions options, int invoiceCount,
+                                Function<byte[], Function<byte[], BatchPackageBuilder.BatchPackage>> packagerFactory,
+                                @Nullable List<I> typedInputs) {
         OffsetDateTime startedAt = OffsetDateTime.now(clock);
         long deadlineNanos = nanoNow() + options.timeout().toNanos();
 
@@ -322,7 +332,7 @@ public final class BatchSubmissionFlow {
             closeWithRetry(sessionRef, deadlineNanos);
             pollUntilTerminal(sessionRef, deadlineNanos);
 
-            return collectResult(sessionRef, invoiceCount, startedAt);
+            return collectResult(sessionRef, invoiceCount, startedAt, typedInputs);
         } finally {
             pkg.cleanup();
         }
@@ -538,12 +548,14 @@ public final class BatchSubmissionFlow {
         return value == null ? java.util.Optional.empty() : java.util.Optional.of(value);
     }
 
-    private BatchResult collectResult(String sessionRef, int totalCount, OffsetDateTime startedAt) {
+    private <I extends Invoice> BatchResult<I> collectResult(String sessionRef, int totalCount,
+                                                              OffsetDateTime startedAt,
+                                                              @Nullable List<I> typedInputs) {
         OffsetDateTime completedAt = OffsetDateTime.now(clock);
         List<SessionInvoiceStatus> all = sessionClient.getAllInvoices(sessionRef);
         List<SessionInvoiceStatus> failed = sessionClient.getAllFailedInvoices(sessionRef);
 
-        List<ClearedInvoice> cleared = new ArrayList<>();
+        List<ClearedInvoice<I>> cleared = new ArrayList<>();
         List<FailedInvoice> failures = new ArrayList<>();
 
         java.util.Set<String> failedRefs = new java.util.HashSet<>();
@@ -563,18 +575,17 @@ public final class BatchSubmissionFlow {
             }
             byte[] upo = sessionClient.getUpoByInvoiceReference(sessionRef, invoice.referenceNumber());
             UpoEntry entry = new UpoEntry(invoice.referenceNumber(), upo);
-            Invoice placeholder = buildUpoPlaceholderInvoice();
-            // Batch flow doesn't re-fetch the archived XML — surface the
-            // same UPO-only placeholder content as an InvoiceDocument so
-            // ClearedInvoice's typed slot is populated. Consumers needing
-            // the real document call client.invoices().archive().getByKsefNumber(...).
+            I anchored = resolveTypedInput(typedInputs, invoice.ordinalNumber());
+            // Document slot is the UPO-only placeholder — batch flow doesn't
+            // re-fetch the archived XML. Consumers needing the typed
+            // archive document call client.invoices().archive().getByKsefNumber(...).
             InvoiceDocument documentPlaceholder = InvoiceDocumentConstructor.newAnonymousDocument(
-                    placeholder.formCode(), placeholder.xml());
-            SubmittedInvoice submitted = new SubmittedInvoice(
-                    placeholder, invoice.referenceNumber(), invoice,
+                    anchored.formCode(), anchored.xml());
+            SubmittedInvoice<I> submitted = new SubmittedInvoice<>(
+                    anchored, invoice.referenceNumber(), invoice,
                     optionalKsefNumber(invoice.ksefNumber()),
                     java.util.Optional.empty(), java.util.Optional.empty(), List.of());
-            cleared.add(new ClearedInvoice(submitted, documentPlaceholder, entry));
+            cleared.add(new ClearedInvoice<>(submitted, documentPlaceholder, entry));
         }
         // BatchResult invariants: successfulCount == cleared.size(), failedCount == failed.size(),
         // totalCount == successful + failed. Caller-supplied totalCount is the *invoice count*
@@ -585,9 +596,31 @@ public final class BatchSubmissionFlow {
         if (reconciled != totalCount) {
             LOGGER.warn(LOG_TOTAL_COUNT_MISMATCH, sessionRef, totalCount, reconciled);
         }
-        return new BatchResult(sessionRef, cleared, failures,
+        return new BatchResult<>(sessionRef, cleared, failures,
                 reconciled, cleared.size(), failures.size(),
                 startedAt, completedAt);
+    }
+
+    /**
+     * Map a {@link SessionInvoiceStatus#ordinalNumber()} (1-based, set by
+     * KSeF in the order invoices appear in the uploaded ZIP) back to the
+     * original typed input. Falls back to the UPO-only placeholder when
+     * no typed inputs are available (file-streaming path) or the ordinal
+     * is out of range (defensive — should not happen if KSeF echoes the
+     * upload order). The placeholder cast is safe because the only call
+     * site with {@code typedInputs == null} is {@code submitFromFiles},
+     * which returns {@code BatchResult<Invoice>} ({@code I = Invoice}),
+     * so the placeholder {@link Invoice} matches the requested static type.
+     */
+    @SuppressWarnings("unchecked")
+    private static <I extends Invoice> I resolveTypedInput(@Nullable List<I> typedInputs, int ordinalNumber) {
+        if (typedInputs != null) {
+            int index = ordinalNumber - 1;
+            if (index >= 0 && index < typedInputs.size()) {
+                return typedInputs.get(index);
+            }
+        }
+        return (I) buildUpoPlaceholderInvoice();
     }
 
     /**

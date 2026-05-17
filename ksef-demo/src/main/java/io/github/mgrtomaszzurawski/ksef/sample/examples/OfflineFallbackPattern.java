@@ -63,7 +63,7 @@ public final class OfflineFallbackPattern {
         try {
             return session.sendInvoice(invoice);
         } catch (KsefUnavailableException unavailable) {
-            OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
+            var offline = OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
             return session.sendOfflineInvoice(offline);
         }
     }

@@ -81,7 +81,7 @@ class SubmitBatchTest {
                     Fa3InvoiceFixtures.minimalValid(),
                     Fa3InvoiceFixtures.minimalValid());
 
-            BatchResult result = client.invoices().batch().submit(FormCode.FA3, invoices, FAST_OPTIONS);
+            var result = client.invoices().batch().submit(invoices, FAST_OPTIONS);
 
             assertEquals(BATCH_REF, result.sessionRef());
             assertEquals(EXPECTED_INVOICE_COUNT, result.totalCount());
@@ -113,7 +113,7 @@ class SubmitBatchTest {
                     Fa3InvoiceFixtures.minimalValid(),
                     Fa3InvoiceFixtures.minimalValid());
 
-            BatchResult result = client.invoices().batch().submit(FormCode.FA3, invoices, FAST_OPTIONS);
+            var result = client.invoices().batch().submit(invoices, FAST_OPTIONS);
 
             assertEquals(EXPECTED_CLEARED_PARTIAL, result.successfulCount());
             assertEquals(EXPECTED_FAILED_FAILURE, result.failedCount());

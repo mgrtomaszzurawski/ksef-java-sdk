@@ -85,13 +85,13 @@ class OnlineSessionImplOfflineSendTest {
                         .withBody(INVOICE_STATUS_OK_RESPONSE)));
 
         Invoice invoice = Fa3InvoiceFixtures.minimalValid();
-        OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24,
+        var offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24,
                 new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(
                         QrEnvironment.TEST, QrContextType.NIP, SELLER_NIP, SELLER_NIP, ISSUE_DATE));
         OnlineSession session = createSession(wmInfo);
 
         // when
-        SubmittedInvoice result = session.sendOfflineInvoice(offline);
+        var result = session.sendOfflineInvoice(offline);
 
         // then — wire body carries offlineMode=true
         verify(postRequestedFor(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))

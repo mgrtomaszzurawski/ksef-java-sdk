@@ -132,15 +132,16 @@ public final class InvoicesImpl implements Invoices {
 
     private static final class UnavailableBatch implements InvoiceBatch {
         @Override
-        public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult submit(
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode formCode,
-                java.util.List<io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice> invoices,
+        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice>
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult<I> submit(
+                java.util.List<I> invoices,
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions options) {
             throw new IllegalStateException(ERR_SUBMIT_BATCH_REQUIRES_FULL_RUNTIME);
         }
 
         @Override
-        public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult submitFromFiles(
+        public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult<
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice> submitFromFiles(
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode formCode,
                 java.util.List<java.nio.file.Path> files,
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions options) {

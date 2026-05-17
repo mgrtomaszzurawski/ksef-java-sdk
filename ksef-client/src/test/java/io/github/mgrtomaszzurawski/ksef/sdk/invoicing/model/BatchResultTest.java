@@ -44,10 +44,10 @@ class BatchResultTest {
 
     @Test
     void constructor_whenAllInvariantsHold_succeeds() {
-        ClearedInvoice cleared = sampleCleared("inv-1");
+        var cleared = sampleCleared("inv-1");
         FailedInvoice failed = new FailedInvoice("inv-2", "rejected", List.of("detail"));
 
-        BatchResult result = new BatchResult(
+        var result = new BatchResult(
                 REF, List.of(cleared), List.of(failed), 2, 1, 1, STARTED, COMPLETED);
 
         assertEquals(1, result.successfulCount());
@@ -57,7 +57,7 @@ class BatchResultTest {
 
     @Test
     void constructor_whenSuccessfulCountMismatchesClearedSize_throws() {
-        List<ClearedInvoice> cleared = List.of(sampleCleared("inv-1"));
+        List<ClearedInvoice<Invoice>> cleared = List.of(sampleCleared("inv-1"));
         List<FailedInvoice> failed = List.of();
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 new BatchResult(REF, cleared, failed, 1, 0, 0, STARTED, COMPLETED));
@@ -67,7 +67,7 @@ class BatchResultTest {
 
     @Test
     void constructor_whenFailedCountMismatchesFailedSize_throws() {
-        List<ClearedInvoice> cleared = List.of();
+        List<ClearedInvoice<Invoice>> cleared = List.of();
         List<FailedInvoice> failed = List.of(new FailedInvoice("inv-1", "err", List.of()));
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 new BatchResult(REF, cleared, failed, 1, 0, 0, STARTED, COMPLETED));
@@ -77,7 +77,7 @@ class BatchResultTest {
 
     @Test
     void constructor_whenTotalCountMismatchesSum_throws() {
-        List<ClearedInvoice> cleared = List.of();
+        List<ClearedInvoice<Invoice>> cleared = List.of();
         List<FailedInvoice> failed = List.of();
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 new BatchResult(REF, cleared, failed, 5, 0, 0, STARTED, COMPLETED));
@@ -92,14 +92,14 @@ class BatchResultTest {
         java.util.List<FailedInvoice> mutableFailed = new java.util.ArrayList<>();
         mutableFailed.add(new FailedInvoice("inv-2", "err", List.of()));
 
-        BatchResult result = new BatchResult(
+        var result = new BatchResult(
                 REF, mutableCleared, mutableFailed, 2, 1, 1, STARTED, COMPLETED);
 
         assertNotSame(mutableCleared, result.cleared());
         assertNotSame(mutableFailed, result.failed());
     }
 
-    private static ClearedInvoice sampleCleared(String referenceNumber) {
+    private static ClearedInvoice<Invoice> sampleCleared(String referenceNumber) {
         Invoice placeholder = Invoice.fromXml(FormCode.FA3, UPO_BYTES);
         InvoiceDocument document = InvoiceDocumentConstructor.newAnonymousDocument(
                 FormCode.FA3, UPO_BYTES);
@@ -107,9 +107,9 @@ class BatchResultTest {
                 1, "FV/1", null, referenceNumber, null, null,
                 STARTED, STARTED, null, null, null, null,
                 new InvoiceStatusInfo(200, "Ok", List.of(), java.util.Map.of()));
-        SubmittedInvoice submitted = new SubmittedInvoice(
+        SubmittedInvoice<Invoice> submitted = new SubmittedInvoice<>(
                 placeholder, referenceNumber, status,
                 Optional.empty(), Optional.empty(), Optional.empty(), List.of());
-        return new ClearedInvoice(submitted, document, new UpoEntry(referenceNumber, UPO_BYTES));
+        return new ClearedInvoice<>(submitted, document, new UpoEntry(referenceNumber, UPO_BYTES));
     }
 }

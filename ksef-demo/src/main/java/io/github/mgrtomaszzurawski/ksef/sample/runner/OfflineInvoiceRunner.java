@@ -116,7 +116,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
                                             LocalDate issueDate, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            OfflineInvoice offline = OfflineInvoiceBuilder.forInvoice(invoice)
+            var offline = OfflineInvoiceBuilder.forInvoice(invoice)
                     .signingCertificate(certificate)
                     .offlineMode(OfflineMode.OFFLINE_24)
                     .qrEnvironment(qrEnvironment)
@@ -144,7 +144,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
                                                   LocalDate issueDate, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24,
+            var offline = OfflineInvoice.fromInvoice(invoice, certificate, OfflineMode.OFFLINE_24,
                     new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(
                             qrEnvironment, QrContextType.NIP, sellerNip, sellerNip, issueDate));
             String message = assertQrPresent(OP_STATIC_FACTORY, offline, results, start);
@@ -211,7 +211,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
         }
         long start = System.currentTimeMillis();
         try (OnlineSession session = context.client().invoices().sessions().open(FormCode.FA3)) {
-            SubmittedInvoice submitted = session.sendOfflineInvoice(offline);
+            var submitted = session.sendOfflineInvoice(offline);
             int statusCode = submitted.status().status() != null
                     ? submitted.status().status().code() : -1;
             results.add(RunResult.ok(NAME, OP_SEND_OFFLINE, elapsed(start),

@@ -16,7 +16,12 @@ import java.util.Objects;
  * KSeF Offline certificate and the private key that signs KOD II — the
  * SDK does not see private-key material directly.
  *
- * <p>Two default impls are bundled:
+ * <p>The single method is generic on {@code <I extends Invoice>} so the
+ * typed input invoice is preserved on the returned {@link OfflineInvoice}
+ * (R1-6). Java does not allow lambdas to target SAMs with a generic
+ * method — implement this interface via anonymous class or a named class.
+ *
+ * <p>One default impl is bundled:
  *
  * <ul>
  *   <li>{@link #fromPrivateKey(KsefCertificate)} — in-process signing.
@@ -31,7 +36,6 @@ import java.util.Objects;
  *
  * @since 1.0.0
  */
-@FunctionalInterface
 public interface OfflineSigningProvider {
 
     /**
@@ -39,12 +43,15 @@ public interface OfflineSigningProvider {
      * {@link OfflineInvoice} carrying KOD I + KOD II PNG bytes alongside
      * the offline-mode classification.
      *
+     * @param <I> the static {@link Invoice} subtype passed in; preserved
+     *     on the returned {@link OfflineInvoice} so consumer code keeps
+     *     typed access to the underlying invoice
      * @param invoice the underlying invoice (non-null)
      * @param mode the offline-mode classification (non-null)
      * @param context KOD I + KOD II authorisation context bundle (non-null)
      * @return self-contained {@link OfflineInvoice}
      */
-    OfflineInvoice signAndPackage(Invoice invoice, OfflineMode mode, OfflineSigningContext context);
+    <I extends Invoice> OfflineInvoice<I> signAndPackage(I invoice, OfflineMode mode, OfflineSigningContext context);
 
     /**
      * In-process provider: signs with the private key already held by
@@ -53,7 +60,12 @@ public interface OfflineSigningProvider {
      */
     static OfflineSigningProvider fromPrivateKey(KsefCertificate certificate) {
         Objects.requireNonNull(certificate, "certificate must not be null");
-        return (invoice, mode, context) ->
-                OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
+        return new OfflineSigningProvider() {
+            @Override
+            public <I extends Invoice> OfflineInvoice<I> signAndPackage(
+                    I invoice, OfflineMode mode, OfflineSigningContext context) {
+                return OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
+            }
+        };
     }
 }
