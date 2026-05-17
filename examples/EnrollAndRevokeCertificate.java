@@ -8,8 +8,12 @@
  * Reference code (not a runnable script): adapt to your application.
  *
  * What this shows:
- *   Enroll a new certificate from a CSR, poll until the serial appears, then
- *   revoke. Authentication uses XAdES because cert-management endpoints reject
+ *   Request a new KSeF certificate via the SDK's workflow wrapper, then
+ *   revoke it. The single requestNewCertificate(keyPair) call pulls
+ *   limits, fetches the required CSR subject, builds the CSR locally,
+ *   submits enroll, polls until terminal, and retrieves the DER bytes
+ *   — see ADR-032 (sync-default operation pattern).
+ *   Authentication uses XAdES because cert-management endpoints reject
  *   token-only auth.
  *
  * Side effects on KSeF:
@@ -19,25 +23,21 @@
  *   KSEF_P12_FILE     — path to PKCS#12 keystore
  *   KSEF_P12_PASSWORD — keystore password
  *   KSEF_NIP          — taxpayer NIP (10 digits)
- *   KSEF_CSR_DER      — path to a PKCS#10 CSR in DER format
  *   KSEF_ENV          — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.builder.CertificateEnrollBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
-import java.nio.file.Files;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrievedCertificate;
 import java.nio.file.Path;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 
 public final class EnrollAndRevokeCertificate {
 
-    private static final long POLL_INTERVAL_MS = 2000;
-    private static final long POLL_TIMEOUT_MS = 300_000; // 5 minutes
+    private static final int RSA_KEY_SIZE = 2048;
 
     private EnrollAndRevokeCertificate() { }
 
@@ -45,10 +45,7 @@ public final class EnrollAndRevokeCertificate {
         Path p12Path = Path.of(requireEnv("KSEF_P12_FILE"));
         char[] p12Password = requireEnv("KSEF_P12_PASSWORD").toCharArray();
         String nip = requireEnv("KSEF_NIP");
-        Path csrPath = Path.of(requireEnv("KSEF_CSR_DER"));
         KsefEnvironment environment = resolveEnv(System.getenv("KSEF_ENV"));
-
-        byte[] csrDer = Files.readAllBytes(csrPath);
 
         try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefPkcs12Credentials(p12Path, p12Password, nip))
@@ -61,36 +58,20 @@ public final class EnrollAndRevokeCertificate {
             java.util.Arrays.fill(p12Password, '\0');
             System.out.println("XAdES authenticated as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
-            CertificateEnrollBuilder enrollBuilder = CertificateEnrollBuilder
-                    .create("Example certificate", KsefCertificateType.AUTHENTICATION, csrDer);
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+            keyGen.initialize(RSA_KEY_SIZE);
+            KeyPair keyPair = keyGen.generateKeyPair();
 
-            EnrollCertificateResult enroll = client.certificates().enroll(enrollBuilder.build());
-            System.out.println("Enrollment submitted, ref: " + enroll.referenceNumber());
+            RetrievedCertificate cert = client.certificates().requestNewCertificate(keyPair);
+            System.out.println("Certificate issued, serial: " + cert.certificateSerialNumber());
 
-            String serial = pollForSerial(client, enroll.referenceNumber());
-            if (serial == null) {
-                System.out.println("Serial number never appeared within timeout — leaving as-is");
-                return;
-            }
-            System.out.println("Certificate issued, serial: " + serial);
-
-            client.certificates().revoke(CertificateSerialNumber.parse(serial), CertificateRevocationReason.UNSPECIFIED);
+            client.certificates().revoke(
+                    CertificateSerialNumber.parse(cert.certificateSerialNumber()),
+                    CertificateRevocationReason.UNSPECIFIED);
             System.out.println("Certificate revoked");
         } finally {
             java.util.Arrays.fill(p12Password, '\0');
         }
-    }
-
-    private static String pollForSerial(KsefClient client, String referenceNumber) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
-        while (System.currentTimeMillis() < deadline) {
-            CertificateEnrollmentStatus status = client.certificates().getEnrollmentStatus(referenceNumber);
-            if (status.certificateSerialNumber() != null) {
-                return status.certificateSerialNumber();
-            }
-            Thread.sleep(POLL_INTERVAL_MS);
-        }
-        return null;
     }
 
     private static String requireEnv(String name) {

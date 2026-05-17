@@ -119,71 +119,6 @@ class CertificateClientTest {
     }
 
     @Test
-    void getEnrollmentData_whenAuthenticated_returnsData(WireMockRuntimeInfo wmInfo) {
-        // given
-        stubFor(get(urlEqualTo("/v2/certificates/enrollments/data"))
-                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(ENROLLMENT_DATA_RESPONSE)));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            // when
-            CertificateEnrollmentData response = ksef.certificates().getEnrollmentData();
-
-            // then
-            assertEquals(COMMON_NAME, response.commonName());
-            assertEquals(COUNTRY_NAME, response.countryName());
-        }
-    }
-
-    @Test
-    void enroll_whenAuthenticated_returnsReference(WireMockRuntimeInfo wmInfo) {
-        // given
-        stubFor(post(urlEqualTo(PATH_ENROLLMENTS))
-                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(ENROLL_RESPONSE)));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            // when
-            EnrollCertificateResult response = ksef.certificates().enroll(
-                    CertificateEnrollBuilder.create(TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR).build());
-
-            // then
-            assertEquals(TEST_ENROLLMENT_REF, response.referenceNumber());
-            assertNotNull(response.timestamp());
-        }
-    }
-
-    @Test
-    void getEnrollmentStatus_whenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
-        // given
-        stubFor(get(urlEqualTo(PATH_ENROLLMENTS + "/" + TEST_ENROLLMENT_REF))
-                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(ENROLLMENT_STATUS_RESPONSE)));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            // when
-            CertificateEnrollmentStatus response =
-                    ksef.certificates().getEnrollmentStatus(TEST_ENROLLMENT_REF);
-
-            // then
-            assertEquals(KSEF_STATUS_OK, response.status().code());
-            assertNotNull(response.requestDate());
-        }
-    }
-
-    @Test
     void retrieve_whenAuthenticated_returnsCertificates(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/v2/certificates/retrieve"))
@@ -242,32 +177,6 @@ class CertificateClientTest {
             // then
             assertNotNull(response.certificates());
             assertFalse(response.hasMore());
-        }
-    }
-
-    @Test
-    void enroll_whenServerError_throwsServerException(WireMockRuntimeInfo wmInfo) {
-        // given
-        stubFor(post(urlEqualTo(PATH_ENROLLMENTS))
-                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_SERVER_ERROR).withBody("{}")));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            // then
-            var certs = ksef.certificates();
-            var request = CertificateEnrollBuilder.create(
-                    TEST_CERT_NAME, KsefCertificateType.AUTHENTICATION, TEST_CSR).build();
-            assertThrows(KsefServerException.class, () -> certs.enroll(request));
-        }
-    }
-
-    @Test
-    void getEnrollmentStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-            var certs = ksef.certificates();
-
-            assertThrows(IllegalArgumentException.class,
-                    () -> certs.getEnrollmentStatus("../../../etc/passwd"));
         }
     }
 
