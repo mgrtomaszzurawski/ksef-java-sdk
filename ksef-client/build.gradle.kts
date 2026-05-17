@@ -231,6 +231,17 @@ tasks.javadoc {
         encoding = "UTF-8"
         charSet = "UTF-8"
         docEncoding = "UTF-8"
+        // R1-7: group module-summary pages into four named sections so
+        // the alphabetised default does not interleave `sdk`,
+        // `sdk.common`, `sdk.config`, and the eight `sdk.domain.*`
+        // trees in one long list.
+        group("Entry point", "io.github.mgrtomaszzurawski.ksef.sdk")
+        group("Configuration", "io.github.mgrtomaszzurawski.ksef.sdk.config")
+        group(
+            "Common types",
+            "io.github.mgrtomaszzurawski.ksef.sdk.common:io.github.mgrtomaszzurawski.ksef.sdk.exception:io.github.mgrtomaszzurawski.ksef.sdk.crypto"
+        )
+        group("Operational domain APIs", "io.github.mgrtomaszzurawski.ksef.sdk.domain*")
         tags(
             "apiNote:a:API Note:",
             "implSpec:a:Implementation Requirements:",
@@ -271,6 +282,14 @@ tasks.register<Javadoc>("javadocAll") {
         addStringOption("-show-module-contents", "all")
         addStringOption("-show-packages", "all")
         addBooleanOption("private", true)
+        group("Entry point", "io.github.mgrtomaszzurawski.ksef.sdk")
+        group("Configuration", "io.github.mgrtomaszzurawski.ksef.sdk.config")
+        group(
+            "Common types",
+            "io.github.mgrtomaszzurawski.ksef.sdk.common:io.github.mgrtomaszzurawski.ksef.sdk.exception:io.github.mgrtomaszzurawski.ksef.sdk.crypto"
+        )
+        group("Operational domain APIs", "io.github.mgrtomaszzurawski.ksef.sdk.domain*")
+        group("Internal — runtime + client", "io.github.mgrtomaszzurawski.ksef.sdk.internal*")
         tags(
             "apiNote:a:API Note:",
             "implSpec:a:Implementation Requirements:",
