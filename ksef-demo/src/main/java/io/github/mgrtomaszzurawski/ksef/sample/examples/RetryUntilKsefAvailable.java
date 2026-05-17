@@ -45,7 +45,7 @@ public final class RetryUntilKsefAvailable {
      * @throws InterruptedException if the calling thread is interrupted
      *     while sleeping between retries
      */
-    public static SubmittedInvoice sendWithRetry(OnlineSession session, Invoice invoice)
+    public static SubmittedInvoice<Invoice> sendWithRetry(OnlineSession session, Invoice invoice)
             throws InterruptedException {
         if (session == null) {
             throw new NullPointerException(ERR_NULL_SESSION);

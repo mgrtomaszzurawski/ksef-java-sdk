@@ -11,7 +11,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;

@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
@@ -125,7 +124,7 @@ public final class SessionRunner implements DemoRunner {
         }
 
         try (session) {
-            SubmittedInvoice<? extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice> submitted = null;
+            SubmittedInvoice<Fa3Invoice> submitted = null;
             if (fullMode) {
                 submitted = runSendInvoice(context, session, results);
                 if (submitted != null) {

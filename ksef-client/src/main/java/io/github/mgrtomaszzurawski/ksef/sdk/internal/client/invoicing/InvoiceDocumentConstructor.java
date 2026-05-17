@@ -42,6 +42,8 @@ public final class InvoiceDocumentConstructor {
 
     private static final String ERR_REFLECTIVE_CONSTRUCTION_FAILED =
             "SDK internal error: reflective construction of invoice document failed";
+    private static final String ERR_NULL_FORM_CODE = "formCode must not be null";
+    private static final String ERR_NULL_XML = "xml must not be null";
 
     private static final String FROM_METHOD_NAME = "from";
 
@@ -117,8 +119,8 @@ public final class InvoiceDocumentConstructor {
      *     {@link InvoiceDocument#formCode()} and {@link InvoiceDocument#xml()}.
      */
     public static InvoiceDocument newAnonymousDocument(FormCode formCode, byte[] xml) {
-        Objects.requireNonNull(formCode, "formCode must not be null");
-        Objects.requireNonNull(xml, "xml must not be null");
+        Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
+        Objects.requireNonNull(xml, ERR_NULL_XML);
         try {
             return (InvoiceDocument) ANONYMOUS_FROM.invoke(null, formCode, xml);
         } catch (IllegalAccessException ex) {
@@ -136,8 +138,8 @@ public final class InvoiceDocumentConstructor {
      * @apiNote Internal — see class-level Javadoc.
      */
     public static InvoiceDocument newDocument(FormCode formCode, byte[] xml) {
-        Objects.requireNonNull(formCode, "formCode must not be null");
-        Objects.requireNonNull(xml, "xml must not be null");
+        Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
+        Objects.requireNonNull(xml, ERR_NULL_XML);
         if (formCode.equals(FormCode.FA3)) {
             return newFa3Document(xml);
         }
@@ -154,9 +156,9 @@ public final class InvoiceDocumentConstructor {
     }
 
     private static <T> T invoke(Method method, Class<T> resultType, byte[] xml) {
-        Objects.requireNonNull(xml, "xml must not be null");
+        Objects.requireNonNull(xml, ERR_NULL_XML);
         try {
-            return resultType.cast(method.invoke(null, (Object) xml));
+            return resultType.cast(method.invoke(null, xml));
         } catch (IllegalAccessException ex) {
             throw new IllegalStateException(ERR_REFLECTIVE_CONSTRUCTION_FAILED, ex);
         } catch (InvocationTargetException invocationFailure) {

@@ -424,13 +424,12 @@ class TestDataClientTest {
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
                 .build()) {
             // resetSessionLimits takes no args — exercises the guard without touching
-            // any request validation or wire path.
-            assertThrows(KsefUnsupportedEnvironmentException.class,
-                    () -> ksef.testData().resetSessionLimits());
-            assertThrows(KsefUnsupportedEnvironmentException.class,
-                    () -> ksef.testData().resetSubjectLimits());
-            assertThrows(KsefUnsupportedEnvironmentException.class,
-                    () -> ksef.testData().resetRateLimits());
+            // any request validation or wire path. Single-method lambdas keep the
+            // Sonar S5778 contract (only one throwing invocation per assertThrows).
+            var testData = ksef.testData();
+            assertThrows(KsefUnsupportedEnvironmentException.class, testData::resetSessionLimits);
+            assertThrows(KsefUnsupportedEnvironmentException.class, testData::resetSubjectLimits);
+            assertThrows(KsefUnsupportedEnvironmentException.class, testData::resetRateLimits);
         }
     }
 

@@ -58,7 +58,7 @@ public interface ClosedSession extends Session {
      * @param invoiceReferenceNumber the SDK-assigned reference number
      * @return the cleared-invoice record
      */
-    ClearedInvoice<? extends Invoice> cleared(String invoiceReferenceNumber);
+    ClearedInvoice<Invoice> cleared(String invoiceReferenceNumber);
 
     /**
      * Bulk-fetch every {@link ClearedInvoice} for this session — covers
@@ -71,7 +71,7 @@ public interface ClosedSession extends Session {
      * @return one {@link ClearedInvoice} per accepted invoice; empty
      *     list when the session has no UPO yet
      */
-    List<ClearedInvoice<? extends Invoice>> allCleared();
+    List<ClearedInvoice<Invoice>> allCleared();
 
     /**
      * AutoCloseable contract — for an already-closed session this is a

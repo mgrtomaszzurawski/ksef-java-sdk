@@ -16,7 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
@@ -101,9 +100,9 @@ public final class OfflineInvoiceRunner implements DemoRunner {
                 context.client().config().environment());
         LocalDate issueDate = LocalDate.now();
 
-        OfflineInvoice viaBuilder = runBuilderProbe(invoice, testCertificate,
+        OfflineInvoice<Invoice> viaBuilder = runBuilderProbe(invoice, testCertificate,
                 qrEnvironment, context.nipIdentifier(), issueDate, results);
-        OfflineInvoice viaFactory = runStaticFactoryProbe(invoice, testCertificate,
+        OfflineInvoice<Invoice> viaFactory = runStaticFactoryProbe(invoice, testCertificate,
                 qrEnvironment, context.nipIdentifier(), issueDate, results);
 
         runSendOfflineInvoiceProbe(context, viaBuilder != null ? viaBuilder : viaFactory, results);
@@ -111,7 +110,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
         return results;
     }
 
-    private OfflineInvoice runBuilderProbe(Invoice invoice, KsefCertificate certificate,
+    private OfflineInvoice<Invoice> runBuilderProbe(Invoice invoice, KsefCertificate certificate,
                                             QrEnvironment qrEnvironment, String sellerNip,
                                             LocalDate issueDate, List<RunResult> results) {
         long start = System.currentTimeMillis();
@@ -139,7 +138,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
         }
     }
 
-    private OfflineInvoice runStaticFactoryProbe(Invoice invoice, KsefCertificate certificate,
+    private OfflineInvoice<Invoice> runStaticFactoryProbe(Invoice invoice, KsefCertificate certificate,
                                                   QrEnvironment qrEnvironment, String sellerNip,
                                                   LocalDate issueDate, List<RunResult> results) {
         long start = System.currentTimeMillis();
@@ -166,7 +165,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
      * Returns the OK message when valid, or {@code null} when a failure
      * has already been recorded into {@code results}.
      */
-    private String assertQrPresent(String operation, OfflineInvoice offline,
+    private String assertQrPresent(String operation, OfflineInvoice<Invoice> offline,
                                    List<RunResult> results, long start) {
         byte[] kodI = offline.kodIQrPng();
         byte[] kodII = offline.kodIIQrPng();
@@ -196,7 +195,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
      * not a real KSeF Offline cert), so the probe records the rejection
      * as a successful observation rather than a runner failure.
      */
-    private void runSendOfflineInvoiceProbe(DemoContext context, OfflineInvoice offline,
+    private void runSendOfflineInvoiceProbe(DemoContext context, OfflineInvoice<Invoice> offline,
                                             List<RunResult> results) {
         if (context.mode() != DemoMode.FULL) {
             results.add(RunResult.skip(NAME, OP_SEND_OFFLINE, SKIP_NOT_FULL_MODE));

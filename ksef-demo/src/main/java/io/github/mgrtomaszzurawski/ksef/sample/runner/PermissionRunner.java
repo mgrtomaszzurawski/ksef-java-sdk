@@ -88,6 +88,9 @@ public final class PermissionRunner implements DemoRunner {
     private static final String SKIP_REQUIRES_NIP_VAT_UE =
             "requires NipVatUe-context credentials (current creds are NIP-context)";
 
+    private static final String CODE_PREFIX = "code=";
+    private static final String LOG_TERMINAL_TEMPLATE = "[{}] {} terminal code={}";
+
     @Override
     public String name() { return NAME; }
 
@@ -161,8 +164,11 @@ public final class PermissionRunner implements DemoRunner {
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
                     .invoiceRead();
             PermissionOperationStatus response = context.client().permissions().grantPerson(builder.build());
-            LOGGER.info("[{}] grantPerson terminal code={}", NAME, terminalCode(response));
-            results.add(RunResult.ok(NAME, OP_GRANT_PERSON, elapsed(start), "code=" + terminalCode(response)));
+            String code = terminalCode(response);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_TERMINAL_TEMPLATE, NAME, OP_GRANT_PERSON, code);
+            }
+            results.add(RunResult.ok(NAME, OP_GRANT_PERSON, elapsed(start), CODE_PREFIX + code));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_PERSON, elapsed(start), errorMessage(exception)));
         }
@@ -177,8 +183,11 @@ public final class PermissionRunner implements DemoRunner {
                     .entityDetails(TEST_ENTITY_FULL_NAME)
                     .invoiceRead();
             PermissionOperationStatus response = context.client().permissions().grantEntity(builder.build());
-            LOGGER.info("[{}] grantEntity terminal code={}", NAME, terminalCode(response));
-            results.add(RunResult.ok(NAME, OP_GRANT_ENTITY, elapsed(start), "code=" + terminalCode(response)));
+            String code = terminalCode(response);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_TERMINAL_TEMPLATE, NAME, OP_GRANT_ENTITY, code);
+            }
+            results.add(RunResult.ok(NAME, OP_GRANT_ENTITY, elapsed(start), CODE_PREFIX + code));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_ENTITY, elapsed(start), errorMessage(exception)));
         }
@@ -193,8 +202,11 @@ public final class PermissionRunner implements DemoRunner {
                     .entityDetails(TEST_AUTHORIZATION_NAME)
                     .selfInvoicing();
             PermissionOperationStatus response = context.client().permissions().grantAuthorization(builder.build());
-            LOGGER.info("[{}] grantAuthorization terminal code={}", NAME, terminalCode(response));
-            results.add(RunResult.ok(NAME, OP_GRANT_AUTHORIZATION, elapsed(start), "code=" + terminalCode(response)));
+            String code = terminalCode(response);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_TERMINAL_TEMPLATE, NAME, OP_GRANT_AUTHORIZATION, code);
+            }
+            results.add(RunResult.ok(NAME, OP_GRANT_AUTHORIZATION, elapsed(start), CODE_PREFIX + code));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_AUTHORIZATION, elapsed(start), errorMessage(exception)));
         }
@@ -209,8 +221,11 @@ public final class PermissionRunner implements DemoRunner {
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
                     .invoiceRead();
             PermissionOperationStatus response = context.client().permissions().grantIndirect(builder.build());
-            LOGGER.info("[{}] grantIndirect terminal code={}", NAME, terminalCode(response));
-            results.add(RunResult.ok(NAME, OP_GRANT_INDIRECT, elapsed(start), "code=" + terminalCode(response)));
+            String code = terminalCode(response);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_TERMINAL_TEMPLATE, NAME, OP_GRANT_INDIRECT, code);
+            }
+            results.add(RunResult.ok(NAME, OP_GRANT_INDIRECT, elapsed(start), CODE_PREFIX + code));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_INDIRECT, elapsed(start), errorMessage(exception)));
         }
@@ -225,8 +240,11 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_SUBUNIT_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME);
             PermissionOperationStatus response = context.client().permissions().grantSubunit(builder.build());
-            LOGGER.info("[{}] grantSubunit terminal code={}", NAME, terminalCode(response));
-            results.add(RunResult.ok(NAME, OP_GRANT_SUBUNIT, elapsed(start), "code=" + terminalCode(response)));
+            String code = terminalCode(response);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_TERMINAL_TEMPLATE, NAME, OP_GRANT_SUBUNIT, code);
+            }
+            results.add(RunResult.ok(NAME, OP_GRANT_SUBUNIT, elapsed(start), CODE_PREFIX + code));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_SUBUNIT, elapsed(start), errorMessage(exception)));
         }
@@ -243,8 +261,11 @@ public final class PermissionRunner implements DemoRunner {
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
                     .euEntityDetails(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS);
             PermissionOperationStatus response = context.client().permissions().grantEuEntityAdmin(builder.build());
-            LOGGER.info("[{}] grantEuEntityAdmin terminal code={}", NAME, terminalCode(response));
-            results.add(RunResult.ok(NAME, OP_GRANT_EU_ENTITY_ADMIN, elapsed(start), "code=" + terminalCode(response)));
+            String code = terminalCode(response);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_TERMINAL_TEMPLATE, NAME, OP_GRANT_EU_ENTITY_ADMIN, code);
+            }
+            results.add(RunResult.ok(NAME, OP_GRANT_EU_ENTITY_ADMIN, elapsed(start), CODE_PREFIX + code));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_EU_ENTITY_ADMIN, elapsed(start), errorMessage(exception)));
         }
@@ -259,8 +280,11 @@ public final class PermissionRunner implements DemoRunner {
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
                     .invoiceRead();
             PermissionOperationStatus response = context.client().permissions().grantEuEntity(builder.build());
-            LOGGER.info("[{}] grantEuEntity terminal code={}", NAME, terminalCode(response));
-            results.add(RunResult.ok(NAME, OP_GRANT_EU_ENTITY, elapsed(start), "code=" + terminalCode(response)));
+            String code = terminalCode(response);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_TERMINAL_TEMPLATE, NAME, OP_GRANT_EU_ENTITY, code);
+            }
+            results.add(RunResult.ok(NAME, OP_GRANT_EU_ENTITY, elapsed(start), CODE_PREFIX + code));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_EU_ENTITY, elapsed(start), errorMessage(exception)));
         }

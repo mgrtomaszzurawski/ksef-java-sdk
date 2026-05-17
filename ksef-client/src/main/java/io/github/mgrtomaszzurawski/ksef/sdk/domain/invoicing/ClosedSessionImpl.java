@@ -171,12 +171,12 @@ final class ClosedSessionImpl implements ClosedSession {
      * original XML.
      */
     @Override
-    public List<ClearedInvoice<? extends Invoice>> allCleared() {
+    public List<ClearedInvoice<Invoice>> allCleared() {
         SessionStatus current = sessionClient.getStatus(referenceNumber);
         if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
             return List.of();
         }
-        List<ClearedInvoice<? extends Invoice>> bulk = new ArrayList<>(current.upo().pages().size());
+        List<ClearedInvoice<Invoice>> bulk = new ArrayList<>(current.upo().pages().size());
         int ordinalCounter = 0;
         for (var page : current.upo().pages()) {
             byte[] xml = sessionClient.getUpoByReference(referenceNumber, page.referenceNumber());

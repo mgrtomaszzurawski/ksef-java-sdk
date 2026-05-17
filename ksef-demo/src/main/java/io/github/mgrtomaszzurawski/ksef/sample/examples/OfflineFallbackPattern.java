@@ -46,7 +46,7 @@ public final class OfflineFallbackPattern {
      * unavailability window, and {@link OfflineMode#KSEF_EMERGENCY}
      * when KSeF entered emergency mode.
      */
-    public static SubmittedInvoice sendWithOfflineFallback(OnlineSession session,
+    public static SubmittedInvoice<Invoice> sendWithOfflineFallback(OnlineSession session,
                                                            Invoice invoice,
                                                            KsefCertificate certificate,
                                                            OfflineMode mode,
