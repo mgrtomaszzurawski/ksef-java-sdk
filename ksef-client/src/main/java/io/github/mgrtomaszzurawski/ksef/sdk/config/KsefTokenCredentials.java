@@ -72,4 +72,9 @@ public record KsefTokenCredentials(String ksefToken, KsefIdentifier identifier,
                 + (authPolicy == null ? "" : ", authPolicy=set") + "]";
     }
 
+    @Override
+    public KsefCredentialsDescriptor asDescriptor() {
+        return KsefCredentialsDescriptor.of(AuthMethod.TOKEN, identifier);
+    }
+
 }

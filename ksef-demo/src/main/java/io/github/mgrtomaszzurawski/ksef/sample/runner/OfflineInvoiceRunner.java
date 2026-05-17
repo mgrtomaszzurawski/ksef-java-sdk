@@ -98,7 +98,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
         Invoice invoice = Invoice.fromXml(FormCode.FA3,
                 TestInvoiceXml.generate(FormCode.FA3, context.nipIdentifier()));
         QrEnvironment qrEnvironment = QrEnvironment.fromKsefEnvironment(
-                context.client().environment());
+                context.client().config().environment());
         LocalDate issueDate = LocalDate.now();
 
         OfflineInvoice viaBuilder = runBuilderProbe(invoice, testCertificate,

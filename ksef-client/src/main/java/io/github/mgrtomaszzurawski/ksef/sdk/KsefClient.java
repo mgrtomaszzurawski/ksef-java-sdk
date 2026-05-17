@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefClientConfig;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
@@ -139,6 +140,7 @@ public final class KsefClient implements AutoCloseable {
     private final SessionContext sessionContext;
     private final Duration readTimeout;
     private final HttpRuntime runtime;
+    private final KsefClientConfig config;
 
     private final AuthClient authClient;
     private final SecurityClient securityClient;
@@ -166,6 +168,15 @@ public final class KsefClient implements AutoCloseable {
         this.environment = Objects.requireNonNull(builder.environment, ERR_ENVIRONMENT_NULL);
         this.credentials = Objects.requireNonNull(builder.credentials, ERR_CREDENTIALS_NULL);
         this.readTimeout = builder.readTimeout;
+        this.config = new KsefClientConfig(
+                this.environment,
+                this.credentials.asDescriptor(),
+                builder.connectTimeout,
+                this.readTimeout,
+                builder.invoiceVerificationTimeout,
+                builder.retryPolicy,
+                builder.featurePolicy,
+                builder.offlineSigningProvider != null);
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(builder.connectTimeout)
                 .build();
@@ -379,8 +390,21 @@ public final class KsefClient implements AutoCloseable {
         return qrCodeService;
     }
 
-    /** Configured KSeF environment for this client. */
-    public KsefEnvironment environment() { return environment; }
+    /**
+     * Immutable snapshot of how this client was configured at
+     * {@code build()} time (environment, credential summary, timeouts,
+     * retry policy, feature policy). Use for diagnostics, logging, and
+     * multi-tenant orchestration where comparing two clients'
+     * configurations matters.
+     *
+     * <p>{@code KsefClient} itself does not override {@code equals} /
+     * {@code hashCode}; the returned record does (auto via record
+     * contract) over its eight fields including the masked
+     * {@link KsefCredentialsDescriptor}.
+     */
+    public KsefClientConfig config() {
+        return config;
+    }
 
     /**
      * The {@link OfflineSigningProvider} registered via

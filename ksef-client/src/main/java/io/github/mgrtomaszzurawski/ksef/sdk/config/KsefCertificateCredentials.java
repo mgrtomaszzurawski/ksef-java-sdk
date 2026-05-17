@@ -126,4 +126,9 @@ public record KsefCertificateCredentials(
                 + ", subjectIdentifier=" + subjectIdentifier.wireType()
                 + ", signingOptions=" + signingOptions + "]";
     }
+
+    @Override
+    public KsefCredentialsDescriptor asDescriptor() {
+        return KsefCredentialsDescriptor.of(AuthMethod.CERTIFICATE, identifier);
+    }
 }

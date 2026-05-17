@@ -39,6 +39,17 @@ public sealed interface KsefCredentials
     KsefIdentifier identifier();
 
     /**
+     * Masked summary of this credentials instance — safe to log and
+     * include in diagnostics (no secrets surface). Used by
+     * {@link KsefClient#config()} to build the public
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentialsDescriptor}.
+     *
+     * @return masked descriptor with auth method + identifier type +
+     *     {@code ***NNNN} tail of the identifier value
+     */
+    KsefCredentialsDescriptor asDescriptor();
+
+    /**
      * Optional IP allow-list policy applied at authentication time. Codex
      * 2026-05-05 #7 / F6.
      *
