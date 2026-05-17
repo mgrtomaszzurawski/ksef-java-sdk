@@ -33,7 +33,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityRoles
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionSubjectDetails;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission;

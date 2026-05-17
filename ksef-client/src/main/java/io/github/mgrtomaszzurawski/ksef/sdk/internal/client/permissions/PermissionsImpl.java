@@ -40,9 +40,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityAdm
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissionsQueryRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync;
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionGrantRequest;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
+import java.time.Duration;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionsQueryRequest;
@@ -121,6 +124,10 @@ public final class PermissionsImpl implements Permissions {
 
     private static final String ERR_REQUEST_NULL = "request must not be null";
     private static final String ERR_NULL_FILTER = "filter must not be null";
+    private static final String ERR_NULL_TIMEOUT = "timeout must not be null";
+
+    /** Default sync timeout for permission grant/revoke operations (ADR-032). */
+    private static final Duration DEFAULT_OPERATION_TIMEOUT = Duration.ofMinutes(5);
 
     /** Spec-defined max page size for permission query endpoints. */
     private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 250;
@@ -138,110 +145,167 @@ public final class PermissionsImpl implements Permissions {
     }
 
     @Override
-    public PermissionOperationResult grantPerson(PersonPermissionGrantRequest request) {
+    public PermissionOperationStatus grantPerson(PersonPermissionGrantRequest request) {
+        return grantPerson(request, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus grantPerson(PersonPermissionGrantRequest request, Duration timeout) {
+        Objects.requireNonNull(request, ERR_REQUEST_NULL);
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL, OP_GRANT_PERSON);
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        String token = http.requireToken();
-        PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_PERSON,
-                PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(request), token,
-                PermissionsOperationResponseRaw.class, OP_GRANT_PERSON);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        String refNumber = postGrant(PATH_GRANT_PERSON,
+                PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(request), OP_GRANT_PERSON);
+        return awaitTerminalStatus(refNumber, OP_GRANT_PERSON, timeout);
     }
 
     @Override
-    public PermissionOperationResult grantEntity(EntityPermissionGrantRequest request) {
+    public PermissionOperationStatus grantEntity(EntityPermissionGrantRequest request) {
+        return grantEntity(request, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus grantEntity(EntityPermissionGrantRequest request, Duration timeout) {
+        Objects.requireNonNull(request, ERR_REQUEST_NULL);
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL, OP_GRANT_ENTITY);
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        String token = http.requireToken();
-        PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_ENTITY,
-                PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(request), token,
-                PermissionsOperationResponseRaw.class, OP_GRANT_ENTITY);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        String refNumber = postGrant(PATH_GRANT_ENTITY,
+                PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(request), OP_GRANT_ENTITY);
+        return awaitTerminalStatus(refNumber, OP_GRANT_ENTITY, timeout);
     }
 
     @Override
-    public PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantRequest request) {
+    public PermissionOperationStatus grantAuthorization(EntityAuthorizationPermissionGrantRequest request) {
+        return grantAuthorization(request, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus grantAuthorization(EntityAuthorizationPermissionGrantRequest request, Duration timeout) {
+        Objects.requireNonNull(request, ERR_REQUEST_NULL);
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL, OP_GRANT_AUTHORIZATION);
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        String token = http.requireToken();
-        PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_AUTHORIZATION,
-                PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(request), token,
-                PermissionsOperationResponseRaw.class, OP_GRANT_AUTHORIZATION);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        String refNumber = postGrant(PATH_GRANT_AUTHORIZATION,
+                PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(request), OP_GRANT_AUTHORIZATION);
+        return awaitTerminalStatus(refNumber, OP_GRANT_AUTHORIZATION, timeout);
     }
 
     @Override
-    public PermissionOperationResult grantIndirect(IndirectPermissionGrantRequest request) {
+    public PermissionOperationStatus grantIndirect(IndirectPermissionGrantRequest request) {
+        return grantIndirect(request, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus grantIndirect(IndirectPermissionGrantRequest request, Duration timeout) {
+        Objects.requireNonNull(request, ERR_REQUEST_NULL);
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL, OP_GRANT_INDIRECT);
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        String token = http.requireToken();
-        PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_INDIRECT,
-                PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(request), token,
-                PermissionsOperationResponseRaw.class, OP_GRANT_INDIRECT);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        String refNumber = postGrant(PATH_GRANT_INDIRECT,
+                PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(request), OP_GRANT_INDIRECT);
+        return awaitTerminalStatus(refNumber, OP_GRANT_INDIRECT, timeout);
     }
 
     @Override
-    public PermissionOperationResult grantSubunit(SubunitPermissionGrantRequest request) {
+    public PermissionOperationStatus grantSubunit(SubunitPermissionGrantRequest request) {
+        return grantSubunit(request, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus grantSubunit(SubunitPermissionGrantRequest request, Duration timeout) {
+        Objects.requireNonNull(request, ERR_REQUEST_NULL);
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL, OP_GRANT_SUBUNIT);
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        String token = http.requireToken();
-        PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_SUBUNIT,
-                PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(request), token,
-                PermissionsOperationResponseRaw.class, OP_GRANT_SUBUNIT);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        String refNumber = postGrant(PATH_GRANT_SUBUNIT,
+                PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(request), OP_GRANT_SUBUNIT);
+        return awaitTerminalStatus(refNumber, OP_GRANT_SUBUNIT, timeout);
     }
 
     @Override
-    public PermissionOperationResult grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request) {
+    public PermissionOperationStatus grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request) {
+        return grantEuEntityAdmin(request, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request, Duration timeout) {
+        Objects.requireNonNull(request, ERR_REQUEST_NULL);
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY_ADMIN);
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        String token = http.requireToken();
-        PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY_ADMIN,
-                PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(request), token,
-                PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY_ADMIN);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        String refNumber = postGrant(PATH_GRANT_EU_ENTITY_ADMIN,
+                PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(request), OP_GRANT_EU_ENTITY_ADMIN);
+        return awaitTerminalStatus(refNumber, OP_GRANT_EU_ENTITY_ADMIN, timeout);
     }
 
     @Override
-    public PermissionOperationResult grantEuEntity(EuEntityPermissionGrantRequest request) {
+    public PermissionOperationStatus grantEuEntity(EuEntityPermissionGrantRequest request) {
+        return grantEuEntity(request, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus grantEuEntity(EuEntityPermissionGrantRequest request, Duration timeout) {
+        Objects.requireNonNull(request, ERR_REQUEST_NULL);
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY);
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        String token = http.requireToken();
-        PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(PATH_GRANT_EU_ENTITY,
-                PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(request), token,
-                PermissionsOperationResponseRaw.class, OP_GRANT_EU_ENTITY);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        String refNumber = postGrant(PATH_GRANT_EU_ENTITY,
+                PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(request), OP_GRANT_EU_ENTITY);
+        return awaitTerminalStatus(refNumber, OP_GRANT_EU_ENTITY, timeout);
     }
 
     @Override
-    public PermissionOperationResult revokePermission(String permissionId) {
+    public PermissionOperationStatus revokePermission(String permissionId) {
+        return revokePermission(permissionId, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus revokePermission(String permissionId, Duration timeout) {
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL_REF, OP_REVOKE_COMMON, permissionId);
         requireSafePathSegment(permissionId);
         String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.deleteAuthenticatedWithResponse(PATH_REVOKE_COMMON + permissionId, token,
                 PermissionsOperationResponseRaw.class, OP_REVOKE_COMMON);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        PermissionOperationResult intermediate = PermissionsMappers.toPermissionOperationResult(rawValue);
+        return awaitTerminalStatus(intermediate.referenceNumber(), OP_REVOKE_COMMON, timeout);
     }
 
     @Override
-    public PermissionOperationResult revokeAuthorization(String permissionId) {
+    public PermissionOperationStatus revokeAuthorization(String permissionId) {
+        return revokeAuthorization(permissionId, DEFAULT_OPERATION_TIMEOUT);
+    }
+
+    @Override
+    public PermissionOperationStatus revokeAuthorization(String permissionId, Duration timeout) {
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
         LOGGER.debug(LOG_CALL_REF, OP_REVOKE_AUTHORIZATION, permissionId);
         requireSafePathSegment(permissionId);
         String token = http.requireToken();
         PermissionsOperationResponseRaw rawValue = http.deleteAuthenticatedWithResponse(PATH_REVOKE_AUTHORIZATION + permissionId, token,
                 PermissionsOperationResponseRaw.class, OP_REVOKE_AUTHORIZATION);
-        return PermissionsMappers.toPermissionOperationResult(rawValue);
+        PermissionOperationResult intermediate = PermissionsMappers.toPermissionOperationResult(rawValue);
+        return awaitTerminalStatus(intermediate.referenceNumber(), OP_REVOKE_AUTHORIZATION, timeout);
     }
 
-    @Override
-    public PermissionOperationStatus getOperationStatus(String referenceNumber) {
-        LOGGER.debug(LOG_CALL_REF, OP_GET_OPERATION_STATUS, referenceNumber);
-        requireSafePathSegment(referenceNumber);
+    private String postGrant(String path, Object requestBody, String opName) {
         String token = http.requireToken();
-        PermissionsOperationStatusResponseRaw rawValue = http.getAuthenticated(PATH_OPERATION_STATUS + referenceNumber, token,
-                PermissionsOperationStatusResponseRaw.class, OP_GET_OPERATION_STATUS);
-        return PermissionsMappers.toPermissionOperationStatus(rawValue);
+        PermissionsOperationResponseRaw rawValue = http.postJsonAuthenticated(path, requestBody, token,
+                PermissionsOperationResponseRaw.class, opName);
+        return PermissionsMappers.toPermissionOperationResult(rawValue).referenceNumber();
+    }
+
+    private PermissionOperationStatus awaitTerminalStatus(String referenceNumber, String opName, Duration timeout) {
+        requireSafePathSegment(referenceNumber);
+        return KsefAsync.awaitTerminal(new KsefAsync.Config<>(
+                opName,
+                () -> {
+                    String token = http.requireToken();
+                    PermissionsOperationStatusResponseRaw raw = http.getAuthenticated(
+                            PATH_OPERATION_STATUS + referenceNumber, token,
+                            PermissionsOperationStatusResponseRaw.class, OP_GET_OPERATION_STATUS);
+                    return PermissionsMappers.toPermissionOperationStatus(raw);
+                },
+                status -> status.status() != null
+                        && status.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD,
+                status -> status.status() == null ? null : status.status().code(),
+                timeout,
+                null));
     }
 
     @Override

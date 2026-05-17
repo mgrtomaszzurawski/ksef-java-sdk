@@ -18,7 +18,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPer
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissionsQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionGrantRequest;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissions;
@@ -30,26 +29,53 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.Subordinate
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermissionsQueryRequest;
+import java.time.Duration;
 
 /**
- * Client for KSeF permission management — granting, revoking, and querying permissions
+ * KSeF permission management — granting, revoking, and querying permissions
  * for persons, entities, EU entities, subunits, and authorizations.
+ *
+ * <p>Reached via {@code KsefClient.permissions()}.
+ *
+ * <p>Per ADR-032, every {@code grant*} and {@code revoke*} method is
+ * synchronous: the SDK polls the KSeF operation-status endpoint
+ * internally and returns when the operation reaches a terminal state.
+ * Each method ships in two overloads — one using a sensible default
+ * timeout, one accepting an explicit {@link Duration}.
  *
  * @since 1.0.0
  */
 public interface Permissions {
 
-    PermissionOperationResult grantPerson(PersonPermissionGrantRequest request);
-    PermissionOperationResult grantEntity(EntityPermissionGrantRequest request);
-    PermissionOperationResult grantAuthorization(EntityAuthorizationPermissionGrantRequest request);
-    PermissionOperationResult grantIndirect(IndirectPermissionGrantRequest request);
-    PermissionOperationResult grantSubunit(SubunitPermissionGrantRequest request);
-    PermissionOperationResult grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request);
-    PermissionOperationResult grantEuEntity(EuEntityPermissionGrantRequest request);
-    PermissionOperationResult revokePermission(String permissionId);
-    PermissionOperationResult revokeAuthorization(String permissionId);
-    PermissionOperationStatus getOperationStatus(String referenceNumber);
+    PermissionOperationStatus grantPerson(PersonPermissionGrantRequest request);
+    PermissionOperationStatus grantPerson(PersonPermissionGrantRequest request, Duration timeout);
+
+    PermissionOperationStatus grantEntity(EntityPermissionGrantRequest request);
+    PermissionOperationStatus grantEntity(EntityPermissionGrantRequest request, Duration timeout);
+
+    PermissionOperationStatus grantAuthorization(EntityAuthorizationPermissionGrantRequest request);
+    PermissionOperationStatus grantAuthorization(EntityAuthorizationPermissionGrantRequest request, Duration timeout);
+
+    PermissionOperationStatus grantIndirect(IndirectPermissionGrantRequest request);
+    PermissionOperationStatus grantIndirect(IndirectPermissionGrantRequest request, Duration timeout);
+
+    PermissionOperationStatus grantSubunit(SubunitPermissionGrantRequest request);
+    PermissionOperationStatus grantSubunit(SubunitPermissionGrantRequest request, Duration timeout);
+
+    PermissionOperationStatus grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request);
+    PermissionOperationStatus grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request, Duration timeout);
+
+    PermissionOperationStatus grantEuEntity(EuEntityPermissionGrantRequest request);
+    PermissionOperationStatus grantEuEntity(EuEntityPermissionGrantRequest request, Duration timeout);
+
+    PermissionOperationStatus revokePermission(String permissionId);
+    PermissionOperationStatus revokePermission(String permissionId, Duration timeout);
+
+    PermissionOperationStatus revokeAuthorization(String permissionId);
+    PermissionOperationStatus revokeAuthorization(String permissionId, Duration timeout);
+
     AttachmentPermissionStatus getAttachmentStatus();
+
     PersonalPermissions queryPersonal(PersonalPermissionsQueryRequest request);
     PersonPermissions queryPersons(PersonPermissionsQueryRequest request);
     SubunitPermissions querySubunits(SubunitPermissionsQueryRequest filter);
@@ -64,6 +90,10 @@ public interface Permissions {
     // The SDK never materialises the full result set — memory pressure is
     // bounded by what the caller pulls from the stream. For a hard cap, pipe
     // through .limit(N); for a snapshot list, pipe through .toList().
+    //
+    // request.pageOffset() is ignored by stream* methods — the paginator
+    // always starts from page 0. Use query* for snapshot at a specific
+    // offset.
 
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission>
             streamPersonal(PersonalPermissionsQueryRequest request);

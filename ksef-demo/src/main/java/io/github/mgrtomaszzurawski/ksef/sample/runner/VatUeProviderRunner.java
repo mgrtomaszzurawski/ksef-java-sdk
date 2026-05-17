@@ -9,13 +9,11 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.IdentifierGenerators;
 import io.github.mgrtomaszzurawski.ksef.sample.util.SelfSignedCerts;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EuEntityAdminPermissionGrantBuilder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -121,17 +119,7 @@ public final class VatUeProviderRunner implements DemoRunner {
                     .euEntityName(EU_ENTITY_NAME)
                     .subjectEntityByFingerprint(SUBJECT_FULL_NAME, DEMO_ADDRESS)
                     .euEntityDetails(EU_ENTITY_NAME, DEMO_ADDRESS);
-            String referenceNumber = context.client().permissions().grantEuEntityAdmin(builder.build()).referenceNumber();
-            var permissions = context.client().permissions();
-            var status = KsefAsync.awaitTerminal(
-                    new KsefAsync.Config<>(
-                            OP_GRANT,
-                            () -> permissions.getOperationStatus(referenceNumber),
-                            opStatus -> opStatus.status() != null
-                                    && opStatus.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD,
-                            opStatus -> opStatus.status() == null ? null : opStatus.status().code(),
-                            GRANT_AWAIT_TIMEOUT,
-                            null));
+            var status = context.client().permissions().grantEuEntityAdmin(builder.build(), GRANT_AWAIT_TIMEOUT);
             int code = status.status() == null ? -1 : status.status().code();
             String description = status.status() == null ? "" : status.status().description();
             if (code == GRANT_SUCCESS_STATUS_CODE) {
