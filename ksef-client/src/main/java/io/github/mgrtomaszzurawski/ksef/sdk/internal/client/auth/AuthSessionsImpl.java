@@ -25,6 +25,8 @@ import java.util.stream.Stream;
 public final class AuthSessionsImpl implements AuthSessions {
 
     private static final String ERR_REF_NULL = "referenceNumber must not be null";
+    private static final String ERR_NO_IP_AFTER_AUTH =
+            "Auth completed but clientIp not populated — SDK internal error";
 
     private final AuthClient authClient;
     private final Runnable ensureOpen;
@@ -54,8 +56,16 @@ public final class AuthSessionsImpl implements AuthSessions {
     @Override
     public void terminate() {
         ensureOpen.run();
-        authClient.terminateCurrentSession();
-        onTerminate.run();
+        try {
+            authClient.terminateCurrentSession();
+        } finally {
+            // Local state cleanup is best-effort and idempotent — runs
+            // regardless of HTTP outcome. If the server DELETE failed,
+            // any future protected call retries auth via the 401-driven
+            // reauth path; the local "authenticated=false" flag here
+            // just primes lazy auth correctly.
+            onTerminate.run();
+        }
     }
 
     @Override
@@ -77,8 +87,11 @@ public final class AuthSessionsImpl implements AuthSessions {
     }
 
     @Override
-    public Optional<String> lastChallengeClientIp() {
-        return lastChallengeClientIpSupplier.get();
+    public String lastChallengeClientIp() {
+        ensureOpen.run();
+        ensureAuthenticated.run();
+        return lastChallengeClientIpSupplier.get()
+                .orElseThrow(() -> new IllegalStateException(ERR_NO_IP_AFTER_AUTH));
     }
 
     private static AuthSession toAuthSession(AuthenticationListItem item) {

@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.auth;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -43,8 +42,19 @@ public interface AuthSessions {
     /**
      * Terminate the current authentication session.
      *
-     * <p>Clears all session state. After calling this, the next operation
-     * triggers a fresh authentication flow (lazy auth).
+     * <p>Local session state is cleared regardless of whether the server
+     * DELETE succeeds — wrapped in a try-finally so the SDK's cached
+     * {@code authenticated} flag returns to {@code false} even if the
+     * wire call throws. Any HTTP exception then propagates to the caller.
+     *
+     * <p>After this call, the next operation triggers a fresh
+     * authentication flow (lazy auth).
+     *
+     * <p>Note: local authentication state is a <em>cached hint</em>.
+     * Server-side session termination — by another user, an admin, TTL
+     * expiry, or token revocation — is handled transparently through
+     * the SDK's 401-driven reauth retry, which kicks in on the next
+     * call regardless of what the local flag says.
      */
     void terminate();
 
@@ -61,10 +71,17 @@ public interface AuthSessions {
     Stream<AuthSession> streamAuthSessions();
 
     /**
-     * Terminate a specific auth session by its reference number. Useful
-     * for cleaning up orphaned sessions or terminating a session other
-     * than the current one. Use {@link #terminate()} for the current
-     * session.
+     * Terminate a specific auth session by its reference number.
+     * Intended for terminating OTHER sessions in your KSeF context
+     * (shown via {@link #streamAuthSessions()}). To end your own session
+     * use {@link #terminate()} for proper local state cleanup.
+     *
+     * <p>If you pass your own reference number here, the server kills
+     * your session but the SDK's local {@code authenticated} flag stays
+     * {@code true}. The next protected call returns 401 and the SDK's
+     * 401-driven reauth retry transparently re-authenticates — one
+     * extra round-trip and the consumer sees no error. Still, prefer
+     * {@link #terminate()} for clarity.
      *
      * @param referenceNumber reference number of the session to terminate
      */
@@ -72,8 +89,13 @@ public interface AuthSessions {
 
     /**
      * The {@code clientIp} value reported by KSeF in the most recent
-     * {@code /auth/challenge} response, or empty if no challenge has
-     * been requested yet on the parent client.
+     * {@code /auth/challenge} response on this client.
+     *
+     * <p>If no challenge has been issued yet, this method triggers
+     * lazy authentication (full challenge/redeem flow) before returning,
+     * so a {@code String} is always available. Cost: when the client
+     * hasn't authenticated yet, the call performs a complete auth
+     * handshake. Subsequent calls reuse the cached value.
      *
      * <p>Use to autopin
      * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy}
@@ -83,8 +105,7 @@ public interface AuthSessions {
      * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials}
      * on subsequent authentications.
      *
-     * @return the client IP from the latest challenge, or empty if no
-     *     challenge has been issued yet
+     * @return the client IP from the latest challenge (non-null)
      */
-    Optional<String> lastChallengeClientIp();
+    String lastChallengeClientIp();
 }
