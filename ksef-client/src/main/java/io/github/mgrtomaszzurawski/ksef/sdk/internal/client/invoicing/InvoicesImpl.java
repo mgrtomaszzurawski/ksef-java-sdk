@@ -100,7 +100,7 @@ public final class InvoicesImpl implements Invoices {
         boolean sessionsAvailable = sessionClient != null && environment != null && publicKeyResolver != null;
         this.archive = new InvoiceArchiveImpl(runtime, sessionClient, invoiceTypes);
         this.export = new InvoiceExportImpl(runtime);
-        this.sync = new InvoiceSyncImpl(runtime, this.export);
+        this.sync = new InvoiceSyncImpl(runtime, this.export, invoiceTypes);
         InvoiceBatch batch = sessionsAvailable
                 ? new InvoiceBatchImpl(sessionClient, runtime.httpClient(), environment, publicKeyResolver)
                 : new UnavailableBatch();

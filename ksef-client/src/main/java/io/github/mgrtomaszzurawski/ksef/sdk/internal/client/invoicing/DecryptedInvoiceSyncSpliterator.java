@@ -5,8 +5,12 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;
@@ -76,13 +80,18 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
     private static final String ERR_NULL_OBJECT_MAPPER = "objectMapper must not be null";
     private static final String ERR_NULL_PLAN = "plan must not be null";
     private static final String ERR_NULL_CHECKPOINT_STORE = "checkpointStore must not be null";
+    private static final String ERR_NULL_INVOICE_TYPES = "invoiceTypes must not be null";
     private static final String ERR_NULL_ACTION = "action must not be null";
     private static final String ERR_PRODUCER_FAILED = "Sync producer thread failed";
+    private static final String UNKNOWN_FORM_CODE_SYSTEM_CODE = "UNKNOWN";
+    private static final String UNKNOWN_FORM_CODE_SCHEMA_VERSION = "0";
+    private static final String UNKNOWN_FORM_CODE_VALUE = "UNKNOWN";
 
     private final BlockingQueue<DecryptedInvoice> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
     private final AtomicReference<Throwable> producerFailure = new AtomicReference<>();
     private final ExecutorService executor;
     private final CompletableFuture<Void> producerFuture;
+    private final KsefInvoiceTypes invoiceTypes;
     private volatile boolean cancelled;
     private boolean producerCompleted;
 
@@ -90,10 +99,19 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
                                     ObjectMapper objectMapper,
                                     IncrementalSyncPlan plan,
                                     CheckpointStore checkpointStore) {
+        this(invoiceExport, objectMapper, plan, checkpointStore, KsefInvoiceTypes.builtinsOnly());
+    }
+
+    DecryptedInvoiceSyncSpliterator(InvoiceExport invoiceExport,
+                                    ObjectMapper objectMapper,
+                                    IncrementalSyncPlan plan,
+                                    CheckpointStore checkpointStore,
+                                    KsefInvoiceTypes invoiceTypes) {
         Objects.requireNonNull(invoiceExport, ERR_NULL_INVOICE_EXPORT);
         Objects.requireNonNull(objectMapper, ERR_NULL_OBJECT_MAPPER);
         Objects.requireNonNull(plan, ERR_NULL_PLAN);
         Objects.requireNonNull(checkpointStore, ERR_NULL_CHECKPOINT_STORE);
+        this.invoiceTypes = Objects.requireNonNull(invoiceTypes, ERR_NULL_INVOICE_TYPES);
         this.executor = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, PRODUCER_THREAD_NAME);
             thread.setDaemon(true);
@@ -177,7 +195,10 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
                 throw new CancelledStreamException();
             }
             byte[] xmlBytes = readXmlBytes(xmlPath);
-            DecryptedInvoice invoice = new DecryptedInvoice(ksefNumber, metadata, xmlBytes,
+            FormCode formCode = toFormCode(metadata.formCode());
+            InvoiceDocument document = InvoiceDocumentConstructor.newDocument(
+                    invoiceTypes, formCode, xmlBytes);
+            DecryptedInvoice invoice = new DecryptedInvoice(metadata, document,
                     xmlPath != null ? Optional.of(xmlPath) : Optional.empty());
             try {
                 while (!cancelled) {
@@ -191,6 +212,14 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
                 throw new CancelledStreamException();
             }
         };
+    }
+
+    private static FormCode toFormCode(FormCodeInfo info) {
+        if (info == null) {
+            return FormCode.custom(UNKNOWN_FORM_CODE_SYSTEM_CODE,
+                    UNKNOWN_FORM_CODE_SCHEMA_VERSION, UNKNOWN_FORM_CODE_VALUE);
+        }
+        return FormCode.custom(info.systemCode(), info.schemaVersion(), info.value());
     }
 
     private void propagateProducerFailure() {
