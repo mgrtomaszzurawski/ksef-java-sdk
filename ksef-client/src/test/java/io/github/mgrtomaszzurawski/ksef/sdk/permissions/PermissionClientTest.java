@@ -159,6 +159,7 @@ class PermissionClientTest {
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
@@ -178,6 +179,7 @@ class PermissionClientTest {
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
@@ -197,6 +199,7 @@ class PermissionClientTest {
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
@@ -216,6 +219,7 @@ class PermissionClientTest {
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
@@ -237,6 +241,7 @@ class PermissionClientTest {
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
@@ -256,6 +261,7 @@ class PermissionClientTest {
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
@@ -274,6 +280,7 @@ class PermissionClientTest {
             PermissionOperationStatus response = ksef.permissions().revokePermission(TEST_PERMISSION_ID);
 
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
@@ -293,6 +300,7 @@ class PermissionClientTest {
                     ksef.permissions().revokeAuthorization(TEST_PERMISSION_ID);
 
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 

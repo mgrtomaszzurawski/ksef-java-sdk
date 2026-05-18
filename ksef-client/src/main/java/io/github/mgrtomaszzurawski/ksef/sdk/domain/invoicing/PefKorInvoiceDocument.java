@@ -28,7 +28,12 @@ import org.jspecify.annotations.Nullable;
 /**
  * Read-side PEF_KOR (UBL CreditNote) document fetched from KSeF. Wraps
  * the JAXB-generated {@link CreditNoteType} root and the raw XML bytes.
- * Construct via {@link #from(byte[])}.
+ *
+ * <p>Constructed by the SDK; consumers receive instances via
+ * {@link InvoiceArchive#getByKsefNumber} or
+ * {@link ClosedSession#cleared}. The {@code from(byte[])} factory is
+ * package-private — cross-package SDK construction is routed through
+ * {@code InvoiceDocumentConstructor} (R1-5 reflective bridge).
  *
  * <p>Public accessors are flat primitives that read through to the
  * underlying UBL JAXB tree on demand. Two escape hatches expose fields

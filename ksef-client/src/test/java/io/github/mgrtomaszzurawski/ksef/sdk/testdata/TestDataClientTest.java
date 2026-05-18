@@ -417,20 +417,35 @@ class TestDataClientTest {
     }
 
     @Test
-    void testData_whenWiredToProd_eachMethodThrowsKsefUnsupportedEnvironmentException() {
-        try (KsefClient ksef = KsefClient.builder()
+    void resetSessionLimits_whenWiredToProd_throwsKsefUnsupportedEnvironmentException() {
+        try (KsefClient ksef = prodWiredClient()) {
+            assertThrows(KsefUnsupportedEnvironmentException.class,
+                    ksef.testData()::resetSessionLimits);
+        }
+    }
+
+    @Test
+    void resetSubjectLimits_whenWiredToProd_throwsKsefUnsupportedEnvironmentException() {
+        try (KsefClient ksef = prodWiredClient()) {
+            assertThrows(KsefUnsupportedEnvironmentException.class,
+                    ksef.testData()::resetSubjectLimits);
+        }
+    }
+
+    @Test
+    void resetRateLimits_whenWiredToProd_throwsKsefUnsupportedEnvironmentException() {
+        try (KsefClient ksef = prodWiredClient()) {
+            assertThrows(KsefUnsupportedEnvironmentException.class,
+                    ksef.testData()::resetRateLimits);
+        }
+    }
+
+    private static KsefClient prodWiredClient() {
+        return KsefClient.builder()
                 .environment(KsefEnvironment.PROD)
                 .credentials(new KsefTokenCredentials("test-token", TEST_NIP))
                 .retryPolicy(RetryPolicy.builder().enabled(false).build())
-                .build()) {
-            // resetSessionLimits takes no args — exercises the guard without touching
-            // any request validation or wire path. Single-method lambdas keep the
-            // Sonar S5778 contract (only one throwing invocation per assertThrows).
-            var testData = ksef.testData();
-            assertThrows(KsefUnsupportedEnvironmentException.class, testData::resetSessionLimits);
-            assertThrows(KsefUnsupportedEnvironmentException.class, testData::resetSubjectLimits);
-            assertThrows(KsefUnsupportedEnvironmentException.class, testData::resetRateLimits);
-        }
+                .build();
     }
 
     private static KsefClient createClient(WireMockRuntimeInfo wmInfo) {

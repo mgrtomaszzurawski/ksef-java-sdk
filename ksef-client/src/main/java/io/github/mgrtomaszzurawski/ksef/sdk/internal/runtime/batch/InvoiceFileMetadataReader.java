@@ -52,6 +52,7 @@ public final class InvoiceFileMetadataReader {
     private static final String UBL_INVOICE_ROOT_LOCAL_NAME = "Invoice";
     private static final String UBL_CREDIT_NOTE_ROOT_LOCAL_NAME = "CreditNote";
 
+    private static final String ERR_NULL_FILE = "file must not be null";
     private static final String ERR_PARSE_FAILED =
             "Failed to read XML root element from %s";
     private static final String ERR_UNKNOWN_ROOT =
@@ -72,7 +73,7 @@ public final class InvoiceFileMetadataReader {
      * @throws KsefException if the bytes cannot be parsed as XML at all
      */
     public static Optional<FormCode> readFormCode(Path file) {
-        Objects.requireNonNull(file, "file must not be null");
+        Objects.requireNonNull(file, ERR_NULL_FILE);
         RootElement root = readRoot(file);
         return classify(root.localName(), root.namespaceUri());
     }
@@ -82,7 +83,7 @@ public final class InvoiceFileMetadataReader {
      * cannot be determined.
      */
     public static FormCode readFormCodeOrThrow(Path file) {
-        Objects.requireNonNull(file, "file must not be null");
+        Objects.requireNonNull(file, ERR_NULL_FILE);
         RootElement root = readRoot(file);
         return classify(root.localName(), root.namespaceUri()).orElseThrow(() ->
                 new KsefException(String.format(java.util.Locale.ROOT,

@@ -143,6 +143,7 @@ public final class BatchSubmissionFlow {
     private static final String ERR_INVOICES_EMPTY = "invoices must not be empty";
     private static final String ERR_FILES_EMPTY = "files must not be empty";
     private static final String ERR_NULL_INVOICE = "invoice must not be null";
+    private static final String ERR_NULL_FILE = "file must not be null";
     private static final String ERR_FORM_CODE_MISMATCH =
             "Invoice at index %d declares formCode=%s but the batch is for formCode=%s";
     private static final String ERR_FILE_FORM_CODE_MISMATCH =
@@ -178,12 +179,18 @@ public final class BatchSubmissionFlow {
     private static final String SCHEME_HTTP = "http";
 
     /** Sentinel form-code for the synthetic UPO-only placeholder invoice carried on
-     *  rebuilt {@link SubmittedInvoice} entries — see {@link #buildUpoPlaceholderInvoice()}. */
+     *  rebuilt {@link SubmittedInvoice} entries when the file-streaming path produced them. */
     private static final FormCode UPO_PLACEHOLDER_FORM_CODE = FormCode.custom("UPO", "1", "UPO");
     /** Empty payload for the UPO-only placeholder invoice. The original FA(3)/PEF/PEFKOR
      *  XML is not retained server-side after batch close; consumers needing the canonical
      *  invoice payload must call {@code client.invoices().archive().getByKsefNumber(...)}. */
     private static final byte[] UPO_PLACEHOLDER_XML = new byte[0];
+    /** Singleton placeholder invoice/document — replaces per-call {@code Invoice.fromXml}
+     *  allocations on the file-streaming {@code submitFromFiles} path (perf review). */
+    private static final Invoice UPO_PLACEHOLDER_INVOICE =
+            Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
+
+    private static final String UPO_FETCH_THREAD_NAME = "ksef-batch-upo-fetch";
 
     private static final java.util.regex.Pattern IP_LITERAL_PATTERN = java.util.regex.Pattern.compile(
             "^(?:(?:\\d{1,3}\\.){3}\\d{1,3}|\\[?[0-9a-fA-F]*:[0-9a-fA-F:]*\\]?)$");
@@ -282,7 +289,7 @@ public final class BatchSubmissionFlow {
     private static void preflightFiles(FormCode expected, List<Path> files) {
         // Phase 1A: cheap SAX root-element check across the whole list.
         for (Path file : files) {
-            Objects.requireNonNull(file, "file must not be null");
+            Objects.requireNonNull(file, ERR_NULL_FILE);
             FormCode declared = InvoiceFileMetadataReader.readFormCode(file).orElseThrow(() ->
                     new IllegalArgumentException(String.format(java.util.Locale.ROOT,
                             ERR_FILE_FORM_CODE_UNRECOGNISED, file)));
@@ -401,7 +408,7 @@ public final class BatchSubmissionFlow {
             closeWithRetry(sessionRef, deadlineNanos);
             pollUntilTerminal(sessionRef, deadlineNanos);
 
-            return collectResult(sessionRef, invoiceCount, startedAt, typedInputs);
+            return collectResult(sessionRef, invoiceCount, startedAt, typedInputs, options, deadlineNanos);
         } finally {
             pkg.cleanup();
         }
@@ -619,15 +626,14 @@ public final class BatchSubmissionFlow {
 
     private <I extends Invoice> BatchResult<I> collectResult(String sessionRef, int totalCount,
                                                               OffsetDateTime startedAt,
-                                                              @Nullable List<I> typedInputs) {
-        OffsetDateTime completedAt = OffsetDateTime.now(clock);
+                                                              @Nullable List<I> typedInputs,
+                                                              BatchOptions options,
+                                                              long deadlineNanos) {
         List<SessionInvoiceStatus> all = sessionClient.getAllInvoices(sessionRef);
         List<SessionInvoiceStatus> failed = sessionClient.getAllFailedInvoices(sessionRef);
 
-        List<ClearedInvoice<I>> cleared = new ArrayList<>();
-        List<FailedInvoice> failures = new ArrayList<>();
-
-        java.util.Set<String> failedRefs = new java.util.HashSet<>();
+        java.util.Set<String> failedRefs = new java.util.HashSet<>(Math.max(failed.size() * 2, 16));
+        List<FailedInvoice> failures = new ArrayList<>(failed.size());
         for (SessionInvoiceStatus failedInvoice : failed) {
             failedRefs.add(failedInvoice.referenceNumber());
             String error = failedInvoice.status() != null && failedInvoice.status().description() != null
@@ -638,12 +644,26 @@ public final class BatchSubmissionFlow {
                     : List.of();
             failures.add(new FailedInvoice(failedInvoice.referenceNumber(), error, details));
         }
+
+        // Filter accepted (= not in failedRefs) once, preserving server ordinal order.
+        List<SessionInvoiceStatus> accepted = new ArrayList<>(Math.max(all.size() - failedRefs.size(), 0));
         for (SessionInvoiceStatus invoice : all) {
-            if (failedRefs.contains(invoice.referenceNumber())) {
-                continue;
+            if (!failedRefs.contains(invoice.referenceNumber())) {
+                accepted.add(invoice);
             }
-            byte[] upo = sessionClient.getUpoByInvoiceReference(sessionRef, invoice.referenceNumber());
-            UpoEntry entry = new UpoEntry(invoice.referenceNumber(), upo);
+        }
+
+        // Parallel UPO fetch — reuses the BatchOptions.parallelism() knob already
+        // honoured by uploadAllParts. Per-invoice GET to KSeF dominates wall-time
+        // for large batches; sequential 10K invoices × 50 ms RTT = 8+ min that is
+        // now bounded by parallelism instead of by the batch size.
+        List<byte[]> upoBytesByIndex = fetchUposInParallel(sessionRef, accepted,
+                options.parallelism(), deadlineNanos);
+
+        List<ClearedInvoice<I>> cleared = new ArrayList<>(accepted.size());
+        for (int idx = 0; idx < accepted.size(); idx++) {
+            SessionInvoiceStatus invoice = accepted.get(idx);
+            UpoEntry entry = new UpoEntry(invoice.referenceNumber(), upoBytesByIndex.get(idx));
             I anchored = resolveTypedInput(typedInputs, invoice.ordinalNumber());
             // Document slot is the UPO-only placeholder — batch flow doesn't
             // re-fetch the archived XML. Consumers needing the typed
@@ -656,6 +676,7 @@ public final class BatchSubmissionFlow {
                     java.util.Optional.empty(), java.util.Optional.empty(), List.of());
             cleared.add(new ClearedInvoice<>(submitted, documentPlaceholder, entry));
         }
+        OffsetDateTime completedAt = OffsetDateTime.now(clock);
         // BatchResult invariants: successfulCount == cleared.size(), failedCount == failed.size(),
         // totalCount == successful + failed. Caller-supplied totalCount is the *invoice count*
         // submitted to the SDK; if KSeF later disagrees with that count (i.e. all.size() +
@@ -671,38 +692,93 @@ public final class BatchSubmissionFlow {
     }
 
     /**
-     * Map a {@link SessionInvoiceStatus#ordinalNumber()} (1-based, set by
-     * KSeF in the order invoices appear in the uploaded ZIP) back to the
-     * original typed input. Falls back to the UPO-only placeholder when
-     * no typed inputs are available (file-streaming path) or the ordinal
-     * is out of range (defensive — should not happen if KSeF echoes the
-     * upload order). The placeholder cast is safe because the only call
-     * site with {@code typedInputs == null} is {@code submitFromFiles},
-     * which returns {@code BatchResult<Invoice>} ({@code I = Invoice}),
-     * so the placeholder {@link Invoice} matches the requested static type.
+     * Fetch UPO bytes for every accepted invoice in parallel, preserving
+     * the input order so the caller can pair {@code accepted[i]} with
+     * {@code result[i]}. Bounded by {@code parallelism} (same knob the
+     * upload path uses) and the same {@code deadlineNanos} budget.
      */
-    @SuppressWarnings("unchecked")
-    private static <I extends Invoice> I resolveTypedInput(@Nullable List<I> typedInputs, int ordinalNumber) {
-        if (typedInputs != null) {
-            int index = ordinalNumber - 1;
-            if (index >= 0 && index < typedInputs.size()) {
-                return typedInputs.get(index);
+    private List<byte[]> fetchUposInParallel(String sessionRef, List<SessionInvoiceStatus> accepted,
+                                             int parallelism, long deadlineNanos) {
+        int workers = Math.min(parallelism, accepted.size());
+        if (workers <= SEQUENTIAL_UPLOAD_THRESHOLD) {
+            List<byte[]> sequential = new ArrayList<>(accepted.size());
+            for (SessionInvoiceStatus invoice : accepted) {
+                assertWithinDeadline(deadlineNanos);
+                sequential.add(sessionClient.getUpoByInvoiceReference(sessionRef, invoice.referenceNumber()));
             }
+            return sequential;
         }
-        return (I) buildUpoPlaceholderInvoice();
+        ExecutorService executor = Executors.newFixedThreadPool(workers, runnable -> {
+            Thread thread = new Thread(runnable, UPO_FETCH_THREAD_NAME);
+            thread.setDaemon(true);
+            return thread;
+        });
+        try {
+            List<Future<byte[]>> futures = new ArrayList<>(accepted.size());
+            for (SessionInvoiceStatus invoice : accepted) {
+                String invoiceRef = invoice.referenceNumber();
+                futures.add(executor.submit(() -> {
+                    assertWithinDeadline(deadlineNanos);
+                    return sessionClient.getUpoByInvoiceReference(sessionRef, invoiceRef);
+                }));
+            }
+            List<byte[]> ordered = new ArrayList<>(futures.size());
+            for (Future<byte[]> future : futures) {
+                ordered.add(awaitFuture(future, deadlineNanos));
+            }
+            return ordered;
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private static byte[] awaitFuture(Future<byte[]> future, long deadlineNanos) {
+        try {
+            long remainingNanos = deadlineNanos - nanoNow();
+            if (remainingNanos <= DEADLINE_EXPIRED_NANOS) {
+                throw new KsefNetworkException(ERR_UPLOAD_TIMED_OUT, null);
+            }
+            return future.get(remainingNanos, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(ERR_INTERRUPTED, interrupted);
+        } catch (ExecutionException executionFailure) {
+            Throwable cause = executionFailure.getCause();
+            if (cause instanceof KsefException ksefFailure) {
+                throw ksefFailure;
+            }
+            if (cause instanceof RuntimeException runtimeFailure) {
+                throw runtimeFailure;
+            }
+            throw new IllegalStateException(ERR_UPLOAD_WORKER_FAILED, cause);
+        } catch (java.util.concurrent.TimeoutException timedOut) {
+            throw new KsefNetworkException(ERR_UPLOAD_TIMED_OUT, timedOut);
+        }
     }
 
     /**
-     * Build the UPO-only placeholder {@link Invoice} carried on rebuilt
-     * {@link SubmittedInvoice} entries. The previous implementation built the
-     * placeholder from UPO bytes ({@code Invoice.fromXml(formCode, upo)}),
-     * which lied about the placeholder content — UPO XAdES bytes are NOT a
-     * valid FA/PEF invoice payload. The sentinel below makes the placeholder
-     * shape explicit; consumers needing the original invoice XML must call
-     * {@code client.invoices().archive().getByKsefNumber(...)}.
+     * Resolve the typed input for the SubmittedInvoice slot from KSeF's
+     * 1-based {@code ordinalNumber}. The two call paths are disjoint:
+     * {@code submit(List<I>, ...)} always passes a non-null typed-inputs
+     * list with the same length as the input, and the file-streaming path
+     * passes {@code null} (then {@code I = Invoice}). Both produce a value
+     * of the requested static type without an unchecked cast: the typed
+     * path indexes into a {@code List<I>}, the file path returns the
+     * static placeholder which is itself an {@code Invoice}.
      */
-    private static Invoice buildUpoPlaceholderInvoice() {
-        return Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
+    private static <I extends Invoice> I resolveTypedInput(@Nullable List<I> typedInputs, int ordinalNumber) {
+        if (typedInputs == null) {
+            // Caller's static type is Invoice (only submitFromFiles reaches here).
+            @SuppressWarnings("unchecked")
+            I placeholder = (I) UPO_PLACEHOLDER_INVOICE;
+            return placeholder;
+        }
+        int index = ordinalNumber - 1;
+        if (index < 0 || index >= typedInputs.size()) {
+            throw new IllegalStateException("KSeF ordinalNumber " + ordinalNumber
+                    + " is out of range for the submitted list (size=" + typedInputs.size() + ")");
+        }
+        return typedInputs.get(index);
     }
 
     private static boolean isSessionBusy(KsefException exception) {

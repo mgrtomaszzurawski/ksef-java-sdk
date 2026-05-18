@@ -20,7 +20,8 @@ import java.util.Optional;
  * memory, so invoice content can be encrypted and submitted. After the
  * session is closed, the AES material is zeroised; the only way to keep
  * accessing the session for read operations / UPO retrieval is to call
- * {@link #archive()} which returns a {@link ClosedSession} view.
+ * {@link #complete()} which closes the session AND returns a
+ * {@link ClosedSession} view in one call.
  *
  * <p>Idiomatic usage with try-with-resources + explicit archive:
  *
@@ -186,13 +187,13 @@ public interface OnlineSession extends Session {
      * retrieval. Equivalent to {@link #close()} plus obtaining the
      * archive view in one call.
      *
-     * <p>Subsequent {@code archive()} / {@code close()} calls are
+     * <p>Subsequent {@code complete()} / {@code close()} calls are
      * idempotent — the same {@link ClosedSession} instance is returned,
      * the underlying state machine flips to CLOSED only once.
      *
-     * <p>Calling {@link #send(byte[])} (or any other write method) after
-     * {@code archive()} throws {@link IllegalStateException} with an
-     * informative message.
+     * <p>Calling {@link #sendInvoice(Invoice)} (or any other {@code send*}
+     * method) after {@code complete()} throws {@link IllegalStateException}
+     * with an informative message.
      *
      * @return the read-only post-close view of this session
      */

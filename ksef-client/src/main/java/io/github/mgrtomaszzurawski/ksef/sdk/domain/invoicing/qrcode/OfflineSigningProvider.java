@@ -38,6 +38,9 @@ import java.util.Objects;
  */
 public interface OfflineSigningProvider {
 
+    /** Internal — null-arg message for the {@link #fromPrivateKey} factory. */
+    String ERR_NULL_CERTIFICATE = "certificate must not be null";
+
     /**
      * Sign and package the invoice into a self-contained
      * {@link OfflineInvoice} carrying KOD I + KOD II PNG bytes alongside
@@ -59,7 +62,7 @@ public interface OfflineSigningProvider {
      * for hardware-backed signing implement the interface directly.
      */
     static OfflineSigningProvider fromPrivateKey(KsefCertificate certificate) {
-        Objects.requireNonNull(certificate, "certificate must not be null");
+        Objects.requireNonNull(certificate, ERR_NULL_CERTIFICATE);
         return new OfflineSigningProvider() {
             @Override
             public <I extends Invoice> OfflineInvoice<I> signAndPackage(

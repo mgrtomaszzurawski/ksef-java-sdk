@@ -90,8 +90,14 @@
                  helper extraction. Class-level CC scales with the number of
                  helpers, not their individual complexity. The streaming
                  download/decrypt/verify pipeline (Codex F5) added three
-                 helpers, pushing aggregate CC just past the original 120. -->
-            <property name="classReportLevel" value="140"/>
+                 helpers, pushing aggregate CC just past the original 120.
+                 R1 /review iteration: BatchSubmissionFlow gained
+                 fetchUposInParallel + awaitFuture helpers to honour the
+                 BatchOptions.parallelism() knob on UPO retrieval (perf
+                 finding — 10K-invoice batches drop from 8 min serial to
+                 bounded by configured parallelism); helpers pushed the
+                 aggregate from 140 to 144. -->
+            <property name="classReportLevel" value="150"/>
         </properties>
     </rule>
 

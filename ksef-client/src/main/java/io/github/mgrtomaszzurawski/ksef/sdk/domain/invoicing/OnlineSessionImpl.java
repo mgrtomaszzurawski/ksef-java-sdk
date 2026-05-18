@@ -111,6 +111,10 @@ final class OnlineSessionImpl implements OnlineSession {
     private static final String ERR_SEND_INVOICE_REQUIRES_FULL_CTOR =
             "sendInvoice(Invoice) requires the verification-aware constructor (KsefEnvironment + timeout);"
                     + " InvoicesImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
+    private static final String ERR_FORM_CODE_LEGACY_CTOR =
+            "OnlineSession was opened without a FormCode (legacy ctor); "
+                    + "formCode() is only meaningful when the session was opened via "
+                    + "client.invoices().sessions().open(FormCode).";
 
     /** Default verification timeout when none is supplied via the builder. */
     static final Duration DEFAULT_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);
@@ -188,10 +192,7 @@ final class OnlineSessionImpl implements OnlineSession {
     @Override
     public FormCode formCode() {
         if (formCode == null) {
-            throw new IllegalStateException(
-                    "OnlineSession was opened without a FormCode (legacy ctor); "
-                            + "formCode() is only meaningful when the session was opened via "
-                            + "client.invoices().sessions().open(FormCode).");
+            throw new IllegalStateException(ERR_FORM_CODE_LEGACY_CTOR);
         }
         return formCode;
     }

@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 public final class AuthSessionsImpl implements AuthSessions {
 
     private static final String ERR_REF_NULL = "referenceNumber must not be null";
+    private static final String ERR_NULL_FILTER = "filter must not be null";
     private static final String ERR_NO_IP_AFTER_AUTH =
             "Auth completed but clientIp not populated — SDK internal error";
 
@@ -74,7 +75,7 @@ public final class AuthSessionsImpl implements AuthSessions {
     public AuthSessionListResult queryAuthSessions(AuthSessionsQueryRequest filter) {
         ensureOpen.run();
         ensureAuthenticated.run();
-        Objects.requireNonNull(filter, "filter must not be null");
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
         var page = authClient.listSessions(filter.continuationToken());
         List<AuthSession> mapped = page.items().stream().map(AuthSessionsImpl::toAuthSession).toList();
         return new AuthSessionListResult(mapped, page.continuationToken());

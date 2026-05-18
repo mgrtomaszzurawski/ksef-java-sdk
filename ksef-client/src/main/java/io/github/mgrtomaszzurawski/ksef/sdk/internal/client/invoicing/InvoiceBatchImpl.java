@@ -63,8 +63,7 @@ public final class InvoiceBatchImpl implements InvoiceBatch {
         if (invoices.isEmpty()) {
             throw new IllegalArgumentException(ERR_EMPTY_INVOICES);
         }
-        FormCode formCode = Objects.requireNonNull(
-                invoices.get(0).formCode(), "invoices.get(0).formCode() must not be null");
+        FormCode formCode = Objects.requireNonNull(invoices.get(0).formCode(), ERR_NULL_FORM_CODE);
         LOGGER.debug(LOG_CALL, OP_SUBMIT_BATCH);
         return newFlow().submit(formCode, invoices, options);
     }

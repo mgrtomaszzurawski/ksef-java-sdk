@@ -38,7 +38,10 @@ import java.security.KeyPair;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameBuilder;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -94,15 +97,9 @@ public final class CertificatesImpl implements Certificates {
 
     private static final String OP_REQUEST_NEW_CERTIFICATE = "requestNewCertificate";
     private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
-    private static final String DN_CN_PREFIX = "CN=";
-    private static final String DN_COUNTRY_PREFIX = ",C=";
-    private static final String DN_GIVEN_NAME_PREFIX = ",GIVENNAME=";
-    private static final String DN_SURNAME_PREFIX = ",SURNAME=";
-    private static final String DN_SERIAL_NUMBER_PREFIX = ",SERIALNUMBER=";
-    private static final String DN_ORGANIZATION_PREFIX = ",O=";
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP") // X.500 OID 2.5.4.97 — not an IP literal
-    private static final String OID_ORGANIZATION_IDENTIFIER = "2.5.4.97";
-    private static final String DN_ORGANIZATION_IDENTIFIER_PREFIX = "," + OID_ORGANIZATION_IDENTIFIER + "=";
+    /** X.500 organizationIdentifier OID; not in {@link BCStyle} as a named constant. */
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP") // OID, not an IP literal
+    private static final ASN1ObjectIdentifier OID_ORGANIZATION_IDENTIFIER = new ASN1ObjectIdentifier("2.5.4.97");
 
     private static final String PARAM_PAGE_OFFSET_PREFIX = "?pageOffset=";
     private static final String PARAM_PAGE_SIZE_PREFIX = "?pageSize=";
@@ -238,25 +235,29 @@ public final class CertificatesImpl implements Certificates {
 
     private static byte[] buildCsr(CertificateEnrollmentData subject, KeyPair keyPair)
             throws OperatorCreationException, IOException {
-        StringBuilder subjectDn = new StringBuilder()
-                .append(DN_CN_PREFIX).append(subject.commonName())
-                .append(DN_COUNTRY_PREFIX).append(subject.countryName());
+        // X500NameBuilder encodes each RDN value safely — no manual escaping of
+        // ',', '=', '+', '\\', '"', '<', '>', ';' needed. The previous StringBuilder
+        // approach assumed KSeF-supplied fields were RDN-clean; switching to the
+        // builder is defense in depth against a future KSeF change.
+        X500NameBuilder nameBuilder = new X500NameBuilder(BCStyle.INSTANCE)
+                .addRDN(BCStyle.CN, subject.commonName())
+                .addRDN(BCStyle.C, subject.countryName());
         if (subject.givenName() != null) {
-            subjectDn.append(DN_GIVEN_NAME_PREFIX).append(subject.givenName());
+            nameBuilder.addRDN(BCStyle.GIVENNAME, subject.givenName());
         }
         if (subject.surname() != null) {
-            subjectDn.append(DN_SURNAME_PREFIX).append(subject.surname());
+            nameBuilder.addRDN(BCStyle.SURNAME, subject.surname());
         }
         if (subject.serialNumber() != null) {
-            subjectDn.append(DN_SERIAL_NUMBER_PREFIX).append(subject.serialNumber());
+            nameBuilder.addRDN(BCStyle.SERIALNUMBER, subject.serialNumber());
         }
         if (subject.organizationName() != null) {
-            subjectDn.append(DN_ORGANIZATION_PREFIX).append(subject.organizationName());
+            nameBuilder.addRDN(BCStyle.O, subject.organizationName());
         }
         if (subject.organizationIdentifier() != null) {
-            subjectDn.append(DN_ORGANIZATION_IDENTIFIER_PREFIX).append(subject.organizationIdentifier());
+            nameBuilder.addRDN(OID_ORGANIZATION_IDENTIFIER, subject.organizationIdentifier());
         }
-        X500Name x500 = new X500Name(subjectDn.toString());
+        X500Name x500 = nameBuilder.build();
         JcaPKCS10CertificationRequestBuilder csrBuilder =
                 new JcaPKCS10CertificationRequestBuilder(x500, keyPair.getPublic());
         ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM).build(keyPair.getPrivate());

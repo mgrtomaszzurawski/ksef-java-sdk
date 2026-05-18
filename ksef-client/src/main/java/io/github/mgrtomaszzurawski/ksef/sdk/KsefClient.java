@@ -92,7 +92,7 @@ import org.slf4j.LoggerFactory;
  *         .build()) {
  *
  *     try (OnlineSession session = client.invoices().sessions().open(FormCode.FA3)) {
- *         session.send(invoiceXmlBytes);
+ *         session.sendInvoice(Invoice.fromXml(FormCode.FA3, invoiceXmlBytes));
  *     }
  * }
  * }</pre>
@@ -527,7 +527,7 @@ public final class KsefClient implements AutoCloseable {
          * {@link #readTimeout(Duration)}, which bounds how long the SDK
          * waits for the server's response once the connection is open.
          *
-         * <p>Default 30s. Set this lower for fail-fast probes against
+         * <p>Default 10s. Set this lower for fail-fast probes against
          * unreachable hosts; raise it when running over high-latency
          * links (mobile, geo-distant networks).
          *

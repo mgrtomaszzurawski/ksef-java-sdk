@@ -78,8 +78,9 @@ public interface InvoiceArchive {
      * XML root element + namespace and returns the matching typed
      * subclass ({@code Fa3InvoiceDocument}, {@code Fa2InvoiceDocument},
      * {@code PefInvoiceDocument}, {@code PefKorInvoiceDocument}). Unknown
-     * / custom schemas fall through to the minimal
-     * {@link InvoiceDocument#fromXml(FormCode, byte[])} wrapper.
+     * / custom schemas fall through to an anonymous {@link InvoiceDocument}
+     * wrapper exposing only {@link InvoiceDocument#formCode()} and
+     * {@link InvoiceDocument#xml()}.
      *
      * <p>If the consumer holds a raw string, parse it explicitly via
      * {@link KsefNumber#parse(String)} — keeping validation up-front at the
