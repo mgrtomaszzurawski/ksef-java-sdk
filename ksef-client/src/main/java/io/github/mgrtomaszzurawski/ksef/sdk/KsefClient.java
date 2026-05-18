@@ -176,7 +176,7 @@ public final class KsefClient implements AutoCloseable {
                 builder.invoiceVerificationTimeout,
                 builder.retryPolicy,
                 builder.featurePolicy,
-                builder.offlineSigningProvider != null);
+                Optional.ofNullable(builder.offlineSigningProvider));
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(builder.connectTimeout)
                 .build();
@@ -404,18 +404,6 @@ public final class KsefClient implements AutoCloseable {
      */
     public KsefClientConfig config() {
         return config;
-    }
-
-    /**
-     * The {@link OfflineSigningProvider} registered via
-     * {@link Builder#offlineSigning}, or empty when the client was built
-     * without one. Consumers using the offline path with a configured
-     * provider can let the SDK sign and package the invoice; consumers
-     * without one fall back to the lower-level
-     * {@code OfflineInvoice.fromInvoice(...)} factory.
-     */
-    public Optional<OfflineSigningProvider> offlineSigningProvider() {
-        return Optional.ofNullable(offlineSigningProvider);
     }
 
     /**
