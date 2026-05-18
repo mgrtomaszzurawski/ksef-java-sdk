@@ -127,8 +127,9 @@ public final class PermissionsMappers {
         return new PermissionOperationResult(rawValue.getReferenceNumber());
     }
 
-    public static PermissionOperationStatus toPermissionOperationStatus(PermissionsOperationStatusResponseRaw rawValue) {
-        return new PermissionOperationStatus(CommonMappers.toStatusInfo(rawValue.getStatus()));
+    public static PermissionOperationStatus toPermissionOperationStatus(String referenceNumber,
+                                                                        PermissionsOperationStatusResponseRaw rawValue) {
+        return new PermissionOperationStatus(referenceNumber, CommonMappers.toStatusInfo(rawValue.getStatus()));
     }
 
     public static PersonalPermission toPersonalPermission(PersonalPermissionRaw rawValue) {

@@ -299,7 +299,7 @@ public final class PermissionsImpl implements Permissions {
                     PermissionsOperationStatusResponseRaw raw = http.getAuthenticated(
                             PATH_OPERATION_STATUS + referenceNumber, token,
                             PermissionsOperationStatusResponseRaw.class, OP_GET_OPERATION_STATUS);
-                    return PermissionsMappers.toPermissionOperationStatus(raw);
+                    return PermissionsMappers.toPermissionOperationStatus(referenceNumber, raw);
                 },
                 status -> status.status() != null
                         && status.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD,

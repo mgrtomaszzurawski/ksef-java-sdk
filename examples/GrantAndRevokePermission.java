@@ -47,21 +47,20 @@ public final class GrantAndRevokePermission {
                     .invoiceRead();
 
             PermissionOperationStatus granted = client.permissions().grantPerson(grant.build());
-            System.out.println("Grant completed: code=" + granted.status().code()
+            System.out.println("Grant completed: ref=" + granted.referenceNumber()
+                    + " code=" + granted.status().code()
                     + " desc=" + granted.status().description());
 
-            // In production look up the permission ID via permissions().queryPersons(...)
-            // and pass that in. Demo flow doesn't have a stable ID without a query, so
-            // we skip revoke unless the caller passes KSEF_PERMISSION_ID.
-            String permissionId = System.getenv("KSEF_PERMISSION_ID");
-            if (permissionId != null && !permissionId.isBlank()) {
-                try {
-                    PermissionOperationStatus revoked = client.permissions().revokePermission(permissionId);
-                    System.out.println("Revoke completed: code=" + revoked.status().code()
-                            + " desc=" + revoked.status().description());
-                } catch (Exception revokeFailed) {
-                    System.out.println("Revoke skipped: " + revokeFailed.getMessage());
-                }
+            // The grant's referenceNumber doubles as the permissionId for
+            // the matching revoke — no extra queryPersons() lookup needed
+            // when undoing a freshly-issued grant.
+            try {
+                PermissionOperationStatus revoked = client.permissions().revokePermission(granted.referenceNumber());
+                System.out.println("Revoke completed: ref=" + revoked.referenceNumber()
+                        + " code=" + revoked.status().code()
+                        + " desc=" + revoked.status().description());
+            } catch (Exception revokeFailed) {
+                System.out.println("Revoke skipped: " + revokeFailed.getMessage());
             }
         }
     }

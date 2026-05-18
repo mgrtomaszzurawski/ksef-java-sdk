@@ -139,6 +139,7 @@ class PermissionClientTest {
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
