@@ -80,7 +80,7 @@ class BatchResultTest {
         List<ClearedInvoice<Invoice>> cleared = List.of();
         List<FailedInvoice> failed = List.of();
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                new BatchResult(REF, cleared, failed, 5, 0, 0, STARTED, COMPLETED));
+                new BatchResult<>(REF, cleared, failed, 5, 0, 0, STARTED, COMPLETED));
 
         assertTrue(ex.getMessage().contains("totalCount"));
     }

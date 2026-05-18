@@ -36,8 +36,9 @@ class InvoiceFileMetadataReaderTest {
             + "<CreditNote xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2\"/>";
     private static final String UNRECOGNISED_NAMESPACE_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             + "<Faktura xmlns=\"http://example.com/not-ksef\"/>";
+    private static final String UNRECOGNISED_ROOT_NAME = "RandomRoot";
     private static final String UNRECOGNISED_ROOT_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-            + "<RandomRoot/>";
+            + "<" + UNRECOGNISED_ROOT_NAME + "/>";
     private static final String MALFORMED_XML = "<?xml version=\"1.0\"?><Unclosed";
 
     @TempDir
@@ -93,7 +94,7 @@ class InvoiceFileMetadataReaderTest {
         KsefException thrown = assertThrows(KsefException.class,
                 () -> InvoiceFileMetadataReader.readFormCodeOrThrow(file));
         assertTrue(thrown.getMessage().contains(file.toString()));
-        assertTrue(thrown.getMessage().contains("RandomRoot"));
+        assertTrue(thrown.getMessage().contains(UNRECOGNISED_ROOT_NAME));
     }
 
     @Test

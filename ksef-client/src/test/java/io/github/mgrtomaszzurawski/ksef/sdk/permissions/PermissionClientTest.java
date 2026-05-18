@@ -267,6 +267,7 @@ class PermissionClientTest {
 
     @Test
     void revokeCommon_whenAuthenticated_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        // given
         stubFor(delete(urlEqualTo(PATH_REVOKE_COMMON))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
@@ -277,8 +278,10 @@ class PermissionClientTest {
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
+            // when
             PermissionOperationStatus response = ksef.permissions().revokePermission(TEST_PERMISSION_ID);
 
+            // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
@@ -286,6 +289,7 @@ class PermissionClientTest {
 
     @Test
     void revokeAuthorization_whenAuthenticated_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        // given
         stubFor(delete(urlEqualTo(PATH_REVOKE_AUTHORIZATION))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
@@ -296,9 +300,11 @@ class PermissionClientTest {
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
+            // when
             PermissionOperationStatus response =
                     ksef.permissions().revokeAuthorization(TEST_PERMISSION_ID);
 
+            // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }

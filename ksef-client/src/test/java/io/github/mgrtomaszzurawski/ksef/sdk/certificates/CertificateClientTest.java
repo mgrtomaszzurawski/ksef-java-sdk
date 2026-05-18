@@ -22,7 +22,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCert
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.security.KeyPair;

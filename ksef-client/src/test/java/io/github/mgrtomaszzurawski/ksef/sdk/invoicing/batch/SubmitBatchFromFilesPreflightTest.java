@@ -67,8 +67,11 @@ class SubmitBatchFromFilesPreflightTest {
                             FormCode.FA3, List.of(mismatched), FAST_OPTIONS));
             assertTrue(thrown.getMessage().contains(mismatched.toString()),
                     () -> "Error message should reference the offending file path: " + thrown.getMessage());
-            assertTrue(thrown.getMessage().contains("FA"),
-                    () -> "Error message should reference the form code mismatch: " + thrown.getMessage());
+            // Pin both halves of the mismatch — declared (FA2) and expected (FA3).
+            assertTrue(thrown.getMessage().contains(FormCode.FA2.toString()),
+                    () -> "Error message should reference the declared form code: " + thrown.getMessage());
+            assertTrue(thrown.getMessage().contains(FormCode.FA3.toString()),
+                    () -> "Error message should reference the expected form code: " + thrown.getMessage());
 
             // and — the batch-open endpoint was never hit
             assertEquals(0, findAll(postRequestedFor(urlMatching(BATCH_OPEN_PATH_REGEX))).size(),

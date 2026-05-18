@@ -163,6 +163,7 @@ public final class BatchSubmissionFlow {
     private static final String ERR_UPLOAD_TIMED_OUT = "Batch upload timed out";
     private static final String ERR_UPLOAD_WORKER_FAILED = "Batch upload worker failed";
     private static final String ERR_UPO_FETCH_TIMED_OUT = "Batch UPO fetch timed out";
+    private static final String ERR_UPO_FETCH_INTERRUPTED = "Interrupted while fetching batch UPOs";
     private static final String ERR_UPO_FETCH_WORKER_FAILED = "Batch UPO fetch worker failed";
     private static final String ERR_ORDINAL_OUT_OF_RANGE =
             "KSeF ordinalNumber %d is out of range for the submitted list (size=%d)";
@@ -758,7 +759,7 @@ public final class BatchSubmissionFlow {
 
     private static byte[] awaitFuture(Future<byte[]> future, long deadlineNanos) {
         return awaitFutureWithDeadline(future, deadlineNanos,
-                ERR_UPO_FETCH_TIMED_OUT, ERR_INTERRUPTED, ERR_UPO_FETCH_WORKER_FAILED);
+                ERR_UPO_FETCH_TIMED_OUT, ERR_UPO_FETCH_INTERRUPTED, ERR_UPO_FETCH_WORKER_FAILED);
     }
 
     /**

@@ -5,10 +5,12 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 /**
- * Thrown by
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsync#awaitTerminal}
- * when the configured timeout elapses before the polled status reaches a
- * terminal state.
+ * Thrown by the SDK's internal async-polling helper when the configured
+ * timeout elapses before the polled operation status reaches a terminal
+ * state. Surfaced verbatim from synchronous operations that internally
+ * poll (e.g. {@code Permissions.grant*} / {@code revoke*},
+ * {@code Certificates.requestNewCertificate}) after their per-call
+ * {@code Duration} budget is exhausted.
  *
  * <p>Lives in {@code sdk.exception} (an exported JPMS package) so modular
  * consumers can import it directly.
