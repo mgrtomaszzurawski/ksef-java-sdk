@@ -275,11 +275,20 @@ tasks.register<Javadoc>("javadocAll") {
         charSet = "UTF-8"
         docEncoding = "UTF-8"
         // JPMS-aware tooling defaults to showing only exported packages /
-        // public+protected members. The two `--show-*=all` flags override
-        // that filter (non-exported packages enter the navigation), and
-        // `-private` surfaces package-private + private members so internal
-        // collaborators are also clickable from internal call sites.
-        addStringOption("-show-module-contents", "all")
+        // public+protected members. `--show-packages=all` surfaces every
+        // package in the package listing (including non-exported
+        // sdk.internal.*), and `-private` surfaces package-private + private
+        // members so internal collaborators are clickable from internal call
+        // sites.
+        //
+        // R2-2: `--show-module-contents=all` triggers the JDK 17 javadoc bug
+        // "error: cannot read Input length = 1" on the module-summary
+        // generation path, swallowed silently by isFailOnError=false and
+        // producing no index.html. The flag was meant to also list internal
+        // packages in the module-summary navigation, but the package listing
+        // from `--show-packages=all` is sufficient for browsing internal
+        // code locally — module-summary nav is a non-essential extra view.
+        // Re-enable only after the JDK17 javadoc bug is patched upstream.
         addStringOption("-show-packages", "all")
         addBooleanOption("private", true)
         group("Entry point", "io.github.mgrtomaszzurawski.ksef.sdk")
