@@ -82,8 +82,11 @@ public final class TokensImpl implements Tokens {
         LOGGER.debug(LOG_CALL, OP_LIST);
         String token = http.requireToken();
         String path = PATH_TOKENS + buildQueryString(filter);
-        QueryTokensResponseRaw rawValue = http.getAuthenticated(path, token,
-                QueryTokensResponseRaw.class, OP_LIST);
+        QueryTokensResponseRaw rawValue = filter.continuationToken() == null
+                ? http.getAuthenticated(path, token, QueryTokensResponseRaw.class, OP_LIST)
+                : http.getAuthenticated(path, token, QueryTokensResponseRaw.class, OP_LIST,
+                        io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
+                        filter.continuationToken());
         return TokensMappers.toTokenList(rawValue);
     }
 

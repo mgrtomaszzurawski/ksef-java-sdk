@@ -20,16 +20,21 @@ public interface Tokens {
     GenerateTokenResult generate(TokenGenerateRequest request);
 
     /**
-     * Single-page list with the five spec-defined filter parameters
+     * Single-page list honouring the request's filter parameters
      * ({@code status[]}, {@code description}, {@code authorIdentifier},
-     * {@code authorIdentifierType}, {@code pageSize}). The continuation
-     * token is preserved on the returned {@link TokenList} for callers
-     * who want to drive paging manually; for lazy paging prefer
-     * {@link #streamTokens(TokenQueryRequest)}.
+     * {@code authorIdentifierType}, {@code pageSize}) and explicit
+     * {@code continuationToken} for page navigation. On the first call
+     * leave {@link TokenQueryRequest#continuationToken()} {@code null};
+     * for subsequent pages feed back the
+     * {@link TokenList#continuationToken()} returned by the previous
+     * call. The cursor is propagated via the spec's
+     * {@code x-continuation-token} request header. For lazy traversal
+     * across every page prefer {@link #streamTokens(TokenQueryRequest)}.
      *
      * <p>Pass
      * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenQueryBuilder#create()
-     * TokenQueryBuilder.create().build()} for an unfiltered query.
+     * TokenQueryBuilder.create().build()} for an unfiltered first-page
+     * query.
      */
     TokenList queryTokens(TokenQueryRequest filter);
 
@@ -39,6 +44,11 @@ public interface Tokens {
      * filter parameters are forwarded on every page. Pass
      * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenQueryBuilder#create()
      * TokenQueryBuilder.create().build()} for an unfiltered stream.
+     *
+     * <p>{@link TokenQueryRequest#continuationToken()} is
+     * <em>ignored</em> — the SDK paginator always starts from the
+     * beginning of the result set. Use {@link #queryTokens} when
+     * navigating from a known cursor.
      */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenListItem> streamTokens(TokenQueryRequest filter);
 
