@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 /**
- * Coordinator for KSeF invoice operations grouped into four focused
+ * Coordinator for KSeF invoice operations grouped into five focused
  * sub-areas. Each accessor returns a narrow interface that owns a single
  * area of responsibility:
  *
@@ -17,6 +17,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
  *       interactive sends, {@link InvoiceSessions#batch() batch} for
  *       package submission, and {@link InvoiceSessions#stream
  *       session-summary} streaming covering both types.</li>
+ *   <li>{@link #offline()} — build-only offline issuance:
+ *       assemble an {@link OfflineInvoice} (KOD I + KOD II) ready to be
+ *       sent through an online session.</li>
  *   <li>{@link #export()} — kick off export jobs and poll for
  *       completion.</li>
  *   <li>{@link #sync()} — incremental sync as a lazy
@@ -39,6 +42,14 @@ public interface Invoices {
      * submissions, and stream session summaries.
      */
     InvoiceSessions sessions();
+
+    /**
+     * Build-only offline issuance: assemble {@link OfflineInvoice}
+     * instances (KOD I + KOD II QR codes, optional technical-correction
+     * hash) for later send via
+     * {@code sessions().online(formCode).sendOfflineInvoice(...)}.
+     */
+    OfflineInvoices offline();
 
     /**
      * Invoice export jobs: start an export, poll its status, download

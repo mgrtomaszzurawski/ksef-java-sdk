@@ -251,7 +251,15 @@ final class OnlineSessionImpl implements OnlineSession {
         ensureFormCodeMatches(underlying);
         byte[] invoiceXml = offline.xml();
         InvoiceValidationGate.validate(offline.formCode(), invoiceXml);
-        SendInvoiceResult sendResult = send(SendInvoiceCommand.offline(invoiceXml));
+        // When the offline invoice carries hashOfCorrectedInvoice (built
+        // via OfflineInvoices.issueTechnicalCorrection or
+        // OfflineInvoiceBuilder.hashOfCorrectedInvoice), route through
+        // the technical-correction wire shape so the hash reaches the
+        // server (REQ-OFFLINE-004, ksef-docs/offline/korekta-techniczna.md).
+        SendInvoiceCommand command = offline.hashOfCorrectedInvoice()
+                .map(hash -> SendInvoiceCommand.technicalCorrection(invoiceXml, hash))
+                .orElseGet(() -> SendInvoiceCommand.offline(invoiceXml));
+        SendInvoiceResult sendResult = send(command);
         SessionInvoiceStatus terminalStatus = pollUntilVerified(sendResult.referenceNumber());
         return buildOfflineSubmittedInvoice(underlying, sendResult.referenceNumber(),
                 terminalStatus, offline.kodIQrPng(), offline.kodIIQrPng());
