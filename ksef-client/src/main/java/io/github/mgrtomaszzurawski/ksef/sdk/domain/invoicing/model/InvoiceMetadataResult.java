@@ -8,12 +8,48 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Result of querying invoice metadata.
+ * Single page of invoice metadata returned by
+ * {@code InvoiceArchive.queryByMetadata(...)}.
  *
- * @param hasMore whether more results are available
- * @param isTruncated whether the result set was truncated
- * @param permanentStorageHwmDate high-water-mark date for permanent storage
- * @param invoices list of invoice metadata
+ * <p><strong>Paging flow.</strong> Two flags drive navigation:
+ *
+ * <ul>
+ *   <li>{@link #hasMore} — {@code true} when at least one more page
+ *       exists past the current {@code pageOffset}. Increment
+ *       {@code pageOffset} and re-issue the query to fetch it. When
+ *       {@code false}, this is the terminal page.</li>
+ *   <li>{@link #isTruncated} — {@code true} when the filter set has
+ *       hit KSeF's hard <strong>10 000-record cap</strong> per
+ *       {@code (subjectType, dateRange, sortOrder)} tuple. Further
+ *       {@code pageOffset} increments past this point will NOT return
+ *       additional results. Workaround per spec
+ *       ({@code POST /invoices/query/metadata} description):
+ *       advance {@code dateRange.from} (or {@code dateRange.to},
+ *       depending on sort direction) past the last record's date,
+ *       reset {@code pageOffset = 0}, and re-issue. The
+ *       {@code streamByMetadata} paginator handles this transition
+ *       automatically.</li>
+ * </ul>
+ *
+ * <p>{@link #permanentStorageHwmDate} is populated only when
+ * {@code dateType = PermanentStorage} on the query. It is the
+ * server-stable timestamp below which the result set is guaranteed
+ * not to gain further records — used by the SDK's
+ * {@code InvoiceSync} orchestrator as the high-water-mark for
+ * incremental walks. For {@code Issue} / {@code Invoicing} date
+ * filters this field is {@code null} per spec.
+ *
+ * @param hasMore {@code true} when more pages exist past the current
+ *     {@code pageOffset}
+ * @param isTruncated {@code true} when the filter set hit the
+ *     server's 10 000-record cap (see flow above)
+ * @param permanentStorageHwmDate stability watermark for
+ *     {@code PermanentStorage}-date queries (non-null only when
+ *     {@code dateType = PermanentStorage}); guarantees that no
+ *     further records will appear in this result set below this
+ *     timestamp
+ * @param invoices the metadata records on this page (non-null,
+ *     possibly empty)
  *
  * @since 1.0.0
  */
