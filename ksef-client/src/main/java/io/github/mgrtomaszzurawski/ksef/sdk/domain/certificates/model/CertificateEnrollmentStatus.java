@@ -20,6 +20,6 @@ import org.jspecify.annotations.Nullable;
 public record CertificateEnrollmentStatus(
         OffsetDateTime requestDate,
         @Nullable StatusInfo status,
-        @Nullable String certificateSerialNumber) {
+        @Nullable CertificateSerialNumber certificateSerialNumber) {
 
 }

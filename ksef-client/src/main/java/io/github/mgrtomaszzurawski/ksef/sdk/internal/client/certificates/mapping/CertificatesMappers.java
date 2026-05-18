@@ -27,6 +27,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateQueryResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
@@ -93,7 +94,8 @@ public final class CertificatesMappers {
         return new CertificateEnrollmentStatus(
                 rawValue.getRequestDate(),
                 CommonMappers.toStatusInfo(rawValue.getStatus()),
-                rawValue.getCertificateSerialNumber());
+                rawValue.getCertificateSerialNumber() == null
+                        ? null : CertificateSerialNumber.parse(rawValue.getCertificateSerialNumber()));
     }
 
     public static @Nullable CertificateLimit toCertificateLimit(@Nullable CertificateLimitRaw rawValue) {
@@ -119,7 +121,7 @@ public final class CertificatesMappers {
             subIdValue = rawValue.getSubjectIdentifier().getValue();
         }
         return new CertificateListItem(
-                rawValue.getCertificateSerialNumber(),
+                CertificateSerialNumber.parse(rawValue.getCertificateSerialNumber()),
                 rawValue.getName(),
                 rawValue.getType().getValue(),
                 rawValue.getCommonName(),
@@ -150,7 +152,7 @@ public final class CertificatesMappers {
         return RetrievedCertificate.from(
                 rawValue.getCertificate(),
                 rawValue.getCertificateName(),
-                rawValue.getCertificateSerialNumber(),
+                CertificateSerialNumber.parse(rawValue.getCertificateSerialNumber()),
                 toKsefCertificateType(rawValue.getCertificateType()));
     }
 

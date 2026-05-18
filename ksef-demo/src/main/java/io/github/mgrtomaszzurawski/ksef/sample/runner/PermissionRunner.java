@@ -22,7 +22,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonalP
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubordinateEntityRolesQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.SubunitPermissionsQueryBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -52,7 +52,6 @@ public final class PermissionRunner implements DemoRunner {
     private static final String OP_GRANT_SUBUNIT = "grantSubunit";
     private static final String OP_GRANT_EU_ENTITY_ADMIN = "grantEuEntityAdmin";
     private static final String OP_GRANT_EU_ENTITY = "grantEuEntity";
-    private static final String OP_GET_OP_STATUS = "getOperationStatus";
     private static final String OP_QUERY_PERSONAL = "queryPersonal";
     private static final String OP_QUERY_PERSONS = "queryPersons";
     private static final String OP_QUERY_SUBUNITS = "querySubunits";
@@ -87,9 +86,14 @@ public final class PermissionRunner implements DemoRunner {
     private static final String GRANT_EU_ADMIN_DESC = "SDK Demo EU admin grant - will be revoked";
     private static final String GRANT_EU_ENTITY_DESC = "SDK Demo EU entity grant - will be revoked";
 
-    private static final String DEPENDS_ON_GRANT = "depends on grant";
     private static final String SKIP_REQUIRES_NIP_VAT_UE =
             "requires NipVatUe-context credentials (current creds are NIP-context)";
+    private static final String DEPENDS_ON_GRANT = "depends on grant";
+
+    private static final String CODE_PREFIX = "code=";
+    private static final String LOG_TERMINAL_TEMPLATE = "[{}] {} terminal code={}";
+    private static final String LOG_REVOKED = "[{}] revoked id={}";
+    private static final String REVOKED_PREFIX = "revoked ";
 
     @Override
     public String name() { return NAME; }
@@ -121,70 +125,68 @@ public final class PermissionRunner implements DemoRunner {
     }
 
     private void runPersonGrantCycle(DemoContext context, List<RunResult> results) {
-        String operationRef = runGrantPerson(context, results);
-        if (operationRef != null) {
-            runGetOperationStatus(context, operationRef, results);
-            runRevokeCommon(context, operationRef, results);
+        String permissionId = runGrantPerson(context, results);
+        if (permissionId != null) {
+            runRevokeCommon(context, permissionId, results);
         } else {
-            results.add(RunResult.skip(NAME, OP_GET_OP_STATUS + "[person]", DEPENDS_ON_GRANT));
             results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[person]", DEPENDS_ON_GRANT));
         }
     }
 
     private void runEntityGrantCycle(DemoContext context, List<RunResult> results) {
-        String operationRef = runGrantEntity(context, results);
-        if (operationRef != null) {
-            runRevokeCommon(context, operationRef, results);
+        String permissionId = runGrantEntity(context, results);
+        if (permissionId != null) {
+            runRevokeCommon(context, permissionId, results);
         } else {
             results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[entity]", DEPENDS_ON_GRANT));
         }
     }
 
     private void runAuthorizationGrantCycle(DemoContext context, List<RunResult> results) {
-        String operationRef = runGrantAuthorization(context, results);
-        if (operationRef != null) {
-            runRevokeAuthorization(context, operationRef, results);
+        String permissionId = runGrantAuthorization(context, results);
+        if (permissionId != null) {
+            runRevokeAuthorization(context, permissionId, results);
         } else {
-            results.add(RunResult.skip(NAME, OP_REVOKE_AUTHORIZATION, DEPENDS_ON_GRANT));
+            results.add(RunResult.skip(NAME, OP_REVOKE_AUTHORIZATION + "[authorization]", DEPENDS_ON_GRANT));
         }
     }
 
     private void runIndirectGrantCycle(DemoContext context, List<RunResult> results) {
-        String operationRef = runGrantIndirect(context, results);
-        if (operationRef != null) {
-            runRevokeCommon(context, operationRef, results);
+        String permissionId = runGrantIndirect(context, results);
+        if (permissionId != null) {
+            runRevokeCommon(context, permissionId, results);
         } else {
             results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[indirect]", DEPENDS_ON_GRANT));
         }
     }
 
     private void runSubunitGrantCycle(DemoContext context, List<RunResult> results) {
-        String operationRef = runGrantSubunit(context, results);
-        if (operationRef != null) {
-            runRevokeCommon(context, operationRef, results);
+        String permissionId = runGrantSubunit(context, results);
+        if (permissionId != null) {
+            runRevokeCommon(context, permissionId, results);
         } else {
             results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[subunit]", DEPENDS_ON_GRANT));
         }
     }
 
     private void runEuEntityAdminGrantCycle(DemoContext context, List<RunResult> results) {
-        String operationRef = runGrantEuEntityAdmin(context, results);
-        if (operationRef != null) {
-            runRevokeCommon(context, operationRef, results);
+        String permissionId = runGrantEuEntityAdmin(context, results);
+        if (permissionId != null) {
+            runRevokeAuthorization(context, permissionId, results);
         } else {
-            results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[euAdmin]", DEPENDS_ON_GRANT));
+            results.add(RunResult.skip(NAME, OP_REVOKE_AUTHORIZATION + "[euEntityAdmin]", DEPENDS_ON_GRANT));
         }
     }
 
     private void runEuEntityGrantCycle(DemoContext context, List<RunResult> results) {
         if (context.identifierType() != KsefIdentifier.Type.NIP_VAT_UE) {
             results.add(RunResult.skip(NAME, OP_GRANT_EU_ENTITY, SKIP_REQUIRES_NIP_VAT_UE));
-            results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[euEntity]", SKIP_REQUIRES_NIP_VAT_UE));
+            results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[euEntity]", DEPENDS_ON_GRANT));
             return;
         }
-        String operationRef = runGrantEuEntity(context, results);
-        if (operationRef != null) {
-            runRevokeCommon(context, operationRef, results);
+        String permissionId = runGrantEuEntity(context, results);
+        if (permissionId != null) {
+            runRevokeCommon(context, permissionId, results);
         } else {
             results.add(RunResult.skip(NAME, OP_REVOKE_COMMON + "[euEntity]", DEPENDS_ON_GRANT));
         }
@@ -198,11 +200,8 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_PERSON_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
                     .invoiceRead();
-            PermissionOperationResult response = context.client().permissions().grantPerson(builder.build());
-            String refNum = response.referenceNumber();
-            LOGGER.info("[{}] granted person permission, ref={}", NAME, refNum);
-            results.add(RunResult.ok(NAME, OP_GRANT_PERSON, elapsed(start), "ref=" + refNum));
-            return refNum;
+            PermissionOperationStatus response = context.client().permissions().grantPerson(builder.build());
+            return recordGrantOk(OP_GRANT_PERSON, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_PERSON, elapsed(start), errorMessage(exception)));
             return null;
@@ -217,11 +216,8 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_ENTITY_DESC)
                     .entityDetails(TEST_ENTITY_FULL_NAME)
                     .invoiceRead();
-            PermissionOperationResult response = context.client().permissions().grantEntity(builder.build());
-            String refNum = response.referenceNumber();
-            LOGGER.info("[{}] granted entity permission, ref={}", NAME, refNum);
-            results.add(RunResult.ok(NAME, OP_GRANT_ENTITY, elapsed(start), "ref=" + refNum));
-            return refNum;
+            PermissionOperationStatus response = context.client().permissions().grantEntity(builder.build());
+            return recordGrantOk(OP_GRANT_ENTITY, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_ENTITY, elapsed(start), errorMessage(exception)));
             return null;
@@ -236,11 +232,8 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_AUTH_DESC)
                     .entityDetails(TEST_AUTHORIZATION_NAME)
                     .selfInvoicing();
-            PermissionOperationResult response = context.client().permissions().grantAuthorization(builder.build());
-            String refNum = response.referenceNumber();
-            LOGGER.info("[{}] granted authorization permission, ref={}", NAME, refNum);
-            results.add(RunResult.ok(NAME, OP_GRANT_AUTHORIZATION, elapsed(start), "ref=" + refNum));
-            return refNum;
+            PermissionOperationStatus response = context.client().permissions().grantAuthorization(builder.build());
+            return recordGrantOk(OP_GRANT_AUTHORIZATION, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_AUTHORIZATION, elapsed(start), errorMessage(exception)));
             return null;
@@ -255,11 +248,8 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_INDIRECT_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
                     .invoiceRead();
-            PermissionOperationResult response = context.client().permissions().grantIndirect(builder.build());
-            String refNum = response.referenceNumber();
-            LOGGER.info("[{}] granted indirect permission, ref={}", NAME, refNum);
-            results.add(RunResult.ok(NAME, OP_GRANT_INDIRECT, elapsed(start), "ref=" + refNum));
-            return refNum;
+            PermissionOperationStatus response = context.client().permissions().grantIndirect(builder.build());
+            return recordGrantOk(OP_GRANT_INDIRECT, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_INDIRECT, elapsed(start), errorMessage(exception)));
             return null;
@@ -274,11 +264,8 @@ public final class PermissionRunner implements DemoRunner {
                     .contextNip(TEST_SUBUNIT_CONTEXT_NIP)
                     .description(GRANT_SUBUNIT_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME);
-            PermissionOperationResult response = context.client().permissions().grantSubunit(builder.build());
-            String refNum = response.referenceNumber();
-            LOGGER.info("[{}] granted subunit permission, ref={}", NAME, refNum);
-            results.add(RunResult.ok(NAME, OP_GRANT_SUBUNIT, elapsed(start), "ref=" + refNum));
-            return refNum;
+            PermissionOperationStatus response = context.client().permissions().grantSubunit(builder.build());
+            return recordGrantOk(OP_GRANT_SUBUNIT, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_SUBUNIT, elapsed(start), errorMessage(exception)));
             return null;
@@ -295,11 +282,8 @@ public final class PermissionRunner implements DemoRunner {
                     .euEntityName(TEST_EU_ENTITY_NAME)
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
                     .euEntityDetails(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS);
-            PermissionOperationResult response = context.client().permissions().grantEuEntityAdmin(builder.build());
-            String refNum = response.referenceNumber();
-            LOGGER.info("[{}] granted EU entity admin permission, ref={}", NAME, refNum);
-            results.add(RunResult.ok(NAME, OP_GRANT_EU_ENTITY_ADMIN, elapsed(start), "ref=" + refNum));
-            return refNum;
+            PermissionOperationStatus response = context.client().permissions().grantEuEntityAdmin(builder.build());
+            return recordGrantOk(OP_GRANT_EU_ENTITY_ADMIN, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_EU_ENTITY_ADMIN, elapsed(start), errorMessage(exception)));
             return null;
@@ -314,26 +298,58 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_EU_ENTITY_DESC)
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
                     .invoiceRead();
-            PermissionOperationResult response = context.client().permissions().grantEuEntity(builder.build());
-            String refNum = response.referenceNumber();
-            LOGGER.info("[{}] granted EU entity permission, ref={}", NAME, refNum);
-            results.add(RunResult.ok(NAME, OP_GRANT_EU_ENTITY, elapsed(start), "ref=" + refNum));
-            return refNum;
+            PermissionOperationStatus response = context.client().permissions().grantEuEntity(builder.build());
+            return recordGrantOk(OP_GRANT_EU_ENTITY, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_EU_ENTITY, elapsed(start), errorMessage(exception)));
             return null;
         }
     }
 
-    private void runGetOperationStatus(DemoContext context, String referenceNumber, List<RunResult> results) {
+    private static String terminalCode(PermissionOperationStatus status) {
+        return status.status() == null ? "null" : Integer.toString(status.status().code());
+    }
+
+    /**
+     * Shared OK-path helper for every grant runner: logs the terminal
+     * code, records the OK result, and returns the operation's
+     * {@code referenceNumber} so the grant cycle can chain a revoke.
+     */
+    private static String recordGrantOk(String op, PermissionOperationStatus response,
+                                        List<RunResult> results, long start) {
+        String code = terminalCode(response);
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(LOG_TERMINAL_TEMPLATE, NAME, op, code);
+        }
+        results.add(RunResult.ok(NAME, op, elapsed(start), CODE_PREFIX + code));
+        return response.referenceNumber();
+    }
+
+    private void runRevokeCommon(DemoContext context, String permissionId, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            var response = context.client().permissions().getOperationStatus(referenceNumber);
-            LOGGER.info("[{}] operation status: code={}", NAME,
-                    response.status() != null ? response.status().code() : "null");
-            results.add(RunResult.ok(NAME, OP_GET_OP_STATUS, elapsed(start)));
+            PermissionOperationStatus response = context.client().permissions().revokePermission(permissionId);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_REVOKED, NAME, permissionId);
+            }
+            results.add(RunResult.ok(NAME, OP_REVOKE_COMMON, elapsed(start),
+                    REVOKED_PREFIX + permissionId + " " + CODE_PREFIX + terminalCode(response)));
         } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_GET_OP_STATUS, elapsed(start), errorMessage(exception)));
+            results.add(RunResult.fail(NAME, OP_REVOKE_COMMON, elapsed(start), errorMessage(exception)));
+        }
+    }
+
+    private void runRevokeAuthorization(DemoContext context, String permissionId, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            PermissionOperationStatus response = context.client().permissions().revokeAuthorization(permissionId);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(LOG_REVOKED, NAME, permissionId);
+            }
+            results.add(RunResult.ok(NAME, OP_REVOKE_AUTHORIZATION, elapsed(start),
+                    REVOKED_PREFIX + permissionId + " " + CODE_PREFIX + terminalCode(response)));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_REVOKE_AUTHORIZATION, elapsed(start), errorMessage(exception)));
         }
     }
 
@@ -345,28 +361,6 @@ public final class PermissionRunner implements DemoRunner {
             results.add(RunResult.ok(NAME, OP_GET_ATTACHMENT, elapsed(start)));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GET_ATTACHMENT, elapsed(start), errorMessage(exception)));
-        }
-    }
-
-    private void runRevokeCommon(DemoContext context, String permissionId, List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        try {
-            context.client().permissions().revokePermission(permissionId);
-            LOGGER.info("[{}] revoked permission id={}", NAME, permissionId);
-            results.add(RunResult.ok(NAME, OP_REVOKE_COMMON, elapsed(start), "revoked " + permissionId));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_REVOKE_COMMON, elapsed(start), errorMessage(exception)));
-        }
-    }
-
-    private void runRevokeAuthorization(DemoContext context, String permissionId, List<RunResult> results) {
-        long start = System.currentTimeMillis();
-        try {
-            context.client().permissions().revokeAuthorization(permissionId);
-            LOGGER.info("[{}] revoked authorization id={}", NAME, permissionId);
-            results.add(RunResult.ok(NAME, OP_REVOKE_AUTHORIZATION, elapsed(start), "revoked " + permissionId));
-        } catch (Exception exception) {
-            results.add(RunResult.fail(NAME, OP_REVOKE_AUTHORIZATION, elapsed(start), errorMessage(exception)));
         }
     }
 

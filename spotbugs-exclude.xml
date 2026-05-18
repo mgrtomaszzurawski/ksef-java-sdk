@@ -54,12 +54,18 @@
         <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
-    <!-- Top-level records under sdk.common (PublicKeyCertificate has byte[] cert
-         field) and sdk.config (credentials hold char[] / X509Certificate /
+    <!-- Top-level records under sdk.common, sdk.internal.runtime.crypto
+         (PublicKeyCertificate has byte[] cert field, KsefCryptoService/
+         EncryptionMaterial/FileMetadata/KsefEncryptionInfo moved here in R1-5),
+         and sdk.config (credentials hold char[] / X509Certificate /
          PrivateKey by design — identity objects that cannot be meaningfully
          copied). -->
     <Match>
         <Package name="io.github.mgrtomaszzurawski.ksef.sdk.common"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
     <Match>

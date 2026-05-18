@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -17,6 +18,11 @@ import java.util.Objects;
  * the time the call returns, every accepted invoice already has its UPO
  * downloaded.
  *
+ * @param <I> the static {@link Invoice} subtype propagated from
+ *     {@code InvoiceBatch.submit(List<I>, BatchOptions)}; preserved on
+ *     each embedded {@link ClearedInvoice} so callers do not need to
+ *     downcast {@code result.cleared().get(0).submitted().invoice()}
+ *     back to a typed invoice
  * @param sessionRef the KSeF batch session reference number
  * @param cleared one {@link ClearedInvoice} per accepted invoice — embeds
  *     the full {@code SubmittedInvoice} chain (input invoice + KSeF
@@ -36,9 +42,9 @@ import java.util.Objects;
  *
  * @since 1.0.0
  */
-public record BatchResult(
+public record BatchResult<I extends Invoice>(
         String sessionRef,
-        List<ClearedInvoice> cleared,
+        List<ClearedInvoice<I>> cleared,
         List<FailedInvoice> failed,
         int totalCount,
         int successfulCount,

@@ -14,6 +14,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.QueryCertificatesResponseRa
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RetrieveCertificatesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.RevokeCertificateRequestRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsync;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentData;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateEnrollmentStatus;
@@ -23,12 +25,28 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateRevocationReason;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.CertificateSerialNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrieveCertificatesResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrievedCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
+import java.io.IOException;
+import java.security.KeyPair;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameBuilder;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport.requireSafePathSegment;
@@ -69,6 +87,19 @@ public final class CertificatesImpl implements Certificates {
     private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBERS = "certificateSerialNumbers is required";
     private static final String ERR_NULL_CERTIFICATE_SERIAL_NUMBER = "certificateSerialNumber must not be null";
     private static final String ERR_NULL_REVOCATION_REASON = "revocationReason is required";
+    private static final String ERR_NULL_KEY_PAIR = "keyPair must not be null";
+    private static final String ERR_NULL_TIMEOUT = "timeout must not be null";
+    private static final String ERR_BUILD_CSR = "Failed to build PKCS#10 CSR from supplied key pair and KSeF subject";
+    private static final String ERR_RETRIEVE_EMPTY = "KSeF enrollment terminal status carried no DER bytes";
+
+    /** Default sync timeout for cert enrollment workflow (ADR-032). */
+    private static final Duration DEFAULT_ENROLL_TIMEOUT = Duration.ofMinutes(5);
+
+    private static final String OP_REQUEST_NEW_CERTIFICATE = "requestNewCertificate";
+    private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
+    /** X.500 organizationIdentifier OID; not in {@link BCStyle} as a named constant. */
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP") // OID, not an IP literal
+    private static final ASN1ObjectIdentifier OID_ORGANIZATION_IDENTIFIER = new ASN1ObjectIdentifier("2.5.4.97");
 
     private static final String PARAM_PAGE_OFFSET_PREFIX = "?pageOffset=";
     private static final String PARAM_PAGE_SIZE_PREFIX = "?pageSize=";
@@ -107,12 +138,12 @@ public final class CertificatesImpl implements Certificates {
     }
 
     /**
-     * Get data required for certificate enrollment (CSR template, allowed types).
-     *
-     * @return enrollment data with CSR requirements
+     * Internal — server-derived CSR subject fields for the current auth
+     * session. Used only by the workflow wrapper
+     * {@link #requestNewCertificate(KeyPair)}; not part of the public API
+     * surface per ADR-032.
      */
-    @Override
-    public CertificateEnrollmentData getEnrollmentData() {
+    CertificateEnrollmentData requiredCsrSubjectFromClientSession() {
         LOGGER.debug(LOG_CALL, OP_GET_ENROLLMENT_DATA);
         warnIfNotCertificateAuth(OP_GET_ENROLLMENT_DATA);
         String token = http.requireToken();
@@ -122,13 +153,10 @@ public final class CertificatesImpl implements Certificates {
     }
 
     /**
-     * Enroll (register) a new certificate.
-     *
-     * @param request enrollment request with certificate name, type, and CSR
-     * @return response with enrollment reference number
+     * Internal — submit a CSR for enrollment. Used by the workflow
+     * wrapper; not part of the public API surface per ADR-032.
      */
-    @Override
-    public EnrollCertificateResult enroll(CertificateEnrollRequest request) {
+    EnrollCertificateResult enrollInternal(CertificateEnrollRequest request) {
         LOGGER.debug(LOG_CALL, OP_ENROLL);
         warnIfNotCertificateAuth(OP_ENROLL);
         Objects.requireNonNull(request, ERR_NULL_REQUEST);
@@ -140,19 +168,101 @@ public final class CertificatesImpl implements Certificates {
     }
 
     /**
-     * Get the status of a certificate enrollment.
-     *
-     * @param referenceNumber the enrollment reference number
-     * @return enrollment status
+     * Internal — poll an enrollment by reference number. Used by the
+     * workflow wrapper; not part of the public API surface per ADR-032.
      */
-    @Override
-    public CertificateEnrollmentStatus getEnrollmentStatus(String referenceNumber) {
+    CertificateEnrollmentStatus getEnrollmentStatusInternal(String referenceNumber) {
         LOGGER.debug(LOG_CALL_REF, OP_GET_ENROLLMENT_STATUS, referenceNumber);
         requireSafePathSegment(referenceNumber);
         String token = http.requireToken();
         CertificateEnrollmentStatusResponseRaw rawValue = http.getAuthenticated(ApiPaths.subPath(PATH_ENROLLMENTS, referenceNumber), token,
                 CertificateEnrollmentStatusResponseRaw.class, OP_GET_ENROLLMENT_STATUS);
         return CertificatesMappers.toCertificateEnrollmentStatus(rawValue);
+    }
+
+    @Override
+    public RetrievedCertificate requestNewCertificate(KeyPair keyPair) {
+        return requestNewCertificate(keyPair, DEFAULT_ENROLL_TIMEOUT);
+    }
+
+    @Override
+    public RetrievedCertificate requestNewCertificate(KeyPair keyPair, Duration timeout) {
+        Objects.requireNonNull(keyPair, ERR_NULL_KEY_PAIR);
+        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
+        LOGGER.debug(LOG_CALL, OP_REQUEST_NEW_CERTIFICATE);
+        warnIfNotCertificateAuth(OP_REQUEST_NEW_CERTIFICATE);
+
+        // Step 1: pull required CSR subject from the current auth session.
+        CertificateEnrollmentData subject = requiredCsrSubjectFromClientSession();
+
+        // Step 2: build PKCS#10 CSR from KeyPair + subject locally.
+        byte[] csrDer;
+        try {
+            csrDer = buildCsr(subject, keyPair);
+        } catch (OperatorCreationException | IOException csrFailure) {
+            throw new KsefCryptoException(ERR_BUILD_CSR, csrFailure);
+        }
+
+        // Step 3: submit enrollment.
+        KsefCertificateType certType = KsefCertificateType.AUTHENTICATION;
+        CertificateEnrollRequest enrollRequest = new CertificateEnrollRequest(
+                subject.commonName(), certType, csrDer, null);
+        EnrollCertificateResult enrollResult = enrollInternal(enrollRequest);
+
+        // Step 4: poll until terminal (or timeout).
+        CertificateEnrollmentStatus terminal = KsefAsync.awaitTerminal(new KsefAsync.Config<>(
+                OP_REQUEST_NEW_CERTIFICATE,
+                () -> getEnrollmentStatusInternal(enrollResult.referenceNumber()),
+                status -> status.status() != null
+                        && status.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD,
+                status -> status.status() == null ? null : status.status().code(),
+                timeout,
+                null));
+
+        if (terminal.certificateSerialNumber() == null) {
+            throw new KsefException(ERR_RETRIEVE_EMPTY + ": enrollment status code="
+                    + (terminal.status() == null ? "?" : terminal.status().code()), null);
+        }
+
+        // Step 5: retrieve the DER bytes for the freshly-issued certificate.
+        CertificateSerialNumber serial = terminal.certificateSerialNumber();
+        RetrieveCertificatesResult retrieved = retrieve(List.of(serial));
+        if (retrieved.certificates().isEmpty()) {
+            throw new KsefException(ERR_RETRIEVE_EMPTY + " for serial=" + serial.value(), null);
+        }
+        return retrieved.certificates().get(0);
+    }
+
+    private static byte[] buildCsr(CertificateEnrollmentData subject, KeyPair keyPair)
+            throws OperatorCreationException, IOException {
+        // X500NameBuilder encodes each RDN value safely — no manual escaping of
+        // ',', '=', '+', '\\', '"', '<', '>', ';' needed. The previous StringBuilder
+        // approach assumed KSeF-supplied fields were RDN-clean; switching to the
+        // builder is defense in depth against a future KSeF change.
+        X500NameBuilder nameBuilder = new X500NameBuilder(BCStyle.INSTANCE)
+                .addRDN(BCStyle.CN, subject.commonName())
+                .addRDN(BCStyle.C, subject.countryName());
+        if (subject.givenName() != null) {
+            nameBuilder.addRDN(BCStyle.GIVENNAME, subject.givenName());
+        }
+        if (subject.surname() != null) {
+            nameBuilder.addRDN(BCStyle.SURNAME, subject.surname());
+        }
+        if (subject.serialNumber() != null) {
+            nameBuilder.addRDN(BCStyle.SERIALNUMBER, subject.serialNumber());
+        }
+        if (subject.organizationName() != null) {
+            nameBuilder.addRDN(BCStyle.O, subject.organizationName());
+        }
+        if (subject.organizationIdentifier() != null) {
+            nameBuilder.addRDN(OID_ORGANIZATION_IDENTIFIER, subject.organizationIdentifier());
+        }
+        X500Name x500 = nameBuilder.build();
+        JcaPKCS10CertificationRequestBuilder csrBuilder =
+                new JcaPKCS10CertificationRequestBuilder(x500, keyPair.getPublic());
+        ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM).build(keyPair.getPrivate());
+        PKCS10CertificationRequest certificationRequest = csrBuilder.build(signer);
+        return certificationRequest.getEncoded();
     }
 
     /**

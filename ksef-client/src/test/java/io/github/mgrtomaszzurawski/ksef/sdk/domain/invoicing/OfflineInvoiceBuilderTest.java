@@ -39,7 +39,7 @@ class OfflineInvoiceBuilderTest {
         Invoice invoice = Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML);
 
         // when
-        OfflineInvoice offline = OfflineInvoiceBuilder.forInvoice(invoice)
+        var offline = OfflineInvoiceBuilder.forInvoice(invoice)
                 .signingCertificate(certificate)
                 .offlineMode(OfflineMode.OFFLINE_24)
                 .qrEnvironment(QrEnvironment.TEST)
@@ -118,7 +118,7 @@ class OfflineInvoiceBuilderTest {
         }
 
         // when
-        OfflineInvoice offline = OfflineInvoiceBuilder
+        var offline = OfflineInvoiceBuilder
                 .forInvoice(Invoice.fromXml(CUSTOM_CODE, SIMPLE_XML))
                 .signingCertificate(certificate)
                 .offlineMode(OfflineMode.KSEF_UNAVAILABILITY)

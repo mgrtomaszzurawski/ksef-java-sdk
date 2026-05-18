@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 import io.github.mgrtomaszzurawski.ksef.client.model.EncryptionInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
@@ -94,7 +94,7 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
 
         return SessionHandleConstructor.newOnlineSession(
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SessionHandle(
-                        sessionClient, openResult.referenceNumber(), aesKey, initVector),
+                        sessionClient, openResult.referenceNumber(), aesKey, initVector, formCode),
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceVerificationConfig(
                         openResult.validUntil(), environment, invoiceVerificationTimeout),
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OfflineSendHook(

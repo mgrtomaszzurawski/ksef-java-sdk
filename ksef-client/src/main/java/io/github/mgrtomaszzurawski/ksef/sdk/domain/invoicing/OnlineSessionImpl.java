@@ -111,6 +111,10 @@ final class OnlineSessionImpl implements OnlineSession {
     private static final String ERR_SEND_INVOICE_REQUIRES_FULL_CTOR =
             "sendInvoice(Invoice) requires the verification-aware constructor (KsefEnvironment + timeout);"
                     + " InvoicesImpl wires it automatically — legacy fixtures must use send(byte[]) instead";
+    private static final String ERR_FORM_CODE_LEGACY_CTOR =
+            "OnlineSession was opened without a FormCode (legacy ctor); "
+                    + "formCode() is only meaningful when the session was opened via "
+                    + "client.invoices().sessions().open(FormCode).";
 
     /** Default verification timeout when none is supplied via the builder. */
     static final Duration DEFAULT_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);
@@ -119,10 +123,14 @@ final class OnlineSessionImpl implements OnlineSession {
     /** A status with code &lt; 200 means KSeF is still processing the invoice. */
     private static final int VERIFICATION_TERMINAL_THRESHOLD = STATUS_CODE_OK;
 
+    private static final String ERR_FORM_CODE_MISMATCH =
+            "Invoice formCode %s does not match session formCode %s";
+
     private final SessionClient sessionClient;
     private final String referenceNumber;
     private final byte[] aesKey;
     private final byte[] initVector;
+    @Nullable private final FormCode formCode;
     @Nullable private final OffsetDateTime validUntil;
     @Nullable private final KsefEnvironment environment;
     private final Duration invoiceVerificationTimeout;
@@ -143,7 +151,7 @@ final class OnlineSessionImpl implements OnlineSession {
 
     OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector) {
-        this(new SessionHandle(sessionClient, referenceNumber, aesKey, initVector),
+        this(new SessionHandle(sessionClient, referenceNumber, aesKey, initVector, null),
                 new InvoiceVerificationConfig(null, null, DEFAULT_VERIFICATION_TIMEOUT),
                 OfflineSendHook.empty());
     }
@@ -151,7 +159,7 @@ final class OnlineSessionImpl implements OnlineSession {
     OnlineSessionImpl(SessionClient sessionClient, String referenceNumber,
                 byte[] aesKey, byte[] initVector,
                 @Nullable OffsetDateTime validUntil) {
-        this(new SessionHandle(sessionClient, referenceNumber, aesKey, initVector),
+        this(new SessionHandle(sessionClient, referenceNumber, aesKey, initVector, null),
                 new InvoiceVerificationConfig(validUntil, null, DEFAULT_VERIFICATION_TIMEOUT),
                 OfflineSendHook.empty());
     }
@@ -161,7 +169,7 @@ final class OnlineSessionImpl implements OnlineSession {
                 @Nullable OffsetDateTime validUntil,
                 @Nullable KsefEnvironment environment,
                 Duration invoiceVerificationTimeout) {
-        this(new SessionHandle(sessionClient, referenceNumber, aesKey, initVector),
+        this(new SessionHandle(sessionClient, referenceNumber, aesKey, initVector, null),
                 new InvoiceVerificationConfig(validUntil, environment, invoiceVerificationTimeout),
                 OfflineSendHook.empty());
     }
@@ -171,6 +179,7 @@ final class OnlineSessionImpl implements OnlineSession {
         this.referenceNumber = handle.referenceNumber();
         this.aesKey = handle.aesKey();
         this.initVector = handle.initVector();
+        this.formCode = handle.formCode();
         this.validUntil = verification.validUntil();
         this.environment = verification.environment();
         this.invoiceVerificationTimeout = Objects.requireNonNull(verification.invoiceVerificationTimeout(),
@@ -178,6 +187,25 @@ final class OnlineSessionImpl implements OnlineSession {
         this.qrCodeService = new QrCodeService();
         this.offlineSigningProvider = offline.provider();
         this.sellerNip = offline.sellerNip();
+    }
+
+    @Override
+    public FormCode formCode() {
+        if (formCode == null) {
+            throw new IllegalStateException(ERR_FORM_CODE_LEGACY_CTOR);
+        }
+        return formCode;
+    }
+
+    private void ensureFormCodeMatches(Invoice invoice) {
+        if (formCode == null) {
+            return;
+        }
+        FormCode invoiceFormCode = invoice.formCode();
+        if (!Objects.equals(invoiceFormCode, formCode)) {
+            throw new IllegalArgumentException(String.format(java.util.Locale.ROOT,
+                    ERR_FORM_CODE_MISMATCH, invoiceFormCode, formCode));
+        }
     }
 
     @Override
@@ -192,8 +220,9 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public SubmittedInvoice sendInvoice(Invoice invoice) {
+    public <I extends Invoice> SubmittedInvoice<I> sendInvoice(I invoice) {
         Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
+        ensureFormCodeMatches(invoice);
         if (environment == null) {
             // Legacy 4/5-arg constructors do not carry the environment +
             // timeout pair needed for KOD I QR rendering. Surface the
@@ -216,9 +245,10 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public SubmittedInvoice sendOfflineInvoice(OfflineInvoice offline) {
+    public <I extends Invoice> SubmittedInvoice<I> sendOfflineInvoice(OfflineInvoice<I> offline) {
         Objects.requireNonNull(offline, ERR_OFFLINE_INVOICE_NULL);
-        Invoice underlying = offline.underlyingInvoice();
+        I underlying = offline.underlyingInvoice();
+        ensureFormCodeMatches(underlying);
         byte[] invoiceXml = offline.xml();
         InvoiceValidationGate.validate(offline.formCode(), invoiceXml);
         SendInvoiceResult sendResult = send(SendInvoiceCommand.offline(invoiceXml));
@@ -228,9 +258,10 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     @Override
-    public SubmittedInvoice sendOffline(Invoice invoice, OfflineMode mode) {
+    public <I extends Invoice> SubmittedInvoice<I> sendOffline(I invoice, OfflineMode mode) {
         Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
         Objects.requireNonNull(mode, ERR_OFFLINE_MODE_NULL);
+        ensureFormCodeMatches(invoice);
         if (offlineSigningProvider == null || environment == null || sellerNip == null) {
             throw new IllegalStateException(ERR_SEND_OFFLINE_REQUIRES_PROVIDER);
         }
@@ -239,14 +270,15 @@ final class OnlineSessionImpl implements OnlineSession {
                 new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext(
                         qrEnvironment, QrContextType.NIP, sellerNip, sellerNip,
                         java.time.LocalDate.now(java.time.ZoneOffset.UTC));
-        OfflineInvoice offline = offlineSigningProvider.signAndPackage(invoice, mode, context);
+        OfflineInvoice<I> offline = offlineSigningProvider.signAndPackage(invoice, mode, context);
         return sendOfflineInvoice(offline);
     }
 
     @Override
-    public SubmittedInvoice sendTechnicalCorrection(Invoice invoice, byte[] hashOfOriginal) {
+    public <I extends Invoice> SubmittedInvoice<I> sendTechnicalCorrection(I invoice, byte[] hashOfOriginal) {
         Objects.requireNonNull(invoice, ERR_INVOICE_NULL);
         Objects.requireNonNull(hashOfOriginal, ERR_HASH_NULL);
+        ensureFormCodeMatches(invoice);
         if (hashOfOriginal.length != SHA256_LENGTH_BYTES) {
             throw new IllegalArgumentException(String.format(
                     ERR_HASH_LENGTH_TEMPLATE, SHA256_LENGTH_BYTES, hashOfOriginal.length));
@@ -259,20 +291,21 @@ final class OnlineSessionImpl implements OnlineSession {
         // not synthesise a KOD II here — the caller is responsible for
         // pairing this submission with a KOD II if visualisation is
         // required (the certificate isn't available at this layer).
-        return new SubmittedInvoice(invoice, sendResult.referenceNumber(),
+        return new SubmittedInvoice<>(invoice, sendResult.referenceNumber(),
                 terminalStatus, Optional.empty(), Optional.empty(),
                 Optional.empty(), List.of());
     }
 
-    private SubmittedInvoice buildOfflineSubmittedInvoice(Invoice invoice, String invoiceRef,
-                                                          SessionInvoiceStatus terminalStatus,
-                                                          byte[] kodIPng, byte[] kodIIPng) {
+    private static <I extends Invoice> SubmittedInvoice<I> buildOfflineSubmittedInvoice(
+            I invoice, String invoiceRef,
+            SessionInvoiceStatus terminalStatus,
+            byte[] kodIPng, byte[] kodIIPng) {
         Integer code = terminalStatus.status() != null ? terminalStatus.status().code() : null;
         boolean accepted = code != null && code == STATUS_CODE_OK;
         Optional<KsefNumber> ksefNumber = Optional.empty();
         List<String> errorDetails = List.of();
         if (accepted && terminalStatus.ksefNumber() != null) {
-            ksefNumber = Optional.of(KsefNumber.parse(terminalStatus.ksefNumber()));
+            ksefNumber = Optional.of(terminalStatus.ksefNumber());
         } else if (terminalStatus.status() != null && terminalStatus.status().details() != null) {
             errorDetails = new ArrayList<>(terminalStatus.status().details());
             if (terminalStatus.status().description() != null && errorDetails.isEmpty()) {
@@ -282,7 +315,7 @@ final class OnlineSessionImpl implements OnlineSession {
         // KOD I + KOD II were rendered at OfflineInvoice construction
         // time — propagate them verbatim. The visualisation must show
         // both QRs on the offline path even on rejection.
-        return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
+        return new SubmittedInvoice<>(invoice, invoiceRef, terminalStatus,
                 ksefNumber, Optional.of(kodIPng), Optional.of(kodIIPng), errorDetails);
     }
 
@@ -303,7 +336,7 @@ final class OnlineSessionImpl implements OnlineSession {
         throw new KsefSessionPollingTimeoutException(invoiceRef, attempts, lastCode);
     }
 
-    private SubmittedInvoice buildSubmittedInvoice(Invoice invoice, String invoiceRef,
+    private <I extends Invoice> SubmittedInvoice<I> buildSubmittedInvoice(I invoice, String invoiceRef,
                                                    SessionInvoiceStatus terminalStatus,
                                                    byte[] invoiceSha256) {
         Integer code = terminalStatus.status() != null ? terminalStatus.status().code() : null;
@@ -312,7 +345,7 @@ final class OnlineSessionImpl implements OnlineSession {
         Optional<byte[]> kodIQr = Optional.empty();
         List<String> errorDetails = List.of();
         if (accepted && terminalStatus.ksefNumber() != null) {
-            KsefNumber number = KsefNumber.parse(terminalStatus.ksefNumber());
+            KsefNumber number = terminalStatus.ksefNumber();
             ksefNumber = Optional.of(number);
             kodIQr = Optional.of(renderKodIQr(number, invoiceSha256));
         } else if (terminalStatus.status() != null && terminalStatus.status().details() != null) {
@@ -321,7 +354,7 @@ final class OnlineSessionImpl implements OnlineSession {
                 errorDetails.add(terminalStatus.status().description());
             }
         }
-        return new SubmittedInvoice(invoice, invoiceRef, terminalStatus,
+        return new SubmittedInvoice<>(invoice, invoiceRef, terminalStatus,
                 ksefNumber, kodIQr, Optional.empty(), errorDetails);
     }
 

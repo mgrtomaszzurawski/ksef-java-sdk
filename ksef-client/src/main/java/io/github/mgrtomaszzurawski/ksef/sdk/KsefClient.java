@@ -8,12 +8,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefClientConfig;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
@@ -91,7 +92,7 @@ import org.slf4j.LoggerFactory;
  *         .build()) {
  *
  *     try (OnlineSession session = client.invoices().sessions().open(FormCode.FA3)) {
- *         session.send(invoiceXmlBytes);
+ *         session.sendInvoice(Invoice.fromXml(FormCode.FA3, invoiceXmlBytes));
  *     }
  * }
  * }</pre>
@@ -139,6 +140,7 @@ public final class KsefClient implements AutoCloseable {
     private final SessionContext sessionContext;
     private final Duration readTimeout;
     private final HttpRuntime runtime;
+    private final KsefClientConfig config;
 
     private final AuthClient authClient;
     private final SecurityClient securityClient;
@@ -166,6 +168,15 @@ public final class KsefClient implements AutoCloseable {
         this.environment = Objects.requireNonNull(builder.environment, ERR_ENVIRONMENT_NULL);
         this.credentials = Objects.requireNonNull(builder.credentials, ERR_CREDENTIALS_NULL);
         this.readTimeout = builder.readTimeout;
+        this.config = new KsefClientConfig(
+                this.environment,
+                this.credentials.asDescriptor(),
+                builder.connectTimeout,
+                this.readTimeout,
+                builder.invoiceVerificationTimeout,
+                builder.retryPolicy,
+                builder.featurePolicy,
+                builder.offlineSigningProvider != null);
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(builder.connectTimeout)
                 .build();
@@ -191,7 +202,7 @@ public final class KsefClient implements AutoCloseable {
         this.permissions = new PermissionsImpl(this.runtime);
         this.certificates = new CertificatesImpl(this.runtime);
         this.limits = new LimitsImpl(this.runtime);
-        this.testData = new TestDataAdminImpl(this.runtime);
+        this.testData = new TestDataAdminImpl(this.runtime, this.environment);
         this.peppolClient = new PeppolProvidersImpl(this.runtime);
         this.qrCodeService = new QrCodeService();
         this.authImpl = new AuthSessionsImpl(
@@ -343,12 +354,18 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
-     * Internal — package-private friend accessor used by
-     * {@link KsefTestData#of(KsefClient)}. The env check + PROD guard
-     * live on the factory so the public API surface stays free of
-     * environment-restricted accessors that PROD consumers never need.
+     * Access KSeF test-environment data administration (create/remove
+     * test subjects, grant test permissions, override limits, etc.).
+     *
+     * <p>The returned facade fails fast with
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException}
+     * on every method when this client is wired to
+     * {@link KsefEnvironment#PROD} — KSeF test-data endpoints do not
+     * exist on PROD. The guard is per-method (not on this accessor)
+     * so the failure surfaces at the call site with full Javadoc
+     * visibility for IDE quick-doc / hover hints.
      */
-    TestDataAdmin testDataInternal() {
+    public TestDataAdmin testData() {
         ensureOpen();
         return testData;
     }
@@ -373,8 +390,21 @@ public final class KsefClient implements AutoCloseable {
         return qrCodeService;
     }
 
-    /** Configured KSeF environment for this client. */
-    public KsefEnvironment environment() { return environment; }
+    /**
+     * Immutable snapshot of how this client was configured at
+     * {@code build()} time (environment, credential summary, timeouts,
+     * retry policy, feature policy). Use for diagnostics, logging, and
+     * multi-tenant orchestration where comparing two clients'
+     * configurations matters.
+     *
+     * <p>{@code KsefClient} itself does not override {@code equals} /
+     * {@code hashCode}; the returned record does (auto via record
+     * contract) over its eight fields including the masked
+     * {@link KsefCredentialsDescriptor}.
+     */
+    public KsefClientConfig config() {
+        return config;
+    }
 
     /**
      * The {@link OfflineSigningProvider} registered via
@@ -405,7 +435,7 @@ public final class KsefClient implements AutoCloseable {
      * the SDK accessors ({@link #invoices()}, {@link #permissions()},
      * {@link #tokens()}, {@link #certificates()}, {@link #peppol()},
      * {@link #limits()}, {@link #authSessions()}, or
-     * {@link KsefTestData#of(KsefClient)}) throws
+     * {@link #testData()}) throws
      * {@link IllegalStateException}.
      */
     @Override
@@ -441,6 +471,19 @@ public final class KsefClient implements AutoCloseable {
         return new Builder();
     }
 
+    /**
+     * Fluent builder for {@link KsefClient}.
+     *
+     * <p>Two fields are required: {@link #environment(KsefEnvironment)}
+     * and {@link #credentials(KsefCredentials)}. Everything else has a
+     * sensible default (timeouts, retry with exponential backoff +
+     * jitter, default feature policy). Call {@link #build()} once at
+     * the end to materialise the client.
+     *
+     * <p>Not thread-safe — instantiate a builder per client. Once
+     * {@code build()} returns, the builder is logically spent;
+     * subsequent setter calls will not mutate the constructed client.
+     */
     public static final class Builder {
 
         private @Nullable KsefEnvironment environment;
@@ -477,6 +520,20 @@ public final class KsefClient implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Set the TCP connection-establishment timeout. Bounds how long
+         * the SDK waits for the underlying socket handshake (TCP + TLS)
+         * before failing the request. Distinct from
+         * {@link #readTimeout(Duration)}, which bounds how long the SDK
+         * waits for the server's response once the connection is open.
+         *
+         * <p>Default 10s. Set this lower for fail-fast probes against
+         * unreachable hosts; raise it when running over high-latency
+         * links (mobile, geo-distant networks).
+         *
+         * @param connectTimeout the handshake budget (must not be null)
+         * @return this builder
+         */
         public Builder connectTimeout(Duration connectTimeout) {
             this.connectTimeout = connectTimeout;
             return this;
@@ -494,6 +551,26 @@ public final class KsefClient implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Configure the retry policy used for idempotent HTTP operations
+         * (GETs, polling, the SDK's session/operation status checks).
+         *
+         * <p>Default: enabled with exponential backoff + jitter and a
+         * bounded attempt count, suitable for transient network or 5xx
+         * errors. Use {@code RetryPolicy.builder().enabled(false).build()}
+         * to disable retries entirely (e.g. inside WireMock-backed
+         * tests where every retry creates noise). Use the builder's
+         * other knobs to tune attempt count, base delay, and max
+         * backoff per consumer needs.
+         *
+         * <p>Non-idempotent operations (sending an invoice, granting a
+         * permission) are <strong>not</strong> retried regardless of
+         * this policy — repeating those would risk duplicate side
+         * effects on KSeF.
+         *
+         * @param retryPolicy the policy (must not be null)
+         * @return this builder
+         */
         public Builder retryPolicy(RetryPolicy retryPolicy) {
             this.retryPolicy = retryPolicy;
             return this;

@@ -123,4 +123,9 @@ public record KsefPkcs12Credentials(
                 + ", subjectIdentifier=" + subjectIdentifier.wireType()
                 + ", keystorePath=" + keystorePath + "]";
     }
+
+    @Override
+    public KsefCredentialsDescriptor asDescriptor() {
+        return KsefCredentialsDescriptor.of(AuthMethod.PKCS12, identifier);
+    }
 }

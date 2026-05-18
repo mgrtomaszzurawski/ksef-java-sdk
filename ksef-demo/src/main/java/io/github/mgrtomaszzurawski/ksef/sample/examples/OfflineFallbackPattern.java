@@ -46,7 +46,7 @@ public final class OfflineFallbackPattern {
      * unavailability window, and {@link OfflineMode#KSEF_EMERGENCY}
      * when KSeF entered emergency mode.
      */
-    public static SubmittedInvoice sendWithOfflineFallback(OnlineSession session,
+    public static SubmittedInvoice<Invoice> sendWithOfflineFallback(OnlineSession session,
                                                            Invoice invoice,
                                                            KsefCertificate certificate,
                                                            OfflineMode mode,
@@ -63,7 +63,7 @@ public final class OfflineFallbackPattern {
         try {
             return session.sendInvoice(invoice);
         } catch (KsefUnavailableException unavailable) {
-            OfflineInvoice offline = OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
+            var offline = OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
             return session.sendOfflineInvoice(offline);
         }
     }

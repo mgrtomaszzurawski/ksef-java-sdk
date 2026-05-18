@@ -102,7 +102,7 @@ class AllMappersSmokeTest {
     private static final int MAX_CERTIFICATES = 5;
     private static final String QUERY_SERIAL = "ABCDEF0123";
     private static final String QUERY_NAME = "test-name";
-    private static final String QUERY_KSEF_NUMBER = "test-ksef-1";
+    private static final String QUERY_KSEF_NUMBER = "5265877635-20250826-0100001AF629-AF";
     private static final String QUERY_INVOICE_NUMBER = "test-invoice-1";
     private static final String SUBUNIT_DESC = "subunit-desc";
     private static final String PEPPOL_ID_FIXTURE = "PL:0007:1111111111";
@@ -165,7 +165,8 @@ class AllMappersSmokeTest {
         var sellerQuery = InvoiceQueryBuilder.seller()
                 .invoicingDateFrom(OffsetDateTime.now())
                 .dateTo(OffsetDateTime.now().plusDays(1))
-                .ksefNumber(QUERY_KSEF_NUMBER).invoiceNumber(QUERY_INVOICE_NUMBER).sellerNip(NIP)
+                .ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(QUERY_KSEF_NUMBER))
+                .invoiceNumber(QUERY_INVOICE_NUMBER).sellerNip(NIP)
                 .onlineOnly().selfInvoicing(true).hasAttachment(true).build();
         var sellerRaw = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(sellerQuery);
         assertEquals(NIP, sellerRaw.getSellerNip());

@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.sample.util.IdentifierGenerators;
 import io.github.mgrtomaszzurawski.ksef.sample.util.SelfSignedCerts;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsync;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
@@ -18,7 +17,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefAsyncStatus;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,17 +128,8 @@ public final class PeppolProviderRunner implements DemoRunner {
                     .pefInvoicing()
                     .entityDetails("KSeF Java SDK Demo Peppol Provider")
                     .description("PeppolProviderRunner grant for " + peppolId);
-            String referenceNumber = context.client().permissions().grantAuthorization(builder.build()).referenceNumber();
-            var permissions = context.client().permissions();
-            var status = KsefAsync.awaitTerminal(
-                    new KsefAsync.Config<>(
-                            "grantAuthorization",
-                            () -> permissions.getOperationStatus(referenceNumber),
-                            opStatus -> opStatus.status() != null
-                                    && opStatus.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD,
-                            opStatus -> opStatus.status() == null ? null : opStatus.status().code(),
-                            Duration.ofSeconds(GRANT_AWAIT_SECONDS),
-                            null));
+            var status = context.client().permissions().grantAuthorization(builder.build(),
+                    Duration.ofSeconds(GRANT_AWAIT_SECONDS));
             int code = status.status() == null ? -1 : status.status().code();
             if (code == GRANT_SUCCESS_STATUS_CODE) {
                 results.add(RunResult.ok(NAME, OP_GRANT_PEF_INVOICING, elapsed(start),
@@ -226,8 +215,7 @@ public final class PeppolProviderRunner implements DemoRunner {
     private String queryAssignedKsefNumber(OnlineSession session, String invoiceRef) {
         try {
             var status = session.invoiceStatus(invoiceRef);
-            String ksefNumber = status.ksefNumber();
-            return ksefNumber == null || ksefNumber.isBlank() ? null : ksefNumber;
+            return status.ksefNumber() == null ? null : status.ksefNumber().value();
         } catch (Exception ignored) {
             // Best-effort: KSeF rejected the invoice or status query failed —
             // either way, we cannot chain a correction.

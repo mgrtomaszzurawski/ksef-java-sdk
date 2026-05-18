@@ -24,7 +24,12 @@ import org.jspecify.annotations.Nullable;
 /**
  * Read-side FA(3) invoice fetched from KSeF. Wraps the JAXB-generated
  * {@link Faktura} root and the raw XML bytes returned by the server.
- * Construct via {@link #from(byte[])}.
+ *
+ * <p>Constructed by the SDK; consumers receive instances via
+ * {@link InvoiceArchive#getByKsefNumber} or
+ * {@link ClosedSession#cleared}. The {@code from(byte[])} factory is
+ * package-private — cross-package SDK construction is routed through
+ * {@code InvoiceDocumentConstructor} (R1-5 reflective bridge).
  *
  * <p>Public accessors are flat primitives snapshotted at construction;
  * mutations to {@link #unsafeJaxbView()} do not affect the flat accessor
@@ -81,8 +86,14 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
      * Parse FA(3) XML bytes into a typed document. The bytes are kept
      * verbatim for {@link #xml()}; the JAXB tree is unmarshalled and the
      * flat-accessor values snapshotted at construction.
+     *
+     * <p>Package-private — SDK creates documents from archive responses;
+     * consumers read via {@link InvoiceArchive#getByKsefNumber} or the
+     * {@code archive()} flow. Cross-package access by SDK internals is
+     * routed through {@code InvoiceDocumentConstructor} (reflective
+     * bridge mirroring {@code SessionHandleConstructor}).
      */
-    public static Fa3InvoiceDocument from(byte[] xml) {
+    static Fa3InvoiceDocument from(byte[] xml) {
         Objects.requireNonNull(xml, InvoiceDocumentMessages.ERR_NULL_XML);
         Faktura jaxb = JaxbInvoiceMarshaller.unmarshal(xml, Faktura.class);
         return new Fa3InvoiceDocument(jaxb, xml);

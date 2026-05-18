@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoSummary;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoiceDocumentConstructor;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -112,17 +113,18 @@ final class ClosedSessionImpl implements ClosedSession {
     }
 
     @Override
-    public ClearedInvoice cleared(SubmittedInvoice submitted) {
+    public <I extends Invoice> ClearedInvoice<I> cleared(SubmittedInvoice<I> submitted) {
         Objects.requireNonNull(submitted, ERR_NULL_SUBMITTED);
         byte[] xml = sessionClient.getUpoByInvoiceReference(referenceNumber, submitted.referenceNumber());
         UpoEntry entry = new UpoEntry(submitted.referenceNumber(), xml);
-        // ClosedSession archive flow doesn't refetch the original invoice XML
-        // — surface the SubmittedInvoice's embedded Invoice through the typed
-        // InvoiceDocument slot via the minimal wrapper. Consumers needing the
-        // typed Fa3/Pef/etc. document call client.invoices().getByKsefNumber.
-        InvoiceDocument document = InvoiceDocument.fromXml(
+        // R1-6: dispatch on the embedded Invoice's formCode to produce a
+        // typed InvoiceDocument when the schema is known (FA2/FA3/PEF/PEF_KOR).
+        // Custom forms fall back to the anonymous wrapper. ClosedSession
+        // archive flow doesn't refetch the archived bytes — the bytes used
+        // here are the original submission XML the consumer already held.
+        InvoiceDocument document = InvoiceDocumentConstructor.newDocument(
                 submitted.invoice().formCode(), submitted.invoice().xml());
-        return new ClearedInvoice(submitted, document, entry);
+        return new ClearedInvoice<>(submitted, document, entry);
     }
 
     /**
@@ -136,20 +138,20 @@ final class ClosedSessionImpl implements ClosedSession {
      * {@link SubmittedInvoice#ksefNumber()} value when present.
      */
     @Override
-    public ClearedInvoice cleared(String invoiceReferenceNumber) {
+    public ClearedInvoice<Invoice> cleared(String invoiceReferenceNumber) {
         Objects.requireNonNull(invoiceReferenceNumber, ERR_NULL_INVOICE_REF);
         byte[] xml = sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
         SessionInvoiceStatus status = sessionClient.getInvoiceStatus(referenceNumber, invoiceReferenceNumber);
         Invoice placeholder = Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
-        InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
+        InvoiceDocument documentPlaceholder = InvoiceDocuments.anonymousFromXml(
                 UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
-        SubmittedInvoice submitted = new SubmittedInvoice(
+        SubmittedInvoice<Invoice> submitted = new SubmittedInvoice<>(
                 placeholder, invoiceReferenceNumber, status,
                 status.ksefNumber() != null
-                        ? Optional.of(KsefNumber.parse(status.ksefNumber()))
+                        ? Optional.of(status.ksefNumber())
                         : Optional.empty(),
                 Optional.empty(), Optional.empty(), List.of());
-        return new ClearedInvoice(submitted, documentPlaceholder,
+        return new ClearedInvoice<>(submitted, documentPlaceholder,
                 new UpoEntry(invoiceReferenceNumber, xml));
     }
 
@@ -169,12 +171,12 @@ final class ClosedSessionImpl implements ClosedSession {
      * original XML.
      */
     @Override
-    public List<ClearedInvoice> allCleared() {
+    public List<ClearedInvoice<Invoice>> allCleared() {
         SessionStatus current = sessionClient.getStatus(referenceNumber);
         if (current.upo() == null || current.upo().pages() == null || current.upo().pages().isEmpty()) {
             return List.of();
         }
-        List<ClearedInvoice> bulk = new ArrayList<>(current.upo().pages().size());
+        List<ClearedInvoice<Invoice>> bulk = new ArrayList<>(current.upo().pages().size());
         int ordinalCounter = 0;
         for (var page : current.upo().pages()) {
             byte[] xml = sessionClient.getUpoByReference(referenceNumber, page.referenceNumber());
@@ -185,12 +187,12 @@ final class ClosedSessionImpl implements ClosedSession {
                 SessionInvoiceStatus syntheticStatus = newAcceptedSessionInvoiceStatus(
                         ordinalCounter, invoiceRef, ksefNumber, summary.acceptanceDate());
                 Invoice placeholder = Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
-                InvoiceDocument documentPlaceholder = InvoiceDocument.fromXml(
+                InvoiceDocument documentPlaceholder = InvoiceDocuments.anonymousFromXml(
                         UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
-                SubmittedInvoice rebuilt = new SubmittedInvoice(
+                SubmittedInvoice<Invoice> rebuilt = new SubmittedInvoice<>(
                         placeholder, invoiceRef, syntheticStatus,
                         Optional.of(ksefNumber), Optional.empty(), Optional.empty(), List.of());
-                bulk.add(new ClearedInvoice(rebuilt, documentPlaceholder,
+                bulk.add(new ClearedInvoice<>(rebuilt, documentPlaceholder,
                         new UpoEntry(invoiceRef, xml)));
             }
         }
@@ -209,7 +211,7 @@ final class ClosedSessionImpl implements ClosedSession {
         InvoiceStatusInfo statusInfo = new InvoiceStatusInfo(
                 UPO_ACCEPTED_STATUS_CODE, UPO_ACCEPTED_STATUS_DESCRIPTION, List.of(), Map.of());
         return new SessionInvoiceStatus(
-                ordinal, invoiceRef, ksefNumber.value(), invoiceRef,
+                ordinal, invoiceRef, ksefNumber, invoiceRef,
                 null, null, acceptedAt, acceptedAt, null, null, null, null, statusInfo);
     }
 

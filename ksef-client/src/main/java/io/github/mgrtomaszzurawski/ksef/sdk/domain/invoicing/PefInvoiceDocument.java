@@ -27,7 +27,12 @@ import javax.xml.datatype.XMLGregorianCalendar;
 /**
  * Read-side PEF (UBL Invoice) document fetched from KSeF. Wraps the
  * JAXB-generated {@link InvoiceType} root and the raw XML bytes.
- * Construct via {@link #from(byte[])}.
+ *
+ * <p>Constructed by the SDK; consumers receive instances via
+ * {@link InvoiceArchive#getByKsefNumber} or
+ * {@link ClosedSession#cleared}. The {@code from(byte[])} factory is
+ * package-private — cross-package SDK construction is routed through
+ * {@code InvoiceDocumentConstructor} (R1-5 reflective bridge).
  *
  * <p>Public accessors are flat primitives that read through to the
  * underlying UBL JAXB tree on demand. Two escape hatches expose fields
@@ -89,8 +94,12 @@ public final class PefInvoiceDocument implements InvoiceDocument {
         return List.copyOf(mapped);
     }
 
-    /** Parse PEF UBL Invoice XML bytes into a typed document. */
-    public static PefInvoiceDocument from(byte[] xml) {
+    /**
+     * Parse PEF UBL Invoice XML bytes into a typed document. Package-private —
+     * SDK orchestrates construction from archive responses; cross-package
+     * SDK access via {@code InvoiceDocumentConstructor}.
+     */
+    static PefInvoiceDocument from(byte[] xml) {
         Objects.requireNonNull(xml, InvoiceDocumentMessages.ERR_NULL_XML);
         InvoiceType jaxb = JaxbInvoiceMarshaller.unmarshal(xml, InvoiceType.class);
         return new PefInvoiceDocument(jaxb, xml);

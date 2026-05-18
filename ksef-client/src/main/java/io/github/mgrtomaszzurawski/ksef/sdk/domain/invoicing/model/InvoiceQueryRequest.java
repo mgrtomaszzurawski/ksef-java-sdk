@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +32,7 @@ public record InvoiceQueryRequest(
         InvoiceQueryDateType dateType,
         OffsetDateTime dateFrom,
         @Nullable OffsetDateTime dateTo,
-        @Nullable String ksefNumber,
+        @Nullable KsefNumber ksefNumber,
         @Nullable String invoiceNumber,
         @Nullable String sellerNip,
         @Nullable InvoicingMode invoicingMode,

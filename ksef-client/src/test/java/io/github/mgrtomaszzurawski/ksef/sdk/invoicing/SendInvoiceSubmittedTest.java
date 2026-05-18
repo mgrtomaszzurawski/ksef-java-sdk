@@ -97,7 +97,7 @@ class SendInvoiceSubmittedTest {
         try (OnlineSession session = createSession(wmInfo)) {
 
             // when
-            SubmittedInvoice submitted = session.sendInvoice(invoice);
+            var submitted = session.sendInvoice(invoice);
 
             // then — terminal accepted state populates ksefNumber + kodIQr
             assertSame(invoice, submitted.invoice(),
@@ -126,7 +126,7 @@ class SendInvoiceSubmittedTest {
         try (OnlineSession session = createSession(wmInfo)) {
 
             // when
-            SubmittedInvoice submitted = session.sendInvoice(invoice);
+            var submitted = session.sendInvoice(invoice);
 
             // then — terminal rejected state populates errorDetails, no QR / KSeF number
             assertSame(invoice, submitted.invoice());

@@ -25,7 +25,7 @@ import org.jspecify.annotations.Nullable;
  * @since 1.0.0
  */
 public record CertificateListItem(
-        String certificateSerialNumber,
+        CertificateSerialNumber certificateSerialNumber,
         String name,
         String type,
         String commonName,

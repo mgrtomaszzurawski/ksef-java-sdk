@@ -24,7 +24,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPermissionGrantBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
 
 public final class GrantAndRevokePermission {
@@ -47,21 +46,19 @@ public final class GrantAndRevokePermission {
                     .personDetails("Example", "Recipient")
                     .invoiceRead();
 
-            PermissionOperationResult granted = client.permissions().grantPerson(grant.build());
-            System.out.println("Grant submitted, ref: " + granted.referenceNumber());
+            PermissionOperationStatus granted = client.permissions().grantPerson(grant.build());
+            System.out.println("Grant completed: ref=" + granted.referenceNumber()
+                    + " code=" + granted.status().code()
+                    + " desc=" + granted.status().description());
 
-            PermissionOperationStatus status = client.permissions()
-                    .getOperationStatus(granted.referenceNumber());
-            System.out.println("Operation status: code=" + status.status().code()
-                    + " desc=" + status.status().description());
-
-            // Revoke right away (the operation reference doubles as the permission ID
-            // once the grant is processed; in production you would query for the
-            // permission ID via permissions().queryPersons(...) and pass that in).
+            // The grant's referenceNumber doubles as the permissionId for
+            // the matching revoke — no extra queryPersons() lookup needed
+            // when undoing a freshly-issued grant.
             try {
-                PermissionOperationResult revoked = client.permissions()
-                        .revokePermission(granted.referenceNumber());
-                System.out.println("Revoke submitted, ref: " + revoked.referenceNumber());
+                PermissionOperationStatus revoked = client.permissions().revokePermission(granted.referenceNumber());
+                System.out.println("Revoke completed: ref=" + revoked.referenceNumber()
+                        + " code=" + revoked.status().code()
+                        + " desc=" + revoked.status().description());
             } catch (Exception revokeFailed) {
                 System.out.println("Revoke skipped: " + revokeFailed.getMessage());
             }

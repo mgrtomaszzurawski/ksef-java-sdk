@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.common;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
 /**
  * Centralised KSeF REST API path prefixes (ADR-014).
@@ -12,16 +12,11 @@ package io.github.mgrtomaszzurawski.ksef.sdk.common;
  * {@code PATH_*} constant.
  *
  * <p>The API version segment ({@code /v2}) is part of the server URL
- * configured via {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment}
- * — these path constants do <strong>not</strong> repeat it.
+ * configured via {@code KsefEnvironment} — these path constants do
+ * <strong>not</strong> repeat it.
  *
- * <p>Public so consumer-side tooling (custom probes, validation harnesses,
- * raw {@code java.net.http.HttpClient} integrations) can build URLs using the
- * same source of truth as the SDK itself.
- *
- * @apiNote Public for consumer URL construction. The SDK's domain clients
- *          consume these constants internally — consumers usually don't need
- *          to touch them.
+ * <p>Internal — consumers use the high-level SDK methods rather than
+ * composing URLs by hand.
  *
  * @since 1.0.0
  */

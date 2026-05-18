@@ -24,7 +24,12 @@ import org.jspecify.annotations.Nullable;
 /**
  * Read-side FA(2) invoice fetched from KSeF. Wraps the JAXB-generated
  * {@link Faktura} root and the raw XML bytes returned by the server.
- * Construct via {@link #from(byte[])}.
+ *
+ * <p>Constructed by the SDK; consumers receive instances via
+ * {@link InvoiceArchive#getByKsefNumber} or
+ * {@link ClosedSession#cleared}. The {@code from(byte[])} factory is
+ * package-private — cross-package SDK construction is routed through
+ * {@code InvoiceDocumentConstructor} (R1-5 reflective bridge).
  *
  * <p>Public accessors are flat primitives snapshotted at construction;
  * mutations to {@link #unsafeJaxbView()} do not affect the flat accessor
@@ -131,8 +136,12 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         }
     }
 
-    /** Parse FA(2) XML bytes into a typed document. */
-    public static Fa2InvoiceDocument from(byte[] xml) {
+    /**
+     * Parse FA(2) XML bytes into a typed document. Package-private —
+     * SDK orchestrates construction from archive responses; cross-package
+     * SDK access via {@code InvoiceDocumentConstructor}.
+     */
+    static Fa2InvoiceDocument from(byte[] xml) {
         Objects.requireNonNull(xml, InvoiceDocumentMessages.ERR_NULL_XML);
         Faktura jaxb = JaxbInvoiceMarshaller.unmarshal(xml, Faktura.class);
         return new Fa2InvoiceDocument(jaxb, xml);

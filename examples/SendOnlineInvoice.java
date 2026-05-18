@@ -58,7 +58,7 @@ public final class SendOnlineInvoice {
             // sendInvoice blocks until KSeF reaches a terminal state and
             // returns the full SubmittedInvoice (KSeF number, KOD I QR PNG,
             // status, embedded original Invoice).
-            SubmittedInvoice submitted = session.sendInvoice(Invoice.fromXml(FormCode.FA3, invoiceXml));
+            var submitted = session.sendInvoice(Invoice.fromXml(FormCode.FA3, invoiceXml));
             System.out.println("Invoice accepted, ref: " + submitted.referenceNumber()
                     + ", ksefNumber: " + submitted.ksefNumber().map(KsefNumber::value).orElse("<none>"));
 
@@ -66,7 +66,7 @@ public final class SendOnlineInvoice {
             // accepted invoice once the session is closed) and retrieve the UPO
             // for the invoice we just submitted.
             ClosedSession closed = session.complete();
-            ClearedInvoice cleared = closed.cleared(submitted);
+            var cleared = closed.cleared(submitted);
             System.out.println("UPO bytes for ref " + submitted.referenceNumber()
                     + ": " + cleared.upo().xmlBytes().length);
         }

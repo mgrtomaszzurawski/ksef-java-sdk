@@ -158,7 +158,7 @@ class CertificatesMappersTest {
         CertificateEnrollmentStatus result = CertificatesMappers.toCertificateEnrollmentStatus(raw);
 
         // then
-        assertEquals(SERIAL, result.certificateSerialNumber());
+        assertEquals(SERIAL, result.certificateSerialNumber().value());
         assertNotNull(result.status());
         assertEquals(200, result.status().code());
     }
@@ -186,7 +186,7 @@ class CertificatesMappersTest {
         CertificateListItem result = CertificatesMappers.toCertificateListItem(raw);
 
         // then
-        assertEquals(SERIAL, result.certificateSerialNumber());
+        assertEquals(SERIAL, result.certificateSerialNumber().value());
         assertEquals(NAME, result.name());
         assertEquals("Authentication", result.type());
         assertEquals("Active", result.status());
@@ -260,7 +260,7 @@ class CertificatesMappersTest {
         assertNotNull(result.publicKey());
         assertNotNull(result.der());
         assertEquals(NAME, result.certificateName());
-        assertEquals(SERIAL, result.certificateSerialNumber());
+        assertEquals(SERIAL, result.certificateSerialNumber().value());
         assertEquals(KsefCertificateType.AUTHENTICATION, result.certificateType());
     }
 

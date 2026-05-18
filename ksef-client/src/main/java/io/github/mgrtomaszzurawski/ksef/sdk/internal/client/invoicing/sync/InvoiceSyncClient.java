@@ -230,37 +230,31 @@ public final class InvoiceSyncClient {
                                   Set<String> seenKsefNumbers) {
         long dispatched = 0;
         for (InvoiceMetadata metadata : metadatas) {
-            KsefNumber typed = parsableUnseenKsefNumber(metadata, seenKsefNumbers, context.subjectType());
+            KsefNumber typed = unseenKsefNumber(metadata, seenKsefNumbers);
             if (typed == null) {
                 continue;
             }
             Path xmlPath = context.plan().fullContent() ? matchInvoiceXml(dir, typed, (int) dispatched) : null;
             context.sink().accept(typed, metadata, xmlPath);
-            seenKsefNumbers.add(metadata.ksefNumber());
+            seenKsefNumbers.add(typed.value());
             dispatched++;
         }
         return dispatched;
     }
 
     /**
-     * Returns the parsed {@link KsefNumber} for {@code metadata}, or
-     * {@code null} when the entry should be skipped (missing number,
-     * already seen, or malformed). Logs a warning for malformed numbers
-     * so the operator notices server-side data quality issues.
+     * Returns the {@link KsefNumber} for {@code metadata} if it has not
+     * been seen yet, or {@code null} when the entry should be skipped
+     * (missing number, already seen). After R1-17 the field is typed at
+     * mapping time, so no further parse is needed here.
      */
-    private @Nullable KsefNumber parsableUnseenKsefNumber(InvoiceMetadata metadata,
-                                                 Set<String> seenKsefNumbers,
-                                                 InvoiceQuerySubjectType subjectType) {
-        String raw = metadata.ksefNumber();
-        if (raw == null || seenKsefNumbers.contains(raw)) {
+    private @Nullable KsefNumber unseenKsefNumber(InvoiceMetadata metadata,
+                                                  Set<String> seenKsefNumbers) {
+        KsefNumber typed = metadata.ksefNumber();
+        if (typed == null || seenKsefNumbers.contains(typed.value())) {
             return null;
         }
-        try {
-            return KsefNumber.parse(raw);
-        } catch (IllegalArgumentException badNumber) {
-            LOGGER.warn("[sync {}] skipping invoice with invalid KSeF number: {}", subjectType, raw);
-            return null;
-        }
+        return typed;
     }
 
     /**

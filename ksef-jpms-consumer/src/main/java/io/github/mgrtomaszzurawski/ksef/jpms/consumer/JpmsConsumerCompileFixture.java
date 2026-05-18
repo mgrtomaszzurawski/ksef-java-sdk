@@ -6,7 +6,6 @@ package io.github.mgrtomaszzurawski.ksef.jpms.consumer;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -17,11 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CsrRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CsrResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.EncryptionMaterial;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.FileMetadata;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefCryptoService;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefEncryptionInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.authentication.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
@@ -93,15 +88,12 @@ public final class JpmsConsumerCompileFixture {
                 SigningOptions.class,
                 KsefNumber.class,
                 StatusInfo.class,
-                PublicKeyCertificate.class,
-                // sdk.crypto
-                KsefCryptoService.class,
-                EncryptionMaterial.class,
-                KsefEncryptionInfo.class,
-                FileMetadata.class,
+                // sdk.crypto — KsefCryptoService + EncryptionMaterial + FileMetadata +
+                // KsefEncryptionInfo + PublicKeyCertificate moved to sdk.internal.runtime.crypto
+                // per R1-5 (no longer visible to JPMS consumers — that is the point).
                 CsrRequest.class,
                 CsrResult.class,
-                // sdk.domain.authentication.model — verify exported (gap caught earlier)
+                // sdk.domain.auth.model — verify exported (gap caught earlier)
                 AuthSession.class,
                 // sdk.domain.invoicing + builder + qrcode + sync
                 FormCode.class,

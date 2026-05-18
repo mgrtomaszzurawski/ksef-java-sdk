@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -32,7 +33,7 @@ import org.jspecify.annotations.Nullable;
 public record SessionInvoiceStatus(
         int ordinalNumber,
         String invoiceNumber,
-        @Nullable String ksefNumber,
+        @Nullable KsefNumber ksefNumber,
         String referenceNumber,
         byte @Nullable [] invoiceHash,
         @Nullable String invoiceFileName,

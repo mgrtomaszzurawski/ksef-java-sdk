@@ -72,7 +72,7 @@ class ClearedFromArchiveTest {
                         .withBody(UPO_XML)));
 
         try (KsefClient ksef = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo, TEST_TOKEN, TEST_NIP)) {
-            ClearedInvoice cleared = ksef.invoices().archive().clearedFromArchive(SESSION_REF, INVOICE_REF);
+            var cleared = ksef.invoices().archive().clearedFromArchive(SESSION_REF, INVOICE_REF);
 
             assertEquals(INVOICE_REF, cleared.submitted().referenceNumber());
             assertEquals(KSEF_NUMBER, cleared.submitted().ksefNumber().orElseThrow().value());

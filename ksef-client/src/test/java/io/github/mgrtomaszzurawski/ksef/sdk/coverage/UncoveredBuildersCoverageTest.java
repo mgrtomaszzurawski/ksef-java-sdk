@@ -276,7 +276,7 @@ class UncoveredBuildersCoverageTest {
         assertNotNull(builder);
         try (var client = builder.build()) {
             assertNotNull(client);
-            assertEquals(KsefEnvironment.TEST, client.environment());
+            assertEquals(KsefEnvironment.TEST, client.config().environment());
         }
     }
 }

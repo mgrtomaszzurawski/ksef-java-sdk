@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.common;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
 import java.io.ByteArrayInputStream;

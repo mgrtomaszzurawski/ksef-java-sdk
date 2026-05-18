@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -165,8 +166,8 @@ public final class FormCode {
     }
 
     /**
-     * Throw {@link IllegalArgumentException} when this form code is not
-     * accepted on the supplied environment. Per
+     * Throw {@link KsefUnsupportedEnvironmentException} when this form
+     * code is not accepted on the supplied environment. Per
      * {@code ksef-docs/srodowiska.md}, FA(2) is accepted only on
      * {@link KsefEnvironment#TEST}; DEMO and PROD accept FA(3), PEF(3)
      * and PEF_KOR(3) only. Custom form codes are not checked (the SDK
@@ -176,6 +177,8 @@ public final class FormCode {
      * {@code client.invoices().batch().submit*} as a client-side preflight so misconfigured
      * consumers fail fast with a clear message instead of seeing a
      * server-side schema rejection on the first invoice send.
+     *
+     * @throws KsefUnsupportedEnvironmentException when {@link #FA2} is used on DEMO or PROD
      */
     public void assertAllowedOn(KsefEnvironment environment) {
         Objects.requireNonNull(environment, ERR_NULL_ENVIRONMENT);
@@ -184,7 +187,7 @@ public final class FormCode {
         }
         if (environment.equals(KsefEnvironment.DEMO)
                 || environment.equals(KsefEnvironment.PROD)) {
-            throw new IllegalArgumentException(ERR_FA2_NOT_ALLOWED);
+            throw new KsefUnsupportedEnvironmentException(ERR_FA2_NOT_ALLOWED);
         }
     }
 

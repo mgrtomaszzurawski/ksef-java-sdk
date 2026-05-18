@@ -30,7 +30,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAutho
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermissions;
@@ -131,7 +130,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PermissionOperationResult response =
+            PermissionOperationStatus response =
                     ksef.permissions().grantPerson(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
                             .description(TEST_DESCRIPTION)
                             .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
@@ -139,6 +138,7 @@ class PermissionClientTest {
                             .build());
 
             // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
@@ -150,7 +150,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PermissionOperationResult response =
+            PermissionOperationStatus response =
                     ksef.permissions().grantEntity(EntityPermissionGrantBuilder.forNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .entityDetails("Firma Sp. z o.o.")
@@ -158,6 +158,7 @@ class PermissionClientTest {
                             .build());
 
             // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
@@ -169,7 +170,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PermissionOperationResult response =
+            PermissionOperationStatus response =
                     ksef.permissions().grantAuthorization(EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
                             .selfInvoicing()
                             .description(TEST_DESCRIPTION)
@@ -177,6 +178,7 @@ class PermissionClientTest {
                             .build());
 
             // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
@@ -188,7 +190,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PermissionOperationResult response =
+            PermissionOperationStatus response =
                     ksef.permissions().grantIndirect(IndirectPermissionGrantBuilder.forNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
@@ -196,6 +198,7 @@ class PermissionClientTest {
                             .build());
 
             // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
@@ -207,7 +210,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PermissionOperationResult response =
+            PermissionOperationStatus response =
                     ksef.permissions().grantSubunit(SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
                             .contextNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
@@ -215,6 +218,7 @@ class PermissionClientTest {
                             .build());
 
             // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
@@ -226,7 +230,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PermissionOperationResult response =
+            PermissionOperationStatus response =
                     ksef.permissions().grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
                             .contextNipVatUe("PL" + TEST_NIP)
                             .description(TEST_DESCRIPTION)
@@ -236,6 +240,7 @@ class PermissionClientTest {
                             .build());
 
             // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
@@ -247,7 +252,7 @@ class PermissionClientTest {
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
             // when
-            PermissionOperationResult response =
+            PermissionOperationStatus response =
                     ksef.permissions().grantEuEntity(EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
                             .description(TEST_DESCRIPTION)
                             .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
@@ -255,60 +260,53 @@ class PermissionClientTest {
                             .build());
 
             // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
     @Test
-    void revokeCommon_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
+    void revokeCommon_whenAuthenticated_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        // given
         stubFor(delete(urlEqualTo(PATH_REVOKE_COMMON))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(OPERATION_RESPONSE)));
+        stubOperationStatusEndpoint();
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-            PermissionOperationResult response = ksef.permissions().revokePermission(TEST_PERMISSION_ID);
+            // when
+            PermissionOperationStatus response = ksef.permissions().revokePermission(TEST_PERMISSION_ID);
 
+            // then
+            assertEquals(KSEF_STATUS_OK, response.status().code());
             assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
     @Test
-    void revokeAuthorization_whenAuthenticated_returnsOperationReference(WireMockRuntimeInfo wmInfo) {
+    void revokeAuthorization_whenAuthenticated_returnsTerminalStatus(WireMockRuntimeInfo wmInfo) {
+        // given
         stubFor(delete(urlEqualTo(PATH_REVOKE_AUTHORIZATION))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(OPERATION_RESPONSE)));
+        stubOperationStatusEndpoint();
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-            PermissionOperationResult response =
+            // when
+            PermissionOperationStatus response =
                     ksef.permissions().revokeAuthorization(TEST_PERMISSION_ID);
 
-            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
-        }
-    }
-
-    @Test
-    void getOperationStatus_whenExists_returnsStatus(WireMockRuntimeInfo wmInfo) {
-        stubFor(get(urlEqualTo("/v2/permissions/operations/" + TEST_OPERATION_REF))
-                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
-                .willReturn(aResponse()
-                        .withStatus(TestHttpConstants.HTTP_OK)
-                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(OPERATION_STATUS_RESPONSE)));
-
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            PermissionOperationStatus response =
-                    ksef.permissions().getOperationStatus(TEST_OPERATION_REF);
-
+            // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+            assertEquals(TEST_OPERATION_REF, response.referenceNumber());
         }
     }
 
@@ -470,16 +468,6 @@ class PermissionClientTest {
         }
     }
 
-    @Test
-    void getOperationStatus_whenPathTraversal_throwsIllegalArgument(WireMockRuntimeInfo wmInfo) {
-        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
-
-            var permissions = ksef.permissions();
-
-            assertThrows(IllegalArgumentException.class, () -> permissions.getOperationStatus("../../../etc/passwd"));
-        }
-    }
-
     private static void stubGrantEndpoint(String path) {
         stubFor(post(urlEqualTo(path))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
@@ -487,6 +475,18 @@ class PermissionClientTest {
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(OPERATION_RESPONSE)));
+        // Sync grant polls /operations/{ref} until terminal — stub it with a
+        // terminal success body so the poll loop returns on first tick.
+        stubOperationStatusEndpoint();
+    }
+
+    private static void stubOperationStatusEndpoint() {
+        stubFor(get(urlEqualTo("/v2/permissions/operations/" + TEST_OPERATION_REF))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(OPERATION_STATUS_RESPONSE)));
     }
 
     private static void stubQueryEndpoint(String path, String responseBody) {

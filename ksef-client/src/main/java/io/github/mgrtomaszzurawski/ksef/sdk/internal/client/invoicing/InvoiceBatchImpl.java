@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.PublicKeyCertificateUsage;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
@@ -38,6 +38,8 @@ public final class InvoiceBatchImpl implements InvoiceBatch {
     private static final String ERR_NULL_INVOICES = "invoices must not be null";
     private static final String ERR_NULL_OPTIONS = "options must not be null";
     private static final String ERR_NULL_FILES = "files must not be null";
+    private static final String ERR_EMPTY_INVOICES =
+            "invoices must not be empty — submit() derives the batch FormCode from invoices.get(0)";
 
     private final SessionClient sessionClient;
     private final HttpClient httpClient;
@@ -55,16 +57,19 @@ public final class InvoiceBatchImpl implements InvoiceBatch {
     }
 
     @Override
-    public BatchResult submit(FormCode formCode, List<Invoice> invoices, BatchOptions options) {
-        Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
+    public <I extends Invoice> BatchResult<I> submit(List<I> invoices, BatchOptions options) {
         Objects.requireNonNull(invoices, ERR_NULL_INVOICES);
         Objects.requireNonNull(options, ERR_NULL_OPTIONS);
+        if (invoices.isEmpty()) {
+            throw new IllegalArgumentException(ERR_EMPTY_INVOICES);
+        }
+        FormCode formCode = Objects.requireNonNull(invoices.get(0).formCode(), ERR_NULL_FORM_CODE);
         LOGGER.debug(LOG_CALL, OP_SUBMIT_BATCH);
         return newFlow().submit(formCode, invoices, options);
     }
 
     @Override
-    public BatchResult submitFromFiles(FormCode formCode, List<Path> files, BatchOptions options) {
+    public BatchResult<Invoice> submitFromFiles(FormCode formCode, List<Path> files, BatchOptions options) {
         Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
         Objects.requireNonNull(files, ERR_NULL_FILES);
         Objects.requireNonNull(options, ERR_NULL_OPTIONS);

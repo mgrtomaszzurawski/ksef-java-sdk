@@ -174,7 +174,7 @@ class InvoiceClientTest {
             // when
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"))
-                    .ksefNumber(TEST_KSEF_NUMBER)
+                    .ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(TEST_KSEF_NUMBER))
                     .sellerNip(TEST_NIP)
                     .onlineOnly()
                     .selfInvoicing(true)

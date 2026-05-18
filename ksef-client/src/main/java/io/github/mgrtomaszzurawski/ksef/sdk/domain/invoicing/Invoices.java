@@ -10,15 +10,15 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
  * area of responsibility:
  *
  * <ul>
- *   <li>{@link InvoiceArchive#archive() archive()} — retrieve by KSeF
- *       number, reconstruct cleared invoices, query/stream metadata.</li>
- *   <li>{@link InvoiceSessions#sessions() sessions()} — open online
- *       sessions and stream session summaries.</li>
- *   <li>{@link InvoiceBatch#batch() batch()} — synchronous batch
- *       submission (blocking, minutes to hours).</li>
- *   <li>{@link InvoiceExport#export() export()} — kick off export jobs
- *       and poll for completion.</li>
- *   <li>{@link InvoiceSync#sync() sync()} — incremental sync as a lazy
+ *   <li>{@link #archive()} — retrieve by KSeF number, reconstruct
+ *       cleared invoices, query/stream metadata.</li>
+ *   <li>{@link #sessions()} — open online sessions and stream session
+ *       summaries.</li>
+ *   <li>{@link #batch()} — synchronous batch submission (blocking,
+ *       minutes to hours).</li>
+ *   <li>{@link #export()} — kick off export jobs and poll for
+ *       completion.</li>
+ *   <li>{@link #sync()} — incremental sync as a lazy
  *       {@link java.util.stream.Stream}.</li>
  * </ul>
  *

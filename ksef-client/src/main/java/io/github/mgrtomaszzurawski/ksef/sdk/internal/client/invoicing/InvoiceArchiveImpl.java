@@ -6,16 +6,12 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.ApiPaths;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa2InvoiceDocument;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefInvoiceDocument;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
@@ -101,27 +97,16 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
         byte[] xml = http.getAuthenticatedBytes(PATH_INVOICES_KSEF + value, token, OP_GET_BY_KSEF);
         Optional<FormCode> detected = FormCodeDetector.detect(xml);
         if (detected.isEmpty()) {
-            return InvoiceDocument.fromXml(FormCode.custom(UNKNOWN_FORM_CODE_SYSTEM_CODE,
-                    UNKNOWN_FORM_CODE_SCHEMA_VERSION, UNKNOWN_FORM_CODE_TYPE), xml);
+            return InvoiceDocumentConstructor.newAnonymousDocument(
+                    FormCode.custom(UNKNOWN_FORM_CODE_SYSTEM_CODE,
+                            UNKNOWN_FORM_CODE_SCHEMA_VERSION, UNKNOWN_FORM_CODE_TYPE),
+                    xml);
         }
-        FormCode formCode = detected.get();
-        if (formCode.equals(FormCode.FA3)) {
-            return Fa3InvoiceDocument.from(xml);
-        }
-        if (formCode.equals(FormCode.FA2)) {
-            return Fa2InvoiceDocument.from(xml);
-        }
-        if (formCode.equals(FormCode.PEF3)) {
-            return PefInvoiceDocument.from(xml);
-        }
-        if (formCode.equals(FormCode.PEF_KOR3)) {
-            return PefKorInvoiceDocument.from(xml);
-        }
-        return InvoiceDocument.fromXml(formCode, xml);
+        return InvoiceDocumentConstructor.newDocument(detected.get(), xml);
     }
 
     @Override
-    public ClearedInvoice clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber) {
+    public ClearedInvoice<Invoice> clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber) {
         Objects.requireNonNull(sessionReferenceNumber, ERR_NULL_SESSION_REF);
         Objects.requireNonNull(invoiceReferenceNumber, ERR_NULL_INVOICE_REF);
         if (sessionClient == null) {
@@ -138,13 +123,13 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
             throw new KsefException(ERR_NO_KSEF_NUMBER, null);
         }
 
-        KsefNumber ksefNumber = KsefNumber.parse(status.ksefNumber());
+        KsefNumber ksefNumber = status.ksefNumber();
         InvoiceDocument document = getByKsefNumber(ksefNumber);
         byte[] upoBytes = sessionClient.getUpoByInvoiceReference(sessionReferenceNumber, invoiceReferenceNumber);
         UpoEntry upo = new UpoEntry(invoiceReferenceNumber, upoBytes);
         Invoice invoice = Invoice.fromXml(document.formCode(), document.xml());
 
-        SubmittedInvoice submitted = new SubmittedInvoice(
+        SubmittedInvoice<Invoice> submitted = new SubmittedInvoice<>(
                 invoice,
                 invoiceReferenceNumber,
                 status,
@@ -152,7 +137,7 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
                 Optional.empty(),
                 Optional.empty(),
                 List.of());
-        return new ClearedInvoice(submitted, document, upo);
+        return new ClearedInvoice<>(submitted, document, upo);
     }
 
     @Override

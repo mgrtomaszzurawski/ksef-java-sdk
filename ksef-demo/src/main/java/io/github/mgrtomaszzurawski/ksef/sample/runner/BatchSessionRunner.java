@@ -11,7 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -81,7 +81,7 @@ public final class BatchSessionRunner implements DemoRunner {
     private static String resolveSkipReason(FormCode formCode, KsefEnvironment env) {
         try {
             formCode.assertAllowedOn(env);
-        } catch (IllegalArgumentException notAllowed) {
+        } catch (KsefUnsupportedEnvironmentException notAllowed) {
             return SKIP_REASON_PREFIX + notAllowed.getMessage();
         }
         if (requiresPeppolProviderAuth(formCode)) {
@@ -96,7 +96,7 @@ public final class BatchSessionRunner implements DemoRunner {
 
         long start = System.currentTimeMillis();
         try {
-            BatchResult result = context.client().invoices().batch().submit(formCode, invoices, BatchOptions.defaults());
+            var result = context.client().invoices().batch().submit(invoices, BatchOptions.defaults());
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("[{}] {} submitted batch ref={}, total={}, cleared={}, failed={}",
                         NAME, formCodeLabel, result.sessionRef(), result.totalCount(),

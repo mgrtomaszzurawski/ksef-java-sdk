@@ -1,7 +1,7 @@
 # ADR-021: Public API tiers — workflow first, endpoints second
 
 Date: 2026-05-03
-Status: Accepted
+Status: Accepted (Tier 2 portion amended by [ADR-032](ADR-032-sync-default-operation-pattern.md) — 2026-05-17)
 Last verified: 2026-05-07
 
 ## Context

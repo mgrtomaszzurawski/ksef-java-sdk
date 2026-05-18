@@ -20,7 +20,8 @@ import java.util.Optional;
  * memory, so invoice content can be encrypted and submitted. After the
  * session is closed, the AES material is zeroised; the only way to keep
  * accessing the session for read operations / UPO retrieval is to call
- * {@link #archive()} which returns a {@link ClosedSession} view.
+ * {@link #complete()} which closes the session AND returns a
+ * {@link ClosedSession} view in one call.
  *
  * <p>Idiomatic usage with try-with-resources + explicit archive:
  *
@@ -50,6 +51,17 @@ import java.util.Optional;
  * @since 1.0.0
  */
 public interface OnlineSession extends Session {
+
+    /**
+     * The {@link FormCode} this session was opened with. Each subsequent
+     * {@code sendInvoice*} call must supply an {@link Invoice} whose
+     * {@link Invoice#formCode()} matches this value — the SDK fails
+     * fast with {@link IllegalArgumentException} on mismatch before
+     * any wire traffic (R1-19).
+     *
+     * @return the session's declared form code
+     */
+    FormCode formCode();
 
     /**
      * Send an invoice (the open {@link Invoice} interface) within this
@@ -83,7 +95,7 @@ public interface OnlineSession extends Session {
      * @throws IllegalStateException if the session is already closed or archived
      * @throws NullPointerException if {@code invoice} is null
      */
-    SubmittedInvoice sendInvoice(Invoice invoice);
+    <I extends Invoice> SubmittedInvoice<I> sendInvoice(I invoice);
 
     /**
      * Send a pre-built {@link OfflineInvoice} within this session.
@@ -109,7 +121,7 @@ public interface OnlineSession extends Session {
      * @throws IllegalStateException if the session is already closed or archived
      * @throws NullPointerException if {@code offline} is null
      */
-    SubmittedInvoice sendOfflineInvoice(OfflineInvoice offline);
+    <I extends Invoice> SubmittedInvoice<I> sendOfflineInvoice(OfflineInvoice<I> offline);
 
     /**
      * Convenience overload that signs and packages the invoice on the
@@ -138,7 +150,7 @@ public interface OnlineSession extends Session {
      * @throws IllegalStateException if no {@code OfflineSigningProvider}
      *     was configured on the client builder
      */
-    SubmittedInvoice sendOffline(Invoice invoice, OfflineMode mode);
+    <I extends Invoice> SubmittedInvoice<I> sendOffline(I invoice, OfflineMode mode);
 
     /**
      * Send a technical correction (korekta techniczna) within this
@@ -162,7 +174,7 @@ public interface OnlineSession extends Session {
      * @throws IllegalStateException if the session is already closed or archived
      * @throws NullPointerException if any argument is null
      */
-    SubmittedInvoice sendTechnicalCorrection(Invoice invoice, byte[] hashOfOriginal);
+    <I extends Invoice> SubmittedInvoice<I> sendTechnicalCorrection(I invoice, byte[] hashOfOriginal);
 
     /**
      * Time remaining until {@link Session#validUntil()} relative to the
@@ -175,13 +187,13 @@ public interface OnlineSession extends Session {
      * retrieval. Equivalent to {@link #close()} plus obtaining the
      * archive view in one call.
      *
-     * <p>Subsequent {@code archive()} / {@code close()} calls are
+     * <p>Subsequent {@code complete()} / {@code close()} calls are
      * idempotent — the same {@link ClosedSession} instance is returned,
      * the underlying state machine flips to CLOSED only once.
      *
-     * <p>Calling {@link #send(byte[])} (or any other write method) after
-     * {@code archive()} throws {@link IllegalStateException} with an
-     * informative message.
+     * <p>Calling {@link #sendInvoice(Invoice)} (or any other {@code send*}
+     * method) after {@code complete()} throws {@link IllegalStateException}
+     * with an informative message.
      *
      * @return the read-only post-close view of this session
      */

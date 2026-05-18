@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
@@ -125,7 +124,7 @@ public final class SessionRunner implements DemoRunner {
         }
 
         try (session) {
-            SubmittedInvoice submitted = null;
+            SubmittedInvoice<Fa3Invoice> submitted = null;
             if (fullMode) {
                 submitted = runSendInvoice(context, session, results);
                 if (submitted != null) {
@@ -151,13 +150,14 @@ public final class SessionRunner implements DemoRunner {
      * (PR15) against the SubmittedInvoice handle produced by
      * {@code session.sendInvoice(Invoice)} earlier in the run.
      */
-    private void runGetClearedBySubmittedInvoice(
+    private <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice>
+            void runGetClearedBySubmittedInvoice(
             io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed,
-            SubmittedInvoice submitted,
+            SubmittedInvoice<I> submitted,
             List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            ClearedInvoice cleared = closed.cleared(submitted);
+            var cleared = closed.cleared(submitted);
             results.add(RunResult.ok(NAME, OP_CLEARED_BY_SUBMITTED, elapsed(start),
                     REF_PREFIX + cleared.submitted().referenceNumber()));
         } catch (io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException exception) {
@@ -260,12 +260,12 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private SubmittedInvoice runSendInvoice(DemoContext context, OnlineSession session,
+    private SubmittedInvoice<Fa3Invoice> runSendInvoice(DemoContext context, OnlineSession session,
                                             List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
             Fa3Invoice invoice = buildDemoInvoice(context);
-            SubmittedInvoice submitted = session.sendInvoice(invoice);
+            var submitted = session.sendInvoice(invoice);
             String invoiceRef = submitted.referenceNumber();
             LOGGER.info(LOG_SENT_INVOICE, NAME, invoiceRef);
             results.add(RunResult.ok(NAME, OP_SEND_INVOICE, elapsed(start),
@@ -317,7 +317,7 @@ public final class SessionRunner implements DemoRunner {
         }
         Integer code = invoice.status().code();
         String description = invoice.status().description();
-        String ksefNumber = invoice.ksefNumber();
+        String ksefNumber = invoice.ksefNumber() == null ? null : invoice.ksefNumber().value();
         LOGGER.info(LOG_INVOICE_STATUS, NAME, label, code, description, ksefNumber);
         List<String> details = invoice.status().details();
         if (details != null && !details.isEmpty()) {
@@ -408,8 +408,7 @@ public final class SessionRunner implements DemoRunner {
                                String invoiceRef, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice cleared =
-                    closed.cleared(invoiceRef);
+            var cleared = closed.cleared(invoiceRef);
             byte[] upo = cleared.upo().xmlBytes();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_UPO_RETRIEVED, NAME, upo.length);

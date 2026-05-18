@@ -6,7 +6,6 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.KsefTestData;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.TestDataAdmin;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestPermissionsGrantBuilder;
@@ -113,7 +112,7 @@ public final class TestDataRunner implements DemoRunner {
             return results;
         }
 
-        TestDataAdmin testData = KsefTestData.of(context.client());
+        TestDataAdmin testData = context.client().testData();
 
         // Probe first: testdata endpoints exist in OpenAPI spec but are not deployed to
         // every test environment (e.g. api-demo returns 404 — they live on api-test).

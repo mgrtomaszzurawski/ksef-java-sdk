@@ -28,6 +28,10 @@ import java.util.Optional;
  * the caller can re-query {@code session.invoiceStatus(referenceNumber)}
  * later if they want to retry the wait.
  *
+ * @param <I> the static {@link Invoice} subtype passed to the send
+ *     call — the SDK preserves this type so callers do not need to
+ *     downcast {@code submitted.invoice()} back to {@code Fa3Invoice}
+ *     / {@code PefInvoice} / custom-impl after a successful send
  * @param invoice the original {@link Invoice} passed to the send call;
  *     embedded for chain-of-custody and stream fold patterns ("for each
  *     invoice, send and tell me what happened")
@@ -52,8 +56,8 @@ import java.util.Optional;
  *
  * @since 1.0.0
  */
-public record SubmittedInvoice(
-        Invoice invoice,
+public record SubmittedInvoice<I extends Invoice>(
+        I invoice,
         String referenceNumber,
         SessionInvoiceStatus status,
         Optional<KsefNumber> ksefNumber,
@@ -119,7 +123,7 @@ public record SubmittedInvoice(
         if (this == other) {
             return true;
         }
-        if (!(other instanceof SubmittedInvoice that)) {
+        if (!(other instanceof SubmittedInvoice<?> that)) {
             return false;
         }
         return Objects.equals(invoice, that.invoice)
