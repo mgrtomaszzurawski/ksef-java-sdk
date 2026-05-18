@@ -76,17 +76,19 @@ public final class AuthSessionsImpl implements AuthSessions {
         ensureOpen.run();
         ensureAuthenticated.run();
         Objects.requireNonNull(filter, ERR_NULL_FILTER);
-        var page = authClient.listSessions(filter.continuationToken());
+        var page = authClient.listSessions(filter.continuationToken(), filter.pageSize());
         List<AuthSession> mapped = page.items().stream().map(AuthSessionsImpl::toAuthSession).toList();
         return new AuthSessionListResult(mapped, page.continuationToken());
     }
 
     @Override
-    public Stream<AuthSession> streamAuthSessions() {
+    public Stream<AuthSession> streamAuthSessions(AuthSessionsQueryRequest filter) {
         ensureOpen.run();
         ensureAuthenticated.run();
+        Objects.requireNonNull(filter, ERR_NULL_FILTER);
+        Integer pageSize = filter.pageSize();
         return PagedSpliterator.cursorStream(continuationToken -> {
-            var page = authClient.listSessions(continuationToken);
+            var page = authClient.listSessions(continuationToken, pageSize);
             List<AuthSession> mapped = page.items().stream().map(AuthSessionsImpl::toAuthSession).toList();
             return new PagedSpliterator.CursorPage<>(mapped, page.continuationToken());
         });

@@ -152,7 +152,9 @@ public final class VatUeProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions(
+                    io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults())
+                    .findAny().ifPresent(authSession -> { });
             LOGGER.info("[{}] {} authenticated as nipVatUe={}", NAME, LABEL, nipVatUe);
             results.add(RunResult.ok(NAME, OP_AUTH + LABEL, elapsed(start),
                     "nipVatUe=" + nipVatUe));

@@ -22,4 +22,21 @@ import org.jspecify.annotations.Nullable;
 public record AuthSessionsQueryRequest(
         @Nullable String continuationToken,
         @Nullable Integer pageSize) {
+
+    /**
+     * Default filter — first page, server-default page size (10).
+     * Use this when the caller does not need to tune paging.
+     */
+    public static AuthSessionsQueryRequest defaults() {
+        return new AuthSessionsQueryRequest(null, null);
+    }
+
+    /**
+     * Filter targeting the first page with an explicit page size.
+     *
+     * @param pageSize server-bounded page size (10-100)
+     */
+    public static AuthSessionsQueryRequest firstPage(int pageSize) {
+        return new AuthSessionsQueryRequest(null, pageSize);
+    }
 }

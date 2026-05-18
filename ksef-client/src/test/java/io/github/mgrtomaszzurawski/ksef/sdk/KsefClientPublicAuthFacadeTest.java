@@ -76,7 +76,9 @@ class KsefClientPublicAuthFacadeTest {
                             .withBody(SESSIONS_LIST_RESPONSE)));
 
             // when
-            List<AuthSession> sessions = client.authSessions().streamAuthSessions().toList();
+            List<AuthSession> sessions = client.authSessions()
+                    .streamAuthSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults())
+                    .toList();
 
             // then — at minimum the size + reference numbers must round-trip.
             // current()/tokenRedeemed() pass through the OpenAPI raw model setters

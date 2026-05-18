@@ -78,18 +78,26 @@ public interface AuthSessions {
      * Lazily paginate every active auth session for this consumer's KSeF
      * context, walking pages on demand via the {@code x-continuation-token}
      * cursor. Holds at most one page in heap; stops fetching as soon as the
-     * caller's terminal operation is satisfied.
+     * caller's terminal operation is satisfied. Honours the request's
+     * {@link AuthSessionsQueryRequest#pageSize() pageSize} on every page
+     * fetch.
+     *
+     * <p>{@link AuthSessionsQueryRequest#continuationToken()} is
+     * <em>ignored</em> — the SDK paginator always starts from the
+     * beginning of the result set. Use {@link #queryAuthSessions} when
+     * navigating from a known cursor.
      *
      * <p>Use {@link Stream#limit(long)} or
      * {@link Stream#takeWhile(java.util.function.Predicate)}
      * to bound the walk.
      */
-    Stream<AuthSession> streamAuthSessions();
+    Stream<AuthSession> streamAuthSessions(AuthSessionsQueryRequest filter);
 
     /**
      * Terminate a specific auth session by its reference number.
      * Intended for terminating OTHER sessions in your KSeF context
-     * (shown via {@link #streamAuthSessions()}). To end your own session
+     * (shown via {@link #streamAuthSessions(AuthSessionsQueryRequest)}).
+     * To end your own session
      * use {@link #terminate()} for proper local state cleanup.
      *
      * <p>If you pass your own reference number here, the server kills

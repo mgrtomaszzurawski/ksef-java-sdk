@@ -77,7 +77,7 @@ public final class AuthRunner implements DemoRunner {
             // Drive lazy auth via any authenticated read — streamAuthSessions()
             // hits /v2/auth/sessions which forces the full challenge flow.
             // No-op ifPresent consumes the Optional per Sonar S2201.
-            context.client().authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            context.client().authSessions().streamAuthSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults()).findAny().ifPresent(authSession -> { });
             String nip = context.nipIdentifier();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_AUTHENTICATED, NAME, nip);
@@ -106,7 +106,7 @@ public final class AuthRunner implements DemoRunner {
             // Lazy re-auth — any authenticated read after terminate() drives
             // the full challenge-response cycle again. No-op ifPresent
             // consumes the Optional per Sonar S2201.
-            context.client().authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            context.client().authSessions().streamAuthSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults()).findAny().ifPresent(authSession -> { });
             LOGGER.info(LOG_RE_AUTHENTICATED, NAME);
             results.add(RunResult.ok(NAME, OP_RE_AUTHENTICATE, elapsed(reAuthStart),
                     NIP_PREFIX + context.nipIdentifier()));
@@ -119,7 +119,7 @@ public final class AuthRunner implements DemoRunner {
     private void runListSessions(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            List<AuthSession> sessions = context.client().authSessions().streamAuthSessions().toList();
+            List<AuthSession> sessions = context.client().authSessions().streamAuthSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults()).toList();
             int count = sessions.size();
             LOGGER.info(LOG_ACTIVE_SESSIONS, NAME, count);
             results.add(RunResult.ok(NAME, OP_LIST_SESSIONS, elapsed(start),
@@ -141,7 +141,7 @@ public final class AuthRunner implements DemoRunner {
         KsefClient client = context.client();
         String currentRef;
         try {
-            List<AuthSession> sessions = client.authSessions().streamAuthSessions().toList();
+            List<AuthSession> sessions = client.authSessions().streamAuthSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults()).toList();
             currentRef = findCurrentSessionRef(sessions);
             client.authSessions().terminateSession(currentRef);
             LOGGER.info(LOG_TERMINATED_BY_REF, NAME, currentRef);
@@ -157,7 +157,7 @@ public final class AuthRunner implements DemoRunner {
         try {
             // Lazy re-auth after terminate-by-ref. No-op ifPresent consumes
             // the Optional per Sonar S2201.
-            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults()).findAny().ifPresent(authSession -> { });
             LOGGER.info(LOG_RE_AUTHENTICATED_AFTER_BY_REF, NAME);
             results.add(RunResult.ok(NAME, OP_RE_AUTHENTICATE_AFTER_TERMINATE_BY_REF,
                     elapsed(reAuthStart), NIP_PREFIX + context.nipIdentifier()));

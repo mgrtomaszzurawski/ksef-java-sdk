@@ -349,24 +349,30 @@ public final class AuthClient {
      * @return list response with session items and continuation token
      */
     public AuthenticationList listSessions() {
-        return listSessions(null);
+        return listSessions(null, null);
     }
 
     /**
      * List active authentication sessions, optionally continuing from a
-     * prior page's continuation token.
+     * prior page's continuation token and overriding the server's
+     * default page size (10).
      *
      * @param continuationToken cursor returned by the previous page, or
      *                          {@code null} to fetch the first page
+     * @param pageSize          server-bounded page size (10-100), or
+     *                          {@code null} to use the server default (10)
      * @return list response with session items and the next continuation token
      */
-    public AuthenticationList listSessions(@Nullable String continuationToken) {
+    public AuthenticationList listSessions(@Nullable String continuationToken, @Nullable Integer pageSize) {
         LOGGER.debug(LOG_CALL, OP_LIST_SESSIONS);
         String token = sessionContext.token();
+        String path = pageSize == null
+                ? PATH_SESSIONS
+                : PATH_SESSIONS + "?pageSize=" + pageSize;
         AuthenticationListResponseRaw raw = continuationToken == null
-                ? http.getAuthenticated(PATH_SESSIONS, token,
+                ? http.getAuthenticated(path, token,
                         AuthenticationListResponseRaw.class, OP_LIST_SESSIONS)
-                : http.getAuthenticated(PATH_SESSIONS, token,
+                : http.getAuthenticated(path, token,
                         AuthenticationListResponseRaw.class, OP_LIST_SESSIONS,
                         io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
                         continuationToken);
