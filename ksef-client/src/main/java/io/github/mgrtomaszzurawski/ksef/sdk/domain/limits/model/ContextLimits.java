@@ -7,10 +7,19 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Effective context limits for online and batch sessions.
+ * Snapshot of the maximum-per-session caps the server enforces on
+ * online and batch sessions for the current authentication context.
+ * Both fields are populated by the server (both required); the
+ * {@link Nullable} annotation guards against malformed responses.
  *
- * @param onlineSession online session limits
- * @param batchSession batch session limits
+ * @param onlineSession per-session caps for interactive (online)
+ *     sessions opened via {@code client.invoices().sessions().open(...)}.
+ *     Contains three caps: single-invoice size in MB,
+ *     invoice-with-attachment size in MB, and total invoices per
+ *     session.
+ * @param batchSession per-session caps for batch package submissions
+ *     opened via {@code client.invoices().batch().open(...)}. Same
+ *     three caps apply per individual invoice part inside the batch.
  *
  * @since 1.0.0
  */
