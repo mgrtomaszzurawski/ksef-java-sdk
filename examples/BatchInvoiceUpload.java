@@ -64,7 +64,7 @@ public final class BatchInvoiceUpload {
             // Threading warning: submitBatch blocks for minutes to hours.
             // Do not call from UI / HTTP handler / reactive dispatch threads.
             // Wrap with CompletableFuture.supplyAsync(executor) for async use.
-            var result = client.invoices().batch().submit(invoices, BatchOptions.defaults());
+            var result = client.invoices().sessions().batch().submit(invoices, BatchOptions.defaults());
 
             System.out.println("Batch session: " + result.sessionRef());
             System.out.println("Submitted: " + result.totalCount() + " invoices");

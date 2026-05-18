@@ -13,13 +13,14 @@ import org.jspecify.annotations.Nullable;
  * {@link Nullable} annotation guards against malformed responses.
  *
  * @param onlineSession per-session caps for interactive (online)
- *     sessions opened via {@code client.invoices().sessions().open(...)}.
+ *     sessions opened via {@code client.invoices().sessions().online(...)}.
  *     Contains three caps: single-invoice size in MB,
  *     invoice-with-attachment size in MB, and total invoices per
  *     session.
  * @param batchSession per-session caps for batch package submissions
- *     opened via {@code client.invoices().batch().open(...)}. Same
- *     three caps apply per individual invoice part inside the batch.
+ *     driven via {@code client.invoices().sessions().batch().submit(...)}.
+ *     Same three caps apply per individual invoice part inside the
+ *     batch.
  *
  * @since 1.0.0
  */

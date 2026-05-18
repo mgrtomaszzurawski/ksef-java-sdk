@@ -63,7 +63,7 @@ class SubmitBatchFromFilesPreflightTest {
 
             // when / then — Phase 1A fails fast with the file path and form-code names
             IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                    () -> client.invoices().batch().submitFromFiles(
+                    () -> client.invoices().sessions().batch().submitFromFiles(
                             FormCode.FA3, List.of(mismatched), FAST_OPTIONS));
             assertTrue(thrown.getMessage().contains(mismatched.toString()),
                     () -> "Error message should reference the offending file path: " + thrown.getMessage());
@@ -88,7 +88,7 @@ class SubmitBatchFromFilesPreflightTest {
 
             // when / then — Phase 1A surfaces the unrecognised-root error with the file path
             IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                    () -> client.invoices().batch().submitFromFiles(
+                    () -> client.invoices().sessions().batch().submitFromFiles(
                             FormCode.FA3, List.of(foreign), FAST_OPTIONS));
             assertTrue(thrown.getMessage().contains(foreign.toString()),
                     () -> "Error message should reference the file path: " + thrown.getMessage());
@@ -109,7 +109,7 @@ class SubmitBatchFromFilesPreflightTest {
             // when / then — KsefXmlValidationException carries the file path in its message
             KsefXmlValidator.KsefXmlValidationException thrown = assertThrows(
                     KsefXmlValidator.KsefXmlValidationException.class,
-                    () -> client.invoices().batch().submitFromFiles(
+                    () -> client.invoices().sessions().batch().submitFromFiles(
                             FormCode.FA3, List.of(invalid), FAST_OPTIONS));
             assertTrue(thrown.getMessage().contains(invalid.toString()),
                     () -> "Error message should reference the offending file path: " + thrown.getMessage());

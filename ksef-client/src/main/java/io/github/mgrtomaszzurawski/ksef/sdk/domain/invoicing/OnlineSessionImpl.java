@@ -114,7 +114,7 @@ final class OnlineSessionImpl implements OnlineSession {
     private static final String ERR_FORM_CODE_LEGACY_CTOR =
             "OnlineSession was opened without a FormCode (legacy ctor); "
                     + "formCode() is only meaningful when the session was opened via "
-                    + "client.invoices().sessions().open(FormCode).";
+                    + "client.invoices().sessions().online(FormCode).";
 
     /** Default verification timeout when none is supplied via the builder. */
     static final Duration DEFAULT_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);

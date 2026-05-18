@@ -173,7 +173,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                     LABEL_PEPPOL_ID + peppolId));
 
             long openStart = System.currentTimeMillis();
-            try (OnlineSession session = client.invoices().sessions().open(formCode)) {
+            try (OnlineSession session = client.invoices().sessions().online(formCode)) {
                 results.add(RunResult.ok(NAME, OP_OPEN_SESSION + label, elapsed(openStart),
                         "ref=" + session.referenceNumber()));
                 invoiceRef = runSend(session, formCode, context.nipIdentifier(),

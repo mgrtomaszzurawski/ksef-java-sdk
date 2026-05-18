@@ -21,16 +21,17 @@ import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Coordinator implementation of {@link Invoices}. Instantiates the five
+ * Coordinator implementation of {@link Invoices}. Instantiates the four
  * sub-area implementations once at construction and returns them through
- * the {@code archive()}, {@code sessions()}, {@code batch()},
- * {@code export()}, and {@code sync()} accessors.
+ * the {@code archive()}, {@code sessions()}, {@code export()}, and
+ * {@code sync()} accessors. The batch flow is reached via
+ * {@code sessions().batch()} (R2-4 B).
  *
  * <p>The single-arg constructor produces a coordinator whose
- * session-aware sub-areas ({@code sessions()}, {@code batch()},
- * {@code clearedFromArchive()}) throw {@link IllegalStateException} on
- * use — wire the full runtime through the multi-arg constructor for
- * those code paths.
+ * session-aware sub-areas ({@code sessions()}, including its nested
+ * {@code batch()}, {@code clearedFromArchive()}) throw
+ * {@link IllegalStateException} on use — wire the full runtime through
+ * the multi-arg constructor for those code paths.
  *
  * @since 1.0.0
  */
@@ -47,7 +48,6 @@ public final class InvoicesImpl implements Invoices {
     private final InvoiceExport export;
     private final InvoiceSync sync;
     private final InvoiceSessions sessions;
-    private final InvoiceBatch batch;
 
     public InvoicesImpl(HttpRuntime runtime) {
         this(runtime, null, null, null, DEFAULT_INVOICE_VERIFICATION_TIMEOUT, null, null);
@@ -81,13 +81,13 @@ public final class InvoicesImpl implements Invoices {
         this.archive = new InvoiceArchiveImpl(runtime, sessionClient);
         this.export = new InvoiceExportImpl(runtime);
         this.sync = new InvoiceSyncImpl(runtime, this.export);
-        this.sessions = (sessionClient != null && environment != null && publicKeyResolver != null)
-                ? new InvoiceSessionsImpl(sessionClient, environment, publicKeyResolver,
-                        invoiceVerificationTimeout, offlineSigningProvider, sellerNip)
-                : new UnavailableSessions();
-        this.batch = (sessionClient != null && environment != null && publicKeyResolver != null)
+        InvoiceBatch batch = (sessionClient != null && environment != null && publicKeyResolver != null)
                 ? new InvoiceBatchImpl(sessionClient, runtime.httpClient(), environment, publicKeyResolver)
                 : new UnavailableBatch();
+        this.sessions = (sessionClient != null && environment != null && publicKeyResolver != null)
+                ? new InvoiceSessionsImpl(sessionClient, environment, publicKeyResolver,
+                        invoiceVerificationTimeout, offlineSigningProvider, sellerNip, batch)
+                : new UnavailableSessions(batch);
     }
 
     @Override
@@ -101,11 +101,6 @@ public final class InvoicesImpl implements Invoices {
     }
 
     @Override
-    public InvoiceBatch batch() {
-        return batch;
-    }
-
-    @Override
     public InvoiceExport export() {
         return export;
     }
@@ -116,10 +111,21 @@ public final class InvoicesImpl implements Invoices {
     }
 
     private static final class UnavailableSessions implements InvoiceSessions {
+        private final InvoiceBatch batch;
+
+        UnavailableSessions(InvoiceBatch batch) {
+            this.batch = batch;
+        }
+
         @Override
-        public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession open(
+        public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession online(
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode formCode) {
             throw new IllegalStateException(ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME);
+        }
+
+        @Override
+        public InvoiceBatch batch() {
+            return batch;
         }
 
         @Override
