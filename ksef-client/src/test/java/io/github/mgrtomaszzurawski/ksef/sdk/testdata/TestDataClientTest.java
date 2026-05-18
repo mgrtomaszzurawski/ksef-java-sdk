@@ -418,7 +418,10 @@ class TestDataClientTest {
 
     @Test
     void resetSessionLimits_whenWiredToProd_throwsKsefUnsupportedEnvironmentException() {
+        // given
         try (KsefClient ksef = prodWiredClient()) {
+
+            // when / then
             assertThrows(KsefUnsupportedEnvironmentException.class,
                     ksef.testData()::resetSessionLimits);
         }
@@ -426,7 +429,10 @@ class TestDataClientTest {
 
     @Test
     void resetSubjectLimits_whenWiredToProd_throwsKsefUnsupportedEnvironmentException() {
+        // given
         try (KsefClient ksef = prodWiredClient()) {
+
+            // when / then
             assertThrows(KsefUnsupportedEnvironmentException.class,
                     ksef.testData()::resetSubjectLimits);
         }
@@ -434,7 +440,10 @@ class TestDataClientTest {
 
     @Test
     void resetRateLimits_whenWiredToProd_throwsKsefUnsupportedEnvironmentException() {
+        // given
         try (KsefClient ksef = prodWiredClient()) {
+
+            // when / then
             assertThrows(KsefUnsupportedEnvironmentException.class,
                     ksef.testData()::resetRateLimits);
         }

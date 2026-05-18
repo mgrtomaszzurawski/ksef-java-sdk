@@ -269,11 +269,12 @@ class CertificateClientTest {
             assertNotNull(result);
             assertEquals(TEST_CERT_SERIAL, result.certificateSerialNumber().value());
             assertEquals(TEST_CERT_NAME, result.certificateName());
-            // and — workflow exercised every endpoint exactly once
-            verify(com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor(urlEqualTo(PATH_ENROLLMENTS + "/data")));
-            verify(postRequestedFor(urlEqualTo(PATH_ENROLLMENTS)));
-            verify(com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor(urlEqualTo(PATH_ENROLLMENTS + "/" + TEST_ENROLLMENT_REF)));
-            verify(postRequestedFor(urlEqualTo(PATH_CERTIFICATES_RETRIEVE)));
+            // and — workflow exercised every endpoint exactly once (status poll
+            // hits terminal on the first call because the stub returns code 200)
+            verify(1, com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor(urlEqualTo(PATH_ENROLLMENTS + "/data")));
+            verify(1, postRequestedFor(urlEqualTo(PATH_ENROLLMENTS)));
+            verify(1, com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor(urlEqualTo(PATH_ENROLLMENTS + "/" + TEST_ENROLLMENT_REF)));
+            verify(1, postRequestedFor(urlEqualTo(PATH_CERTIFICATES_RETRIEVE)));
         }
     }
 
