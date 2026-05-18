@@ -4,34 +4,43 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa2InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
 /**
  * Internal construction bridge for typed {@link InvoiceDocument}
- * subtypes returned by the archive and session-cleared flows.
+ * subtypes returned by the archive, sync, and session-cleared flows.
  *
  * <p>R1-5: the typed document factories
- * ({@code Fa2/Fa3/Pef/PefKorInvoiceDocument.from(byte[])}) and the
- * anonymous-wrapper helper are package-private inside
- * {@code sdk.domain.invoicing}. The SDK orchestrates document
- * construction from server-side XML; consumers read what the archive
- * returns. Keeping the factories package-private prevents leaking a
- * construction path on the published binary/Javadoc surface (mirrors
- * the {@code SessionHandleConstructor} pattern for session handles).
+ * ({@code Fa2/Fa3/Pef/PefKorInvoiceDocument.from(byte[])}) are
+ * package-private inside {@code sdk.domain.invoicing}. The SDK
+ * orchestrates document construction from server-side XML; consumers
+ * read what the archive returns. Keeping the factories package-private
+ * prevents leaking a construction path on the published binary/Javadoc
+ * surface (mirrors the {@code SessionHandleConstructor} pattern for
+ * session handles).
  *
- * <p>Cross-package access by SDK internals goes through this bridge.
- * The reflective lookups are cached as {@link Method} instances at
- * class-load time; subsequent {@code invoke} calls have negligible
- * overhead vs. direct invocation. Within the same named module,
- * {@link Method#setAccessible(boolean)} works without any
+ * <p>R2-6 ext: dispatch now consults a {@link KsefInvoiceTypes}
+ * registry between the hardcoded built-in fast-path and the
+ * {@link UnrecognizedInvoiceDocument} fallback. Built-ins always win
+ * (consumers cannot replace FA2/FA3/PEF/PEF_KOR via the registry —
+ * registration of those FormCodes is rejected by
+ * {@link KsefInvoiceTypes.Builder#register}). Cross-package access by
+ * SDK internals goes through this bridge.
+ *
+ * <p>The reflective lookups for built-ins are cached as {@link Method}
+ * instances at class-load time; subsequent {@code invoke} calls have
+ * negligible overhead vs. direct invocation. Within the same named
+ * module, {@link Method#setAccessible(boolean)} works without any
  * {@code opens} directive in {@code module-info.java}.
  *
  * @apiNote Internal — never call from consumer code.
@@ -44,19 +53,14 @@ public final class InvoiceDocumentConstructor {
             "SDK internal error: reflective construction of invoice document failed";
     private static final String ERR_NULL_FORM_CODE = "formCode must not be null";
     private static final String ERR_NULL_XML = "xml must not be null";
+    private static final String ERR_NULL_REGISTRY = "registry must not be null";
 
     private static final String FROM_METHOD_NAME = "from";
-
-    private static final String INVOICE_DOCUMENTS_FQN =
-            "io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocuments";
-
-    private static final String ANONYMOUS_METHOD_NAME = "anonymousFromXml";
 
     private static final Method FA2_FROM;
     private static final Method FA3_FROM;
     private static final Method PEF_FROM;
     private static final Method PEF_KOR_FROM;
-    private static final Method ANONYMOUS_FROM;
 
     static {
         try {
@@ -68,10 +72,7 @@ public final class InvoiceDocumentConstructor {
                     FROM_METHOD_NAME, byte[].class));
             PEF_KOR_FROM = makeAccessible(PefKorInvoiceDocument.class.getDeclaredMethod(
                     FROM_METHOD_NAME, byte[].class));
-            Class<?> invoiceDocumentsClass = Class.forName(INVOICE_DOCUMENTS_FQN);
-            ANONYMOUS_FROM = makeAccessible(invoiceDocumentsClass.getDeclaredMethod(
-                    ANONYMOUS_METHOD_NAME, FormCode.class, byte[].class));
-        } catch (NoSuchMethodException | ClassNotFoundException ex) {
+        } catch (NoSuchMethodException ex) {
             throw new ExceptionInInitializerError(ex);
         }
     }
@@ -113,31 +114,43 @@ public final class InvoiceDocumentConstructor {
     }
 
     /**
-     * @apiNote Internal — anonymous-wrapper variant for unknown / custom
+     * @apiNote Internal — typed-fallback variant for unknown / custom
      *     FormCode where the SDK has no schema to unmarshal against.
-     *     Returns a minimal {@link InvoiceDocument} exposing only
-     *     {@link InvoiceDocument#formCode()} and {@link InvoiceDocument#xml()}.
+     *     Returns an {@link UnrecognizedInvoiceDocument} exposing only
+     *     {@link InvoiceDocument#formCode()} and
+     *     {@link InvoiceDocument#xml()}.
      */
     public static InvoiceDocument newAnonymousDocument(FormCode formCode, byte[] xml) {
         Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
         Objects.requireNonNull(xml, ERR_NULL_XML);
-        try {
-            return (InvoiceDocument) ANONYMOUS_FROM.invoke(null, formCode, xml);
-        } catch (IllegalAccessException ex) {
-            throw new IllegalStateException(ERR_REFLECTIVE_CONSTRUCTION_FAILED, ex);
-        } catch (InvocationTargetException invocationFailure) {
-            throw rethrow(invocationFailure);
-        }
+        return new UnrecognizedInvoiceDocument(formCode, xml);
     }
 
     /**
-     * Dispatch helper — given a known {@link FormCode}, returns the typed
-     * subtype; for custom forms returns the anonymous wrapper. Centralises
-     * the switch the archive and session flows used to inline.
+     * Dispatch helper using the SDK's default (built-ins-only) registry.
+     * Equivalent to {@code newDocument(KsefInvoiceTypes.builtinsOnly(),
+     * formCode, xml)}.
      *
      * @apiNote Internal — see class-level Javadoc.
      */
     public static InvoiceDocument newDocument(FormCode formCode, byte[] xml) {
+        return newDocument(KsefInvoiceTypes.builtinsOnly(), formCode, xml);
+    }
+
+    /**
+     * Dispatch helper — given a {@link FormCode}, returns:
+     * <ol>
+     *   <li>the typed built-in subtype when the form is one of
+     *       FA2/FA3/PEF/PEF_KOR;</li>
+     *   <li>the typed wrapper produced by the user-registered factory
+     *       when {@code registry} carries a binding for the form;</li>
+     *   <li>an {@link UnrecognizedInvoiceDocument} otherwise.</li>
+     * </ol>
+     *
+     * @apiNote Internal — see class-level Javadoc.
+     */
+    public static InvoiceDocument newDocument(KsefInvoiceTypes registry, FormCode formCode, byte[] xml) {
+        Objects.requireNonNull(registry, ERR_NULL_REGISTRY);
         Objects.requireNonNull(formCode, ERR_NULL_FORM_CODE);
         Objects.requireNonNull(xml, ERR_NULL_XML);
         if (formCode.equals(FormCode.FA3)) {
@@ -152,7 +165,9 @@ public final class InvoiceDocumentConstructor {
         if (formCode.equals(FormCode.PEF_KOR3)) {
             return newPefKorDocument(xml);
         }
-        return newAnonymousDocument(formCode, xml);
+        return registry.binding(formCode)
+                .map(binding -> binding.parse(xml))
+                .orElseGet(() -> new UnrecognizedInvoiceDocument(formCode, xml));
     }
 
     private static <T> T invoke(Method method, Class<T> resultType, byte[] xml) {

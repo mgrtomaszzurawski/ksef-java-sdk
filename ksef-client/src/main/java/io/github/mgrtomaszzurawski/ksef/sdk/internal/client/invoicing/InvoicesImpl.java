@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
@@ -54,7 +55,7 @@ public final class InvoicesImpl implements Invoices {
     private final OfflineInvoices offline;
 
     public InvoicesImpl(HttpRuntime runtime) {
-        this(runtime, null, null, null, DEFAULT_INVOICE_VERIFICATION_TIMEOUT, null, null);
+        this(runtime, null, null, null, DEFAULT_INVOICE_VERIFICATION_TIMEOUT, null, null, KsefInvoiceTypes.builtinsOnly());
     }
 
     public InvoicesImpl(HttpRuntime runtime,
@@ -62,7 +63,7 @@ public final class InvoicesImpl implements Invoices {
                         @Nullable KsefEnvironment environment,
                         @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver) {
         this(runtime, sessionClient, environment, publicKeyResolver, DEFAULT_INVOICE_VERIFICATION_TIMEOUT,
-                null, null);
+                null, null, KsefInvoiceTypes.builtinsOnly());
     }
 
     public InvoicesImpl(HttpRuntime runtime,
@@ -70,7 +71,8 @@ public final class InvoicesImpl implements Invoices {
                         @Nullable KsefEnvironment environment,
                         @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
                         java.time.Duration invoiceVerificationTimeout) {
-        this(runtime, sessionClient, environment, publicKeyResolver, invoiceVerificationTimeout, null, null);
+        this(runtime, sessionClient, environment, publicKeyResolver, invoiceVerificationTimeout,
+                null, null, KsefInvoiceTypes.builtinsOnly());
     }
 
     public InvoicesImpl(HttpRuntime runtime,
@@ -80,10 +82,23 @@ public final class InvoicesImpl implements Invoices {
                         java.time.Duration invoiceVerificationTimeout,
                         @Nullable OfflineSigningProvider offlineSigningProvider,
                         @Nullable String sellerNip) {
+        this(runtime, sessionClient, environment, publicKeyResolver, invoiceVerificationTimeout,
+                offlineSigningProvider, sellerNip, KsefInvoiceTypes.builtinsOnly());
+    }
+
+    public InvoicesImpl(HttpRuntime runtime,
+                        @Nullable SessionClient sessionClient,
+                        @Nullable KsefEnvironment environment,
+                        @Nullable Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,
+                        java.time.Duration invoiceVerificationTimeout,
+                        @Nullable OfflineSigningProvider offlineSigningProvider,
+                        @Nullable String sellerNip,
+                        KsefInvoiceTypes invoiceTypes) {
         Objects.requireNonNull(runtime, "runtime must not be null");
         Objects.requireNonNull(invoiceVerificationTimeout, "invoiceVerificationTimeout must not be null");
+        Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
         boolean sessionsAvailable = sessionClient != null && environment != null && publicKeyResolver != null;
-        this.archive = new InvoiceArchiveImpl(runtime, sessionClient);
+        this.archive = new InvoiceArchiveImpl(runtime, sessionClient, invoiceTypes);
         this.export = new InvoiceExportImpl(runtime);
         this.sync = new InvoiceSyncImpl(runtime, this.export);
         InvoiceBatch batch = sessionsAvailable
@@ -91,7 +106,7 @@ public final class InvoicesImpl implements Invoices {
                 : new UnavailableBatch();
         this.sessions = sessionsAvailable
                 ? new InvoiceSessionsImpl(sessionClient, environment, publicKeyResolver,
-                        invoiceVerificationTimeout, offlineSigningProvider, sellerNip, batch)
+                        invoiceVerificationTimeout, offlineSigningProvider, sellerNip, batch, invoiceTypes)
                 : new UnavailableSessions(batch);
         this.offline = sessionsAvailable
                 ? new OfflineInvoicesImpl(offlineSigningProvider, environment, sellerNip)

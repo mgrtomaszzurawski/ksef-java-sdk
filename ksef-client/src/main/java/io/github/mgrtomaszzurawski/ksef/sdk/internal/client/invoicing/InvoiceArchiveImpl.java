@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.InvoiceQueryFiltersRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.QueryInvoicesMetadataResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
@@ -82,10 +83,17 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
 
     private final HttpSupport http;
     private final @Nullable SessionClient sessionClient;
+    private final KsefInvoiceTypes invoiceTypes;
 
     public InvoiceArchiveImpl(HttpRuntime runtime, @Nullable SessionClient sessionClient) {
+        this(runtime, sessionClient, KsefInvoiceTypes.builtinsOnly());
+    }
+
+    public InvoiceArchiveImpl(HttpRuntime runtime, @Nullable SessionClient sessionClient,
+                              KsefInvoiceTypes invoiceTypes) {
         this.http = new HttpSupport(runtime);
         this.sessionClient = sessionClient;
+        this.invoiceTypes = Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
     }
 
     @Override
@@ -102,7 +110,7 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
                             UNKNOWN_FORM_CODE_SCHEMA_VERSION, UNKNOWN_FORM_CODE_TYPE),
                     xml);
         }
-        return InvoiceDocumentConstructor.newDocument(detected.get(), xml);
+        return InvoiceDocumentConstructor.newDocument(invoiceTypes, detected.get(), xml);
     }
 
     @Override

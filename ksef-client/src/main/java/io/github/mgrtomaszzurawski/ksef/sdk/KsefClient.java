@@ -194,10 +194,14 @@ public final class KsefClient implements AutoCloseable {
         this.offlineSigningProvider = builder.offlineSigningProvider;
         String resolvedSellerNip = credentials.identifier().type() == KsefIdentifier.Type.NIP
                 ? credentials.identifier().value() : null;
+        io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes resolvedInvoiceTypes =
+                builder.invoiceTypes != null
+                        ? builder.invoiceTypes
+                        : io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes.builtinsOnly();
         this.invoices = new InvoicesImpl(this.runtime,
                 this.sessionClient, this.environment, this::getPublicKey,
                 builder.invoiceVerificationTimeout,
-                this.offlineSigningProvider, resolvedSellerNip);
+                this.offlineSigningProvider, resolvedSellerNip, resolvedInvoiceTypes);
         this.tokens = new TokensImpl(this.runtime);
         this.permissions = new PermissionsImpl(this.runtime);
         this.certificates = new CertificatesImpl(this.runtime);
@@ -482,6 +486,7 @@ public final class KsefClient implements AutoCloseable {
         private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
         private Duration invoiceVerificationTimeout = DEFAULT_INVOICE_VERIFICATION_TIMEOUT;
         private @Nullable OfflineSigningProvider offlineSigningProvider;
+        private @Nullable io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes invoiceTypes;
 
         private Builder() { }
 
@@ -611,6 +616,30 @@ public final class KsefClient implements AutoCloseable {
         public Builder offlineSigning(OfflineSigningProvider provider) {
             this.offlineSigningProvider = Objects.requireNonNull(provider,
                     "offline signing provider must not be null");
+            return this;
+        }
+
+        /**
+         * Register custom {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument}
+         * types the SDK should construct on the read-side flow (archive
+         * lookups, incremental sync, session-cleared retrieval) for
+         * non-built-in {@code FormCode}s.
+         *
+         * <p>Built-in schemas (FA2/FA3/PEF/PEF_KOR) are resolved by the
+         * SDK internally; this hook extends the dispatch with consumer
+         * types. Omitting the call uses
+         * {@code KsefInvoiceTypes.builtinsOnly()} as the default — the
+         * read-side flow returns
+         * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument}
+         * for any unregistered non-built-in form.
+         *
+         * @param invoiceTypes the registry (must not be null; pass
+         *     {@code KsefInvoiceTypes.builtinsOnly()} to revert to the
+         *     default after a prior call on the same builder)
+         * @return this builder
+         */
+        public Builder invoiceTypes(io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes invoiceTypes) {
+            this.invoiceTypes = Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
             return this;
         }
 

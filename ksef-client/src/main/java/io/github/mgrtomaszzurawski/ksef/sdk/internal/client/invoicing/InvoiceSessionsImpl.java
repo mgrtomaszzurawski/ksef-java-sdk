@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.FormCodeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.OpenOnlineSessionRequestRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
@@ -53,6 +54,7 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
     @Nullable private final OfflineSigningProvider offlineSigningProvider;
     @Nullable private final String sellerNip;
     private final InvoiceBatch batch;
+    private final KsefInvoiceTypes invoiceTypes;
 
     public InvoiceSessionsImpl(SessionClient sessionClient,
                                KsefEnvironment environment,
@@ -60,7 +62,8 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
                                java.time.Duration invoiceVerificationTimeout,
                                @Nullable OfflineSigningProvider offlineSigningProvider,
                                @Nullable String sellerNip,
-                               InvoiceBatch batch) {
+                               InvoiceBatch batch,
+                               KsefInvoiceTypes invoiceTypes) {
         this.sessionClient = Objects.requireNonNull(sessionClient, "sessionClient must not be null");
         this.environment = Objects.requireNonNull(environment, "environment must not be null");
         this.publicKeyResolver = Objects.requireNonNull(publicKeyResolver, "publicKeyResolver must not be null");
@@ -69,6 +72,7 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
         this.offlineSigningProvider = offlineSigningProvider;
         this.sellerNip = sellerNip;
         this.batch = Objects.requireNonNull(batch, "batch must not be null");
+        this.invoiceTypes = Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
     }
 
     @Override
@@ -102,7 +106,8 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceVerificationConfig(
                         openResult.validUntil(), environment, invoiceVerificationTimeout),
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OfflineSendHook(
-                        offlineSigningProvider, sellerNip));
+                        offlineSigningProvider, sellerNip),
+                invoiceTypes);
     }
 
     @Override

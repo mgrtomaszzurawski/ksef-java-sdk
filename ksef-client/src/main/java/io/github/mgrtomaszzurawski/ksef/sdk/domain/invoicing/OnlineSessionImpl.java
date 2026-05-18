@@ -137,6 +137,7 @@ final class OnlineSessionImpl implements OnlineSession {
     private final QrCodeService qrCodeService;
     @Nullable private final OfflineSigningProvider offlineSigningProvider;
     @Nullable private final String sellerNip;
+    private final io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes invoiceTypes;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -175,6 +176,12 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     OnlineSessionImpl(SessionHandle handle, InvoiceVerificationConfig verification, OfflineSendHook offline) {
+        this(handle, verification, offline,
+                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes.builtinsOnly());
+    }
+
+    OnlineSessionImpl(SessionHandle handle, InvoiceVerificationConfig verification, OfflineSendHook offline,
+                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes invoiceTypes) {
         this.sessionClient = handle.client();
         this.referenceNumber = handle.referenceNumber();
         this.aesKey = handle.aesKey();
@@ -187,6 +194,7 @@ final class OnlineSessionImpl implements OnlineSession {
         this.qrCodeService = new QrCodeService();
         this.offlineSigningProvider = offline.provider();
         this.sellerNip = offline.sellerNip();
+        this.invoiceTypes = Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
     }
 
     @Override
@@ -479,7 +487,7 @@ final class OnlineSessionImpl implements OnlineSession {
         // a ClosedSession view. Subsequent archive()/close() callers see
         // the same instance via the AtomicReference.
         transitionToClosed();
-        ClosedSessionImpl view = new ClosedSessionImpl(sessionClient, referenceNumber);
+        ClosedSessionImpl view = new ClosedSessionImpl(sessionClient, referenceNumber, invoiceTypes);
         if (archiveView.compareAndSet(null, view)) {
             return view;
         }
@@ -498,7 +506,7 @@ final class OnlineSessionImpl implements OnlineSession {
         // archiveView so that a subsequent archive() returns a coherent
         // (already-closed) handle without re-running the lifecycle.
         transitionToClosed();
-        archiveView.compareAndSet(null, new ClosedSessionImpl(sessionClient, referenceNumber));
+        archiveView.compareAndSet(null, new ClosedSessionImpl(sessionClient, referenceNumber, invoiceTypes));
     }
 
     private void ensureOpen() {
