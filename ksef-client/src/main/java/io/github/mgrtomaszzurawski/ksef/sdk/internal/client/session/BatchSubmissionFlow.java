@@ -162,6 +162,10 @@ public final class BatchSubmissionFlow {
     private static final String ERR_CLOSE_TIMEOUT = "Timeout waiting for batch session to become closeable";
     private static final String ERR_UPLOAD_TIMED_OUT = "Batch upload timed out";
     private static final String ERR_UPLOAD_WORKER_FAILED = "Batch upload worker failed";
+    private static final String ERR_UPO_FETCH_TIMED_OUT = "Batch UPO fetch timed out";
+    private static final String ERR_UPO_FETCH_WORKER_FAILED = "Batch UPO fetch worker failed";
+    private static final String ERR_ORDINAL_OUT_OF_RANGE =
+            "KSeF ordinalNumber %d is out of range for the submitted list (size=%d)";
     private static final String ERR_DEADLINE_EXCEEDED = "submitBatch deadline exceeded";
     private static final String ERR_UNKNOWN_BATCH_PART_SUBTYPE = "Unknown BatchPart subtype: ";
     private static final String UNKNOWN_FAILURE_DESCRIPTION = "Unknown error";
@@ -479,24 +483,44 @@ public final class BatchSubmissionFlow {
 
     private static void awaitFutures(List<Future<?>> futures, long deadlineNanos) {
         for (Future<?> future : futures) {
-            try {
-                long remainingNanos = deadlineNanos - nanoNow();
-                if (remainingNanos <= DEADLINE_EXPIRED_NANOS) {
-                    throw new KsefNetworkException(ERR_UPLOAD_TIMED_OUT, null);
-                }
-                future.get(remainingNanos, TimeUnit.NANOSECONDS);
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-                throw new KsefNetworkException(ERR_UPLOAD_INTERRUPTED, interrupted);
-            } catch (ExecutionException executionFailure) {
-                Throwable cause = executionFailure.getCause();
-                if (cause instanceof RuntimeException runtimeFailure) {
-                    throw runtimeFailure;
-                }
-                throw new KsefNetworkException(ERR_UPLOAD_WORKER_FAILED, cause);
-            } catch (java.util.concurrent.TimeoutException timeoutFailure) {
-                throw new KsefNetworkException(ERR_UPLOAD_TIMED_OUT, timeoutFailure);
+            awaitFutureWithDeadline(future, deadlineNanos,
+                    ERR_UPLOAD_TIMED_OUT, ERR_UPLOAD_INTERRUPTED, ERR_UPLOAD_WORKER_FAILED);
+        }
+    }
+
+    /**
+     * Generic deadline-aware {@link Future#get} wrapper shared by the
+     * upload-parts and UPO-fetch phases. Translates the four JUC exit
+     * paths into the SDK's typed exceptions, with messages supplied by
+     * the caller so diagnostics stay phase-specific.
+     *
+     * <p>Pass {@code null}-safe {@code <Void>} when the caller doesn't
+     * need the result (upload-parts loop): the discarded value is OK
+     * since {@link Future#get} returns {@code null} on a void task.
+     */
+    private static <T> T awaitFutureWithDeadline(Future<T> future, long deadlineNanos,
+                                                 String errTimedOut, String errInterrupted,
+                                                 String errWorkerFailed) {
+        try {
+            long remainingNanos = deadlineNanos - nanoNow();
+            if (remainingNanos <= DEADLINE_EXPIRED_NANOS) {
+                throw new KsefNetworkException(errTimedOut, null);
             }
+            return future.get(remainingNanos, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new KsefNetworkException(errInterrupted, interrupted);
+        } catch (ExecutionException executionFailure) {
+            Throwable cause = executionFailure.getCause();
+            if (cause instanceof KsefException ksefFailure) {
+                throw ksefFailure;
+            }
+            if (cause instanceof RuntimeException runtimeFailure) {
+                throw runtimeFailure;
+            }
+            throw new KsefNetworkException(errWorkerFailed, cause);
+        } catch (java.util.concurrent.TimeoutException timedOut) {
+            throw new KsefNetworkException(errTimedOut, timedOut);
         }
     }
 
@@ -661,9 +685,9 @@ public final class BatchSubmissionFlow {
                 options.parallelism(), deadlineNanos);
 
         List<ClearedInvoice<I>> cleared = new ArrayList<>(accepted.size());
-        for (int idx = 0; idx < accepted.size(); idx++) {
-            SessionInvoiceStatus invoice = accepted.get(idx);
-            UpoEntry entry = new UpoEntry(invoice.referenceNumber(), upoBytesByIndex.get(idx));
+        for (int index = 0; index < accepted.size(); index++) {
+            SessionInvoiceStatus invoice = accepted.get(index);
+            UpoEntry entry = new UpoEntry(invoice.referenceNumber(), upoBytesByIndex.get(index));
             I anchored = resolveTypedInput(typedInputs, invoice.ordinalNumber());
             // Document slot is the UPO-only placeholder — batch flow doesn't
             // re-fetch the archived XML. Consumers needing the typed
@@ -733,27 +757,8 @@ public final class BatchSubmissionFlow {
     }
 
     private static byte[] awaitFuture(Future<byte[]> future, long deadlineNanos) {
-        try {
-            long remainingNanos = deadlineNanos - nanoNow();
-            if (remainingNanos <= DEADLINE_EXPIRED_NANOS) {
-                throw new KsefNetworkException(ERR_UPLOAD_TIMED_OUT, null);
-            }
-            return future.get(remainingNanos, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(ERR_INTERRUPTED, interrupted);
-        } catch (ExecutionException executionFailure) {
-            Throwable cause = executionFailure.getCause();
-            if (cause instanceof KsefException ksefFailure) {
-                throw ksefFailure;
-            }
-            if (cause instanceof RuntimeException runtimeFailure) {
-                throw runtimeFailure;
-            }
-            throw new IllegalStateException(ERR_UPLOAD_WORKER_FAILED, cause);
-        } catch (java.util.concurrent.TimeoutException timedOut) {
-            throw new KsefNetworkException(ERR_UPLOAD_TIMED_OUT, timedOut);
-        }
+        return awaitFutureWithDeadline(future, deadlineNanos,
+                ERR_UPO_FETCH_TIMED_OUT, ERR_INTERRUPTED, ERR_UPO_FETCH_WORKER_FAILED);
     }
 
     /**
@@ -775,8 +780,8 @@ public final class BatchSubmissionFlow {
         }
         int index = ordinalNumber - 1;
         if (index < 0 || index >= typedInputs.size()) {
-            throw new IllegalStateException("KSeF ordinalNumber " + ordinalNumber
-                    + " is out of range for the submitted list (size=" + typedInputs.size() + ")");
+            throw new IllegalStateException(String.format(java.util.Locale.ROOT,
+                    ERR_ORDINAL_OUT_OF_RANGE, ordinalNumber, typedInputs.size()));
         }
         return typedInputs.get(index);
     }

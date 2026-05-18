@@ -88,7 +88,7 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
      * flat-accessor values snapshotted at construction.
      *
      * <p>Package-private — SDK creates documents from archive responses;
-     * consumers read via {@link Invoices#getByKsefNumber} or the
+     * consumers read via {@link InvoiceArchive#getByKsefNumber} or the
      * {@code archive()} flow. Cross-package access by SDK internals is
      * routed through {@code InvoiceDocumentConstructor} (reflective
      * bridge mirroring {@code SessionHandleConstructor}).

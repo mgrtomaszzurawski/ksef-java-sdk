@@ -47,7 +47,7 @@ class BatchResultTest {
         var cleared = sampleCleared("inv-1");
         FailedInvoice failed = new FailedInvoice("inv-2", "rejected", List.of("detail"));
 
-        var result = new BatchResult(
+        BatchResult<Invoice> result = new BatchResult<>(
                 REF, List.of(cleared), List.of(failed), 2, 1, 1, STARTED, COMPLETED);
 
         assertEquals(1, result.successfulCount());
@@ -60,7 +60,7 @@ class BatchResultTest {
         List<ClearedInvoice<Invoice>> cleared = List.of(sampleCleared("inv-1"));
         List<FailedInvoice> failed = List.of();
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                new BatchResult(REF, cleared, failed, 1, 0, 0, STARTED, COMPLETED));
+                new BatchResult<>(REF, cleared, failed, 1, 0, 0, STARTED, COMPLETED));
 
         assertTrue(ex.getMessage().contains("successfulCount"));
     }
@@ -70,7 +70,7 @@ class BatchResultTest {
         List<ClearedInvoice<Invoice>> cleared = List.of();
         List<FailedInvoice> failed = List.of(new FailedInvoice("inv-1", "err", List.of()));
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                new BatchResult(REF, cleared, failed, 1, 0, 0, STARTED, COMPLETED));
+                new BatchResult<>(REF, cleared, failed, 1, 0, 0, STARTED, COMPLETED));
 
         assertTrue(ex.getMessage().contains("failedCount"));
     }
@@ -87,12 +87,12 @@ class BatchResultTest {
 
     @Test
     void constructor_copiesClearedAndFailedDefensively() {
-        java.util.List<ClearedInvoice> mutableCleared = new java.util.ArrayList<>();
+        java.util.List<ClearedInvoice<Invoice>> mutableCleared = new java.util.ArrayList<>();
         mutableCleared.add(sampleCleared("inv-1"));
         java.util.List<FailedInvoice> mutableFailed = new java.util.ArrayList<>();
         mutableFailed.add(new FailedInvoice("inv-2", "err", List.of()));
 
-        var result = new BatchResult(
+        BatchResult<Invoice> result = new BatchResult<>(
                 REF, mutableCleared, mutableFailed, 2, 1, 1, STARTED, COMPLETED);
 
         assertNotSame(mutableCleared, result.cleared());

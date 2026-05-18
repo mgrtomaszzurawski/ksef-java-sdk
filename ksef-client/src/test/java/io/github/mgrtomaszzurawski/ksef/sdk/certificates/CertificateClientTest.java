@@ -59,6 +59,7 @@ class CertificateClientTest {
     private static final String CREDENTIALS_TOKEN = "test-token";
     private static final String CREDENTIALS_NIP = "1111111111";
     private static final String PATH_ENROLLMENTS = "/v2/certificates/enrollments";
+    private static final String PATH_CERTIFICATES_RETRIEVE = "/v2/certificates/retrieve";
     private static final String COMMON_NAME = "KSeF Certificate";
     private static final String COUNTRY_NAME = "PL";
 
@@ -166,7 +167,7 @@ class CertificateClientTest {
     @Test
     void retrieve_whenAuthenticated_returnsCertificates(WireMockRuntimeInfo wmInfo) {
         // given
-        stubFor(post(urlEqualTo("/v2/certificates/retrieve"))
+        stubFor(post(urlEqualTo(PATH_CERTIFICATES_RETRIEVE))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -251,7 +252,7 @@ class CertificateClientTest {
                 Base64.getEncoder().encodeToString(freshCertDer),
                 TEST_CERT_NAME,
                 TEST_CERT_SERIAL);
-        stubFor(post(urlEqualTo("/v2/certificates/retrieve"))
+        stubFor(post(urlEqualTo(PATH_CERTIFICATES_RETRIEVE))
                 .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
@@ -273,7 +274,7 @@ class CertificateClientTest {
             verify(com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor(urlEqualTo(PATH_ENROLLMENTS + "/data")));
             verify(postRequestedFor(urlEqualTo(PATH_ENROLLMENTS)));
             verify(com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor(urlEqualTo(PATH_ENROLLMENTS + "/" + TEST_ENROLLMENT_REF)));
-            verify(postRequestedFor(urlEqualTo("/v2/certificates/retrieve")));
+            verify(postRequestedFor(urlEqualTo(PATH_CERTIFICATES_RETRIEVE)));
         }
     }
 
@@ -321,9 +322,9 @@ class CertificateClientTest {
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
 
-            // when / then — server error on enroll surfaces as KsefException (subclass)
+            // when / then — server error on enroll surfaces as the typed KsefServerException
             KeyPair keyPair = newTestKeyPair();
-            assertThrows(KsefException.class,
+            assertThrows(KsefServerException.class,
                     () -> ksef.certificates().requestNewCertificate(keyPair, WORKFLOW_QUICK_TIMEOUT));
         }
     }
