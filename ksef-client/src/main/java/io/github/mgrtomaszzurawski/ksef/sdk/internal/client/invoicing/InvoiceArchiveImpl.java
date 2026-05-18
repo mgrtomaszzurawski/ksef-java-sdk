@@ -152,10 +152,11 @@ public final class InvoiceArchiveImpl implements InvoiceArchive {
     public InvoiceMetadataResult queryByMetadata(InvoiceQueryRequest query) {
         LOGGER.debug(LOG_CALL, OP_QUERY_METADATA);
         Objects.requireNonNull(query, ERR_NULL_QUERY);
+        int offset = query.pageOffset() != null ? query.pageOffset() : QUERY_METADATA_FIRST_PAGE_OFFSET;
+        int size = query.pageSize() != null ? query.pageSize() : QUERY_METADATA_MAX_PAGE_SIZE;
         return doQueryMetadata(
                 InvoicingRequestMappers.toInvoiceQueryFiltersRaw(query),
-                QUERY_METADATA_FIRST_PAGE_OFFSET, QUERY_METADATA_MAX_PAGE_SIZE,
-                query.sortOrder());
+                offset, size, query.sortOrder());
     }
 
     @Override

@@ -51,6 +51,8 @@ public final class InvoiceQueryBuilder {
     private @Nullable InvoiceFormType formType;
     private @Nullable List<InvoiceType> invoiceTypes;
     private @Nullable SortOrder sortOrder;
+    private @Nullable Integer pageOffset;
+    private @Nullable Integer pageSize;
 
     private InvoiceQueryBuilder(InvoiceQuerySubjectType subjectType) {
         this.subjectType = subjectType;
@@ -205,6 +207,31 @@ public final class InvoiceQueryBuilder {
         return this;
     }
 
+    /**
+     * Set the page offset (0-based) for explicit page navigation via
+     * {@code InvoiceArchive.queryByMetadata}. Default (when not set):
+     * server default 0 (first page). Ignored by
+     * {@code InvoiceArchive.streamByMetadata}, which always starts at
+     * page 0.
+     *
+     * @param pageOffset zero-based page index (must be {@code >= 0})
+     */
+    public InvoiceQueryBuilder pageOffset(int pageOffset) {
+        this.pageOffset = pageOffset;
+        return this;
+    }
+
+    /**
+     * Set the page size for both {@code queryByMetadata} and
+     * {@code streamByMetadata}. Server bounds (per OpenAPI):
+     * {@code 10 <= pageSize <= 250}. Default (when not set): server
+     * default 10.
+     */
+    public InvoiceQueryBuilder pageSize(int pageSize) {
+        this.pageSize = pageSize;
+        return this;
+    }
+
     public InvoiceQueryBuilder toBuilder() {
         InvoiceQueryBuilder copy = new InvoiceQueryBuilder(this.subjectType);
         copy.dateType = this.dateType;
@@ -223,6 +250,8 @@ public final class InvoiceQueryBuilder {
         copy.formType = this.formType;
         copy.invoiceTypes = this.invoiceTypes;
         copy.sortOrder = this.sortOrder;
+        copy.pageOffset = this.pageOffset;
+        copy.pageSize = this.pageSize;
         return copy;
     }
 
@@ -239,6 +268,6 @@ public final class InvoiceQueryBuilder {
                 invoicingMode, selfInvoicing, hasAttachment,
                 restrictToPermanentStorageHwm,
                 amount, buyerIdentifier, currencyCodes, formType, invoiceTypes,
-                sortOrder);
+                sortOrder, pageOffset, pageSize);
     }
 }

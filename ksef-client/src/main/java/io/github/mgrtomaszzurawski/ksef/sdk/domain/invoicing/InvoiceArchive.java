@@ -123,10 +123,28 @@ public interface InvoiceArchive {
     ClearedInvoice<Invoice> clearedFromArchive(String sessionReferenceNumber, String invoiceReferenceNumber);
 
     /**
-     * Query invoice metadata with filters (date range, buyer/seller, amounts, etc.).
+     * Single-page invoice-metadata query honouring the request's
+     * {@link InvoiceQueryRequest#pageOffset()} +
+     * {@link InvoiceQueryRequest#pageSize()} (defaults 0 and 250 when
+     * either is {@code null}). Use this for explicit UI pagination
+     * where the consumer controls page navigation by inspecting
+     * {@link InvoiceMetadataResult#hasMore()} and re-issuing the query
+     * with an incremented {@code pageOffset}. For full traversal prefer
+     * {@link #streamByMetadata}, which lazily walks pages until the
+     * server reports {@code hasMore == false}.
      *
-     * @param query the filter criteria
-     * @return paginated list of invoice metadata
+     * <p><strong>10 000-record cap.</strong> When the result reports
+     * {@link InvoiceMetadataResult#isTruncated() isTruncated=true} the
+     * filter set has hit the server's hard cap and further
+     * {@code pageOffset} increments would not return additional results
+     * — narrow {@code dateRange} (e.g. advance {@code dateFrom} past the
+     * last record's date) and re-issue with {@code pageOffset=0}. The
+     * {@link #streamByMetadata} paginator handles this transition
+     * automatically.
+     *
+     * @param query the filter + paging criteria
+     * @return one page of invoice metadata plus {@code hasMore} /
+     *     {@code isTruncated} / {@code permanentStorageHwmDate} flags
      */
     InvoiceMetadataResult queryByMetadata(InvoiceQueryRequest query);
 
@@ -135,12 +153,15 @@ public interface InvoiceArchive {
      * the date-cursor + page-offset model used by KSeF's
      * {@code POST /invoices/query/metadata}. Pages are fetched lazily;
      * caller controls memory pressure by limiting / collecting
-     * downstream.
+     * downstream. The paginator transparently handles the 10 000-record
+     * truncation by advancing {@code dateRange} and resetting
+     * {@code pageOffset}, per spec.
      *
-     * <p>{@code query.pageOffset()} is <em>ignored</em> — the paginator
-     * always starts from page 0 and iterates until the server reports
-     * {@code hasMore == false}. Use {@link #queryByMetadata} for a
-     * snapshot at a specific offset.
+     * <p>{@link InvoiceQueryRequest#pageOffset()} and
+     * {@link InvoiceQueryRequest#pageSize()} are <em>ignored</em> — the
+     * paginator always starts from page 0 and uses the SDK's internal
+     * page size for efficiency. Use {@link #queryByMetadata} when
+     * explicit page control is needed.
      */
     Stream<InvoiceMetadata> streamByMetadata(InvoiceQueryRequest query);
 }
