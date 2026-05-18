@@ -21,7 +21,9 @@ public record EntityAuthorizationPermissionsQueryRequest(
         @Nullable String authorizingNip,
         @Nullable EntityAuthorizationIdentifierType authorizedType,
         @Nullable String authorizedValue,
-        List<EntityAuthorizationPermissionType> permissionTypes) {
+        List<EntityAuthorizationPermissionType> permissionTypes,
+        @Nullable Integer pageOffset,
+        @Nullable Integer pageSize) {
 
     public EntityAuthorizationPermissionsQueryRequest {
         Objects.requireNonNull(queryType, "queryType");

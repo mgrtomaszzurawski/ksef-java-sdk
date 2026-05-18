@@ -322,7 +322,8 @@ public final class PermissionsImpl implements Permissions {
         LOGGER.debug(LOG_CALL, OP_QUERY_PERSONAL);
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         String token = http.requireToken();
-        QueryPersonalPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_PERSONAL,
+        String path = appendPaging(PATH_QUERY_PERSONAL, request.pageOffset(), request.pageSize());
+        QueryPersonalPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(request), token,
                 QueryPersonalPermissionsResponseRaw.class, OP_QUERY_PERSONAL);
         return PermissionsMappers.toPersonalPermissions(rawValue);
@@ -333,7 +334,8 @@ public final class PermissionsImpl implements Permissions {
         LOGGER.debug(LOG_CALL, OP_QUERY_PERSONS);
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         String token = http.requireToken();
-        QueryPersonPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_PERSONS,
+        String path = appendPaging(PATH_QUERY_PERSONS, request.pageOffset(), request.pageSize());
+        QueryPersonPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 PermissionsQueryRequestMappers.toPersonPermissionsQueryRequestRaw(request), token,
                 QueryPersonPermissionsResponseRaw.class, OP_QUERY_PERSONS);
         return PermissionsMappers.toPersonPermissions(rawValue);
@@ -388,7 +390,8 @@ public final class PermissionsImpl implements Permissions {
         LOGGER.debug(LOG_CALL, OP_QUERY_AUTHORIZATIONS);
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         String token = http.requireToken();
-        QueryEntityAuthorizationPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_AUTHORIZATIONS,
+        String path = appendPaging(PATH_QUERY_AUTHORIZATIONS, request.pageOffset(), request.pageSize());
+        QueryEntityAuthorizationPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 PermissionsQueryRequestMappers.toEntityAuthorizationPermissionsQueryRequestRaw(request), token,
                 QueryEntityAuthorizationPermissionsResponseRaw.class, OP_QUERY_AUTHORIZATIONS);
         return PermissionsMappers.toEntityAuthorizationPermissions(rawValue);
@@ -399,7 +402,8 @@ public final class PermissionsImpl implements Permissions {
         LOGGER.debug(LOG_CALL, OP_QUERY_EU_ENTITIES);
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         String token = http.requireToken();
-        QueryEuEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_EU_ENTITIES,
+        String path = appendPaging(PATH_QUERY_EU_ENTITIES, request.pageOffset(), request.pageSize());
+        QueryEuEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 PermissionsQueryRequestMappers.toEuEntityPermissionsQueryRequestRaw(request), token,
                 QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
         return PermissionsMappers.toEuEntityPermissions(rawValue);

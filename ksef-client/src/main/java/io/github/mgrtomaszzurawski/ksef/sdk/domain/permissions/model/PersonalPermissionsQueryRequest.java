@@ -18,7 +18,9 @@ public record PersonalPermissionsQueryRequest(
         @Nullable PersonalTargetIdentifierType targetType,
         @Nullable String targetValue,
         List<PersonalPermissionType> permissionTypes,
-        @Nullable PermissionState permissionState) {
+        @Nullable PermissionState permissionState,
+        @Nullable Integer pageOffset,
+        @Nullable Integer pageSize) {
 
     public PersonalPermissionsQueryRequest {
         permissionTypes = permissionTypes == null ? List.of() : List.copyOf(permissionTypes);

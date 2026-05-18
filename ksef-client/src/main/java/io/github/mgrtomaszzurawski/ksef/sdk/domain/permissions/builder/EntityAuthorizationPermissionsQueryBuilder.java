@@ -28,6 +28,8 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
     private @Nullable EntityAuthorizationIdentifierType authorizedType;
     private @Nullable String authorizedValue;
     private final List<EntityAuthorizationPermissionType> permissionTypes = new ArrayList<>();
+    private @Nullable Integer pageOffset;
+    private @Nullable Integer pageSize;
 
     private EntityAuthorizationPermissionsQueryBuilder(AuthorizationQueryType queryType) {
         this.queryType = Objects.requireNonNull(queryType, ERR_QUERY_TYPE_REQUIRED);
@@ -78,17 +80,29 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
         return this;
     }
 
+    public EntityAuthorizationPermissionsQueryBuilder pageOffset(int pageOffset) {
+        this.pageOffset = pageOffset;
+        return this;
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder pageSize(int pageSize) {
+        this.pageSize = pageSize;
+        return this;
+    }
+
     public EntityAuthorizationPermissionsQueryBuilder toBuilder() {
         EntityAuthorizationPermissionsQueryBuilder copy = new EntityAuthorizationPermissionsQueryBuilder(this.queryType);
         copy.authorizingNip = this.authorizingNip;
         copy.authorizedType = this.authorizedType;
         copy.authorizedValue = this.authorizedValue;
         copy.permissionTypes.addAll(this.permissionTypes);
+        copy.pageOffset = this.pageOffset;
+        copy.pageSize = this.pageSize;
         return copy;
     }
 
     public EntityAuthorizationPermissionsQueryRequest build() {
         return new EntityAuthorizationPermissionsQueryRequest(queryType, authorizingNip,
-                authorizedType, authorizedValue, permissionTypes);
+                authorizedType, authorizedValue, permissionTypes, pageOffset, pageSize);
     }
 }

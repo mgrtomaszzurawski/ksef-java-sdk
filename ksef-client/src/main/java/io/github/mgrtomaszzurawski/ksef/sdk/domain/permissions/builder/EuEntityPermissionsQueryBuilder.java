@@ -20,6 +20,8 @@ public final class EuEntityPermissionsQueryBuilder {
     private @Nullable String vatUeIdentifier;
     private @Nullable String authorizedFingerprintIdentifier;
     private final List<EuEntityQueryPermissionType> permissionTypes = new ArrayList<>();
+    private @Nullable Integer pageOffset;
+    private @Nullable Integer pageSize;
 
     private EuEntityPermissionsQueryBuilder() { }
 
@@ -57,15 +59,28 @@ public final class EuEntityPermissionsQueryBuilder {
         return this;
     }
 
+    public EuEntityPermissionsQueryBuilder pageOffset(int pageOffset) {
+        this.pageOffset = pageOffset;
+        return this;
+    }
+
+    public EuEntityPermissionsQueryBuilder pageSize(int pageSize) {
+        this.pageSize = pageSize;
+        return this;
+    }
+
     public EuEntityPermissionsQueryBuilder toBuilder() {
         EuEntityPermissionsQueryBuilder copy = new EuEntityPermissionsQueryBuilder();
         copy.vatUeIdentifier = this.vatUeIdentifier;
         copy.authorizedFingerprintIdentifier = this.authorizedFingerprintIdentifier;
         copy.permissionTypes.addAll(this.permissionTypes);
+        copy.pageOffset = this.pageOffset;
+        copy.pageSize = this.pageSize;
         return copy;
     }
 
     public EuEntityPermissionsQueryRequest build() {
-        return new EuEntityPermissionsQueryRequest(vatUeIdentifier, authorizedFingerprintIdentifier, permissionTypes);
+        return new EuEntityPermissionsQueryRequest(vatUeIdentifier, authorizedFingerprintIdentifier,
+                permissionTypes, pageOffset, pageSize);
     }
 }

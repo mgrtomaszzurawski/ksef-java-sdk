@@ -38,6 +38,8 @@ public final class PersonPermissionsQueryBuilder {
     private @Nullable String targetValue;
     private final List<PersonPermissionType> permissionTypes = new ArrayList<>();
     private @Nullable PermissionState permissionState;
+    private @Nullable Integer pageOffset;
+    private @Nullable Integer pageSize;
 
     private PersonPermissionsQueryBuilder(PersonPermissionsQueryType queryType) {
         this.queryType = Objects.requireNonNull(queryType, ERR_QUERY_TYPE_REQUIRED);
@@ -141,6 +143,16 @@ public final class PersonPermissionsQueryBuilder {
         return this;
     }
 
+    public PersonPermissionsQueryBuilder pageOffset(int pageOffset) {
+        this.pageOffset = pageOffset;
+        return this;
+    }
+
+    public PersonPermissionsQueryBuilder pageSize(int pageSize) {
+        this.pageSize = pageSize;
+        return this;
+    }
+
     public PersonPermissionsQueryBuilder toBuilder() {
         PersonPermissionsQueryBuilder copy = new PersonPermissionsQueryBuilder(this.queryType);
         copy.authorType = this.authorType;
@@ -153,12 +165,15 @@ public final class PersonPermissionsQueryBuilder {
         copy.targetValue = this.targetValue;
         copy.permissionTypes.addAll(this.permissionTypes);
         copy.permissionState = this.permissionState;
+        copy.pageOffset = this.pageOffset;
+        copy.pageSize = this.pageSize;
         return copy;
     }
 
     public PersonPermissionsQueryRequest build() {
         return new PersonPermissionsQueryRequest(queryType, authorType, authorValue,
                 authorizedType, authorizedValue, contextType, contextValue,
-                targetType, targetValue, permissionTypes, permissionState);
+                targetType, targetValue, permissionTypes, permissionState,
+                pageOffset, pageSize);
     }
 }
