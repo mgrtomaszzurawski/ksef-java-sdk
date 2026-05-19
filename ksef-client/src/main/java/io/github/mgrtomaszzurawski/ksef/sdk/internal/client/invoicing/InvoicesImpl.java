@@ -86,6 +86,11 @@ public final class InvoicesImpl implements Invoices {
                 offlineSigningProvider, sellerNip, KsefInvoiceTypes.builtinsOnly());
     }
 
+    // 8 collaborators: full Invoices coordinator needs transport + session
+    // client + env + public-key resolver + verification timeout + offline
+    // signing wiring + custom invoice-type registry. Same reasoning as the
+    // sub-impl: bundling into a "config record" only renames args.
+    @SuppressWarnings("java:S107")
     public InvoicesImpl(HttpRuntime runtime,
                         @Nullable SessionClient sessionClient,
                         @Nullable KsefEnvironment environment,
@@ -138,22 +143,12 @@ public final class InvoicesImpl implements Invoices {
         return sync;
     }
 
-    private static final class UnavailableSessions implements InvoiceSessions {
-        private final InvoiceBatch batch;
-
-        UnavailableSessions(InvoiceBatch batch) {
-            this.batch = batch;
-        }
+    private record UnavailableSessions(InvoiceBatch batch) implements InvoiceSessions {
 
         @Override
         public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession online(
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode formCode) {
             throw new IllegalStateException(ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME);
-        }
-
-        @Override
-        public InvoiceBatch batch() {
-            return batch;
         }
 
         @Override

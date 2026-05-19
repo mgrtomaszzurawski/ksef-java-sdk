@@ -91,8 +91,8 @@ class PermissionsSealedDispatchTest {
     @Test
     void grant_nullRequest_throwsNullPointer(WireMockRuntimeInfo wmInfo) {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
-            assertThrows(NullPointerException.class,
-                    () -> client.permissions().grant(null));
+            var permissions = client.permissions();
+            assertThrows(NullPointerException.class, () -> permissions.grant(null));
         }
     }
 

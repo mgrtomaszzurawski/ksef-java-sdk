@@ -56,6 +56,11 @@ public final class InvoiceSessionsImpl implements InvoiceSessions {
     private final InvoiceBatch batch;
     private final KsefInvoiceTypes invoiceTypes;
 
+    // 8 collaborators: session-aware impl needs the full runtime (session client,
+    // env, public-key resolver, verification timeout, offline-signing wiring,
+    // batch sub-facade, custom invoice-type registry). Bundling into a "config
+    // record" would just rename 8 args without behavioural gain.
+    @SuppressWarnings("java:S107")
     public InvoiceSessionsImpl(SessionClient sessionClient,
                                KsefEnvironment environment,
                                Function<PublicKeyCertificateUsage, PublicKey> publicKeyResolver,

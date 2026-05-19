@@ -189,6 +189,12 @@ public final class KsefInvoiceTypes {
         }
     }
 
+    // Sonar S3398: bindingFor + its helpers (readFormCode, resolveFromMethod)
+    // are used only from Builder. Moving inside Builder is mechanically
+    // possible but stretches an already non-trivial inner class; the helpers
+    // are deliberately grouped near the user-facing factory methods so the
+    // file reads sequentially (factories → builder → binding helpers).
+    @SuppressWarnings("java:S3398")
     private static InvoiceTypeBinding bindingFor(Class<? extends InvoiceDocument> type) {
         if (!InvoiceDocument.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException(String.format(ERR_NOT_INVOICE_DOCUMENT, type.getName()));
