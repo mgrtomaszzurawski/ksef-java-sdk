@@ -5,7 +5,10 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  *
- * Reference code (not a runnable script): adapt to your application.
+ * Reference snippet — adapt to your application. Not directly runnable:
+ * loadOfflineCertificate() is the single integration seam you must
+ * implement (load from PKCS#12 keystore, HSM/KMS, or implement
+ * OfflineSigningProvider directly).
  *
  * What this shows:
  *   Build an offline-issued invoice (KOD I + KOD II QR codes) using
@@ -19,23 +22,14 @@
  *   invoice that KSeF rejected for technical reasons (e.g. schema
  *   mismatch) per ksef-docs/offline/korekta-techniczna.md.
  *
- * Requires:
- *   The KsefClient must be built with an OfflineSigningProvider for
- *   the default issue(invoice, mode) path. Alternative:
- *   issue(invoice, mode, KsefCertificate) bypasses the configured
- *   provider for a single call.
- *
  * Inputs (env vars):
- *   KSEF_TOKEN        — pre-issued KSeF token
  *   KSEF_NIP          — taxpayer NIP
  *   KSEF_INVOICE_XML  — path to FA(3) invoice XML
- *   KSEF_CERT_P12     — path to PKCS#12 holding the Offline cert
- *   KSEF_CERT_PASS    — PKCS#12 password
- *   KSEF_ENV          — TEST | DEMO | PROD (optional)
+ *   KSEF_ENV          — TEST | DEMO | PROD (optional, default: TEST)
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
@@ -51,21 +45,20 @@ public final class IssueOfflineInvoice {
     private IssueOfflineInvoice() { }
 
     public static void main(String[] args) throws Exception {
-        String token = requireEnv("KSEF_TOKEN");
+        String ksefToken = requireEnv("KSEF_TOKEN");
         String nip = requireEnv("KSEF_NIP");
         Path invoicePath = Path.of(requireEnv("KSEF_INVOICE_XML"));
-        Path p12Path = Path.of(requireEnv("KSEF_CERT_P12"));
-        char[] p12Pass = requireEnv("KSEF_CERT_PASS").toCharArray();
         KsefEnvironment environment = resolveEnv(System.getenv("KSEF_ENV"));
 
         byte[] invoiceXml = Files.readAllBytes(invoicePath);
         Invoice invoice = Invoice.fromXml(FormCode.FA3, invoiceXml);
 
         try (KsefClient client = KsefClient.builder().environment(environment)
-                .credentials(new KsefPkcs12Credentials(p12Path, p12Pass, nip))
+                .credentials(new KsefTokenCredentials(ksefToken, nip))
                 // Provider supplies the Offline cert that signs KOD II. The SDK
-                // does not see private-key material; the provider owns it.
-                .offlineSigning(loadProvider())
+                // never touches private-key material directly — the provider
+                // owns it. Replace loadOfflineCertificate() with your cert source.
+                .offlineSigning(OfflineSigningProvider.fromPrivateKey(loadOfflineCertificate()))
                 .build()) {
 
             // Issue an offline24 invoice — taxpayer-elected offline mode
@@ -90,18 +83,24 @@ public final class IssueOfflineInvoice {
                     .issueTechnicalCorrection(invoice, hashOfOriginal, OfflineMode.OFFLINE_24);
             System.out.println("Correction with hashOfCorrectedInvoice: "
                     + correction.hashOfCorrectedInvoice().isPresent());
-        } finally {
-            java.util.Arrays.fill(p12Pass, '\0');
         }
     }
 
-    /** Production: build the provider via {@code KsefCertificate.fromPem(...)} or
-     *  an HSM/KMS adapter. The placeholder below would be replaced with
-     *  the real cert source loaded from a keystore or remote secret. */
-    @SuppressWarnings("unused")
-    private static OfflineSigningProvider loadProvider() {
-        KsefCertificate placeholder = null;
-        return OfflineSigningProvider.fromPrivateKey(placeholder);
+    /**
+     * Integration seam — supply the KSeF Offline certificate that signs
+     * KOD II. Typical sources:
+     * <ul>
+     *   <li>PKCS#12 keystore on disk — {@code KeyStore.getInstance("PKCS12")}
+     *       then extract via {@code keyStore.getKey(alias, pass)} +
+     *       {@code keyStore.getCertificate(alias)}.</li>
+     *   <li>HSM / KMS — implement {@link OfflineSigningProvider} directly
+     *       so the SDK never sees the private-key material.</li>
+     * </ul>
+     */
+    private static KsefCertificate loadOfflineCertificate() {
+        throw new UnsupportedOperationException(
+                "Replace loadOfflineCertificate() with your KsefCertificate source"
+                        + " — see method Javadoc for typical patterns.");
     }
 
     private static String requireEnv(String name) {
