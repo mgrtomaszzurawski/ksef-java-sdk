@@ -132,6 +132,13 @@ public interface Permissions {
      *     authorization grant operation
      */
     PermissionOperationStatus revokeAuthorization(String permissionId);
+
+    /**
+     * Synchronous-with-custom-timeout overload of {@link #revokeAuthorization(String)}.
+     *
+     * @param permissionId the permission ID returned by the authorization grant
+     * @param timeout overall budget for the polling loop (non-null)
+     */
     PermissionOperationStatus revokeAuthorization(String permissionId, Duration timeout);
 
     /**
@@ -150,32 +157,128 @@ public interface Permissions {
      */
     AttachmentPermissionStatus getAttachmentStatus();
 
+    /**
+     * Query permissions the authenticated subject holds in the current
+     * authorisation context — paginated single-page snapshot. Wire:
+     * {@code POST /permissions/query/personal/grants}. The impl substitutes
+     * {@code pageOffset=0} / {@code pageSize=100} when null on the request
+     * (KSeF enforces {@code pageSize in [10, 100]} on permission endpoints).
+     */
     PersonalPermissions queryPersonal(PersonalPermissionsQueryRequest request);
+
+    /**
+     * Query person-grant assignments — single-page snapshot. Wire:
+     * {@code POST /permissions/query/persons/grants}. Defaults: pageOffset=0,
+     * pageSize=100; KSeF range {@code [10, 100]} per spec.
+     */
     PersonPermissions queryPersons(PersonPermissionsQueryRequest request);
+
+    /**
+     * Query subunit-grant assignments — single-page snapshot. Wire:
+     * {@code POST /permissions/query/subunits/grants}. Defaults: pageOffset=0,
+     * pageSize=100.
+     */
     SubunitPermissions querySubunits(SubunitPermissionsQueryRequest filter);
+
+    /**
+     * Query entity-grant assignments — single-page snapshot. Wire:
+     * {@code POST /permissions/query/entities/grants}. Defaults: pageOffset=0,
+     * pageSize=100.
+     */
     EntityPermissions queryEntities(EntityPermissionsQueryRequest filter);
+
+    /**
+     * Query entity roles — single-page snapshot. Wire:
+     * {@code GET /permissions/query/entities/roles}. Defaults: pageOffset=0,
+     * pageSize=100.
+     */
     EntityRoles queryEntityRoles(EntityRolesQueryRequest filter);
+
+    /**
+     * Query subordinate-entity roles — single-page snapshot. Wire:
+     * {@code POST /permissions/query/subordinate-entities/roles}. Defaults:
+     * pageOffset=0, pageSize=100.
+     */
     SubordinateEntityRoles querySubordinateRoles(SubordinateEntityRolesQueryRequest filter);
+
+    /**
+     * Query entity-authorization permissions — single-page snapshot. Wire:
+     * {@code POST /permissions/query/authorizations/grants}. Defaults:
+     * pageOffset=0, pageSize=100.
+     */
     EntityAuthorizationPermissions queryAuthorizations(EntityAuthorizationPermissionsQueryRequest request);
+
+    /**
+     * Query EU-entity permissions — single-page snapshot. Wire:
+     * {@code POST /permissions/query/eu-entities/grants}. Defaults: pageOffset=0,
+     * pageSize=100. Requires NipVatUe-context credentials.
+     */
     EuEntityPermissions queryEuEntities(EuEntityPermissionsQueryRequest request);
 
     // Stream paginators — each walks pageOffset = 0, 1, 2, ... until
     // hasMore=false. request.pageOffset() is ignored on stream*.
 
+    /**
+     * Stream the personal-permissions query lazily — the SDK walks
+     * {@code pageOffset = 0, 1, 2, ...} until the server returns
+     * {@code hasMore=false}, with the KSeF-enforced max
+     * {@code pageSize=100}. {@code request.pageOffset()} is ignored on
+     * stream*; {@code request.pageSize()} is also ignored — the SDK uses
+     * the spec-max page for fewest round-trips. Close the stream to abort
+     * mid-walk.
+     */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission>
             streamPersonal(PersonalPermissionsQueryRequest request);
+
+    /**
+     * Stream person grants lazily across pages. See {@link #streamPersonal}
+     * for the {@code pageOffset}/{@code pageSize}-ignored contract.
+     */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission>
             streamPersons(PersonPermissionsQueryRequest request);
+
+    /**
+     * Stream subunit grants lazily across pages. See {@link #streamPersonal}
+     * for the {@code pageOffset}/{@code pageSize}-ignored contract.
+     */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubunitPermission>
             streamSubunits(SubunitPermissionsQueryRequest filter);
+
+    /**
+     * Stream entity grants lazily across pages. See {@link #streamPersonal}
+     * for the {@code pageOffset}/{@code pageSize}-ignored contract.
+     */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityPermission>
             streamEntities(EntityPermissionsQueryRequest filter);
+
+    /**
+     * Stream entity roles lazily across pages. See {@link #streamPersonal}
+     * for the {@code pageOffset}/{@code pageSize}-ignored contract.
+     */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityRole>
             streamEntityRoles(EntityRolesQueryRequest filter);
+
+    /**
+     * Stream subordinate-entity roles lazily across pages. See
+     * {@link #streamPersonal} for the {@code pageOffset}/{@code pageSize}-ignored
+     * contract.
+     */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.SubordinateEntityRole>
             streamSubordinateRoles(SubordinateEntityRolesQueryRequest filter);
+
+    /**
+     * Stream entity-authorization grants lazily across pages. See
+     * {@link #streamPersonal} for the {@code pageOffset}/{@code pageSize}-ignored
+     * contract.
+     */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationGrant>
             streamAuthorizations(EntityAuthorizationPermissionsQueryRequest request);
+
+    /**
+     * Stream EU-entity permissions lazily across pages. See {@link #streamPersonal}
+     * for the {@code pageOffset}/{@code pageSize}-ignored contract.
+     * Requires NipVatUe-context credentials.
+     */
     java.util.stream.Stream<io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission>
             streamEuEntities(EuEntityPermissionsQueryRequest request);
 }

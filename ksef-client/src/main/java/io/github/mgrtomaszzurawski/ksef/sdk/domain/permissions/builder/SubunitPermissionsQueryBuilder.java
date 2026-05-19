@@ -50,11 +50,21 @@ public final class SubunitPermissionsQueryBuilder {
         return this;
     }
 
+    /**
+     * Zero-based page offset for {@code querySubunits}. Default (null) → 0.
+     * Must be {@code >= 0}; validated at {@code build()} time. Ignored on
+     * {@code streamSubunits}.
+     */
     public SubunitPermissionsQueryBuilder pageOffset(int pageOffset) {
         this.pageOffset = pageOffset;
         return this;
     }
 
+    /**
+     * Page size for {@code querySubunits}. KSeF range {@code [10, 100]};
+     * validated at {@code build()} time. Default (null) → 100. Ignored on
+     * {@code streamSubunits}.
+     */
     public SubunitPermissionsQueryBuilder pageSize(int pageSize) {
         this.pageSize = pageSize;
         return this;

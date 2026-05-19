@@ -14,7 +14,7 @@ import java.util.List;
  * a fresh session key, splits the encrypted package into parts, uploads,
  * polls until terminal, and downloads UPOs for accepted invoices.
  *
- * <p>Reached via {@link Invoices#batch()}.
+ * <p>Reached via {@link InvoiceSessions#batch()}.
  *
  * <p><strong>Threading warning.</strong> Methods on this interface block
  * the calling thread for minutes to hours depending on batch size and

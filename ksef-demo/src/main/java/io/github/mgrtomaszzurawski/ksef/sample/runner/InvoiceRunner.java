@@ -129,8 +129,8 @@ public final class InvoiceRunner implements DemoRunner {
             // finally block scrubs the dir after the probe. Demo code,
             // not production SDK surface.
             @SuppressWarnings("java:S5443")
-            java.nio.file.Path tmp = Files.createTempDirectory(EXPORT_DOWNLOAD_PREFIX);
-            outputDir = tmp;
+            java.nio.file.Path createdTempDirectory = Files.createTempDirectory(EXPORT_DOWNLOAD_PREFIX);
+            outputDir = createdTempDirectory;
             OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC)
                     .truncatedTo(ChronoUnit.SECONDS)
                     .minusDays(QUERY_DATE_RANGE_DAYS);
@@ -157,11 +157,11 @@ public final class InvoiceRunner implements DemoRunner {
         }
     }
 
-    private static void deleteRecursive(java.nio.file.Path dir) {
-        if (dir == null) {
+    private static void deleteRecursive(java.nio.file.Path directory) {
+        if (directory == null) {
             return;
         }
-        try (var stream = Files.walk(dir)) {
+        try (var stream = Files.walk(directory)) {
             stream.sorted(java.util.Comparator.reverseOrder())
                     .forEach(path -> {
                         try {

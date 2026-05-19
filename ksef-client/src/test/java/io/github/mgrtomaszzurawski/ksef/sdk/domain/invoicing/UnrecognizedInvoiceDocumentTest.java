@@ -41,21 +41,21 @@ class UnrecognizedInvoiceDocumentTest {
     @Test
     void constructor_defensiveCopiesXmlBytes() {
         byte[] source = XML_BYTES.clone();
-        UnrecognizedInvoiceDocument doc = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, source);
+        UnrecognizedInvoiceDocument document = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, source);
         source[0] = (byte) 0xFF;
-        assertEquals('<', (char) doc.xml()[0],
+        assertEquals('<', (char) document.xml()[0],
                 "Constructor must clone the xml bytes — mutating the source array must not affect the document.");
     }
 
     @Test
     void xml_returnsFreshCopyEachCall() {
-        UnrecognizedInvoiceDocument doc = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
-        byte[] first = doc.xml();
-        byte[] second = doc.xml();
+        UnrecognizedInvoiceDocument document = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
+        byte[] first = document.xml();
+        byte[] second = document.xml();
         assertNotSame(first, second, "xml() must return a defensive copy each call.");
         assertArrayEquals(first, second);
         first[0] = (byte) 0xFF;
-        assertEquals('<', (char) doc.xml()[0],
+        assertEquals('<', (char) document.xml()[0],
                 "Mutating the returned array must not affect subsequent xml() calls.");
     }
 
@@ -86,14 +86,14 @@ class UnrecognizedInvoiceDocumentTest {
 
     @Test
     void equals_isFalseAgainstUnrelatedType() {
-        UnrecognizedInvoiceDocument doc = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
-        assertNotEquals("not-an-invoice-document", doc);
+        UnrecognizedInvoiceDocument document = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
+        assertNotEquals("not-an-invoice-document", document);
     }
 
     @Test
     void toString_carriesFormCodeAndByteLength() {
-        UnrecognizedInvoiceDocument doc = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
-        String rendered = doc.toString();
+        UnrecognizedInvoiceDocument document = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
+        String rendered = document.toString();
         assertTrue(rendered.contains(UNKNOWN_CODE.toString()),
                 () -> "toString should reference the form code: " + rendered);
         assertTrue(rendered.contains("byte[" + XML_BYTES.length + "]"),

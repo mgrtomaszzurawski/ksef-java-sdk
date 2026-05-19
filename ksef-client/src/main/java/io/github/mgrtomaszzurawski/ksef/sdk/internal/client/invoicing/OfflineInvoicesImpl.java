@@ -90,6 +90,13 @@ public final class OfflineInvoicesImpl implements OfflineInvoices {
         // Provider builds the base OfflineInvoice (signs KOD II); we then
         // attach the hashOfCorrectedInvoice via the builder so the wire
         // send routes through SendInvoiceCommand.technicalCorrection.
+        //
+        // Maintenance note: the rebuild fields below must stay in sync
+        // with OfflineInvoiceBuilder. If the builder gains a new required
+        // field, this method silently drops it. Future cleanup: expose
+        // OfflineInvoice.toBuilder() OR
+        // OfflineInvoice.withHashOfCorrectedInvoice(byte[]) so the rebuild
+        // copies all fields automatically. Tracked: review-iter-7 finding.
         OfflineSigningContext context = resolveContext();
         OfflineInvoice<I> base = provider.signAndPackage(invoice, mode, context);
         return OfflineInvoiceBuilder.<I>forInvoice(invoice)

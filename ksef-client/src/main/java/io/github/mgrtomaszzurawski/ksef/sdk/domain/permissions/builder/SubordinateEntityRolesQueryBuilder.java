@@ -32,11 +32,21 @@ public final class SubordinateEntityRolesQueryBuilder {
         return this;
     }
 
+    /**
+     * Zero-based page offset for {@code querySubordinateRoles}. Default
+     * (null) → 0. Must be {@code >= 0}; validated at {@code build()} time.
+     * Ignored on {@code streamSubordinateRoles}.
+     */
     public SubordinateEntityRolesQueryBuilder pageOffset(int pageOffset) {
         this.pageOffset = pageOffset;
         return this;
     }
 
+    /**
+     * Page size for {@code querySubordinateRoles}. KSeF range
+     * {@code [10, 100]}; validated at {@code build()} time. Default (null) → 100.
+     * Ignored on {@code streamSubordinateRoles}.
+     */
     public SubordinateEntityRolesQueryBuilder pageSize(int pageSize) {
         this.pageSize = pageSize;
         return this;

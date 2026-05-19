@@ -86,6 +86,9 @@ public final class KsefInvoiceTypes {
             "%s.FORM_CODE must be of type FormCode (got: %s)";
     private static final String ERR_FORM_CODE_VALUE_NULL =
             "%s.FORM_CODE is null at registration";
+    private static final String ERR_FORM_CODE_ACCESS_FAILED =
+            "%s.FORM_CODE could not be read reflectively (modifiers passed validation; "
+                    + "JPMS module access or SecurityManager likely denied the read)";
     private static final String ERR_MISSING_FROM_METHOD =
             "%s must declare 'public static %s from(byte[] xml)'";
     private static final String ERR_FROM_WRONG_MODIFIERS =
@@ -221,9 +224,11 @@ public final class KsefInvoiceTypes {
                 throw new IllegalArgumentException(String.format(ERR_FORM_CODE_VALUE_NULL, type.getName()));
             }
             return value;
-        } catch (IllegalAccessException unexpected) {
-            throw new IllegalArgumentException(String.format(ERR_FORM_CODE_WRONG_MODIFIERS,
-                    type.getName(), Modifier.toString(modifiers)), unexpected);
+        } catch (IllegalAccessException accessDenied) {
+            // Modifier check above already verified public+static+final; reaching
+            // here means JPMS module-access or SecurityManager denied the read.
+            throw new IllegalArgumentException(String.format(ERR_FORM_CODE_ACCESS_FAILED,
+                    type.getName()), accessDenied);
         }
     }
 

@@ -143,11 +143,22 @@ public final class PersonPermissionsQueryBuilder {
         return this;
     }
 
+    /**
+     * Zero-based page offset for {@code queryPersons}. Default (null) → 0.
+     * Must be {@code >= 0}; validated at {@code build()} time. Ignored on
+     * {@code streamPersons} (the SDK walks pages itself).
+     */
     public PersonPermissionsQueryBuilder pageOffset(int pageOffset) {
         this.pageOffset = pageOffset;
         return this;
     }
 
+    /**
+     * Page size for {@code queryPersons}. KSeF range {@code [10, 100]};
+     * validated at {@code build()} time. Default (null) → 100 (SDK uses
+     * spec-max). Ignored on {@code streamPersons} (the SDK uses spec-max
+     * for fewest round-trips).
+     */
     public PersonPermissionsQueryBuilder pageSize(int pageSize) {
         this.pageSize = pageSize;
         return this;

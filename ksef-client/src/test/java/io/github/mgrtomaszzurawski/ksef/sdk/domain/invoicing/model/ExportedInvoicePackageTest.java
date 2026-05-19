@@ -30,11 +30,11 @@ class ExportedInvoicePackageTest {
         Map<String, byte[]> source = new HashMap<>();
         source.put("a.xml", INVOICE_A.clone());
 
-        ExportedInvoicePackage pkg = new ExportedInvoicePackage(META_JSON, source);
+        ExportedInvoicePackage exportPackage = new ExportedInvoicePackage(META_JSON, source);
 
         // Mutate both the source map and the byte[] entry — the snapshot must stay intact.
         source.put("b.xml", INVOICE_B);
-        Map<String, byte[]> view = pkg.invoiceXmls();
+        Map<String, byte[]> view = exportPackage.invoiceXmls();
         assertEquals(1, view.size(), "Map entries must be snapshotted on construction.");
         assertArrayEquals(INVOICE_A, view.get("a.xml"));
     }
@@ -43,16 +43,16 @@ class ExportedInvoicePackageTest {
     void invoiceXmls_returnsFreshDeepCopyOnEveryCall() {
         Map<String, byte[]> source = new HashMap<>();
         source.put("a.xml", INVOICE_A.clone());
-        ExportedInvoicePackage pkg = new ExportedInvoicePackage(META_JSON, source);
+        ExportedInvoicePackage exportPackage = new ExportedInvoicePackage(META_JSON, source);
 
-        Map<String, byte[]> first = pkg.invoiceXmls();
-        Map<String, byte[]> second = pkg.invoiceXmls();
+        Map<String, byte[]> first = exportPackage.invoiceXmls();
+        Map<String, byte[]> second = exportPackage.invoiceXmls();
 
         assertNotSame(first, second, "Each accessor call returns a fresh map.");
         assertNotSame(first.get("a.xml"), second.get("a.xml"), "Each entry is a fresh byte[] clone.");
 
         first.get("a.xml")[0] = (byte) 0xFF;
-        assertEquals('<', (char) pkg.invoiceXmls().get("a.xml")[0],
+        assertEquals('<', (char) exportPackage.invoiceXmls().get("a.xml")[0],
                 "Mutating returned bytes must not affect subsequent reads.");
     }
 
@@ -60,33 +60,33 @@ class ExportedInvoicePackageTest {
     void invoiceXml_byFilenameReturnsCloneAndNullForMissing() {
         Map<String, byte[]> source = new HashMap<>();
         source.put("a.xml", INVOICE_A.clone());
-        ExportedInvoicePackage pkg = new ExportedInvoicePackage(META_JSON, source);
+        ExportedInvoicePackage exportPackage = new ExportedInvoicePackage(META_JSON, source);
 
-        byte[] a = pkg.invoiceXml("a.xml");
-        assertArrayEquals(INVOICE_A, a);
-        assertNotSame(source.get("a.xml"), a);
+        byte[] invoiceAXml = exportPackage.invoiceXml("a.xml");
+        assertArrayEquals(INVOICE_A, invoiceAXml);
+        assertNotSame(source.get("a.xml"), invoiceAXml);
 
-        assertNull(pkg.invoiceXml("missing.xml"));
+        assertNull(exportPackage.invoiceXml("missing.xml"));
     }
 
     @Test
     void compactCtor_nullInvoiceXmlsDefaultsToEmptyMap() {
-        ExportedInvoicePackage pkg = new ExportedInvoicePackage(META_JSON, null);
-        assertEquals(0, pkg.invoiceXmls().size());
+        ExportedInvoicePackage exportPackage = new ExportedInvoicePackage(META_JSON, null);
+        assertEquals(0, exportPackage.invoiceXmls().size());
     }
 
     @Test
     void metadataJson_returnsFreshCopyEachCall() {
-        ExportedInvoicePackage pkg = new ExportedInvoicePackage(META_JSON, Map.of());
-        byte[] first = pkg.metadataJson();
-        byte[] second = pkg.metadataJson();
+        ExportedInvoicePackage exportPackage = new ExportedInvoicePackage(META_JSON, Map.of());
+        byte[] first = exportPackage.metadataJson();
+        byte[] second = exportPackage.metadataJson();
         assertNotSame(first, second);
         assertArrayEquals(META_JSON, first);
     }
 
     @Test
     void metadataJson_returnsNullWhenAbsentOnConstruction() {
-        ExportedInvoicePackage pkg = new ExportedInvoicePackage(null, Map.of());
-        assertNull(pkg.metadataJson());
+        ExportedInvoicePackage exportPackage = new ExportedInvoicePackage(null, Map.of());
+        assertNull(exportPackage.metadataJson());
     }
 }

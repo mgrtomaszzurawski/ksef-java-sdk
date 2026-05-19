@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Public auth-session DTO — single entry yielded by
- * {@code KsefClient.authSessions().streamAuthSessions()}. Captures one
+ * {@code KsefClient.authSessions().streamAuthSessions(AuthSessionsQueryRequest)}. Captures one
  * row of the KSeF {@code GET /auth/sessions} response.
  *
  * <p>The internal richer representation

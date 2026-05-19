@@ -25,11 +25,21 @@ public final class EntityRolesQueryBuilder {
         return new EntityRolesQueryBuilder();
     }
 
+    /**
+     * Zero-based page offset for {@code queryEntityRoles}. Default (null) → 0.
+     * Must be {@code >= 0}; validated at {@code build()} time. Ignored on
+     * {@code streamEntityRoles}.
+     */
     public EntityRolesQueryBuilder pageOffset(int pageOffset) {
         this.pageOffset = pageOffset;
         return this;
     }
 
+    /**
+     * Page size for {@code queryEntityRoles}. KSeF range {@code [10, 100]};
+     * validated at {@code build()} time. Default (null) → 100. Ignored on
+     * {@code streamEntityRoles}.
+     */
     public EntityRolesQueryBuilder pageSize(int pageSize) {
         this.pageSize = pageSize;
         return this;

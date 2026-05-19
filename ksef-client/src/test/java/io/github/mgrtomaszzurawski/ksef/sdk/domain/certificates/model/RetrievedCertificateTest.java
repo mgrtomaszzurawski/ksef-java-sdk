@@ -102,8 +102,8 @@ class RetrievedCertificateTest {
     @Test
     void isExpired_withClockBeforeNotAfter_returnsFalse() {
         RetrievedCertificate cert = RetrievedCertificate.from(derBytes, CERT_NAME, SERIAL, TYPE);
-        Clock now = Clock.fixed(Instant.now(), ZoneId.systemDefault());
-        assertFalse(cert.isExpired(now));
+        Clock currentClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+        assertFalse(cert.isExpired(currentClock));
     }
 
     @Test

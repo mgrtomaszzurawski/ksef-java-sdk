@@ -233,12 +233,12 @@ public final class TestDataAdminImpl implements TestDataAdmin {
         LOGGER.debug(LOG_CALL, OP_REVOKE_ATTACHMENT);
         Objects.requireNonNull(request, ERR_NULL_REVOKE_REQUEST);
         String nipValue = requireNipValue(request.subject(), ERR_NULL_NIP);
-        AttachmentPermissionRevokeRequestRaw raw = new AttachmentPermissionRevokeRequestRaw();
-        raw.setNip(nipValue);
+        AttachmentPermissionRevokeRequestRaw rawBody = new AttachmentPermissionRevokeRequestRaw();
+        rawBody.setNip(nipValue);
         if (request.expectedEndDate() != null) {
-            raw.setExpectedEndDate(request.expectedEndDate());
+            rawBody.setExpectedEndDate(request.expectedEndDate());
         }
-        http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, raw, OP_REVOKE_ATTACHMENT);
+        http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, rawBody, OP_REVOKE_ATTACHMENT);
     }
 
     private static String requireNipValue(KsefIdentifier identifier, String nullMessage) {

@@ -214,6 +214,19 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
         };
     }
 
+    /**
+     * Map metadata's nullable {@link FormCodeInfo} to a {@link FormCode}.
+     *
+     * <p><strong>Null fallback collision warning:</strong> when {@code info}
+     * is null the synthetic {@code FormCode.custom("UNKNOWN", "0", "UNKNOWN")}
+     * is returned. A consumer registering a custom {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes}
+     * binding for this exact triple will see their typed wrapper returned
+     * for KSeF-side-null-formCode invoices instead of an
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument}.
+     * The triple is reserved-by-convention for this fallback; consumers
+     * should not register types under {@code FormCode.custom("UNKNOWN", "0",
+     * "UNKNOWN")}.
+     */
     private static FormCode toFormCode(FormCodeInfo info) {
         if (info == null) {
             return FormCode.custom(UNKNOWN_FORM_CODE_SYSTEM_CODE,

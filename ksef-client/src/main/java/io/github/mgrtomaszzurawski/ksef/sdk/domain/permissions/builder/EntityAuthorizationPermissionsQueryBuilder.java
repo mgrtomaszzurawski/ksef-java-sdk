@@ -80,11 +80,21 @@ public final class EntityAuthorizationPermissionsQueryBuilder {
         return this;
     }
 
+    /**
+     * Zero-based page offset for {@code queryAuthorizations}. Default
+     * (null) → 0. Must be {@code >= 0}; validated at {@code build()} time.
+     * Ignored on {@code streamAuthorizations}.
+     */
     public EntityAuthorizationPermissionsQueryBuilder pageOffset(int pageOffset) {
         this.pageOffset = pageOffset;
         return this;
     }
 
+    /**
+     * Page size for {@code queryAuthorizations}. KSeF range {@code [10, 100]};
+     * validated at {@code build()} time. Default (null) → 100. Ignored on
+     * {@code streamAuthorizations}.
+     */
     public EntityAuthorizationPermissionsQueryBuilder pageSize(int pageSize) {
         this.pageSize = pageSize;
         return this;
