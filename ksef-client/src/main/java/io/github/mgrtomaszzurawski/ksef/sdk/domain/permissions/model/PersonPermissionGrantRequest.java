@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * SDK request for {@code Permissions.grantPerson(...)}.
+ * SDK request for {@code Permissions.grant(...)}.
  *
  * @since 1.0.0
  */
@@ -18,7 +18,7 @@ public record PersonPermissionGrantRequest(
         String description,
         String firstName,
         String lastName,
-        List<PersonPermissionType> permissions) {
+        List<PersonPermissionType> permissions) implements PermissionGrantRequest {
 
     public PersonPermissionGrantRequest {
         Objects.requireNonNull(identifierType, "identifierType");

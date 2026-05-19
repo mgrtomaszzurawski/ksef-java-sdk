@@ -8,7 +8,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code Permissions.grantSubunit(...)}.
+ * SDK request for {@code Permissions.grant(...)}.
  *
  * @since 1.0.0
  */
@@ -20,7 +20,7 @@ public record SubunitPermissionGrantRequest(
         String description,
         String firstName,
         String lastName,
-        @Nullable String subunitName) {
+        @Nullable String subunitName) implements PermissionGrantRequest {
 
     public SubunitPermissionGrantRequest {
         Objects.requireNonNull(identifierType, "identifierType");

@@ -131,7 +131,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantPerson(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
+                    ksef.permissions().grant(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
                             .description(TEST_DESCRIPTION)
                             .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                             .invoiceRead()
@@ -151,7 +151,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantEntity(EntityPermissionGrantBuilder.forNip(TEST_NIP)
+                    ksef.permissions().grant(EntityPermissionGrantBuilder.forNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .entityDetails("Firma Sp. z o.o.")
                             .invoiceRead()
@@ -171,7 +171,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantAuthorization(EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
+                    ksef.permissions().grant(EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
                             .selfInvoicing()
                             .description(TEST_DESCRIPTION)
                             .entityDetails("Firma Sp. z o.o.")
@@ -191,7 +191,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantIndirect(IndirectPermissionGrantBuilder.forNip(TEST_NIP)
+                    ksef.permissions().grant(IndirectPermissionGrantBuilder.forNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                             .invoiceRead()
@@ -211,7 +211,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantSubunit(SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
+                    ksef.permissions().grant(SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
                             .contextNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
@@ -231,7 +231,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                    ksef.permissions().grant(EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
                             .contextNipVatUe("PL" + TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .euEntityName("EU Partner GmbH")
@@ -253,7 +253,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantEuEntity(EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                    ksef.permissions().grant(EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
                             .description(TEST_DESCRIPTION)
                             .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
                             .invoiceRead()
@@ -454,7 +454,7 @@ class PermissionClientTest {
                     .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                     .invoiceRead()
                     .build();
-            assertThrows(KsefAuthException.class, () -> permissions.grantPerson(request));
+            assertThrows(KsefAuthException.class, () -> permissions.grant(request));
         }
     }
 

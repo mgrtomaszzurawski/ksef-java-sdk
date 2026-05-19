@@ -200,7 +200,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_PERSON_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
                     .invoiceRead();
-            PermissionOperationStatus response = context.client().permissions().grantPerson(builder.build());
+            PermissionOperationStatus response = context.client().permissions().grant(builder.build());
             return recordGrantOk(OP_GRANT_PERSON, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_PERSON, elapsed(start), errorMessage(exception)));
@@ -216,7 +216,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_ENTITY_DESC)
                     .entityDetails(TEST_ENTITY_FULL_NAME)
                     .invoiceRead();
-            PermissionOperationStatus response = context.client().permissions().grantEntity(builder.build());
+            PermissionOperationStatus response = context.client().permissions().grant(builder.build());
             return recordGrantOk(OP_GRANT_ENTITY, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_ENTITY, elapsed(start), errorMessage(exception)));
@@ -232,7 +232,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_AUTH_DESC)
                     .entityDetails(TEST_AUTHORIZATION_NAME)
                     .selfInvoicing();
-            PermissionOperationStatus response = context.client().permissions().grantAuthorization(builder.build());
+            PermissionOperationStatus response = context.client().permissions().grant(builder.build());
             return recordGrantOk(OP_GRANT_AUTHORIZATION, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_AUTHORIZATION, elapsed(start), errorMessage(exception)));
@@ -248,7 +248,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_INDIRECT_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME)
                     .invoiceRead();
-            PermissionOperationStatus response = context.client().permissions().grantIndirect(builder.build());
+            PermissionOperationStatus response = context.client().permissions().grant(builder.build());
             return recordGrantOk(OP_GRANT_INDIRECT, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_INDIRECT, elapsed(start), errorMessage(exception)));
@@ -264,7 +264,7 @@ public final class PermissionRunner implements DemoRunner {
                     .contextNip(TEST_SUBUNIT_CONTEXT_NIP)
                     .description(GRANT_SUBUNIT_DESC)
                     .personDetails(TEST_PERSON_FIRST_NAME, TEST_PERSON_LAST_NAME);
-            PermissionOperationStatus response = context.client().permissions().grantSubunit(builder.build());
+            PermissionOperationStatus response = context.client().permissions().grant(builder.build());
             return recordGrantOk(OP_GRANT_SUBUNIT, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_SUBUNIT, elapsed(start), errorMessage(exception)));
@@ -282,7 +282,7 @@ public final class PermissionRunner implements DemoRunner {
                     .euEntityName(TEST_EU_ENTITY_NAME)
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
                     .euEntityDetails(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS);
-            PermissionOperationStatus response = context.client().permissions().grantEuEntityAdmin(builder.build());
+            PermissionOperationStatus response = context.client().permissions().grant(builder.build());
             return recordGrantOk(OP_GRANT_EU_ENTITY_ADMIN, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_EU_ENTITY_ADMIN, elapsed(start), errorMessage(exception)));
@@ -298,7 +298,7 @@ public final class PermissionRunner implements DemoRunner {
                     .description(GRANT_EU_ENTITY_DESC)
                     .subjectEntityByFingerprint(TEST_EU_ENTITY_NAME, TEST_EU_ENTITY_ADDRESS)
                     .invoiceRead();
-            PermissionOperationStatus response = context.client().permissions().grantEuEntity(builder.build());
+            PermissionOperationStatus response = context.client().permissions().grant(builder.build());
             return recordGrantOk(OP_GRANT_EU_ENTITY, response, results, start);
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_GRANT_EU_ENTITY, elapsed(start), errorMessage(exception)));

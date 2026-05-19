@@ -44,6 +44,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsync;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
 import java.time.Duration;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionGrantRequest;
@@ -145,108 +146,43 @@ public final class PermissionsImpl implements Permissions {
     }
 
     @Override
-    public PermissionOperationStatus grantPerson(PersonPermissionGrantRequest request) {
-        return grantPerson(request, DEFAULT_OPERATION_TIMEOUT);
+    public PermissionOperationStatus grant(PermissionGrantRequest request) {
+        return grant(request, DEFAULT_OPERATION_TIMEOUT);
     }
 
     @Override
-    public PermissionOperationStatus grantPerson(PersonPermissionGrantRequest request, Duration timeout) {
+    public PermissionOperationStatus grant(PermissionGrantRequest request, Duration timeout) {
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_PERSON);
-        String refNumber = postGrant(PATH_GRANT_PERSON,
-                PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(request), OP_GRANT_PERSON);
-        return awaitTerminalStatus(refNumber, OP_GRANT_PERSON, timeout);
+        return switch (request) {
+            case PersonPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_PERSON,
+                    PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(r),
+                    OP_GRANT_PERSON, timeout);
+            case EntityPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_ENTITY,
+                    PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(r),
+                    OP_GRANT_ENTITY, timeout);
+            case EntityAuthorizationPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_AUTHORIZATION,
+                    PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(r),
+                    OP_GRANT_AUTHORIZATION, timeout);
+            case IndirectPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_INDIRECT,
+                    PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(r),
+                    OP_GRANT_INDIRECT, timeout);
+            case SubunitPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_SUBUNIT,
+                    PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(r),
+                    OP_GRANT_SUBUNIT, timeout);
+            case EuEntityAdminPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_EU_ENTITY_ADMIN,
+                    PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(r),
+                    OP_GRANT_EU_ENTITY_ADMIN, timeout);
+            case EuEntityPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_EU_ENTITY,
+                    PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(r),
+                    OP_GRANT_EU_ENTITY, timeout);
+        };
     }
 
-    @Override
-    public PermissionOperationStatus grantEntity(EntityPermissionGrantRequest request) {
-        return grantEntity(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEntity(EntityPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_ENTITY);
-        String refNumber = postGrant(PATH_GRANT_ENTITY,
-                PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(request), OP_GRANT_ENTITY);
-        return awaitTerminalStatus(refNumber, OP_GRANT_ENTITY, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantAuthorization(EntityAuthorizationPermissionGrantRequest request) {
-        return grantAuthorization(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantAuthorization(EntityAuthorizationPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_AUTHORIZATION);
-        String refNumber = postGrant(PATH_GRANT_AUTHORIZATION,
-                PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(request), OP_GRANT_AUTHORIZATION);
-        return awaitTerminalStatus(refNumber, OP_GRANT_AUTHORIZATION, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantIndirect(IndirectPermissionGrantRequest request) {
-        return grantIndirect(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantIndirect(IndirectPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_INDIRECT);
-        String refNumber = postGrant(PATH_GRANT_INDIRECT,
-                PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(request), OP_GRANT_INDIRECT);
-        return awaitTerminalStatus(refNumber, OP_GRANT_INDIRECT, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantSubunit(SubunitPermissionGrantRequest request) {
-        return grantSubunit(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantSubunit(SubunitPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_SUBUNIT);
-        String refNumber = postGrant(PATH_GRANT_SUBUNIT,
-                PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(request), OP_GRANT_SUBUNIT);
-        return awaitTerminalStatus(refNumber, OP_GRANT_SUBUNIT, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request) {
-        return grantEuEntityAdmin(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY_ADMIN);
-        String refNumber = postGrant(PATH_GRANT_EU_ENTITY_ADMIN,
-                PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(request), OP_GRANT_EU_ENTITY_ADMIN);
-        return awaitTerminalStatus(refNumber, OP_GRANT_EU_ENTITY_ADMIN, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEuEntity(EuEntityPermissionGrantRequest request) {
-        return grantEuEntity(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEuEntity(EuEntityPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY);
-        String refNumber = postGrant(PATH_GRANT_EU_ENTITY,
-                PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(request), OP_GRANT_EU_ENTITY);
-        return awaitTerminalStatus(refNumber, OP_GRANT_EU_ENTITY, timeout);
+    private PermissionOperationStatus dispatchGrant(String path, Object rawBody, String opName, Duration timeout) {
+        LOGGER.debug(LOG_CALL, opName);
+        String refNumber = postGrant(path, rawBody, opName);
+        return awaitTerminalStatus(refNumber, opName, timeout);
     }
 
     @Override

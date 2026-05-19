@@ -46,7 +46,7 @@ public final class GrantAndRevokePermission {
                     .personDetails("Example", "Recipient")
                     .invoiceRead();
 
-            PermissionOperationStatus granted = client.permissions().grantPerson(grant.build());
+            PermissionOperationStatus granted = client.permissions().grant(grant.build());
             System.out.println("Grant completed: ref=" + granted.referenceNumber()
                     + " code=" + granted.status().code()
                     + " desc=" + granted.status().description());

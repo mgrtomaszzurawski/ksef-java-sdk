@@ -119,7 +119,7 @@ public final class VatUeProviderRunner implements DemoRunner {
                     .euEntityName(EU_ENTITY_NAME)
                     .subjectEntityByFingerprint(SUBJECT_FULL_NAME, DEMO_ADDRESS)
                     .euEntityDetails(EU_ENTITY_NAME, DEMO_ADDRESS);
-            var status = context.client().permissions().grantEuEntityAdmin(builder.build(), GRANT_AWAIT_TIMEOUT);
+            var status = context.client().permissions().grant(builder.build(), GRANT_AWAIT_TIMEOUT);
             int code = status.status() == null ? -1 : status.status().code();
             String description = status.status() == null ? "" : status.status().description();
             if (code == GRANT_SUCCESS_STATUS_CODE) {
