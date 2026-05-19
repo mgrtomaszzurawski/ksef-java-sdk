@@ -29,8 +29,12 @@ public final class TokenRunner implements DemoRunner {
     private static final String OP_GENERATE = "generate";
     private static final String OP_GET_STATUS = "getStatus";
     private static final String OP_LIST = "list";
+    private static final String OP_STREAM = "streamTokens";
     private static final String OP_REVOKE = "revoke";
     private static final String TOKEN_DESCRIPTION = "SDK Demo Token";
+    /** Cap stream walk so probes complete in bounded time on real-data tenants. */
+    private static final long STREAM_PROBE_LIMIT = 5L;
+    private static final String STREAM_SUFFIX = " tokens walked (limit=" + STREAM_PROBE_LIMIT + ")";
 
     @Override
     public String name() { return NAME; }
@@ -47,10 +51,21 @@ public final class TokenRunner implements DemoRunner {
         runGetStatus(context, tokenRef, results);
 
         runList(context, results);
+        runStream(context, results);
 
         runRevoke(context, tokenRef, results);
 
         return results;
+    }
+
+    private void runStream(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().tokens().streamTokens(TokenQueryBuilder.create().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM, elapsed(start), errorMessage(exception)));
+        }
     }
 
     private String runGenerate(DemoContext context, List<RunResult> results) {

@@ -61,6 +61,18 @@ public final class PermissionRunner implements DemoRunner {
     private static final String OP_QUERY_AUTHORIZATIONS = "queryAuthorizations";
     private static final String OP_QUERY_EU_ENTITIES = "queryEuEntities";
     private static final String OP_GET_ATTACHMENT = "getAttachmentStatus";
+    private static final String OP_STREAM_PERSONAL = "streamPersonal";
+    private static final String OP_STREAM_PERSONS = "streamPersons";
+    private static final String OP_STREAM_SUBUNITS = "streamSubunits";
+    private static final String OP_STREAM_ENTITIES = "streamEntities";
+    private static final String OP_STREAM_ENTITY_ROLES = "streamEntityRoles";
+    private static final String OP_STREAM_SUBORDINATE_ROLES = "streamSubordinateRoles";
+    private static final String OP_STREAM_AUTHORIZATIONS = "streamAuthorizations";
+    private static final String OP_STREAM_EU_ENTITIES = "streamEuEntities";
+
+    /** Cap stream walk so probes complete in bounded time on real-data tenants. */
+    private static final long STREAM_PROBE_LIMIT = 5L;
+    private static final String STREAM_SUFFIX = " items walked (limit=" + STREAM_PROBE_LIMIT + ")";
     private static final String OP_REVOKE_COMMON = "revokePermission";
     private static final String OP_REVOKE_AUTHORIZATION = "revokeAuthorization";
 
@@ -119,9 +131,106 @@ public final class PermissionRunner implements DemoRunner {
         runQueryAuthorizations(context, results);
         runQueryEuEntities(context, results);
 
+        runStreamPersonal(context, results);
+        runStreamPersons(context, results);
+        runStreamSubunits(context, results);
+        runStreamEntities(context, results);
+        runStreamEntityRoles(context, results);
+        runStreamSubordinateRoles(context, results);
+        runStreamAuthorizations(context, results);
+        runStreamEuEntities(context, results);
+
         runGetAttachmentStatus(context, results);
 
         return results;
+    }
+
+    private void runStreamPersonal(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().permissions()
+                .streamPersonal(PersonalPermissionsQueryBuilder.create().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM_PERSONAL, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM_PERSONAL, elapsed(start), errorMessage(exception)));
+        }
+    }
+
+    private void runStreamPersons(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().permissions().streamPersons(
+                PersonPermissionsQueryBuilder.permissionsGrantedInCurrentContext().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM_PERSONS, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM_PERSONS, elapsed(start), errorMessage(exception)));
+        }
+    }
+
+    private void runStreamSubunits(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().permissions()
+                .streamSubunits(SubunitPermissionsQueryBuilder.create().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM_SUBUNITS, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM_SUBUNITS, elapsed(start), errorMessage(exception)));
+        }
+    }
+
+    private void runStreamEntities(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().permissions()
+                .streamEntities(EntityPermissionsQueryBuilder.create().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM_ENTITIES, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM_ENTITIES, elapsed(start), errorMessage(exception)));
+        }
+    }
+
+    private void runStreamEntityRoles(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().permissions()
+                .streamEntityRoles(EntityRolesQueryBuilder.create().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM_ENTITY_ROLES, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM_ENTITY_ROLES, elapsed(start), errorMessage(exception)));
+        }
+    }
+
+    private void runStreamSubordinateRoles(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().permissions()
+                .streamSubordinateRoles(SubordinateEntityRolesQueryBuilder.create().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM_SUBORDINATE_ROLES, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM_SUBORDINATE_ROLES, elapsed(start), errorMessage(exception)));
+        }
+    }
+
+    private void runStreamAuthorizations(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().permissions()
+                .streamAuthorizations(EntityAuthorizationPermissionsQueryBuilder.granted().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM_AUTHORIZATIONS, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM_AUTHORIZATIONS, elapsed(start), errorMessage(exception)));
+        }
+    }
+
+    private void runStreamEuEntities(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try (var stream = context.client().permissions()
+                .streamEuEntities(EuEntityPermissionsQueryBuilder.create().build())) {
+            long count = stream.limit(STREAM_PROBE_LIMIT).count();
+            results.add(RunResult.ok(NAME, OP_STREAM_EU_ENTITIES, elapsed(start), count + STREAM_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_STREAM_EU_ENTITIES, elapsed(start), errorMessage(exception)));
+        }
     }
 
     private void runPersonGrantCycle(DemoContext context, List<RunResult> results) {
