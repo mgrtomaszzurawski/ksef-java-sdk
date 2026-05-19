@@ -20,6 +20,7 @@ public record EuEntityPermissionsQueryRequest(
         @Nullable Integer pageSize) {
 
     public EuEntityPermissionsQueryRequest {
+        PermissionQueryPaging.validate(pageOffset, pageSize);
         permissionTypes = permissionTypes == null ? List.of() : List.copyOf(permissionTypes);
     }
 }

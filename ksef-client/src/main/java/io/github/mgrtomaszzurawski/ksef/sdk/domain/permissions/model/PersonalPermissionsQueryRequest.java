@@ -23,6 +23,7 @@ public record PersonalPermissionsQueryRequest(
         @Nullable Integer pageSize) {
 
     public PersonalPermissionsQueryRequest {
+        PermissionQueryPaging.validate(pageOffset, pageSize);
         permissionTypes = permissionTypes == null ? List.of() : List.copyOf(permissionTypes);
     }
 }

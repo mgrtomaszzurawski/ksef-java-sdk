@@ -27,6 +27,7 @@ public record EntityAuthorizationPermissionsQueryRequest(
 
     public EntityAuthorizationPermissionsQueryRequest {
         Objects.requireNonNull(queryType, "queryType");
+        PermissionQueryPaging.validate(pageOffset, pageSize);
         permissionTypes = permissionTypes == null ? List.of() : List.copyOf(permissionTypes);
     }
 }
