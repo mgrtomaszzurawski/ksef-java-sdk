@@ -15,6 +15,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
@@ -120,6 +121,31 @@ class KsefClientPublicAuthFacadeTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
             var auth = client.authSessions();
             assertThrows(NullPointerException.class, () -> auth.terminateSession(null));
+        }
+    }
+
+    @Test
+    void streamSessions_whenPageSizeSet_appendsPageSizeQueryParameter(WireMockRuntimeInfo wmInfo) {
+        int explicitPageSize = 25;
+        String pagedSessionsUrl = AUTH_SESSIONS + "?pageSize=" + explicitPageSize;
+        try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
+            // given — stub the paged URL exactly (priority 1 to override the
+            // fixture's catch-all auth handler).
+            stubFor(get(urlEqualTo(pagedSessionsUrl))
+                    .atPriority(1)
+                    .willReturn(aResponse()
+                            .withStatus(TestHttpConstants.HTTP_OK)
+                            .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER,
+                                    TestHttpConstants.APPLICATION_JSON)
+                            .withBody(SESSIONS_LIST_RESPONSE)));
+
+            // when
+            client.authSessions()
+                    .streamAuthSessions(AuthSessionsQueryRequest.firstPage(explicitPageSize))
+                    .toList();
+
+            // then — wire request hit exactly `?pageSize=25`, not the default URL
+            verify(getRequestedFor(urlEqualTo(pagedSessionsUrl)));
         }
     }
 }

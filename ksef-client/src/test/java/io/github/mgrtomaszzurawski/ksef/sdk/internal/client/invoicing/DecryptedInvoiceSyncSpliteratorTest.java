@@ -6,8 +6,12 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoiceDirectory;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -32,7 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,6 +66,9 @@ class DecryptedInvoiceSyncSpliteratorTest {
     private static final int STATUS_OK = 200;
     private static final long INVOICE_COUNT_ZERO = 0L;
     private static final long INVOICE_COUNT_ONE = 1L;
+    private static final String CUSTOM_FORM_SYSTEM_CODE = "KIT-X";
+    private static final String CUSTOM_FORM_SCHEMA_VERSION = "1-0";
+    private static final String CUSTOM_FORM_VALUE = "KitX";
 
     @Test
     void tryAdvance_whenProducerEmitsInvoice_drainsItThenReturnsFalse(@TempDir Path tempDir) throws Exception {
@@ -170,6 +179,80 @@ class DecryptedInvoiceSyncSpliteratorTest {
     }
 
     @Test
+    void tryAdvance_whenRegisteredCustomFormCode_emitsTypedCustomDocument(@TempDir Path tempDir) throws Exception {
+        // given — metadata carries a custom form code triple; spliterator built
+        // with a registry mapping that triple to a typed wrapper class.
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        Path windowDir = tempDir.resolve("subject1/window-0");
+        PreparedInvoiceExport firstWindow = stubExport(
+                exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR),
+                metadataDirWithCustomFormCode(windowDir, KSEF_NUMBER_1,
+                        CUSTOM_FORM_SYSTEM_CODE, CUSTOM_FORM_SCHEMA_VERSION, CUSTOM_FORM_VALUE));
+        PreparedInvoiceExport emptyWindow = stubExport(
+                exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
+        when(invoiceExport.prepare(any(InvoiceQueryRequest.class), any(ExportScope.class)))
+                .thenReturn(firstWindow, emptyWindow);
+
+        KsefInvoiceTypes registry = KsefInvoiceTypes.builder()
+                .register(SampleCustomInvoiceDocument.class)
+                .build();
+        IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
+        InMemoryCheckpointStore store = new InMemoryCheckpointStore();
+
+        // when — collect emitted document
+        java.util.concurrent.atomic.AtomicReference<InvoiceDocument> emitted =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        try (DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
+                invoiceExport, jacksonMapper(), plan, store, registry)) {
+            while (spliterator.tryAdvance(invoice -> emitted.compareAndSet(null, invoice.document()))) {
+                // drain
+            }
+        }
+
+        // then — emitted document is the typed custom wrapper, not the fallback
+        InvoiceDocument document = emitted.get();
+        assertNotNull(document, "Spliterator must emit one document");
+        assertInstanceOf(SampleCustomInvoiceDocument.class, document,
+                "Registered custom form code must surface as typed wrapper, not UnrecognizedInvoiceDocument");
+    }
+
+    @Test
+    void tryAdvance_whenUnregisteredCustomFormCode_emitsUnrecognizedDocument(@TempDir Path tempDir) throws Exception {
+        // given — metadata carries a custom form code that the registry does NOT cover
+        InvoiceExport invoiceExport = mock(InvoiceExport.class);
+        Path windowDir = tempDir.resolve("subject1/window-0");
+        PreparedInvoiceExport firstWindow = stubExport(
+                exportStatus(INVOICE_COUNT_ONE, ADVANCED_CURSOR),
+                metadataDirWithCustomFormCode(windowDir, KSEF_NUMBER_1,
+                        CUSTOM_FORM_SYSTEM_CODE, CUSTOM_FORM_SCHEMA_VERSION, CUSTOM_FORM_VALUE));
+        PreparedInvoiceExport emptyWindow = stubExport(
+                exportStatus(INVOICE_COUNT_ZERO, ADVANCED_CURSOR), null);
+        when(invoiceExport.prepare(any(InvoiceQueryRequest.class), any(ExportScope.class)))
+                .thenReturn(firstWindow, emptyWindow);
+
+        IncrementalSyncPlan plan = singleSubjectPlan(tempDir);
+        InMemoryCheckpointStore store = new InMemoryCheckpointStore();
+
+        // when — registry without the custom registration → fallback path
+        java.util.concurrent.atomic.AtomicReference<InvoiceDocument> emitted =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        try (DecryptedInvoiceSyncSpliterator spliterator = new DecryptedInvoiceSyncSpliterator(
+                invoiceExport, jacksonMapper(), plan, store, KsefInvoiceTypes.builtinsOnly())) {
+            while (spliterator.tryAdvance(invoice -> emitted.compareAndSet(null, invoice.document()))) {
+                // drain
+            }
+        }
+
+        // then — UnrecognizedInvoiceDocument carrying the reported form code
+        InvoiceDocument document = emitted.get();
+        assertNotNull(document);
+        assertInstanceOf(UnrecognizedInvoiceDocument.class, document);
+        assertEquals(FormCode.custom(CUSTOM_FORM_SYSTEM_CODE,
+                        CUSTOM_FORM_SCHEMA_VERSION, CUSTOM_FORM_VALUE),
+                document.formCode());
+    }
+
+    @Test
     void characteristics_isOrderedAndNonnull(@TempDir Path tempDir) {
         InvoiceExport invoiceExport = mock(InvoiceExport.class);
         PreparedInvoiceExport emptyWindow = stubExport(
@@ -203,6 +286,24 @@ class DecryptedInvoiceSyncSpliteratorTest {
         InvoicePackage pkg = new InvoicePackage(
                 invoiceCount, null, List.of(), false, null, null, null, hwm);
         return new InvoiceExportStatus(new StatusInfo(STATUS_OK, "OK", List.of()), null, null, pkg);
+    }
+
+    private static ExportedInvoiceDirectory metadataDirWithCustomFormCode(Path windowDir,
+                                                                           String ksefNumber,
+                                                                           String systemCode,
+                                                                           String schemaVersion,
+                                                                           String formValue) throws IOException {
+        Files.createDirectories(windowDir);
+        Path metadataPath = windowDir.resolve("_metadata.json");
+        String json = String.format(
+                "{\"invoices\":[{\"ksefNumber\":\"%s\",\"formCode\":{\"systemCode\":\"%s\","
+                        + "\"schemaVersion\":\"%s\",\"value\":\"%s\"}}]}",
+                ksefNumber, systemCode, schemaVersion, formValue);
+        Files.writeString(metadataPath, json);
+        Path xmlPath = windowDir.resolve(ksefNumber + ".xml");
+        Files.writeString(xmlPath, "<KitX/>");
+        return new ExportedInvoiceDirectory(windowDir, metadataPath,
+                Map.of(ksefNumber + ".xml", xmlPath));
     }
 
     private static ExportedInvoiceDirectory metadataDirWithXml(Path windowDir, List<String> ksefNumbers) throws IOException {
@@ -240,6 +341,27 @@ class DecryptedInvoiceSyncSpliteratorTest {
         return new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    }
+
+    /** Fixture custom InvoiceDocument matching the FormCode triple emitted by the test metadata. */
+    public static final class SampleCustomInvoiceDocument implements InvoiceDocument {
+        public static final FormCode FORM_CODE = FormCode.custom(
+                CUSTOM_FORM_SYSTEM_CODE, CUSTOM_FORM_SCHEMA_VERSION, CUSTOM_FORM_VALUE);
+        private final byte[] xml;
+        private SampleCustomInvoiceDocument(byte[] xml) {
+            this.xml = xml.clone();
+        }
+        public static SampleCustomInvoiceDocument from(byte[] xml) {
+            return new SampleCustomInvoiceDocument(xml);
+        }
+        @Override
+        public FormCode formCode() {
+            return FORM_CODE;
+        }
+        @Override
+        public byte[] xml() {
+            return xml.clone();
+        }
     }
 
     private static final class InMemoryCheckpointStore implements CheckpointStore {

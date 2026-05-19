@@ -136,6 +136,35 @@ class InvoiceClientTest {
     }
 
     @Test
+    void queryMetadata_whenExplicitPagingSet_overridesSdkDefaults(WireMockRuntimeInfo wmInfo) {
+        // given — builder paging overrides the SDK's default 0/250 substitution
+        int explicitOffset = 4;
+        int explicitSize = 50;
+        String pagedUrl = INVOICES_BASE + "/query/metadata?pageOffset="
+                + explicitOffset + "&pageSize=" + explicitSize;
+        stubFor(post(urlEqualTo(pagedUrl))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(QUERY_METADATA_RESPONSE)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+
+            // when
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1))
+                    .pageOffset(explicitOffset)
+                    .pageSize(explicitSize);
+            ksef.invoices().archive().queryByMetadata(query.build());
+
+            // then — request URL carried both explicit values, not the SDK defaults.
+            // The URL-equal stub would 404 otherwise.
+            verify(postRequestedFor(urlEqualTo(pagedUrl)));
+        }
+    }
+
+    @Test
     void streamMetadata_whenSecondPageRequested_preservesAllFiltersBetweenPages(WireMockRuntimeInfo wmInfo) {
         // given — A.1.2 spec algorithm:
         //   hasMore=true && isTruncated=false → pageOffset++ (same dateRange).

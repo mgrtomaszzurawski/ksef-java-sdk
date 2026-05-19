@@ -43,8 +43,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -496,6 +498,64 @@ class PermissionClientTest {
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(responseBody)));
+    }
+
+    @Test
+    void queryPersons_whenPagingSet_appendsBothPageOffsetAndPageSize(WireMockRuntimeInfo wmInfo) {
+        // given — pageOffset + pageSize together must produce ?pageOffset=N&pageSize=M
+        String pagedPath = "/v2/permissions/query/persons/grants?pageOffset=3&pageSize=20";
+        stubQueryEndpoint(pagedPath, QUERY_EMPTY_RESPONSE);
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+
+            // when
+            ksef.permissions().queryPersons(
+                    PersonPermissionsQueryBuilder.permissionsInCurrentContext()
+                            .pageOffset(3)
+                            .pageSize(20)
+                            .build());
+
+            // then — request hit the exact paged URL (the URL stub would 404 otherwise)
+            verify(postRequestedFor(urlEqualTo(pagedPath)));
+        }
+    }
+
+    @Test
+    void queryPersons_whenOnlyPageOffsetSet_appendsOnlyPageOffset(WireMockRuntimeInfo wmInfo) {
+        // given — single param: appendPaging must emit `?pageOffset=N` (not `&pageOffset=N`)
+        String pagedPath = "/v2/permissions/query/persons/grants?pageOffset=5";
+        stubQueryEndpoint(pagedPath, QUERY_EMPTY_RESPONSE);
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+
+            // when
+            ksef.permissions().queryPersons(
+                    PersonPermissionsQueryBuilder.permissionsInCurrentContext()
+                            .pageOffset(5)
+                            .build());
+
+            // then
+            verify(postRequestedFor(urlEqualTo(pagedPath)));
+        }
+    }
+
+    @Test
+    void queryPersons_whenOnlyPageSizeSet_appendsOnlyPageSize(WireMockRuntimeInfo wmInfo) {
+        // given — single param: appendPaging must emit `?pageSize=M` (not `&pageSize=M`)
+        String pagedPath = "/v2/permissions/query/persons/grants?pageSize=15";
+        stubQueryEndpoint(pagedPath, QUERY_EMPTY_RESPONSE);
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+
+            // when
+            ksef.permissions().queryPersons(
+                    PersonPermissionsQueryBuilder.permissionsInCurrentContext()
+                            .pageSize(15)
+                            .build());
+
+            // then
+            verify(postRequestedFor(urlEqualTo(pagedPath)));
+        }
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {
