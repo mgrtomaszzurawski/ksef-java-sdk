@@ -62,42 +62,42 @@ class UnrecognizedInvoiceDocumentTest {
 
     @Test
     void equalsAndHashCode_areStructuralOverFormCodeAndBytes() {
-        UnrecognizedInvoiceDocument a = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
-        UnrecognizedInvoiceDocument b = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES.clone());
-        assertEquals(a, b);
-        assertEquals(a.hashCode(), b.hashCode());
+        UnrecognizedInvoiceDocument first = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
+        UnrecognizedInvoiceDocument second = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES.clone());
+        assertEquals(first, second);
+        assertEquals(first.hashCode(), second.hashCode());
     }
 
     @Test
     void equals_isFalseWhenFormCodeDiffers() {
-        UnrecognizedInvoiceDocument a = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
-        UnrecognizedInvoiceDocument b = new UnrecognizedInvoiceDocument(
+        UnrecognizedInvoiceDocument first = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
+        UnrecognizedInvoiceDocument second = new UnrecognizedInvoiceDocument(
                 FormCode.custom("UNK-2", "0-1", "OtherUnknown"), XML_BYTES);
-        assertNotEquals(a, b);
+        assertNotEquals(first, second);
     }
 
     @Test
     void equals_isFalseWhenXmlBytesDiffer() {
-        UnrecognizedInvoiceDocument a = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
+        UnrecognizedInvoiceDocument first = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
         byte[] mutated = XML_BYTES.clone();
         mutated[0] = (byte) 0xFE;
-        UnrecognizedInvoiceDocument b = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, mutated);
-        assertNotEquals(a, b);
+        UnrecognizedInvoiceDocument second = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, mutated);
+        assertNotEquals(first, second);
     }
 
     @Test
     void equals_isFalseAgainstUnrelatedType() {
-        UnrecognizedInvoiceDocument a = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
-        assertFalse(a.equals("not-an-invoice-document"));
+        UnrecognizedInvoiceDocument doc = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
+        assertFalse(doc.equals("not-an-invoice-document"));
     }
 
     @Test
     void toString_carriesFormCodeAndByteLength() {
         UnrecognizedInvoiceDocument doc = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
-        String s = doc.toString();
-        assertTrue(s.contains(UNKNOWN_CODE.toString()),
-                () -> "toString should reference the form code: " + s);
-        assertTrue(s.contains("byte[" + XML_BYTES.length + "]"),
-                () -> "toString should expose the xml byte length: " + s);
+        String rendered = doc.toString();
+        assertTrue(rendered.contains(UNKNOWN_CODE.toString()),
+                () -> "toString should reference the form code: " + rendered);
+        assertTrue(rendered.contains("byte[" + XML_BYTES.length + "]"),
+                () -> "toString should expose the xml byte length: " + rendered);
     }
 }

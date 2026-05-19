@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,8 +38,7 @@ class KsefClientConfigTest {
     static void initProvider() throws Exception {
         TestCertificates pair = TestCertificates.generateRsa();
         provider = OfflineSigningProvider.fromPrivateKey(
-                new io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate(
-                        pair.certificate(), pair.privateKey()));
+                new KsefCertificate(pair.certificate(), pair.privateKey()));
     }
 
     @Test

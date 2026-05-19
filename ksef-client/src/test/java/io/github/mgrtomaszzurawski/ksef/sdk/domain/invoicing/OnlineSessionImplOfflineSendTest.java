@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
@@ -94,9 +95,12 @@ class OnlineSessionImplOfflineSendTest {
         // when
         var result = session.sendOfflineInvoice(offline);
 
-        // then — wire body carries offlineMode=true
+        // then — wire body carries offlineMode=true AND the hashOfCorrectedInvoice
+        // field is ABSENT (this is a non-correction offline submission, so the
+        // technical-correction branch in sendOfflineInvoice must NOT fire)
         verify(postRequestedFor(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
-                .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true"))));
+                .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true")))
+                .withRequestBody(matchingJsonPath("$.hashOfCorrectedInvoice", absent())));
 
         // and — KOD I + KOD II propagated through to the SubmittedInvoice
         assertEquals(TEST_INVOICE_REF, result.referenceNumber());

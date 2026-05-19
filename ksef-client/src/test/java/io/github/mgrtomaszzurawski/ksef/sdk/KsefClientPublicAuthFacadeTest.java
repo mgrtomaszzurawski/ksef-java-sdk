@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -77,7 +78,7 @@ class KsefClientPublicAuthFacadeTest {
 
             // when
             List<AuthSession> sessions = client.authSessions()
-                    .streamAuthSessions(io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults())
+                    .streamAuthSessions(AuthSessionsQueryRequest.defaults())
                     .toList();
 
             // then — at minimum the size + reference numbers must round-trip.

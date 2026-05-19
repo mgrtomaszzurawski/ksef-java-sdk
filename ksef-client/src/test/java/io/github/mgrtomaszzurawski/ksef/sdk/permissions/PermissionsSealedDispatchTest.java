@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.permissions;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -43,6 +44,9 @@ class PermissionsSealedDispatchTest {
     private static final String LAST_NAME = "Subject";
     private static final String ENTITY_FULL_NAME = "Test Sp. z o.o.";
     private static final String OPERATION_REFERENCE = "20251019-PM-1A2B3C4D5E-FF0011-AA";
+    private static final String PATH_GRANT_PERSONS = "/v2/permissions/persons/grants";
+    private static final String PATH_GRANT_ENTITIES = "/v2/permissions/entities/grants";
+    private static final String PATH_OPERATIONS_PREFIX = "/v2/permissions/operations/";
 
     private static final String OPERATION_REF_RESPONSE = """
             {"referenceNumber":"%s"}
@@ -54,7 +58,7 @@ class PermissionsSealedDispatchTest {
 
     @Test
     void grant_personRequest_postsToPersonsEndpoint(WireMockRuntimeInfo wmInfo) {
-        stubAcceptedAt("/v2/permissions/persons/grants");
+        stubAcceptedAt(PATH_GRANT_PERSONS);
         stubOperationStatusTerminal();
 
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
@@ -66,13 +70,13 @@ class PermissionsSealedDispatchTest {
 
             PermissionOperationStatus status = client.permissions().grant(request);
             assertEquals(OPERATION_REFERENCE, status.referenceNumber());
-            verify(postRequestedFor(urlEqualTo("/v2/permissions/persons/grants")));
+            verify(postRequestedFor(urlEqualTo(PATH_GRANT_PERSONS)));
         }
     }
 
     @Test
     void grant_entityRequest_postsToEntitiesEndpoint(WireMockRuntimeInfo wmInfo) {
-        stubAcceptedAt("/v2/permissions/entities/grants");
+        stubAcceptedAt(PATH_GRANT_ENTITIES);
         stubOperationStatusTerminal();
 
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
@@ -84,7 +88,7 @@ class PermissionsSealedDispatchTest {
 
             PermissionOperationStatus status = client.permissions().grant(request);
             assertEquals(OPERATION_REFERENCE, status.referenceNumber());
-            verify(postRequestedFor(urlEqualTo("/v2/permissions/entities/grants")));
+            verify(postRequestedFor(urlEqualTo(PATH_GRANT_ENTITIES)));
         }
     }
 
@@ -106,8 +110,7 @@ class PermissionsSealedDispatchTest {
     }
 
     private static void stubOperationStatusTerminal() {
-        stubFor(com.github.tomakehurst.wiremock.client.WireMock.get(
-                urlMatching("/v2/permissions/operations/" + OPERATION_REFERENCE))
+        stubFor(get(urlMatching(PATH_OPERATIONS_PREFIX + OPERATION_REFERENCE))
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER,
