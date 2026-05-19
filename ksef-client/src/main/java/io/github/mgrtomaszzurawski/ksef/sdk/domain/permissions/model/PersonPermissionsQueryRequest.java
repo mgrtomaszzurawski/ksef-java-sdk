@@ -31,5 +31,6 @@ public record PersonPermissionsQueryRequest(
     public PersonPermissionsQueryRequest {
         Objects.requireNonNull(queryType, "queryType");
         permissionTypes = permissionTypes == null ? List.of() : List.copyOf(permissionTypes);
+        PermissionQueryPaging.validate(pageOffset, pageSize);
     }
 }

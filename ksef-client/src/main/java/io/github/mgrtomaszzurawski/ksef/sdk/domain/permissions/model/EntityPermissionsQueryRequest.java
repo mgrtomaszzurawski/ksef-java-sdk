@@ -23,4 +23,8 @@ public record EntityPermissionsQueryRequest(
         @Nullable String contextIdentifierValue,
         @Nullable Integer pageOffset,
         @Nullable Integer pageSize) {
+
+    public EntityPermissionsQueryRequest {
+        PermissionQueryPaging.validate(pageOffset, pageSize);
+    }
 }

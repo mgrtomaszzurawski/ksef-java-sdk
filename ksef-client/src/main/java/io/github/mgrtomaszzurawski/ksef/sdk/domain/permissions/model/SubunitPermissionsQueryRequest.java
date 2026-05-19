@@ -23,4 +23,8 @@ public record SubunitPermissionsQueryRequest(
         @Nullable String subunitIdentifierValue,
         @Nullable Integer pageOffset,
         @Nullable Integer pageSize) {
+
+    public SubunitPermissionsQueryRequest {
+        PermissionQueryPaging.validate(pageOffset, pageSize);
+    }
 }

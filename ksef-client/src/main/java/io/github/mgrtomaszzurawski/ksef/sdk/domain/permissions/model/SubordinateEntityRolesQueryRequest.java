@@ -22,4 +22,8 @@ public record SubordinateEntityRolesQueryRequest(
         @Nullable String subordinateEntityNip,
         @Nullable Integer pageOffset,
         @Nullable Integer pageSize) {
+
+    public SubordinateEntityRolesQueryRequest {
+        PermissionQueryPaging.validate(pageOffset, pageSize);
+    }
 }

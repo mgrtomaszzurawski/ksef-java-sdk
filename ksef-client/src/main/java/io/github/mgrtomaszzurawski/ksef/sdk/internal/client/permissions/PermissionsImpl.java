@@ -132,8 +132,19 @@ public final class PermissionsImpl implements Permissions {
     /** Default sync timeout for permission grant/revoke operations (ADR-032). */
     private static final Duration DEFAULT_OPERATION_TIMEOUT = Duration.ofMinutes(5);
 
-    /** Spec-defined max page size for permission query endpoints. */
-    private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 250;
+    /**
+     * KSeF-enforced max page size for permission query endpoints
+     * ({@code persons/grants}, {@code entities/grants}, {@code subunits/grants},
+     * {@code authorizations/grants}, {@code eu-entities/grants},
+     * {@code personal/grants}, {@code entities/roles},
+     * {@code subordinate-entities/roles}). The server enforces
+     * {@code [10, 100]} on these endpoints and rejects requests outside the
+     * bound with 21405 ("'pageSize' must be between 10 and 100"). This is
+     * a tighter range than the {@code /invoices/query/metadata} endpoint
+     * which accepts up to 250 — different KSeF subsystem, different
+     * server-side limit. Verified by live-demo regression 2026-05-19.
+     */
+    private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 100;
     private static final String PERMISSION_QUERY_PAGE_PARAMS = "?pageOffset=";
     private static final String PERMISSION_QUERY_PAGE_SIZE_PARAM = "&pageSize=" + PERMISSION_QUERY_MAX_PAGE_SIZE;
     private static final String QUERY_PARAM_SEPARATOR_FIRST = "?";
