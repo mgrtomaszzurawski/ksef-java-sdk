@@ -36,54 +36,64 @@ class SubmittedInvoiceTest {
 
     @Test
     void compactCtor_rejectsNullInvoice() {
-        SessionInvoiceStatus status = newStatus();
+        final SessionInvoiceStatus status = newStatus();
+        final Optional<KsefNumber> empty = Optional.empty();
+        final Optional<byte[]> emptyBytes = Optional.empty();
+        final List<String> emptyErrors = List.of();
         assertThrows(NullPointerException.class,
-                () -> new SubmittedInvoice<>(null, REFERENCE, status,
-                        Optional.empty(), Optional.empty(), Optional.empty(), List.of()));
+                () -> new SubmittedInvoice<>(null, REFERENCE, status, empty, emptyBytes, emptyBytes, emptyErrors));
     }
 
     @Test
     void compactCtor_rejectsNullReferenceNumber() {
-        Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
-        SessionInvoiceStatus status = newStatus();
+        final Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
+        final SessionInvoiceStatus status = newStatus();
+        final Optional<KsefNumber> empty = Optional.empty();
+        final Optional<byte[]> emptyBytes = Optional.empty();
+        final List<String> emptyErrors = List.of();
         assertThrows(NullPointerException.class,
-                () -> new SubmittedInvoice<>(invoice, null, status,
-                        Optional.empty(), Optional.empty(), Optional.empty(), List.of()));
+                () -> new SubmittedInvoice<>(invoice, null, status, empty, emptyBytes, emptyBytes, emptyErrors));
     }
 
     @Test
     void compactCtor_rejectsNullStatus() {
-        Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
+        final Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
+        final Optional<KsefNumber> empty = Optional.empty();
+        final Optional<byte[]> emptyBytes = Optional.empty();
+        final List<String> emptyErrors = List.of();
         assertThrows(NullPointerException.class,
-                () -> new SubmittedInvoice<>(invoice, REFERENCE, null,
-                        Optional.empty(), Optional.empty(), Optional.empty(), List.of()));
+                () -> new SubmittedInvoice<>(invoice, REFERENCE, null, empty, emptyBytes, emptyBytes, emptyErrors));
     }
 
     @Test
     void compactCtor_rejectsNullKsefNumberOptional() {
-        Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
-        SessionInvoiceStatus status = newStatus();
+        final Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
+        final SessionInvoiceStatus status = newStatus();
+        final Optional<byte[]> emptyBytes = Optional.empty();
+        final List<String> emptyErrors = List.of();
         assertThrows(NullPointerException.class,
-                () -> new SubmittedInvoice<>(invoice, REFERENCE, status,
-                        null, Optional.empty(), Optional.empty(), List.of()));
+                () -> new SubmittedInvoice<>(invoice, REFERENCE, status, null, emptyBytes, emptyBytes, emptyErrors));
     }
 
     @Test
     void compactCtor_rejectsNullKodIOptional() {
-        Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
-        SessionInvoiceStatus status = newStatus();
+        final Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
+        final SessionInvoiceStatus status = newStatus();
+        final Optional<KsefNumber> empty = Optional.empty();
+        final Optional<byte[]> emptyBytes = Optional.empty();
+        final List<String> emptyErrors = List.of();
         assertThrows(NullPointerException.class,
-                () -> new SubmittedInvoice<>(invoice, REFERENCE, status,
-                        Optional.empty(), null, Optional.empty(), List.of()));
+                () -> new SubmittedInvoice<>(invoice, REFERENCE, status, empty, null, emptyBytes, emptyErrors));
     }
 
     @Test
     void compactCtor_rejectsNullErrorDetailsList() {
-        Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
-        SessionInvoiceStatus status = newStatus();
+        final Invoice invoice = Invoice.fromXml(FormCode.FA3, INVOICE_XML);
+        final SessionInvoiceStatus status = newStatus();
+        final Optional<KsefNumber> empty = Optional.empty();
+        final Optional<byte[]> emptyBytes = Optional.empty();
         assertThrows(NullPointerException.class,
-                () -> new SubmittedInvoice<>(invoice, REFERENCE, status,
-                        Optional.empty(), Optional.empty(), Optional.empty(), null));
+                () -> new SubmittedInvoice<>(invoice, REFERENCE, status, empty, emptyBytes, emptyBytes, null));
     }
 
     @Test

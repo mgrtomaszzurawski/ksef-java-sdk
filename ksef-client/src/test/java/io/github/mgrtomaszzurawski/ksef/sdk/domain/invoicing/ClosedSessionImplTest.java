@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -159,7 +158,7 @@ class ClosedSessionImplTest {
 
         assertSame(submitted, result.submitted());
         assertEquals(INVOICE_REF, result.upo().referenceNumber());
-        verify(sessionClient).getUpoByInvoiceReference(eq(SESSION_REF), eq(INVOICE_REF));
+        verify(sessionClient).getUpoByInvoiceReference(SESSION_REF, INVOICE_REF);
     }
 
     @Test
@@ -205,9 +204,11 @@ class ClosedSessionImplTest {
     void close_isNoOpAfterAlreadyClosedState() {
         SessionClient sessionClient = mock(SessionClient.class);
         ClosedSessionImpl closed = new ClosedSessionImpl(sessionClient, SESSION_REF);
-        // Assert no throw — pure no-op per AutoCloseable contract.
+        // Pure no-op per AutoCloseable contract — double-close must not throw
+        // and must not delegate to the SessionClient.
         closed.close();
         closed.close();
+        org.mockito.Mockito.verifyNoInteractions(sessionClient);
     }
 
     private static SessionStatus newStatus() {
