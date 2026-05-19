@@ -227,7 +227,9 @@ class TestDataClientTest {
         try (KsefClient ksef = createClient(wmInfo)) {
 
             // when
-            ksef.testData().revokeAttachment(KsefIdentifier.nip(TEST_NIP), REVOKE_END_DATE);
+            ksef.testData().revokeAttachment(
+                    io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestAttachmentRevokeRequest
+                            .scheduled(KsefIdentifier.nip(TEST_NIP), REVOKE_END_DATE));
 
             // then
             verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))

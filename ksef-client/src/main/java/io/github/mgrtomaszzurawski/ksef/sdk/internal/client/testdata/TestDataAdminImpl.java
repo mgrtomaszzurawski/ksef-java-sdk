@@ -22,11 +22,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCrea
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestRateLimitsRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLimitsRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectCreateRequest;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestAttachmentRevokeRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectLimitsRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.testdata.mapping.TestdataMappers;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
-import java.time.LocalDate;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +87,7 @@ public final class TestDataAdminImpl implements TestDataAdmin {
     private static final String ERR_NON_NIP_IDENTIFIER =
             "TestDataAdmin operations require a NIP-typed KsefIdentifier but got: ";
     private static final String ERR_NULL_IDENTIFIER = "identifier must not be null";
-    private static final String ERR_NULL_EXPECTED_END_DATE = "expectedEndDate is required";
+    private static final String ERR_NULL_REVOKE_REQUEST = "request must not be null";
     private static final String ERR_NULL_ENVIRONMENT = "environment must not be null";
     private static final String ERR_PROD =
             "Test-data API is not available on KsefEnvironment.PROD — "
@@ -222,21 +222,23 @@ public final class TestDataAdminImpl implements TestDataAdmin {
     }
 
     /**
-     * Revoke attachment permissions in the test environment with an expected end date.
-     *
-     * @param nip NIP of the subject to revoke attachment permissions from
-     * @param expectedEndDate expected end date for the revocation
+     * Revoke attachment permission in the test environment. The wire's
+     * {@code expectedEndDate} is nullable per OpenAPI; when the
+     * request carries {@code null}, the SDK omits the field so the
+     * server applies its default revocation behaviour.
      */
     @Override
-    public void revokeAttachment(KsefIdentifier subjectIdentifier, LocalDate attachmentExpiryDate) {
+    public void revokeAttachment(TestAttachmentRevokeRequest request) {
         ensureNotProd();
         LOGGER.debug(LOG_CALL, OP_REVOKE_ATTACHMENT);
-        String nipValue = requireNipValue(subjectIdentifier, ERR_NULL_NIP);
-        Objects.requireNonNull(attachmentExpiryDate, ERR_NULL_EXPECTED_END_DATE);
-        AttachmentPermissionRevokeRequestRaw request = new AttachmentPermissionRevokeRequestRaw();
-        request.setNip(nipValue);
-        request.setExpectedEndDate(attachmentExpiryDate);
-        http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, request, OP_REVOKE_ATTACHMENT);
+        Objects.requireNonNull(request, ERR_NULL_REVOKE_REQUEST);
+        String nipValue = requireNipValue(request.subject(), ERR_NULL_NIP);
+        AttachmentPermissionRevokeRequestRaw raw = new AttachmentPermissionRevokeRequestRaw();
+        raw.setNip(nipValue);
+        if (request.expectedEndDate() != null) {
+            raw.setExpectedEndDate(request.expectedEndDate());
+        }
+        http.postJsonNoContent(PATH_ATTACHMENT_REVOKE, raw, OP_REVOKE_ATTACHMENT);
     }
 
     private static String requireNipValue(KsefIdentifier identifier, String nullMessage) {
