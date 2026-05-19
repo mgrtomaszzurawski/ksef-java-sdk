@@ -29,13 +29,15 @@ import java.util.Objects;
  * surface (mirrors the {@code SessionHandleConstructor} pattern for
  * session handles).
  *
- * <p>R2-6 ext: dispatch now consults a {@link KsefInvoiceTypes}
- * registry between the hardcoded built-in fast-path and the
- * {@link UnrecognizedInvoiceDocument} fallback. Built-ins always win
- * (consumers cannot replace FA2/FA3/PEF/PEF_KOR via the registry —
- * registration of those FormCodes is rejected by
- * {@link KsefInvoiceTypes.Builder#register}). Cross-package access by
- * SDK internals goes through this bridge.
+ * <p>R2-6 ext: dispatch consults a {@link KsefInvoiceTypes} registry
+ * between the hardcoded built-in fast-path and the
+ * {@link UnrecognizedInvoiceDocument} fallback. Built-ins always win —
+ * the registry is consulted only after the built-in fast-path returns
+ * no match. Registering a {@link KsefInvoiceTypes.InvoiceTypeBinding}
+ * for a built-in {@code FormCode} is silently shadowed (the registry
+ * is never reached for those codes); the registry handles non-built-in
+ * form codes only. Cross-package access by SDK internals goes through
+ * this bridge.
  *
  * <p>The reflective lookups for built-ins are cached as {@link Method}
  * instances at class-load time; subsequent {@code invoke} calls have

@@ -31,8 +31,9 @@ import org.jspecify.annotations.Nullable;
  *     this field — the paginator always starts at page 0.
  * @param pageSize optional page size for both
  *     {@code queryByMetadata} and {@code streamByMetadata}. Server bounds
- *     (per OpenAPI): min 10, max 250; {@code null} defers to the server
- *     default (10).
+ *     (per OpenAPI): min 10, max 250; {@code null} defers to the SDK
+ *     default (250 — the largest page the server accepts, chosen so
+ *     stream consumers cover ground per round-trip).
  *
  * @since 1.0.0
  */

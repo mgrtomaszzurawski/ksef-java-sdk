@@ -11,7 +11,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -175,6 +174,11 @@ public final class KsefInvoiceTypes {
             return this;
         }
 
+        /**
+         * Return an immutable {@link KsefInvoiceTypes} snapshot of the
+         * bindings registered so far. Subsequent calls on this builder
+         * have no effect on the returned snapshot.
+         */
         public KsefInvoiceTypes build() {
             return new KsefInvoiceTypes(bindings);
         }
@@ -267,10 +271,12 @@ public final class KsefInvoiceTypes {
             this.factory = factory;
         }
 
+        /** The implementation class registered for this binding's {@link #formCode()}. */
         public Class<? extends InvoiceDocument> type() {
             return type;
         }
 
+        /** The {@link FormCode} this binding handles. */
         public FormCode formCode() {
             return formCode;
         }
@@ -278,9 +284,11 @@ public final class KsefInvoiceTypes {
         /**
          * Invoke the registered factory.
          *
-         * @throws IllegalStateException if the factory itself fails
-         *     ({@link InvocationTargetException} cause). Runtime
-         *     exceptions thrown by user code propagate unchanged.
+         * @throws IllegalStateException if the underlying
+         *     {@link MethodHandle#invokeExact(Object...)} throws a
+         *     non-{@link RuntimeException} {@link Throwable} (cause is
+         *     the underlying throwable). Runtime exceptions thrown by
+         *     user code propagate unchanged.
          */
         // MethodHandle.invokeExact declares `throws Throwable`; we must catch
         // it to wrap reflective failures, then re-throw user RuntimeExceptions

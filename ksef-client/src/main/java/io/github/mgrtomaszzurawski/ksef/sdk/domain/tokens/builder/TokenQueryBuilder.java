@@ -146,6 +146,12 @@ public final class TokenQueryBuilder {
         return pageSize;
     }
 
+    /**
+     * Currently configured continuation cursor, or {@code null} when
+     * the builder is set to fetch the first page. Symmetric accessor
+     * to {@link #continuationToken(String)}; provided to support
+     * builder-state inspection in higher-level orchestration code.
+     */
     public @Nullable String continuationTokenValue() {
         return continuationToken;
     }
