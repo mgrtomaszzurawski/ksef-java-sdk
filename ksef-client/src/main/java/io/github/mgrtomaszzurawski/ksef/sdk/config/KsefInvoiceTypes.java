@@ -108,33 +108,24 @@ public final class KsefInvoiceTypes {
     }
 
     /**
-     * Start a builder pre-loaded with the SDK's built-in schemas
-     * (FA2/FA3/PEF/PEF_KOR). Built-ins are resolved by the SDK
-     * internally; they appear as legal but invisible entries — adding
-     * a custom type for the same FormCode throws
-     * {@link IllegalArgumentException} at registration. Use this when
-     * extending the SDK's read-side with custom types.
+     * Start an empty builder for registering custom (non-built-in)
+     * {@link InvoiceDocument} types. Built-ins (FA2/FA3/PEF/PEF_KOR) are
+     * resolved by the SDK directly via the read-side flow and are not
+     * routed through this registry — registering an additional type for
+     * a built-in {@link FormCode} is silently shadowed by the built-in
+     * resolution. This registry handles non-built-in form codes only
+     * (custom industry schemas, future KSeF schema versions consumers
+     * choose to wrap before SDK adds them).
      */
     public static Builder builder() {
         return new Builder();
     }
 
     /**
-     * Start a builder with no built-ins. Same effective registry as
-     * {@link #builder()} from the consumer's perspective (built-ins
-     * are always available on the read-side flow), but the builder
-     * accepts custom types for FA2/FA3/PEF/PEF_KOR FormCodes which
-     * normally collide with built-ins. Reserved for testing / mock
-     * scenarios.
-     */
-    public static Builder builderFromScratch() {
-        return new Builder();
-    }
-
-    /**
-     * Zero-custom-type registry — equivalent to
-     * {@code builder().build()}. The SDK's default when
-     * {@code KsefClient.Builder.invoiceTypes(...)} is not invoked.
+     * Zero-custom-type registry — equivalent to {@code builder().build()}.
+     * The SDK's default when {@code KsefClient.Builder.invoiceTypes(...)}
+     * is not invoked. Non-built-in form codes land on
+     * {@link UnrecognizedInvoiceDocument} on the read-side.
      */
     public static KsefInvoiceTypes builtinsOnly() {
         return new KsefInvoiceTypes(Map.of());
@@ -291,6 +282,12 @@ public final class KsefInvoiceTypes {
          *     ({@link InvocationTargetException} cause). Runtime
          *     exceptions thrown by user code propagate unchanged.
          */
+        // MethodHandle.invokeExact declares `throws Throwable`; we must catch
+        // it to wrap reflective failures, then re-throw user RuntimeExceptions
+        // unchanged so consumer code can pattern-match on its own exception
+        // hierarchy. PMD's AvoidCatchingThrowable / AvoidRethrowingException
+        // do not model this MethodHandle constraint.
+        @SuppressWarnings({"PMD.AvoidCatchingThrowable", "PMD.AvoidRethrowingException"})
         public InvoiceDocument parse(byte[] xml) {
             Objects.requireNonNull(xml, "xml must not be null");
             try {

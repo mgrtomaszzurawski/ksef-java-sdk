@@ -126,6 +126,8 @@ public final class PermissionsImpl implements Permissions {
     private static final String ERR_REQUEST_NULL = "request must not be null";
     private static final String ERR_NULL_FILTER = "filter must not be null";
     private static final String ERR_NULL_TIMEOUT = "timeout must not be null";
+    private static final String ERR_UNHANDLED_GRANT_SUBTYPE =
+            "Unhandled PermissionGrantRequest subtype: ";
 
     /** Default sync timeout for permission grant/revoke operations (ADR-032). */
     private static final Duration DEFAULT_OPERATION_TIMEOUT = Duration.ofMinutes(5);
@@ -196,8 +198,7 @@ public final class PermissionsImpl implements Permissions {
                     PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(r),
                     OP_GRANT_EU_ENTITY, timeout);
         }
-        throw new IllegalStateException("Unhandled PermissionGrantRequest subtype: "
-                + request.getClass().getName());
+        throw new IllegalStateException(ERR_UNHANDLED_GRANT_SUBTYPE + request.getClass().getName());
     }
 
     private PermissionOperationStatus dispatchGrant(String path, Object rawBody, String opName, Duration timeout) {

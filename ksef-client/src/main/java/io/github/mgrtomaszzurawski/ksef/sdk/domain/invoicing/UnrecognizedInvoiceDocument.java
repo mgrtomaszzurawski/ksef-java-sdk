@@ -58,12 +58,10 @@ public record UnrecognizedInvoiceDocument(FormCode formCode, byte[] xml) impleme
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        return other instanceof UnrecognizedInvoiceDocument that
-                && Objects.equals(formCode, that.formCode)
-                && Arrays.equals(xml, that.xml);
+        return this == other
+                || (other instanceof UnrecognizedInvoiceDocument that
+                        && Objects.equals(formCode, that.formCode)
+                        && Arrays.equals(xml, that.xml));
     }
 
     @Override
