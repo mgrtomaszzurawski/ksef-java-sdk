@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -88,7 +87,7 @@ class UnrecognizedInvoiceDocumentTest {
     @Test
     void equals_isFalseAgainstUnrelatedType() {
         UnrecognizedInvoiceDocument doc = new UnrecognizedInvoiceDocument(UNKNOWN_CODE, XML_BYTES);
-        assertFalse(doc.equals("not-an-invoice-document"));
+        assertNotEquals("not-an-invoice-document", doc);
     }
 
     @Test

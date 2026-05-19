@@ -131,15 +131,16 @@ public final class OfflineInvoiceRunner implements DemoRunner {
             byte[] hashOfOriginal = sha256(invoice.xml());
             OfflineInvoice<Invoice> correction = context.client().invoices().offline()
                     .issueTechnicalCorrection(invoice, hashOfOriginal, OfflineMode.OFFLINE_24);
-            if (correction.hashOfCorrectedInvoice().isEmpty()) {
+            java.util.Optional<byte[]> hashOpt = correction.hashOfCorrectedInvoice();
+            if (hashOpt.isEmpty()) {
                 results.add(RunResult.fail(NAME, OP_ISSUE_TECH_CORRECTION, elapsed(start),
                         "hashOfCorrectedInvoice missing on resulting OfflineInvoice"));
                 return;
             }
             results.add(RunResult.ok(NAME, OP_ISSUE_TECH_CORRECTION, elapsed(start),
-                    "hash=" + correction.hashOfCorrectedInvoice().get().length + " bytes,"
-                            + " kodI=" + correction.kodIQrPng().length + " bytes,"
-                            + " kodII=" + correction.kodIIQrPng().length + " bytes"));
+                    "hash=" + hashOpt.get().length + BYTES_SUFFIX + ","
+                            + " kodI=" + correction.kodIQrPng().length + BYTES_SUFFIX + ","
+                            + " kodII=" + correction.kodIIQrPng().length + BYTES_SUFFIX));
         } catch (Exception exception) {
             results.add(RunResult.fail(NAME, OP_ISSUE_TECH_CORRECTION, elapsed(start),
                     errorMessage(exception)));

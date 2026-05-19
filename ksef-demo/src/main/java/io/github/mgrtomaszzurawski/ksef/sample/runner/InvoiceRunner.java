@@ -124,7 +124,13 @@ public final class InvoiceRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         java.nio.file.Path outputDir = null;
         try {
-            outputDir = Files.createTempDirectory(EXPORT_DOWNLOAD_PREFIX);
+            // Files.createTempDirectory honours the JVM's umask on Unix
+            // (POSIX dir created mode 0700 by default); the deleteRecursive
+            // finally block scrubs the dir after the probe. Demo code,
+            // not production SDK surface.
+            @SuppressWarnings("java:S5443")
+            java.nio.file.Path tmp = Files.createTempDirectory(EXPORT_DOWNLOAD_PREFIX);
+            outputDir = tmp;
             OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC)
                     .truncatedTo(ChronoUnit.SECONDS)
                     .minusDays(QUERY_DATE_RANGE_DAYS);

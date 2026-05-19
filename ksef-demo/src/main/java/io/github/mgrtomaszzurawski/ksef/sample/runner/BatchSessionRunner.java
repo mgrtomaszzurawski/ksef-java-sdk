@@ -101,7 +101,13 @@ public final class BatchSessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         Path tempDir = null;
         try {
-            tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX);
+            // Files.createTempDirectory honours the JVM's umask on Unix
+            // (POSIX dir created mode 0700 by default); the auto-delete
+            // finally block scrubs the dir after the probe. Demo code,
+            // not production SDK surface.
+            @SuppressWarnings("java:S5443")
+            Path tmp = Files.createTempDirectory(TEMP_DIR_PREFIX);
+            tempDir = tmp;
             List<Path> files = writeInvoiceFiles(tempDir, formCode, context.nipIdentifier());
             var result = context.client().invoices().sessions().batch()
                     .submitFromFiles(formCode, files, BatchOptions.defaults());

@@ -343,7 +343,7 @@ public final class SessionRunner implements DemoRunner {
             MessageDigest digest = MessageDigest.getInstance(SHA_256);
             byte[] full = digest.digest(data);
             if (full.length != SHA256_LENGTH_BYTES) {
-                throw new IllegalStateException("SHA-256 returned " + full.length + " bytes");
+                throw new IllegalStateException("SHA-256 returned " + full.length + BYTES_LABEL);
             }
             return full;
         } catch (NoSuchAlgorithmException missing) {
