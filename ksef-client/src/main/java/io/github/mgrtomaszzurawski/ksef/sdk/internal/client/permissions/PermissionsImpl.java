@@ -154,29 +154,50 @@ public final class PermissionsImpl implements Permissions {
     public PermissionOperationStatus grant(PermissionGrantRequest request, Duration timeout) {
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        return switch (request) {
-            case PersonPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_PERSON,
+        // Java 17: pattern matching in switch is preview, so we use an
+        // instanceof ladder. The sealed permits clause on
+        // PermissionGrantRequest still guarantees exhaustiveness at the
+        // type-system level — adding an 8th permits member without a
+        // matching arm here would compile but unreachable IllegalStateException
+        // catches the dispatch gap at first call. Migrate to switch
+        // pattern when the SDK moves off Java 17.
+        if (request instanceof PersonPermissionGrantRequest r) {
+            return dispatchGrant(PATH_GRANT_PERSON,
                     PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(r),
                     OP_GRANT_PERSON, timeout);
-            case EntityPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_ENTITY,
+        }
+        if (request instanceof EntityPermissionGrantRequest r) {
+            return dispatchGrant(PATH_GRANT_ENTITY,
                     PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(r),
                     OP_GRANT_ENTITY, timeout);
-            case EntityAuthorizationPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_AUTHORIZATION,
+        }
+        if (request instanceof EntityAuthorizationPermissionGrantRequest r) {
+            return dispatchGrant(PATH_GRANT_AUTHORIZATION,
                     PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(r),
                     OP_GRANT_AUTHORIZATION, timeout);
-            case IndirectPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_INDIRECT,
+        }
+        if (request instanceof IndirectPermissionGrantRequest r) {
+            return dispatchGrant(PATH_GRANT_INDIRECT,
                     PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(r),
                     OP_GRANT_INDIRECT, timeout);
-            case SubunitPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_SUBUNIT,
+        }
+        if (request instanceof SubunitPermissionGrantRequest r) {
+            return dispatchGrant(PATH_GRANT_SUBUNIT,
                     PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(r),
                     OP_GRANT_SUBUNIT, timeout);
-            case EuEntityAdminPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_EU_ENTITY_ADMIN,
+        }
+        if (request instanceof EuEntityAdminPermissionGrantRequest r) {
+            return dispatchGrant(PATH_GRANT_EU_ENTITY_ADMIN,
                     PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(r),
                     OP_GRANT_EU_ENTITY_ADMIN, timeout);
-            case EuEntityPermissionGrantRequest r -> dispatchGrant(PATH_GRANT_EU_ENTITY,
+        }
+        if (request instanceof EuEntityPermissionGrantRequest r) {
+            return dispatchGrant(PATH_GRANT_EU_ENTITY,
                     PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(r),
                     OP_GRANT_EU_ENTITY, timeout);
-        };
+        }
+        throw new IllegalStateException("Unhandled PermissionGrantRequest subtype: "
+                + request.getClass().getName());
     }
 
     private PermissionOperationStatus dispatchGrant(String path, Object rawBody, String opName, Duration timeout) {

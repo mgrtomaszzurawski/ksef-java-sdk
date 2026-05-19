@@ -65,7 +65,7 @@ public final class IssueOfflineInvoice {
                 .credentials(new KsefPkcs12Credentials(p12Path, p12Pass, nip))
                 // Provider supplies the Offline cert that signs KOD II. The SDK
                 // does not see private-key material; the provider owns it.
-                .offlineSigning(loadProvider(client -> null))
+                .offlineSigning(loadProvider())
                 .build()) {
 
             // Issue an offline24 invoice — taxpayer-elected offline mode
@@ -95,12 +95,13 @@ public final class IssueOfflineInvoice {
         }
     }
 
-    /** Production: build the provider via KsefCertificate.fromPem(...) or
+    /** Production: build the provider via {@code KsefCertificate.fromPem(...)} or
      *  an HSM/KMS adapter. The placeholder below would be replaced with
-     *  the real cert source. */
+     *  the real cert source loaded from a keystore or remote secret. */
     @SuppressWarnings("unused")
-    private static OfflineSigningProvider loadProvider(java.util.function.Function<?, KsefCertificate> certSource) {
-        return OfflineSigningProvider.fromPrivateKey(/* KsefCertificate */ null);
+    private static OfflineSigningProvider loadProvider() {
+        KsefCertificate placeholder = null;
+        return OfflineSigningProvider.fromPrivateKey(placeholder);
     }
 
     private static String requireEnv(String name) {

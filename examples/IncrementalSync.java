@@ -41,9 +41,6 @@
  *     KsefClient.Builder.invoiceTypes(KsefInvoiceTypes) if your stack
  *     issues invoices under non-KSeF schemas.
  */
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
@@ -131,36 +128,37 @@ public final class IncrementalSync {
      */
     private static void process(DecryptedInvoice decrypted) {
         String ksefRef = decrypted.ksefNumber().value();
-        switch (decrypted.document()) {
-            case Fa3InvoiceDocument fa3 ->
-                    System.out.println("FA(3) " + ksefRef + " — " + fa3.unsafeJaxbView().getFa().getP1());
-            case Fa2InvoiceDocument fa2 ->
-                    System.out.println("FA(2) " + ksefRef + " — " + fa2.unsafeJaxbView().getFa().getP1());
-            case PefInvoiceDocument pef ->
-                    System.out.println("PEF " + ksefRef + " — " + pef.invoice().getId().getValue());
-            case PefKorInvoiceDocument pefKor ->
-                    System.out.println("PEFKOR " + ksefRef + " — " + pefKor.creditNote().getId().getValue());
-            case UnrecognizedInvoiceDocument unknown ->
-                    System.out.println("Unknown form " + unknown.formCode() + " for " + ksefRef
-                            + " — " + unknown.xml().length + " bytes raw");
-            default -> System.out.println("Unhandled document type for " + ksefRef);
+        var doc = decrypted.document();
+        if (doc instanceof Fa3InvoiceDocument fa3) {
+            System.out.println("FA(3) " + ksefRef + " — " + fa3.unsafeJaxbView().getFa().getP1());
+        } else if (doc instanceof Fa2InvoiceDocument fa2) {
+            System.out.println("FA(2) " + ksefRef + " — " + fa2.unsafeJaxbView().getFa().getP1());
+        } else if (doc instanceof PefInvoiceDocument pef) {
+            System.out.println("PEF " + ksefRef + " — invoiceNumber=" + pef.invoiceNumber());
+        } else if (doc instanceof PefKorInvoiceDocument pefKor) {
+            System.out.println("PEFKOR " + ksefRef + " — invoiceNumber=" + pefKor.invoiceNumber());
+        } else if (doc instanceof UnrecognizedInvoiceDocument unknown) {
+            System.out.println("Unknown form " + unknown.formCode() + " for " + ksefRef
+                    + " — " + unknown.xml().length + " bytes raw");
+        } else {
+            System.out.println("Unhandled document type for " + ksefRef);
         }
     }
 
     /**
-     * File-backed {@link CheckpointStore} writing one JSON file per
-     * subject type (e.g. {@code <outDir>/checkpoint-SUBJECT1.json}).
-     * Production code typically uses a transactional database instead;
-     * this implementation is a minimal pattern for single-process
-     * cron-style sync jobs.
+     * File-backed {@link CheckpointStore} writing one text file per
+     * subject type (e.g. {@code <outDir>/checkpoint-SUBJECT1.txt}) in
+     * a minimal two-line format: ISO-8601 cursor + boolean
+     * lastTruncated. Production code typically uses a transactional
+     * database; this implementation is a minimal cron-style sync
+     * fixture that avoids any extra dependencies beyond ksef-client.
      */
     private static final class FileCheckpointStore implements CheckpointStore {
 
         private static final String FILE_NAME_PREFIX = "checkpoint-";
-        private static final String FILE_NAME_SUFFIX = ".json";
+        private static final String FILE_NAME_SUFFIX = ".txt";
 
         private final Path directory;
-        private final ObjectMapper json = new ObjectMapper().registerModule(new JavaTimeModule());
 
         FileCheckpointStore(Path directory) {
             this.directory = directory;
@@ -173,8 +171,13 @@ public final class IncrementalSync {
                 return Optional.empty();
             }
             try {
-                Snapshot snapshot = json.readValue(Files.readAllBytes(file), Snapshot.class);
-                return Optional.of(new SyncCheckpoint(snapshot.cursor(), snapshot.lastTruncated()));
+                var lines = Files.readAllLines(file);
+                if (lines.size() < 2) {
+                    return Optional.empty();
+                }
+                OffsetDateTime cursor = OffsetDateTime.parse(lines.get(0));
+                boolean lastTruncated = Boolean.parseBoolean(lines.get(1));
+                return Optional.of(new SyncCheckpoint(cursor, lastTruncated));
             } catch (IOException ioFailure) {
                 throw new UncheckedIOException("Failed to read checkpoint at " + file, ioFailure);
             }
@@ -185,9 +188,9 @@ public final class IncrementalSync {
             Path file = fileFor(subjectType);
             try {
                 Files.createDirectories(directory);
-                byte[] body = json.writeValueAsBytes(
-                        new Snapshot(checkpoint.cursor(), checkpoint.lastTruncated()));
-                Files.write(file, body);
+                Files.writeString(file,
+                        checkpoint.cursor().toString() + System.lineSeparator()
+                                + checkpoint.lastTruncated() + System.lineSeparator());
             } catch (IOException ioFailure) {
                 throw new UncheckedIOException("Failed to write checkpoint at " + file, ioFailure);
             }
@@ -196,10 +199,6 @@ public final class IncrementalSync {
         private Path fileFor(InvoiceQuerySubjectType subjectType) {
             return directory.resolve(FILE_NAME_PREFIX + subjectType.name() + FILE_NAME_SUFFIX);
         }
-
-        private record Snapshot(
-                @JsonProperty("cursor") OffsetDateTime cursor,
-                @JsonProperty("lastTruncated") boolean lastTruncated) { }
     }
 
     private static String requireEnv(String name) {

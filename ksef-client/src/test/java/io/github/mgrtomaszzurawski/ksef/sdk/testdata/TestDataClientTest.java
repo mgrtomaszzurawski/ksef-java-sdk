@@ -240,6 +240,27 @@ class TestDataClientTest {
     }
 
     @Test
+    void revokeAttachment_withoutExpectedEndDate_omitsFieldFromWireBody(WireMockRuntimeInfo wmInfo) {
+        // R2-12 — wire spec says expectedEndDate is nullable
+        // (only nip is required). When the request carries null, SDK
+        // MUST omit the field so KSeF applies its default revocation.
+        stubFor(post(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))
+                .willReturn(aResponse().withStatus(TestHttpConstants.HTTP_NO_CONTENT)));
+
+        try (KsefClient ksef = createClient(wmInfo)) {
+            ksef.testData().revokeAttachment(
+                    io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestAttachmentRevokeRequest
+                            .immediate(KsefIdentifier.nip(TEST_NIP)));
+
+            // Body carries nip but does NOT carry expectedEndDate key.
+            verify(postRequestedFor(urlEqualTo(PATH_TESTDATA_ATTACHMENT_REVOKE))
+                    .withRequestBody(matchingJsonPath("$.nip", equalTo(TEST_NIP)))
+                    .withRequestBody(matchingJsonPath("$",
+                            com.github.tomakehurst.wiremock.client.WireMock.notMatching(".*expectedEndDate.*"))));
+        }
+    }
+
+    @Test
     void blockContext_whenCalled_sendsPostRequest(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(post(urlEqualTo("/v2/testdata/context/block"))

@@ -54,26 +54,24 @@ public final class GetInvoiceFromArchive {
     }
 
     /**
-     * Pattern-match on the typed document. The SDK constructed the
-     * concrete subtype from the FormCode KSeF returned; consumer code
-     * gets schema-specific accessors without parsing XML.
+     * Pattern-match on the typed document via instanceof ladder
+     * (pattern-matching in switch is Java 21+, preview in 17).
      */
     private static void describe(InvoiceDocument document) {
-        switch (document) {
-            case Fa3InvoiceDocument fa3 ->
-                    System.out.println("FA(3): P_1=" + fa3.unsafeJaxbView().getFa().getP1());
-            case Fa2InvoiceDocument fa2 ->
-                    System.out.println("FA(2): P_1=" + fa2.unsafeJaxbView().getFa().getP1());
-            case PefInvoiceDocument pef ->
-                    System.out.println("PEF: id=" + pef.invoice().getId().getValue());
-            case PefKorInvoiceDocument pefKor ->
-                    System.out.println("PEFKOR: id=" + pefKor.creditNote().getId().getValue());
-            case UnrecognizedInvoiceDocument unknown ->
-                    System.out.println("Unknown form " + unknown.formCode()
-                            + " — " + unknown.xml().length + " bytes raw");
-            default ->
-                    System.out.println("Unhandled InvoiceDocument subtype: "
-                            + document.getClass().getName());
+        if (document instanceof Fa3InvoiceDocument fa3) {
+            System.out.println("FA(3): P_1=" + fa3.unsafeJaxbView().getFa().getP1());
+        } else if (document instanceof Fa2InvoiceDocument fa2) {
+            System.out.println("FA(2): P_1=" + fa2.unsafeJaxbView().getFa().getP1());
+        } else if (document instanceof PefInvoiceDocument pef) {
+            System.out.println("PEF: invoiceNumber=" + pef.invoiceNumber());
+        } else if (document instanceof PefKorInvoiceDocument pefKor) {
+            System.out.println("PEFKOR: invoiceNumber=" + pefKor.invoiceNumber());
+        } else if (document instanceof UnrecognizedInvoiceDocument unknown) {
+            System.out.println("Unknown form " + unknown.formCode()
+                    + " — " + unknown.xml().length + " bytes raw");
+        } else {
+            System.out.println("Unhandled InvoiceDocument subtype: "
+                    + document.getClass().getName());
         }
     }
 

@@ -486,7 +486,7 @@ public final class KsefClient implements AutoCloseable {
         private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
         private Duration invoiceVerificationTimeout = DEFAULT_INVOICE_VERIFICATION_TIMEOUT;
         private @Nullable OfflineSigningProvider offlineSigningProvider;
-        private @Nullable io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes invoiceTypes;
+        private io.github.mgrtomaszzurawski.ksef.sdk.config.@Nullable KsefInvoiceTypes invoiceTypes;
 
         private Builder() { }
 

@@ -51,7 +51,7 @@ public final class QueryPeppolProviders {
             int totalSeen = 0;
             PeppolProvidersResult page;
             do {
-                page = client.peppolProviders().queryProviders(
+                page = client.peppol().queryProviders(
                         new PeppolProvidersQueryRequest(pageOffset, PAGE_SIZE));
                 System.out.println("Page " + pageOffset + ": "
                         + page.providers().size() + " providers, hasMore=" + page.hasMore());
@@ -62,7 +62,7 @@ public final class QueryPeppolProviders {
 
             // Lazy stream: paginator handles offset arithmetic internally;
             // no filter args because the Peppol endpoint has none per spec.
-            try (Stream<PeppolProvider> stream = client.peppolProviders().streamProviders()) {
+            try (Stream<PeppolProvider> stream = client.peppol().streamProviders()) {
                 long streamed = stream.limit(STREAM_PREVIEW_LIMIT).count();
                 System.out.println("Stream preview (first " + STREAM_PREVIEW_LIMIT + "): " + streamed);
             }

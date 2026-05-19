@@ -65,14 +65,17 @@ public final class ExportInvoiceArchive {
             // Blocks until server reports terminal export state.
             InvoiceExportStatus status = prepared.awaitReady();
             System.out.println("Export ready: " + status.status());
-            System.out.println("Package: " + status.pkg().invoiceCount() + " invoices");
+            if (status.invoicePackage() != null) {
+                System.out.println("Package: "
+                        + status.invoicePackage().invoiceCount() + " invoices");
+            }
 
             // Stream-download + decrypt straight to outDir. Memory bounded
             // by chunk buffer, NOT by full package size (KSeF export
             // packages can be multi-GB).
             var dir = prepared.downloadAndDecryptTo(status, outDir);
-            System.out.println("Decrypted to " + dir.directory()
-                    + " (" + dir.xmlFiles().size() + " files)");
+            System.out.println("Decrypted to " + dir.outputDirectory()
+                    + " (" + dir.invoiceXmls().size() + " files)");
         }
     }
 
