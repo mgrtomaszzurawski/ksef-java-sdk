@@ -46,6 +46,7 @@ class OnlineSessionImplOfflineSendTest {
     private static final String SESSIONS_BASE = "/v2/sessions";
     private static final String ONLINE_BASE = SESSIONS_BASE + "/online";
     private static final LocalDate ISSUE_DATE = LocalDate.of(2026, 5, 9);
+    private static final int SHA256_LENGTH = 32;
 
     private static final String SEND_INVOICE_RESPONSE = """
             {
@@ -103,6 +104,53 @@ class OnlineSessionImplOfflineSendTest {
         assertTrue(result.kodIIQr().isPresent());
         assertTrue(result.kodIQr().orElseThrow().length > 0);
         assertTrue(result.kodIIQr().orElseThrow().length > 0);
+    }
+
+    @Test
+    void sendOfflineInvoice_whenOfflineCarriesHashOfCorrectedInvoice_postsTechnicalCorrectionWireShape(WireMockRuntimeInfo wmInfo) {
+        // given — same stubs; the differentiating signal is the request body shape
+        stubFor(post(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_ACCEPTED)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(SEND_INVOICE_RESPONSE)));
+        stubFor(get(urlEqualTo(SESSIONS_BASE + "/" + TEST_SESSION_REF
+                + "/invoices/" + TEST_INVOICE_REF))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(INVOICE_STATUS_OK_RESPONSE)));
+
+        // OfflineInvoice carrying hashOfCorrectedInvoice — built directly via
+        // OfflineInvoiceBuilder rather than going through OfflineInvoices.issueTechnicalCorrection
+        // because OfflineInvoices is unauthenticated here; this still pins the
+        // OnlineSessionImpl conditional branch (see OnlineSessionImpl.sendOfflineInvoice
+        // — hashOfCorrectedInvoice().map(...).orElseGet(...)).
+        byte[] originalHash = new byte[SHA256_LENGTH];
+        for (int i = 0; i < originalHash.length; i++) {
+            originalHash[i] = (byte) i;
+        }
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
+        OfflineInvoice<Invoice> offline = OfflineInvoiceBuilder.forInvoice(invoice)
+                .signingCertificate(certificate)
+                .offlineMode(OfflineMode.OFFLINE_24)
+                .qrEnvironment(QrEnvironment.TEST)
+                .contextType(QrContextType.NIP)
+                .contextValue(SELLER_NIP)
+                .sellerNip(SELLER_NIP)
+                .issueDate(ISSUE_DATE)
+                .hashOfCorrectedInvoice(originalHash)
+                .build();
+        OnlineSession session = createSession(wmInfo);
+
+        // when
+        session.sendOfflineInvoice(offline);
+
+        // then — body carries BOTH offlineMode=true AND hashOfCorrectedInvoice
+        // (the conditional branch routed through SendInvoiceCommand.technicalCorrection)
+        verify(postRequestedFor(urlEqualTo(ONLINE_BASE + "/" + TEST_SESSION_REF + "/invoices"))
+                .withRequestBody(matchingJsonPath("$.offlineMode", equalTo("true")))
+                .withRequestBody(matchingJsonPath("$.hashOfCorrectedInvoice")));
     }
 
     private static OnlineSession createSession(WireMockRuntimeInfo wmInfo) {
