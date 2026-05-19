@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * SDK request for {@code Permissions.grantEuEntity(...)}.
+ * SDK request for {@code Permissions.grant(...)}.
  *
  * @since 1.0.0
  */
@@ -17,7 +17,7 @@ public record EuEntityPermissionGrantRequest(
         String description,
         String subjectFullName,
         String subjectAddress,
-        List<EuEntityPermissionType> permissions) {
+        List<EuEntityPermissionType> permissions) implements PermissionGrantRequest {
 
     public EuEntityPermissionGrantRequest {
         Objects.requireNonNull(fingerprintValue, "fingerprintValue");

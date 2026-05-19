@@ -52,7 +52,7 @@ public final class SendOnlineInvoice {
             // Authentication is lazy — opening a session triggers it.
             System.out.println("Connecting as ***" + nip.substring(Math.max(0, nip.length() - 4)));
 
-            OnlineSession session = client.invoices().sessions().open(FormCode.FA3);
+            OnlineSession session = client.invoices().sessions().online(FormCode.FA3);
             System.out.println("Session opened: " + session.referenceNumber());
 
             // sendInvoice blocks until KSeF reaches a terminal state and

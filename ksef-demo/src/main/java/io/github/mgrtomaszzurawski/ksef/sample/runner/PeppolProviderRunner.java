@@ -110,7 +110,9 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions(
+                    io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults())
+                    .findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH, elapsed(start),
                     LABEL_PEPPOL_ID + peppolId + " (registered via XAdES self-signed cert)"));
             return true;
@@ -128,7 +130,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                     .pefInvoicing()
                     .entityDetails("KSeF Java SDK Demo Peppol Provider")
                     .description("PeppolProviderRunner grant for " + peppolId);
-            var status = context.client().permissions().grantAuthorization(builder.build(),
+            var status = context.client().permissions().grant(builder.build(),
                     Duration.ofSeconds(GRANT_AWAIT_SECONDS));
             int code = status.status() == null ? -1 : status.status().code();
             if (code == GRANT_SUCCESS_STATUS_CODE) {
@@ -168,12 +170,14 @@ public final class PeppolProviderRunner implements DemoRunner {
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.
-            client.authSessions().streamAuthSessions().findAny().ifPresent(authSession -> { });
+            client.authSessions().streamAuthSessions(
+                    io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults())
+                    .findAny().ifPresent(authSession -> { });
             results.add(RunResult.ok(NAME, OP_AUTH + label, elapsed(authStart),
                     LABEL_PEPPOL_ID + peppolId));
 
             long openStart = System.currentTimeMillis();
-            try (OnlineSession session = client.invoices().sessions().open(formCode)) {
+            try (OnlineSession session = client.invoices().sessions().online(formCode)) {
                 results.add(RunResult.ok(NAME, OP_OPEN_SESSION + label, elapsed(openStart),
                         "ref=" + session.referenceNumber()));
                 invoiceRef = runSend(session, formCode, context.nipIdentifier(),

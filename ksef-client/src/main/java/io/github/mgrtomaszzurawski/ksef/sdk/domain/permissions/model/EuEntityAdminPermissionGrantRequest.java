@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 import java.util.Objects;
 
 /**
- * SDK request for {@code Permissions.grantEuEntityAdmin(...)}.
+ * SDK request for {@code Permissions.grant(...)}.
  *
  * @since 1.0.0
  */
@@ -19,7 +19,7 @@ public record EuEntityAdminPermissionGrantRequest(
         String subjectFullName,
         String subjectAddress,
         String euEntityFullName,
-        String euEntityAddress) {
+        String euEntityAddress) implements PermissionGrantRequest {
 
     public EuEntityAdminPermissionGrantRequest {
         Objects.requireNonNull(fingerprintValue, "fingerprintValue");

@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceStatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
@@ -56,10 +57,16 @@ final class ClosedSessionImpl implements ClosedSession {
 
     private final SessionClient sessionClient;
     private final String referenceNumber;
+    private final KsefInvoiceTypes invoiceTypes;
 
     ClosedSessionImpl(SessionClient sessionClient, String referenceNumber) {
+        this(sessionClient, referenceNumber, KsefInvoiceTypes.builtinsOnly());
+    }
+
+    ClosedSessionImpl(SessionClient sessionClient, String referenceNumber, KsefInvoiceTypes invoiceTypes) {
         this.sessionClient = sessionClient;
         this.referenceNumber = referenceNumber;
+        this.invoiceTypes = Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
     }
 
     @Override
@@ -123,7 +130,7 @@ final class ClosedSessionImpl implements ClosedSession {
         // archive flow doesn't refetch the archived bytes — the bytes used
         // here are the original submission XML the consumer already held.
         InvoiceDocument document = InvoiceDocumentConstructor.newDocument(
-                submitted.invoice().formCode(), submitted.invoice().xml());
+                invoiceTypes, submitted.invoice().formCode(), submitted.invoice().xml());
         return new ClearedInvoice<>(submitted, document, entry);
     }
 

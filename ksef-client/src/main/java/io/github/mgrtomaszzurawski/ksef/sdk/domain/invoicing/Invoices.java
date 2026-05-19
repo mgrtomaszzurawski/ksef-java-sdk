@@ -12,10 +12,14 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
  * <ul>
  *   <li>{@link #archive()} — retrieve by KSeF number, reconstruct
  *       cleared invoices, query/stream metadata.</li>
- *   <li>{@link #sessions()} — open online sessions and stream session
- *       summaries.</li>
- *   <li>{@link #batch()} — synchronous batch submission (blocking,
- *       minutes to hours).</li>
+ *   <li>{@link #sessions()} — full session lifecycle:
+ *       {@link InvoiceSessions#online(FormCode) online} for
+ *       interactive sends, {@link InvoiceSessions#batch() batch} for
+ *       package submission, and {@link InvoiceSessions#stream
+ *       session-summary} streaming covering both types.</li>
+ *   <li>{@link #offline()} — build-only offline issuance:
+ *       assemble an {@link OfflineInvoice} (KOD I + KOD II) ready to be
+ *       sent through an online session.</li>
  *   <li>{@link #export()} — kick off export jobs and poll for
  *       completion.</li>
  *   <li>{@link #sync()} — incremental sync as a lazy
@@ -34,16 +38,18 @@ public interface Invoices {
     InvoiceArchive archive();
 
     /**
-     * Online-session lifecycle: open an interactive session for sending
-     * invoices, and stream session summaries.
+     * Full session lifecycle: open online sessions, drive batch
+     * submissions, and stream session summaries.
      */
     InvoiceSessions sessions();
 
     /**
-     * Batch submission: synchronous, blocking flow for sending up to
-     * 10 000 invoices in a single encrypted package.
+     * Build-only offline issuance: assemble {@link OfflineInvoice}
+     * instances (KOD I + KOD II QR codes, optional technical-correction
+     * hash) for later send via
+     * {@code sessions().online(formCode).sendOfflineInvoice(...)}.
      */
-    InvoiceBatch batch();
+    OfflineInvoices offline();
 
     /**
      * Invoice export jobs: start an export, poll its status, download

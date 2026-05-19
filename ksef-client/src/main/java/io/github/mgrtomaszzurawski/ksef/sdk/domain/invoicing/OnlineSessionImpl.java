@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.builder.SendInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceCommand;
@@ -114,7 +115,7 @@ final class OnlineSessionImpl implements OnlineSession {
     private static final String ERR_FORM_CODE_LEGACY_CTOR =
             "OnlineSession was opened without a FormCode (legacy ctor); "
                     + "formCode() is only meaningful when the session was opened via "
-                    + "client.invoices().sessions().open(FormCode).";
+                    + "client.invoices().sessions().online(FormCode).";
 
     /** Default verification timeout when none is supplied via the builder. */
     static final Duration DEFAULT_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);
@@ -137,6 +138,7 @@ final class OnlineSessionImpl implements OnlineSession {
     private final QrCodeService qrCodeService;
     @Nullable private final OfflineSigningProvider offlineSigningProvider;
     @Nullable private final String sellerNip;
+    private final KsefInvoiceTypes invoiceTypes;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -175,6 +177,12 @@ final class OnlineSessionImpl implements OnlineSession {
     }
 
     OnlineSessionImpl(SessionHandle handle, InvoiceVerificationConfig verification, OfflineSendHook offline) {
+        this(handle, verification, offline,
+                KsefInvoiceTypes.builtinsOnly());
+    }
+
+    OnlineSessionImpl(SessionHandle handle, InvoiceVerificationConfig verification, OfflineSendHook offline,
+                KsefInvoiceTypes invoiceTypes) {
         this.sessionClient = handle.client();
         this.referenceNumber = handle.referenceNumber();
         this.aesKey = handle.aesKey();
@@ -187,6 +195,7 @@ final class OnlineSessionImpl implements OnlineSession {
         this.qrCodeService = new QrCodeService();
         this.offlineSigningProvider = offline.provider();
         this.sellerNip = offline.sellerNip();
+        this.invoiceTypes = Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
     }
 
     @Override
@@ -251,7 +260,15 @@ final class OnlineSessionImpl implements OnlineSession {
         ensureFormCodeMatches(underlying);
         byte[] invoiceXml = offline.xml();
         InvoiceValidationGate.validate(offline.formCode(), invoiceXml);
-        SendInvoiceResult sendResult = send(SendInvoiceCommand.offline(invoiceXml));
+        // When the offline invoice carries hashOfCorrectedInvoice (built
+        // via OfflineInvoices.issueTechnicalCorrection or
+        // OfflineInvoiceBuilder.hashOfCorrectedInvoice), route through
+        // the technical-correction wire shape so the hash reaches the
+        // server (REQ-OFFLINE-004, ksef-docs/offline/korekta-techniczna.md).
+        SendInvoiceCommand command = offline.hashOfCorrectedInvoice()
+                .map(hash -> SendInvoiceCommand.technicalCorrection(invoiceXml, hash))
+                .orElseGet(() -> SendInvoiceCommand.offline(invoiceXml));
+        SendInvoiceResult sendResult = send(command);
         SessionInvoiceStatus terminalStatus = pollUntilVerified(sendResult.referenceNumber());
         return buildOfflineSubmittedInvoice(underlying, sendResult.referenceNumber(),
                 terminalStatus, offline.kodIQrPng(), offline.kodIIQrPng());
@@ -471,7 +488,7 @@ final class OnlineSessionImpl implements OnlineSession {
         // a ClosedSession view. Subsequent archive()/close() callers see
         // the same instance via the AtomicReference.
         transitionToClosed();
-        ClosedSessionImpl view = new ClosedSessionImpl(sessionClient, referenceNumber);
+        ClosedSessionImpl view = new ClosedSessionImpl(sessionClient, referenceNumber, invoiceTypes);
         if (archiveView.compareAndSet(null, view)) {
             return view;
         }
@@ -490,7 +507,7 @@ final class OnlineSessionImpl implements OnlineSession {
         // archiveView so that a subsequent archive() returns a coherent
         // (already-closed) handle without re-running the lifecycle.
         transitionToClosed();
-        archiveView.compareAndSet(null, new ClosedSessionImpl(sessionClient, referenceNumber));
+        archiveView.compareAndSet(null, new ClosedSessionImpl(sessionClient, referenceNumber, invoiceTypes));
     }
 
     private void ensureOpen() {

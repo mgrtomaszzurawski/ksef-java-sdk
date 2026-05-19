@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -58,6 +59,7 @@ public final class AuthClient {
     private static final String PATH_TOKEN_REFRESH = ApiPaths.AUTH + "/token/refresh";
     private static final String PATH_SESSIONS = ApiPaths.AUTH + "/sessions";
     private static final String PATH_SESSIONS_CURRENT = ApiPaths.AUTH + "/sessions/current";
+    private static final String QUERY_PAGE_SIZE_PARAM = "?pageSize=";
 
     private static final String OP_CHALLENGE = "requestChallenge";
     private static final String OP_AUTH_XADES = "authenticateWithXades";
@@ -349,26 +351,32 @@ public final class AuthClient {
      * @return list response with session items and continuation token
      */
     public AuthenticationList listSessions() {
-        return listSessions(null);
+        return listSessions(null, null);
     }
 
     /**
      * List active authentication sessions, optionally continuing from a
-     * prior page's continuation token.
+     * prior page's continuation token and overriding the server's
+     * default page size (10).
      *
      * @param continuationToken cursor returned by the previous page, or
      *                          {@code null} to fetch the first page
+     * @param pageSize          server-bounded page size (10-100), or
+     *                          {@code null} to use the server default (10)
      * @return list response with session items and the next continuation token
      */
-    public AuthenticationList listSessions(@Nullable String continuationToken) {
+    public AuthenticationList listSessions(@Nullable String continuationToken, @Nullable Integer pageSize) {
         LOGGER.debug(LOG_CALL, OP_LIST_SESSIONS);
         String token = sessionContext.token();
+        String path = pageSize == null
+                ? PATH_SESSIONS
+                : PATH_SESSIONS + QUERY_PAGE_SIZE_PARAM + pageSize;
         AuthenticationListResponseRaw raw = continuationToken == null
-                ? http.getAuthenticated(PATH_SESSIONS, token,
+                ? http.getAuthenticated(path, token,
                         AuthenticationListResponseRaw.class, OP_LIST_SESSIONS)
-                : http.getAuthenticated(PATH_SESSIONS, token,
+                : http.getAuthenticated(path, token,
                         AuthenticationListResponseRaw.class, OP_LIST_SESSIONS,
-                        io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
+                        SessionClient.HEADER_CONTINUATION_TOKEN,
                         continuationToken);
         return AuthenticationList.from(raw);
     }

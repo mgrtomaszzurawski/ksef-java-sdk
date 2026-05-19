@@ -9,7 +9,9 @@ import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
@@ -17,9 +19,12 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import java.math.BigDecimal;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.github.mgrtomaszzurawski.ksef.sample.runner.RunnerHelper.elapsed;
@@ -50,6 +55,22 @@ public final class SessionRunner implements DemoRunner {
     private static final String OP_UPO = "getUpo";
     private static final String OP_STALE_SESSION_RECOVERY = "staleSessionRecovery";
     private static final String OP_CLEARED_BY_SUBMITTED = "getClearedBySubmittedInvoice";
+    private static final String OP_SEND_OFFLINE_WRAPPED = "sendOfflineWrapped";
+    private static final String OP_SEND_TECHNICAL_CORRECTION = "sendTechnicalCorrection";
+
+    /** SHA-256 length in bytes — sendTechnicalCorrection requires exactly 32. */
+    private static final int SHA256_LENGTH_BYTES = 32;
+    private static final String SHA_256 = "SHA-256";
+
+    /** KSeF server validation exception code (21405 per-field validation). */
+    private static final int EXPECTED_CODE_VALIDATION = 21405;
+    /** KSeF server JSON-parse exception code (21001). */
+    private static final int EXPECTED_CODE_JSON_PARSE = 21001;
+    /** Cert keyword (English) used to recognise expected self-signed-cert rejection. */
+    private static final String CERT_KEYWORD_EN = "certificate";
+    /** Cert keyword (Polish, KSeF localises responses) — same rejection arm. */
+    private static final String CERT_KEYWORD_PL = "certyfikat";
+    private static final String OK_REJECTED_BY_SERVER_PREFIX = "server rejected as expected, ";
 
     private static final String SKIP_NOT_FULL_MODE =
             "AUTH_SAFE mode — cleared(SubmittedInvoice) needs a real send first";
@@ -130,6 +151,11 @@ public final class SessionRunner implements DemoRunner {
                 if (submitted != null) {
                     runGetInvoiceStatus(session, submitted.referenceNumber(), results);
                 }
+                runSendOfflineWrapped(context, session, results);
+                runSendTechnicalCorrection(context, session, results);
+            } else {
+                results.add(RunResult.skip(NAME, OP_SEND_OFFLINE_WRAPPED, SKIP_NOT_FULL_MODE));
+                results.add(RunResult.skip(NAME, OP_SEND_TECHNICAL_CORRECTION, SKIP_NOT_FULL_MODE));
             }
             runGetStatus(session, results);
             runGetInvoices(session, results);
@@ -175,7 +201,7 @@ public final class SessionRunner implements DemoRunner {
         long start = System.currentTimeMillis();
         OnlineSession firstSession = null;
         try {
-            firstSession = context.client().invoices().sessions().open(FormCode.FA3);
+            firstSession = context.client().invoices().sessions().online(FormCode.FA3);
             String firstRef = firstSession.referenceNumber();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_FIRST_SESSION_OPENED, NAME, firstRef);
@@ -216,7 +242,7 @@ public final class SessionRunner implements DemoRunner {
     private void attemptConcurrentSession(DemoContext context, List<RunResult> results, long start) {
         OnlineSession second = null;
         try {
-            second = context.client().invoices().sessions().open(FormCode.FA3);
+            second = context.client().invoices().sessions().online(FormCode.FA3);
             String secondRef = second.referenceNumber();
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(LOG_CONCURRENT_PERMITTED, NAME, secondRef);
@@ -246,7 +272,7 @@ public final class SessionRunner implements DemoRunner {
     private OnlineSession runOpenSession(DemoContext context, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            OnlineSession session = context.client().invoices().sessions().open(FormCode.FA3);
+            OnlineSession session = context.client().invoices().sessions().online(FormCode.FA3);
             String sessionRef = session.referenceNumber();
             LOGGER.info(LOG_OPENED, NAME, sessionRef);
             context.state().setSessionReferenceNumber(sessionRef);
@@ -257,6 +283,89 @@ public final class SessionRunner implements DemoRunner {
             results.add(RunResult.fail(NAME, OP_OPEN_SESSION, elapsed(start),
                     errorMessage(exception)));
             return null;
+        }
+    }
+
+    /**
+     * Probes the R2-4 D wrapped offline-send path —
+     * {@code session.sendOffline(Invoice, OfflineMode)} which uses the
+     * client-configured {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider}
+     * + auto-resolved QR context (env, seller NIP, today's date). Distinct
+     * code path from {@code sendOfflineInvoice(OfflineInvoice)} which
+     * accepts a pre-built handle. Demo client wires a self-signed test
+     * cert via {@code KsefClient.Builder.offlineSigning(...)}, so KSeF
+     * rejects the send with 21405 + "certificate" — expected outcome.
+     */
+    private void runSendOfflineWrapped(DemoContext context, OnlineSession session,
+                                       List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            Fa3Invoice invoice = buildDemoInvoice(context);
+            var submitted = session.sendOffline(invoice, OfflineMode.OFFLINE_24);
+            results.add(RunResult.ok(NAME, OP_SEND_OFFLINE_WRAPPED, elapsed(start),
+                    REF_PREFIX + submitted.referenceNumber()));
+        } catch (KsefException ksefException) {
+            recordExpectedCertRejection(OP_SEND_OFFLINE_WRAPPED, ksefException, start, results);
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_SEND_OFFLINE_WRAPPED, elapsed(start),
+                    errorMessage(exception)));
+        }
+    }
+
+    /**
+     * Probes online {@code session.sendTechnicalCorrection(Invoice, byte[])}
+     * which routes through the technical-correction wire shape
+     * ({@code offlineMode=true} + {@code hashOfCorrectedInvoice}). The
+     * SHA-256 hash here points at the invoice itself (no real original
+     * to reference in our test history) — KSeF rejects with 21405 +
+     * "certificate" because the request also requires the offline-signing
+     * cert chain. Expected outcome under self-signed test cert.
+     */
+    private void runSendTechnicalCorrection(DemoContext context, OnlineSession session,
+                                            List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            Fa3Invoice invoice = buildDemoInvoice(context);
+            byte[] hashOfOriginal = sha256(invoice.xml());
+            var submitted = session.sendTechnicalCorrection(invoice, hashOfOriginal);
+            results.add(RunResult.ok(NAME, OP_SEND_TECHNICAL_CORRECTION, elapsed(start),
+                    REF_PREFIX + submitted.referenceNumber()));
+        } catch (KsefException ksefException) {
+            recordExpectedCertRejection(OP_SEND_TECHNICAL_CORRECTION, ksefException, start, results);
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_SEND_TECHNICAL_CORRECTION, elapsed(start),
+                    errorMessage(exception)));
+        }
+    }
+
+    private static byte[] sha256(byte[] data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(SHA_256);
+            byte[] full = digest.digest(data);
+            if (full.length != SHA256_LENGTH_BYTES) {
+                throw new IllegalStateException("SHA-256 returned " + full.length + BYTES_LABEL);
+            }
+            return full;
+        } catch (NoSuchAlgorithmException missing) {
+            throw new IllegalStateException("SHA-256 unavailable", missing);
+        }
+    }
+
+    private void recordExpectedCertRejection(String operation, KsefException ksefException,
+                                             long start, List<RunResult> results) {
+        Integer code = ksefException.exceptionCode();
+        String body = ksefException.safeResponseBody();
+        boolean expectedCode = code != null && (code == EXPECTED_CODE_VALIDATION
+                || code == EXPECTED_CODE_JSON_PARSE);
+        String bodyLower = body == null ? "" : body.toLowerCase(Locale.ROOT);
+        boolean mentionsCertificate = bodyLower.contains(CERT_KEYWORD_EN)
+                || bodyLower.contains(CERT_KEYWORD_PL);
+        if (expectedCode && mentionsCertificate) {
+            results.add(RunResult.ok(NAME, operation, elapsed(start),
+                    OK_REJECTED_BY_SERVER_PREFIX + "code=" + code));
+        } else {
+            results.add(RunResult.fail(NAME, operation, elapsed(start),
+                    "unexpected KsefException code=" + code + " body=" + body));
         }
     }
 

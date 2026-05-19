@@ -5,78 +5,94 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * One decrypted invoice produced by {@code Invoices.sync().asStream(...)}.
- * Carries the {@link KsefNumber}, the metadata record returned by the
- * server's incremental sync endpoint, the decrypted XML bytes, and an
- * optional file path when the caller's
+ * One decrypted invoice produced by {@code client.invoices().sync().asStream(...)}.
+ * Carries the server's invoice metadata, the typed
+ * {@link InvoiceDocument} the SDK constructed from the decrypted XML,
+ * and an optional file path when the consumer's
  * {@link IncrementalSyncPlan} requested file-output mode.
  *
- * <p>The {@code xml} bytes are defensive-copied on construction and on
- * every accessor call. {@code xmlPath} is empty when the consumer
- * requested in-memory mode (no spilling to disk).
+ * <p>The {@link #document()} field is typed for the SDK's built-in
+ * schemas (FA2/FA3/PEF/PEF_KOR) and for any custom type registered via
+ * {@code KsefClient.Builder.invoiceTypes(KsefInvoiceTypes)}; otherwise
+ * it is an {@link UnrecognizedInvoiceDocument} fallback. Pattern-match
+ * on the concrete type when schema-specific processing is needed; fall
+ * back to {@link #xml()} on the unrecognised arm.
  *
- * @param ksefNumber server-assigned unique invoice number
- * @param metadata invoice metadata record returned by the sync query
- * @param xml decrypted invoice XML bytes (bit-exact)
+ * <pre>{@code
+ * try (Stream<DecryptedInvoice> stream = client.invoices().sync().asStream(plan, store)) {
+ *     stream.forEach(decrypted -> {
+ *         switch (decrypted.document()) {
+ *             case io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3InvoiceDocument fa3 ->
+ *                 processFa3(fa3);
+ *             case MyCustomInvoiceDocument custom -> processCustom(custom);
+ *             case UnrecognizedInvoiceDocument unknown ->
+ *                 logAndStoreRaw(unknown.formCode(), unknown.xml());
+ *             default -> throw new IllegalStateException("unhandled: " + decrypted.document());
+ *         }
+ *     });
+ * }
+ * }</pre>
+ *
+ * <p>{@code xmlPath} is empty when the consumer requested in-memory
+ * mode (no spilling to disk).
+ *
+ * @param metadata invoice metadata returned by the sync query
+ *     (carries the KSeF number, dates, party identifiers, form code)
+ * @param document typed read-side invoice document constructed from the
+ *     decrypted XML (one of the built-in subtypes, a registered custom
+ *     type, or {@link UnrecognizedInvoiceDocument})
  * @param xmlPath on-disk location when the plan requested file-output;
  *     empty otherwise
  *
  * @since 1.0.0
  */
 public record DecryptedInvoice(
-        KsefNumber ksefNumber,
         InvoiceMetadata metadata,
-        byte[] xml,
+        InvoiceDocument document,
         Optional<Path> xmlPath) {
 
-    private static final String ERR_NULL_KSEF = "ksefNumber must not be null";
     private static final String ERR_NULL_METADATA = "metadata must not be null";
-    private static final String ERR_NULL_XML = "xml must not be null";
+    private static final String ERR_NULL_DOCUMENT = "document must not be null";
     private static final String ERR_NULL_PATH = "xmlPath must not be null";
 
     public DecryptedInvoice {
-        Objects.requireNonNull(ksefNumber, ERR_NULL_KSEF);
         Objects.requireNonNull(metadata, ERR_NULL_METADATA);
-        Objects.requireNonNull(xml, ERR_NULL_XML);
+        Objects.requireNonNull(document, ERR_NULL_DOCUMENT);
         Objects.requireNonNull(xmlPath, ERR_NULL_PATH);
-        xml = xml.clone();
     }
 
-    @Override
+    /**
+     * Convenience: KSeF number from the metadata. Equivalent to
+     * {@code metadata().ksefNumber()}.
+     */
+    public KsefNumber ksefNumber() {
+        return metadata.ksefNumber();
+    }
+
+    /**
+     * Convenience: form code from the document. Equivalent to
+     * {@code document().formCode()}. Matches metadata's form code in
+     * the steady state — both come from the same server payload.
+     */
+    public FormCode formCode() {
+        return document.formCode();
+    }
+
+    /**
+     * Convenience: decrypted XML bytes. Delegates to
+     * {@link InvoiceDocument#xml()} on the typed document (defensive
+     * copy on every call per the document's contract).
+     */
     public byte[] xml() {
-        return xml.clone();
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (!(other instanceof DecryptedInvoice that)) {
-            return false;
-        }
-        return Objects.equals(ksefNumber, that.ksefNumber)
-                && Objects.equals(metadata, that.metadata)
-                && Arrays.equals(xml, that.xml)
-                && Objects.equals(xmlPath, that.xmlPath);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(ksefNumber, metadata, Arrays.hashCode(xml), xmlPath);
-    }
-
-    @Override
-    public String toString() {
-        return "DecryptedInvoice[ksefNumber=" + ksefNumber.value()
-                + ", xml=byte[" + xml.length + "]"
-                + ", xmlPath=" + xmlPath.map(Path::toString).orElse("<in-memory>") + "]";
+        return document.xml();
     }
 }

@@ -51,7 +51,7 @@ import java.util.Objects;
  *     @Override public byte[] xml() { return xmlBytes.clone(); }
  * }
  *
- * try (var session = client.invoices().sessions().open(myForm)) {
+ * try (var session = client.invoices().sessions().online(myForm)) {
  *     session.sendInvoice(new MyCustomInvoice(myXmlBytes));
  * }
  * }</pre>

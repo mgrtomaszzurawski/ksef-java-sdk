@@ -44,6 +44,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsync;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async.KsefAsyncStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.IndirectPermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.model.PermissionOperationResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
 import java.time.Duration;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissionGrantRequest;
@@ -125,12 +126,25 @@ public final class PermissionsImpl implements Permissions {
     private static final String ERR_REQUEST_NULL = "request must not be null";
     private static final String ERR_NULL_FILTER = "filter must not be null";
     private static final String ERR_NULL_TIMEOUT = "timeout must not be null";
+    private static final String ERR_UNHANDLED_GRANT_SUBTYPE =
+            "Unhandled PermissionGrantRequest subtype: ";
 
     /** Default sync timeout for permission grant/revoke operations (ADR-032). */
     private static final Duration DEFAULT_OPERATION_TIMEOUT = Duration.ofMinutes(5);
 
-    /** Spec-defined max page size for permission query endpoints. */
-    private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 250;
+    /**
+     * KSeF-enforced max page size for permission query endpoints
+     * ({@code persons/grants}, {@code entities/grants}, {@code subunits/grants},
+     * {@code authorizations/grants}, {@code eu-entities/grants},
+     * {@code personal/grants}, {@code entities/roles},
+     * {@code subordinate-entities/roles}). The server enforces
+     * {@code [10, 100]} on these endpoints and rejects requests outside the
+     * bound with 21405 ("'pageSize' must be between 10 and 100"). This is
+     * a tighter range than the {@code /invoices/query/metadata} endpoint
+     * which accepts up to 250 — different KSeF subsystem, different
+     * server-side limit. Verified by live-demo regression 2026-05-19.
+     */
+    private static final int PERMISSION_QUERY_MAX_PAGE_SIZE = 100;
     private static final String PERMISSION_QUERY_PAGE_PARAMS = "?pageOffset=";
     private static final String PERMISSION_QUERY_PAGE_SIZE_PARAM = "&pageSize=" + PERMISSION_QUERY_MAX_PAGE_SIZE;
     private static final String QUERY_PARAM_SEPARATOR_FIRST = "?";
@@ -145,108 +159,63 @@ public final class PermissionsImpl implements Permissions {
     }
 
     @Override
-    public PermissionOperationStatus grantPerson(PersonPermissionGrantRequest request) {
-        return grantPerson(request, DEFAULT_OPERATION_TIMEOUT);
+    public PermissionOperationStatus grant(PermissionGrantRequest request) {
+        return grant(request, DEFAULT_OPERATION_TIMEOUT);
     }
 
     @Override
-    public PermissionOperationStatus grantPerson(PersonPermissionGrantRequest request, Duration timeout) {
+    public PermissionOperationStatus grant(PermissionGrantRequest request, Duration timeout) {
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_PERSON);
-        String refNumber = postGrant(PATH_GRANT_PERSON,
-                PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(request), OP_GRANT_PERSON);
-        return awaitTerminalStatus(refNumber, OP_GRANT_PERSON, timeout);
+        // Java 17: pattern matching in switch is preview, so we use an
+        // instanceof ladder. The sealed permits clause on
+        // PermissionGrantRequest still guarantees exhaustiveness at the
+        // type-system level — adding an 8th permits member without a
+        // matching arm here would compile but unreachable IllegalStateException
+        // catches the dispatch gap at first call. Migrate to switch
+        // pattern when the SDK moves off Java 17.
+        if (request instanceof PersonPermissionGrantRequest personGrant) {
+            return dispatchGrant(PATH_GRANT_PERSON,
+                    PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(personGrant),
+                    OP_GRANT_PERSON, timeout);
+        }
+        if (request instanceof EntityPermissionGrantRequest entityGrant) {
+            return dispatchGrant(PATH_GRANT_ENTITY,
+                    PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(entityGrant),
+                    OP_GRANT_ENTITY, timeout);
+        }
+        if (request instanceof EntityAuthorizationPermissionGrantRequest authorizationGrant) {
+            return dispatchGrant(PATH_GRANT_AUTHORIZATION,
+                    PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(authorizationGrant),
+                    OP_GRANT_AUTHORIZATION, timeout);
+        }
+        if (request instanceof IndirectPermissionGrantRequest indirectGrant) {
+            return dispatchGrant(PATH_GRANT_INDIRECT,
+                    PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(indirectGrant),
+                    OP_GRANT_INDIRECT, timeout);
+        }
+        if (request instanceof SubunitPermissionGrantRequest subunitGrant) {
+            return dispatchGrant(PATH_GRANT_SUBUNIT,
+                    PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(subunitGrant),
+                    OP_GRANT_SUBUNIT, timeout);
+        }
+        if (request instanceof EuEntityAdminPermissionGrantRequest euEntityAdminGrant) {
+            return dispatchGrant(PATH_GRANT_EU_ENTITY_ADMIN,
+                    PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(euEntityAdminGrant),
+                    OP_GRANT_EU_ENTITY_ADMIN, timeout);
+        }
+        if (request instanceof EuEntityPermissionGrantRequest euEntityGrant) {
+            return dispatchGrant(PATH_GRANT_EU_ENTITY,
+                    PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(euEntityGrant),
+                    OP_GRANT_EU_ENTITY, timeout);
+        }
+        throw new IllegalStateException(ERR_UNHANDLED_GRANT_SUBTYPE + request.getClass().getName());
     }
 
-    @Override
-    public PermissionOperationStatus grantEntity(EntityPermissionGrantRequest request) {
-        return grantEntity(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEntity(EntityPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_ENTITY);
-        String refNumber = postGrant(PATH_GRANT_ENTITY,
-                PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(request), OP_GRANT_ENTITY);
-        return awaitTerminalStatus(refNumber, OP_GRANT_ENTITY, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantAuthorization(EntityAuthorizationPermissionGrantRequest request) {
-        return grantAuthorization(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantAuthorization(EntityAuthorizationPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_AUTHORIZATION);
-        String refNumber = postGrant(PATH_GRANT_AUTHORIZATION,
-                PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(request), OP_GRANT_AUTHORIZATION);
-        return awaitTerminalStatus(refNumber, OP_GRANT_AUTHORIZATION, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantIndirect(IndirectPermissionGrantRequest request) {
-        return grantIndirect(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantIndirect(IndirectPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_INDIRECT);
-        String refNumber = postGrant(PATH_GRANT_INDIRECT,
-                PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(request), OP_GRANT_INDIRECT);
-        return awaitTerminalStatus(refNumber, OP_GRANT_INDIRECT, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantSubunit(SubunitPermissionGrantRequest request) {
-        return grantSubunit(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantSubunit(SubunitPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_SUBUNIT);
-        String refNumber = postGrant(PATH_GRANT_SUBUNIT,
-                PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(request), OP_GRANT_SUBUNIT);
-        return awaitTerminalStatus(refNumber, OP_GRANT_SUBUNIT, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request) {
-        return grantEuEntityAdmin(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEuEntityAdmin(EuEntityAdminPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY_ADMIN);
-        String refNumber = postGrant(PATH_GRANT_EU_ENTITY_ADMIN,
-                PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(request), OP_GRANT_EU_ENTITY_ADMIN);
-        return awaitTerminalStatus(refNumber, OP_GRANT_EU_ENTITY_ADMIN, timeout);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEuEntity(EuEntityPermissionGrantRequest request) {
-        return grantEuEntity(request, DEFAULT_OPERATION_TIMEOUT);
-    }
-
-    @Override
-    public PermissionOperationStatus grantEuEntity(EuEntityPermissionGrantRequest request, Duration timeout) {
-        Objects.requireNonNull(request, ERR_REQUEST_NULL);
-        Objects.requireNonNull(timeout, ERR_NULL_TIMEOUT);
-        LOGGER.debug(LOG_CALL, OP_GRANT_EU_ENTITY);
-        String refNumber = postGrant(PATH_GRANT_EU_ENTITY,
-                PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(request), OP_GRANT_EU_ENTITY);
-        return awaitTerminalStatus(refNumber, OP_GRANT_EU_ENTITY, timeout);
+    private PermissionOperationStatus dispatchGrant(String path, Object rawBody, String opName, Duration timeout) {
+        LOGGER.debug(LOG_CALL, opName);
+        String refNumber = postGrant(path, rawBody, opName);
+        return awaitTerminalStatus(refNumber, opName, timeout);
     }
 
     @Override
@@ -322,7 +291,8 @@ public final class PermissionsImpl implements Permissions {
         LOGGER.debug(LOG_CALL, OP_QUERY_PERSONAL);
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         String token = http.requireToken();
-        QueryPersonalPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_PERSONAL,
+        String path = appendPaging(PATH_QUERY_PERSONAL, request.pageOffset(), request.pageSize());
+        QueryPersonalPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 PermissionsQueryRequestMappers.toPersonalPermissionsQueryRequestRaw(request), token,
                 QueryPersonalPermissionsResponseRaw.class, OP_QUERY_PERSONAL);
         return PermissionsMappers.toPersonalPermissions(rawValue);
@@ -333,7 +303,8 @@ public final class PermissionsImpl implements Permissions {
         LOGGER.debug(LOG_CALL, OP_QUERY_PERSONS);
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         String token = http.requireToken();
-        QueryPersonPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_PERSONS,
+        String path = appendPaging(PATH_QUERY_PERSONS, request.pageOffset(), request.pageSize());
+        QueryPersonPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 PermissionsQueryRequestMappers.toPersonPermissionsQueryRequestRaw(request), token,
                 QueryPersonPermissionsResponseRaw.class, OP_QUERY_PERSONS);
         return PermissionsMappers.toPersonPermissions(rawValue);
@@ -388,7 +359,8 @@ public final class PermissionsImpl implements Permissions {
         LOGGER.debug(LOG_CALL, OP_QUERY_AUTHORIZATIONS);
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         String token = http.requireToken();
-        QueryEntityAuthorizationPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_AUTHORIZATIONS,
+        String path = appendPaging(PATH_QUERY_AUTHORIZATIONS, request.pageOffset(), request.pageSize());
+        QueryEntityAuthorizationPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 PermissionsQueryRequestMappers.toEntityAuthorizationPermissionsQueryRequestRaw(request), token,
                 QueryEntityAuthorizationPermissionsResponseRaw.class, OP_QUERY_AUTHORIZATIONS);
         return PermissionsMappers.toEntityAuthorizationPermissions(rawValue);
@@ -399,7 +371,8 @@ public final class PermissionsImpl implements Permissions {
         LOGGER.debug(LOG_CALL, OP_QUERY_EU_ENTITIES);
         Objects.requireNonNull(request, ERR_REQUEST_NULL);
         String token = http.requireToken();
-        QueryEuEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(PATH_QUERY_EU_ENTITIES,
+        String path = appendPaging(PATH_QUERY_EU_ENTITIES, request.pageOffset(), request.pageSize());
+        QueryEuEntityPermissionsResponseRaw rawValue = http.postJsonAuthenticated(path,
                 PermissionsQueryRequestMappers.toEuEntityPermissionsQueryRequestRaw(request), token,
                 QueryEuEntityPermissionsResponseRaw.class, OP_QUERY_EU_ENTITIES);
         return PermissionsMappers.toEuEntityPermissions(rawValue);

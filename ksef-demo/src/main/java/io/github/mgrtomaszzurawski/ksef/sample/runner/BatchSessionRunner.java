@@ -12,6 +12,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -45,6 +48,10 @@ public final class BatchSessionRunner implements DemoRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(BatchSessionRunner.class);
     private static final String NAME = "batchSession";
     private static final String OP_SUBMIT_BATCH = "submitBatch";
+    private static final String OP_SUBMIT_FROM_FILES = "submitFromFiles";
+    private static final String TEMP_DIR_PREFIX = "ksef-batch-files-";
+    private static final String TEMP_FILE_PREFIX = "invoice-";
+    private static final String TEMP_FILE_SUFFIX = ".xml";
     private static final String SKIP_REASON_PREFIX = "FormCode rejected by environment: ";
     private static final String SKIP_REASON_PEF_AUTH =
             "FA_PEF/FA_KOR_PEF require Peppol provider auth (PefInvoiceWrite permission) — "
@@ -75,7 +82,77 @@ public final class BatchSessionRunner implements DemoRunner {
                 runOnce(context, formCode, formCodeLabel, results);
             }
         }
+        // submitFromFiles probe — disk-based batch path (R1-19 SAX preflight +
+        // streaming XSD validation). Distinct from submit(List<Invoice>) which
+        // operates on in-memory invoice objects. FA(3) only; other form codes
+        // need additional preflight wiring not currently exercised.
+        runSubmitFromFilesOnce(context, FormCode.FA3, env, results);
         return results;
+    }
+
+    private void runSubmitFromFilesOnce(DemoContext context, FormCode formCode,
+                                        KsefEnvironment env, List<RunResult> results) {
+        String formCodeLabel = formCodeLabel(formCode);
+        String skipReason = resolveSkipReason(formCode, env);
+        if (skipReason != null) {
+            results.add(RunResult.skip(NAME, OP_SUBMIT_FROM_FILES + formCodeLabel, skipReason));
+            return;
+        }
+        long start = System.currentTimeMillis();
+        Path tempDir = null;
+        try {
+            // Files.createTempDirectory honours the JVM's umask on Unix
+            // (POSIX dir created mode 0700 by default); the auto-delete
+            // finally block scrubs the dir after the probe. Demo code,
+            // not production SDK surface.
+            @SuppressWarnings("java:S5443")
+            Path createdTempDirectory = Files.createTempDirectory(TEMP_DIR_PREFIX);
+            tempDir = createdTempDirectory;
+            List<Path> files = writeInvoiceFiles(tempDir, formCode, context.nipIdentifier());
+            var result = context.client().invoices().sessions().batch()
+                    .submitFromFiles(formCode, files, BatchOptions.defaults());
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("[{}] {} submitFromFiles ref={}, total={}, cleared={}, failed={}",
+                        NAME, formCodeLabel, result.sessionRef(), result.totalCount(),
+                        result.successfulCount(), result.failedCount());
+            }
+            results.add(RunResult.ok(NAME, OP_SUBMIT_FROM_FILES + formCodeLabel, elapsed(start),
+                    "ref=" + result.sessionRef() + ", " + result.totalCount() + " invoices"));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_SUBMIT_FROM_FILES + formCodeLabel, elapsed(start),
+                    errorMessage(exception)));
+        } finally {
+            cleanupTempFiles(tempDir);
+        }
+    }
+
+    private static List<Path> writeInvoiceFiles(Path targetDirectory, FormCode formCode, String sellerNip) throws IOException {
+        List<Path> files = new ArrayList<>(INVOICE_COUNT);
+        for (int index = 0; index < INVOICE_COUNT; index++) {
+            byte[] xmlBytes = TestInvoiceXml.generate(formCode, sellerNip);
+            Path file = targetDirectory.resolve(TEMP_FILE_PREFIX + index + TEMP_FILE_SUFFIX);
+            Files.write(file, xmlBytes);
+            files.add(file);
+        }
+        return files;
+    }
+
+    private static void cleanupTempFiles(Path targetDirectory) {
+        if (targetDirectory == null) {
+            return;
+        }
+        try (var stream = Files.walk(targetDirectory)) {
+            stream.sorted(java.util.Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException ignored) {
+                            // best-effort cleanup
+                        }
+                    });
+        } catch (IOException ignored) {
+            // best-effort cleanup
+        }
     }
 
     private static String resolveSkipReason(FormCode formCode, KsefEnvironment env) {
@@ -96,7 +173,7 @@ public final class BatchSessionRunner implements DemoRunner {
 
         long start = System.currentTimeMillis();
         try {
-            var result = context.client().invoices().batch().submit(invoices, BatchOptions.defaults());
+            var result = context.client().invoices().sessions().batch().submit(invoices, BatchOptions.defaults());
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("[{}] {} submitted batch ref={}, total={}, cleared={}, failed={}",
                         NAME, formCodeLabel, result.sessionRef(), result.totalCount(),

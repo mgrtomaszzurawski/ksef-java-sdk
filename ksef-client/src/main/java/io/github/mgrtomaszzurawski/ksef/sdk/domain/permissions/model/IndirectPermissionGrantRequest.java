@@ -9,7 +9,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK request for {@code Permissions.grantIndirect(...)}.
+ * SDK request for {@code Permissions.grant(...)}.
  *
  * @since 1.0.0
  */
@@ -21,7 +21,7 @@ public record IndirectPermissionGrantRequest(
         String lastName,
         @Nullable IndirectTargetIdentifierType targetType,
         @Nullable String targetValue,
-        List<IndirectPermissionType> permissions) {
+        List<IndirectPermissionType> permissions) implements PermissionGrantRequest {
 
     public IndirectPermissionGrantRequest {
         Objects.requireNonNull(identifierType, "identifierType");

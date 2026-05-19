@@ -43,8 +43,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -131,7 +133,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantPerson(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
+                    ksef.permissions().grant(PersonPermissionGrantBuilder.forPesel(TEST_PESEL)
                             .description(TEST_DESCRIPTION)
                             .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                             .invoiceRead()
@@ -151,7 +153,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantEntity(EntityPermissionGrantBuilder.forNip(TEST_NIP)
+                    ksef.permissions().grant(EntityPermissionGrantBuilder.forNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .entityDetails("Firma Sp. z o.o.")
                             .invoiceRead()
@@ -171,7 +173,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantAuthorization(EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
+                    ksef.permissions().grant(EntityAuthorizationPermissionGrantBuilder.forNip(TEST_NIP)
                             .selfInvoicing()
                             .description(TEST_DESCRIPTION)
                             .entityDetails("Firma Sp. z o.o.")
@@ -191,7 +193,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantIndirect(IndirectPermissionGrantBuilder.forNip(TEST_NIP)
+                    ksef.permissions().grant(IndirectPermissionGrantBuilder.forNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                             .invoiceRead()
@@ -211,7 +213,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantSubunit(SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
+                    ksef.permissions().grant(SubunitPermissionGrantBuilder.forPesel(TEST_PESEL)
                             .contextNip(TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
@@ -231,7 +233,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantEuEntityAdmin(EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                    ksef.permissions().grant(EuEntityAdminPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
                             .contextNipVatUe("PL" + TEST_NIP)
                             .description(TEST_DESCRIPTION)
                             .euEntityName("EU Partner GmbH")
@@ -253,7 +255,7 @@ class PermissionClientTest {
 
             // when
             PermissionOperationStatus response =
-                    ksef.permissions().grantEuEntity(EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
+                    ksef.permissions().grant(EuEntityPermissionGrantBuilder.forFingerprint(TEST_FINGERPRINT)
                             .description(TEST_DESCRIPTION)
                             .subjectEntityByFingerprint("Partner Corp", "Berlin, Germany")
                             .invoiceRead()
@@ -454,7 +456,7 @@ class PermissionClientTest {
                     .personDetails(TEST_FIRST_NAME, TEST_LAST_NAME)
                     .invoiceRead()
                     .build();
-            assertThrows(KsefAuthException.class, () -> permissions.grantPerson(request));
+            assertThrows(KsefAuthException.class, () -> permissions.grant(request));
         }
     }
 
@@ -496,6 +498,64 @@ class PermissionClientTest {
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
                         .withBody(responseBody)));
+    }
+
+    @Test
+    void queryPersons_whenPagingSet_appendsBothPageOffsetAndPageSize(WireMockRuntimeInfo wmInfo) {
+        // given — pageOffset + pageSize together must produce ?pageOffset=N&pageSize=M
+        String pagedPath = "/v2/permissions/query/persons/grants?pageOffset=3&pageSize=20";
+        stubQueryEndpoint(pagedPath, QUERY_EMPTY_RESPONSE);
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+
+            // when
+            ksef.permissions().queryPersons(
+                    PersonPermissionsQueryBuilder.permissionsInCurrentContext()
+                            .pageOffset(3)
+                            .pageSize(20)
+                            .build());
+
+            // then — request hit the exact paged URL (the URL stub would 404 otherwise)
+            verify(postRequestedFor(urlEqualTo(pagedPath)));
+        }
+    }
+
+    @Test
+    void queryPersons_whenOnlyPageOffsetSet_appendsOnlyPageOffset(WireMockRuntimeInfo wmInfo) {
+        // given — single param: appendPaging must emit `?pageOffset=N` (not `&pageOffset=N`)
+        String pagedPath = "/v2/permissions/query/persons/grants?pageOffset=5";
+        stubQueryEndpoint(pagedPath, QUERY_EMPTY_RESPONSE);
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+
+            // when
+            ksef.permissions().queryPersons(
+                    PersonPermissionsQueryBuilder.permissionsInCurrentContext()
+                            .pageOffset(5)
+                            .build());
+
+            // then
+            verify(postRequestedFor(urlEqualTo(pagedPath)));
+        }
+    }
+
+    @Test
+    void queryPersons_whenOnlyPageSizeSet_appendsOnlyPageSize(WireMockRuntimeInfo wmInfo) {
+        // given — single param: appendPaging must emit `?pageSize=M` (not `&pageSize=M`)
+        String pagedPath = "/v2/permissions/query/persons/grants?pageSize=15";
+        stubQueryEndpoint(pagedPath, QUERY_EMPTY_RESPONSE);
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+
+            // when
+            ksef.permissions().queryPersons(
+                    PersonPermissionsQueryBuilder.permissionsInCurrentContext()
+                            .pageSize(15)
+                            .build());
+
+            // then
+            verify(postRequestedFor(urlEqualTo(pagedPath)));
+        }
     }
 
     private static KsefClient createAuthenticatedClient(WireMockRuntimeInfo wmInfo) {

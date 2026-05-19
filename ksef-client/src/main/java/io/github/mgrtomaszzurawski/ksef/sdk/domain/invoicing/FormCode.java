@@ -173,8 +173,8 @@ public final class FormCode {
      * and PEF_KOR(3) only. Custom form codes are not checked (the SDK
      * cannot infer their environment policy) and pass through.
      *
-     * <p>Called by {@code client.invoices().sessions().open} and
-     * {@code client.invoices().batch().submit*} as a client-side preflight so misconfigured
+     * <p>Called by {@code client.invoices().sessions().online} and
+     * {@code client.invoices().sessions().batch().submit*} as a client-side preflight so misconfigured
      * consumers fail fast with a clear message instead of seeing a
      * server-side schema rejection on the first invoice send.
      *

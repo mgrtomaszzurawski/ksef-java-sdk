@@ -31,6 +31,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -115,9 +117,20 @@ public final class DemoApp {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Running {} pass against {}", config.label(), config.envUrl());
         }
+        // Wire an OfflineSigningProvider built from a fresh self-signed test
+        // certificate so probes targeting `client.invoices().offline().issue(...)`
+        // and `session.sendOffline(invoice, mode)` can construct an OfflineInvoice
+        // end-to-end. The cert is throw-away — KSeF rejects offline sends signed
+        // with non-KSeF-Offline certs with code 21405, which probes treat as
+        // expected (see OfflineInvoiceRunner.runSendOfflineInvoiceProbe).
+        SelfSignedCerts.GeneratedCertificate offlineCert = SelfSignedCerts.forNip(config.nipIdentifier());
+        OfflineSigningProvider offlineProvider = OfflineSigningProvider.fromPrivateKey(
+                new KsefCertificate(offlineCert.certificate(), offlineCert.privateKey()));
+
         try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(config.envUrl()))
                 .credentials(config.credentials())
                 .retryPolicy(RetryPolicy.builder().build())
+                .offlineSigning(offlineProvider)
                 .build()) {
             DemoContext context = new DemoContext(client, config.mode(), config.state(),
                     config.ksefToken(), config.nipIdentifier(),

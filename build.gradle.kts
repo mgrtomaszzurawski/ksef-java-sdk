@@ -16,6 +16,18 @@ sonar {
     properties {
         property("sonar.projectKey", "ksef-java-sdk")
         property("sonar.projectName", "KSeF Java SDK")
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            "ksef-client/build/reports/jacoco/test/jacocoTestReport.xml"
+        )
+        // ksef-demo is a live-execution probe runner (DemoApp invoked
+        // manually against api-demo / api-test), not a unit-tested library
+        // module. Unit-testing demo runners would defeat their purpose —
+        // they exist to drive real HTTP traffic. Exclude from coverage +
+        // duplication analysis so quality gates measure the library
+        // module (ksef-client) the SDK actually ships.
+        property("sonar.coverage.exclusions", "ksef-demo/**, ksef-examples/**, ksef-jpms-consumer/**")
+        property("sonar.cpd.exclusions", "ksef-demo/**")
     }
 }
 

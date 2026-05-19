@@ -15,9 +15,12 @@ import org.jspecify.annotations.Nullable;
 public record EuEntityPermissionsQueryRequest(
         @Nullable String vatUeIdentifier,
         @Nullable String authorizedFingerprintIdentifier,
-        List<EuEntityQueryPermissionType> permissionTypes) {
+        List<EuEntityQueryPermissionType> permissionTypes,
+        @Nullable Integer pageOffset,
+        @Nullable Integer pageSize) {
 
     public EuEntityPermissionsQueryRequest {
+        PermissionQueryPaging.validate(pageOffset, pageSize);
         permissionTypes = permissionTypes == null ? List.of() : List.copyOf(permissionTypes);
     }
 }

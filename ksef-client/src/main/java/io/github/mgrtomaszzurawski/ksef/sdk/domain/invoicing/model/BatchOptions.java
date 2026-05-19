@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
- * Tunables for {@code Invoices.batch().submit(...)} / {@code Invoices.batch().submitFromFiles(...)}.
+ * Tunables for {@code sessions().batch().submit(...)} / {@code sessions().batch().submitFromFiles(...)}.
  *
  * <p>{@code timeout} bounds the entire synchronous {@code batch().submit} call —
  * encryption + upload + close + status polling + UPO fetch. The SDK enforces

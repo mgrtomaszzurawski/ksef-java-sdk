@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * SDK request for {@code Permissions.grantEntity(...)}.
+ * SDK request for {@code Permissions.grant(...)}.
  *
  * @since 1.0.0
  */
@@ -16,7 +16,7 @@ public record EntityPermissionGrantRequest(
         String identifierValue,
         String description,
         String fullName,
-        List<EntityPermissionEntry> permissions) {
+        List<EntityPermissionEntry> permissions) implements PermissionGrantRequest {
 
     public EntityPermissionGrantRequest {
         Objects.requireNonNull(identifierValue, "identifierValue");

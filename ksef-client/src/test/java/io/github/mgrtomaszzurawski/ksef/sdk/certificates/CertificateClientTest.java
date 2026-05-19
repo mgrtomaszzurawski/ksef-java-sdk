@@ -301,8 +301,9 @@ class CertificateClientTest {
 
             // when / then — polling exceeds the workflow timeout
             KeyPair keyPair = newTestKeyPair();
+            var certs = ksef.certificates();
             assertThrows(KsefAsyncTimeoutException.class,
-                    () -> ksef.certificates().requestNewCertificate(keyPair, WORKFLOW_INSTANT_TIMEOUT));
+                    () -> certs.requestNewCertificate(keyPair, WORKFLOW_INSTANT_TIMEOUT));
         }
     }
 
@@ -324,8 +325,9 @@ class CertificateClientTest {
 
             // when / then — server error on enroll surfaces as the typed KsefServerException
             KeyPair keyPair = newTestKeyPair();
+            var certs = ksef.certificates();
             assertThrows(KsefServerException.class,
-                    () -> ksef.certificates().requestNewCertificate(keyPair, WORKFLOW_QUICK_TIMEOUT));
+                    () -> certs.requestNewCertificate(keyPair, WORKFLOW_QUICK_TIMEOUT));
         }
     }
 

@@ -5,11 +5,27 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 
 /**
- * Effective limits for batch sessions.
+ * Per-session caps the server enforces on batch sessions opened under
+ * the current authentication context. Constrains the contents of each
+ * part inside a batch package, not the aggregate package size — for
+ * aggregate caps (50 parts, 5 GB pre-encryption per package) see
+ * {@code KsefLimits.MAX_BATCH_PARTS} and
+ * {@code KsefLimits.MAX_BATCH_TOTAL_BYTES} on the internal validation
+ * path.
  *
- * @param maxInvoiceSizeInMB maximum invoice size in megabytes
- * @param maxInvoiceWithAttachmentSizeInMB maximum invoice with attachment size in megabytes
- * @param maxInvoices maximum number of invoices per session
+ * <p>Typical values on KSeF demo (May 2026): 1 / 3 / 10000. Concrete
+ * numbers vary per environment and per taxpayer — query at runtime via
+ * {@code client.limits().getContextLimits()} rather than hard-coding.
+ *
+ * @param maxInvoiceSizeInMB maximum size in megabytes of a single
+ *     invoice payload inside any batch part. Server validates this on
+ *     batch close after decrypting the parts.
+ * @param maxInvoiceWithAttachmentSizeInMB maximum size in megabytes of
+ *     an invoice combined with its attachment payload inside a batch
+ *     part.
+ * @param maxInvoices maximum total invoices the entire batch package
+ *     may carry across all parts. Exceeding this cap surfaces as a
+ *     wire-level validation error on batch close.
  *
  * @since 1.0.0
  */

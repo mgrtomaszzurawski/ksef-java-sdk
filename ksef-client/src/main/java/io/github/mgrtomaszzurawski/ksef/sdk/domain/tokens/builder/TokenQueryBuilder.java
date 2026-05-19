@@ -41,6 +41,7 @@ public final class TokenQueryBuilder {
     private @Nullable String description;
     private @Nullable String authorIdentifier;
     private @Nullable TokenAuthorIdentifierType authorIdentifierType;
+    private @Nullable String continuationToken;
     private @Nullable Integer pageSize;
 
     private TokenQueryBuilder() { }
@@ -98,8 +99,24 @@ public final class TokenQueryBuilder {
     }
 
     /**
+     * Continue an explicit-pagination walk by supplying the
+     * {@code continuationToken} returned by the previous
+     * {@code queryTokens} call's
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenList#continuationToken()}.
+     * Not set (or {@code null}) means start from the beginning.
+     * Ignored by {@code streamTokens}.
+     */
+    public TokenQueryBuilder continuationToken(String continuationToken) {
+        this.continuationToken = Objects.requireNonNull(continuationToken, "continuationToken");
+        return this;
+    }
+
+    /**
      * Set the page size (server-side, {@value #PAGE_SIZE_MIN}-{@value #PAGE_SIZE_MAX}).
-     * The SDK paginator handles the {@code x-continuation-token} cursor automatically.
+     * The SDK {@code streamTokens} paginator handles the
+     * {@code x-continuation-token} cursor automatically; explicit
+     * navigation through {@code queryTokens} feeds the cursor back via
+     * {@link #continuationToken(String)}.
      */
     public TokenQueryBuilder pageSize(int pageSize) {
         if (pageSize < PAGE_SIZE_MIN || pageSize > PAGE_SIZE_MAX) {
@@ -130,10 +147,21 @@ public final class TokenQueryBuilder {
     }
 
     /**
+     * Currently configured continuation cursor, or {@code null} when
+     * the builder is set to fetch the first page. Symmetric accessor
+     * to {@link #continuationToken(String)}; provided to support
+     * builder-state inspection in higher-level orchestration code.
+     */
+    public @Nullable String continuationTokenValue() {
+        return continuationToken;
+    }
+
+    /**
      * Build the immutable {@link TokenQueryRequest} captured by this builder.
      */
     public TokenQueryRequest build() {
-        return new TokenQueryRequest(statuses, description, authorIdentifier, authorIdentifierType, pageSize);
+        return new TokenQueryRequest(statuses, description, authorIdentifier, authorIdentifierType,
+                continuationToken, pageSize);
     }
 
     /** Return a copy of this builder with the same field state (ergonomic for partial reuse). */
@@ -143,6 +171,7 @@ public final class TokenQueryBuilder {
         copy.description = this.description;
         copy.authorIdentifier = this.authorIdentifier;
         copy.authorIdentifierType = this.authorIdentifierType;
+        copy.continuationToken = this.continuationToken;
         copy.pageSize = this.pageSize;
         return copy;
     }

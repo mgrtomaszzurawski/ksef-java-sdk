@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  * <p>{@code formCode} is nullable on purpose — legacy test fixtures
  * still build sessions without the form-code context (they use
  * {@code send(byte[])} directly instead of {@code sendInvoice(Invoice)}).
- * Production paths in {@code InvoiceSessionsImpl.open(FormCode)} always
+ * Production paths in {@code InvoiceSessionsImpl.online(FormCode)} always
  * supply it.
  *
  * <p>Internal handoff record — instances flow once from session-open into

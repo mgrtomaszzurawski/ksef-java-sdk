@@ -24,10 +24,13 @@ public record PersonPermissionsQueryRequest(
         @Nullable PersonalTargetIdentifierType targetType,
         @Nullable String targetValue,
         List<PersonPermissionType> permissionTypes,
-        @Nullable PermissionState permissionState) {
+        @Nullable PermissionState permissionState,
+        @Nullable Integer pageOffset,
+        @Nullable Integer pageSize) {
 
     public PersonPermissionsQueryRequest {
         Objects.requireNonNull(queryType, "queryType");
         permissionTypes = permissionTypes == null ? List.of() : List.copyOf(permissionTypes);
+        PermissionQueryPaging.validate(pageOffset, pageSize);
     }
 }

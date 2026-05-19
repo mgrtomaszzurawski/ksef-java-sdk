@@ -19,4 +19,8 @@ import org.jspecify.annotations.Nullable;
 public record EntityRolesQueryRequest(
         @Nullable Integer pageOffset,
         @Nullable Integer pageSize) {
+
+    public EntityRolesQueryRequest {
+        PermissionQueryPaging.validate(pageOffset, pageSize);
+    }
 }

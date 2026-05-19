@@ -42,11 +42,6 @@ public final class LimitsImpl implements Limits {
         this.http = new HttpSupport(runtime);
     }
 
-    /**
-     * Get the effective context limits (online and batch session limits).
-     *
-     * @return context limits with online and batch session constraints
-     */
     @Override
     public ContextLimits getContextLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_CONTEXT_LIMITS);
@@ -56,11 +51,6 @@ public final class LimitsImpl implements Limits {
         return LimitsMappers.toContextLimits(rawValue);
     }
 
-    /**
-     * Get the effective subject limits (certificate and enrollment limits).
-     *
-     * @return subject limits with certificate and enrollment constraints
-     */
     @Override
     public SubjectLimits getSubjectLimits() {
         LOGGER.debug(LOG_CALL, OP_GET_SUBJECT_LIMITS);

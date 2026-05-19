@@ -47,6 +47,11 @@ public final class OfflineInvoiceRunner implements DemoRunner {
     private static final String OP_BUILDER = "offlineInvoiceBuilder";
     private static final String OP_STATIC_FACTORY = "offlineInvoiceFromInvoice";
     private static final String OP_SEND_OFFLINE = "sendOfflineInvoice";
+    private static final String OP_ISSUE_TECH_CORRECTION = "issueTechnicalCorrection";
+
+    /** SHA-256 length in bytes required by issueTechnicalCorrection. */
+    private static final int SHA256_LENGTH_BYTES = 32;
+    private static final String SHA_256 = "SHA-256";
 
     private static final String FAIL_NULL_KOD_I = "kodIQrPng() is null";
     private static final String FAIL_NULL_KOD_II = "kodIIQrPng() is null";
@@ -106,8 +111,53 @@ public final class OfflineInvoiceRunner implements DemoRunner {
                 qrEnvironment, context.nipIdentifier(), issueDate, results);
 
         runSendOfflineInvoiceProbe(context, viaBuilder != null ? viaBuilder : viaFactory, results);
+        runIssueTechnicalCorrectionProbe(context, invoice, results);
 
         return results;
+    }
+
+    /**
+     * R2-4 D offline technical-correction path —
+     * {@code client.invoices().offline().issueTechnicalCorrection(invoice, hash, mode)}.
+     * Uses the client-configured {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider}
+     * (wired in DemoApp). Asserts the resulting {@link OfflineInvoice}
+     * carries {@code hashOfCorrectedInvoice} — the field the wire send
+     * path inspects to route through the technical-correction shape.
+     */
+    private void runIssueTechnicalCorrectionProbe(DemoContext context, Invoice invoice,
+                                                   List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        try {
+            byte[] hashOfOriginal = sha256(invoice.xml());
+            OfflineInvoice<Invoice> correction = context.client().invoices().offline()
+                    .issueTechnicalCorrection(invoice, hashOfOriginal, OfflineMode.OFFLINE_24);
+            java.util.Optional<byte[]> hashOpt = correction.hashOfCorrectedInvoice();
+            if (hashOpt.isEmpty()) {
+                results.add(RunResult.fail(NAME, OP_ISSUE_TECH_CORRECTION, elapsed(start),
+                        "hashOfCorrectedInvoice missing on resulting OfflineInvoice"));
+                return;
+            }
+            results.add(RunResult.ok(NAME, OP_ISSUE_TECH_CORRECTION, elapsed(start),
+                    "hash=" + hashOpt.get().length + BYTES_SUFFIX + ","
+                            + " kodI=" + correction.kodIQrPng().length + BYTES_SUFFIX + ","
+                            + " kodII=" + correction.kodIIQrPng().length + BYTES_SUFFIX));
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_ISSUE_TECH_CORRECTION, elapsed(start),
+                    errorMessage(exception)));
+        }
+    }
+
+    private static byte[] sha256(byte[] data) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance(SHA_256);
+            byte[] full = digest.digest(data);
+            if (full.length != SHA256_LENGTH_BYTES) {
+                throw new IllegalStateException("SHA-256 returned " + full.length + BYTES_SUFFIX);
+            }
+            return full;
+        } catch (java.security.NoSuchAlgorithmException missing) {
+            throw new IllegalStateException("SHA-256 unavailable", missing);
+        }
     }
 
     private OfflineInvoice<Invoice> runBuilderProbe(Invoice invoice, KsefCertificate certificate,
@@ -209,7 +259,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
             return;
         }
         long start = System.currentTimeMillis();
-        try (OnlineSession session = context.client().invoices().sessions().open(FormCode.FA3)) {
+        try (OnlineSession session = context.client().invoices().sessions().online(FormCode.FA3)) {
             var submitted = session.sendOfflineInvoice(offline);
             int statusCode = submitted.status().status() != null
                     ? submitted.status().status().code() : -1;

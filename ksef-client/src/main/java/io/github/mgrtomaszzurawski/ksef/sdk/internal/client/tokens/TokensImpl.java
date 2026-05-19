@@ -17,6 +17,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,8 +83,11 @@ public final class TokensImpl implements Tokens {
         LOGGER.debug(LOG_CALL, OP_LIST);
         String token = http.requireToken();
         String path = PATH_TOKENS + buildQueryString(filter);
-        QueryTokensResponseRaw rawValue = http.getAuthenticated(path, token,
-                QueryTokensResponseRaw.class, OP_LIST);
+        QueryTokensResponseRaw rawValue = filter.continuationToken() == null
+                ? http.getAuthenticated(path, token, QueryTokensResponseRaw.class, OP_LIST)
+                : http.getAuthenticated(path, token, QueryTokensResponseRaw.class, OP_LIST,
+                        SessionClient.HEADER_CONTINUATION_TOKEN,
+                        filter.continuationToken());
         return TokensMappers.toTokenList(rawValue);
     }
 
@@ -97,7 +101,7 @@ public final class TokensImpl implements Tokens {
             QueryTokensResponseRaw rawValue = continuationToken == null
                     ? http.getAuthenticated(pathWithFilters, accessToken, QueryTokensResponseRaw.class, OP_LIST)
                     : http.getAuthenticated(pathWithFilters, accessToken, QueryTokensResponseRaw.class, OP_LIST,
-                            io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
+                            SessionClient.HEADER_CONTINUATION_TOKEN,
                             continuationToken);
             TokenList page = TokensMappers.toTokenList(rawValue);
             return new io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.pagination.PagedSpliterator.CursorPage<>(

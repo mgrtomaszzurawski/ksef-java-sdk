@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
@@ -31,10 +32,16 @@ public final class InvoiceSyncImpl implements InvoiceSync {
 
     private final HttpRuntime runtime;
     private final InvoiceExport export;
+    private final KsefInvoiceTypes invoiceTypes;
 
     public InvoiceSyncImpl(HttpRuntime runtime, InvoiceExport export) {
+        this(runtime, export, KsefInvoiceTypes.builtinsOnly());
+    }
+
+    public InvoiceSyncImpl(HttpRuntime runtime, InvoiceExport export, KsefInvoiceTypes invoiceTypes) {
         this.runtime = Objects.requireNonNull(runtime, "runtime must not be null");
         this.export = Objects.requireNonNull(export, "export must not be null");
+        this.invoiceTypes = Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
     }
 
     @Override
@@ -43,7 +50,8 @@ public final class InvoiceSyncImpl implements InvoiceSync {
         Objects.requireNonNull(checkpointStore, ERR_NULL_CHECKPOINT_STORE);
         LOGGER.debug(LOG_CALL, OP_SYNC_AS_STREAM);
         DecryptedInvoiceSyncSpliterator spliterator =
-                new DecryptedInvoiceSyncSpliterator(export, runtime.objectMapper(), plan, checkpointStore);
+                new DecryptedInvoiceSyncSpliterator(export, runtime.objectMapper(), plan,
+                        checkpointStore, invoiceTypes);
         return java.util.stream.StreamSupport.stream(spliterator, false)
                 .onClose(spliterator::close);
     }

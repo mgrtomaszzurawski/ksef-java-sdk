@@ -38,6 +38,8 @@ public final class PersonPermissionsQueryBuilder {
     private @Nullable String targetValue;
     private final List<PersonPermissionType> permissionTypes = new ArrayList<>();
     private @Nullable PermissionState permissionState;
+    private @Nullable Integer pageOffset;
+    private @Nullable Integer pageSize;
 
     private PersonPermissionsQueryBuilder(PersonPermissionsQueryType queryType) {
         this.queryType = Objects.requireNonNull(queryType, ERR_QUERY_TYPE_REQUIRED);
@@ -141,6 +143,27 @@ public final class PersonPermissionsQueryBuilder {
         return this;
     }
 
+    /**
+     * Zero-based page offset for {@code queryPersons}. Default (null) → 0.
+     * Must be {@code >= 0}; validated at {@code build()} time. Ignored on
+     * {@code streamPersons} (the SDK walks pages itself).
+     */
+    public PersonPermissionsQueryBuilder pageOffset(int pageOffset) {
+        this.pageOffset = pageOffset;
+        return this;
+    }
+
+    /**
+     * Page size for {@code queryPersons}. KSeF range {@code [10, 100]};
+     * validated at {@code build()} time. Default (null) → 100 (SDK uses
+     * spec-max). Ignored on {@code streamPersons} (the SDK uses spec-max
+     * for fewest round-trips).
+     */
+    public PersonPermissionsQueryBuilder pageSize(int pageSize) {
+        this.pageSize = pageSize;
+        return this;
+    }
+
     public PersonPermissionsQueryBuilder toBuilder() {
         PersonPermissionsQueryBuilder copy = new PersonPermissionsQueryBuilder(this.queryType);
         copy.authorType = this.authorType;
@@ -153,12 +176,15 @@ public final class PersonPermissionsQueryBuilder {
         copy.targetValue = this.targetValue;
         copy.permissionTypes.addAll(this.permissionTypes);
         copy.permissionState = this.permissionState;
+        copy.pageOffset = this.pageOffset;
+        copy.pageSize = this.pageSize;
         return copy;
     }
 
     public PersonPermissionsQueryRequest build() {
         return new PersonPermissionsQueryRequest(queryType, authorType, authorValue,
                 authorizedType, authorizedValue, contextType, contextValue,
-                targetType, targetValue, permissionTypes, permissionState);
+                targetType, targetValue, permissionTypes, permissionState,
+                pageOffset, pageSize);
     }
 }

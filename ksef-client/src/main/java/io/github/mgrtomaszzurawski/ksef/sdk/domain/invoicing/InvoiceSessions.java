@@ -9,8 +9,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQuery
 import java.util.stream.Stream;
 
 /**
- * Online-session lifecycle access — open a new interactive session for
- * sending invoices, and stream session summaries for monitoring.
+ * Full KSeF session lifecycle access — open interactive (online) sessions
+ * for one-by-one sends, drive batch package submissions, and stream
+ * session summaries (covering both online and batch).
  *
  * <p>Reached via {@link Invoices#sessions()}.
  *
@@ -41,7 +42,17 @@ public interface InvoiceSessions {
      * @param formCode the invoice form code (e.g. {@link FormCode#FA3})
      * @return an open session — use with try-with-resources
      */
-    OnlineSession open(FormCode formCode);
+    OnlineSession online(FormCode formCode);
+
+    /**
+     * Access the batch session flow — synchronous submission of up to
+     * 10 000 invoices in a single encrypted package. The returned
+     * {@link InvoiceBatch} blocks for minutes to hours; see its Javadoc
+     * for the threading contract.
+     *
+     * @return batch session accessor (non-null)
+     */
+    InvoiceBatch batch();
 
     /**
      * Stream sessions (online + batch) matching the filter, walking the

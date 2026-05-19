@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
@@ -74,6 +75,7 @@ public final class SessionHandleConstructor {
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VALID_UNTIL;
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VERIFICATION_AWARE;
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_OFFLINE_AWARE;
+    private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_TYPES_AWARE;
     private static final Constructor<PreparedInvoiceExport> PREPARED_EXPORT_CTOR;
 
     static {
@@ -96,6 +98,10 @@ public final class SessionHandleConstructor {
             ONLINE_SESSION_CTOR_OFFLINE_AWARE = makeAccessible(
                     onlineImpl.getDeclaredConstructor(
                             SessionHandle.class, InvoiceVerificationConfig.class, OfflineSendHook.class));
+            ONLINE_SESSION_CTOR_TYPES_AWARE = makeAccessible(
+                    onlineImpl.getDeclaredConstructor(
+                            SessionHandle.class, InvoiceVerificationConfig.class, OfflineSendHook.class,
+                            KsefInvoiceTypes.class));
             PREPARED_EXPORT_CTOR = makeAccessible(
                     PreparedInvoiceExport.class.getDeclaredConstructor(
                             InvoiceExport.class, HttpClient.class, String.class,
@@ -172,6 +178,18 @@ public final class SessionHandleConstructor {
                                                  InvoiceVerificationConfig verification,
                                                  OfflineSendHook offline) {
         return invoke(ONLINE_SESSION_CTOR_OFFLINE_AWARE, handle, verification, offline);
+    }
+
+    /**
+     * @apiNote Internal — R2-6 ext variant carrying the
+     *     {@link KsefInvoiceTypes} registry that drives custom-type
+     *     resolution on the {@code ClosedSession.cleared(...)} path.
+     */
+    public static OnlineSession newOnlineSession(SessionHandle handle,
+                                                 InvoiceVerificationConfig verification,
+                                                 OfflineSendHook offline,
+                                                 KsefInvoiceTypes invoiceTypes) {
+        return invoke(ONLINE_SESSION_CTOR_TYPES_AWARE, handle, verification, offline, invoiceTypes);
     }
 
     /**

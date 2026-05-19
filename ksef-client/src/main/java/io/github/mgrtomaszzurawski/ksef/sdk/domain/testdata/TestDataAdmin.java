@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestAttachmentRevokeRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsGrantRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPermissionsRevokeRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestPersonCreateRequest;
@@ -14,7 +15,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSessionLim
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectCreateRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectLimitsRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
-import java.time.LocalDate;
 
 /**
  * KSeF test-environment data management — create/remove test subjects
@@ -94,15 +94,22 @@ public interface TestDataAdmin {
     void grantAttachment(KsefIdentifier subjectIdentifier);
 
     /**
-     * Revoke a previously granted attachment permission for the given subject.
+     * Revoke a subject's attachment permission in the TEST/DEMO tenant.
      *
-     * @param subjectIdentifier the subject whose attachment permission is revoked
-     * @param attachmentExpiryDate the date originally supplied to
-     *     {@link #grantAttachment(KsefIdentifier)} for this permission — KSeF
-     *     uses it to disambiguate the specific permission grant being revoked
+     * <p>Wire shape (per OpenAPI {@code AttachmentPermissionRevokeRequest}):
+     * {@code nip} is required, {@code expectedEndDate} is nullable.
+     * When the request's
+     * {@link TestAttachmentRevokeRequest#expectedEndDate()} is
+     * {@code null}, the field is omitted from the wire body and KSeF
+     * applies its server-side default revocation behaviour per the
+     * spec ("Data wycofania zgody na przesyłanie faktur z
+     * załącznikiem").
+     *
+     * @param request the revocation request (non-null; carries
+     *     {@code subject} and optional {@code expectedEndDate})
      * @throws KsefUnsupportedEnvironmentException when the client is wired to {@link KsefEnvironment#PROD}
      */
-    void revokeAttachment(KsefIdentifier subjectIdentifier, LocalDate attachmentExpiryDate);
+    void revokeAttachment(TestAttachmentRevokeRequest request);
 
     /**
      * Block authentication for a KSeF auth-context (identified by NIP /

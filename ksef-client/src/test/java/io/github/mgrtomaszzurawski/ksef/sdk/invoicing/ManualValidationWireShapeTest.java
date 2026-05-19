@@ -160,8 +160,10 @@ class ManualValidationWireShapeTest {
     void permissionsStreamPersonal_walksPageOffsetUntilHasMoreFalse(WireMockRuntimeInfo wmInfo) {
         // A.4.1 — streamPersonal must follow pageOffset until hasMore=false.
         // Stub two pages: page 0 returns hasMore=true; page 1 returns
-        // hasMore=false. Verify both requests went out with the spec-max
-        // pageSize=250 and pageOffset advanced.
+        // hasMore=false. Verify both requests went out with the
+        // KSeF-enforced max pageSize=100 (permissions endpoints reject
+        // pageSize outside [10, 100] with 21405 — discovered by live
+        // demo regression 2026-05-19) and pageOffset advanced.
         stubFor(post(urlPathEqualTo(PERMISSIONS_PERSONAL_PATH))
                 .inScenario("personal-pagination")
                 .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
@@ -188,8 +190,8 @@ class ManualValidationWireShapeTest {
 
             var requests = findAll(postRequestedFor(urlPathEqualTo(PERMISSIONS_PERSONAL_PATH)));
             assertEquals(2, requests.size(), "streamPersonal must fetch both pages");
-            assertTrue(requests.get(0).getUrl().contains("pageSize=250"),
-                    "page 0 should use spec-max pageSize=250, was: " + requests.get(0).getUrl());
+            assertTrue(requests.get(0).getUrl().contains("pageSize=100"),
+                    "page 0 should use KSeF-enforced max pageSize=100, was: " + requests.get(0).getUrl());
             assertTrue(requests.get(1).getUrl().contains("pageOffset=1"),
                     "page 1 should advance pageOffset to 1, was: " + requests.get(1).getUrl());
         }

@@ -8,21 +8,22 @@
  * Reference code (not a runnable script): adapt to your application.
  *
  * What this shows:
- *   Submit a batch of invoices via the synchronous submitBatch facade (PR11).
- *   The SDK encrypts every invoice with a session AES key, splits the encrypted
- *   ZIP into parts, opens a KSeF batch session, uploads every part, closes the
- *   session, polls until terminal, and downloads UPOs for accepted invoices.
- *   By the time submitBatch returns, the result already carries every UPO.
+ *   Submit a batch of invoices through KSeF's batch flow, wrapped in
+ *   CompletableFuture so the caller can do other work while the SDK
+ *   uploads, polls, and downloads UPOs in the background. The SDK
+ *   facade is synchronous (blocks the calling thread for minutes to
+ *   hours per ADR; KSeF batch can be up to 5 GB), so consumer code
+ *   that wants async semantics MUST wrap it via an Executor.
  *
- * Threading warning:
- *   This method blocks the calling thread for minutes to hours, depending on
- *   batch size and upload bandwidth. KSeF batch can be up to 5 GB. Do not call
- *   from UI threads, HTTP request handlers, or reactive framework dispatch
- *   threads. Wrap with a dedicated executor for async use.
+ * Pattern demonstrated:
+ *   CompletableFuture.supplyAsync(supplier, executor) -> chain
+ *   .thenAccept(...) for the result side-effect, .exceptionally(...)
+ *   for failure handling. Executor: a small bounded pool, NOT the
+ *   common ForkJoinPool (batch I/O would starve CPU-bound tasks).
  *
  * Side effects on KSeF:
- *   Files real legally-binding invoices in batch. Do not run against PROD without
- *   understanding the consequences.
+ *   Files real legally-binding invoices in batch. Do not run against
+ *   PROD without understanding the consequences.
  *
  * Inputs the snippet expects (read from env vars when run as-is):
  *   KSEF_TOKEN        — pre-issued KSeF token
@@ -40,8 +41,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public final class BatchInvoiceUpload {
+
+    /** Hard cap on how long the caller waits for the future. Batch can take
+     *  hours per ADR; tune to your operational expectations. */
+    private static final long BATCH_AWAIT_HOURS = 2L;
 
     private BatchInvoiceUpload() { }
 
@@ -54,22 +64,52 @@ public final class BatchInvoiceUpload {
         byte[] invoiceXml = Files.readAllBytes(invoicePath);
         List<Invoice> invoices = List.of(Invoice.fromXml(FormCode.FA3, invoiceXml));
 
+        // Dedicated executor — NOT the common ForkJoinPool. Batch I/O would
+        // starve any CPU-bound tasks sharing the pool. One thread is enough
+        // here (one batch at a time); raise the size for fan-out workloads.
+        ExecutorService batchExecutor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "ksef-batch-worker");
+            thread.setDaemon(true);
+            return thread;
+        });
+
         try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(new KsefTokenCredentials(token, nip))
                 .build()) {
 
-            // Authentication is lazy — submitBatch triggers it on first call.
+            // Authentication is lazy — submit triggers it on the worker
+            // thread on first call.
             System.out.println("Connecting as ***" + nip.substring(Math.max(0, nip.length() - 4)));
+            System.out.println("Dispatching batch (caller thread is free to do other work)...");
 
-            // Threading warning: submitBatch blocks for minutes to hours.
-            // Do not call from UI / HTTP handler / reactive dispatch threads.
-            // Wrap with CompletableFuture.supplyAsync(executor) for async use.
-            var result = client.invoices().batch().submit(invoices, BatchOptions.defaults());
+            CompletableFuture<BatchResult<Invoice>> future = CompletableFuture
+                    .supplyAsync(() -> client.invoices().sessions().batch()
+                            .submit(invoices, BatchOptions.defaults()), batchExecutor)
+                    .whenComplete((result, failure) -> {
+                        if (failure != null) {
+                            System.err.println("Batch failed: " + failure.getMessage());
+                            return;
+                        }
+                        System.out.println("Batch session: " + result.sessionRef());
+                        System.out.println("Submitted: " + result.totalCount() + " invoices");
+                        System.out.println("Cleared:   " + result.successfulCount());
+                        System.out.println("Failed:    " + result.failedCount());
+                    });
 
-            System.out.println("Batch session: " + result.sessionRef());
-            System.out.println("Submitted: " + result.totalCount() + " invoices");
-            System.out.println("Cleared:   " + result.successfulCount());
-            System.out.println("Failed:    " + result.failedCount());
+            // Caller can do its own work here while the batch progresses.
+            // For the example we just block waiting for completion within a
+            // configured deadline.
+            try {
+                future.get(BATCH_AWAIT_HOURS, TimeUnit.HOURS);
+            } catch (TimeoutException timeout) {
+                future.cancel(true);
+                System.err.println("Batch did not finish within " + BATCH_AWAIT_HOURS + "h — cancelled.");
+            }
+        } finally {
+            batchExecutor.shutdown();
+            if (!batchExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                batchExecutor.shutdownNow();
+            }
         }
     }
 

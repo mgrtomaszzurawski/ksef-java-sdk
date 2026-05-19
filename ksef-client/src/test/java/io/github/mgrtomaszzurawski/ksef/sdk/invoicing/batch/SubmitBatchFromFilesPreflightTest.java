@@ -62,9 +62,10 @@ class SubmitBatchFromFilesPreflightTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
 
             // when / then — Phase 1A fails fast with the file path and form-code names
+            var batch = client.invoices().sessions().batch();
+            List<Path> files = List.of(mismatched);
             IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                    () -> client.invoices().batch().submitFromFiles(
-                            FormCode.FA3, List.of(mismatched), FAST_OPTIONS));
+                    () -> batch.submitFromFiles(FormCode.FA3, files, FAST_OPTIONS));
             assertTrue(thrown.getMessage().contains(mismatched.toString()),
                     () -> "Error message should reference the offending file path: " + thrown.getMessage());
             // Pin both halves of the mismatch — declared (FA2) and expected (FA3).
@@ -87,9 +88,10 @@ class SubmitBatchFromFilesPreflightTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
 
             // when / then — Phase 1A surfaces the unrecognised-root error with the file path
+            var foreignBatch = client.invoices().sessions().batch();
+            List<Path> files = List.of(foreign);
             IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                    () -> client.invoices().batch().submitFromFiles(
-                            FormCode.FA3, List.of(foreign), FAST_OPTIONS));
+                    () -> foreignBatch.submitFromFiles(FormCode.FA3, files, FAST_OPTIONS));
             assertTrue(thrown.getMessage().contains(foreign.toString()),
                     () -> "Error message should reference the file path: " + thrown.getMessage());
 
@@ -107,10 +109,11 @@ class SubmitBatchFromFilesPreflightTest {
         try (KsefClient client = KsefAuthFlowFixture.newAuthenticatedClient(wmInfo)) {
 
             // when / then — KsefXmlValidationException carries the file path in its message
+            var invalidBatch = client.invoices().sessions().batch();
+            List<Path> files = List.of(invalid);
             KsefXmlValidator.KsefXmlValidationException thrown = assertThrows(
                     KsefXmlValidator.KsefXmlValidationException.class,
-                    () -> client.invoices().batch().submitFromFiles(
-                            FormCode.FA3, List.of(invalid), FAST_OPTIONS));
+                    () -> invalidBatch.submitFromFiles(FormCode.FA3, files, FAST_OPTIONS));
             assertTrue(thrown.getMessage().contains(invalid.toString()),
                     () -> "Error message should reference the offending file path: " + thrown.getMessage());
 

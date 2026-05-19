@@ -171,7 +171,8 @@ public final class JpmsConsumerCompileFixture {
         // Reference Stream<AuthSession> as a public return shape (now via
         // the client.authSessions() accessor — PR6 trim).
         java.util.function.Function<KsefClient, java.util.stream.Stream<AuthSession>> streamSessions =
-                client -> client.authSessions().streamAuthSessions();
+                client -> client.authSessions().streamAuthSessions(
+                        io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSessionsQueryRequest.defaults());
         if (streamSessions == null) {
             throw new IllegalStateException("streamSessions was null");
         }

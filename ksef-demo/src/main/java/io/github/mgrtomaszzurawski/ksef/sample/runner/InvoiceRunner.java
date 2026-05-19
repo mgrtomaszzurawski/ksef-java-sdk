@@ -57,6 +57,8 @@ public final class InvoiceRunner implements DemoRunner {
     private static final String OP_GET_BY_KSEF = "getByKsefNumber";
     private static final String OP_GET_BY_KSEF_TYPED = "getByKsefNumberTyped";
     private static final String OP_SYNC_AS_STREAM = "syncAsStream";
+    private static final String OP_EXPORT_DOWNLOAD = "exportDownload";
+    private static final String EXPORT_DOWNLOAD_PREFIX = "ksef-demo-export-";
     private static final String SKIP_NO_KSEF_NUMBER =
             "no KSeF number available — queryInvoicesByMetadata returned empty and no FULL-mode ref in context";
     private static final String SKIP_NO_EXPORT_REF = "export not started";
@@ -104,8 +106,73 @@ public final class InvoiceRunner implements DemoRunner {
 
         runSyncAsStream(context, results);
         runGetByKsefNumberTyped(context, ksefNumber, results);
+        runExportDownload(context, results);
 
         return results;
+    }
+
+    /**
+     * End-to-end export download: open a fresh {@code PreparedInvoiceExport}
+     * (METADATA_ONLY scope keeps download small), wait for terminal status,
+     * call {@link PreparedInvoiceExport#downloadAndDecryptTo} to actually
+     * retrieve and decrypt the archive bytes, and assert the result. Pins
+     * the terminal-state retrieval path that the original
+     * {@code runExportInvoices} + {@code pollExportStatus} pair only
+     * exercised up to the status-200 observation.
+     */
+    private void runExportDownload(DemoContext context, List<RunResult> results) {
+        long start = System.currentTimeMillis();
+        java.nio.file.Path outputDir = null;
+        try {
+            // Files.createTempDirectory honours the JVM's umask on Unix
+            // (POSIX dir created mode 0700 by default); the deleteRecursive
+            // finally block scrubs the dir after the probe. Demo code,
+            // not production SDK surface.
+            @SuppressWarnings("java:S5443")
+            java.nio.file.Path createdTempDirectory = Files.createTempDirectory(EXPORT_DOWNLOAD_PREFIX);
+            outputDir = createdTempDirectory;
+            OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC)
+                    .truncatedTo(ChronoUnit.SECONDS)
+                    .minusDays(QUERY_DATE_RANGE_DAYS);
+            try (PreparedInvoiceExport export = context.client().invoices().export().prepare(
+                    InvoiceQueryBuilder.seller().invoicingDateFrom(from).build(),
+                    ExportScope.METADATA_ONLY)) {
+                InvoiceExportStatus status = export.awaitReady();
+                Integer code = status.status() != null ? status.status().code() : null;
+                if (code == null || code != EXPORT_STATUS_OK) {
+                    results.add(RunResult.fail(NAME, OP_EXPORT_DOWNLOAD, elapsed(start),
+                            "non-terminal status code=" + code));
+                    return;
+                }
+                var directory = export.downloadAndDecryptTo(status, outputDir);
+                int xmlCount = directory.invoiceXmls() != null ? directory.invoiceXmls().size() : 0;
+                results.add(RunResult.ok(NAME, OP_EXPORT_DOWNLOAD, elapsed(start),
+                        "downloaded " + xmlCount + " invoice XMLs to temp dir"));
+            }
+        } catch (Exception exception) {
+            results.add(RunResult.fail(NAME, OP_EXPORT_DOWNLOAD, elapsed(start),
+                    errorMessage(exception)));
+        } finally {
+            deleteRecursive(outputDir);
+        }
+    }
+
+    private static void deleteRecursive(java.nio.file.Path directory) {
+        if (directory == null) {
+            return;
+        }
+        try (var stream = Files.walk(directory)) {
+            stream.sorted(java.util.Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (java.io.IOException ignored) {
+                            // best-effort cleanup
+                        }
+                    });
+        } catch (java.io.IOException ignored) {
+            // best-effort cleanup
+        }
     }
 
     private InvoiceMetadataResult runQueryMetadata(DemoContext context, List<RunResult> results) {

@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 import java.util.Objects;
 
 /**
- * SDK request for {@code Permissions.grantAuthorization(...)}.
+ * SDK request for {@code Permissions.grant(...)}.
  *
  * @since 1.0.0
  */
@@ -16,7 +16,7 @@ public record EntityAuthorizationPermissionGrantRequest(
         String identifierValue,
         String description,
         String fullName,
-        EntityAuthorizationPermissionType permission) {
+        EntityAuthorizationPermissionType permission) implements PermissionGrantRequest {
 
     public EntityAuthorizationPermissionGrantRequest {
         Objects.requireNonNull(identifierType, "identifierType");
