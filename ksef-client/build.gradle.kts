@@ -177,6 +177,13 @@ spotbugs {
 
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
+    reports {
+        // SonarQube reads the XML report via sonar.coverage.jacoco.xmlReportPaths
+        // (configured at the root sonar {} block). Enable explicitly because
+        // the JaCoCo plugin disables it by default in some Gradle versions.
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
 
 tasks.jacocoTestCoverageVerification {

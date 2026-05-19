@@ -152,7 +152,7 @@ public final class OfflineInvoiceRunner implements DemoRunner {
             java.security.MessageDigest digest = java.security.MessageDigest.getInstance(SHA_256);
             byte[] full = digest.digest(data);
             if (full.length != SHA256_LENGTH_BYTES) {
-                throw new IllegalStateException("SHA-256 returned " + full.length + " bytes");
+                throw new IllegalStateException("SHA-256 returned " + full.length + BYTES_SUFFIX);
             }
             return full;
         } catch (java.security.NoSuchAlgorithmException missing) {
