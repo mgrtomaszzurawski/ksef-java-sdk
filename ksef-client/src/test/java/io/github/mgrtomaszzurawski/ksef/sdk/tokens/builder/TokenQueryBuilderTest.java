@@ -59,6 +59,20 @@ class TokenQueryBuilderTest {
     }
 
     @Test
+    void authorIdentifier_rejectsTooShortValue() {
+        TokenQueryBuilder builder = TokenQueryBuilder.create();
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.authorIdentifier("ab"));
+    }
+
+    @Test
+    void continuationTokenValue_returnsConfiguredCursor() {
+        TokenQueryBuilder builder = TokenQueryBuilder.create().continuationToken("cursor-xyz");
+
+        assertEquals("cursor-xyz", builder.continuationTokenValue());
+    }
+
+    @Test
     void authorIdentifierType_setsValueRetrievableViaGetter() {
         TokenQueryBuilder builder = TokenQueryBuilder.create()
                 .authorIdentifierType(TokenAuthorIdentifierType.NIP);

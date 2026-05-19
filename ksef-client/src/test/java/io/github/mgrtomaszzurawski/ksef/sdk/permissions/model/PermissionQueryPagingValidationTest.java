@@ -152,4 +152,16 @@ class PermissionQueryPagingValidationTest {
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, builder::build);
         assertTrue(thrown.getMessage().contains("-1"));
     }
+
+    @Test
+    void euEntities_pageOffsetSetterFlowsThroughBuild() {
+        var request = EuEntityPermissionsQueryBuilder.create().pageOffset(3).build();
+        assertEquals(3, request.pageOffset());
+    }
+
+    @Test
+    void entityAuthorizations_pageOffsetSetterFlowsThroughBuild() {
+        var request = EntityAuthorizationPermissionsQueryBuilder.granted().pageOffset(7).build();
+        assertEquals(7, request.pageOffset());
+    }
 }
