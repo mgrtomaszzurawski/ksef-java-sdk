@@ -106,8 +106,8 @@ public final class BatchSessionRunner implements DemoRunner {
             // finally block scrubs the dir after the probe. Demo code,
             // not production SDK surface.
             @SuppressWarnings("java:S5443")
-            Path tmp = Files.createTempDirectory(TEMP_DIR_PREFIX);
-            tempDir = tmp;
+            Path createdTempDirectory = Files.createTempDirectory(TEMP_DIR_PREFIX);
+            tempDir = createdTempDirectory;
             List<Path> files = writeInvoiceFiles(tempDir, formCode, context.nipIdentifier());
             var result = context.client().invoices().sessions().batch()
                     .submitFromFiles(formCode, files, BatchOptions.defaults());
@@ -126,22 +126,22 @@ public final class BatchSessionRunner implements DemoRunner {
         }
     }
 
-    private static List<Path> writeInvoiceFiles(Path dir, FormCode formCode, String sellerNip) throws IOException {
+    private static List<Path> writeInvoiceFiles(Path targetDirectory, FormCode formCode, String sellerNip) throws IOException {
         List<Path> files = new ArrayList<>(INVOICE_COUNT);
         for (int index = 0; index < INVOICE_COUNT; index++) {
-            byte[] xml = TestInvoiceXml.generate(formCode, sellerNip);
-            Path file = dir.resolve(TEMP_FILE_PREFIX + index + TEMP_FILE_SUFFIX);
-            Files.write(file, xml);
+            byte[] xmlBytes = TestInvoiceXml.generate(formCode, sellerNip);
+            Path file = targetDirectory.resolve(TEMP_FILE_PREFIX + index + TEMP_FILE_SUFFIX);
+            Files.write(file, xmlBytes);
             files.add(file);
         }
         return files;
     }
 
-    private static void cleanupTempFiles(Path dir) {
-        if (dir == null) {
+    private static void cleanupTempFiles(Path targetDirectory) {
+        if (targetDirectory == null) {
             return;
         }
-        try (var stream = Files.walk(dir)) {
+        try (var stream = Files.walk(targetDirectory)) {
             stream.sorted(java.util.Comparator.reverseOrder())
                     .forEach(path -> {
                         try {

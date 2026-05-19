@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -58,6 +59,7 @@ public final class AuthClient {
     private static final String PATH_TOKEN_REFRESH = ApiPaths.AUTH + "/token/refresh";
     private static final String PATH_SESSIONS = ApiPaths.AUTH + "/sessions";
     private static final String PATH_SESSIONS_CURRENT = ApiPaths.AUTH + "/sessions/current";
+    private static final String QUERY_PAGE_SIZE_PARAM = "?pageSize=";
 
     private static final String OP_CHALLENGE = "requestChallenge";
     private static final String OP_AUTH_XADES = "authenticateWithXades";
@@ -368,13 +370,13 @@ public final class AuthClient {
         String token = sessionContext.token();
         String path = pageSize == null
                 ? PATH_SESSIONS
-                : PATH_SESSIONS + "?pageSize=" + pageSize;
+                : PATH_SESSIONS + QUERY_PAGE_SIZE_PARAM + pageSize;
         AuthenticationListResponseRaw raw = continuationToken == null
                 ? http.getAuthenticated(path, token,
                         AuthenticationListResponseRaw.class, OP_LIST_SESSIONS)
                 : http.getAuthenticated(path, token,
                         AuthenticationListResponseRaw.class, OP_LIST_SESSIONS,
-                        io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient.HEADER_CONTINUATION_TOKEN,
+                        SessionClient.HEADER_CONTINUATION_TOKEN,
                         continuationToken);
         return AuthenticationList.from(raw);
     }

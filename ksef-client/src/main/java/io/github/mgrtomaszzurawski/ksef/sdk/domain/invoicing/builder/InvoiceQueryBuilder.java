@@ -224,8 +224,9 @@ public final class InvoiceQueryBuilder {
     /**
      * Set the page size for both {@code queryByMetadata} and
      * {@code streamByMetadata}. Server bounds (per OpenAPI):
-     * {@code 10 <= pageSize <= 250}. Default (when not set): server
-     * default 10.
+     * {@code 10 <= pageSize <= 250}. Default (when not set): SDK
+     * default 250 — the largest page the server accepts, chosen so
+     * stream consumers cover ground per round-trip.
      */
     public InvoiceQueryBuilder pageSize(int pageSize) {
         this.pageSize = pageSize;

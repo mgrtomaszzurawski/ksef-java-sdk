@@ -174,39 +174,39 @@ public final class PermissionsImpl implements Permissions {
         // matching arm here would compile but unreachable IllegalStateException
         // catches the dispatch gap at first call. Migrate to switch
         // pattern when the SDK moves off Java 17.
-        if (request instanceof PersonPermissionGrantRequest r) {
+        if (request instanceof PersonPermissionGrantRequest personGrant) {
             return dispatchGrant(PATH_GRANT_PERSON,
-                    PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(r),
+                    PermissionsRequestMappers.toPersonPermissionsGrantRequestRaw(personGrant),
                     OP_GRANT_PERSON, timeout);
         }
-        if (request instanceof EntityPermissionGrantRequest r) {
+        if (request instanceof EntityPermissionGrantRequest entityGrant) {
             return dispatchGrant(PATH_GRANT_ENTITY,
-                    PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(r),
+                    PermissionsRequestMappers.toEntityPermissionsGrantRequestRaw(entityGrant),
                     OP_GRANT_ENTITY, timeout);
         }
-        if (request instanceof EntityAuthorizationPermissionGrantRequest r) {
+        if (request instanceof EntityAuthorizationPermissionGrantRequest authorizationGrant) {
             return dispatchGrant(PATH_GRANT_AUTHORIZATION,
-                    PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(r),
+                    PermissionsRequestMappers.toEntityAuthorizationPermissionsGrantRequestRaw(authorizationGrant),
                     OP_GRANT_AUTHORIZATION, timeout);
         }
-        if (request instanceof IndirectPermissionGrantRequest r) {
+        if (request instanceof IndirectPermissionGrantRequest indirectGrant) {
             return dispatchGrant(PATH_GRANT_INDIRECT,
-                    PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(r),
+                    PermissionsRequestMappers.toIndirectPermissionsGrantRequestRaw(indirectGrant),
                     OP_GRANT_INDIRECT, timeout);
         }
-        if (request instanceof SubunitPermissionGrantRequest r) {
+        if (request instanceof SubunitPermissionGrantRequest subunitGrant) {
             return dispatchGrant(PATH_GRANT_SUBUNIT,
-                    PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(r),
+                    PermissionsRequestMappers.toSubunitPermissionsGrantRequestRaw(subunitGrant),
                     OP_GRANT_SUBUNIT, timeout);
         }
-        if (request instanceof EuEntityAdminPermissionGrantRequest r) {
+        if (request instanceof EuEntityAdminPermissionGrantRequest euEntityAdminGrant) {
             return dispatchGrant(PATH_GRANT_EU_ENTITY_ADMIN,
-                    PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(r),
+                    PermissionsRequestMappers.toEuEntityAdministrationPermissionsGrantRequestRaw(euEntityAdminGrant),
                     OP_GRANT_EU_ENTITY_ADMIN, timeout);
         }
-        if (request instanceof EuEntityPermissionGrantRequest r) {
+        if (request instanceof EuEntityPermissionGrantRequest euEntityGrant) {
             return dispatchGrant(PATH_GRANT_EU_ENTITY,
-                    PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(r),
+                    PermissionsRequestMappers.toEuEntityPermissionsGrantRequestRaw(euEntityGrant),
                     OP_GRANT_EU_ENTITY, timeout);
         }
         throw new IllegalStateException(ERR_UNHANDLED_GRANT_SUBTYPE + request.getClass().getName());

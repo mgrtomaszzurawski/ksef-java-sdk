@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefClientConfig;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
@@ -194,10 +195,10 @@ public final class KsefClient implements AutoCloseable {
         this.offlineSigningProvider = builder.offlineSigningProvider;
         String resolvedSellerNip = credentials.identifier().type() == KsefIdentifier.Type.NIP
                 ? credentials.identifier().value() : null;
-        io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes resolvedInvoiceTypes =
+        KsefInvoiceTypes resolvedInvoiceTypes =
                 builder.invoiceTypes != null
                         ? builder.invoiceTypes
-                        : io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes.builtinsOnly();
+                        : KsefInvoiceTypes.builtinsOnly();
         this.invoices = new InvoicesImpl(this.runtime,
                 this.sessionClient, this.environment, this::getPublicKey,
                 builder.invoiceVerificationTimeout,
@@ -486,7 +487,7 @@ public final class KsefClient implements AutoCloseable {
         private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
         private Duration invoiceVerificationTimeout = DEFAULT_INVOICE_VERIFICATION_TIMEOUT;
         private @Nullable OfflineSigningProvider offlineSigningProvider;
-        private io.github.mgrtomaszzurawski.ksef.sdk.config.@Nullable KsefInvoiceTypes invoiceTypes;
+        private @Nullable KsefInvoiceTypes invoiceTypes;
 
         private Builder() { }
 
@@ -638,7 +639,7 @@ public final class KsefClient implements AutoCloseable {
          *     default after a prior call on the same builder)
          * @return this builder
          */
-        public Builder invoiceTypes(io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes invoiceTypes) {
+        public Builder invoiceTypes(KsefInvoiceTypes invoiceTypes) {
             this.invoiceTypes = Objects.requireNonNull(invoiceTypes, "invoiceTypes must not be null");
             return this;
         }

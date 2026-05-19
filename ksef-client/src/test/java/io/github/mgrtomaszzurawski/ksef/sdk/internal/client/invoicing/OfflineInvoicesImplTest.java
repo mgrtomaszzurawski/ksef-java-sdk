@@ -148,6 +148,34 @@ class OfflineInvoicesImplTest {
                 () -> facade.issue(invoice, null));
     }
 
+    @Test
+    void issueWithCertificate_whenCertificateNull_throwsNullPointer() {
+        OfflineInvoices facade = new OfflineInvoicesImpl(new CountingProvider(),
+                KsefEnvironment.TEST, SELLER_NIP);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
+        assertThrows(NullPointerException.class,
+                () -> facade.issue(invoice, OfflineMode.OFFLINE_24, null));
+    }
+
+    @Test
+    void issueTechnicalCorrection_whenHashNull_throwsNullPointer() {
+        OfflineInvoices facade = new OfflineInvoicesImpl(new CountingProvider(),
+                KsefEnvironment.TEST, SELLER_NIP);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
+        assertThrows(NullPointerException.class,
+                () -> facade.issueTechnicalCorrection(invoice, null, OfflineMode.OFFLINE_24));
+    }
+
+    @Test
+    void issueTechnicalCorrection_whenModeNull_throwsNullPointer() {
+        OfflineInvoices facade = new OfflineInvoicesImpl(new CountingProvider(),
+                KsefEnvironment.TEST, SELLER_NIP);
+        Invoice invoice = Fa3InvoiceFixtures.minimalValid();
+        byte[] hash = fillBytes(SHA256_LENGTH_BYTES);
+        assertThrows(NullPointerException.class,
+                () -> facade.issueTechnicalCorrection(invoice, hash, null));
+    }
+
     private static byte[] fillBytes(int length) {
         byte[] bytes = new byte[length];
         for (int i = 0; i < length; i++) {

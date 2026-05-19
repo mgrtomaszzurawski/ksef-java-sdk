@@ -62,7 +62,7 @@ public final class IssueOfflineInvoice {
                 .build()) {
 
             // Issue an offline24 invoice — taxpayer-elected offline mode
-            // (vs offline-niedostępność elected by KSeF outage).
+            // (vs offline-unavailability mode elected by KSeF outage).
             OfflineInvoice<Invoice> offline = client.invoices().offline()
                     .issue(invoice, OfflineMode.OFFLINE_24);
 

@@ -73,9 +73,9 @@ public final class ExportInvoiceArchive {
             // Stream-download + decrypt straight to outDir. Memory bounded
             // by chunk buffer, NOT by full package size (KSeF export
             // packages can be multi-GB).
-            var dir = prepared.downloadAndDecryptTo(status, outDir);
-            System.out.println("Decrypted to " + dir.outputDirectory()
-                    + " (" + dir.invoiceXmls().size() + " files)");
+            var directory = prepared.downloadAndDecryptTo(status, outDir);
+            System.out.println("Decrypted to " + directory.outputDirectory()
+                    + " (" + directory.invoiceXmls().size() + " files)");
         }
     }
 

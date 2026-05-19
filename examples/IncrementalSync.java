@@ -128,16 +128,16 @@ public final class IncrementalSync {
      */
     private static void process(DecryptedInvoice decrypted) {
         String ksefRef = decrypted.ksefNumber().value();
-        var doc = decrypted.document();
-        if (doc instanceof Fa3InvoiceDocument fa3) {
+        var document = decrypted.document();
+        if (document instanceof Fa3InvoiceDocument fa3) {
             System.out.println("FA(3) " + ksefRef + " — " + fa3.unsafeJaxbView().getFa().getP1());
-        } else if (doc instanceof Fa2InvoiceDocument fa2) {
+        } else if (document instanceof Fa2InvoiceDocument fa2) {
             System.out.println("FA(2) " + ksefRef + " — " + fa2.unsafeJaxbView().getFa().getP1());
-        } else if (doc instanceof PefInvoiceDocument pef) {
+        } else if (document instanceof PefInvoiceDocument pef) {
             System.out.println("PEF " + ksefRef + " — invoiceNumber=" + pef.invoiceNumber());
-        } else if (doc instanceof PefKorInvoiceDocument pefKor) {
+        } else if (document instanceof PefKorInvoiceDocument pefKor) {
             System.out.println("PEFKOR " + ksefRef + " — invoiceNumber=" + pefKor.invoiceNumber());
-        } else if (doc instanceof UnrecognizedInvoiceDocument unknown) {
+        } else if (document instanceof UnrecognizedInvoiceDocument unknown) {
             System.out.println("Unknown form " + unknown.formCode() + " for " + ksefRef
                     + " — " + unknown.xml().length + " bytes raw");
         } else {

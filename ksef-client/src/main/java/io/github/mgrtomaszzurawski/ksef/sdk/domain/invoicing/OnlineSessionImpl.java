@@ -6,6 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.builder.SendInvoiceBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceCommand;
@@ -137,7 +138,7 @@ final class OnlineSessionImpl implements OnlineSession {
     private final QrCodeService qrCodeService;
     @Nullable private final OfflineSigningProvider offlineSigningProvider;
     @Nullable private final String sellerNip;
-    private final io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes invoiceTypes;
+    private final KsefInvoiceTypes invoiceTypes;
     private volatile boolean closed;
     private final java.util.concurrent.atomic.AtomicInteger sentInvoiceCount =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -177,11 +178,11 @@ final class OnlineSessionImpl implements OnlineSession {
 
     OnlineSessionImpl(SessionHandle handle, InvoiceVerificationConfig verification, OfflineSendHook offline) {
         this(handle, verification, offline,
-                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes.builtinsOnly());
+                KsefInvoiceTypes.builtinsOnly());
     }
 
     OnlineSessionImpl(SessionHandle handle, InvoiceVerificationConfig verification, OfflineSendHook offline,
-                io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes invoiceTypes) {
+                KsefInvoiceTypes invoiceTypes) {
         this.sessionClient = handle.client();
         this.referenceNumber = handle.referenceNumber();
         this.aesKey = handle.aesKey();
