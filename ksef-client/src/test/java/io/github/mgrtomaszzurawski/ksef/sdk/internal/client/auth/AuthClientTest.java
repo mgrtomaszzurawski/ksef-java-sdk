@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationList;

@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sample;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ApiPaths;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import java.io.FileInputStream;
 import java.net.URI;
 import java.net.http.HttpClient;

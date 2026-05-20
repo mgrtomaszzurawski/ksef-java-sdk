@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ApiRateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;

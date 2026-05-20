@@ -2,13 +2,13 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.authentication;
+package io.github.mgrtomaszzurawski.ksef.sdk.config.credentials;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCertificateCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefPkcs12Credentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

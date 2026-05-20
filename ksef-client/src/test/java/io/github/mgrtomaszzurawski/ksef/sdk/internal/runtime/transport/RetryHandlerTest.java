@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;

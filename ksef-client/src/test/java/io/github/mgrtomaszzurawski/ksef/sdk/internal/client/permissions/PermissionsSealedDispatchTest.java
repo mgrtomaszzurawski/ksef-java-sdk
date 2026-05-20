@@ -19,7 +19,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.PersonPermissionGrantBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionGrantRequest;

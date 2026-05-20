@@ -7,13 +7,12 @@ package io.github.mgrtomaszzurawski.ksef.jpms.consumer;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.core.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.UpoVersion;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
@@ -83,7 +82,6 @@ public final class JpmsConsumerCompileFixture {
                 RetryPolicy.class,
                 FeaturePolicy.class,
                 UpoVersion.class,
-                SigningOptions.class,
                 KsefNumber.class,
                 StatusInfo.class,
                 // sdk.crypto package removed entirely (R3) — CSR generation

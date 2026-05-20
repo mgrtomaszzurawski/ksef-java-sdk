@@ -4,7 +4,6 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
@@ -13,10 +12,13 @@ import java.security.cert.X509Certificate;
  * KSeF XAdES auth exchange. Pairs with {@link XadesAuthRequest} on
  * {@code AuthClient.authenticateWithXades(...)}.
  *
+ * <p>XAdES profile + digest are fixed in 1.0.0 (BASELINE_B + SHA-256)
+ * — additional profiles will be added when matching implementation +
+ * tests land per ADR-021.
+ *
  * @since 1.0.0
  */
 public record XadesSigningMaterial(
         X509Certificate certificate,
-        PrivateKey privateKey,
-        SigningOptions signingOptions) {
+        PrivateKey privateKey) {
 }

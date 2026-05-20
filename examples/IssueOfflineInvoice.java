@@ -29,7 +29,7 @@
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;

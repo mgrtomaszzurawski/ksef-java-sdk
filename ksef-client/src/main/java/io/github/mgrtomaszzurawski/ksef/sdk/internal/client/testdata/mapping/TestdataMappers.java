@@ -8,7 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SubjectIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SubjectTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataAuthenticationContextIdentifierTypeRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.TestDataPermissionTypeRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;

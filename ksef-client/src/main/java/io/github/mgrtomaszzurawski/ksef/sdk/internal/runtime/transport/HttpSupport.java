@@ -348,19 +348,19 @@ public final class HttpSupport {
     }
 
     /**
-     * Apply headers driven by {@link io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy}.
+     * Apply headers driven by {@link io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy}.
      *
      * <ul>
      *   <li>{@code X-Error-Format: problem-details} — only when
-     *       {@link io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy#problemDetails()}
+     *       {@link io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy#problemDetails()}
      *       is {@code true}. Default policy enables it.</li>
      *   <li>{@code X-KSeF-Feature: upo-v4-3} — only on UPO-related calls
-     *       when {@link io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion#V4_3} is
+     *       when {@link io.github.mgrtomaszzurawski.ksef.sdk.config.policy.UpoVersion#V4_3} is
      *       selected. Detected from path containing {@code /upo}.</li>
      * </ul>
      */
     private void applyFeatureHeaders(HttpRequest.Builder builder, String path) {
-        io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy policy = runtime.featurePolicy();
+        io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy policy = runtime.featurePolicy();
         if (policy == null) {
             // Defensive — pre-1.0.0 runtimes may have null. Apply legacy behavior.
             builder.header(X_ERROR_FORMAT_HEADER, X_ERROR_FORMAT_PROBLEM_DETAILS);
@@ -376,9 +376,9 @@ public final class HttpSupport {
     }
 
     private static @Nullable String featureHeaderValue(
-            io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy policy,
+            io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy policy,
             String path) {
-        if (policy.upoVersion() == io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion.V4_3
+        if (policy.upoVersion() == io.github.mgrtomaszzurawski.ksef.sdk.config.policy.UpoVersion.V4_3
                 && isUpoPath(path)) {
             return UPO_V4_3_FEATURE;
         }

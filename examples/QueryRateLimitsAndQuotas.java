@@ -24,7 +24,7 @@
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ApiRateLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.ContextLimits;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;

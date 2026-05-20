@@ -15,9 +15,9 @@ import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokenRefreshR
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthorizationPolicyRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.InitTokenAuthenticationRequestRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.CertificateSubjectIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationChallenge;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationInit;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.AuthenticationList;
@@ -167,27 +167,15 @@ public final class AuthClient {
      * Authenticate using XAdES signature flow with a generic identifier and
      * an explicit {@link CertificateSubjectIdentifier} strategy. Closes
      * REQ-AUTH-033 (certificate fingerprint variant of
-     * {@code SubjectIdentifierType}).
+     * {@code SubjectIdentifierType}). XAdES profile + digest are fixed at
+     * BASELINE_B + SHA-256 per ADR-021.
      */
     public AuthenticationInit authenticateWithXades(
             String challenge, X509Certificate certificate, PrivateKey privateKey,
             KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier) {
-        return authenticateWithXades(challenge, certificate, privateKey, identifier, subjectIdentifier,
-                io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults());
-    }
-
-    /**
-     * Authenticate with explicit {@link io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions}.
-     * Closes REQ-AUTH-039/040 to the extent of the documented narrow scope
-     * (BASELINE-B + SHA-256). Other combinations throw.
-     */
-    public AuthenticationInit authenticateWithXades(
-            String challenge, X509Certificate certificate, PrivateKey privateKey,
-            KsefIdentifier identifier, CertificateSubjectIdentifier subjectIdentifier,
-            io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions) {
         return authenticateWithXades(
                 new XadesAuthRequest(challenge, identifier, subjectIdentifier, null, null),
-                new XadesSigningMaterial(certificate, privateKey, signingOptions));
+                new XadesSigningMaterial(certificate, privateKey));
     }
 
     /**
@@ -208,7 +196,7 @@ public final class AuthClient {
                 request.subjectIdentifier(), request.policy(), request.defaultClientIp());
         String signedXml = SigningService.signXml(
                 authXml.getBytes(StandardCharsets.UTF_8),
-                signing.certificate(), signing.privateKey(), signing.signingOptions());
+                signing.certificate(), signing.privateKey());
         AuthenticationInitResponseRaw response = http.postXml(
                 PATH_XADES_SIGNATURE, signedXml, AuthenticationInitResponseRaw.class, OP_AUTH_XADES);
         activateSession(response);

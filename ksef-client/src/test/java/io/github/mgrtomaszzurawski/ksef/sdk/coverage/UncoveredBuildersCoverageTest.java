@@ -5,10 +5,10 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.coverage;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.builder.InvoiceExportBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;

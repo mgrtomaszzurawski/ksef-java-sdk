@@ -13,7 +13,7 @@ import java.util.Objects;
  * sign KOD II QR payloads on offline-mode invoices.
  *
  * <p>Distinct from
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials}
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCertificateCredentials}
  * (authentication credentials with extra context like
  * {@code identifier}, {@code subjectIdentifier}, {@code signingOptions})
  * — this type carries only the material needed to compute and embed a

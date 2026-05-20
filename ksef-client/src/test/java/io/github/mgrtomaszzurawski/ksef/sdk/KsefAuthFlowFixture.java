@@ -6,8 +6,8 @@ package io.github.mgrtomaszzurawski.ksef.sdk;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
 import java.time.OffsetDateTime;
 import java.util.Base64;

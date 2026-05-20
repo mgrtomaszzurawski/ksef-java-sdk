@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.SessionContext;
 import java.net.http.HttpClient;

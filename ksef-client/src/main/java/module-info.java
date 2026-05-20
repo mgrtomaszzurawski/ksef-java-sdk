@@ -8,8 +8,12 @@ module io.github.mgrtomaszzurawski.ksef {
     // SDK public API — entry point
     exports io.github.mgrtomaszzurawski.ksef.sdk;
 
-    // Configuration: environments, identifiers, retry policy
+    // Configuration: environments, custom invoice types, diagnostic snapshot
     exports io.github.mgrtomaszzurawski.ksef.sdk.config;
+    // Configuration credentials: KsefCredentials sealed interface + 3 impls + identifier types
+    exports io.github.mgrtomaszzurawski.ksef.sdk.config.credentials;
+    // Configuration policy knobs: retry, feature flags, IP authorization
+    exports io.github.mgrtomaszzurawski.ksef.sdk.config.policy;
 
     // Cross-domain envelope + value-object types (StatusInfo, KsefNumber)
     exports io.github.mgrtomaszzurawski.ksef.sdk.core;
