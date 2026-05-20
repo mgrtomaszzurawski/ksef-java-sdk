@@ -18,18 +18,7 @@ sonar {
         property("sonar.projectName", "KSeF Java SDK")
         property(
             "sonar.coverage.jacoco.xmlReportPaths",
-            "ksef-client/build/reports/jacoco/test/jacocoTestReport.xml"
-        )
-        // Explicit binaries for the multi-project build — the sonar plugin
-        // does not always pick them up automatically across Gradle subprojects
-        // even after :ksef-client:compileJava has produced them.
-        property(
-            "sonar.java.binaries",
-            "ksef-client/build/classes/java/main, ksef-rest-models/build/classes/java/main, ksef-xml-models/build/classes/java/main"
-        )
-        property(
-            "sonar.java.test.binaries",
-            "ksef-client/build/classes/java/test"
+            "${rootProject.projectDir}/ksef-client/build/reports/jacoco/test/jacocoTestReport.xml"
         )
         // ksef-demo is a live-execution probe runner (DemoApp invoked
         // manually against api-demo / api-test), not a unit-tested library
@@ -41,6 +30,22 @@ sonar {
         property("sonar.cpd.exclusions", "ksef-demo/**")
         // Generated source trees never appear in analysis input.
         property("sonar.exclusions", "**/build/generated-sources/**, **/generated/**")
+    }
+}
+
+// Skip subprojects from sonar analysis individually. The sonarqube plugin
+// auto-applies to every subproject; without this each one tries to analyse
+// its own .java tree and fails when the auto-detected binaries path is
+// missing or empty. Only ksef-client is hand-written library code worth
+// scanning; everything else is generated / live-execution scaffolding.
+gradle.projectsEvaluated {
+    subprojects.filter {
+        it.name in setOf(
+            "ksef-rest-models", "ksef-xml-models", "ksef-demo",
+            "ksef-examples", "ksef-jpms-consumer"
+        )
+    }.forEach { sp ->
+        sp.extensions.findByType(org.sonarqube.gradle.SonarExtension::class.java)?.isSkipProject = true
     }
 }
 
