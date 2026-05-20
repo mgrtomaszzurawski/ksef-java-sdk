@@ -6,10 +6,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoices;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;

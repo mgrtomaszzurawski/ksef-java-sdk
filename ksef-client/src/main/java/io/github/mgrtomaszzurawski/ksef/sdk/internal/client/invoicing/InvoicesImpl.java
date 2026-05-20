@@ -7,13 +7,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceBatch;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.InvoiceSessions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceSync;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
@@ -146,7 +146,7 @@ public final class InvoicesImpl implements Invoices {
     private record UnavailableSessions(InvoiceBatch batch) implements InvoiceSessions {
 
         @Override
-        public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession online(
+        public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession online(
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode formCode) {
             throw new IllegalStateException(ERR_OPEN_SESSION_REQUIRES_FULL_RUNTIME);
         }
@@ -161,7 +161,7 @@ public final class InvoicesImpl implements Invoices {
 
     private static final class UnavailableBatch implements InvoiceBatch {
         @Override
-        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice>
+        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice>
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult<I> submit(
                 java.util.List<I> invoices,
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions options) {
@@ -170,7 +170,7 @@ public final class InvoicesImpl implements Invoices {
 
         @Override
         public io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult<
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice> submitFromFiles(
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice> submitFromFiles(
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode formCode,
                 java.util.List<java.nio.file.Path> files,
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions options) {
@@ -180,25 +180,25 @@ public final class InvoicesImpl implements Invoices {
 
     private static final class UnavailableOffline implements OfflineInvoices {
         @Override
-        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice>
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice<I> issue(
-                I invoice, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode mode) {
+        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice>
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoice<I> issue(
+                I invoice, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode mode) {
             throw new IllegalStateException(ERR_OFFLINE_REQUIRES_FULL_RUNTIME);
         }
 
         @Override
-        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice>
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice<I> issue(
-                I invoice, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode mode,
+        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice>
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoice<I> issue(
+                I invoice, io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode mode,
                 io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate certificate) {
             throw new IllegalStateException(ERR_OFFLINE_REQUIRES_FULL_RUNTIME);
         }
 
         @Override
-        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice>
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice<I> issueTechnicalCorrection(
+        public <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice>
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoice<I> issueTechnicalCorrection(
                 I invoice, byte[] hashOfOriginal,
-                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode mode) {
+                io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode mode) {
             throw new IllegalStateException(ERR_OFFLINE_REQUIRES_FULL_RUNTIME);
         }
     }

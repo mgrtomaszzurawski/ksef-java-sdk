@@ -6,9 +6,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.InvoiceVerificationConfig;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OfflineSendHook;
@@ -69,7 +69,7 @@ public final class SessionHandleConstructor {
      * importable from this internal package.
      */
     private static final String ONLINE_SESSION_IMPL_FQN =
-            "io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSessionImpl";
+            "io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSessionImpl";
 
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR;
     private static final Constructor<? extends OnlineSession> ONLINE_SESSION_CTOR_VALID_UNTIL;

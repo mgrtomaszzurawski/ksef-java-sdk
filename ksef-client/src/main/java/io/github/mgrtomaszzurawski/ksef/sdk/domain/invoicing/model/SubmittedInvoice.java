@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;

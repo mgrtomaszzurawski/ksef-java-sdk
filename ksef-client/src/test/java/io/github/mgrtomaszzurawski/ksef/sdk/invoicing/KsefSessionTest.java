@@ -11,8 +11,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
@@ -211,7 +211,7 @@ class KsefSessionTest {
                                 """.formatted(TEST_INVOICE_REF))));
 
         try (OnlineSession session = createSession(wmInfo)) {
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.complete();
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession closed = session.complete();
 
             // when
             byte[] upoBytes = closed.cleared(TEST_INVOICE_REF).upo().xmlBytes();

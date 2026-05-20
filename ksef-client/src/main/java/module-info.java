@@ -26,6 +26,10 @@ module io.github.mgrtomaszzurawski.ksef {
 
     // Invoicing functionality (online + batch sessions, invoice ops, QR, sync orchestrator)
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;

@@ -4,9 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.api;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;

@@ -5,8 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceSync;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.IncrementalSyncPlan;

@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.examples;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa2Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Fa2Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;

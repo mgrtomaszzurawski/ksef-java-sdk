@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.examples;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.PefInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefAddress;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefInvoiceLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefParty;

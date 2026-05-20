@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.config;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes.InvoiceTypeBinding;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

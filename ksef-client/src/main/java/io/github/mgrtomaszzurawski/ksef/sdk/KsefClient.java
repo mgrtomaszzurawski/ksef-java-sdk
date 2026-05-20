@@ -621,7 +621,7 @@ public final class KsefClient implements AutoCloseable {
         }
 
         /**
-         * Register custom {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument}
+         * Register custom {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument}
          * types the SDK should construct on the read-side flow (archive
          * lookups, incremental sync, session-cleared retrieval) for
          * non-built-in {@code FormCode}s.
@@ -631,7 +631,7 @@ public final class KsefClient implements AutoCloseable {
          * types. Omitting the call uses
          * {@code KsefInvoiceTypes.builtinsOnly()} as the default — the
          * read-side flow returns
-         * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument}
+         * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.UnrecognizedInvoiceDocument}
          * for any unregistered non-built-in form.
          *
          * @param invoiceTypes the registry (must not be null; pass

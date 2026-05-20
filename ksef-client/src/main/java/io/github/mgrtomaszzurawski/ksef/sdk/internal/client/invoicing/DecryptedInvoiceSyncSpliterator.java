@@ -7,9 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceSync;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.CheckpointStore;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync.DecryptedInvoice;
@@ -222,7 +222,7 @@ final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvo
      * is returned. A consumer registering a custom {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes}
      * binding for this exact triple will see their typed wrapper returned
      * for KSeF-side-null-formCode invoices instead of an
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument}.
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.UnrecognizedInvoiceDocument}.
      * The triple is reserved-by-convention for this fallback; consumers
      * should not register types under {@code FormCode.custom("UNKNOWN", "0",
      * "UNKNOWN")}.

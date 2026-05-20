@@ -7,10 +7,10 @@ package io.github.mgrtomaszzurawski.ksef.sample.runner;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoContext;
 import io.github.mgrtomaszzurawski.ksef.sample.DemoMode;
 import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Fa3Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
@@ -160,7 +160,7 @@ public final class SessionRunner implements DemoRunner {
             runGetStatus(session, results);
             runGetInvoices(session, results);
             runGetFailedInvoices(session, results);
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = runArchive(context, session, results);
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession closed = runArchive(context, session, results);
             if (fullMode && closed != null && submitted != null) {
                 runGetCleared(closed, submitted.referenceNumber(), results);
                 runGetClearedBySubmittedInvoice(closed, submitted, results);
@@ -176,9 +176,9 @@ public final class SessionRunner implements DemoRunner {
      * (PR15) against the SubmittedInvoice handle produced by
      * {@code session.sendInvoice(Invoice)} earlier in the run.
      */
-    private <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice>
+    private <I extends io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice>
             void runGetClearedBySubmittedInvoice(
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed,
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession closed,
             SubmittedInvoice<I> submitted,
             List<RunResult> results) {
         long start = System.currentTimeMillis();
@@ -484,11 +484,11 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession runArchive(
+    private io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession runArchive(
             DemoContext context, OnlineSession session, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
-            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed = session.complete();
+            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession closed = session.complete();
             LOGGER.info(LOG_SESSION_CLOSED, NAME);
             results.add(RunResult.ok(NAME, OP_CLOSE, elapsed(start)));
             return closed;
@@ -513,7 +513,7 @@ public final class SessionRunner implements DemoRunner {
         }
     }
 
-    private void runGetCleared(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.ClosedSession closed,
+    private void runGetCleared(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession closed,
                                String invoiceRef, List<RunResult> results) {
         long start = System.currentTimeMillis();
         try {
