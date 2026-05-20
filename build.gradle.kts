@@ -20,6 +20,17 @@ sonar {
             "sonar.coverage.jacoco.xmlReportPaths",
             "ksef-client/build/reports/jacoco/test/jacocoTestReport.xml"
         )
+        // Explicit binaries for the multi-project build — the sonar plugin
+        // does not always pick them up automatically across Gradle subprojects
+        // even after :ksef-client:compileJava has produced them.
+        property(
+            "sonar.java.binaries",
+            "ksef-client/build/classes/java/main, ksef-rest-models/build/classes/java/main, ksef-xml-models/build/classes/java/main"
+        )
+        property(
+            "sonar.java.test.binaries",
+            "ksef-client/build/classes/java/test"
+        )
         // ksef-demo is a live-execution probe runner (DemoApp invoked
         // manually against api-demo / api-test), not a unit-tested library
         // module. Unit-testing demo runners would defeat their purpose —
@@ -28,6 +39,8 @@ sonar {
         // module (ksef-client) the SDK actually ships.
         property("sonar.coverage.exclusions", "ksef-demo/**, ksef-examples/**, ksef-jpms-consumer/**")
         property("sonar.cpd.exclusions", "ksef-demo/**")
+        // Generated source trees never appear in analysis input.
+        property("sonar.exclusions", "**/build/generated-sources/**, **/generated/**")
     }
 }
 
