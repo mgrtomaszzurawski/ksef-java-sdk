@@ -29,8 +29,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchAssemblyMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchFileSpec;
@@ -325,7 +325,7 @@ public final class BatchSubmissionFlow {
                             List.copyOf(failureMessages));
                 }
             } catch (IOException ioFailure) {
-                throw new KsefNetworkException(
+                throw new KsefServerException(
                         String.format(java.util.Locale.ROOT, ERR_FILE_XSD_VALIDATION_FAILED,
                                 file, ioFailure.getMessage()), ioFailure);
             }
@@ -505,12 +505,12 @@ public final class BatchSubmissionFlow {
         try {
             long remainingNanos = deadlineNanos - nanoNow();
             if (remainingNanos <= DEADLINE_EXPIRED_NANOS) {
-                throw new KsefNetworkException(errTimedOut, null);
+                throw new KsefServerException(errTimedOut, null);
             }
             return future.get(remainingNanos, TimeUnit.NANOSECONDS);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new KsefNetworkException(errInterrupted, interrupted);
+            throw new KsefServerException(errInterrupted, interrupted);
         } catch (ExecutionException executionFailure) {
             Throwable cause = executionFailure.getCause();
             if (cause instanceof KsefException ksefFailure) {
@@ -519,9 +519,9 @@ public final class BatchSubmissionFlow {
             if (cause instanceof RuntimeException runtimeFailure) {
                 throw runtimeFailure;
             }
-            throw new KsefNetworkException(errWorkerFailed, cause);
+            throw new KsefServerException(errWorkerFailed, cause);
         } catch (java.util.concurrent.TimeoutException timedOut) {
-            throw new KsefNetworkException(errTimedOut, timedOut);
+            throw new KsefServerException(errTimedOut, timedOut);
         }
     }
 
@@ -547,7 +547,7 @@ public final class BatchSubmissionFlow {
                 throw new IllegalStateException(ERR_UNKNOWN_BATCH_PART_SUBTYPE + part.getClass());
             }
         } catch (java.io.FileNotFoundException missingFile) {
-            throw new KsefNetworkException(
+            throw new KsefServerException(
                     String.format(java.util.Locale.ROOT, ERR_UPLOAD_IO, upload.ordinalNumber()),
                     missingFile);
         }
@@ -560,19 +560,19 @@ public final class BatchSubmissionFlow {
             HttpResponse<Void> response = httpClient.send(builder.build(), BodyHandlers.discarding());
             if (response.statusCode() < HTTP_STATUS_LOWER_BOUND_OK
                     || response.statusCode() >= HTTP_STATUS_UPPER_BOUND_OK) {
-                throw new KsefNetworkException(
+                throw new KsefServerException(
                         String.format(java.util.Locale.ROOT, ERR_UPLOAD_FAILED,
                                 upload.ordinalNumber(), response.statusCode()),
                         null);
             }
             LOGGER.debug(LOG_PART_UPLOADED, upload.ordinalNumber());
         } catch (IOException ioFailure) {
-            throw new KsefNetworkException(
+            throw new KsefServerException(
                     String.format(java.util.Locale.ROOT, ERR_UPLOAD_IO, upload.ordinalNumber()),
                     ioFailure);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new KsefNetworkException(ERR_UPLOAD_INTERRUPTED, interrupted);
+            throw new KsefServerException(ERR_UPLOAD_INTERRUPTED, interrupted);
         }
     }
 
@@ -617,7 +617,7 @@ public final class BatchSubmissionFlow {
                 return;
             }
             if (nanoNow() >= deadlineNanos) {
-                throw new KsefSessionPollingTimeoutException(sessionRef, attempt, lastCode);
+                throw new KsefAsyncTimeoutException(sessionRef, attempt, lastCode);
             }
         }
     }
@@ -824,7 +824,7 @@ public final class BatchSubmissionFlow {
 
     private static void assertWithinDeadline(long deadlineNanos) {
         if (nanoNow() >= deadlineNanos) {
-            throw new KsefNetworkException(ERR_DEADLINE_EXCEEDED, null);
+            throw new KsefServerException(ERR_DEADLINE_EXCEEDED, null);
         }
     }
 

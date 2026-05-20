@@ -8,7 +8,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationChallengeResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnavailableException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpSupport;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
@@ -30,7 +30,7 @@ class HttpSupportKsefUnavailableTest {
     private static final int HTTP_SERVICE_UNAVAILABLE = 503;
 
     @Test
-    void get_whenServerReturns503_throwsKsefUnavailableException(WireMockRuntimeInfo wmInfo) {
+    void get_whenServerReturns503_throwsKsefServerException(WireMockRuntimeInfo wmInfo) {
         // given
         stubFor(get(urlEqualTo(STUB_PATH))
                 .willReturn(aResponse()
@@ -41,7 +41,7 @@ class HttpSupportKsefUnavailableTest {
         HttpSupport http = createHttpSupport(wmInfo);
 
         // when / then
-        KsefUnavailableException exception = assertThrows(KsefUnavailableException.class,
+        KsefServerException exception = assertThrows(KsefServerException.class,
                 () -> http.get(TEST_PATH, AuthenticationChallengeResponseRaw.class, OPERATION_NAME));
         assertEquals(HTTP_SERVICE_UNAVAILABLE, exception.statusCode());
     }

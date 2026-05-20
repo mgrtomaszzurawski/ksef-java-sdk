@@ -43,7 +43,7 @@ public sealed interface ClosedSession extends Session permits ClosedSessionImpl 
      *     {@code OnlineSession.sendInvoice(...)} on the same session
      * @return the cleared-invoice record
      * @throws NullPointerException if {@code submitted} is null
-     * @throws io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException
+     * @throws io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException
      *     if the UPO is not available within the configured retrieval timeout
      */
     <I extends Invoice> ClearedInvoice<I> cleared(SubmittedInvoice<I> submitted);

@@ -6,10 +6,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnavailableException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
@@ -124,13 +124,13 @@ public final class RetryHandler {
 
     private static KsefException mapIoFailure(IOException exception, String operationName) {
         // Connection-level failures indicate KSeF is unreachable rather
-        // than just slow — surface them as KsefUnavailableException so
+        // than just slow — surface them as KsefServerException so
         // consumers can branch on offline-mode policy. Other IOExceptions
-        // (read timeout, malformed response) stay as KsefNetworkException.
+        // (read timeout, malformed response) stay as KsefServerException.
         if (isUnavailableTransport(exception)) {
-            return new KsefUnavailableException(ERR_KSEF_UNREACHABLE + " — " + operationName, exception);
+            return new KsefServerException(ERR_KSEF_UNREACHABLE + " — " + operationName, exception);
         }
-        return new KsefNetworkException(operationName, exception);
+        return new KsefServerException(operationName, exception);
     }
 
     private static boolean isUnavailableTransport(IOException exception) {
@@ -161,7 +161,7 @@ public final class RetryHandler {
         if (exception instanceof KsefServerException) {
             return policy.retryOn5xx();
         }
-        return exception instanceof KsefNetworkException;
+        return exception instanceof KsefServerException;
     }
 
     private <T> @Nullable T callOnce(ApiCall<T> call, String operationName) {
@@ -179,7 +179,7 @@ public final class RetryHandler {
             Thread.sleep(jitteredMillis);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new KsefNetworkException(operationName, interrupted);
+            throw new KsefServerException(operationName, interrupted);
         }
     }
 

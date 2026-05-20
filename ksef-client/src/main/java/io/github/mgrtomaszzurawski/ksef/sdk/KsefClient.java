@@ -589,7 +589,7 @@ public final class KsefClient implements AutoCloseable {
          * SDK posts an invoice it polls the per-invoice status until
          * KSeF reports a terminal state (Accepted / Rejected); this
          * duration bounds how long the SDK waits before throwing
-         * {@code KsefSessionPollingTimeoutException}. Default 60s.
+         * {@code KsefAsyncTimeoutException}. Default 60s.
          *
          * <p>Tune higher for environments where verification is known
          * to spike; lower for tests that want a fast-fail behaviour.

@@ -24,7 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrCodeServic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.SessionClient;
 import java.security.MessageDigest;
@@ -351,7 +351,7 @@ final class OnlineSessionImpl implements OnlineSession {
             }
             sleep((int) VERIFICATION_POLL_INTERVAL_MS);
         }
-        throw new KsefSessionPollingTimeoutException(invoiceRef, attempts, lastCode);
+        throw new KsefAsyncTimeoutException(invoiceRef, attempts, lastCode);
     }
 
     private <I extends Invoice> SubmittedInvoice<I> buildSubmittedInvoice(I invoice, String invoiceRef,
@@ -581,7 +581,7 @@ final class OnlineSessionImpl implements OnlineSession {
             }
         }
         LOGGER.warn(LOG_POLL_TIMEOUT, referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
-        throw new KsefSessionPollingTimeoutException(referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
+        throw new KsefAsyncTimeoutException(referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     private @Nullable Integer logStatusTransition(@Nullable Integer lastCode, @Nullable Integer code, int attempt) {

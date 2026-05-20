@@ -85,7 +85,7 @@ public sealed interface OnlineSession extends Session permits OnlineSessionImpl 
      * server's error details and an empty KSeF number / KOD I QR.
      *
      * <p>On verification timeout: throws
-     * {@code KsefSessionPollingTimeoutException}. The submission itself
+     * {@code KsefAsyncTimeoutException}. The submission itself
      * has already happened by then — the caller can re-query
      * {@link Session#invoiceStatus(String)} later if they want to wait
      * longer.

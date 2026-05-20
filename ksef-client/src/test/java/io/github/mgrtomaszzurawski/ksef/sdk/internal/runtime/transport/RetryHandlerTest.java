@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
@@ -80,7 +80,7 @@ class RetryHandlerTest {
         RetryHandler handler = new RetryHandler(policy);
 
         // then
-        assertThrows(KsefNetworkException.class, () ->
+        assertThrows(KsefServerException.class, () ->
                 handler.execute(() -> {
                     throw new IOException("connection refused");
                 }, OPERATION_NAME));

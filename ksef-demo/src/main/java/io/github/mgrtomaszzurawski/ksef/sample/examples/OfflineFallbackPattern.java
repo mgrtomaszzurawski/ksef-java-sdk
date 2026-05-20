@@ -11,11 +11,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnavailableException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 
 /**
  * Convert-after-failure pattern: catch
- * {@link KsefUnavailableException}, build an {@link OfflineInvoice}
+ * {@link KsefServerException}, build an {@link OfflineInvoice}
  * with KOD I + KOD II QR codes, and submit through the offline
  * channel. The offline submission sets the wire-level
  * {@code offlineMode=true} so KSeF applies the correct
@@ -36,7 +36,7 @@ public final class OfflineFallbackPattern {
 
     /**
      * Try {@code session.sendInvoice(invoice)} first. On
-     * {@link KsefUnavailableException}, build an
+     * {@link KsefServerException}, build an
      * {@link OfflineInvoice} with the supplied certificate and submit
      * it through {@link OnlineSession#sendOfflineInvoice(OfflineInvoice)}.
      *
@@ -62,7 +62,7 @@ public final class OfflineFallbackPattern {
         }
         try {
             return session.sendInvoice(invoice);
-        } catch (KsefUnavailableException unavailable) {
+        } catch (KsefServerException unavailable) {
             var offline = OfflineInvoice.fromInvoice(invoice, certificate, mode, context);
             return session.sendOfflineInvoice(offline);
         }

@@ -9,8 +9,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportedInvoi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackagePart;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNetworkException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionPollingTimeoutException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAsyncTimeoutException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefSessionTerminalFailureException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CryptoService;
 import java.io.ByteArrayInputStream;
@@ -173,7 +173,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
     /**
      * Poll the export status until it reaches a terminal code (server status
      * code &ge; 200; KSeF reports {@code 200} for completion). Throws
-     * {@link KsefSessionPollingTimeoutException} when no terminal status is
+     * {@link KsefAsyncTimeoutException} when no terminal status is
      * observed within {@link #STATUS_POLL_MAX_ATTEMPTS} attempts.
      *
      * @return the terminal {@link InvoiceExportStatus}
@@ -195,7 +195,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             }
             lastCode = code;
         }
-        throw new KsefSessionPollingTimeoutException(referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
+        throw new KsefAsyncTimeoutException(referenceNumber, STATUS_POLL_MAX_ATTEMPTS, lastCode);
     }
 
     /**
@@ -372,10 +372,10 @@ public final class PreparedInvoiceExport implements AutoCloseable {
                 response = httpClient.send(request,
                         HttpResponse.BodyHandlers.ofFile(encryptedTemp));
             } catch (IOException ioFailure) {
-                throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), ioFailure);
+                throw new KsefServerException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), ioFailure);
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
-                throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), interrupted);
+                throw new KsefServerException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), interrupted);
             }
             if (response.statusCode() != HTTP_OK) {
                 throw new KsefException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url)
@@ -602,10 +602,10 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             }
             return response.body();
         } catch (IOException ioFailure) {
-            throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), ioFailure);
+            throw new KsefServerException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), ioFailure);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new KsefNetworkException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), interrupted);
+            throw new KsefServerException(ERR_DOWNLOAD_FAILED + " " + redactQuery(url), interrupted);
         }
     }
 
@@ -709,7 +709,7 @@ public final class PreparedInvoiceExport implements AutoCloseable {
             Thread.sleep(millis);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new KsefNetworkException(ERR_INTERRUPTED_POLLING, interrupted);
+            throw new KsefServerException(ERR_INTERRUPTED_POLLING, interrupted);
         }
     }
 }
