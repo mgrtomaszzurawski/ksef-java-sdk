@@ -21,7 +21,7 @@ import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 /**
  * Internal CSR (PKCS#10) generation. Auto-detects signature algorithm
  * from key type ({@code SHA256withRSA} for RSA, {@code SHA256withECDSA}
- * for EC). Used by {@code KsefCryptoService.generateCsr(...)}.
+ * for EC). Called by {@link #generate(CsrRequest)}.
  *
  * <p>Spec: {@code ksef-docs/certyfikaty-KSeF.md} certificate enrollment.
  *

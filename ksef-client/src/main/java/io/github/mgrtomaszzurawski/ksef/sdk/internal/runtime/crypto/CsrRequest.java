@@ -8,7 +8,7 @@ import java.security.KeyPair;
 import java.util.Objects;
 
 /**
- * Request for {@link KsefCryptoService#generateCsr(CsrRequest)}.
+ * Request for {@link CsrSupport#generate(CsrRequest)}.
  *
  * <p>Builds a PKCS#10 Certificate Signing Request signed with
  * {@code keyPair}'s private key for KSeF certificate enrollment.

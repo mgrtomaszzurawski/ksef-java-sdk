@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Result of {@link KsefCryptoService#generateCsr(CsrRequest)}.
+ * Result of {@link CsrSupport#generate(CsrRequest)}.
  *
  * <p>The {@link #pkcs10Der} bytes are the DER-encoded PKCS#10
  * Certificate Signing Request ready to submit to the KSeF
