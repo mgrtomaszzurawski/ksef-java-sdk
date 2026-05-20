@@ -9,7 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.sample.report.RunResult;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
 import java.io.IOException;

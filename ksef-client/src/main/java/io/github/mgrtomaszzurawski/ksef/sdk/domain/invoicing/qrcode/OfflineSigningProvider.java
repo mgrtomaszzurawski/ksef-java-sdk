@@ -5,9 +5,9 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode;
 import java.util.Objects;
 
 /**

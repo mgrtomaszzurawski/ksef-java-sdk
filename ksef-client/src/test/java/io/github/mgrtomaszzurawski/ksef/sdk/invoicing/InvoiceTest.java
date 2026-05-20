@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

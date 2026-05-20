@@ -6,18 +6,17 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineInvoices;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OfflineMode;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoices;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningContext;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

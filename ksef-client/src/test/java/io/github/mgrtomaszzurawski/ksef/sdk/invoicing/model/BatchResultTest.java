@@ -5,8 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.invoicing.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FailedInvoice;
@@ -16,11 +16,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvo
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.UpoEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoiceDocumentConstructor;
 import org.junit.jupiter.api.Test;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -10,7 +10,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
@@ -222,8 +222,8 @@ class SubmitBatchTest {
 
     private static void stubSymmetricKeyEncryptionCert() {
         try {
-            io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates testCerts =
-                    io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates.generateRsa();
+            io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates testCerts =
+                    io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates.generateRsa();
             String certBase64 = java.util.Base64.getEncoder()
                     .encodeToString(testCerts.certificate().getEncoded());
             String validFrom = java.time.OffsetDateTime.now().toString();

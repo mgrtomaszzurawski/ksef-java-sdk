@@ -10,13 +10,13 @@ import io.github.mgrtomaszzurawski.ksef.sample.util.IdentifierGenerators;
 import io.github.mgrtomaszzurawski.ksef.sample.util.SelfSignedCerts;
 import io.github.mgrtomaszzurawski.ksef.sample.util.TestInvoiceXml;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,7 +106,7 @@ public final class PeppolProviderRunner implements DemoRunner {
                 cert.certificate(), cert.privateKey(), KsefIdentifier.peppolId(peppolId));
         try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(envUrl))
                 .credentials(creds)
-                .retryPolicy(io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy.builder().build())
+                .retryPolicy(io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy.builder().build())
                 .build()) {
             // Drive lazy auth via any authenticated read; no-op ifPresent
             // consumes the Optional per Sonar S2201.

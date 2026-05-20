@@ -1,7 +1,7 @@
 # ADR-012: Package structure — `domain/` for functionality, `internal/{client,runtime}/` for plumbing
 
 **Date:** 2026-05-01
-**Status:** Accepted
+**Status:** Superseded by [ADR-034](ADR-034-sentinel-and-domain-sub-bucketing.md) — 2026-05-20
 **Last verified:** 2026-05-07
 **Trigger:** PR #25, #26, dev commit `59d3703`. The pre-Phase-9 state had 27
 files at the `sdk/` package root, 90 records flat in `sdk/model/`, 25 builders

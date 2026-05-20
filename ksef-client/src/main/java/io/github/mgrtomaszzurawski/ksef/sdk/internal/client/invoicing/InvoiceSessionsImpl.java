@@ -11,9 +11,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCer
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceBatch;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.InvoiceSessions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;

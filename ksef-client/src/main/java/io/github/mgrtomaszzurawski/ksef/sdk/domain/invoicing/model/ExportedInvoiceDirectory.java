@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;

@@ -5,8 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationInitResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.mapping.AuthMappers;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -22,6 +21,6 @@ public record AuthenticationInit(String referenceNumber, @Nullable TokenInfo aut
     public static AuthenticationInit from(AuthenticationInitResponseRaw rawValue) {
         return new AuthenticationInit(
                 rawValue.getReferenceNumber(),
-                CommonMappers.toTokenInfo(rawValue.getAuthenticationToken()));
+                AuthMappers.toTokenInfo(rawValue.getAuthenticationToken()));
     }
 }

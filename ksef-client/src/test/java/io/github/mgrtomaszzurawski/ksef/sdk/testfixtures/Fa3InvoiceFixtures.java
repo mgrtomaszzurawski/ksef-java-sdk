@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.testfixtures;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Fa3Invoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
 import java.math.BigDecimal;

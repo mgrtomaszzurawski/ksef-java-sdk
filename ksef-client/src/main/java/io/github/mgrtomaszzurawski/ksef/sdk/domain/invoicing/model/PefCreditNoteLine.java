@@ -4,13 +4,15 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
+
 import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
  * UBL CreditNoteLine model exposed by the read-side
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoice} and
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PefKorInvoiceDocument}
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.PefKorInvoice} and
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.PefKorInvoiceDocument}
  * accessors. The data shape mirrors {@link PefInvoiceLine} but the field
  * names track the UBL CreditNote element {@code <cac:CreditNoteLine>},
  * which uses {@code <cbc:CreditedQuantity>} instead of

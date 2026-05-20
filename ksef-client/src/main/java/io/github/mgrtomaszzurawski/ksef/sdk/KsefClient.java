@@ -10,18 +10,18 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.StatusInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.CertificateSubjectIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCertificateCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefClientConfig;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefPkcs12Credentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.AuthSessions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.Certificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
@@ -62,7 +62,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.slf4j.Logger;
@@ -589,7 +589,7 @@ public final class KsefClient implements AutoCloseable {
          * SDK posts an invoice it polls the per-invoice status until
          * KSeF reports a terminal state (Accepted / Rejected); this
          * duration bounds how long the SDK waits before throwing
-         * {@code KsefSessionPollingTimeoutException}. Default 60s.
+         * {@code KsefAsyncTimeoutException}. Default 60s.
          *
          * <p>Tune higher for environments where verification is known
          * to spike; lower for tests that want a fast-fail behaviour.
@@ -621,7 +621,7 @@ public final class KsefClient implements AutoCloseable {
         }
 
         /**
-         * Register custom {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument}
+         * Register custom {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument}
          * types the SDK should construct on the read-side flow (archive
          * lookups, incremental sync, session-cleared retrieval) for
          * non-built-in {@code FormCode}s.
@@ -631,7 +631,7 @@ public final class KsefClient implements AutoCloseable {
          * types. Omitting the call uses
          * {@code KsefInvoiceTypes.builtinsOnly()} as the default — the
          * read-side flow returns
-         * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument}
+         * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.UnrecognizedInvoiceDocument}
          * for any unregistered non-built-in form.
          *
          * @param invoiceTypes the registry (must not be null; pass
@@ -668,7 +668,7 @@ public final class KsefClient implements AutoCloseable {
             authenticateWithToken(token);
         } else if (credentials instanceof KsefCertificateCredentials cert) {
             authenticateWithCertificate(cert.certificate(), cert.privateKey(), cert.identifier(),
-                    cert.subjectIdentifier(), cert.signingOptions(),
+                    cert.subjectIdentifier(),
                     cert.authorizationPolicy().orElse(null));
         } else if (credentials instanceof KsefPkcs12Credentials pkcs12) {
             authenticateWithPkcs12(pkcs12);
@@ -689,7 +689,6 @@ public final class KsefClient implements AutoCloseable {
     private void authenticateWithCertificate(X509Certificate certificate, PrivateKey privateKey,
                                              KsefIdentifier identifier,
                                              CertificateSubjectIdentifier subjectIdentifier,
-                                             io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions signingOptions,
                                              @Nullable AuthorizationPolicy policy) {
         AuthenticationChallenge challenge = authClient.requestChallenge();
         this.lastChallengeClientIp = challenge.clientIp();
@@ -697,7 +696,7 @@ public final class KsefClient implements AutoCloseable {
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.XadesAuthRequest(
                         challenge.challenge(), identifier, subjectIdentifier, policy, challenge.clientIp()),
                 new io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.XadesSigningMaterial(
-                        certificate, privateKey, signingOptions));
+                        certificate, privateKey));
         pollAuthStatus();
         authClient.redeemTokens();
     }
@@ -709,7 +708,6 @@ public final class KsefClient implements AutoCloseable {
         X509Certificate certificate = CertificateLoader.getCertificate(keyStore, alias);
         authenticateWithCertificate(certificate, privateKey, credentials.identifier(),
                 credentials.subjectIdentifier(),
-                io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults(),
                 credentials.authorizationPolicy().orElse(null));
     }
 

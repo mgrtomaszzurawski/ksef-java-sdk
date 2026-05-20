@@ -4,8 +4,12 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
+
+
+
+
+import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -24,7 +28,7 @@ import java.util.Optional;
  *
  * <p>The SDK blocks until KSeF reaches a terminal state (Accepted or
  * Rejected) before constructing this record. On verification timeout
- * the SDK throws {@code KsefSessionPollingTimeoutException} instead;
+ * the SDK throws {@code KsefAsyncTimeoutException} instead;
  * the caller can re-query {@code session.invoiceStatus(referenceNumber)}
  * later if they want to retry the wait.
  *

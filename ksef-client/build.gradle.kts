@@ -246,7 +246,7 @@ tasks.javadoc {
         group("Configuration", "io.github.mgrtomaszzurawski.ksef.sdk.config")
         group(
             "Common types",
-            "io.github.mgrtomaszzurawski.ksef.sdk.common:io.github.mgrtomaszzurawski.ksef.sdk.exception:io.github.mgrtomaszzurawski.ksef.sdk.crypto"
+            "io.github.mgrtomaszzurawski.ksef.sdk.core:io.github.mgrtomaszzurawski.ksef.sdk.exception"
         )
         group("Operational domain APIs", "io.github.mgrtomaszzurawski.ksef.sdk.domain*")
         tags(
@@ -287,25 +287,20 @@ tasks.register<Javadoc>("javadocAll") {
         // sdk.internal.*), and `-private` surfaces package-private + private
         // members so internal collaborators are clickable from internal call
         // sites.
-        //
-        // R2-2: `--show-module-contents=all` triggers the JDK 17 javadoc bug
-        // "error: cannot read Input length = 1" on the module-summary
-        // generation path, swallowed silently by isFailOnError=false and
-        // producing no index.html. The flag was meant to also list internal
-        // packages in the module-summary navigation, but the package listing
-        // from `--show-packages=all` is sufficient for browsing internal
-        // code locally — module-summary nav is a non-essential extra view.
-        // Re-enable only after the JDK17 javadoc bug is patched upstream.
         addStringOption("-show-packages", "all")
         addBooleanOption("private", true)
+        // Group labels MUST be ASCII-only. JDK 17's javadoc crashes with
+        // "error: cannot read Input length = 1" on non-ASCII bytes in
+        // group titles (e.g. an em-dash U+2014), producing an empty
+        // output directory. The crash is silent unless isFailOnError=true.
         group("Entry point", "io.github.mgrtomaszzurawski.ksef.sdk")
         group("Configuration", "io.github.mgrtomaszzurawski.ksef.sdk.config")
         group(
             "Common types",
-            "io.github.mgrtomaszzurawski.ksef.sdk.common:io.github.mgrtomaszzurawski.ksef.sdk.exception:io.github.mgrtomaszzurawski.ksef.sdk.crypto"
+            "io.github.mgrtomaszzurawski.ksef.sdk.core:io.github.mgrtomaszzurawski.ksef.sdk.exception:io.github.mgrtomaszzurawski.ksef.sdk.crypto"
         )
         group("Operational domain APIs", "io.github.mgrtomaszzurawski.ksef.sdk.domain*")
-        group("Internal — runtime + client", "io.github.mgrtomaszzurawski.ksef.sdk.internal*")
+        group("Internal - runtime + client", "io.github.mgrtomaszzurawski.ksef.sdk.internal*")
         tags(
             "apiNote:a:API Note:",
             "implSpec:a:Implementation Requirements:",
@@ -313,7 +308,10 @@ tasks.register<Javadoc>("javadocAll") {
         )
         addStringOption("Xdoclint:none", "-quiet")
     }
-    isFailOnError = false
+    // Fail loudly on real javadoc errors. The previous isFailOnError=false
+    // masked the em-dash crash and shipped an empty javadoc-internal/
+    // directory while the build reported SUCCESS.
+    isFailOnError = true
 }
 
 // ---------- Maven Central publication ----------

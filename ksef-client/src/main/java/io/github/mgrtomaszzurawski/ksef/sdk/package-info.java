@@ -13,11 +13,10 @@
  * {@code client.authSessions()}, {@code client.testData()}).
  *
  * <p>Configuration types (environment, credentials, retry policy, feature
- * policy, authorization policy) live in {@code sdk.config}; shared value
- * types ({@code StatusInfo}, {@code TokenInfo},
- * {@code PublicKeyCertificate}) live in {@code sdk.common}; the typed
- * exception hierarchy lives in {@code sdk.exception}; the XSD-driven
- * invoice validator and XML utility surface live in {@code sdk.crypto}.
+ * policy, authorization policy) live in {@code sdk.config}; cross-domain
+ * value/envelope types ({@code StatusInfo}, {@code KsefNumber}) live in
+ * {@code sdk.core}; the typed exception hierarchy lives in
+ * {@code sdk.exception}.
  */
 @org.jspecify.annotations.NullMarked
 package io.github.mgrtomaszzurawski.ksef.sdk;

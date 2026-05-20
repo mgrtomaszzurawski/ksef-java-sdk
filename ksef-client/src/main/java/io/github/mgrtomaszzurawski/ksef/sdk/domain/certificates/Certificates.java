@@ -23,9 +23,9 @@ import java.util.List;
  *
  * <p><strong>Authentication requirement</strong>: all endpoints in this
  * client require certificate-based authentication (XAdES, via
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCertificateCredentials}
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCertificateCredentials}
  * or
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefPkcs12Credentials}).
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefPkcs12Credentials}).
  * Token-authenticated callers will receive HTTP 403 from the server.
  *
  * <p><strong>Typical flow</strong>:

@@ -1,0 +1,20 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk.core;
+
+import java.util.List;
+
+/**
+ * Status information returned by KSeF for various operations.
+ *
+ * @param code numeric status code (e.g. 200 = success, 415 = session busy)
+ * @param description human-readable status description
+ * @param details optional additional detail messages
+ *
+ * @since 1.0.0
+ */
+public record StatusInfo(int code, String description, List<String> details) {
+
+}

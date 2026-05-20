@@ -48,7 +48,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestRateLimi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSessionLimitsBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectCreateBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.builder.TestSubjectLimitsBuilder;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestDataPermissionType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectType;
@@ -165,7 +165,7 @@ class AllMappersSmokeTest {
         var sellerQuery = InvoiceQueryBuilder.seller()
                 .invoicingDateFrom(OffsetDateTime.now())
                 .dateTo(OffsetDateTime.now().plusDays(1))
-                .ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(QUERY_KSEF_NUMBER))
+                .ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber.parse(QUERY_KSEF_NUMBER))
                 .invoiceNumber(QUERY_INVOICE_NUMBER).sellerNip(NIP)
                 .onlineOnly().selfInvoicing(true).hasAttachment(true).build();
         var sellerRaw = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(sellerQuery);

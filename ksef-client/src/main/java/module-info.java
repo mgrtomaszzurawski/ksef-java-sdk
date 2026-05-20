@@ -8,11 +8,15 @@ module io.github.mgrtomaszzurawski.ksef {
     // SDK public API — entry point
     exports io.github.mgrtomaszzurawski.ksef.sdk;
 
-    // Configuration: environments, identifiers, retry policy
+    // Configuration: environments, custom invoice types, diagnostic snapshot
     exports io.github.mgrtomaszzurawski.ksef.sdk.config;
+    // Configuration credentials: KsefCredentials sealed interface + 3 impls + identifier types
+    exports io.github.mgrtomaszzurawski.ksef.sdk.config.credentials;
+    // Configuration policy knobs: retry, feature flags, IP authorization
+    exports io.github.mgrtomaszzurawski.ksef.sdk.config.policy;
 
-    // Common shared types (StatusInfo, TokenInfo, KsefNumber, public-key models)
-    exports io.github.mgrtomaszzurawski.ksef.sdk.common;
+    // Cross-domain envelope + value-object types (StatusInfo, KsefNumber)
+    exports io.github.mgrtomaszzurawski.ksef.sdk.core;
 
     // Auth-session management accessor (KsefClient.authSessions())
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.auth;
@@ -20,11 +24,12 @@ module io.github.mgrtomaszzurawski.ksef {
     // Authentication public DTOs (AuthSession returned by KsefClient.authSessions().streamAuthSessions(filter))
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model;
 
-    // Public crypto facade (REQ-CRYPTO-001..004)
-    exports io.github.mgrtomaszzurawski.ksef.sdk.crypto;
-
     // Invoicing functionality (online + batch sessions, invoice ops, QR, sync orchestrator)
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;

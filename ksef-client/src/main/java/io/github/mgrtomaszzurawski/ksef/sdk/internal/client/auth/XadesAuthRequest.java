@@ -4,9 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.CertificateSubjectIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.CertificateSubjectIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
 import org.jspecify.annotations.Nullable;
 
 /**

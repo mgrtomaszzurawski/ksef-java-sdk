@@ -4,10 +4,11 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceDocument;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.UnrecognizedInvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.UnrecognizedInvoiceDocument;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -31,7 +32,7 @@ import java.util.Optional;
  * try (Stream<DecryptedInvoice> stream = client.invoices().sync().asStream(plan, store)) {
  *     stream.forEach(decrypted -> {
  *         switch (decrypted.document()) {
- *             case io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Fa3InvoiceDocument fa3 ->
+ *             case io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Fa3InvoiceDocument fa3 ->
  *                 processFa3(fa3);
  *             case MyCustomInvoiceDocument custom -> processCustom(custom);
  *             case UnrecognizedInvoiceDocument unknown ->

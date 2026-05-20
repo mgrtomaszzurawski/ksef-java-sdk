@@ -90,7 +90,7 @@ class BatchThreadingWarningPlacementTest {
 
     private static String readInvoiceBatchSource() throws IOException {
         Path source = findRepoFile(
-                "ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/sdk/domain/invoicing/InvoiceBatch.java");
+                "ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/sdk/domain/invoicing/archive/InvoiceBatch.java");
         return Files.readString(source, StandardCharsets.UTF_8);
     }
 

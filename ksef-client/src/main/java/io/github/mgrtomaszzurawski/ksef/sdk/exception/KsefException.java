@@ -42,7 +42,7 @@ public class KsefException extends RuntimeException {
     private static final int HTTP_SERVER_ERROR_MIN = 500;
     private static final int HTTP_SERVICE_UNAVAILABLE = 503;
     private static final String ERR_KSEF_UNAVAILABLE_503 =
-            "KSeF returned 503 Service Unavailable — switch to offline mode (catch KsefUnavailableException)";
+            "KSeF returned 503 Service Unavailable — switch to offline mode (catch KsefServerException)";
 
     private final int statusCode;
     private final @Nullable String responseBody;
@@ -171,7 +171,7 @@ public class KsefException extends RuntimeException {
             return new KsefRateLimitException(message, cause, statusCode, responseBody, retryAfterSeconds);
         }
         if (statusCode == HTTP_SERVICE_UNAVAILABLE) {
-            return new KsefUnavailableException(ERR_KSEF_UNAVAILABLE_503, cause, statusCode, responseBody);
+            return new KsefServerException(ERR_KSEF_UNAVAILABLE_503, cause, statusCode, responseBody);
         }
         if (statusCode >= HTTP_SERVER_ERROR_MIN) {
             return new KsefServerException(message, cause, statusCode, responseBody);

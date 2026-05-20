@@ -5,27 +5,24 @@
 package io.github.mgrtomaszzurawski.ksef.jpms.consumer;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.StatusInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions;
-import io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CsrRequest;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CsrResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.UpoVersion;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceBatch;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSessions;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceSync;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceBatch;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.InvoiceSessions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceSync;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BatchResult;
@@ -76,7 +73,7 @@ public final class JpmsConsumerCompileFixture {
      * in {@code module-info.java} that drops an export breaks this build.
      */
     public static void referencePublicSurface() {
-        // sdk + sdk.config + sdk.common
+        // sdk + sdk.config + sdk.core
         Class<?>[] surface = {
                 KsefClient.class,
                 KsefEnvironment.class,
@@ -85,14 +82,12 @@ public final class JpmsConsumerCompileFixture {
                 RetryPolicy.class,
                 FeaturePolicy.class,
                 UpoVersion.class,
-                SigningOptions.class,
                 KsefNumber.class,
                 StatusInfo.class,
-                // sdk.crypto — KsefCryptoService + EncryptionMaterial + FileMetadata +
-                // KsefEncryptionInfo + PublicKeyCertificate moved to sdk.internal.runtime.crypto
-                // per R1-5 (no longer visible to JPMS consumers — that is the point).
-                CsrRequest.class,
-                CsrResult.class,
+                // sdk.crypto package removed entirely (R3) — CSR generation
+                // and XML validation are now SDK-internal (called via the
+                // certificates().requestNewCertificate() facade and the
+                // automatic preflight gate on session.send respectively).
                 // sdk.domain.auth.model — verify exported (gap caught earlier)
                 AuthSession.class,
                 // sdk.domain.invoicing + builder + qrcode + sync

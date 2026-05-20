@@ -128,62 +128,81 @@ own `build.gradle.kts`.
 
 **Key design rule (ADR-005):** Consumers never import from `client.*` packages. All domain client public methods return immutable records from `sdk.domain.*.model`. Generated `*Raw` types are internal implementation detail.
 
-### Package structure (ADR-012)
+### Package structure (ADR-012 → superseded by ADR-034)
 
 ```
 ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/
 ├── sdk/
 │   ├── KsefClient.java                  # entry point at sdk/ root
-│   ├── KsefClientInternals.java         # @Deprecated test seam (moves to ksef-client-testkit in 0.2.x)
 │   ├── package-info.java
-│   ├── config/                          # KsefEnvironment, KsefIdentifier, RetryPolicy
-│   ├── common/                          # StatusInfo, TokenInfo, PublicKeyCertificate(Usage)
-│   ├── exception/                       # 10 typed exceptions (KsefException + subclasses)
+│   ├── config/                          # KsefEnvironment, KsefInvoiceTypes,
+│   │   │                                # KsefClientConfig + Descriptor + AuthMethod
+│   │   ├── credentials/                 # KsefCredentials sealed + 3 impls
+│   │   │                                # + KsefIdentifier + CertificateSubjectIdentifier
+│   │   └── policy/                      # RetryPolicy, FeaturePolicy,
+│   │                                    # UpoVersion, AuthorizationPolicy
+│   ├── core/                            # StatusInfo + KsefNumber (cross-domain)
+│   ├── exception/                       # 13 typed exceptions (KsefException + subclasses) + KsefValidationError
 │   │
 │   ├── domain/                          # PUBLIC functionality buckets (8)
-│   │   ├── authentication/  # KsefCredentials + 3 impls (Token, Pkcs12, Certificate)
-│   │   │   └── model/       # 10 auth-flow records
-│   │   ├── invoicing/       # FormCode, KsefSession, KsefBatchSession, InvoiceClient,
-│   │   │   │                  PreparedInvoiceExport, ExportedInvoicePackage
-│   │   │   ├── builder/     # 5 builders (online/batch session, send invoice, query, export)
-│   │   │   ├── model/       # 27 records
-│   │   │   ├── batch/       # BatchFileSpec, PreparedBatchPackage
-│   │   │   └── qrcode/      # QrCodeService, KsefVerificationLinks, QrEnvironment, QrContextType
-│   │   ├── permissions/     # PermissionClient
-│   │   │   ├── builder/     # 12 builders
-│   │   │   └── model/       # 22 records
-│   │   ├── tokens/          # TokenClient
-│   │   │   ├── builder/     # 2 builders
-│   │   │   └── model/       # 8 records
-│   │   ├── certificates/    # CertificateClient
-│   │   │   ├── builder/     # 3 builders
-│   │   │   └── model/       # 13 records
-│   │   ├── peppol/          # PeppolClient + model/ (3 records)
-│   │   ├── limits/          # LimitsClient, RateLimitClient + model/ (5 records)
-│   │   └── testdata/        # TestDataClient
-│   │       ├── builder/     # 8 builders
-│   │       └── model/       # 5 records
+│   │   ├── auth/            # AuthSessions + model/
+│   │   ├── invoicing/       # Invoices (facade), FormCode
+│   │   │   ├── session/     # Session sealed, OnlineSession, ClosedSession + Impls + InvoiceSessions
+│   │   │   ├── document/    # Invoice + InvoiceDocument hierarchy (FA2/3, PEF/Kor, Unrecognized)
+│   │   │   ├── offline/     # OfflineInvoice + OfflineInvoices + OfflineMode
+│   │   │   ├── archive/     # InvoiceArchive, InvoiceBatch, InvoiceExport,
+│   │   │   │                  InvoiceSync, PreparedInvoiceExport
+│   │   │   ├── builder/     # InvoiceQueryBuilder + OfflineInvoiceBuilder
+│   │   │   ├── model/       # records
+│   │   │   ├── qrcode/      # QrCodeService, KsefVerificationLinks, QrEnvironment, QrContextType
+│   │   │   └── sync/        # IncrementalSyncPlan, DecryptedInvoice, InvoiceSink
+│   │   ├── permissions/     # Permissions
+│   │   │   ├── builder/     # 15 builders
+│   │   │   └── model/       # records (sealed PermissionGrantRequest + 7 permits)
+│   │   ├── tokens/          # Tokens + builder/ + model/
+│   │   ├── certificates/    # Certificates + builder/ + model/
+│   │   ├── peppol/          # PeppolProviders + model/
+│   │   ├── limits/          # Limits + model/
+│   │   └── testdata/        # TestDataAdmin
+│   │       ├── builder/     # 7 builders
+│   │       └── model/       # records
 │   │
 │   └── internal/                        # NOT exported via JPMS
 │       ├── client/                      # endpoint wrappers used only by KsefClient
-│       │   ├── auth/        # AuthClient, SessionContext
-│       │   ├── session/     # SessionClient
-│       │   └── security/    # SecurityClient
+│       │   ├── auth/        # AuthClient, SessionContext, AuthSessionsImpl + model/ + mapping/
+│       │   ├── session/     # SessionClient, BatchSubmissionFlow, SessionHandleConstructor
+│       │   ├── security/    # SecurityClient
+│       │   ├── invoicing/   # InvoicesImpl, InvoiceArchiveImpl, OfflineInvoicesImpl,
+│       │   │                # InvoiceSessionsImpl, InvoiceBatchImpl, InvoiceExportImpl,
+│       │   │                # InvoiceSyncImpl + builder/ + mapping/ + model/ + sync/
+│       │   ├── certificates/, permissions/, tokens/, limits/, peppol/, testdata/
+│       │   │                # one *Impl + mapping/ each
+│       │   └── common/      # CommonMappers (cross-domain StatusInfo + PublicKeyCertificate mappers)
 │       └── runtime/                     # cross-cutting infrastructure
-│           ├── transport/   # HttpSupport, HttpRuntime, RetryHandler, ApiPaths
-│           ├── crypto/      # CryptoService, CertificateLoader
-│           ├── signing/     # SigningService
-│           └── batch/       # BatchPackageBuilder
+│           ├── transport/   # HttpSupport, HttpRuntime, KsefHttpRuntime, RetryHandler,
+│           │                # ApiPaths, ServerErrorParser, UriRedaction
+│           ├── crypto/      # CryptoService, CertificateLoader, CsrSupport, CsrRequest,
+│           │                # CsrResult, EncryptionMaterial, KsefEncryptionInfo, FileMetadata,
+│           │                # PublicKeyCertificate(Usage)
+│           ├── validation/  # KsefXmlValidator + InvoiceValidationGate (XSD preflight)
+│           ├── signing/     # SigningService (XAdES BASELINE-B + SHA-256, hardcoded)
+│           ├── batch/       # BatchPackageBuilder + BatchFileSpec + BatchPart + helpers + KsefLimits
+│           ├── async/       # KsefAsync + KsefAsyncStatus (poll-until-terminal helper)
+│           ├── jaxb/        # JaxbDeepClone
+│           └── pagination/  # PagedSpliterator
 │
 └── client/                              # Generated code (NOT exported)
     └── model/                           # OpenAPI *Raw classes
 ```
 
-**Sub-split convention (ADR-012):** Inside any `domain/<feature>/` bucket,
-*headline* types (clients, credentials, session abstractions) live at the
-bucket root; *builders* live under `<bucket>/builder/`; *records* live
-under `<bucket>/model/`. Sentinel packages (`config/`, `common/`,
-`exception/`) stay flat — each holds one *kind* of type.
+**Sub-split convention (ADR-034 supersedes ADR-012):** Sentinel and
+domain buckets MAY sub-split into thematic sub-buckets when one bucket
+exceeds peer scale (config — 7 themes; invoicing — 32 root files).
+Sub-split depth is one level only. Within a sub-bucket the original
+ADR-012 layout applies: headlines at root, `builder/`, `model/`. ADR-024
+reflective-bridge constraint (sealed impls share package with their
+permitting interface) is preserved across sub-bucketing — e.g. all
+sealed Session impls live inside `domain/invoicing/session/`.
 
 ### Model generation
 
@@ -221,22 +240,24 @@ HTTP 401 (driven by `HttpRuntime.reauthenticate()`).
 
 The SDK is a named Java module (`io.github.mgrtomaszzurawski.ksef`).
 Every package outside `sdk.internal.*` is exported; the `internal` tree
-is invisible to consumers (ADR-005, ADR-012):
+is invisible to consumers (ADR-005, ADR-012, ADR-034):
 
 - `sdk` — `KsefClient` (entry point)
-- `sdk.config` — `KsefEnvironment`, `KsefIdentifier`, `RetryPolicy`
-- `sdk.common` — `StatusInfo`, `TokenInfo`, public-key types
-- `sdk.exception` — typed exception hierarchy (10 types)
-- `sdk.domain.<feature>` + `.builder` + `.model` — one set per
-  functionality bucket (authentication, invoicing, permissions,
-  tokens, certificates, peppol, limits, testdata)
+- `sdk.config` — `KsefEnvironment`, `KsefInvoiceTypes`, diagnostic snapshot types
+- `sdk.config.credentials` — sealed `KsefCredentials` hierarchy + identifier types
+- `sdk.config.policy` — `RetryPolicy`, `FeaturePolicy`, `UpoVersion`, `AuthorizationPolicy`
+- `sdk.core` — `StatusInfo` (envelope), `KsefNumber` (KSeF-assigned invoice identifier)
+- `sdk.exception` — typed exception hierarchy (13 types)
+- `sdk.domain.<feature>` + sub-buckets per ADR-034 — one set per
+  functionality bucket (auth, invoicing, permissions, tokens,
+  certificates, peppol, limits, testdata). Invoicing additionally
+  sub-bucketed into session/, document/, offline/, archive/.
 
 NOT exported:
 - `sdk.internal.client.*` — endpoint wrappers (`AuthClient`,
-  `SessionClient`, `SecurityClient`, `SessionContext`)
-- `sdk.internal.runtime.*` — cross-cutting plumbing (`HttpSupport`,
-  `HttpRuntime`, `RetryHandler`, `ApiPaths`, `CryptoService`,
-  `CertificateLoader`, `SigningService`, `BatchPackageBuilder`)
+  `SessionClient`, `SecurityClient`, `*Impl` for every domain area)
+- `sdk.internal.runtime.*` — cross-cutting plumbing (transport, crypto,
+  signing, validation, async, batch, jaxb, pagination)
 - `client.model` — opened to Jackson only for deserialization
 
 ## Code patterns and conventions
@@ -340,9 +361,10 @@ Architectural decisions in `ADR/`. Consult before making changes.
 - **ADR-005** — SDK overlay on generated code: immutable records as public API, `*Raw` types internal
 - **ADR-008** — API redesign: `KsefSession` / `KsefBatchSession` session abstractions
 - **ADR-011** — Batch encryption (AES-256-CBC + PKCS#7) and polling semantics
-- **ADR-012** — Package structure: `domain/<feature>/` for functionality, `internal/{client,runtime}/` for plumbing
+- **ADR-012** — *Superseded by ADR-034*. Package structure: `domain/<feature>/` for functionality, `internal/{client,runtime}/` for plumbing
 - **ADR-013** — `HttpRuntime` narrow interface — breaks the transport→facade layering inversion
 - **ADR-014** — `ApiPaths` centralisation — single source of truth for REST paths and version
+- **ADR-034** — Sentinel and domain sub-bucketing when themes diverge. Sentinel packages and domain buckets MAY sub-split (one level deep) when they aggregate types from multiple distinct themes
 
 ## Additional context
 

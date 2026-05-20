@@ -5,7 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefCryptoException;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.time.Clock;
@@ -14,7 +14,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

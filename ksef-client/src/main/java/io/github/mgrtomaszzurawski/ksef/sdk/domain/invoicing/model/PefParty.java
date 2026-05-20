@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 

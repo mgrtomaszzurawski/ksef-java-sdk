@@ -56,7 +56,12 @@ public final class SigningService {
     }
 
     /**
-     * Sign XML content with XAdES-BASELINE-B enveloped signature.
+     * Sign XML content with XAdES-BASELINE-B enveloped signature + SHA-256.
+     *
+     * <p>1.0.0 hard-codes the BASELINE_B + SHA-256 combination per
+     * ADR-021 — additional XAdES profiles (T/LT/LTA) and digests
+     * (SHA-384, SHA-512, SHA3-*) will be added when matching
+     * implementation + tests land.
      *
      * @param xmlContent the XML bytes to sign
      * @param certificate the signing certificate
@@ -64,29 +69,10 @@ public final class SigningService {
      * @return the signed XML as a string
      */
     public static String signXml(byte[] xmlContent, X509Certificate certificate, PrivateKey privateKey) {
-        return signXml(xmlContent, certificate, privateKey,
-                io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.defaults());
-    }
-
-    /**
-     * Sign XML using the supplied {@link io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions}.
-     *
-     * <p>1.0.0 supports only {@code BASELINE_B} + {@code SHA256}. Any other
-     * combination of options throws {@link KsefCryptoException} per ADR-021
-     * (public knobs must mean working support, not aspirational support).
-     * The narrow scope is intentional and documented.
-     */
-    public static String signXml(byte[] xmlContent, X509Certificate certificate, PrivateKey privateKey,
-                                 io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions options) {
         if (xmlContent == null || certificate == null || privateKey == null) {
             throw new KsefCryptoException(ERR_SIGN_FAILED,
                     new IllegalArgumentException(ERR_NULL_INPUTS));
         }
-        if (options == null) {
-            throw new KsefCryptoException(ERR_SIGN_FAILED,
-                    new IllegalArgumentException("options must not be null"));
-        }
-        validateSigningOptions(options);
         try {
             DSSDocument document = new InMemoryDocument(xmlContent, null, MimeTypeEnum.XML);
             XAdESSignatureParameters parameters = buildParameters(certificate, privateKey);
@@ -101,19 +87,6 @@ public final class SigningService {
             }
         } catch (IOException | DSSException exception) {
             throw new KsefCryptoException(ERR_SIGN_FAILED, exception);
-        }
-    }
-
-    private static void validateSigningOptions(
-            io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions options) {
-        if (options.xadesProfile()
-                != io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.XadesProfile.BASELINE_B
-                || options.digestAlgorithm()
-                != io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions.DigestAlgorithm.SHA256) {
-            throw new KsefCryptoException(
-                    "1.0 only implements XAdES BASELINE-B + SHA-256; got profile="
-                            + options.xadesProfile() + " digest=" + options.digestAlgorithm(),
-                    null);
         }
     }
 

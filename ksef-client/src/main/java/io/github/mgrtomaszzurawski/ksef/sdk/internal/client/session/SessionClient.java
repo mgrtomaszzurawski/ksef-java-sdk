@@ -16,8 +16,8 @@ import io.github.mgrtomaszzurawski.ksef.client.model.SessionInvoicesResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.SessionStatusResponseRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.BatchSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.OnlineSessionOpenResult;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.SendInvoiceResult;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model.SendInvoiceResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoiceStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionInvoices;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionStatus;
@@ -290,7 +290,7 @@ public final class SessionClient {
     /**
      * Iterate every page of invoices for the session, following
      * {@code x-continuation-token} internally. Use this from
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession#invoices()}
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession#invoices()}
      * — sessions with more than 10 (default) or {@value #SESSION_INVOICES_PAGE_SIZE}
      * (max) invoices were silently truncated by {@link #getInvoices(String)}.
      */

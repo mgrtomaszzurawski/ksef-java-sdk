@@ -4,6 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
+
 /**
  * Masked summary of a {@link KsefCredentials} instance — safe to log,
  * include in diagnostics, or compare across clients without exposing

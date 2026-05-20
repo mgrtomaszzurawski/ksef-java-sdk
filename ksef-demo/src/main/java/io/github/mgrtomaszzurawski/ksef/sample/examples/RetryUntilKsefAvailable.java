@@ -4,13 +4,13 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sample.examples;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnavailableException;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 
 /**
- * Wait-and-retry pattern for {@link KsefUnavailableException}.
+ * Wait-and-retry pattern for {@link KsefServerException}.
  *
  * <p>Useful when a consumer prefers to keep retrying online submission
  * over a few minutes before falling back to offline issuance — for
@@ -35,12 +35,12 @@ public final class RetryUntilKsefAvailable {
 
     /**
      * Send {@code invoice} through {@code session.sendInvoice(...)},
-     * retrying on {@link KsefUnavailableException} up to
+     * retrying on {@link KsefServerException} up to
      * {@value #DEFAULT_MAX_ATTEMPTS} times with exponential backoff.
      *
      * @return the {@link SubmittedInvoice} returned by the first
      *     successful attempt
-     * @throws KsefUnavailableException when every attempt failed; the
+     * @throws KsefServerException when every attempt failed; the
      *     final attempt's exception is rethrown
      * @throws InterruptedException if the calling thread is interrupted
      *     while sleeping between retries
@@ -54,11 +54,11 @@ public final class RetryUntilKsefAvailable {
             throw new NullPointerException(ERR_NULL_INVOICE);
         }
         long backoffMillis = INITIAL_BACKOFF_MILLIS;
-        KsefUnavailableException lastFailure = null;
+        KsefServerException lastFailure = null;
         for (int attempt = 1; attempt <= DEFAULT_MAX_ATTEMPTS; attempt++) {
             try {
                 return session.sendInvoice(invoice);
-            } catch (KsefUnavailableException unavailable) {
+            } catch (KsefServerException unavailable) {
                 lastFailure = unavailable;
                 if (attempt == DEFAULT_MAX_ATTEMPTS) {
                     break;
@@ -67,7 +67,7 @@ public final class RetryUntilKsefAvailable {
                 backoffMillis = Math.min(backoffMillis * BACKOFF_MULTIPLIER, MAX_BACKOFF_MILLIS);
             }
         }
-        throw new KsefUnavailableException(
+        throw new KsefServerException(
                 String.format(ERR_GAVE_UP, DEFAULT_MAX_ATTEMPTS),
                 lastFailure);
     }

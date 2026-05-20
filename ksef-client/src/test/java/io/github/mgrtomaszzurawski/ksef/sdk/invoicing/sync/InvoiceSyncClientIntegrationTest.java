@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.StatusInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.PreparedInvoiceExport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePackage;
@@ -267,7 +267,7 @@ class InvoiceSyncClientIntegrationTest {
         final AtomicInteger invocations = new AtomicInteger();
 
         @Override
-        public void accept(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber ksefNumber,
+        public void accept(io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber ksefNumber,
                            io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata metadata,
                            Path xmlPath) {
             invocations.incrementAndGet();

@@ -17,7 +17,7 @@ import java.util.stream.Stream;
  * needs it; this accessor exposes the explicit session-management
  * verbs (terminate, list, terminate-by-reference) and the diagnostic
  * {@link #lastChallengeClientIp()} hook used to autopin
- * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy}
+ * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy}
  * IP allow-lists.
  *
  * @since 1.0.0
@@ -122,11 +122,11 @@ public interface AuthSessions {
      * handshake. Subsequent calls reuse the cached value.
      *
      * <p>Use to autopin
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.AuthorizationPolicy}
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy}
      * for token authentication: read this after the first authentication,
      * then build a fresh policy that whitelists exactly this IP and pass
      * it via
-     * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials}
+     * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials}
      * on subsequent authentications.
      *
      * @return the client IP from the latest challenge (non-null)

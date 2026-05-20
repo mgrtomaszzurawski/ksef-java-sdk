@@ -5,8 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
 
 import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping.CommonMappers;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.mapping.AuthMappers;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -21,7 +20,7 @@ public record AuthenticationTokens(@Nullable TokenInfo accessToken, @Nullable To
 
     public static AuthenticationTokens from(AuthenticationTokensResponseRaw rawValue) {
         return new AuthenticationTokens(
-                CommonMappers.toTokenInfo(rawValue.getAccessToken()),
-                CommonMappers.toTokenInfo(rawValue.getRefreshToken()));
+                AuthMappers.toTokenInfo(rawValue.getAccessToken()),
+                AuthMappers.toTokenInfo(rawValue.getRefreshToken()));
     }
 }
