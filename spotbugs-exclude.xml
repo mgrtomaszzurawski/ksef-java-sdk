@@ -72,6 +72,18 @@
         <Package name="io.github.mgrtomaszzurawski.ksef.sdk.config"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.config.credentials"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.config.policy"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.core"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
     <!-- BatchSubmissionFlow internal mechanics: AES key + IV held to drive
          the synchronous batch flow; the flow is the sole owner for the call's
          lifetime, so defensive copies on every internal hop add noise without
@@ -114,7 +126,7 @@
          alternative, not via defensive copy of the JAXB tree (which has no
          clone() contract). -->
     <Match>
-        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.(Fa2|Fa3|Pef|PefKor)Invoice(Document)?"/>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.document\.(Fa2|Fa3|Pef|PefKor)Invoice(Document)?"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
     <!-- Internal session records — package-internal data carriers, not

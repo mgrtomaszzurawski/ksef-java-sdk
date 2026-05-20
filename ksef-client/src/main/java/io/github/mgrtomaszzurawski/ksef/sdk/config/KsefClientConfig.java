@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.FeaturePolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 import java.time.Duration;
 import java.util.Optional;

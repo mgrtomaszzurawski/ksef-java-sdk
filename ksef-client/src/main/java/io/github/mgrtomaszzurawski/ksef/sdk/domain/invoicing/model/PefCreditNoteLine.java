@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
+
 import java.math.BigDecimal;
 import java.util.Objects;
 

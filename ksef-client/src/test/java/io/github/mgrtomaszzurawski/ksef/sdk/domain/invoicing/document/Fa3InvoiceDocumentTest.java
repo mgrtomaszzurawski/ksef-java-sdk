@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import java.math.BigDecimal;
 import java.time.LocalDate;

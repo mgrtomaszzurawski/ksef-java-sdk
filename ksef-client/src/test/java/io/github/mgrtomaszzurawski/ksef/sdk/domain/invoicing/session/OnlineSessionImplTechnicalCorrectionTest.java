@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;

@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-enum AuthenticationMethodCategory {
+public enum AuthenticationMethodCategory {
 
     XADES_SIGNATURE,
     NATIONAL_NODE,

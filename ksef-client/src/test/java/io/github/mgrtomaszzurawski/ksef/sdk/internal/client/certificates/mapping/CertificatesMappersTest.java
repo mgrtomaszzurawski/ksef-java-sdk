@@ -26,7 +26,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.Certificat
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.EnrollCertificateResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.RetrievedCertificate;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import org.openapitools.jackson.nullable.JsonNullableModule;

@@ -41,7 +41,7 @@ public final class InvoiceValidationGate {
      * validate against, and KSeF server validation remains authoritative.
      * Throws {@link KsefXmlValidator.KsefXmlValidationException} on hard errors.
      */
-    static void validate(FormCode formCode, byte[] invoiceXml) {
+    public static void validate(FormCode formCode, byte[] invoiceXml) {
         if (!KNOWN_FORM_CODES.contains(formCode) && formCode.customXsdBytes() == null) {
             return;
         }

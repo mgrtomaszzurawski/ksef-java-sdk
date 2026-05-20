@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;
 
+
 import java.time.LocalDate;
 import java.util.Objects;
 

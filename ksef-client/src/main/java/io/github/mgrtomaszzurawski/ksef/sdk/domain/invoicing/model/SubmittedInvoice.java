@@ -4,6 +4,10 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
+
+
+
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
 import java.util.Arrays;

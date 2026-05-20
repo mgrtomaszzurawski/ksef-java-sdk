@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator.Severity;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator.ValidationIssue;

@@ -4,10 +4,16 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.OfflineInvoiceBuilder;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeAll;

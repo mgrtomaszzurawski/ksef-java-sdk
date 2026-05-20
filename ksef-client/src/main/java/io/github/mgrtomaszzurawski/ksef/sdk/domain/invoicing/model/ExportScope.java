@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
 /**
  * Scope of a KSeF invoice export. Replaces the prior
  * {@code boolean fullContent} parameter on

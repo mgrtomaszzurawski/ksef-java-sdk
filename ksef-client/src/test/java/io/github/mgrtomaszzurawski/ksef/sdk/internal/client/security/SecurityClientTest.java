@@ -9,7 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.security.SecurityClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
 import java.util.Base64;

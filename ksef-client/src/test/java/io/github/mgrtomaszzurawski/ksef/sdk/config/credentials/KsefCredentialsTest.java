@@ -9,7 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCertificateCr
 import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefPkcs12Credentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;

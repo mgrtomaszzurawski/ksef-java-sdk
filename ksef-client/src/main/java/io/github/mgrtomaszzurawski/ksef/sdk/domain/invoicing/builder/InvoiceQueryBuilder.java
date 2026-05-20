@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;
 
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BuyerIdentifierType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceFormType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryAmount;

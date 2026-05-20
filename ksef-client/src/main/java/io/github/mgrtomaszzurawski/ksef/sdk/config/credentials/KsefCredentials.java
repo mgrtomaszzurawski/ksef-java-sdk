@@ -4,6 +4,10 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.config.credentials;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentialsDescriptor;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 
 import java.util.Objects;

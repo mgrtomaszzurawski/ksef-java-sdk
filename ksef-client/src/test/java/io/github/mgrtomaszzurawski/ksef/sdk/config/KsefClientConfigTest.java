@@ -5,9 +5,11 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.config;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

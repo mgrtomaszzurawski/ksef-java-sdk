@@ -8,7 +8,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;

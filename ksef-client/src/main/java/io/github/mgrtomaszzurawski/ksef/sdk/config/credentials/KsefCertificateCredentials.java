@@ -4,6 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.config.credentials;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthMethod;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentialsDescriptor;
+
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Objects;

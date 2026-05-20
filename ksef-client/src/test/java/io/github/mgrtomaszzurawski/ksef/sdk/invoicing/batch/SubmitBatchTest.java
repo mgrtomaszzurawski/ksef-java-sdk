@@ -222,8 +222,8 @@ class SubmitBatchTest {
 
     private static void stubSymmetricKeyEncryptionCert() {
         try {
-            io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates testCerts =
-                    io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates.generateRsa();
+            io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates testCerts =
+                    io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates.generateRsa();
             String certBase64 = java.util.Base64.getEncoder()
                     .encodeToString(testCerts.certificate().getEncoded());
             String validFrom = java.time.OffsetDateTime.now().toString();

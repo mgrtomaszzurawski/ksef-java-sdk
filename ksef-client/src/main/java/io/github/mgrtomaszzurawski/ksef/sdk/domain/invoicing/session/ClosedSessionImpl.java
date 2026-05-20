@@ -4,6 +4,14 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.UnrecognizedInvoiceDocument;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
@@ -150,7 +158,7 @@ final class ClosedSessionImpl implements ClosedSession {
         byte[] xml = sessionClient.getUpoByInvoiceReference(referenceNumber, invoiceReferenceNumber);
         SessionInvoiceStatus status = sessionClient.getInvoiceStatus(referenceNumber, invoiceReferenceNumber);
         Invoice placeholder = Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
-        InvoiceDocument documentPlaceholder = InvoiceDocuments.anonymousFromXml(
+        InvoiceDocument documentPlaceholder = new UnrecognizedInvoiceDocument(
                 UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
         SubmittedInvoice<Invoice> submitted = new SubmittedInvoice<>(
                 placeholder, invoiceReferenceNumber, status,
@@ -194,7 +202,7 @@ final class ClosedSessionImpl implements ClosedSession {
                 SessionInvoiceStatus syntheticStatus = newAcceptedSessionInvoiceStatus(
                         ordinalCounter, invoiceRef, ksefNumber, summary.acceptanceDate());
                 Invoice placeholder = Invoice.fromXml(UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
-                InvoiceDocument documentPlaceholder = InvoiceDocuments.anonymousFromXml(
+                InvoiceDocument documentPlaceholder = new UnrecognizedInvoiceDocument(
                         UPO_PLACEHOLDER_FORM_CODE, UPO_PLACEHOLDER_XML);
                 SubmittedInvoice<Invoice> rebuilt = new SubmittedInvoice<>(
                         placeholder, invoiceRef, syntheticStatus,

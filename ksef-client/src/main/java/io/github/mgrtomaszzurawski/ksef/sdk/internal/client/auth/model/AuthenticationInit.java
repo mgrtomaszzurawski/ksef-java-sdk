@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-record AuthenticationInit(String referenceNumber, @Nullable TokenInfo authenticationToken) {
+public record AuthenticationInit(String referenceNumber, @Nullable TokenInfo authenticationToken) {
 
     public static AuthenticationInit from(AuthenticationInitResponseRaw rawValue) {
         return new AuthenticationInit(

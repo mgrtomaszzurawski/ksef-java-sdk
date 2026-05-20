@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
+
 import java.time.OffsetDateTime;
 import java.util.List;
 

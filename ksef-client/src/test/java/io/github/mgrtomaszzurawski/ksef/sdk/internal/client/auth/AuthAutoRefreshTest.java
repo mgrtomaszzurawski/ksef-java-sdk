@@ -11,7 +11,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;

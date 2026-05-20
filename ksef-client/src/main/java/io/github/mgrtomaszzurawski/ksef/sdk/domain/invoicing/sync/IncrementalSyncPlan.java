@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryDateType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQuerySubjectType;
 import java.nio.file.Path;

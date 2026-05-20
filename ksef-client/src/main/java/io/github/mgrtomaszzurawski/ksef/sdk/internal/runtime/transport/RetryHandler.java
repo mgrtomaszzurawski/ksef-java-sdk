@@ -8,8 +8,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
-import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;

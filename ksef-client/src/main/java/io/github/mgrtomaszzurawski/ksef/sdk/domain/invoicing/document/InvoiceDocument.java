@@ -4,6 +4,10 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
+
 /**
  * Read-side counterpart of {@link Invoice}. Returned by
  * {@link InvoiceArchive#getByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber)}

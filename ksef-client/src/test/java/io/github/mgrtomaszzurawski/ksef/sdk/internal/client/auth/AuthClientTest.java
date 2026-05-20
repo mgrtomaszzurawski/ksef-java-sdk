@@ -16,7 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model.Authentic
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefRateLimitException;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefServerException;
-import io.github.mgrtomaszzurawski.ksef.sdk.internal.crypto.TestCertificates;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.TestCertificates;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefTestRuntime;
 import java.time.Instant;

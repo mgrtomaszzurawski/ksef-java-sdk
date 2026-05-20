@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import java.util.Objects;
 
 /**

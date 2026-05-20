@@ -4,6 +4,11 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
+
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
 

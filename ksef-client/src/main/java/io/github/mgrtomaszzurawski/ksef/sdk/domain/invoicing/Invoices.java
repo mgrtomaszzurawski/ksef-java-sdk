@@ -4,6 +4,19 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.InvoiceSessions;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceSync;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoice;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoices;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceExport;
+
+
 /**
  * Coordinator for KSeF invoice operations grouped into five focused
  * sub-areas. Each accessor returns a narrow interface that owns a single

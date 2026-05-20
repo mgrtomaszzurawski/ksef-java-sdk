@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;

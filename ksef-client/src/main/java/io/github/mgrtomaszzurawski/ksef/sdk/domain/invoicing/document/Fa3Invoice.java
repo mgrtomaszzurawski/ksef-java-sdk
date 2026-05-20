@@ -4,6 +4,8 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;

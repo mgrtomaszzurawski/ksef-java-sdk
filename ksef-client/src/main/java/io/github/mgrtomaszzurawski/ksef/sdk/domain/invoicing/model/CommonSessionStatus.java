@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
+
 /**
  * Status of a KSeF session — mirrors OpenAPI {@code CommonSessionStatus}
  * (string enum on the wire, used as the {@code statuses} filter parameter

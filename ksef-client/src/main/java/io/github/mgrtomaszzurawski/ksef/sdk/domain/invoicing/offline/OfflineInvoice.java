@@ -4,6 +4,14 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline;
 
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.OnlineSession;
+
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
+
+
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.OfflineInvoiceBuilder;
@@ -73,10 +81,10 @@ public final class OfflineInvoice<I extends Invoice> {
     private final KsefCertificate signingCertificate;
     private final byte @Nullable [] hashOfCorrectedInvoice;
 
-    OfflineInvoice(I underlyingInvoice, byte[] xml,
-                   byte[] kodIQrPng, byte[] kodIIQrPng,
-                   OfflineMode offlineMode, KsefCertificate signingCertificate,
-                   byte @Nullable [] hashOfCorrectedInvoice) {
+    public OfflineInvoice(I underlyingInvoice, byte[] xml,
+                          byte[] kodIQrPng, byte[] kodIIQrPng,
+                          OfflineMode offlineMode, KsefCertificate signingCertificate,
+                          byte @Nullable [] hashOfCorrectedInvoice) {
         this.underlyingInvoice = Objects.requireNonNull(underlyingInvoice, ERR_NULL_INVOICE);
         this.xml = Objects.requireNonNull(xml, ERR_NULL_XML).clone();
         this.kodIQrPng = Objects.requireNonNull(kodIQrPng, ERR_NULL_KOD_I).clone();
@@ -199,14 +207,14 @@ public final class OfflineInvoice<I extends Invoice> {
                 mode, certificate, null);
     }
 
-    static byte[] renderKodI(QrEnvironment environment, String sellerNip,
+    public static byte[] renderKodI(QrEnvironment environment, String sellerNip,
                              LocalDate issueDate, byte[] invoiceHash) {
         String url = KsefVerificationLinks.buildInvoiceVerificationUrl(
                 environment, sellerNip, issueDate, invoiceHash);
         return new QrCodeService().generateQrCode(url);
     }
 
-    static byte[] renderKodII(QrEnvironment environment, QrContextType contextType,
+    public static byte[] renderKodII(QrEnvironment environment, QrContextType contextType,
                               String contextValue, String sellerNip,
                               KsefCertificate certificate, byte[] invoiceHash) {
         KsefVerificationLinks.CertificateSigningInput signingInput =
@@ -218,7 +226,7 @@ public final class OfflineInvoice<I extends Invoice> {
         return new QrCodeService().generateQrCode(url);
     }
 
-    static byte[] computeSha256(byte[] data) {
+    public static byte[] computeSha256(byte[] data) {
         try {
             MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGORITHM);
             return digest.digest(data);

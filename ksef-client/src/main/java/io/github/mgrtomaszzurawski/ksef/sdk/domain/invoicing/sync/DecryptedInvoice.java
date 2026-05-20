@@ -4,6 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.sync;
 
+
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument;
