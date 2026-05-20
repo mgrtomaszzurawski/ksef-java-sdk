@@ -1,8 +1,12 @@
 # Build output
 target/
+build/
+.gradle/
 *.class
 *.jar
 *.war
+# Gradle wrapper jar IS committed (standard practice) — re-include after the *.jar exclude.
+!gradle/wrapper/gradle-wrapper.jar
 
 # IDE
 .idea/
@@ -29,6 +33,9 @@ logs/
 .claude/
 .reviews/
 
+# Project working notes — kept locally only, not published to GitHub
+context/
+
 # Credentials / secrets
 *.p12
 *.pfx
@@ -38,3 +45,7 @@ logs/
 *.key
 credentials.*
 *.env
+ksef-credentials.properties
+demo-state.json
+logs/
+*.hprof

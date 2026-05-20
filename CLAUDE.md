@@ -1,0 +1,375 @@
+# CLAUDE.md
+
+Repository conventions and architecture notes for assistants working on this codebase.
+
+## What this is
+
+OpenAPI-first Java SDK for the Polish National e-Invoicing System (KSeF) REST API v2. Multi-module Gradle project (Maven removed 2026-05-10 per ADR-031):
+- `ksef-xml-models` — JAXB-generated XML models (FA2/FA3/PEF/PEF_KOR/UPO/AUTH)
+- `ksef-rest-models` — OpenAPI-generated REST models (`*Raw`)
+- `ksef-client` — the SDK library (target: Maven Central; **not yet published**)
+- `ksef-demo` — integration examples and smoke tests (not published)
+- `ksef-examples` — compile-only check of consumer examples in `examples/`
+- `ksef-jpms-consumer` — JPMS consumer compile gate
+
+## Release status
+
+**Pre-1.0. No version has been published to Maven Central yet.** Current
+artefact version is `1.0.0` in `gradle.properties` (preparing for first
+release; no git tag, no Maven Central artefact). There is no consumer contract to
+preserve — the project has zero external dependents because the artefact
+has never been released.
+
+The work-in-progress branches consolidate breaking changes
+(removed/renamed types, changed record components, new required
+parameters) deliberately so that the eventual `1.0.0` cut is clean.
+Reviewers must NOT request back-compat shims, deprecated aliases, or
+overload bridges to "preserve" an API surface that has never shipped.
+SemVer pre-1.0 explicitly permits unrestricted breaking changes.
+
+When a review surfaces "breaking change" findings against the public API,
+treat them as informational confirmation that the breaking change
+landed — not as merge blockers.
+
+KSeF (Krajowy System e-Faktur) is a mandatory e-invoicing platform operated by the Polish Ministry of Finance. The API handles invoice submission, retrieval, session management, authentication via qualified signatures, and permissions management.
+
+## Rules
+
+**All documentation, ADRs, code comments, and commit messages must be in English.**
+Exception: Polish KSeF-specific terms (`faktura`, `NIP`, `PESEL`, `UPO`) are untranslatable domain identifiers.
+
+## Build and test commands
+
+```bash
+# Full reactor build + all tests + static gates (no live KSeF access needed)
+./gradlew build
+
+# SDK module only — compile, test, gates
+./gradlew :ksef-client:build
+
+# Static analysis only (must pass with 0 violations)
+./gradlew :ksef-client:check
+
+# Run a single test class
+./gradlew :ksef-client:test --tests SessionClientTest
+
+# Run a single test method
+./gradlew :ksef-client:test --tests "SessionClientTest.openOnline_whenChallengeSucceeds_returnsSession"
+
+# Run sample demo app (requires ksef-credentials.properties in project root)
+./gradlew :ksef-demo:run -P"demo.mode=AUTH_SAFE"
+
+# Incremental compile only — fastest iteration during dev
+./gradlew :ksef-client:compileJava
+
+# Force everything from scratch (rare — typically only after editing pom.xml,
+# build.gradle.kts, or files under xsd/ or openapi/)
+./gradlew clean build
+```
+
+Gradle's UP-TO-DATE checks, build cache, and incremental Java compiler mean
+plain `./gradlew build` usually finishes in seconds when nothing relevant
+has changed. The `clean` task is rarely needed in the dev loop; reserve it
+for situations where the XSD or OpenAPI inputs change or a plugin
+configuration is edited.
+
+## Architecture
+
+### Gradle multi-module structure (ADR-031)
+
+Root `settings.gradle.kts` aggregates six subprojects; root `build.gradle.kts`
+applies the `base` plugin and shared repositories. Each subproject owns its
+own `build.gradle.kts`.
+
+- `ksef-xml-models` — JAXB-generated XML models. Owns the `xml.*` package
+  tree. Six XJC JavaExec tasks emit into `build/generated-sources/xjc-*`.
+  Cached as a JAR dependency for `ksef-client`; UP-TO-DATE unless XSDs
+  under `ksef-client/xsd/` change.
+- `ksef-rest-models` — OpenAPI-generated REST models. Owns
+  `client.api.*` + `client.model.*` packages with `*Raw` suffix. UP-TO-DATE
+  unless `ksef-client/openapi/open-api.json` changes.
+- `ksef-client` — SDK jar. Hand-written code only (362 main + 98 test files).
+  Configures Spotless, SpotBugs, PMD, Checkstyle, JaCoCo, GPG signing
+  (release-property-gated), and Maven Central publication via
+  `maven-publish` + `signing`.
+- `ksef-demo` — consumer app exercising the live KSeF demo server. Uses
+  the `application` plugin; demo modes are passed via Gradle properties.
+- `ksef-examples` — compile-only check of the JBang-style examples in
+  the top-level `examples/` directory.
+- `ksef-jpms-consumer` — minimal named-module consumer used as a
+  compile-time JPMS surface check.
+
+### Layered architecture (ADR-012)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Consumer code                                                   │
+│  Uses: KsefClient, builders, sdk.domain.*.model records          │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 3: Public API surface                                     │
+│  sdk/KsefClient.java — single entry point + domain accessors     │
+│  sdk/domain/<feature>/ — 8 functionality buckets, each with      │
+│    headline types + builder/ + model/                            │
+│  sdk/{config,common,exception}/ — sentinel utility packages      │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 2: Internal mechanisms (NOT exported via JPMS)            │
+│  sdk/internal/client/<area>/  — endpoint wrappers used by        │
+│    KsefClient under the hood (auth, session, security)           │
+│  sdk/internal/runtime/<purpose>/ — cross-cutting plumbing        │
+│    (transport, crypto, signing, batch helper)                    │
+│  HttpRuntime narrow interface (ADR-013) breaks transport→facade  │
+│    layering inversion; ApiPaths centralises REST paths (ADR-014) │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 1: Generated code (NOT exported via JPMS)                 │
+│  client.model.*Raw — OpenAPI-generated mutable POJOs             │
+│  xml.model.*       — JAXB-generated invoice XML models           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key design rule (ADR-005):** Consumers never import from `client.*` packages. All domain client public methods return immutable records from `sdk.domain.*.model`. Generated `*Raw` types are internal implementation detail.
+
+### Package structure (ADR-012 → superseded by ADR-034)
+
+```
+ksef-client/src/main/java/io/github/mgrtomaszzurawski/ksef/
+├── sdk/
+│   ├── KsefClient.java                  # entry point at sdk/ root
+│   ├── package-info.java
+│   ├── config/                          # KsefEnvironment, KsefInvoiceTypes,
+│   │   │                                # KsefClientConfig + Descriptor + AuthMethod
+│   │   ├── credentials/                 # KsefCredentials sealed + 3 impls
+│   │   │                                # + KsefIdentifier + CertificateSubjectIdentifier
+│   │   └── policy/                      # RetryPolicy, FeaturePolicy,
+│   │                                    # UpoVersion, AuthorizationPolicy
+│   ├── core/                            # StatusInfo + KsefNumber (cross-domain)
+│   ├── exception/                       # 13 typed exceptions (KsefException + subclasses) + KsefValidationError
+│   │
+│   ├── domain/                          # PUBLIC functionality buckets (8)
+│   │   ├── auth/            # AuthSessions + model/
+│   │   ├── invoicing/       # Invoices (facade), FormCode
+│   │   │   ├── session/     # Session sealed, OnlineSession, ClosedSession + Impls + InvoiceSessions
+│   │   │   ├── document/    # Invoice + InvoiceDocument hierarchy (FA2/3, PEF/Kor, Unrecognized)
+│   │   │   ├── offline/     # OfflineInvoice + OfflineInvoices + OfflineMode
+│   │   │   ├── archive/     # InvoiceArchive, InvoiceBatch, InvoiceExport,
+│   │   │   │                  InvoiceSync, PreparedInvoiceExport
+│   │   │   ├── builder/     # InvoiceQueryBuilder + OfflineInvoiceBuilder
+│   │   │   ├── model/       # records
+│   │   │   ├── qrcode/      # QrCodeService, KsefVerificationLinks, QrEnvironment, QrContextType
+│   │   │   └── sync/        # IncrementalSyncPlan, DecryptedInvoice, InvoiceSink
+│   │   ├── permissions/     # Permissions
+│   │   │   ├── builder/     # 15 builders
+│   │   │   └── model/       # records (sealed PermissionGrantRequest + 7 permits)
+│   │   ├── tokens/          # Tokens + builder/ + model/
+│   │   ├── certificates/    # Certificates + builder/ + model/
+│   │   ├── peppol/          # PeppolProviders + model/
+│   │   ├── limits/          # Limits + model/
+│   │   └── testdata/        # TestDataAdmin
+│   │       ├── builder/     # 7 builders
+│   │       └── model/       # records
+│   │
+│   └── internal/                        # NOT exported via JPMS
+│       ├── client/                      # endpoint wrappers used only by KsefClient
+│       │   ├── auth/        # AuthClient, SessionContext, AuthSessionsImpl + model/ + mapping/
+│       │   ├── session/     # SessionClient, BatchSubmissionFlow, SessionHandleConstructor
+│       │   ├── security/    # SecurityClient
+│       │   ├── invoicing/   # InvoicesImpl, InvoiceArchiveImpl, OfflineInvoicesImpl,
+│       │   │                # InvoiceSessionsImpl, InvoiceBatchImpl, InvoiceExportImpl,
+│       │   │                # InvoiceSyncImpl + builder/ + mapping/ + model/ + sync/
+│       │   ├── certificates/, permissions/, tokens/, limits/, peppol/, testdata/
+│       │   │                # one *Impl + mapping/ each
+│       │   └── common/      # CommonMappers (cross-domain StatusInfo + PublicKeyCertificate mappers)
+│       └── runtime/                     # cross-cutting infrastructure
+│           ├── transport/   # HttpSupport, HttpRuntime, KsefHttpRuntime, RetryHandler,
+│           │                # ApiPaths, ServerErrorParser, UriRedaction
+│           ├── crypto/      # CryptoService, CertificateLoader, CsrSupport, CsrRequest,
+│           │                # CsrResult, EncryptionMaterial, KsefEncryptionInfo, FileMetadata,
+│           │                # PublicKeyCertificate(Usage)
+│           ├── validation/  # KsefXmlValidator + InvoiceValidationGate (XSD preflight)
+│           ├── signing/     # SigningService (XAdES BASELINE-B + SHA-256, hardcoded)
+│           ├── batch/       # BatchPackageBuilder + BatchFileSpec + BatchPart + helpers + KsefLimits
+│           ├── async/       # KsefAsync + KsefAsyncStatus (poll-until-terminal helper)
+│           ├── jaxb/        # JaxbDeepClone
+│           └── pagination/  # PagedSpliterator
+│
+└── client/                              # Generated code (NOT exported)
+    └── model/                           # OpenAPI *Raw classes
+```
+
+**Sub-split convention (ADR-034 supersedes ADR-012):** Sentinel and
+domain buckets MAY sub-split into thematic sub-buckets when one bucket
+exceeds peer scale (config — 7 themes; invoicing — 32 root files).
+Sub-split depth is one level only. Within a sub-bucket the original
+ADR-012 layout applies: headlines at root, `builder/`, `model/`. ADR-024
+reflective-bridge constraint (sealed impls share package with their
+permitting interface) is preserved across sub-bucketing — e.g. all
+sealed Session impls live inside `domain/invoicing/session/`.
+
+### Model generation
+
+**REST API models (OpenAPI):**
+The OpenAPI generator produces low-level HTTP client code at build time. Generated classes live in `client.api` and `client.model` packages with `Raw` suffix. Never edited by hand. Consumers never see these — domain clients map them to `sdk.domain.<feature>.model` records via `from()` factory methods.
+
+**Invoice XML models (XSD → JAXB):**
+JAXB XJC generates Java classes from official KSeF XSD schemas (FA(2), FA(3), PEF, RR, UPO). These model the XML invoice structure, separate from the REST API models.
+
+### Encryption flow
+
+KSeF uses a two-level encryption scheme:
+
+1. **Session level** — `OnlineSessionBuilder.build()` generates AES key + IV, encrypts AES key with KSeF RSA public key (SymmetricKeyEncryption cert), sends encrypted key with session open request. Returns `SessionOpenResult` containing the request AND the AES key/IV.
+2. **Invoice level** — `SendInvoiceBuilder.create(xml, aesKey, iv)` encrypts invoice content with the SAME AES key established at session open. The server already has the key from step 1.
+
+**Critical:** Each invoice within a session MUST be encrypted with the session's AES key, NOT a new key. `SendInvoiceBuilder` accepts `aesKey` and `initVector` parameters, not a `PublicKey`.
+
+### Authentication flow
+
+KSeF uses a challenge-response flow, NOT simple API keys:
+1. `POST /auth/challenge` — get encryption challenge
+2. Sign challenge with XAdES qualified signature OR encrypt token with KSeF public key
+3. `POST /auth/xades-signature` or `POST /auth/ksef-token` — exchange for operation token
+4. Poll `GET /auth/{ref}` until status 200
+5. `POST /auth/token/redeem` — exchange operation token for access + refresh tokens
+6. Use Bearer token for all subsequent requests within session
+7. Session has timeout — must handle expiry and refresh
+
+Simplified: pass a `KsefCredentials` to the `KsefClient` builder; the
+client lazily authenticates on the first call and re-authenticates on
+HTTP 401 (driven by `HttpRuntime.reauthenticate()`).
+
+### JPMS
+
+The SDK is a named Java module (`io.github.mgrtomaszzurawski.ksef`).
+Every package outside `sdk.internal.*` is exported; the `internal` tree
+is invisible to consumers (ADR-005, ADR-012, ADR-034):
+
+- `sdk` — `KsefClient` (entry point)
+- `sdk.config` — `KsefEnvironment`, `KsefInvoiceTypes`, diagnostic snapshot types
+- `sdk.config.credentials` — sealed `KsefCredentials` hierarchy + identifier types
+- `sdk.config.policy` — `RetryPolicy`, `FeaturePolicy`, `UpoVersion`, `AuthorizationPolicy`
+- `sdk.core` — `StatusInfo` (envelope), `KsefNumber` (KSeF-assigned invoice identifier)
+- `sdk.exception` — typed exception hierarchy (13 types)
+- `sdk.domain.<feature>` + sub-buckets per ADR-034 — one set per
+  functionality bucket (auth, invoicing, permissions, tokens,
+  certificates, peppol, limits, testdata). Invoicing additionally
+  sub-bucketed into session/, document/, offline/, archive/.
+
+NOT exported:
+- `sdk.internal.client.*` — endpoint wrappers (`AuthClient`,
+  `SessionClient`, `SecurityClient`, `*Impl` for every domain area)
+- `sdk.internal.runtime.*` — cross-cutting plumbing (transport, crypto,
+  signing, validation, async, batch, jaxb, pagination)
+- `client.model` — opened to Jackson only for deserialization
+
+## Code patterns and conventions
+
+### Domain client pattern
+
+Every domain client:
+1. Takes `HttpRuntime` in constructor (the narrow transport interface from
+   ADR-013), wraps it in a `new HttpSupport(runtime)`. `KsefClient` no longer
+   leaks itself into impl ctors — see commit `f958189`.
+2. Defines `private static final String` path constants built from
+   `ApiPaths.<DOMAIN>` (ADR-014); never hardcode `/api/v2` literals
+3. For dynamic segments use `ApiPaths.subPath(base, segments...)` —
+   handles separator placement consistently across all clients
+4. Public methods call `http.getAuthenticated/postJsonAuthenticated(...)` with Raw types
+5. Maps Raw response to immutable record via `RecordType.from(raw)` before returning
+6. Methods returning void (delete, close) do not need mapping
+
+### Immutable record pattern
+
+```java
+public record SessionStatus(StatusInfo status, OffsetDateTime dateCreated, ...) {
+    public static SessionStatus from(SessionStatusResponseRaw raw) {
+        return new SessionStatus(
+            StatusInfo.from(raw.getStatus()),
+            raw.getDateCreated(), ...);
+    }
+}
+```
+
+- `from()` factory is the only way to create instances
+- Null-safe: `from()` handles nullable raw fields
+- Collections are always non-null (use `List.of()` for empty)
+- Nested records also have `from()` factories
+- Enums map via `switch` expression
+
+### Builder pattern
+
+Builders enforce required fields and validate constraints discovered by the server validation probe (Phase 7.0):
+- Factory methods encode choices: `InvoiceQueryBuilder.seller()`, `OnlineSessionBuilder.fa2(key)`
+- Required fields fail-fast with `Objects.requireNonNull` or `IllegalStateException`
+- Server-side constraints replicated: description 5-256 chars, dateRange max 3 months, etc.
+- Builders return SDK domain records (e.g. `OnlineSessionOpenRequest`, `TokenGenerateRequest`); domain clients map records to `*Raw` internally via package-private mappers
+
+### KSeF server error mechanism
+
+Server (.NET backend) returns structured validation errors:
+- **exceptionCode 21405** — per-field validation, dot-notation paths (`filters.dateRange.from`)
+- **exceptionCode 21001** — JSON parsing (wrong types, invalid enums)
+- Server validates all fields in one pass, returns all errors at once
+- Unknown fields silently ignored
+- Public-facing summary in `KNOWN-SERVER-BEHAVIORS.md` (root-level)
+
+## Test patterns
+
+- **WireMock** for all domain client HTTP tests (mock responses, verify requests)
+- **Naming convention:** `methodUnderTest_whenScenario_expectedResult`
+- **Structure:** given/when/then with `// given`, `// when`, `// then` markers
+- **391 tests** total across 33 test classes (surefire count, includes parameterized expansions)
+- No live KSeF calls in tests — all mocked
+- `TestCertificates.java` provides test X.509 certs/keys for crypto tests
+
+## Key conventions
+
+### KSeF-specific terminology
+
+| Term | Meaning |
+|------|---------|
+| NIP | Polish tax ID (10 digits, checksum-validated by server) |
+| PESEL | Polish personal ID (11 digits, checksum-validated by server) |
+| UPO | Urzędowe Poświadczenie Odbioru — official receipt confirming invoice delivery |
+| FA(2), FA(3) | Invoice schema versions |
+| KSeF number | Unique invoice ID assigned by KSeF system (format: YYYYMMDD-XX-...) |
+| Reference number | Session/operation tracking ID (format: YYYYMMDD-XX-...) |
+| Online session | Interactive invoice submission (one at a time) |
+| Batch session | Bulk invoice submission (ZIP package) |
+| Raw types | Generated `*Raw` classes — internal, never in public API |
+
+### Security model
+
+- Bearer JWT tokens (obtained via challenge-response or KSeF token)
+- Invoices encrypted with AES-256, key wrapped with RSA using KSeF public key
+- Session AES key reused for all invoices within session
+- XAdES-BASELINE-B signatures for authentication
+- Test certificates available in CIRFMF/ksef-docs repo
+- KSeF demo environment: `https://api-demo.ksef.mf.gov.pl`
+
+### Known server behaviors (discovered in testing)
+
+- Session cooldown: ~30-60s after termination before new session can open for same NIP
+- Status 415 = session busy, cannot send invoices
+- `certificates/enrollments` crashes on invalid certificateType (server bug)
+- `subjectDetails` required for permission grants despite spec saying optional
+- `pageSize` not validated on permission query endpoints
+- See `KNOWN-SERVER-BEHAVIORS.md` for the curated public list
+
+## ADRs
+
+Architectural decisions in `ADR/`. Consult before making changes.
+
+- **ADR-005** — SDK overlay on generated code: immutable records as public API, `*Raw` types internal
+- **ADR-008** — API redesign: `KsefSession` / `KsefBatchSession` session abstractions
+- **ADR-011** — Batch encryption (AES-256-CBC + PKCS#7) and polling semantics
+- **ADR-012** — *Superseded by ADR-034*. Package structure: `domain/<feature>/` for functionality, `internal/{client,runtime}/` for plumbing
+- **ADR-013** — `HttpRuntime` narrow interface — breaks the transport→facade layering inversion
+- **ADR-014** — `ApiPaths` centralisation — single source of truth for REST paths and version
+- **ADR-034** — Sentinel and domain sub-bucketing when themes diverge. Sentinel packages and domain buckets MAY sub-split (one level deep) when they aggregate types from multiple distinct themes
+
+## Additional context
+
+**Spec source:** CIRFMF/ksef-docs GitHub repository (public). Contains OpenAPI spec, XSD schemas, auth documentation, test certificates, and test scenarios.
+
+**Official SDK comparison:** The official CIRFMF/ksef-client-java SDK has 276 hand-written model classes (NOT generated from their own OpenAPI spec), a single god-class client, no retry, no pagination abstraction. This project generates from specs instead of wrapping the official SDK.
+
+**Test environment:** `https://api-demo.ksef.mf.gov.pl` — KSeF demo environment. Credentials in gitignored `ksef-credentials.properties`.

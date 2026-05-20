@@ -1,0 +1,120 @@
+# OpenAPI path/operation coverage registry
+#
+# Each line is either a spec path or a (METHOD, path) operation tuple
+# exercised by at least one WireMock contract test. Comments after `#`
+# and blank lines are ignored.
+#
+# OpenApiPathCoverageTest reads `ksef-client/openapi/open-api.json` and
+# asserts every path AND every operation tuple appears here. Adding an
+# endpoint to the SDK without adding it here (and a corresponding test)
+# fails the gate.
+#
+# Format options (Codex round-9 fresh review M2):
+#   /tokens                                  # path-only entry — counts as covering ALL methods on /tokens
+#   POST /tokens                             # method-specific tuple — only POST /tokens
+#   GET /tokens/{referenceNumber}            # method-specific tuple
+#
+# Path-only entries are kept for backwards compatibility; new tests that
+# exercise only one HTTP method on a multi-method path SHOULD register
+# method-specific tuples so spec drift on a sibling method (e.g. a new
+# DELETE on a path that only had GET+POST tested) is detected.
+#
+# Do NOT prepend the /v2 prefix to paths.
+
+# Authentication
+/auth/challenge                                                 # AuthClientTest, KsefAuthFlowFixture, AuthAutoRefreshTest
+/auth/ksef-token                                                # KsefAuthFlowFixture
+/auth/xades-signature                                           # AuthClientTest
+/auth/{referenceNumber}                                         # AuthClientTest, AuthAutoRefreshTest, KsefAuthFlowFixture
+/auth/token/redeem                                              # AuthClientTest, KsefAuthFlowFixture
+/auth/token/refresh                                             # AuthClientTest, AuthAutoRefreshTest, KsefClientPublicAuthFacadeTest
+/auth/sessions                                                  # AuthClientTest, KsefClientPublicAuthFacadeTest
+/auth/sessions/current                                          # AuthClientTest
+/auth/sessions/{referenceNumber}                                # KsefClientPublicAuthFacadeTest
+
+# Security keys
+/security/public-key-certificates                               # SecurityClientTest, KsefAuthFlowFixture, KsefClientPublicAuthFacadeTest
+
+# Online + batch sessions
+/sessions                                                       # SessionClientTest
+/sessions/online                                                # SessionClientTest, KsefSessionTest
+/sessions/online/{referenceNumber}/invoices                     # SessionClientTest, KsefSessionTest, KsefSessionWorkflowTest, KsefSessionInvoiceCapTest
+/sessions/online/{referenceNumber}/close                        # SessionClientTest, KsefSessionTest
+/sessions/batch                                                 # SubmitBatchTest
+/sessions/batch/{referenceNumber}/close                         # SubmitBatchTest
+/sessions/{referenceNumber}                                     # SessionClientTest, KsefSessionTest, KsefSessionWorkflowTest
+/sessions/{referenceNumber}/invoices                            # SessionClientTest
+/sessions/{referenceNumber}/invoices/{invoiceReferenceNumber}   # SessionClientTest
+/sessions/{referenceNumber}/invoices/failed                     # SessionClientTest, KsefSessionWorkflowTest
+/sessions/{referenceNumber}/invoices/{invoiceReferenceNumber}/upo  # SessionClientTest, KsefSessionTest, FeaturePolicyHeadersTest
+/sessions/{referenceNumber}/invoices/ksef/{ksefNumber}/upo      # SessionClientTest
+/sessions/{referenceNumber}/upo/{upoReferenceNumber}            # SessionClientTest
+
+# Invoices / export
+/invoices/ksef/{ksefNumber}                                     # InvoiceClientTest
+/invoices/query/metadata                                        # InvoiceClientTest
+/invoices/exports                                               # InvoiceClientTest
+/invoices/exports/{referenceNumber}                             # InvoiceClientTest
+
+# Certificates
+/certificates/limits                                            # CertificateClientTest
+/certificates/enrollments/data                                  # CertificateClientTest
+/certificates/enrollments                                       # CertificateClientTest
+/certificates/enrollments/{referenceNumber}                     # CertificateClientTest
+/certificates/retrieve                                          # CertificateClientTest
+/certificates/query                                             # CertificateClientTest
+/certificates/{certificateSerialNumber}/revoke                  # CertificateClientTest
+
+# Permissions
+/permissions/persons/grants                                     # PermissionClientTest
+/permissions/entities/grants                                    # PermissionClientTest
+/permissions/authorizations/grants                              # PermissionClientTest
+/permissions/indirect/grants                                    # PermissionClientTest
+/permissions/subunits/grants                                    # PermissionClientTest
+/permissions/eu-entities/administration/grants                  # PermissionClientTest
+/permissions/eu-entities/grants                                 # PermissionClientTest
+/permissions/common/grants/{permissionId}                       # PermissionClientTest
+/permissions/authorizations/grants/{permissionId}               # PermissionClientTest
+/permissions/operations/{referenceNumber}                       # PermissionClientTest
+/permissions/attachments/status                                 # PermissionClientTest
+/permissions/query/personal/grants                              # PermissionClientTest
+/permissions/query/persons/grants                               # PermissionClientTest
+/permissions/query/subunits/grants                              # PermissionClientTest
+/permissions/query/entities/grants                              # PermissionClientTest
+/permissions/query/entities/roles                               # PermissionClientTest
+/permissions/query/subordinate-entities/roles                   # PermissionClientTest
+/permissions/query/authorizations/grants                        # PermissionClientTest
+/permissions/query/eu-entities/grants                           # PermissionClientTest
+
+# Tokens
+GET /tokens                                                     # TokenClientTest
+POST /tokens                                                    # TokenClientTest
+GET /tokens/{referenceNumber}                                   # TokenClientTest
+DELETE /tokens/{referenceNumber}                                # TokenClientTest
+
+# Limits
+/limits/context                                                 # LimitsClientTest
+/limits/subject                                                 # LimitsClientTest
+/rate-limits                                                    # LimitsClientTest
+
+# Peppol
+/peppol/query                                                   # PeppolClientTest
+
+# Test data
+/testdata/subject                                               # TestDataClientTest
+/testdata/subject/remove                                        # TestDataClientTest
+/testdata/person                                                # TestDataClientTest
+/testdata/person/remove                                         # TestDataClientTest
+/testdata/permissions                                           # TestDataClientTest
+/testdata/permissions/revoke                                    # TestDataClientTest
+/testdata/attachment                                            # TestDataClientTest
+/testdata/attachment/revoke                                     # TestDataClientTest
+/testdata/context/block                                         # TestDataClientTest
+/testdata/context/unblock                                       # TestDataClientTest
+POST /testdata/limits/context/session                           # TestDataClientTest
+DELETE /testdata/limits/context/session                         # TestDataClientTest
+POST /testdata/limits/subject/certificate                       # TestDataClientTest
+DELETE /testdata/limits/subject/certificate                     # TestDataClientTest
+POST /testdata/rate-limits                                      # TestDataClientTest
+DELETE /testdata/rate-limits                                    # TestDataClientTest
+/testdata/rate-limits/production                                # TestDataClientTest

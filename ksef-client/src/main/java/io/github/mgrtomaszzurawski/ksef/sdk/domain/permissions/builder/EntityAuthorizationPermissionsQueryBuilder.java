@@ -1,0 +1,118 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.AuthorizationQueryType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationIdentifierType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionType;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityAuthorizationPermissionsQueryRequest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Builder for entity authorization permissions query requests.
+ * <p>Required: query direction (granted or received). All other fields are optional.
+ *
+ * @since 0.1.0
+ */
+public final class EntityAuthorizationPermissionsQueryBuilder {
+
+    private static final String ERR_QUERY_TYPE_REQUIRED = "queryType is required — use .granted() or .received()";
+
+    private final AuthorizationQueryType queryType;
+    private @Nullable String authorizingNip;
+    private @Nullable EntityAuthorizationIdentifierType authorizedType;
+    private @Nullable String authorizedValue;
+    private final List<EntityAuthorizationPermissionType> permissionTypes = new ArrayList<>();
+    private @Nullable Integer pageOffset;
+    private @Nullable Integer pageSize;
+
+    private EntityAuthorizationPermissionsQueryBuilder(AuthorizationQueryType queryType) {
+        this.queryType = Objects.requireNonNull(queryType, ERR_QUERY_TYPE_REQUIRED);
+    }
+
+    public static EntityAuthorizationPermissionsQueryBuilder granted() {
+        return new EntityAuthorizationPermissionsQueryBuilder(AuthorizationQueryType.GRANTED);
+    }
+
+    public static EntityAuthorizationPermissionsQueryBuilder received() {
+        return new EntityAuthorizationPermissionsQueryBuilder(AuthorizationQueryType.RECEIVED);
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder authorizingByNip(String nip) {
+        this.authorizingNip = nip;
+        return this;
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder authorizedByNip(String nip) {
+        this.authorizedType = EntityAuthorizationIdentifierType.NIP;
+        this.authorizedValue = nip;
+        return this;
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder authorizedByPeppolId(String peppolId) {
+        this.authorizedType = EntityAuthorizationIdentifierType.PEPPOL_ID;
+        this.authorizedValue = peppolId;
+        return this;
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder selfInvoicing() {
+        permissionTypes.add(EntityAuthorizationPermissionType.SELF_INVOICING);
+        return this;
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder rrInvoicing() {
+        permissionTypes.add(EntityAuthorizationPermissionType.RR_INVOICING);
+        return this;
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder taxRepresentative() {
+        permissionTypes.add(EntityAuthorizationPermissionType.TAX_REPRESENTATIVE);
+        return this;
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder pefInvoicing() {
+        permissionTypes.add(EntityAuthorizationPermissionType.PEF_INVOICING);
+        return this;
+    }
+
+    /**
+     * Zero-based page offset for {@code queryAuthorizations}. Default
+     * (null) → 0. Must be {@code >= 0}; validated at {@code build()} time.
+     * Ignored on {@code streamAuthorizations}.
+     */
+    public EntityAuthorizationPermissionsQueryBuilder pageOffset(int pageOffset) {
+        this.pageOffset = pageOffset;
+        return this;
+    }
+
+    /**
+     * Page size for {@code queryAuthorizations}. KSeF range {@code [10, 100]};
+     * validated at {@code build()} time. Default (null) → 100. Ignored on
+     * {@code streamAuthorizations}.
+     */
+    public EntityAuthorizationPermissionsQueryBuilder pageSize(int pageSize) {
+        this.pageSize = pageSize;
+        return this;
+    }
+
+    public EntityAuthorizationPermissionsQueryBuilder toBuilder() {
+        EntityAuthorizationPermissionsQueryBuilder copy = new EntityAuthorizationPermissionsQueryBuilder(this.queryType);
+        copy.authorizingNip = this.authorizingNip;
+        copy.authorizedType = this.authorizedType;
+        copy.authorizedValue = this.authorizedValue;
+        copy.permissionTypes.addAll(this.permissionTypes);
+        copy.pageOffset = this.pageOffset;
+        copy.pageSize = this.pageSize;
+        return copy;
+    }
+
+    public EntityAuthorizationPermissionsQueryRequest build() {
+        return new EntityAuthorizationPermissionsQueryRequest(queryType, authorizingNip,
+                authorizedType, authorizedValue, permissionTypes, pageOffset, pageSize);
+    }
+}

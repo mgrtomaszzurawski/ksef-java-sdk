@@ -1,0 +1,253 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk.invoicing;
+
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironmentException;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class FormCodeTest {
+
+    private static final String SYSTEM_CODE_FA2 = "FA (2)";
+    private static final String SYSTEM_CODE_FA3 = "FA (3)";
+    private static final String SCHEMA_VERSION_FA = "1-0E";
+    private static final String VALUE_FA = "FA";
+    private static final String SYSTEM_CODE_PEF3 = "PEF (3)";
+    private static final String SYSTEM_CODE_PEF_KOR3 = "PEF_KOR (3)";
+    private static final String SCHEMA_VERSION_PEF = "2-1";
+    private static final String VALUE_PEF = "PEF";
+
+    @Test
+    void fa2_hasExpectedValues() {
+        // given
+        FormCode formCode = FormCode.FA2;
+
+        // then
+        assertEquals(SYSTEM_CODE_FA2, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_FA, formCode.schemaVersion());
+        assertEquals(VALUE_FA, formCode.value());
+    }
+
+    @Test
+    void fa3_hasExpectedValues() {
+        // given
+        FormCode formCode = FormCode.FA3;
+
+        // then
+        assertEquals(SYSTEM_CODE_FA3, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_FA, formCode.schemaVersion());
+        assertEquals(VALUE_FA, formCode.value());
+    }
+
+    @Test
+    void custom_whenValidInputs_createsSuccessfully() {
+        // when
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_PEF3, SCHEMA_VERSION_PEF, VALUE_PEF);
+
+        // then
+        assertEquals(SYSTEM_CODE_PEF3, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_PEF, formCode.schemaVersion());
+        assertEquals(VALUE_PEF, formCode.value());
+    }
+
+    @Test
+    void custom_whenNullSystemCode_throwsNullPointerException() {
+        // when / then
+        assertThrows(NullPointerException.class,
+                () -> FormCode.custom(null, SCHEMA_VERSION_FA, VALUE_FA));
+    }
+
+    @Test
+    void custom_whenNullSchemaVersion_throwsNullPointerException() {
+        // when / then
+        assertThrows(NullPointerException.class,
+                () -> FormCode.custom(SYSTEM_CODE_FA2, null, VALUE_FA));
+    }
+
+    @Test
+    void custom_whenNullValue_throwsNullPointerException() {
+        // when / then
+        assertThrows(NullPointerException.class,
+                () -> FormCode.custom(SYSTEM_CODE_FA2, SCHEMA_VERSION_FA, null));
+    }
+
+    @Test
+    void equals_whenSameValues_returnsTrue() {
+        // given
+        FormCode custom = FormCode.custom(SYSTEM_CODE_FA2, SCHEMA_VERSION_FA, VALUE_FA);
+
+        // when / then
+        assertEquals(FormCode.FA2, custom);
+    }
+
+    @Test
+    void equals_whenDifferentValues_returnsFalse() {
+        // given / when / then
+        assertNotEquals(FormCode.FA2, FormCode.FA3);
+    }
+
+    @Test
+    void hashCode_whenEqualObjects_returnsSameHash() {
+        // given
+        FormCode custom = FormCode.custom(SYSTEM_CODE_FA2, SCHEMA_VERSION_FA, VALUE_FA);
+
+        // when / then
+        assertEquals(FormCode.FA2.hashCode(), custom.hashCode());
+    }
+
+    @Test
+    void toString_returnsValue() {
+        // when
+        String result = FormCode.FA2.toString();
+
+        // then
+        assertEquals(VALUE_FA, result);
+    }
+
+    @Test
+    void pef3_hasExpectedValues() {
+        // given
+        FormCode formCode = FormCode.PEF3;
+
+        // then
+        assertEquals(SYSTEM_CODE_PEF3, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_PEF, formCode.schemaVersion());
+        assertEquals(VALUE_PEF, formCode.value());
+    }
+
+    @Test
+    void pefKor3_hasExpectedValues() {
+        // given
+        FormCode formCode = FormCode.PEF_KOR3;
+
+        // then
+        assertEquals(SYSTEM_CODE_PEF_KOR3, formCode.systemCode());
+        assertEquals(SCHEMA_VERSION_PEF, formCode.schemaVersion());
+        assertEquals(VALUE_PEF, formCode.value());
+    }
+
+    @Test
+    void assertAllowedOn_fa2OnTest_doesNotThrow() {
+        // when / then
+        assertDoesNotThrow(() -> FormCode.FA2.assertAllowedOn(KsefEnvironment.TEST));
+    }
+
+    @Test
+    void assertAllowedOn_fa2OnDemo_throws() {
+        // when / then
+        assertThrows(KsefUnsupportedEnvironmentException.class,
+                () -> FormCode.FA2.assertAllowedOn(KsefEnvironment.DEMO));
+    }
+
+    @Test
+    void assertAllowedOn_fa2OnProd_throws() {
+        // when / then
+        assertThrows(KsefUnsupportedEnvironmentException.class,
+                () -> FormCode.FA2.assertAllowedOn(KsefEnvironment.PROD));
+    }
+
+    @Test
+    void assertAllowedOn_fa3OnAllEnvironments_doesNotThrow() {
+        // when / then
+        assertDoesNotThrow(() -> FormCode.FA3.assertAllowedOn(KsefEnvironment.TEST));
+        assertDoesNotThrow(() -> FormCode.FA3.assertAllowedOn(KsefEnvironment.DEMO));
+        assertDoesNotThrow(() -> FormCode.FA3.assertAllowedOn(KsefEnvironment.PROD));
+    }
+
+    @Test
+    void assertAllowedOn_pef3OnAllEnvironments_doesNotThrow() {
+        // when / then — PEF3 + PEF_KOR3 must be accepted on every environment
+        assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.TEST));
+        assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.DEMO));
+        assertDoesNotThrow(() -> FormCode.PEF3.assertAllowedOn(KsefEnvironment.PROD));
+        assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.TEST));
+        assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.DEMO));
+        assertDoesNotThrow(() -> FormCode.PEF_KOR3.assertAllowedOn(KsefEnvironment.PROD));
+    }
+
+    @Test
+    void assertAllowedOn_customCodeOnAnyEnv_doesNotThrow() {
+        // given
+        FormCode custom = FormCode.custom("CUSTOM (1)", "0-0X", "FA");
+
+        // when / then
+        assertDoesNotThrow(() -> custom.assertAllowedOn(KsefEnvironment.PROD));
+    }
+
+    @Test
+    void assertAllowedOn_nullEnvironment_throws() {
+        // when / then
+        assertThrows(NullPointerException.class,
+                () -> FormCode.FA2.assertAllowedOn(null));
+    }
+
+    private static final byte[] DUMMY_XSD_BYTES = "<xs:schema/>".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+    @Test
+    void custom_withXsd_returnsCustomXsdBytes() {
+        // given / when
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, DUMMY_XSD_BYTES);
+
+        // then
+        org.junit.jupiter.api.Assertions.assertArrayEquals(DUMMY_XSD_BYTES, formCode.customXsdBytes());
+    }
+
+    @Test
+    void custom_withXsd_takesDefensiveCopyOnInput() {
+        // given
+        byte[] source = DUMMY_XSD_BYTES.clone();
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, source);
+
+        // when — caller mutates source after construction
+        source[0] = (byte) 0xFF;
+
+        // then — internal copy unaffected
+        assertEquals((byte) '<', formCode.customXsdBytes()[0]);
+    }
+
+    @Test
+    void custom_withXsd_takesDefensiveCopyOnAccess() {
+        // given
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, DUMMY_XSD_BYTES);
+
+        // when — caller mutates returned array
+        byte[] returned = formCode.customXsdBytes();
+        org.junit.jupiter.api.Assertions.assertNotNull(returned);
+        returned[0] = (byte) 0xFF;
+
+        // then — subsequent accessor returns clean copy
+        assertEquals((byte) '<', formCode.customXsdBytes()[0]);
+    }
+
+    @Test
+    void custom_withoutXsd_returnsNullForCustomXsdBytes() {
+        // given / when
+        FormCode formCode = FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA);
+
+        // then
+        org.junit.jupiter.api.Assertions.assertNull(formCode.customXsdBytes());
+    }
+
+    @Test
+    void custom_withNullXsdBytes_throwsNullPointerException() {
+        // when / then
+        assertThrows(NullPointerException.class,
+                () -> FormCode.custom(SYSTEM_CODE_FA3, SCHEMA_VERSION_FA, VALUE_FA, null));
+    }
+
+    @Test
+    void predefined_constants_haveNullCustomXsdBytes() {
+        // then — predefined forms use bundled XSD, not per-FormCode attached XSD
+        org.junit.jupiter.api.Assertions.assertNull(FormCode.FA2.customXsdBytes());
+        org.junit.jupiter.api.Assertions.assertNull(FormCode.FA3.customXsdBytes());
+        org.junit.jupiter.api.Assertions.assertNull(FormCode.PEF3.customXsdBytes());
+        org.junit.jupiter.api.Assertions.assertNull(FormCode.PEF_KOR3.customXsdBytes());
+    }
+}

@@ -1,0 +1,26 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model;
+
+import io.github.mgrtomaszzurawski.ksef.client.model.AuthenticationTokensResponseRaw;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.mapping.AuthMappers;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Access and refresh tokens obtained by redeeming the operation token.
+ *
+ * @param accessToken the access token for API calls (null if not yet issued)
+ * @param refreshToken the refresh token for obtaining new access tokens (null if not yet issued)
+ *
+ * @since 0.1.0
+ */
+public record AuthenticationTokens(@Nullable TokenInfo accessToken, @Nullable TokenInfo refreshToken) {
+
+    public static AuthenticationTokens from(AuthenticationTokensResponseRaw rawValue) {
+        return new AuthenticationTokens(
+                AuthMappers.toTokenInfo(rawValue.getAccessToken()),
+                AuthMappers.toTokenInfo(rawValue.getRefreshToken()));
+    }
+}

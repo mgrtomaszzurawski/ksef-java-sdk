@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Exclude all generated code -->
+    <Match>
+        <Package name="~io\.github\.mgrtomaszzurawski\.ksef\.client\..*"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.mgrtomaszzurawski\.ksef\.xml\..*"/>
+    </Match>
+    <!-- KsefClient intentionally exposes shared mutable objects (ObjectMapper,
+         SessionContext) to domain clients. These are internal SDK components,
+         not user-facing mutable state. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.KsefClient"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <!-- KsefHttpRuntime is the internal HttpRuntime adapter — its accessors
+         exist to share the same ObjectMapper/SessionContext across domain
+         clients within the SDK module. The package is non-exported via JPMS.
+         Pattern covers the outer class and its nested Transport/AuthHooks records. -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.internal\.runtime\.transport\.KsefHttpRuntime(\$.*)?"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Internal auth request/material records (XadesAuthRequest, XadesSigningMaterial)
+         — package-internal handoff records that carry an X509Certificate + PrivateKey
+         reference plus signing options into AuthClient.authenticateWithXades. The auth
+         call owns these for the request's lifetime; defensive copies add noise. -->
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- PagedSpliterator.{Page,CursorPage} are internal records that briefly
+         hold a List of records returned by a server page fetch. The list is
+         consumed once by the spliterator's buffer and never escapes the SDK.
+         Defensive copy on every page (potentially 10K+ pages) would be wasteful. -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.internal\.runtime\.pagination\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Java records with mutable fields (List, byte[], Map, X509Certificate, PrivateKey, char[]).
+         Records are immutable by intent — the JVM guarantees no setter methods.
+         SpotBugs flags the auto-generated accessor as "exposing mutable state"
+         but there is no way to defensively copy in a record accessor. Domain
+         model records under sdk.domain.<feature>.model.* (ADR-012 layout) all
+         use unmodifiable List from .toList()/List.copyOf() in their from()
+         factories. -->
+    <Match>
+        <Package name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\..*\.model"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Same defensive-copy pattern in the internal auth model (AuthenticationList). -->
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.auth.model"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Top-level records under sdk.common, sdk.internal.runtime.crypto
+         (PublicKeyCertificate has byte[] cert field, KsefCryptoService/
+         EncryptionMaterial/FileMetadata/KsefEncryptionInfo moved here in R1-5),
+         and sdk.config (credentials hold char[] / X509Certificate /
+         PrivateKey by design — identity objects that cannot be meaningfully
+         copied). -->
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.common"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.config"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.config.credentials"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.config.policy"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.core"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- BatchSubmissionFlow internal mechanics: AES key + IV held to drive
+         the synchronous batch flow; the flow is the sole owner for the call's
+         lifetime, so defensive copies on every internal hop add noise without
+         security benefit. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.session.BatchSubmissionFlow"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- OnlineSessionImpl holds session-scoped AES key + IV byte[] received
+         from OnlineSessionBuilder (PR9 rename of KsefSession).
+         Defensive-copying every byte[] hop in the auth flow adds noise
+         without security benefit — the SDK is the sole owner of these
+         arrays for the session's lifetime. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.OnlineSessionImpl"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- OnlineSessionBuilder.SessionOpenResult is an internal-handoff record
+         (KsefClient consumes it once to construct an OnlineSessionImpl).
+         The byte[] aesKey/initVector are session-scoped secrets;
+         defensive copies would force per-call clones for no real
+         benefit since the builder owns the only references. -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.builder\.OnlineSessionBuilder\$SessionOpenResult"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- BatchPackageBuilder.BatchPackage is a record whose compact constructor
+         already calls List.copyOf(partFiles) — the stored list is immutable.
+         SpotBugs cannot detect the defensive copy pattern in record compact
+         constructors and flags the auto-generated accessor regardless. -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.internal\.runtime\.batch\.BatchPackageBuilder\$BatchPackage"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <!-- Typed Invoice/Document classes expose JAXB escape-hatch accessors
+         (unsafeJaxbView() + toJaxbCopy()) per the Bundle B contract. The
+         wrapped JAXB tree is bound to the outer Invoice's lifetime and
+         intentionally shared with consumers that need direct introspection;
+         the read-only contract is enforced via javadoc + a deep-clone
+         alternative, not via defensive copy of the JAXB tree (which has no
+         clone() contract). -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.document\.(Fa2|Fa3|Pef|PefKor)Invoice(Document)?"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Internal session records — package-internal data carriers, not
+         consumer-facing. PartUploadRequest and BatchSession exist only to
+         shuttle data between the batch-submission flow and its caller; the
+         flow is the sole owner for the call's lifetime. -->
+    <Match>
+        <Package name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- InvoicesImpl is the Bundle L coordinator — its accessors return the
+         five sub-impls (InvoiceArchive/InvoiceSessions/InvoiceBatch/
+         InvoiceExport/InvoiceSync) by reference, which is the contract. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoicesImpl"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+</FindBugsFilter>

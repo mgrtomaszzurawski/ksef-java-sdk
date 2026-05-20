@@ -1,0 +1,15 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
+
+/**
+ * Query scope for person permission listings.
+ *
+ * @since 0.1.0
+ */
+public enum PersonPermissionsQueryType {
+    PERMISSIONS_IN_CURRENT_CONTEXT,
+    PERMISSIONS_GRANTED_IN_CURRENT_CONTEXT
+}

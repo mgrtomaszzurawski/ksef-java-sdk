@@ -1,0 +1,264 @@
+/*
+ * Copyright (c) 2026 Tomasz Zurawski
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+package io.github.mgrtomaszzurawski.ksef.sample;
+
+import io.github.mgrtomaszzurawski.ksef.sample.report.RunReport;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.AuthRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.BatchSessionRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.CertificateRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.DemoRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.InvoiceRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.LimitsRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.OfflineInvoiceRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.PeppolProviderRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.PeppolRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.PermissionRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.QrCodeRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.RateLimitRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.SessionRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.TestDataRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.TokenRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.runner.VatUeProviderRunner;
+import io.github.mgrtomaszzurawski.ksef.sample.util.IdentifierGenerators;
+import io.github.mgrtomaszzurawski.ksef.sample.util.SelfSignedCerts;
+import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCertificateCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefPkcs12Credentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigningProvider;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Main entry point for the KSeF demo application.
+ * Exercises all SDK clients against the live KSeF demo server.
+ */
+public final class DemoApp {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DemoApp.class);
+    private static final Path CREDENTIALS_FILE = Path.of("ksef-credentials.properties");
+    private static final Path STATE_FILE = Path.of("demo-state.json");
+    private static final String ERR_MISSING_TOKEN = "ksef.token is required in credentials file";
+    private static final String ERR_MISSING_NIP = "ksef.nip is required in credentials file";
+    private static final String ERR_MISSING_ENV = "ksef.environment is required in credentials file";
+    private static final String ERR_INVALID_MODE = "Invalid demo.mode: {}";
+    private static final int EXIT_FAILURE = 1;
+
+    private DemoApp() { }
+
+    public static void main(String[] args) {
+        DemoMode mode = resolveMode(args);
+        LOGGER.info("KSeF Demo App starting in {} mode", mode);
+
+        AppProperties properties = AppProperties.load(CREDENTIALS_FILE);
+        validateProperties(properties);
+
+        DemoState state;
+        try {
+            state = DemoState.load(STATE_FILE);
+        } catch (IOException exception) {
+            LOGGER.error("Failed to load state file: {}", exception.getMessage());
+            System.exit(EXIT_FAILURE);
+            return;
+        }
+
+        KsefCredentials credentials = buildCredentials(properties);
+        String resolvedEnvUrl = appendApiVersionIfMissing(properties.environment());
+
+        RunReport primaryReport = runPass(new PassConfig(
+                mode, state, credentials, resolvedEnvUrl,
+                properties.ksefToken(), properties.nipIdentifier(),
+                buildRunners(mode), "primary"));
+
+        RunReport testEnvReport = null;
+        if (properties.hasTestEnvironment() && (mode == DemoMode.AUTH_SAFE || mode == DemoMode.FULL)) {
+            testEnvReport = runTestEnvPass(mode, state, properties);
+        }
+
+        state.setLastRunTimestamp(Instant.now().toString());
+        state.setLastRunMode(mode.name());
+        try {
+            state.save(STATE_FILE);
+        } catch (IOException exception) {
+            LOGGER.error("Failed to save state file: {}", exception.getMessage());
+        }
+
+        primaryReport.print();
+        int exitCode = primaryReport.exitCode();
+        if (testEnvReport != null) {
+            LOGGER.info("--- TEST environment pass ---");
+            testEnvReport.print();
+            exitCode = Math.max(exitCode, testEnvReport.exitCode());
+        }
+        System.exit(exitCode);
+    }
+
+    /**
+     * Bundle of parameters for {@link #runPass(PassConfig)}. Reduces the
+     * arity of the previously 8-parameter method to one config record.
+     */
+    private record PassConfig(DemoMode mode, DemoState state, KsefCredentials credentials,
+                              String envUrl, String ksefToken, String nipIdentifier,
+                              List<DemoRunner> runners, String label) { }
+
+    private static RunReport runPass(PassConfig config) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Running {} pass against {}", config.label(), config.envUrl());
+        }
+        // Wire an OfflineSigningProvider built from a fresh self-signed test
+        // certificate so probes targeting `client.invoices().offline().issue(...)`
+        // and `session.sendOffline(invoice, mode)` can construct an OfflineInvoice
+        // end-to-end. The cert is throw-away — KSeF rejects offline sends signed
+        // with non-KSeF-Offline certs with code 21405, which probes treat as
+        // expected (see OfflineInvoiceRunner.runSendOfflineInvoiceProbe).
+        SelfSignedCerts.GeneratedCertificate offlineCert = SelfSignedCerts.forNip(config.nipIdentifier());
+        OfflineSigningProvider offlineProvider = OfflineSigningProvider.fromPrivateKey(
+                new KsefCertificate(offlineCert.certificate(), offlineCert.privateKey()));
+
+        try (KsefClient client = KsefClient.builder().environment(KsefEnvironment.custom(config.envUrl()))
+                .credentials(config.credentials())
+                .retryPolicy(RetryPolicy.builder().build())
+                .offlineSigning(offlineProvider)
+                .build()) {
+            DemoContext context = new DemoContext(client, config.mode(), config.state(),
+                    config.ksefToken(), config.nipIdentifier(),
+                    config.credentials().identifier().type(), config.envUrl());
+            return new DemoSession(context).execute(config.runners());
+        }
+    }
+
+    private static RunReport runTestEnvPass(DemoMode mode, DemoState state, AppProperties properties) {
+        String testEnvUrl = appendApiVersionIfMissing(properties.testEnvironment());
+        // KSeF TEST env auto-creates contexts on first XAdES auth signed with a
+        // self-signed cert whose CN matches the desired identifier. We generate
+        // a fresh NIP and self-signed cert for each TEST run; the throw-away
+        // identity covers FA(2)/FA(3) form-code-with-NIP-context coverage that
+        // DEMO env cannot run with our pre-issued real-NIP token.
+        String randomNip = IdentifierGenerators.generateRandomNip();
+        SelfSignedCerts.GeneratedCertificate cert = SelfSignedCerts.forNip(randomNip);
+        KsefCredentials testCreds = new KsefCertificateCredentials(
+                cert.certificate(), cert.privateKey(), KsefIdentifier.nip(randomNip));
+        return runPass(new PassConfig(mode, state, testCreds, testEnvUrl, null, randomNip,
+                buildTestEnvRunners(mode), "test-env"));
+    }
+
+    private static List<DemoRunner> buildTestEnvRunners(DemoMode mode) {
+        // TEST env pass focuses on form-code/auth-context coverage that the
+        // primary DEMO/PROD pass cannot exercise with real-NIP creds. Avoid
+        // duplicating the breadth-of-API runners (AuthRunner, LimitsRunner,
+        // PermissionRunner, ...) — those are already covered by the primary
+        // pass and adding them here just doubles network traffic and result
+        // noise.
+        List<DemoRunner> runners = new ArrayList<>();
+        if (mode == DemoMode.FULL) {
+            runners.add(new BatchSessionRunner());
+            runners.add(new SessionRunner());
+            runners.add(new PeppolProviderRunner());
+            runners.add(new VatUeProviderRunner());
+        }
+        return runners;
+    }
+
+    private static DemoMode resolveMode(String[] args) {
+        String modeName = System.getProperty("demo.mode");
+        if (modeName == null && args.length > 0) {
+            modeName = args[0];
+        }
+        if (modeName == null) {
+            return DemoMode.READ_ONLY;
+        }
+        try {
+            return DemoMode.valueOf(modeName.toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            LOGGER.error(ERR_INVALID_MODE, modeName);
+            System.exit(EXIT_FAILURE);
+            return DemoMode.READ_ONLY;
+        }
+    }
+
+    /**
+     * Append the {@code /v2} API version path segment to a bare host URL if it
+     * is missing. The KSeF SDK's {@link KsefEnvironment#custom(String)} is
+     * strict — it takes the supplied base URL verbatim and does not auto-add
+     * the version. Operators commonly write {@code ksef.environment} as a
+     * bare host (the way KSeF's own portal documents it), so the demo wrapper
+     * normalises it before handing it to the SDK. Without this, every
+     * authenticated call would return 404 (verified by E2E run on
+     * {@code api-demo.ksef.mf.gov.pl} 2026-05-04).
+     */
+    private static String appendApiVersionIfMissing(String envUrl) {
+        if (envUrl.endsWith("/v2") || envUrl.endsWith("/v2/")) {
+            return envUrl;
+        }
+        // Strip any trailing slash before appending so we don't end up with "//v2".
+        String trimmed = envUrl.endsWith("/") ? envUrl.substring(0, envUrl.length() - 1) : envUrl;
+        return trimmed + "/v2";
+    }
+
+    private static void validateProperties(AppProperties properties) {
+        if (properties.ksefToken() == null || properties.ksefToken().isBlank()) {
+            LOGGER.error(ERR_MISSING_TOKEN);
+            System.exit(EXIT_FAILURE);
+        }
+        if (properties.nipIdentifier() == null || properties.nipIdentifier().isBlank()) {
+            LOGGER.error(ERR_MISSING_NIP);
+            System.exit(EXIT_FAILURE);
+        }
+        if (properties.environment() == null || properties.environment().isBlank()) {
+            LOGGER.error(ERR_MISSING_ENV);
+            System.exit(EXIT_FAILURE);
+        }
+    }
+
+    private static KsefCredentials buildCredentials(AppProperties properties) {
+        if (properties.hasCertificate()) {
+            return new KsefPkcs12Credentials(
+                    Path.of(properties.certFile()),
+                    properties.certPassword().toCharArray(),
+                    properties.nipIdentifier());
+        }
+        return new KsefTokenCredentials(properties.ksefToken(), properties.nipIdentifier());
+    }
+
+    private static List<DemoRunner> buildRunners(DemoMode mode) {
+        List<DemoRunner> runners = new ArrayList<>();
+
+        if (mode != DemoMode.CLEANUP) {
+            runners.add(new QrCodeRunner());
+        }
+
+        if (mode == DemoMode.AUTH_SAFE || mode == DemoMode.FULL) {
+            runners.add(new AuthRunner());
+            runners.add(new LimitsRunner());
+            runners.add(new RateLimitRunner());
+            runners.add(new TokenRunner());
+            runners.add(new PermissionRunner());
+            runners.add(new CertificateRunner());
+            runners.add(new PeppolRunner());
+            runners.add(new TestDataRunner());
+            // BatchSessionRunner is FULL-only: KSeF rejects close on an empty batch
+            // (server error 21205 "package must not be empty"), so the runner cannot
+            // probe lifecycle without actually uploading invoice parts.
+            if (mode == DemoMode.FULL) {
+                runners.add(new BatchSessionRunner());
+            }
+            runners.add(new SessionRunner());
+            runners.add(new InvoiceRunner());
+            runners.add(new OfflineInvoiceRunner());
+        }
+
+        return runners;
+    }
+}
