@@ -5,9 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.core.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
@@ -23,7 +21,6 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;

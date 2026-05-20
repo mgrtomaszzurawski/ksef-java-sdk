@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.model;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.FormCodeInfo;
-
 import java.util.Arrays;
 import java.util.Objects;
 

@@ -5,13 +5,9 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.UnrecognizedInvoiceDocument;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;

@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDoc
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

@@ -12,7 +12,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.builder.TokenQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenQueryRequest;
 import org.junit.jupiter.api.Test;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;

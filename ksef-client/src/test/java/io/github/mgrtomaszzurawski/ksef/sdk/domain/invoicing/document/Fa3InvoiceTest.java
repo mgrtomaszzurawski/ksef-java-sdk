@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;

@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefAddress;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefCreditNoteLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefInvoiceLine;

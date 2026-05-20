@@ -5,10 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

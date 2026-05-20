@@ -6,7 +6,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.exception;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 class KsefExceptionOfStatusMappingTest {
 
-    private static final String MSG = "POST /v2/sessions/online";
+    private static final String OPERATION_NAME = "POST /v2/sessions/online";
     private static final String KSEF_ERROR_BODY = """
             {
               "exception": {
@@ -41,7 +40,7 @@ class KsefExceptionOfStatusMappingTest {
 
     @Test
     void of_whenStatus400_returnsKsefValidationExceptionWithParsedErrors() {
-        KsefException result = KsefException.of(MSG, null, 400, KSEF_ERROR_BODY);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 400, KSEF_ERROR_BODY);
 
         KsefValidationException validation = assertInstanceOf(KsefValidationException.class, result);
         List<KsefValidationError> errors = validation.errors();
@@ -53,7 +52,7 @@ class KsefExceptionOfStatusMappingTest {
 
     @Test
     void of_whenStatus400AndEmptyBody_returnsKsefValidationExceptionWithEmptyErrors() {
-        KsefException result = KsefException.of(MSG, null, 400, null);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 400, null);
 
         KsefValidationException validation = assertInstanceOf(KsefValidationException.class, result);
         assertEquals(0, validation.errors().size(), "Empty body → empty errors list, not null");
@@ -61,25 +60,25 @@ class KsefExceptionOfStatusMappingTest {
 
     @Test
     void of_whenStatus401_returnsKsefAuthException() {
-        KsefException result = KsefException.of(MSG, null, 401, null);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 401, null);
         assertInstanceOf(KsefAuthException.class, result);
     }
 
     @Test
     void of_whenStatus403_returnsKsefAuthException() {
-        KsefException result = KsefException.of(MSG, null, 403, null);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 403, null);
         assertInstanceOf(KsefAuthException.class, result);
     }
 
     @Test
     void of_whenStatus404_returnsKsefNotFoundException() {
-        KsefException result = KsefException.of(MSG, null, 404, null);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 404, null);
         assertInstanceOf(KsefNotFoundException.class, result);
     }
 
     @Test
     void of_whenStatus410_returnsKsefRetentionExpiredException() {
-        KsefException result = KsefException.of(MSG, null, 410, null);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 410, null);
         // Retention is the more specific subtype; NotFound is its parent.
         assertInstanceOf(KsefRetentionExpiredException.class, result);
         assertInstanceOf(KsefNotFoundException.class, result);
@@ -87,7 +86,7 @@ class KsefExceptionOfStatusMappingTest {
 
     @Test
     void of_whenStatus429AndRetryAfter_returnsKsefRateLimitExceptionWithHint() {
-        KsefException result = KsefException.of(MSG, null, 429, null, 42L);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 429, null, 42L);
 
         KsefRateLimitException rateLimit = assertInstanceOf(KsefRateLimitException.class, result);
         assertEquals(42L, rateLimit.retryAfterSeconds());
@@ -95,19 +94,19 @@ class KsefExceptionOfStatusMappingTest {
 
     @Test
     void of_whenStatus500_returnsKsefServerException() {
-        KsefException result = KsefException.of(MSG, null, 500, null);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 500, null);
         assertInstanceOf(KsefServerException.class, result);
     }
 
     @Test
     void of_whenStatus503_returnsKsefServerException() {
-        KsefException result = KsefException.of(MSG, null, 503, null);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 503, null);
         assertInstanceOf(KsefServerException.class, result);
     }
 
     @Test
     void of_whenStatusIsUnmappedClient_returnsGenericKsefException() {
-        KsefException result = KsefException.of(MSG, null, 418, null);
+        KsefException result = KsefException.of(OPERATION_NAME, null, 418, null);
         // 418 has no specific subtype — falls through to base KsefException
         assertEquals(KsefException.class, result.getClass());
         assertEquals(418, result.statusCode());

@@ -42,7 +42,7 @@ public final class MultiTenantOrchestration {
     private MultiTenantOrchestration() { }
 
     public static void main(String[] args) {
-        KsefEnvironment env = resolveEnv(System.getenv("KSEF_ENV"));
+        KsefEnvironment environment = resolveEnv(System.getenv("KSEF_ENV"));
 
         List<Tenant> tenants = List.of(
                 new Tenant(requireEnv("KSEF_NIP_A"), requireEnv("KSEF_TOKEN_A")),
@@ -50,7 +50,7 @@ public final class MultiTenantOrchestration {
 
         try {
             for (Tenant tenant : tenants) {
-                KsefClient client = buildClient(env, tenant);
+                KsefClient client = buildClient(environment, tenant);
                 clientsByNip.put(tenant.nip(), client);
                 KsefClientConfig snapshot = client.config();
                 System.out.println("Built client for NIP=" + tenant.nip()
@@ -70,8 +70,8 @@ public final class MultiTenantOrchestration {
         }
     }
 
-    private static KsefClient buildClient(KsefEnvironment env, Tenant tenant) {
-        return KsefClient.builder().environment(env)
+    private static KsefClient buildClient(KsefEnvironment environment, Tenant tenant) {
+        return KsefClient.builder().environment(environment)
                 .credentials(new KsefTokenCredentials(tenant.token(), tenant.nip()))
                 .build();
     }

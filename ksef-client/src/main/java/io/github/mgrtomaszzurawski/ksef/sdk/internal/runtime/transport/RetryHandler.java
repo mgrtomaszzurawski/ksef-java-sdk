@@ -156,10 +156,15 @@ public final class RetryHandler {
         if (exception instanceof KsefRateLimitException) {
             return policy.retryOn429();
         }
-        if (exception instanceof KsefServerException) {
-            return policy.retryOn5xx();
+        if (exception instanceof KsefServerException server) {
+            // Transport-level failures (connect refused, DNS failure, read
+            // timeout — wrapped via mapIoFailure with the 2-arg ctor that
+            // leaves statusCode=0) are always retried; the SDK has no
+            // server response to honour a policy against. 5xx server
+            // responses (statusCode >= 500) are gated by retryOn5xx().
+            return server.statusCode() == 0 || policy.retryOn5xx();
         }
-        return exception instanceof KsefServerException;
+        return false;
     }
 
     private <T> @Nullable T callOnce(ApiCall<T> call, String operationName) {

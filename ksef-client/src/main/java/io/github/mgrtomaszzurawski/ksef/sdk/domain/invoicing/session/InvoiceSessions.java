@@ -5,11 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceBatch;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionListItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SessionsQueryRequest;
 import java.util.stream.Stream;

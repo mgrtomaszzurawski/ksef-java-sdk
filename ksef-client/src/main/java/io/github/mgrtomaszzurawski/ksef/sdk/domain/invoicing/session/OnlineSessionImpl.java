@@ -5,15 +5,9 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineMode;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline.OfflineInvoice;
-
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
-
-
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefInvoiceTypes;

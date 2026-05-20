@@ -16,7 +16,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.TestHttpConstants;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.findAll;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;

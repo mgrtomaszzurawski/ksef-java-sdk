@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SubmittedInvoice;
 import java.util.List;

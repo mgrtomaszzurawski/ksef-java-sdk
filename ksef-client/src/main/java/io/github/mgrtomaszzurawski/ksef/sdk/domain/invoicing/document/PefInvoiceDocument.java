@@ -5,11 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PefInvoiceLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.pef.InvoiceType;

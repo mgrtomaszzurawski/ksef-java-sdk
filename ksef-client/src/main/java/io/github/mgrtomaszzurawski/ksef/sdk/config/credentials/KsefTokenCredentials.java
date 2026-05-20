@@ -5,10 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.config.credentials;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthMethod;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentialsDescriptor;
-
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;

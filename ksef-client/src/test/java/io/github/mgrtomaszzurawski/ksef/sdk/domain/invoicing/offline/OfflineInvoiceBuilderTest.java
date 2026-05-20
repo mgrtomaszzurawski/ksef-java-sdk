@@ -5,11 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.OfflineInvoiceBuilder;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model.KsefCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrContextType;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.QrEnvironment;

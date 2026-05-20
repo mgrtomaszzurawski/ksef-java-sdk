@@ -5,16 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
-
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.InvoiceDocument;
-
-
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Invoice;
-
-
-
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ClearedInvoice;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadata;

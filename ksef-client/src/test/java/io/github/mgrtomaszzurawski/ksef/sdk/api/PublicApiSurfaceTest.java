@@ -5,7 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.api;
 
 import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Constructor;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**

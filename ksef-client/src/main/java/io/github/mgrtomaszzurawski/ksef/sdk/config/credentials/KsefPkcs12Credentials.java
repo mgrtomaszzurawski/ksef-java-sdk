@@ -6,7 +6,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.config.credentials;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.config.AuthMethod;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefCredentialsDescriptor;
-
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;

@@ -5,8 +5,6 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.Invoices;
-
-
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryRequest;
