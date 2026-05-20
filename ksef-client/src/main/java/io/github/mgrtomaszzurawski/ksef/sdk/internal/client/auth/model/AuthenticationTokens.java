@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public record AuthenticationTokens(@Nullable TokenInfo accessToken, @Nullable TokenInfo refreshToken) {
+record AuthenticationTokens(@Nullable TokenInfo accessToken, @Nullable TokenInfo refreshToken) {
 
     public static AuthenticationTokens from(AuthenticationTokensResponseRaw rawValue) {
         return new AuthenticationTokens(

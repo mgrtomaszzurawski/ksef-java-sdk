@@ -15,7 +15,7 @@ import java.util.List;
  *
  * @since 1.0.0
  */
-public record AuthenticationList(String continuationToken, List<AuthenticationListItem> items) {
+record AuthenticationList(String continuationToken, List<AuthenticationListItem> items) {
 
     public static AuthenticationList from(AuthenticationListResponseRaw raw) {
         List<AuthenticationListItem> mappedItems = raw.getItems().stream().map(AuthenticationListItem::from).toList();

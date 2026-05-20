@@ -10,7 +10,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.mapping
  *
  * @since 1.0.0
  */
-public final class PermissionEnumConverters {
+final class PermissionEnumConverters {
 
     private PermissionEnumConverters() { }
 

@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 1.0.0
  */
-public record AuthenticationTokenRefresh(@Nullable TokenInfo accessToken) {
+record AuthenticationTokenRefresh(@Nullable TokenInfo accessToken) {
 
     public static AuthenticationTokenRefresh from(AuthenticationTokenRefreshResponseRaw rawValue) {
         return new AuthenticationTokenRefresh(AuthMappers.toTokenInfo(rawValue.getAccessToken()));
