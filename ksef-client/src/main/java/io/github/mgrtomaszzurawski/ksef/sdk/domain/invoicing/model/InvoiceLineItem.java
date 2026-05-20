@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * @param vatRate VAT rate token (P_12) — e.g. {@code "23"}, {@code "8"},
  *     {@code "5"}, {@code "0"}, {@code "zw"}, {@code "np"}
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceLineItem(
         int rowNumber,

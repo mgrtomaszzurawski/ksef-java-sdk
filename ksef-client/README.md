@@ -1,12 +1,21 @@
 # ksef-client
 
+> **UNOFFICIAL PREVIEW (0.1.0-preview)**
+>
+> This is a **solo-developed, unofficial** Java SDK for the Polish KSeF
+> e-invoicing system. **Not affiliated** with Ministerstwo Finansów,
+> CIRFMF, or any institution operating KSeF.
+>
+> - Preview status — API may break between 0.x releases without notice
+> - No commercial support, no SLA, no liability (AGPL-3.0 §15–16)
+> - One-person project — issue response is best-effort
+> - **For production invoice flows, prefer the official SDK at
+>   [CIRFMF/ksef-client-java](https://github.com/CIRFMF/ksef-client-java).**
+
+---
+
 Library module of the [KSeF Java SDK](../README.md) — coordinates
 `io.github.mgrtomaszzurawski:ksef-client`.
-
-> **Status:** Maven Central staging dry-run pending. Until the artifact is
-> live on Central, install the `1.0.0` jar locally with
-> `mvn install -pl ksef-client -DskipTests` to use it from a downstream
-> project.
 
 If you only need to consume the SDK, this README is enough. For project-wide
 context, the architecture deep-dive, and the demo / live-validation harness,
@@ -18,7 +27,7 @@ see the [root README](../README.md) and the [`ADR/`](../ADR/) set.
 <dependency>
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-client</artifactId>
-    <version>1.0.0</version>
+    <version>0.1.0-preview</version>
 </dependency>
 ```
 

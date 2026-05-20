@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * {@link #archive()} / {@link #close()} observers see the same
  * {@link ClosedSession} instance.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 final class OnlineSessionImpl implements OnlineSession {
 

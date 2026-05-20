@@ -24,7 +24,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
  *     single online session before close. The session refuses further
  *     {@code sendInvoice} calls once the count is reached.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record OnlineSessionLimits(Integer maxInvoiceSizeInMB, Integer maxInvoiceWithAttachmentSizeInMB, Integer maxInvoices) {
 

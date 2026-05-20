@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 /**
  * A subordinate entity role entry from query results.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SubordinateEntityRole(
         PermissionIdentifier subordinateEntityIdentifier,

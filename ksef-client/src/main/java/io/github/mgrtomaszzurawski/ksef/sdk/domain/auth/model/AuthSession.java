@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  * @param current whether this is the session that issued the
  *     {@code GET /auth/sessions} call
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthSession(
         String referenceNumber,

@@ -36,7 +36,7 @@ import org.jspecify.annotations.Nullable;
  *     default (250 — the largest page the server accepts, chosen so
  *     stream consumers cover ground per round-trip).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceQueryRequest(
         InvoiceQuerySubjectType subjectType,

@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * Subunit of a test subject (used in {@link TestSubjectCreateRequest}).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TestSubunit(String subjectNip, String description) {
 

@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * {@link OfflineSigningProvider} (default path) or is supplied
  * explicitly per call.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class OfflineInvoicesImpl implements OfflineInvoices {
 

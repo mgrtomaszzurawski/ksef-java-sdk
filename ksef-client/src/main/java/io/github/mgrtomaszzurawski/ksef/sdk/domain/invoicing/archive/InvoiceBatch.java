@@ -25,7 +25,7 @@ import java.util.List;
  * threads, HTTP request handlers, or reactive framework dispatch threads.
  * Wrap with a dedicated executor for async use.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface InvoiceBatch {
 

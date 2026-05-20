@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
  * @param packageExpirationDate when the download package expires
  * @param invoicePackage the downloadable package (null if not ready)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceExportStatus(
         @Nullable StatusInfo status,

@@ -54,7 +54,7 @@ import org.jspecify.annotations.Nullable;
  *     specific category above (auth, certificates, permissions,
  *     tokens, limits — all share this budget).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record ApiRateLimits(
         @Nullable RateLimitValues onlineSession,

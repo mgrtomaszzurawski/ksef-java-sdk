@@ -54,7 +54,7 @@ import java.util.Optional;
  * @param xmlPath on-disk location when the plan requested file-output;
  *     empty otherwise
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record DecryptedInvoice(
         InvoiceMetadata metadata,

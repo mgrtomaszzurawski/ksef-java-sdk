@@ -72,7 +72,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.mapping.
  * Client for KSeF permission management — granting, revoking, and querying permissions
  * for persons, entities, EU entities, subunits, and authorizations.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class PermissionsImpl implements Permissions {
 

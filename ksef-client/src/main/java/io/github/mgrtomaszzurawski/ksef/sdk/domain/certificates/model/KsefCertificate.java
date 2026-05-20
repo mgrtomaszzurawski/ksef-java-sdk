@@ -24,7 +24,7 @@ import java.util.Objects;
  * <p>Spec citation: REQ-OFFLINE-006 (KSeF Offline certificate
  * requirement); ADR-019 (KOD II signing scheme).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @SuppressWarnings("java:S6206")
 public final class KsefCertificate {

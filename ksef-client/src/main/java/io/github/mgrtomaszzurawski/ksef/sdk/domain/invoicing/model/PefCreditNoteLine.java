@@ -28,7 +28,7 @@ import java.util.Objects;
  * @param vatPercent VAT percent
  *     (cac:Item/cac:ClassifiedTaxCategory/cbc:Percent)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PefCreditNoteLine(
         String lineId,

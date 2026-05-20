@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * @param pageSize page size (server-side range 10–100; {@code null} =
  *     server default 10)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthSessionsQueryRequest(
         @Nullable String continuationToken,

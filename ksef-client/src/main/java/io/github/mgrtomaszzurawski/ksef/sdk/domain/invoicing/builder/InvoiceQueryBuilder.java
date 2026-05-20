@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
  * Builder for invoice metadata query filters.
  * <p>Required fields: subjectType, dateType, dateFrom. Server enforces dateRange max 3 months.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @SuppressWarnings("PMD.TooManyFields")  // 16 fields = the spec's full filter set; splitting would just hide the spec parity.
 public final class InvoiceQueryBuilder {

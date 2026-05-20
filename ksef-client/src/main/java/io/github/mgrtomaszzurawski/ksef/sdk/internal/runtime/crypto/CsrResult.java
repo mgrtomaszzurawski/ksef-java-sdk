@@ -23,7 +23,7 @@ import java.util.Objects;
  * @param pkcs10Der DER-encoded PKCS#10 CSR (defensively cloned)
  * @param keyPair the key pair used to sign the CSR
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record CsrResult(byte[] pkcs10Der, KeyPair keyPair) {
 

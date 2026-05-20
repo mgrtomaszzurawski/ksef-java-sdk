@@ -21,7 +21,7 @@ import java.util.Optional;
  *     ordinal; preserved across the whole flow)
  * @param xmlBytes raw UPO XML bytes (immutable defensive copy on accessor)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record UpoEntry(String referenceNumber, byte[] xmlBytes) {
 

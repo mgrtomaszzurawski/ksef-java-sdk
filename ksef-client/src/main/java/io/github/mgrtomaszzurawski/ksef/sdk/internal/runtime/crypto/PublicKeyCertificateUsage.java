@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto;
 /**
  * Usage type of a KSeF public key certificate.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum PublicKeyCertificateUsage {
 

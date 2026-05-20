@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * components) is therefore harmless here; suppressing S6218 keeps the
  * carrier free of boilerplate equals/hashCode/toString that would never run.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @SuppressWarnings("java:S6218")
 public record SessionHandle(

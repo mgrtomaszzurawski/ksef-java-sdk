@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
  * payload) is rejected by the server with a parse error. To convert
  * a PEM CSR to DER: {@code openssl req -outform DER -in csr.pem -out csr.der}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class CertificateEnrollBuilder {
 

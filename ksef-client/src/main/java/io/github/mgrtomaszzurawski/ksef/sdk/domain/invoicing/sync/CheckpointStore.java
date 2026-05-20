@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * <p>Spec citation: ADR (planned) — checkpoint commit semantics.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface CheckpointStore {
 

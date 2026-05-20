@@ -22,7 +22,7 @@ import java.util.Optional;
  *
  * @see KsefClient.Builder#credentials(KsefCredentials)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public sealed interface KsefCredentials
         permits KsefTokenCredentials, KsefCertificateCredentials, KsefPkcs12Credentials {

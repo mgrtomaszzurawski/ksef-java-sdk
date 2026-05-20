@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * {@link KsefNotFoundException} still handles 410 because the subtype
  * extends this class.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public class KsefNotFoundException extends KsefException {
 

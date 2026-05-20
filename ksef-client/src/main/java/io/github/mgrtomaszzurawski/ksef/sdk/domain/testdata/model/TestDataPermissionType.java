@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
 /**
  * Type of test data permission in KSeF.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum TestDataPermissionType {
 

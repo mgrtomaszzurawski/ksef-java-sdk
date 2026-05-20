@@ -9,7 +9,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
  * @param type identifier type name (e.g. "Nip", "Pesel", "Fingerprint", "InternalId")
  * @param value identifier value
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TokenIdentifier(String type, String value) {
 }

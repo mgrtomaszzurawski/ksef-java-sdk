@@ -27,7 +27,7 @@ import java.util.Objects;
  *     keep production callers on lenient validation until they are
  *     ready (api-changelog v2.1.1).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record FeaturePolicy(UpoVersion upoVersion, boolean problemDetails, boolean enforceXadesCompliance) {
 

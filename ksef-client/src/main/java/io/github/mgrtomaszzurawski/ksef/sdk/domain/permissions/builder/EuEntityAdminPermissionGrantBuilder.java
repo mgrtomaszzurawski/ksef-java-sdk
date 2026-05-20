@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Required: fingerprint, contextNipVatUe, description (5-256 chars),
  * euEntityName, subjectEntityByFingerprint, euEntityDetails.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class EuEntityAdminPermissionGrantBuilder {
 

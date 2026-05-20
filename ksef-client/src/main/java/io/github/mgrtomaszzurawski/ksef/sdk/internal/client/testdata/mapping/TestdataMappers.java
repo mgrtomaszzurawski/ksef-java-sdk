@@ -16,7 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model.TestSubjectTyp
 /**
  * Internal mappers for testdata domain types. Non-exported package.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class TestdataMappers {
 

@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 /**
  * Direction of an authorization-permission query.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum AuthorizationQueryType {
     GRANTED,

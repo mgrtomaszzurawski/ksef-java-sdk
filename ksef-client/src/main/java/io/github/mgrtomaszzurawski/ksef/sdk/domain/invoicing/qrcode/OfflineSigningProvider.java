@@ -34,7 +34,7 @@ import java.util.Objects;
  * The provider is configured once at {@code KsefClient.Builder.offlineSigning(...)}
  * and is then consumed by the offline-send flow on each invoice.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface OfflineSigningProvider {
 

@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
  * @param downloadUrl URL to download the UPO
  * @param downloadUrlExpirationDate when the download URL expires
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record UpoPage(String referenceNumber, URI downloadUrl, OffsetDateTime downloadUrlExpirationDate) {
 

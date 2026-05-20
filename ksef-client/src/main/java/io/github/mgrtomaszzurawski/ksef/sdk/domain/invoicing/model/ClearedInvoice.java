@@ -43,7 +43,7 @@ import java.util.Objects;
  *     on the runtime type for typed access (e.g. {@code Fa3InvoiceDocument})
  * @param upo       the UPO entry — XAdES-signed acknowledgement bytes + parsed view
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record ClearedInvoice<I extends Invoice>(
         SubmittedInvoice<I> submitted, InvoiceDocument document, UpoEntry upo) {

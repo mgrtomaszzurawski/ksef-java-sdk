@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  * @param status current enrollment status
  * @param certificateSerialNumber serial number of the enrolled certificate (null if pending)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record CertificateEnrollmentStatus(
         OffsetDateTime requestDate,

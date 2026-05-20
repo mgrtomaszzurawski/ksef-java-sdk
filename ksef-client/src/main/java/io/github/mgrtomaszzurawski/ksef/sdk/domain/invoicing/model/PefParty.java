@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  *     {@code cac:PartyTaxScheme/cbc:CompanyID}
  * @param address postal address
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PefParty(
         String endpointId,

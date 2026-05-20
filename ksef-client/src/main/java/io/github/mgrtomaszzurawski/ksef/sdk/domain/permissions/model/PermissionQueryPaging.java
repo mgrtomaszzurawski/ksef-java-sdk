@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * {@code build()} time rather than at first wire call so the consumer
  * sees the offending value next to the call site.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 final class PermissionQueryPaging {
 

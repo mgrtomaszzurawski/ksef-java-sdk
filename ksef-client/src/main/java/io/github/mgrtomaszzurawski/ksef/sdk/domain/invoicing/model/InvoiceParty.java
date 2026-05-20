@@ -41,7 +41,7 @@ import org.jspecify.annotations.Nullable;
  *     {@code Podmiot2/GV} on FA(3). Ignored for {@code Podmiot1}.
  *     Defaults to {@code false}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceParty(
         String nip,

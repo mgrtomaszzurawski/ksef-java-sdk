@@ -18,7 +18,7 @@ import java.time.Duration;
  * {@code KsefClient} implements this interface; {@code HttpSupport} depends
  * only on the abstraction.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface HttpRuntime {
 

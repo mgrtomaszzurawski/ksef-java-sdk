@@ -93,6 +93,10 @@ module io.github.mgrtomaszzurawski.ksef {
     // JSpecify null-safety annotations (ADR-017)
     requires static org.jspecify;
 
+    // Apiguardian @API EXPERIMENTAL marker on KsefClient (preview release).
+    // Removed at 1.0.0 cut.
+    requires static org.apiguardian.api;
+
     // Crypto dependencies (BouncyCastle)
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;

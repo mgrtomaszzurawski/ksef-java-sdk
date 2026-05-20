@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
  * @param status current lifecycle status
  * @param statusDetails additional status details
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TokenDetail(
         String referenceNumber,

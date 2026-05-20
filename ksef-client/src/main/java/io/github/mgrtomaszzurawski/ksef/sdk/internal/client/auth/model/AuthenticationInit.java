@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * @param referenceNumber operation reference number for status polling
  * @param authenticationToken the operation token with validity period (null on partial-init failures)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthenticationInit(String referenceNumber, @Nullable TokenInfo authenticationToken) {
 

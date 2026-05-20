@@ -42,7 +42,7 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  * Archive-side implementation of {@link InvoiceArchive}: retrieve by KSeF
  * number, reconstruct cleared invoices, and query/stream invoice metadata.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoiceArchiveImpl implements InvoiceArchive {
 

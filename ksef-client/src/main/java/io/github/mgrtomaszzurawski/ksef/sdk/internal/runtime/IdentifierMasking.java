@@ -10,7 +10,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime;
  * verbatim leak data to log aggregators. The masking pattern keeps the last
  * four characters so operators can still correlate sessions.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class IdentifierMasking {
 

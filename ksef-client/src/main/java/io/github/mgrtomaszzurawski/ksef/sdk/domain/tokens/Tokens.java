@@ -31,7 +31,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model.TokenQueryReques
  * Use {@link #streamTokens} for lazy full traversal that handles the
  * cursor internally.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface Tokens {
 

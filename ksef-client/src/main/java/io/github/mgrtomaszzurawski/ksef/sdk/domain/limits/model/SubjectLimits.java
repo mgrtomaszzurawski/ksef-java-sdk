@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  *     existing one first. {@code null} when the server does not
  *     advertise a cap.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SubjectLimits(@Nullable Integer maxEnrollments, @Nullable Integer maxCertificates) {
 

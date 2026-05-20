@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 /**
  * Query scope for person permission listings.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum PersonPermissionsQueryType {
     PERMISSIONS_IN_CURRENT_CONTEXT,

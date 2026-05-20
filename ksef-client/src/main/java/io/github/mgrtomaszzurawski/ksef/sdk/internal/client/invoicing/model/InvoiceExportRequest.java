@@ -13,7 +13,7 @@ import java.util.Objects;
  * Carries the per-export AES key (RSA-encrypted with KSeF's public key) and
  * the query filters describing which invoices to export.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceExportRequest(
         byte[] encryptedSymmetricKey,

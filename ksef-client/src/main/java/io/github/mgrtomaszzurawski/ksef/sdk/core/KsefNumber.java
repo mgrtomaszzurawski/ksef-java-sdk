@@ -45,7 +45,7 @@ import java.util.Objects;
  *
  * <p>Spec reference: REQ-SESS-18, REQ-SESS-19, REQ-SESS-20.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record KsefNumber(String value) {
 

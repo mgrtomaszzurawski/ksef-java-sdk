@@ -37,7 +37,7 @@ import java.util.Objects;
  *
  * <p>Spec citation: REQ-OFFLINE-003.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public sealed interface SendInvoiceCommand
         permits SendInvoiceCommand.Normal, SendInvoiceCommand.Offline, SendInvoiceCommand.TechnicalCorrection {

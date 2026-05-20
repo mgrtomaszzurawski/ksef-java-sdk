@@ -11,7 +11,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.testdata.model;
  * @param maxInvoiceWithAttachmentSizeMb max invoice with attachment size in MB
  * @param maxInvoices max number of invoices per session
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TestSessionLimits(int maxInvoiceSizeMb, int maxInvoiceWithAttachmentSizeMb, int maxInvoices) {
 }

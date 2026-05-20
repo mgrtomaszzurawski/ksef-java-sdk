@@ -24,7 +24,7 @@ import java.util.Objects;
  * @param itemName goods / service name (cac:Item/cbc:Name)
  * @param vatPercent VAT percent (cac:Item/cac:ClassifiedTaxCategory/cbc:Percent)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PefInvoiceLine(
         String lineId,

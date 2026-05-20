@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * succeeded). Smoke-level coverage; deeper invariant tests live with
  * the per-feature test classes.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 class UncoveredBuildersCoverageTest {
 

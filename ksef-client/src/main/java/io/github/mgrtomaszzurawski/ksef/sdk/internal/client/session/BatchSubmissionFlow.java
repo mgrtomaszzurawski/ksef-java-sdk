@@ -93,7 +93,7 @@ import org.slf4j.LoggerFactory;
  * <p>Internal — module-private. Reachable only from
  * {@code Invoices.batch().submit(...)}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class BatchSubmissionFlow {
 

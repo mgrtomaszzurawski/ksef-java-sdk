@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * resolved from credentials. Both nullable — {@code sendOffline} throws
  * a typed exception when either is missing.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record OfflineSendHook(
         @Nullable OfflineSigningProvider provider,

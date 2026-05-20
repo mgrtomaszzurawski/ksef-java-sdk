@@ -73,7 +73,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Spec citations: REQ-HWM-001..003, REQ-EXPORT-WINDOWING-001/002.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoiceSyncClient {
 

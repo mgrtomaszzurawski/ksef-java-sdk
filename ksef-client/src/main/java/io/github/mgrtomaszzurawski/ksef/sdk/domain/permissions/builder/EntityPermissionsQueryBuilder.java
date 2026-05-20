@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * + paging query parameters (per spec
  * {@code ksef-docs/uprawnienia.md}). All fields optional.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class EntityPermissionsQueryBuilder {
 

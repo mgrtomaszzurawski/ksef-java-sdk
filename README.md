@@ -1,5 +1,19 @@
 # KSeF Java SDK
 
+> **UNOFFICIAL PREVIEW (0.1.0-preview)**
+>
+> This is a **solo-developed, unofficial** Java SDK for the Polish KSeF
+> e-invoicing system. **Not affiliated** with Ministerstwo Finansów,
+> CIRFMF, or any institution operating KSeF.
+>
+> - Preview status — API may break between 0.x releases without notice
+> - No commercial support, no SLA, no liability (AGPL-3.0 §15–16)
+> - One-person project — issue response is best-effort
+> - **For production invoice flows, prefer the official SDK at
+>   [CIRFMF/ksef-client-java](https://github.com/CIRFMF/ksef-client-java).**
+
+---
+
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)]()
 
@@ -7,9 +21,10 @@ OpenAPI-first Java SDK for the Polish National e-Invoicing System ([KSeF](https:
 
 Generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-docs) OpenAPI specification, with a hand-written ergonomic overlay that hides the protocol details (challenge-response auth, AES-256-CBC session encryption, XAdES-BASELINE-B signing, retry-with-backoff, batch upload + polling).
 
-> **Status:** SDK has reached `1.0.0` source-tree readiness. Maven Central
-> publication is gated on a clean release-profile dry run; until the artifact
-> is staged on Central, install locally with `./gradlew publishToMavenLocal` to use it.
+> **Status:** `0.1.0-preview` published to Maven Central. API surface is
+> EXPERIMENTAL per `@API` annotation on `KsefClient`; 0.x releases may
+> break it. 1.0.0 will lock the contract — see `CHANGELOG.md` for the
+> Known limitations list (test coverage gaps, deferred items).
 
 ## What you can do
 
@@ -78,7 +93,7 @@ Opening the folder via `File → Open Project` skips the Gradle import — sub-m
 <dependency>
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-client</artifactId>
-    <version>1.0.0</version>
+    <version>0.1.0-preview</version>
 </dependency>
 ```
 

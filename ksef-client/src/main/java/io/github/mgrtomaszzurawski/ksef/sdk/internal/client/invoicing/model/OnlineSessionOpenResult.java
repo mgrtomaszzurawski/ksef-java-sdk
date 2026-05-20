@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
  * @param referenceNumber session reference number for subsequent operations
  * @param validUntil session expiration timestamp
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record OnlineSessionOpenResult(String referenceNumber, OffsetDateTime validUntil) {
 

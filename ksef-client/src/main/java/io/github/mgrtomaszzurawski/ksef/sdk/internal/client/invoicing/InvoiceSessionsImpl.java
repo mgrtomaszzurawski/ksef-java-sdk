@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Online-session lifecycle implementation of {@link InvoiceSessions}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoiceSessionsImpl implements InvoiceSessions {
 

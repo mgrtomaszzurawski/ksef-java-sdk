@@ -10,7 +10,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  *
  * <p>Mirrors the OpenAPI {@code AmountType} enum.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum InvoiceQueryAmountType {
 

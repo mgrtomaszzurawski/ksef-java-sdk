@@ -35,7 +35,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArch
  * read-only, cannot be re-sent, can have UPO retrieved. Two interfaces
  * keep the roles distinct so that misuse doesn't compile.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface InvoiceDocument {
 

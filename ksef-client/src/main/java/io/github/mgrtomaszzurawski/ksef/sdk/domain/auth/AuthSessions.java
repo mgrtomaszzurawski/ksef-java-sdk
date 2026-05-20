@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * {@link io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy}
  * IP allow-lists.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface AuthSessions {
 

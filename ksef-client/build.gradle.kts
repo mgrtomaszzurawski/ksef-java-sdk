@@ -1,23 +1,23 @@
+import com.vanniktech.maven.publish.JavaLibrary
+import com.vanniktech.maven.publish.JavadocJar
+
 plugins {
     `java-library`
-    `maven-publish`
-    signing
     jacoco
     checkstyle
     pmd
     id("com.github.spotbugs") version "6.0.26"
     id("com.diffplug.spotless") version "6.25.0"
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
-description = "Java SDK for the Polish National e-Invoicing System (KSeF) REST API v2"
+description = "Unofficial solo-developed Java SDK for the Polish KSeF REST API v2 (preview)"
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
     }
     modularity.inferModulePath.set(true)
-    withSourcesJar()
-    withJavadocJar()
 }
 
 // Centralised version coordinates — mirrors the pre-Gradle ksef-client/pom.xml
@@ -25,6 +25,7 @@ java {
 val jakartaXmlBindVersion = "4.0.2"
 val slf4jVersion = "2.0.16"
 val jspecifyVersion = "1.0.0"
+val apiguardianVersion = "1.1.2"
 val bouncycastleVersion = "1.80"
 val dssVersion = "6.3"
 val zxingVersion = "3.5.3"
@@ -69,6 +70,10 @@ dependencies {
     // Null-safety annotations (JSpecify, ADR-017)
     compileOnly("org.jspecify:jspecify:$jspecifyVersion")
     testCompileOnly("org.jspecify:jspecify:$jspecifyVersion")
+
+    // Apiguardian @API EXPERIMENTAL marker on KsefClient — preview-release
+    // signal for IDE auto-complete + javadoc badge. Removed at 1.0.0 cut.
+    api("org.apiguardian:apiguardian-api:$apiguardianVersion")
 
     // Test
     testImplementation(platform("org.junit:junit-bom:$junitVersion"))
@@ -233,6 +238,12 @@ tasks.check {
 // code lives in separate modules and is not on this module's source path.
 
 tasks.javadoc {
+    // NOTE: sdk.internal.* renders in the published javadoc-jar. Excluding
+    // it at the source-set level breaks symbol resolution in public classes
+    // that reference internal types (e.g. PreparedInvoiceExport imports
+    // sdk.internal.runtime.crypto). Tracked as a known limitation for the
+    // preview release; the @API EXPERIMENTAL marker on KsefClient + module
+    // descriptor non-export are the consumer-facing signal.
     options.encoding = "UTF-8"
     (options as StandardJavadocDocletOptions).apply {
         encoding = "UTF-8"
@@ -314,39 +325,57 @@ tasks.register<Javadoc>("javadocAll") {
     isFailOnError = true
 }
 
-// ---------- Maven Central publication ----------
+// ---------- Maven Central publication (Sonatype Central Portal) ----------
+//
+// vanniktech plugin wraps Central Portal Publisher API (REST + ZIP bundle
+// upload + manual-approve). Replaces the stock `maven-publish` + `signing`
+// + repositories blocks with a single `mavenPublishing { }` DSL.
+//
+// Credentials lookup (in order):
+//   1. ~/.gradle/gradle.properties: mavenCentralUsername/mavenCentralPassword
+//   2. env vars: ORG_GRADLE_PROJECT_mavenCentralUsername / *_Password
+//
+// Signing lookup (in order):
+//   1. signingInMemoryKey / signingInMemoryKeyId / signingInMemoryKeyPassword
+//   2. classic signing.keyId / signing.password / signing.secretKeyRingFile
 
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            pom {
-                name.set("KSeF Client")
-                description.set(project.description)
-                url.set("https://github.com/mgrtomaszzurawski/ksef-java-sdk")
-                licenses {
-                    license {
-                        name.set("GNU Affero General Public License v3.0")
-                        url.set("https://www.gnu.org/licenses/agpl-3.0.html")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("mgrtomaszzurawski")
-                        name.set("Tomasz Zurawski")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:https://github.com/mgrtomaszzurawski/ksef-java-sdk.git")
-                    developerConnection.set("scm:git:ssh://github.com/mgrtomaszzurawski/ksef-java-sdk.git")
-                    url.set("https://github.com/mgrtomaszzurawski/ksef-java-sdk")
-                }
+mavenPublishing {
+    configure(JavaLibrary(javadocJar = JavadocJar.Javadoc(), sourcesJar = true))
+    publishToMavenCentral(automaticRelease = false)
+    // Signing is required by Maven Central but breaks the local smoke test
+    // (publishToMavenLocal) when no GPG key is configured. Gate it on a
+    // property — release pipeline passes -PsigningEnabled=true.
+    if (providers.gradleProperty("signingEnabled").orNull == "true") {
+        signAllPublications()
+    }
+
+    coordinates(
+        groupId = "io.github.mgrtomaszzurawski",
+        artifactId = "ksef-client",
+        version = project.version.toString()
+    )
+
+    pom {
+        name.set("KSeF Client")
+        description.set(project.description)
+        url.set("https://github.com/mgrtomaszzurawski/ksef-java-sdk")
+        licenses {
+            license {
+                name.set("GNU Affero General Public License v3.0")
+                url.set("https://www.gnu.org/licenses/agpl-3.0.html")
             }
         }
+        developers {
+            developer {
+                id.set("mgrtomaszzurawski")
+                name.set("Tomasz Zurawski")
+                email.set("mgrtomaszzurawski@gmail.com")
+            }
+        }
+        scm {
+            connection.set("scm:git:https://github.com/mgrtomaszzurawski/ksef-java-sdk.git")
+            developerConnection.set("scm:git:ssh://github.com/mgrtomaszzurawski/ksef-java-sdk.git")
+            url.set("https://github.com/mgrtomaszzurawski/ksef-java-sdk")
+        }
     }
-}
-
-signing {
-    setRequired({ project.hasProperty("release") })
-    sign(publishing.publications["mavenJava"])
 }

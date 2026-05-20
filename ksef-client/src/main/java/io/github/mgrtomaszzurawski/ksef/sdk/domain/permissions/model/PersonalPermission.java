@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * @param startDate when the permission was granted
  * @param canDelegate whether the permission can be delegated
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PersonalPermission(
         String id,

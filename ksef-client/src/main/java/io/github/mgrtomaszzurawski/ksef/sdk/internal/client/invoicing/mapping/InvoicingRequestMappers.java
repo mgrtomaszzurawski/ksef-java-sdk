@@ -24,7 +24,7 @@ import java.util.List;
  * SDK-record → generated {@code *Raw} mappers for invoicing requests.
  * Lives in a non-exported package; consumers can't reach it.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoicingRequestMappers {
 

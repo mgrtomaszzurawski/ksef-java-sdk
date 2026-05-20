@@ -30,7 +30,7 @@ import org.jspecify.annotations.Nullable;
  * @param details optional per-instance detail messages (may be empty);
  *     defensively copied into an immutable {@link List#copyOf(java.util.Collection)}
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record KsefValidationError(int code, String description, List<String> details)
         implements java.io.Serializable {

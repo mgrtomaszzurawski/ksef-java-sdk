@@ -16,7 +16,7 @@ import java.security.cert.X509Certificate;
  * — additional profiles will be added when matching implementation +
  * tests land per ADR-021.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record XadesSigningMaterial(
         X509Certificate certificate,

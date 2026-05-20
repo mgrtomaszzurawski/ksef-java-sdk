@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code synchronized} keyword on a method that mutates shared
  * state.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @WireMockTest
 class KsefClientConcurrencyTest {

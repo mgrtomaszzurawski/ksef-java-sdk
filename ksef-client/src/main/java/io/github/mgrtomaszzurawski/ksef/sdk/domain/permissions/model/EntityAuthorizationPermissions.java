@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Result of querying entity authorization permissions.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record EntityAuthorizationPermissions(List<EntityAuthorizationGrant> authorizationGrants, boolean hasMore) {
 

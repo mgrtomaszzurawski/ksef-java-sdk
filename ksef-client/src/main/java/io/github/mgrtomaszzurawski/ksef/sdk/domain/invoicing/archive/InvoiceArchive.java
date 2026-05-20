@@ -70,7 +70,7 @@ import java.util.stream.Stream;
  * compliance artefact of the submitting session; persist the UPO
  * bytes (and the session/invoice ref pair) at submission time.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface InvoiceArchive {
 

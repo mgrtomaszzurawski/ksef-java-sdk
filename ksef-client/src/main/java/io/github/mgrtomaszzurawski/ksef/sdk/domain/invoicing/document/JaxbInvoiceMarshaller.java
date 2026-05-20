@@ -23,7 +23,7 @@ import java.io.ByteArrayOutputStream;
  *
  * <p>Package-private — typed Invoice impls are the only callers.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 final class JaxbInvoiceMarshaller {
 

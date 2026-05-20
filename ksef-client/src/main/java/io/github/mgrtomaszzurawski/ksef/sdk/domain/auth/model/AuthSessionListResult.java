@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * @param continuationToken cursor to fetch the next page, or {@code null}
  *     when this is the last page
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthSessionListResult(
         List<AuthSession> sessions,

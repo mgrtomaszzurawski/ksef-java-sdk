@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * disconnected from the internal JAXB tree (and from the bytes that the
  * {@code xml()} accessor still returns).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class JaxbDeepClone {
 

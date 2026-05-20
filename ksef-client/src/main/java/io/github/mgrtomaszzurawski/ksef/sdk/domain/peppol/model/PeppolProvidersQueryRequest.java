@@ -14,7 +14,7 @@ import java.util.Objects;
  * @param pageOffset zero-based page offset (non-negative)
  * @param pageSize   page size (positive)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PeppolProvidersQueryRequest(int pageOffset, int pageSize) {
 

@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * SDK request for {@code Permissions.grant(...)}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record EuEntityAdminPermissionGrantRequest(
         String fingerprintValue,

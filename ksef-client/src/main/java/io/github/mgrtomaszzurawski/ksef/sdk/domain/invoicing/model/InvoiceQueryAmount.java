@@ -18,7 +18,7 @@ import java.util.Objects;
  * @param from lower bound (inclusive)
  * @param to upper bound (inclusive)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceQueryAmount(InvoiceQueryAmountType type, BigDecimal from, BigDecimal to) {
 

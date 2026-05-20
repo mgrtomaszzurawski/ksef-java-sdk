@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  *     (e.g. {@code [InProgress, Failed]} for in-flight + failed sessions);
  *     wire format is the string enum name per OpenAPI {@code CommonSessionStatus}
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SessionsQueryRequest(
         KsefSessionType sessionType,

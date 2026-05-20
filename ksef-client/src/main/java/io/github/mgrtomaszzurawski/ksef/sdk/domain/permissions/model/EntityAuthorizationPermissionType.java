@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 /**
  * Authorization permission types granted between entities.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum EntityAuthorizationPermissionType {
     SELF_INVOICING,

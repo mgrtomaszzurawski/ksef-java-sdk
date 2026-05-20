@@ -75,7 +75,7 @@ import java.time.Duration;
  * is <em>ignored</em> on stream methods — the paginator always starts
  * from page 0. Use {@code query*} for snapshot at a specific offset.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface Permissions {
 

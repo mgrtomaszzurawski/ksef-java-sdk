@@ -20,7 +20,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.offline;
  * {@code ksef-docs/offline/awaria-i-niedostepnosc.md}, REQ-OFFLINE-001
  * through REQ-OFFLINE-007.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum OfflineMode {
 

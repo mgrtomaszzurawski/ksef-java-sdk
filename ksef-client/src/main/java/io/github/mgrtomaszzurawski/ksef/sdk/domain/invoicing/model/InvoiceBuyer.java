@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * @param identifierValue buyer identifier value (NIP, VAT UE number, etc.; null when no identifier)
  * @param name buyer name (null when not provided)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceBuyer(@Nullable BuyerIdentifierType identifierType, @Nullable String identifierValue, @Nullable String name) {
 

@@ -28,7 +28,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model.SubjectLimits;
  * server-side budget. Treat {@link #getRateLimits()} as a read-only
  * diagnostic, not a budgeting primitive.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface Limits {
 

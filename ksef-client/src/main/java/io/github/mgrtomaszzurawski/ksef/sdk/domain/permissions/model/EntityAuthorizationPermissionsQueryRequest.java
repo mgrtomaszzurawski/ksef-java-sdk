@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * {@code authorizedType} accepts {@link EntityAuthorizationIdentifierType}
  * (NIP or PEPPOL_ID).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record EntityAuthorizationPermissionsQueryRequest(
         AuthorizationQueryType queryType,

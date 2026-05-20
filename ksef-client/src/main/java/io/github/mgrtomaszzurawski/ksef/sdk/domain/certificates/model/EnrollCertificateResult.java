@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
  * @param referenceNumber operation reference number
  * @param timestamp server timestamp of the enrollment
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record EnrollCertificateResult(String referenceNumber, OffsetDateTime timestamp) {
 

@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * {@link #build()} call and encrypts the AES key with the supplied KSeF
  * public key. Required: filters (use {@link InvoiceQueryBuilder}).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoiceExportBuilder {
 

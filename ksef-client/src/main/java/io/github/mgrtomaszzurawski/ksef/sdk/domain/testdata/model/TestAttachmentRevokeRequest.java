@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * @param expectedEndDate optional date when the revocation takes
  *     effect; {@code null} = field omitted on wire (server defaults)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TestAttachmentRevokeRequest(
         KsefIdentifier subject,

@@ -16,7 +16,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceQueryR
  *
  * <p>Reached via {@link Invoices#export()}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface InvoiceExport {
 

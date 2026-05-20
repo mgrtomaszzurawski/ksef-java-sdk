@@ -29,7 +29,7 @@ import java.util.List;
  * <p>{@link #close()} is inherited from {@link Session} and is a
  * no-op idempotent for an already-closed session.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public sealed interface ClosedSession extends Session permits ClosedSessionImpl {
 

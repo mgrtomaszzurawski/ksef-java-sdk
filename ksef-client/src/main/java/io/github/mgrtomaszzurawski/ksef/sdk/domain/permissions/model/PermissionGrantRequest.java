@@ -50,7 +50,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
  * land via SDK minor-version bumps that extend the {@code permits}
  * clause.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public sealed interface PermissionGrantRequest
         permits PersonPermissionGrantRequest,

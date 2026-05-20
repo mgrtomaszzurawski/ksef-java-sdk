@@ -21,7 +21,7 @@ import java.util.Objects;
  *     on each window)
  * @param lastTruncated whether the last window was truncated
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SyncCheckpoint(OffsetDateTime cursor, boolean lastTruncated) {
 

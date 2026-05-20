@@ -37,7 +37,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode.OfflineSigni
  * SHA-256 hash, and the online-session send path routes it through the
  * wire's {@code hashOfCorrectedInvoice} field automatically.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface OfflineInvoices {
 

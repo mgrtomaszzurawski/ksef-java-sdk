@@ -63,7 +63,7 @@ import org.jspecify.annotations.Nullable;
  * a correction document because the PEF wire schema uses a separate
  * UBL CreditNote root element for that purpose.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class PefKorInvoice implements Invoice {
 

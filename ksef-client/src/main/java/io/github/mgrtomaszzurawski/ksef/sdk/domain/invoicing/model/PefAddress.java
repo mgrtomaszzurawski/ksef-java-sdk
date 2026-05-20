@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
  * @param postalZone postal code (cbc:PostalZone)
  * @param countryCode ISO 3166-1 alpha-2 country code (cac:Country/cbc:IdentificationCode)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PefAddress(
         @Nullable String streetName,

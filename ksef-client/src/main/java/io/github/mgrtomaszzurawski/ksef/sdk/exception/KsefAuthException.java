@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
  * Thrown on HTTP 401 (Unauthorized) or 403 (Forbidden).
  * Indicates authentication or authorization failure.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public class KsefAuthException extends KsefException {
 

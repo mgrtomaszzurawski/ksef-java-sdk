@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * SDK request for {@code TestDataAdmin.createSubject(...)}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TestSubjectCreateRequest(
         String subjectNip,

@@ -10,7 +10,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * <p>Used by the {@code GET /sessions} listing filter (Codex round-9
  * manual-validation A.2.4).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum KsefSessionType {
     /** Interactive (one-by-one) invoice submission. */

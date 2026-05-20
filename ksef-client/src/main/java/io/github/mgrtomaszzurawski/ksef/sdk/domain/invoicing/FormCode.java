@@ -33,7 +33,7 @@ import org.jspecify.annotations.Nullable;
  * XSD bytes; {@code KsefXmlValidator} and the internal pre-flight gate
  * then run the same validation pipeline used for bundled forms.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class FormCode {
 

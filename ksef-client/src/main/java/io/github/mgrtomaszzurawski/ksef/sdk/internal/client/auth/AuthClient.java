@@ -44,7 +44,7 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
  * Client for KSeF authentication operations.
  * Supports XAdES signature-based and KSeF token-based authentication flows.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class AuthClient {
 
@@ -188,7 +188,7 @@ public final class AuthClient {
      * Pass both {@code null} to omit the AuthorizationPolicy element
      * entirely (server then defaults to "any caller IP").
      *
-     * @since 1.0.0
+     * @since 0.1.0
      */
     public AuthenticationInit authenticateWithXades(XadesAuthRequest request, XadesSigningMaterial signing) {
         LOGGER.debug(LOG_CALL, OP_AUTH_XADES);

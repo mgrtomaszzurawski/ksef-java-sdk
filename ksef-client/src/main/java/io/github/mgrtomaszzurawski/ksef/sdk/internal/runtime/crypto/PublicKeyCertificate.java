@@ -28,7 +28,7 @@ import java.util.Objects;
  * — the factory parses the DER and throws {@link KsefCryptoException} on
  * malformed input rather than returning an unusable instance.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class PublicKeyCertificate {
 

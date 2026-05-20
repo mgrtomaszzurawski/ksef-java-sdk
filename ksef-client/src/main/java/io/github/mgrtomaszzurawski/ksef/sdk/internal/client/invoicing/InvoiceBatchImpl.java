@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Batch submission implementation of {@link InvoiceBatch}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoiceBatchImpl implements InvoiceBatch {
 
