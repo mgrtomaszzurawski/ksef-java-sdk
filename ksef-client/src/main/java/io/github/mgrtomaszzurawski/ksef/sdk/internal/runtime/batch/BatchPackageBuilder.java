@@ -55,10 +55,9 @@ public final class BatchPackageBuilder {
     /** Default max chunk size <em>before encryption</em>: 100 MB (per KSeF spec). */
     private static final long DEFAULT_MAX_PART_SIZE = 100L * 1024L * 1024L;
     /** REQ-SESS-41 — KSeF caps a single session at 10,000 invoices (online or batch). */
-    private static final int MAX_INVOICES_PER_SESSION =
-            io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.MAX_SESSION_INVOICES;
-    private static final int MAX_PARTS = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.MAX_BATCH_PARTS;
-    private static final long MAX_FILE_SIZE = io.github.mgrtomaszzurawski.ksef.sdk.common.KsefLimits.MAX_BATCH_TOTAL_BYTES;
+    private static final int MAX_INVOICES_PER_SESSION = KsefLimits.MAX_SESSION_INVOICES;
+    private static final int MAX_PARTS = KsefLimits.MAX_BATCH_PARTS;
+    private static final long MAX_FILE_SIZE = KsefLimits.MAX_BATCH_TOTAL_BYTES;
     private static final String TEMP_PREFIX_PART = "ksef-batch-part-";
     /** Public so orphan-cleanup at startup can match the prefix. */
     public static final String TEMP_PART_PREFIX = TEMP_PREFIX_PART;

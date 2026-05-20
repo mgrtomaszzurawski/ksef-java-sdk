@@ -11,7 +11,7 @@ module io.github.mgrtomaszzurawski.ksef {
     // Configuration: environments, identifiers, retry policy
     exports io.github.mgrtomaszzurawski.ksef.sdk.config;
 
-    // Common shared types (StatusInfo, TokenInfo, KsefNumber, public-key models)
+    // Cross-domain envelope + value-object types (StatusInfo, KsefNumber)
     exports io.github.mgrtomaszzurawski.ksef.sdk.common;
 
     // Auth-session management accessor (KsefClient.authSessions())

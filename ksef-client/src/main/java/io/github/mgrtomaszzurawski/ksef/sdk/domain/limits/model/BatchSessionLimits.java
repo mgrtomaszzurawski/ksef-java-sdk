@@ -7,11 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
 /**
  * Per-session caps the server enforces on batch sessions opened under
  * the current authentication context. Constrains the contents of each
- * part inside a batch package, not the aggregate package size — for
- * aggregate caps (50 parts, 5 GB pre-encryption per package) see
- * {@code KsefLimits.MAX_BATCH_PARTS} and
- * {@code KsefLimits.MAX_BATCH_TOTAL_BYTES} on the internal validation
- * path.
+ * part inside a batch package, not the aggregate package size —
+ * aggregate caps are fixed by spec at 50 parts / 5 GB pre-encryption
+ * per package and enforced internally by the SDK.
  *
  * <p>Typical values on KSeF demo (May 2026): 1 / 3 / 10000. Concrete
  * numbers vary per environment and per taxpayer — query at runtime via

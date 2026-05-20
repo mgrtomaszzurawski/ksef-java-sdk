@@ -2,20 +2,13 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.common;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch;
 
 /**
- * Spec-defined and SDK-applied limits surfaced as public constants so
- * consumers can reason about page sizes, payload caps, and operation
- * budgets without hard-coding values.
- *
- * <p>Pagination is exposed via lazy {@link java.util.stream.Stream}
- * paginators ({@code archive().streamByMetadata}, {@code streamPersons},
- * {@code streamCertificates}, {@code streamTokens},
- * {@code sessions().stream}, ...). The SDK never imposes an upper bound
- * on stream length — caller controls memory by piping through
- * {@code .limit(N)} or {@code .toList()} as appropriate. Equivalent
- * in spirit to AWS SDK V2 paginators.
+ * Spec-defined limits enforced internally by the batch and session
+ * pipelines. NOT part of the public API — consumers learn about these
+ * constraints through validation errors and the Javadoc on the relevant
+ * builders/records, not by importing this class.
  *
  * @since 1.0.0
  */

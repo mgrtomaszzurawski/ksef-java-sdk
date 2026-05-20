@@ -7,11 +7,9 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.common.mapping;
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateUsageRaw;
 import io.github.mgrtomaszzurawski.ksef.client.model.StatusInfoRaw;
-import io.github.mgrtomaszzurawski.ksef.client.model.TokenInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
 import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.TokenInfo;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -52,13 +50,6 @@ public final class CommonMappers {
                 rawValue.getCode(),
                 rawValue.getDescription(),
                 rawValue.getDetails() != null ? List.copyOf(rawValue.getDetails()) : List.of());
-    }
-
-    public static @Nullable TokenInfo toTokenInfo(@Nullable TokenInfoRaw rawValue) {
-        if (rawValue == null) {
-            return null;
-        }
-        return new TokenInfo(rawValue.getToken(), rawValue.getValidUntil());
     }
 
 }
