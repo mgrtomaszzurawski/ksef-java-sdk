@@ -4,9 +4,9 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.Severity;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.ValidationIssue;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator.Severity;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator.ValidationIssue;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;

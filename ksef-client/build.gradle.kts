@@ -246,7 +246,7 @@ tasks.javadoc {
         group("Configuration", "io.github.mgrtomaszzurawski.ksef.sdk.config")
         group(
             "Common types",
-            "io.github.mgrtomaszzurawski.ksef.sdk.common:io.github.mgrtomaszzurawski.ksef.sdk.exception:io.github.mgrtomaszzurawski.ksef.sdk.crypto"
+            "io.github.mgrtomaszzurawski.ksef.sdk.common:io.github.mgrtomaszzurawski.ksef.sdk.exception"
         )
         group("Operational domain APIs", "io.github.mgrtomaszzurawski.ksef.sdk.domain*")
         tags(

@@ -20,9 +20,6 @@ module io.github.mgrtomaszzurawski.ksef {
     // Authentication public DTOs (AuthSession returned by KsefClient.authSessions().streamAuthSessions(filter))
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model;
 
-    // Public crypto facade (REQ-CRYPTO-001..004)
-    exports io.github.mgrtomaszzurawski.ksef.sdk.crypto;
-
     // Invoicing functionality (online + batch sessions, invoice ops, QR, sync orchestrator)
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder;

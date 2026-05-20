@@ -2,11 +2,11 @@
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
+package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.Severity;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.KsefXmlValidator.ValidationIssue;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator.Severity;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator.ValidationIssue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -25,7 +25,7 @@ import java.util.Set;
  *
  * @since 1.0.0
  */
-final class InvoiceValidationGate {
+public final class InvoiceValidationGate {
 
     private static final Set<FormCode> KNOWN_FORM_CODES =
             Set.of(FormCode.FA2, FormCode.FA3, FormCode.PEF3, FormCode.PEF_KOR3);

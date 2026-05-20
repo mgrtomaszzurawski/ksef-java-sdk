@@ -14,8 +14,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.SigningOptions;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.UpoVersion;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CsrRequest;
-import io.github.mgrtomaszzurawski.ksef.sdk.crypto.CsrResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.auth.model.AuthSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.InvoiceArchive;
@@ -88,11 +86,10 @@ public final class JpmsConsumerCompileFixture {
                 SigningOptions.class,
                 KsefNumber.class,
                 StatusInfo.class,
-                // sdk.crypto — KsefCryptoService + EncryptionMaterial + FileMetadata +
-                // KsefEncryptionInfo + PublicKeyCertificate moved to sdk.internal.runtime.crypto
-                // per R1-5 (no longer visible to JPMS consumers — that is the point).
-                CsrRequest.class,
-                CsrResult.class,
+                // sdk.crypto package removed entirely (R3) — CSR generation
+                // and XML validation are now SDK-internal (called via the
+                // certificates().requestNewCertificate() facade and the
+                // automatic preflight gate on session.send respectively).
                 // sdk.domain.auth.model — verify exported (gap caught earlier)
                 AuthSession.class,
                 // sdk.domain.invoicing + builder + qrcode + sync
