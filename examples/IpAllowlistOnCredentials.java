@@ -1,9 +1,15 @@
-//DEPS io.github.mgrtomaszzurawski:ksef-client:1.0.0
+//DEPS io.github.mgrtomaszzurawski:ksef-client:0.1.0-preview
 //DEPS org.slf4j:slf4j-simple:2.0.16
 
 /*
  * Copyright (c) 2026 Tomasz Zurawski
  * SPDX-License-Identifier: AGPL-3.0-only
+ *
+ * Example for the unofficial KSeF SDK (preview).
+ * Not affiliated with Ministerstwo Finansow or CIRFMF.
+ * API may change between 0.x releases; AGPL-3.0 warranty
+ * disclaimer applies. For production use the official SDK:
+ * https://github.com/CIRFMF/ksef-client-java
  *
  * Reference code (not a runnable script): adapt to your application.
  *
@@ -23,6 +29,7 @@
  */
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
+import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy;
 import java.util.List;
@@ -42,7 +49,7 @@ public final class IpAllowlistOnCredentials {
                 List.of("192.168.0.0/24"));
 
         KsefTokenCredentials credentials =
-                new KsefTokenCredentials(token, nip).withAuthorizationPolicy(ipPolicy);
+                new KsefTokenCredentials(token, KsefIdentifier.nip(nip), ipPolicy);
 
         try (KsefClient client = KsefClient.builder().environment(environment)
                 .credentials(credentials)
@@ -69,7 +76,6 @@ public final class IpAllowlistOnCredentials {
         return switch (name.toUpperCase()) {
             case "DEMO" -> KsefEnvironment.DEMO;
             case "PROD" -> KsefEnvironment.PROD;
-            case "PREPROD" -> KsefEnvironment.PREPROD;
             default -> KsefEnvironment.TEST;
         };
     }

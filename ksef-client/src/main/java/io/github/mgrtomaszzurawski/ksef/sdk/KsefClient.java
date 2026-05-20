@@ -63,6 +63,7 @@ import java.util.Optional;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.AuthorizationPolicy;
+import org.apiguardian.api.API;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.slf4j.Logger;
@@ -103,9 +104,15 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.0.0
  */
+@API(status = API.Status.EXPERIMENTAL, since = "0.1.0")
 public final class KsefClient implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KsefClient.class);
+    private static final String PREVIEW_NOTICE =
+            "ksef-client 0.1.0-preview: unofficial solo-developed preview release."
+                    + " API may break between 0.x versions; AGPL-3.0 disclaimer applies."
+                    + " For production invoice flows prefer the official SDK at"
+                    + " https://github.com/CIRFMF/ksef-client-java";
 
     private static final String ERR_ENVIRONMENT_NULL = "environment must not be null";
     private static final String ERR_CREDENTIALS_NULL = "credentials must not be null";
@@ -224,6 +231,12 @@ public final class KsefClient implements AutoCloseable {
         // KsefClient pooling produces thread/IO pressure.
         io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch.BatchTempCleanup
                 .scheduleAutoCleanup();
+        // Preview-release notice. Emitted per-build (not per-JVM) so
+        // multi-tenant accountancy use cases that construct N clients see
+        // the warning N times — each client is a conscious choice.
+        // Mute path: <logger name="io.github.mgrtomaszzurawski.ksef.sdk.KsefClient" level="ERROR"/>
+        // Removed entirely at the 1.0.0 cut.
+        LOGGER.warn(PREVIEW_NOTICE);
     }
 
     /**

@@ -5,6 +5,127 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-preview] — 2026-05-20
+
+### About this release
+
+**This is the first public preview of an unofficial, solo-developed Java
+SDK for KSeF.** Published under groupId `io.github.mgrtomaszzurawski` to
+make it clear this is a personal-namespace project, not affiliated with
+Ministerstwo Finansów, CIRFMF, or any institution operating the KSeF
+system.
+
+**Status:** `EXPERIMENTAL` per the apiguardian `@API` annotation on
+`KsefClient`. The API surface MAY break between 0.x releases as
+real-world feedback accumulates. The eventual 1.0.0 cut will lock the
+contract.
+
+**Intended use:** read-only flows (queries, exports, incremental sync)
+by the author for own consumption + adventurous early adopters who
+accept breaking changes. **Not recommended for production write flows**
+(invoice submission, batch upload, permission grants) until 1.0.0 lands
+and the test coverage gaps below close.
+
+**Support model:** best-effort GitHub issues. No SLA. No commercial
+support. AGPL-3.0 §15–16 warranty disclaimer applies.
+
+For production invoice flows, prefer the official SDK at
+[CIRFMF/ksef-client-java](https://github.com/CIRFMF/ksef-client-java).
+
+### Highlights since rewrite start
+
+This is the cumulative state of the SDK as of 2026-05-20 after three
+post-redesign feedback rounds (R1 → R2 → R3) on top of the 22-PR
+architectural redesign that landed in late April.
+
+- **Single facade entry point** — `KsefClient` exposes 9 typed accessors
+  (`.invoices()`, `.permissions()`, `.tokens()`, `.certificates()`,
+  `.peppol()`, `.limits()`, `.testData()`, `.authSessions()`,
+  `.qrCode()`); plus a diagnostic `.config()` snapshot for multi-tenant
+  orchestration (R1-16).
+- **Workflow vs Endpoint Tier 1/Tier 2 split** (ADR-021): high-level
+  workflow APIs (`session.send`, `batch().submit`, `invoices().sync()`)
+  hide protocol details (challenge-response auth, AES-256-CBC session
+  encryption, XAdES-BASELINE-B signing + SHA-256, retry-with-backoff,
+  batch upload + polling); endpoint APIs (`client.invoices().queryInvoicesByMetadata`,
+  etc.) for custom orchestration.
+- **Sealed type hierarchies** — `KsefCredentials` (3 permits: token /
+  certificate / PKCS#12), `PermissionGrantRequest` (7 permits, R2-11),
+  `Session` (permits `OnlineSession` + `ClosedSession`, R3 item #10).
+- **Custom invoice types registry** — `KsefInvoiceTypes` extension
+  point for read-side typed wrappers beyond FA2/FA3/PEF/PEF_KOR
+  (R2-6).
+- **Stream paginators** — every read endpoint returning collections
+  exposes a `streamX(...)` variant that lazy-walks via the SDK's
+  internal cursor handler (R2-9, ADR-023).
+- **Typed-exception hierarchy** — 13 exception classes grouped by
+  consumer remediation action (input bad / refresh creds / wait rate
+  limit / server problem / etc.), not by HTTP layer. `KsefException.of`
+  dispatches HTTP status codes to typed subclasses with parsed error
+  bodies (R3 item #8).
+- **Package layout per ADR-034** — `domain/<feature>/` functional
+  buckets with sub-bucketing where one bucket exceeds peers (invoicing
+  sub-split into `session/`, `document/`, `offline/`, `archive/`,
+  `builder/`, `model/`, `qrcode/`, `sync/`). Sentinel packages
+  (`config/`, `core/`, `exception/`) sub-split when themes diverge
+  (`config.credentials`, `config.policy`).
+- **Internal/runtime split** (ADR-012, ADR-013) — `internal.client.*`
+  endpoint wrappers, `internal.runtime.*` cross-cutting plumbing
+  (transport, crypto, validation, async, batch, signing, jaxb,
+  pagination); none of `internal.*` is exported via JPMS.
+- **11 JBang example programs** demonstrating each `KsefClient`
+  accessor (R2-13) plus 4 examples for legit settable knobs
+  (FeaturePolicy, KsefInvoiceTypes registry, AuthorizationPolicy IP
+  allow-list, multi-tenant orchestration via `client.config()`)
+  (R3 item #9).
+- **Live demo runner** (`./gradlew :ksef-demo:run -Pdemo.mode=FULL`)
+  against KSeF DEMO and TEST environments, 75 + 22 = 97 wire flows
+  verified with zero failures post-R3.
+
+### Known limitations
+
+The following gaps are tracked and will close before the 1.0.0 cut:
+
+- **Negative-path test coverage** is partial. The XSD validation gate
+  on `OnlineSession.sendInvoice` and the batch preflight on
+  `submitFromFiles` are pinned with regression tests, and the typed
+  HTTP-status → exception dispatch is pinned, but wider coverage is
+  pending:
+  - **G-2:** XSD violation variety (missing required fields, wrong
+    data types, wrong enums) — only "wrong root" + "structurally
+    invalid" cases covered today.
+  - **G-3:** JAXB unmarshalling negative paths (malformed server
+    response XML, missing required fields in server payloads) —
+    relies on assumption that KSeF returns well-formed XML.
+  - **G-5:** Test fixtures for invalid invoices are inline string
+    literals; refactor to `src/test/resources/invalid-invoices/`
+    pending.
+- **Quality Gate `new_coverage`** drift on Sonar from the R3 refactor
+  surface (file moves counted as "new code"). Legacy tests still cover
+  the same logic at new paths; ratchet up to 80% post-stabilisation.
+- **README quickstart snippet** uses pre-R3 import paths
+  (`domain.invoicing.KsefSession`, `client.openSession(...)`) — the
+  actual current API is `client.invoices().sessions().online(FormCode)`.
+  Consumers should follow the `examples/` directory until README is
+  modernised.
+
+### Coordinates
+
+```xml
+<dependency>
+    <groupId>io.github.mgrtomaszzurawski</groupId>
+    <artifactId>ksef-client</artifactId>
+    <version>0.1.0-preview</version>
+</dependency>
+```
+
+Companion artifacts (transitive, no explicit declaration needed):
+
+- `io.github.mgrtomaszzurawski:ksef-xml-models:0.1.0-preview`
+- `io.github.mgrtomaszzurawski:ksef-rest-models:0.1.0-preview`
+
+---
+
 ## [1.0.0] — planned
 
 First public release. Targets KSeF API 2.4.0 (per

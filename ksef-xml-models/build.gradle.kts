@@ -6,11 +6,15 @@
 // this module is UP-TO-DATE and contributes nothing to ksef-client's
 // incremental compile cycle.
 
+import com.vanniktech.maven.publish.JavaLibrary
+import com.vanniktech.maven.publish.JavadocJar
+
 plugins {
     `java-library`
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
-description = "JAXB-generated XML models for KSeF schemas (FA2, FA3, PEF, PEF_KOR, UPO, AUTH)"
+description = "JAXB-generated XML models for KSeF schemas — companion to unofficial ksef-client (preview)"
 
 java {
     toolchain {
@@ -209,12 +213,31 @@ tasks.named("compileJava") {
     dependsOn(xjcFa2, xjcFa3, xjcPefUbl, xjcUpo, xjcAuth)
 }
 
+// vanniktech's configure(JavaLibrary(...)) registers the `sourcesJar` task
+// lazily; `javadoc` exists eagerly. Both consume the XJC output dirs without
+// seeing the implicit dependency, so wire it. `matching` skips silently if
+// the lazy registration order ever changes.
+tasks.matching { it.name == "sourcesJar" }.configureEach {
+    dependsOn(xjcFa2, xjcFa3, xjcPefUbl, xjcUpo, xjcAuth)
+}
+tasks.named("javadoc") {
+    dependsOn(xjcFa2, xjcFa3, xjcPefUbl, xjcUpo, xjcAuth)
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(17)
     options.encoding = "UTF-8"
     // Generated UBL code triggers many compiler warnings (raw types, deprecation);
     // they are not actionable since the source is generated, so silence them.
     options.compilerArgs.addAll(listOf("-nowarn", "-Xlint:none"))
+}
+
+// JAXB-generated invoice models contain Polish field-name comments and the
+// module-info uses em-dash. Javadoc default encoding is US-ASCII; force
+// UTF-8 + silence the thousands of doclint warnings on generated UBL types.
+tasks.withType<Javadoc>().configureEach {
+    options.encoding = "UTF-8"
+    (options as StandardJavadocDocletOptions).addStringOption("Xdoclint:none", "-quiet")
 }
 
 // Bundle XSDs into the JAR so consumers can load them at runtime
@@ -229,5 +252,48 @@ tasks.named<ProcessResources>("processResources") {
             "PEF/bazowe/*.xsd",
         )
         into("xsd")
+    }
+}
+
+// ---------- Maven Central publication (companion to ksef-client) ----------
+
+mavenPublishing {
+    configure(JavaLibrary(javadocJar = JavadocJar.Javadoc(), sourcesJar = true))
+    publishToMavenCentral(automaticRelease = false)
+    // Signing is required by Maven Central but breaks the local smoke test
+    // (publishToMavenLocal) when no GPG key is configured. Gate it on a
+    // property — release pipeline passes -PsigningEnabled=true.
+    if (providers.gradleProperty("signingEnabled").orNull == "true") {
+        signAllPublications()
+    }
+
+    coordinates(
+        groupId = "io.github.mgrtomaszzurawski",
+        artifactId = "ksef-xml-models",
+        version = project.version.toString()
+    )
+
+    pom {
+        name.set("KSeF XML Models")
+        description.set(project.description)
+        url.set("https://github.com/mgrtomaszzurawski/ksef-java-sdk")
+        licenses {
+            license {
+                name.set("GNU Affero General Public License v3.0")
+                url.set("https://www.gnu.org/licenses/agpl-3.0.html")
+            }
+        }
+        developers {
+            developer {
+                id.set("mgrtomaszzurawski")
+                name.set("Tomasz Zurawski")
+                email.set("mgrtomaszzurawski@gmail.com")
+            }
+        }
+        scm {
+            connection.set("scm:git:https://github.com/mgrtomaszzurawski/ksef-java-sdk.git")
+            developerConnection.set("scm:git:ssh://github.com/mgrtomaszzurawski/ksef-java-sdk.git")
+            url.set("https://github.com/mgrtomaszzurawski/ksef-java-sdk")
+        }
     }
 }
