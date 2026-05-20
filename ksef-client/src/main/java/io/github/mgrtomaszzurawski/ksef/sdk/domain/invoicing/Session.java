@@ -35,7 +35,7 @@ import java.util.Optional;
  *
  * @since 1.0.0
  */
-public interface Session extends AutoCloseable {
+public sealed interface Session extends AutoCloseable permits OnlineSession, ClosedSession {
 
     /**
      * The session reference number assigned by KSeF.

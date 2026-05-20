@@ -13,10 +13,17 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Immutable value object representing a KSeF invoice number.
+ * Immutable value object representing the <strong>KSeF-assigned</strong>
+ * invoice identifier — the value the KSeF system returns after invoice
+ * acceptance. <em>Distinct from</em> the issuer-assigned {@code invoiceNumber}
+ * the seller puts inside the FA(2)/FA(3) document (e.g. {@code "FA/2025/07/01"}):
+ * both fields ship together in {@code InvoiceMetadata} and elsewhere,
+ * but they identify different things.
  *
  * <p>Format defined by {@code faktury/numer-ksef.md}:
  * {@code NIP(10)-YYYYMMDD-TECHNICAL(12 hex)-CRC8(2 hex)}, total 35 characters.
+ * The NIP segment is the <strong>seller's</strong> NIP, the date is the
+ * KSeF-side acceptance date.
  * Example: {@code 5265877635-20250826-0100001AF629-AF}.
  *
  * <p>Use {@link #parse(String)} or the canonical constructor to obtain

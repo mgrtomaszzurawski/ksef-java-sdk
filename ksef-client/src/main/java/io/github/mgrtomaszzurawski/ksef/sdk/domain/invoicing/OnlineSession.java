@@ -50,7 +50,7 @@ import java.util.Optional;
  *
  * @since 1.0.0
  */
-public interface OnlineSession extends Session {
+public sealed interface OnlineSession extends Session permits OnlineSessionImpl {
 
     /**
      * The {@link FormCode} this session was opened with. Each subsequent

@@ -30,7 +30,7 @@ import java.util.List;
  *
  * @since 1.0.0
  */
-public interface ClosedSession extends Session {
+public sealed interface ClosedSession extends Session permits ClosedSessionImpl {
 
     /**
      * Bridge a {@link SubmittedInvoice} to its {@link ClearedInvoice} —
