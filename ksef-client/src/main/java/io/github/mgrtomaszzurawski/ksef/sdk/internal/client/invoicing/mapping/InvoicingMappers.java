@@ -135,7 +135,7 @@ public final class InvoicingMappers {
                 ? rawValue.getThirdSubjects().stream().map(InvoicingMappers::toInvoiceThirdSubject).toList()
                 : List.of();
         return new InvoiceMetadata(
-                io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(rawValue.getKsefNumber()),
+                io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber.parse(rawValue.getKsefNumber()),
                 rawValue.getInvoiceNumber(),
                 rawValue.getIssueDate(),
                 rawValue.getInvoicingDate(),
@@ -289,7 +289,7 @@ public final class InvoicingMappers {
                 rawValue.getOrdinalNumber() != null ? rawValue.getOrdinalNumber() : 0,
                 rawValue.getInvoiceNumber(),
                 rawValue.getKsefNumber() == null
-                        ? null : io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(rawValue.getKsefNumber()),
+                        ? null : io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber.parse(rawValue.getKsefNumber()),
                 rawValue.getReferenceNumber(),
                 rawValue.getInvoiceHash(),
                 rawValue.getInvoiceFileName(),

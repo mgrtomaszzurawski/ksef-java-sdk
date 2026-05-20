@@ -4,7 +4,7 @@
  */
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.StatusInfo;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 

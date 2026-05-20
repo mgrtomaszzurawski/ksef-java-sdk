@@ -38,7 +38,7 @@ public final class InvoiceQueryBuilder {
     private InvoiceQueryDateType dateType = InvoiceQueryDateType.INVOICING;
     private @Nullable OffsetDateTime dateFrom;
     private @Nullable OffsetDateTime dateTo;
-    private io.github.mgrtomaszzurawski.ksef.sdk.common.@Nullable KsefNumber ksefNumber;
+    private io.github.mgrtomaszzurawski.ksef.sdk.core.@Nullable KsefNumber ksefNumber;
     private @Nullable String invoiceNumber;
     private @Nullable String sellerNip;
     private @Nullable InvoicingMode invoicingMode;
@@ -101,7 +101,7 @@ public final class InvoiceQueryBuilder {
         return this;
     }
 
-    public InvoiceQueryBuilder ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber ksefNumber) {
+    public InvoiceQueryBuilder ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber ksefNumber) {
         this.ksefNumber = ksefNumber;
         return this;
     }

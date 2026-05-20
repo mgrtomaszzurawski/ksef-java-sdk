@@ -165,7 +165,7 @@ class AllMappersSmokeTest {
         var sellerQuery = InvoiceQueryBuilder.seller()
                 .invoicingDateFrom(OffsetDateTime.now())
                 .dateTo(OffsetDateTime.now().plusDays(1))
-                .ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(QUERY_KSEF_NUMBER))
+                .ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber.parse(QUERY_KSEF_NUMBER))
                 .invoiceNumber(QUERY_INVOICE_NUMBER).sellerNip(NIP)
                 .onlineOnly().selfInvoicing(true).hasAttachment(true).build();
         var sellerRaw = InvoicingRequestMappers.toInvoiceQueryFiltersRaw(sellerQuery);

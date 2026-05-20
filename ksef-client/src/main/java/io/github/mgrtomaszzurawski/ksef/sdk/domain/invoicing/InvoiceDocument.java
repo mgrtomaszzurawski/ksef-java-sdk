@@ -6,7 +6,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing;
 
 /**
  * Read-side counterpart of {@link Invoice}. Returned by
- * {@link InvoiceArchive#getByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber)}
+ * {@link InvoiceArchive#getByKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber)}
  * for invoices fetched from KSeF (issued by either the consumer or by a
  * counterparty). Open interface — pattern-match (`instanceof` chain) on
  * the concrete typed subtypes when you need schema-specific accessors.

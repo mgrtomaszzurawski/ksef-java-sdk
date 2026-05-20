@@ -641,8 +641,8 @@ public final class BatchSubmissionFlow {
         throw new KsefSessionTerminalFailureException(sessionRef, code, description, details);
     }
 
-    private static java.util.Optional<io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber>
-            optionalKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.@Nullable KsefNumber value) {
+    private static java.util.Optional<io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber>
+            optionalKsefNumber(io.github.mgrtomaszzurawski.ksef.sdk.core.@Nullable KsefNumber value) {
         // After R1-17 SessionInvoiceStatus.ksefNumber is already typed —
         // parse failures fired at mapping time, so any non-null value
         // here is guaranteed valid.

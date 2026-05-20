@@ -246,7 +246,7 @@ tasks.javadoc {
         group("Configuration", "io.github.mgrtomaszzurawski.ksef.sdk.config")
         group(
             "Common types",
-            "io.github.mgrtomaszzurawski.ksef.sdk.common:io.github.mgrtomaszzurawski.ksef.sdk.exception"
+            "io.github.mgrtomaszzurawski.ksef.sdk.core:io.github.mgrtomaszzurawski.ksef.sdk.exception"
         )
         group("Operational domain APIs", "io.github.mgrtomaszzurawski.ksef.sdk.domain*")
         tags(
@@ -297,7 +297,7 @@ tasks.register<Javadoc>("javadocAll") {
         group("Configuration", "io.github.mgrtomaszzurawski.ksef.sdk.config")
         group(
             "Common types",
-            "io.github.mgrtomaszzurawski.ksef.sdk.common:io.github.mgrtomaszzurawski.ksef.sdk.exception:io.github.mgrtomaszzurawski.ksef.sdk.crypto"
+            "io.github.mgrtomaszzurawski.ksef.sdk.core:io.github.mgrtomaszzurawski.ksef.sdk.exception:io.github.mgrtomaszzurawski.ksef.sdk.crypto"
         )
         group("Operational domain APIs", "io.github.mgrtomaszzurawski.ksef.sdk.domain*")
         group("Internal - runtime + client", "io.github.mgrtomaszzurawski.ksef.sdk.internal*")

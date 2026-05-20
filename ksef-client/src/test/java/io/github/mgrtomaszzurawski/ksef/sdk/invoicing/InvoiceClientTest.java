@@ -9,7 +9,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.RetryPolicy;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefTokenCredentials;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
@@ -203,7 +203,7 @@ class InvoiceClientTest {
             // when
             InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
                     .invoicingDateFrom(java.time.OffsetDateTime.parse("2026-04-01T00:00:00Z"))
-                    .ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber.parse(TEST_KSEF_NUMBER))
+                    .ksefNumber(io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber.parse(TEST_KSEF_NUMBER))
                     .sellerNip(TEST_NIP)
                     .onlineOnly()
                     .selfInvoicing(true)

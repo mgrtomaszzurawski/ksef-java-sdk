@@ -5,8 +5,8 @@
 package io.github.mgrtomaszzurawski.ksef.jpms.consumer;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.KsefClient;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.KsefNumber;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.StatusInfo;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.FeaturePolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefIdentifier;
@@ -74,7 +74,7 @@ public final class JpmsConsumerCompileFixture {
      * in {@code module-info.java} that drops an export breaks this build.
      */
     public static void referencePublicSurface() {
-        // sdk + sdk.config + sdk.common
+        // sdk + sdk.config + sdk.core
         Class<?>[] surface = {
                 KsefClient.class,
                 KsefEnvironment.class,

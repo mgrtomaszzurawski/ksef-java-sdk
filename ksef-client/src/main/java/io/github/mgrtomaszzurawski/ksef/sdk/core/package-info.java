@@ -8,4 +8,4 @@
  * {@link KsefNumber} (parsed/validated KSeF-assigned invoice identifier).
  */
 @org.jspecify.annotations.NullMarked
-package io.github.mgrtomaszzurawski.ksef.sdk.common;
+package io.github.mgrtomaszzurawski.ksef.sdk.core;

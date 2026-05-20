@@ -12,7 +12,7 @@ module io.github.mgrtomaszzurawski.ksef {
     exports io.github.mgrtomaszzurawski.ksef.sdk.config;
 
     // Cross-domain envelope + value-object types (StatusInfo, KsefNumber)
-    exports io.github.mgrtomaszzurawski.ksef.sdk.common;
+    exports io.github.mgrtomaszzurawski.ksef.sdk.core;
 
     // Auth-session management accessor (KsefClient.authSessions())
     exports io.github.mgrtomaszzurawski.ksef.sdk.domain.auth;

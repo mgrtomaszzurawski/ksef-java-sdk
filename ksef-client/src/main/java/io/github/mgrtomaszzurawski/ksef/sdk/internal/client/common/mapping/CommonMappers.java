@@ -9,7 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.client.model.PublicKeyCertificateUsageRa
 import io.github.mgrtomaszzurawski.ksef.client.model.StatusInfoRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificate;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.PublicKeyCertificateUsage;
-import io.github.mgrtomaszzurawski.ksef.sdk.common.StatusInfo;
+import io.github.mgrtomaszzurawski.ksef.sdk.core.StatusInfo;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
