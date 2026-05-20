@@ -34,7 +34,7 @@ import static io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.Ht
 /**
  * Invoice-export implementation of {@link InvoiceExport}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoiceExportImpl implements InvoiceExport {
 

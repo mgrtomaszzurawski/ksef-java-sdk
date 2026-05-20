@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Produced by
  * {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.builder.EntityRolesQueryBuilder#build()}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record EntityRolesQueryRequest(
         @Nullable Integer pageOffset,

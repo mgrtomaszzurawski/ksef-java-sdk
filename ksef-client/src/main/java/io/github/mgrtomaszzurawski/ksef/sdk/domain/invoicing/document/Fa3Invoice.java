@@ -60,7 +60,7 @@ import org.jspecify.annotations.Nullable;
  * assembled tree before XML marshalling, so its effects are captured
  * in the resulting bytes and flat accessors.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class Fa3Invoice implements Invoice {
 

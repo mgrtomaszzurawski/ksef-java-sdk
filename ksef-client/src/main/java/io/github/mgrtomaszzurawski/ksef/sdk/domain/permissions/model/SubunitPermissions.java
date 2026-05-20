@@ -12,7 +12,7 @@ import java.util.List;
  * @param permissions list of subunit permissions
  * @param hasMore whether more results are available
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SubunitPermissions(List<SubunitPermission> permissions, boolean hasMore) {
 

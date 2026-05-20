@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * SDK request for {@code TestDataAdmin.createPerson(...)}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TestPersonCreateRequest(
         String nip,

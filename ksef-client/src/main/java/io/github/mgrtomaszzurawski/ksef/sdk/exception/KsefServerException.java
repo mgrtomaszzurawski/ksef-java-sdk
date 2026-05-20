@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * wait and retry (the SDK does so internally; if this exception
  * surfaces, retries already failed).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public class KsefServerException extends KsefException {
 

@@ -56,7 +56,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.certificates.mapping
  * Client for KSeF certificate management — enrollment, retrieval, querying,
  * revocation, and limits.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class CertificatesImpl implements Certificates {
 

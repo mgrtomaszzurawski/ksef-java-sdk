@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  * @param encryptedPartHash encrypted part SHA-256 hash
  * @param expirationDate when the download URL expires
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoicePackagePart(
         int ordinalNumber,

@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * @param invoicingMode whether submitted online or offline
  * @param status invoice processing status
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SessionInvoiceStatus(
         int ordinalNumber,

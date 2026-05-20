@@ -45,7 +45,7 @@ import org.jspecify.annotations.Nullable;
  * @apiNote Module-internal — declared {@code public} only so
  * {@code KsefClient} can call into it. Package not exported via JPMS.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class BatchPackageBuilder {
 

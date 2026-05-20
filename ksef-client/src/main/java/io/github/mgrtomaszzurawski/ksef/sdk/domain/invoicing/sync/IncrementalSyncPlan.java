@@ -42,7 +42,7 @@ import org.jspecify.annotations.Nullable;
  *     {@code true} — metadata-only sync still iterates packages but
  *     {@link InvoiceSink} receives {@code null} for {@code xmlPath}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record IncrementalSyncPlan(
         OffsetDateTime from,

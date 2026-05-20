@@ -102,7 +102,7 @@ import org.slf4j.LoggerFactory;
  * <p>All accessor methods are no-op-cheap — they return the same
  * sub-facade instance for the lifetime of the client. Thread-safe.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @API(status = API.Status.EXPERIMENTAL, since = "0.1.0")
 public final class KsefClient implements AutoCloseable {

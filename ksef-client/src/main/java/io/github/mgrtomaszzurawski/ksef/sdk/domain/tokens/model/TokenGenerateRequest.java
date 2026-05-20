@@ -14,7 +14,7 @@ import java.util.Objects;
  * @param description token description (5-256 characters)
  * @param permissions non-empty list of permissions to grant the token
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TokenGenerateRequest(String description, List<TokenPermissionType> permissions) {
 

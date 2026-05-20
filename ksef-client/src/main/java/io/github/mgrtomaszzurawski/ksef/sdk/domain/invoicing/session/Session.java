@@ -33,7 +33,7 @@ import java.util.Optional;
  * <p>Because {@link AutoCloseable} is the supertype, every {@code Session}
  * is usable with try-with-resources.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public sealed interface Session extends AutoCloseable permits OnlineSession, ClosedSession {
 

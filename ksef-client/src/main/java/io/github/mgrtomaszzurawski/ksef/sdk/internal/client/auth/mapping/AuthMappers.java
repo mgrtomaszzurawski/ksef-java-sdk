@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * types to the {@code internal.client.auth.model} records. Lives in a
  * non-exported package; consumers can't reach it.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class AuthMappers {
 

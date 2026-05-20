@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * @param refreshTokenValidUntil when the refresh token expires
  * @param current whether this is the current session
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthenticationListItem(
         String referenceNumber,

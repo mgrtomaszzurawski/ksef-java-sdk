@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
  * Thrown when a KSeF session has expired or been terminated.
  * This is a KSeF-specific auth error distinct from generic 401/403.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @SuppressWarnings("java:S110") // Exception hierarchy depth is part of the public API contract: extends KsefAuthException so consumers can catch the broader auth category.
 public class KsefSessionExpiredException extends KsefAuthException {

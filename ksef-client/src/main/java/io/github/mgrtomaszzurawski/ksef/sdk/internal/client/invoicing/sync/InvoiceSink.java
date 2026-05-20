@@ -49,7 +49,7 @@ import org.jspecify.annotations.Nullable;
  * within a single sync run, but cross-run dedup is the sink's
  * responsibility.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @FunctionalInterface
 public interface InvoiceSink {

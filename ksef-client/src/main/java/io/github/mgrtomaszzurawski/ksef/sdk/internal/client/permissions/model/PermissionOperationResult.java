@@ -9,7 +9,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.model;
  *
  * @param referenceNumber operation reference number for status polling
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PermissionOperationResult(String referenceNumber) {
 

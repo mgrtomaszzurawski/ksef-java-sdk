@@ -25,7 +25,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
  *     values range from 600 (batch open/close) to 12000 (status
  *     checks).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record RateLimitValues(Integer perSecond, Integer perMinute, Integer perHour) {
 

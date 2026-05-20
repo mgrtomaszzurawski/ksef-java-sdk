@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
  * SDK request payload for {@code Certificates.query(...)}. All fields
  * are optional filters; an empty record queries all certificates.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record CertificateQueryRequest(
         @Nullable CertificateSerialNumber serialNumber,

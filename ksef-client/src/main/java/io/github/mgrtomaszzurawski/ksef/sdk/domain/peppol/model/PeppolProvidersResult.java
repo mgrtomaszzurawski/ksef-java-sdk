@@ -29,7 +29,7 @@ import java.util.List;
  *     past the current {@code pageOffset}; {@code false} when this is
  *     the terminal page
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PeppolProvidersResult(List<PeppolProvider> providers, boolean hasMore) {
 

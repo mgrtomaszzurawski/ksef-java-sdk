@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  * threads in the parent client's lifecycle hooks (gate-checks,
  * lazy-auth trigger, terminate-side cleanup, last-challenge IP).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class AuthSessionsImpl implements AuthSessions {
 

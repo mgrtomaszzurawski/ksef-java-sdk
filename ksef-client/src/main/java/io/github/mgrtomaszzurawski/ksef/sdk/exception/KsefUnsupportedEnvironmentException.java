@@ -28,7 +28,7 @@ import java.io.Serial;
  * an individual argument. Consumers can branch on this type to
  * distinguish env misconfiguration from genuine bad-argument errors.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public class KsefUnsupportedEnvironmentException extends KsefException {
 

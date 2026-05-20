@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
  * Builder for KSeF test session limits override requests.
  * <p>Required: onlineSession and batchSession limits.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class TestSessionLimitsBuilder {
 

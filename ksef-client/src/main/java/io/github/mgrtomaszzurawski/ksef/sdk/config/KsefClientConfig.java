@@ -44,7 +44,7 @@ import java.util.Optional;
  * compare unequal under record-equality, which matches "different
  * signing strategies are not interchangeable" intent.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record KsefClientConfig(
         KsefEnvironment environment,

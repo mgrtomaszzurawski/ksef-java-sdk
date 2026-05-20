@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
  * @param name provider display name
  * @param dateCreated registration timestamp in KSeF
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PeppolProvider(String id, String name, OffsetDateTime dateCreated) {
 

@@ -12,7 +12,7 @@ import java.util.List;
  * @param referenceNumber session reference number
  * @param partUploadRequests upload instructions for each batch part
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record BatchSession(String referenceNumber, List<PartUploadRequest> partUploadRequests) {
 

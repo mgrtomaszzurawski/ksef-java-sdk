@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  * <p>All fields are optional; a builder with no setters invoked
  * matches every token visible to the authenticated principal.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class TokenQueryBuilder {
 

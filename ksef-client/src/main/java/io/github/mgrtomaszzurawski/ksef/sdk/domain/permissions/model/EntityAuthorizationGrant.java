@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * An entity authorization grant from query results.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record EntityAuthorizationGrant(
         String id,

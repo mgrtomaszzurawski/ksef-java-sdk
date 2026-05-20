@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @apiNote Internal — module-private after PR11.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public sealed interface BatchAssemblyMode {
 

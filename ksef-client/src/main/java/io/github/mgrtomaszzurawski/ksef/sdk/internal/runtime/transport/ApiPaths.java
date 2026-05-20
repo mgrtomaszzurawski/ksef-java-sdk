@@ -18,7 +18,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport;
  * <p>Internal — consumers use the high-level SDK methods rather than
  * composing URLs by hand.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class ApiPaths {
 

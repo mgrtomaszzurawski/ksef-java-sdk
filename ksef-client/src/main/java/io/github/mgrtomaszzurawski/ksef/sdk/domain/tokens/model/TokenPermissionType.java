@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
 /**
  * Permission type that can be granted to a KSeF API token.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum TokenPermissionType {
 

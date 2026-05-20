@@ -32,7 +32,7 @@ import java.util.Objects;
  * @param parallelism number of concurrent part-upload workers (clamped to
  *     [{@value #MIN_PARALLELISM}, {@value #MAX_PARALLELISM}])
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record BatchOptions(Duration timeout, int parallelism) {
 

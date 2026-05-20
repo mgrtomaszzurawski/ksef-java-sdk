@@ -37,7 +37,7 @@ import org.jspecify.annotations.Nullable;
  * @param hashOfCorrectedInvoice hash of the corrected invoice (for corrections)
  * @param thirdSubjects third subjects on the invoice (may be empty)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceMetadata(
         KsefNumber ksefNumber,

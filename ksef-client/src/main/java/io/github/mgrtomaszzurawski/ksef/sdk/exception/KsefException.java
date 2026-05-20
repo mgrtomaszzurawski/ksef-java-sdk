@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * Base exception for all KSeF SDK errors.
  * All subclasses are unchecked (extend RuntimeException).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public class KsefException extends RuntimeException {
 

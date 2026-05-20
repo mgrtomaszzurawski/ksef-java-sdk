@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * Some operations (subject, person, permissions, attachment, context block) do not
  * require authentication. Limit and rate-limit operations require authentication.</p>
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @SuppressWarnings("PMD.TestClassWithoutTestCases") // Not a test class — manages KSeF test environment data
 public final class TestDataAdminImpl implements TestDataAdmin {

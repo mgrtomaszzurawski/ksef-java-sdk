@@ -15,7 +15,7 @@ import java.util.Objects;
  * invoices within the session; {@code encryptedSymmetricKey} is the same key
  * RSA-encrypted with KSeF's public key (sent on the open-session request).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record OnlineSessionOpenRequest(
         FormCodeInfo formCode,

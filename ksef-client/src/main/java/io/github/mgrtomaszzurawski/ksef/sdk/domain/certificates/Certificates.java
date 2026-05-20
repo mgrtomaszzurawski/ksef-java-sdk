@@ -61,7 +61,7 @@ import java.util.List;
  * the public surface — they were dead surface pre-1.0 and consumers
  * who wrote the poll loop themselves only duplicated SDK logic.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface Certificates {
 

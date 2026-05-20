@@ -53,7 +53,7 @@ import org.xml.sax.SAXException;
  * callers can distinguish warnings from errors — empty list means
  * valid.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class KsefXmlValidator {
 
@@ -431,7 +431,7 @@ public final class KsefXmlValidator {
      * XSD validation, or by {@link #validate} when the requested
      * {@link FormCode} has no bundled XSD.
      *
-     * @since 1.0.0
+     * @since 0.1.0
      */
     public static class KsefXmlValidationException extends KsefException {
 

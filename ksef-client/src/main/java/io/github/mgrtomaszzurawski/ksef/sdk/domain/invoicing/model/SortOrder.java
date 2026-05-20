@@ -11,7 +11,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
  * {@code POST /invoices/query/metadata}; the spec default is
  * {@link #ASC ascending}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum SortOrder {
 

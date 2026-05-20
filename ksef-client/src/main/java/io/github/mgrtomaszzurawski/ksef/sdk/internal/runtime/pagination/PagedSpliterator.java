@@ -39,7 +39,7 @@ import org.jspecify.annotations.Nullable;
  * holds one page at a time. Equivalent in spirit to AWS SDK V2
  * paginators / GCP {@code Page} iterators.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class PagedSpliterator {
 

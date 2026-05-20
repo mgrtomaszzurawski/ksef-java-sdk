@@ -33,7 +33,7 @@ import org.bouncycastle.asn1.ASN1Sequence;
  * <p>Spec citations: REQ-QR-14, REQ-QR-16, REQ-QR-17; ADR-019
  * (KOD II signing scheme).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class QrSigningService {
 

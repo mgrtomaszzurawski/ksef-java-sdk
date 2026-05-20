@@ -15,7 +15,7 @@ import java.util.Objects;
  * {@code api}) — verification links are served from {@code qr-test}, {@code qr-demo},
  * and {@code qr} respectively.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum QrEnvironment {
     /** Test environment ({@code https://qr-test.ksef.mf.gov.pl}). */

@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
  * @param details additional detail messages from the server response;
  *     empty list when the server returned no extra details
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record FailedInvoice(@Nullable String invoiceRef, String error, List<String> details) {
 

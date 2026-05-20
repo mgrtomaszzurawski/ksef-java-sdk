@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  * sessions without the verification context (and therefore use
  * {@code send(byte[])} directly instead of {@code sendInvoice(Invoice)}).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceVerificationConfig(
         @Nullable OffsetDateTime validUntil,

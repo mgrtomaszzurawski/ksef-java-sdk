@@ -22,7 +22,7 @@ import java.util.Objects;
  * {@link #fromFormCode(FormCode, PublicKey)} with one of the predefined
  * {@code FormCode} constants or {@link FormCode#custom(String, String, String)}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class OnlineSessionBuilder {
 

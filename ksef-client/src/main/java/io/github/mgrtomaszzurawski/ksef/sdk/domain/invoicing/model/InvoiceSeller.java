@@ -14,7 +14,7 @@ import java.util.Objects;
  * @param nip seller NIP (tax ID)
  * @param name seller name (may be null)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceSeller(String nip, String name) {
 

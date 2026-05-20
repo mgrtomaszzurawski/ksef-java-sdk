@@ -19,7 +19,7 @@ import org.jspecify.annotations.Nullable;
  * server-supplied description, and any nested error details so callers can
  * map the failure to a typed business outcome.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public class KsefSessionTerminalFailureException extends KsefException {
 

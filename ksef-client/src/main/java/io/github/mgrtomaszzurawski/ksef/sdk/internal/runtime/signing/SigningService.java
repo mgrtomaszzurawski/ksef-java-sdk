@@ -40,7 +40,7 @@ import java.security.interfaces.RSAPublicKey;
  * XAdES-BASELINE-B signature service for KSeF authentication.
  * Signs XML documents with qualified certificates (RSA or ECDSA).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class SigningService {
 

@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
  * still works. Code that needs to distinguish "expired by retention"
  * from "never existed" should catch this subtype before the parent.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 @SuppressWarnings("java:S110")
 public class KsefRetentionExpiredException extends KsefNotFoundException {

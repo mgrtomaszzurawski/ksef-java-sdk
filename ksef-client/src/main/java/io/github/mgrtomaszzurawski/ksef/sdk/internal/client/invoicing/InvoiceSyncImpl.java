@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Incremental-sync implementation of {@link InvoiceSync}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoiceSyncImpl implements InvoiceSync {
 

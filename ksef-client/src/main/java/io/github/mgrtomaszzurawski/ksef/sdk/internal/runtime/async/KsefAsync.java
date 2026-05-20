@@ -45,7 +45,7 @@ import org.jspecify.annotations.Nullable;
  * to {@code [100ms, 5s]} to bound server load and keep reactivity bounded
  * for long-running operations.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class KsefAsync {
 

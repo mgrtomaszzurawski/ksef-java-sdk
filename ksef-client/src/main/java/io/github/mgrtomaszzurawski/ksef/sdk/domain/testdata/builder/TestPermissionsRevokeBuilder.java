@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * Builder for KSeF test permissions revocation requests.
  * <p>Required: contextNip, authorizedIdentifier (type + value).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class TestPermissionsRevokeBuilder {
 

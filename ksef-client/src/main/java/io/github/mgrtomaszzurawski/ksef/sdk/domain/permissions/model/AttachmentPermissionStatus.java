@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
  * @param attachmentAllowed whether attachments are allowed
  * @param revokedDate when the permission was revoked (null if active)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AttachmentPermissionStatus(Boolean attachmentAllowed, OffsetDateTime revokedDate) {
 

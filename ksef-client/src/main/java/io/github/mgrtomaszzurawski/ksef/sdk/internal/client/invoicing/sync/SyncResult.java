@@ -17,7 +17,7 @@ import java.util.Objects;
  * @param finalCheckpoints the last checkpoint persisted per subject
  *     type (matches what {@link CheckpointStore} now holds)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SyncResult(
         Map<InvoiceQuerySubjectType, Long> processedCounts,

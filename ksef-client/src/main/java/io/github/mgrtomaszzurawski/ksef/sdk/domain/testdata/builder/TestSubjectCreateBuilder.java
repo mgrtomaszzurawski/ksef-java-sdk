@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * Builder for KSeF test subject creation requests.
  * <p>Required: subjectNip, subjectType, description. Optional: subunits, createdDate.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class TestSubjectCreateBuilder {
 

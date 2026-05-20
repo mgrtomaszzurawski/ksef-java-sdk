@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Builder for personal permissions query requests. All fields are optional.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class PersonalPermissionsQueryBuilder {
 

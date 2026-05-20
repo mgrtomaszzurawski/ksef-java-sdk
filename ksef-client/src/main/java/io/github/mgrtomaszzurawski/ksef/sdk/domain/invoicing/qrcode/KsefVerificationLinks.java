@@ -27,7 +27,7 @@ import java.util.Objects;
  *
  * <p>Hashes and signatures are encoded with Base64 URL-safe (no padding).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class KsefVerificationLinks {
 

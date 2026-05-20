@@ -39,7 +39,7 @@ import java.util.Objects;
  * @param xml the raw XML bytes the SDK fetched (non-null, defensive
  *     copy on construction and on every {@link #xml()} call)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record UnrecognizedInvoiceDocument(FormCode formCode, byte[] xml) implements InvoiceDocument {
 

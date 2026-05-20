@@ -26,7 +26,7 @@ import java.util.Objects;
  * @param issueDate calendar date embedded in the KOD I URL (the
  *     invoice's issue date in KSeF wire-time semantics)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record OfflineSigningContext(
         QrEnvironment environment,

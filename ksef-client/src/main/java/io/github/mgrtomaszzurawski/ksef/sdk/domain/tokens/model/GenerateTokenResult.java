@@ -10,7 +10,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.tokens.model;
  * @param referenceNumber operation reference number
  * @param token the generated token string
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record GenerateTokenResult(String referenceNumber, String token) {
 

@@ -41,7 +41,7 @@ import org.jspecify.annotations.Nullable;
  * the live JAXB root (read-only by contract), and {@link #toJaxbCopy()}
  * returns a mutable deep clone.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class Fa3InvoiceDocument implements InvoiceDocument {
 

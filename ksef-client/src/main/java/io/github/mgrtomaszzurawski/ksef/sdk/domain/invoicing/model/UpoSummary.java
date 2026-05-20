@@ -51,7 +51,7 @@ import org.xml.sax.XMLReader;
  *     ({@code nazwaPodmiotuPrzyjmujacego}, typically "Ministerstwo Finansów")
  * @param rawXml bit-exact UPO XML bytes (defensive copy; preserves the XAdES signature)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record UpoSummary(
         String upoReferenceNumber,

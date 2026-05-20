@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * request body + paging query parameters. The spec only defines
  * {@code Nip} as a valid identifier type for this endpoint.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class SubordinateEntityRolesQueryBuilder {
 

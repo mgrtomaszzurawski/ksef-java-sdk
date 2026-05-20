@@ -10,7 +10,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.batch;
  * constraints through validation errors and the Javadoc on the relevant
  * builders/records, not by importing this class.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class KsefLimits {
 

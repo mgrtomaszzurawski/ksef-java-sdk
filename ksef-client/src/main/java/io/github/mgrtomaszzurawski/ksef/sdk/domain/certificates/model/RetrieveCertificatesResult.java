@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @param certificates list of retrieved certificates
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record RetrieveCertificatesResult(List<RetrievedCertificate> certificates) {
 

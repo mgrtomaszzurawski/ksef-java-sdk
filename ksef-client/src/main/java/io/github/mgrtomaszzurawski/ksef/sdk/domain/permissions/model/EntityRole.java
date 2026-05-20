@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * An entity role entry from query results.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record EntityRole(
         @Nullable PermissionIdentifier parentEntityIdentifier,

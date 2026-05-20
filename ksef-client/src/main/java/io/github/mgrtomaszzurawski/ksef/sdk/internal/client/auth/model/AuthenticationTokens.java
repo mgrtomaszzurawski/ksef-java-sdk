@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * @param accessToken the access token for API calls (null if not yet issued)
  * @param refreshToken the refresh token for obtaining new access tokens (null if not yet issued)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthenticationTokens(@Nullable TokenInfo accessToken, @Nullable TokenInfo refreshToken) {
 

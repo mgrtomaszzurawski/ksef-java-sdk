@@ -7,7 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 /**
  * Permission types that can be granted to an EU entity.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum EuEntityPermissionType {
     INVOICE_READ,

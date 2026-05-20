@@ -13,7 +13,7 @@ import java.util.List;
  * @param description human-readable status description
  * @param details optional additional detail messages
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record StatusInfo(int code, String description, List<String> details) {
 

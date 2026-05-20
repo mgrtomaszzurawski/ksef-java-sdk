@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Required: subject identifier (NIP/PESEL/Fingerprint), context identifier,
  * description (5-256 chars), personDetails. Optional: subunitName.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class SubunitPermissionGrantBuilder {
 

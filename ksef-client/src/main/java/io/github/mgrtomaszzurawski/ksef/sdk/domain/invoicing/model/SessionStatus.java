@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  * @param successfulInvoiceCount successfully processed invoices
  * @param failedInvoiceCount failed invoices
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SessionStatus(
         @Nullable StatusInfo status,

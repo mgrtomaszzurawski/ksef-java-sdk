@@ -18,7 +18,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.async;
  *           && status.status().code() >= KsefAsyncStatus.TERMINAL_STATUS_CODE_THRESHOLD
  * }</pre>
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class KsefAsyncStatus {
 

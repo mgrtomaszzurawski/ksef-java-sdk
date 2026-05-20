@@ -23,7 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefIdentifier;
  *       full identifier.</li>
  * </ul>
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record KsefCredentialsDescriptor(
         AuthMethod authMethod,

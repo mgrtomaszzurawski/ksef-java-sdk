@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * @param code authentication method code string
  * @param displayName human-readable display name
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthenticationMethodInfo(
         @Nullable AuthenticationMethodCategory category,

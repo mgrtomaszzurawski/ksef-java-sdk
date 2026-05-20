@@ -18,7 +18,7 @@ import java.security.cert.X509Certificate;
 /**
  * Utility for loading certificates and private keys from PKCS#12 keystores.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class CertificateLoader {
 

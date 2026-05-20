@@ -40,7 +40,7 @@ import java.util.Optional;
  * closed-view for any later {@code archive()} caller). Never
  * instantiated by consumer code.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 final class ClosedSessionImpl implements ClosedSession {
 

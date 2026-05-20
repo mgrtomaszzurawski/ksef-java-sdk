@@ -14,7 +14,7 @@ import java.util.Objects;
  * @param size byte size of the content
  * @param sha256 32-byte SHA-256 hash
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record FileMetadata(long size, byte[] sha256) {
 

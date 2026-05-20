@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  * {@code ksef-docs/offline/korekta-techniczna.md}. For normal sends it
  * stays {@code null} and is omitted from the wire request.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SendInvoiceRequest(
         byte[] invoiceHash,

@@ -13,7 +13,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.qrcode;
  * KSeF uses {@code PascalCase} on the wire while Java enum names use
  * {@code UPPER_SNAKE}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public enum QrContextType {
     /** Polish tax identification number (10 digits). */

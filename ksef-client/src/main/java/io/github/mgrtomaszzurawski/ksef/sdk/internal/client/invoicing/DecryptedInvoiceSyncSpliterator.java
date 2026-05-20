@@ -61,7 +61,7 @@ import java.util.function.Consumer;
  *
  * <p>Internal — only constructed by {@code InvoiceSyncImpl#asStream}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 final class DecryptedInvoiceSyncSpliterator implements Spliterator<DecryptedInvoice>, AutoCloseable {
 

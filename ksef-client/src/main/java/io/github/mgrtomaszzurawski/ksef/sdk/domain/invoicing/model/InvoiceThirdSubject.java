@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * @param name subject name (null when not provided)
  * @param role role code of the third subject (null when not provided)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record InvoiceThirdSubject(
         @Nullable ThirdSubjectIdentifierType identifierType,

@@ -15,7 +15,7 @@ import java.util.Map;
  * @param url upload URL
  * @param headers HTTP headers to include in the upload request
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PartUploadRequest(int ordinalNumber, String method, URI url, Map<String, String> headers) {
 

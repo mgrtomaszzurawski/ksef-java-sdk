@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  * {@link IllegalStateException} on use — wire the full runtime through
  * the multi-arg constructor for those code paths.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoicesImpl implements Invoices {
 

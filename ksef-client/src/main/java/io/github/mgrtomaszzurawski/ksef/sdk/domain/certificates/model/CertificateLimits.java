@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  * @param enrollment per-month enrollment-request quota (used vs limit)
  * @param certificate active-certificate cap (currently active vs limit)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record CertificateLimits(boolean canRequest, @Nullable CertificateLimit enrollment, @Nullable CertificateLimit certificate) {
 

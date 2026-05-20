@@ -25,7 +25,7 @@ import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
  *
  * <p>Spec: {@code ksef-docs/certyfikaty-KSeF.md} certificate enrollment.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class CsrSupport {
 

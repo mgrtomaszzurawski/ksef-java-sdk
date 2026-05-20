@@ -58,7 +58,7 @@ import java.util.Optional;
  * @param errorDetails human-readable error messages reported by KSeF
  *     on rejection; empty list on success
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SubmittedInvoice<I extends Invoice>(
         I invoice,

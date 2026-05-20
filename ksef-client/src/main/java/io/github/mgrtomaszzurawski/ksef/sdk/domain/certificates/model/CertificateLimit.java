@@ -10,7 +10,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.certificates.model;
  * @param remaining remaining certificates available
  * @param limit maximum certificates allowed
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record CertificateLimit(Integer remaining, Integer limit) {
 

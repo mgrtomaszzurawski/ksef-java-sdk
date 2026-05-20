@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * Stores the JWT token and session reference number obtained during authentication.
  * Updated atomically on auth, refresh, and session termination.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class SessionContext {
 

@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * @param surname surname (persons only; null for entities)
  * @param fullName full/trade name (entities only; null for persons)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PermissionSubjectDetails(@Nullable String firstName, @Nullable String surname, @Nullable String fullName) {
 }

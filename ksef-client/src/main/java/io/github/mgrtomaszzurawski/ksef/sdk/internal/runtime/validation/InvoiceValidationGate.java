@@ -23,7 +23,7 @@ import java.util.Set;
  * {@link Severity#FATAL} is detected. Warnings are silently allowed
  * through.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class InvoiceValidationGate {
 

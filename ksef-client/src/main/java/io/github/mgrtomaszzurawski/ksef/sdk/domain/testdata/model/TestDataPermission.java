@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * Permission entry for test-data permission grants.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TestDataPermission(TestDataPermissionType permissionType, String description) {
 

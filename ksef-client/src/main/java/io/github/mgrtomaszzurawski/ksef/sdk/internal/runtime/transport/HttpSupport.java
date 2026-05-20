@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
  * If the retry also returns 401, the {@link io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefAuthException}
  * propagates to the caller.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class HttpSupport {
 

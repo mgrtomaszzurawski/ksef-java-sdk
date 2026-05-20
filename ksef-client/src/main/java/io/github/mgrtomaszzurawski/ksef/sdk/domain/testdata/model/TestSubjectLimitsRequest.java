@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * @param maxEnrollments override for enrollment count limit (null = leave default)
  * @param maxCertificates override for active certificate limit (null = leave default)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record TestSubjectLimitsRequest(
         TestSubjectIdentifierType subjectIdentifierType,

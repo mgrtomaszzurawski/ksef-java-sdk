@@ -15,7 +15,7 @@ import java.util.stream.Stream;
  * <p>Lists Peppol service providers registered in KSeF. Results are sorted by
  * {@code dateCreated} descending, then {@code id} ascending. Requires authentication.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface PeppolProviders {
 

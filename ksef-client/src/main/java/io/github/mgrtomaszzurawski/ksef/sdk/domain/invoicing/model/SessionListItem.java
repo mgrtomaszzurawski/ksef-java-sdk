@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  * @param successfulInvoiceCount how many of those succeeded
  * @param failedInvoiceCount how many failed
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record SessionListItem(
         String referenceNumber,

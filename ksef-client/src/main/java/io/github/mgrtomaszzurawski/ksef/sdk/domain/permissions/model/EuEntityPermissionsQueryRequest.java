@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * SDK request for {@code Permissions.queryEuEntities(...)}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record EuEntityPermissionsQueryRequest(
         @Nullable String vatUeIdentifier,

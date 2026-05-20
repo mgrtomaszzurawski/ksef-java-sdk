@@ -41,7 +41,7 @@ import java.util.Objects;
  * @param processingCompletedAt wall-clock time the SDK observed the
  *     terminal status from KSeF and finished UPO downloads
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record BatchResult<I extends Invoice>(
         String sessionRef,

@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * {@link IllegalArgumentException} immediately rather than reaching
  * the server.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthorizationPolicy(
         List<String> ip4Addresses,

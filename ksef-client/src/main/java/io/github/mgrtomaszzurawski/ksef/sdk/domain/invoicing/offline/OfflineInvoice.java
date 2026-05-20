@@ -53,7 +53,7 @@ import org.jspecify.annotations.Nullable;
  *     handle; preserved so {@link #underlyingInvoice()} returns the
  *     typed invoice (e.g. {@code Fa3Invoice}) without downcast
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class OfflineInvoice<I extends Invoice> {
 

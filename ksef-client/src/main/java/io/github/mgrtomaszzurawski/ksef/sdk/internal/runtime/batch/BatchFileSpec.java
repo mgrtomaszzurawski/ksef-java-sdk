@@ -23,7 +23,7 @@ import java.util.Objects;
  * @apiNote Internal — module-private after PR11. Was previously exposed at
  *     {@code sdk.domain.invoicing.batch.BatchFileSpec}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record BatchFileSpec(long fileSize, byte[] fileHash, List<Part> parts) {
 

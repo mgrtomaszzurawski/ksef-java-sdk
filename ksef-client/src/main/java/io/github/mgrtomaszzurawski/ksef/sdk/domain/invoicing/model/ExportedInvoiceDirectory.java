@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
  * @param invoiceXmls map from invoice file name (inside the ZIP) to its
  *     on-disk path
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record ExportedInvoiceDirectory(
         Path outputDirectory,

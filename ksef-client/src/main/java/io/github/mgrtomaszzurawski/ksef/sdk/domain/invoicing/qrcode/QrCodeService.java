@@ -34,7 +34,7 @@ import javax.imageio.ImageIO;
  * URL builders. This service only renders any string into a QR PNG; it does not
  * know about KSeF URL structure.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class QrCodeService implements QrCodes {
 

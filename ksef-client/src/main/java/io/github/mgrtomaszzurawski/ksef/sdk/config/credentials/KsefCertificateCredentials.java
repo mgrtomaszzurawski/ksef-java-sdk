@@ -48,7 +48,7 @@ import java.util.Objects;
  * @param identifier authentication context identifier (NIP, internal id, EU VAT, or Peppol)
  * @param subjectIdentifier strategy for the {@code SubjectIdentifierType} XML element
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record KsefCertificateCredentials(
         X509Certificate certificate,

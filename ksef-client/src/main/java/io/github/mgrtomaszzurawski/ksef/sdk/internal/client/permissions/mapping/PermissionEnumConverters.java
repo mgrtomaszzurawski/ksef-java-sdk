@@ -8,7 +8,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.mapping
  * SDK enum → {@code *Raw} converters used by permission query/grant mappers.
  * Lives in a non-exported package; consumers can't reach it.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class PermissionEnumConverters {
 

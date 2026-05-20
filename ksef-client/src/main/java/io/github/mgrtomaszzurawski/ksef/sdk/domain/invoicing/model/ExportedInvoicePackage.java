@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * @param invoiceXmls map of invoice file name (inside the ZIP) to invoice XML
  *                    bytes; never {@code null}, may be empty for empty exports
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String, byte[]> invoiceXmls) {
 
@@ -103,7 +103,7 @@ public record ExportedInvoicePackage(byte @Nullable [] metadataJson, Map<String,
      *         wrapped) or the metadata buffer cannot be read
      *         ({@link java.io.IOException} wrapped)
      *
-     * @since 1.0.0
+     * @since 0.1.0
      */
     public List<InvoiceMetadata> invoiceMetadataList() {
         if (metadataJson == null || metadataJson.length == 0) {

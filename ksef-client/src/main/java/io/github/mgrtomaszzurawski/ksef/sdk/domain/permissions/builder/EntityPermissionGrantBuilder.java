@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
  * Builder for entity permission grant requests.
  * <p>Required: NIP, description (5-256 chars), at least one permission, entityDetails (fullName).
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class EntityPermissionGrantBuilder {
 

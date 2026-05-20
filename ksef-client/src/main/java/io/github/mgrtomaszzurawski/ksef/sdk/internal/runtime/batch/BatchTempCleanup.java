@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * at startup — the SDK does not track caller-supplied directories across
  * JVM restarts.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public final class BatchTempCleanup {
 

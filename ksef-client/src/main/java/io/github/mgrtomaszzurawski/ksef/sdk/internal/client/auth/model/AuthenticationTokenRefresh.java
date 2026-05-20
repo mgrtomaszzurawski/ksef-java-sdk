@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @param accessToken the new access token (null on partial-refresh failure)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthenticationTokenRefresh(@Nullable TokenInfo accessToken) {
 

@@ -15,7 +15,7 @@ import java.time.LocalDate;
  * <p>Default implementation is {@link QrCodeService}; access via
  * {@code KsefClient.qrCode()}.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface QrCodes {
 

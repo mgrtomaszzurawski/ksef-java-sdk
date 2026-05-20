@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * @param status terminal operation status (null only when the server
  *     omits the status block, which should not happen on terminal codes)
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record PermissionOperationStatus(String referenceNumber, @Nullable StatusInfo status) {
 

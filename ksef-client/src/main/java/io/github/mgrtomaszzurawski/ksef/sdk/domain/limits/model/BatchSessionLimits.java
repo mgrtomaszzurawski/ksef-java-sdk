@@ -25,7 +25,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.limits.model;
  *     may carry across all parts. Exceeding this cap surfaces as a
  *     wire-level validation error on batch close.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record BatchSessionLimits(Integer maxInvoiceSizeInMB, Integer maxInvoiceWithAttachmentSizeInMB, Integer maxInvoices) {
 

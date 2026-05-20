@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
  * @param timestampMs server timestamp in milliseconds (epoch)
  * @param clientIp the client IP as seen by the server
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public record AuthenticationChallenge(
         String challenge,

@@ -33,7 +33,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefUnsupportedEnvironment
  * chose {@code custom(url)} deliberately and the SDK does not pattern
  * match URLs.
  *
- * @since 1.0.0
+ * @since 0.1.0
  */
 public interface TestDataAdmin {
 
