@@ -1,5 +1,6 @@
 import com.vanniktech.maven.publish.JavaLibrary
 import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     `java-library`
@@ -352,7 +353,10 @@ if (providers.gradleProperty("signingEnabled").orNull == "true") {
 
 mavenPublishing {
     configure(JavaLibrary(javadocJar = JavadocJar.Javadoc(), sourcesJar = true))
-    publishToMavenCentral(automaticRelease = false)
+    // CENTRAL_PORTAL = Sonatype's post-OSSRH Publisher API. The default
+    // (legacy OSSRH `stagingProfiles`) returns HTTP 402 for accounts
+    // provisioned after the 2025-04 OSSRH sunset.
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
     // Signing is required by Maven Central but breaks the local smoke test
     // (publishToMavenLocal) when no GPG key is configured. Gate it on a
     // property — release pipeline passes -PsigningEnabled=true.

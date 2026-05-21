@@ -8,6 +8,7 @@
 
 import com.vanniktech.maven.publish.JavaLibrary
 import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     `java-library`
@@ -266,7 +267,9 @@ if (providers.gradleProperty("signingEnabled").orNull == "true") {
 
 mavenPublishing {
     configure(JavaLibrary(javadocJar = JavadocJar.Javadoc(), sourcesJar = true))
-    publishToMavenCentral(automaticRelease = false)
+    // CENTRAL_PORTAL = Sonatype's post-OSSRH Publisher API
+    // (see ksef-client/build.gradle.kts for rationale).
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
     // Signing is required by Maven Central but breaks the local smoke test
     // (publishToMavenLocal) when no GPG key is configured. Gate it on a
     // property — release pipeline passes -PsigningEnabled=true.
