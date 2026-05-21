@@ -10,6 +10,12 @@ plugins {
     base
     id("org.owasp.dependencycheck") version "11.1.1"
     id("org.sonarqube") version "5.1.0.4882"
+    // Declared at root with `apply false` so the plugin class is loaded
+    // by a single Gradle ClassLoader. Subprojects apply it without a
+    // version. Without this the SonatypeRepositoryBuildService gets
+    // instantiated per-subproject ClassLoader and Gradle's build-service
+    // registry rejects the cross-loader handoff with a type-mismatch.
+    id("com.vanniktech.maven.publish") version "0.30.0" apply false
 }
 
 sonar {

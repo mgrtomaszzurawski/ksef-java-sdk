@@ -11,7 +11,7 @@ import com.vanniktech.maven.publish.JavadocJar
 
 plugins {
     `java-library`
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("com.vanniktech.maven.publish")
 }
 
 description = "JAXB-generated XML models for KSeF schemas — companion to unofficial ksef-client (preview)"
