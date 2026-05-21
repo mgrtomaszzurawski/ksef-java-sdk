@@ -269,11 +269,6 @@ The following gaps are tracked and will close before the 1.0.0 cut:
 - **Sonar `new_coverage`** quality-gate drift from the R3 refactor
   surface (file moves counted as "new code"). Legacy tests still cover
   the same logic at new paths; ratchet up to 80% post-stabilisation.
-- **README quickstart snippet** uses pre-R3 import paths
-  (`domain.invoicing.KsefSession`, `client.openSession(...)`) — the
-  actual current API is `client.invoices().sessions().online(FormCode)`.
-  Consumers should follow the `examples/` directory until README is
-  modernised.
 - **`HttpClient` lifecycle:** the JDK 17 baseline cannot call
   `HttpClient.close()` (added in JDK 21). The shared `HttpClient` is
   left to JVM cleanup. Will be addressed when the JDK baseline is bumped.
