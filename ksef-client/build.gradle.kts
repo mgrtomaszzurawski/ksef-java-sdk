@@ -339,6 +339,17 @@ tasks.register<Javadoc>("javadocAll") {
 //   1. signingInMemoryKey / signingInMemoryKeyId / signingInMemoryKeyPassword
 //   2. classic signing.keyId / signing.password / signing.secretKeyRingFile
 
+// When signing is enabled, delegate to the local `gpg` binary via
+// useGpgCmd() rather than Gradle's BouncyCastle-based in-memory signer.
+// BC fails to parse GnuPG 2.x's modern AEAD-protected secret packets,
+// so even a correctly exported armored key is rejected. The gpg binary
+// honours every cipher its own keyring understands and reads the
+// passphrase from signing.gnupg.passphrase via loopback pinentry.
+if (providers.gradleProperty("signingEnabled").orNull == "true") {
+    apply(plugin = "signing")
+    extensions.configure<SigningExtension> { useGpgCmd() }
+}
+
 mavenPublishing {
     configure(JavaLibrary(javadocJar = JavadocJar.Javadoc(), sourcesJar = true))
     publishToMavenCentral(automaticRelease = false)

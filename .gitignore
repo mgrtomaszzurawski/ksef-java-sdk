@@ -43,6 +43,7 @@ context/
 *.keystore
 *.pem
 *.key
+*.asc
 credentials.*
 *.env
 ksef-credentials.properties

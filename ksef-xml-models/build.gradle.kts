@@ -257,6 +257,13 @@ tasks.named<ProcessResources>("processResources") {
 
 // ---------- Maven Central publication (companion to ksef-client) ----------
 
+// Delegate signing to local `gpg` binary (see ksef-client/build.gradle.kts
+// for rationale: BC chokes on GnuPG 2.x AEAD packets).
+if (providers.gradleProperty("signingEnabled").orNull == "true") {
+    apply(plugin = "signing")
+    extensions.configure<SigningExtension> { useGpgCmd() }
+}
+
 mavenPublishing {
     configure(JavaLibrary(javadocJar = JavadocJar.Javadoc(), sourcesJar = true))
     publishToMavenCentral(automaticRelease = false)

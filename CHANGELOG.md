@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0-preview] — 2026-05-20
+## [0.1.0-preview] — 2026-05-21
 
 ### About this release
 
@@ -17,8 +17,8 @@ system.
 
 **Status:** `EXPERIMENTAL` per the apiguardian `@API` annotation on
 `KsefClient`. The API surface MAY break between 0.x releases as
-real-world feedback accumulates. The eventual 1.0.0 cut will lock the
-contract.
+real-world feedback accumulates. The eventual 1.0.0 cut will drop the
+`EXPERIMENTAL` marker and lock the contract.
 
 **Intended use:** read-only flows (queries, exports, incremental sync)
 by the author for own consumption + adventurous early adopters who
@@ -31,83 +31,6 @@ support. AGPL-3.0 §15–16 warranty disclaimer applies.
 
 For production invoice flows, prefer the official SDK at
 [CIRFMF/ksef-client-java](https://github.com/CIRFMF/ksef-client-java).
-
-### Highlights since rewrite start
-
-This is the cumulative state of the SDK as of 2026-05-20 after three
-post-redesign feedback rounds (R1 → R2 → R3) on top of the 22-PR
-architectural redesign that landed in late April.
-
-- **Single facade entry point** — `KsefClient` exposes 9 typed accessors
-  (`.invoices()`, `.permissions()`, `.tokens()`, `.certificates()`,
-  `.peppol()`, `.limits()`, `.testData()`, `.authSessions()`,
-  `.qrCode()`); plus a diagnostic `.config()` snapshot for multi-tenant
-  orchestration (R1-16).
-- **Workflow vs Endpoint Tier 1/Tier 2 split** (ADR-021): high-level
-  workflow APIs (`session.send`, `batch().submit`, `invoices().sync()`)
-  hide protocol details (challenge-response auth, AES-256-CBC session
-  encryption, XAdES-BASELINE-B signing + SHA-256, retry-with-backoff,
-  batch upload + polling); endpoint APIs (`client.invoices().queryInvoicesByMetadata`,
-  etc.) for custom orchestration.
-- **Sealed type hierarchies** — `KsefCredentials` (3 permits: token /
-  certificate / PKCS#12), `PermissionGrantRequest` (7 permits, R2-11),
-  `Session` (permits `OnlineSession` + `ClosedSession`, R3 item #10).
-- **Custom invoice types registry** — `KsefInvoiceTypes` extension
-  point for read-side typed wrappers beyond FA2/FA3/PEF/PEF_KOR
-  (R2-6).
-- **Stream paginators** — every read endpoint returning collections
-  exposes a `streamX(...)` variant that lazy-walks via the SDK's
-  internal cursor handler (R2-9, ADR-023).
-- **Typed-exception hierarchy** — 13 exception classes grouped by
-  consumer remediation action (input bad / refresh creds / wait rate
-  limit / server problem / etc.), not by HTTP layer. `KsefException.of`
-  dispatches HTTP status codes to typed subclasses with parsed error
-  bodies (R3 item #8).
-- **Package layout per ADR-034** — `domain/<feature>/` functional
-  buckets with sub-bucketing where one bucket exceeds peers (invoicing
-  sub-split into `session/`, `document/`, `offline/`, `archive/`,
-  `builder/`, `model/`, `qrcode/`, `sync/`). Sentinel packages
-  (`config/`, `core/`, `exception/`) sub-split when themes diverge
-  (`config.credentials`, `config.policy`).
-- **Internal/runtime split** (ADR-012, ADR-013) — `internal.client.*`
-  endpoint wrappers, `internal.runtime.*` cross-cutting plumbing
-  (transport, crypto, validation, async, batch, signing, jaxb,
-  pagination); none of `internal.*` is exported via JPMS.
-- **11 JBang example programs** demonstrating each `KsefClient`
-  accessor (R2-13) plus 4 examples for legit settable knobs
-  (FeaturePolicy, KsefInvoiceTypes registry, AuthorizationPolicy IP
-  allow-list, multi-tenant orchestration via `client.config()`)
-  (R3 item #9).
-- **Live demo runner** (`./gradlew :ksef-demo:run -Pdemo.mode=FULL`)
-  against KSeF DEMO and TEST environments, 75 + 22 = 97 wire flows
-  verified with zero failures post-R3.
-
-### Known limitations
-
-The following gaps are tracked and will close before the 1.0.0 cut:
-
-- **Negative-path test coverage** is partial. The XSD validation gate
-  on `OnlineSession.sendInvoice` and the batch preflight on
-  `submitFromFiles` are pinned with regression tests, and the typed
-  HTTP-status → exception dispatch is pinned, but wider coverage is
-  pending:
-  - **G-2:** XSD violation variety (missing required fields, wrong
-    data types, wrong enums) — only "wrong root" + "structurally
-    invalid" cases covered today.
-  - **G-3:** JAXB unmarshalling negative paths (malformed server
-    response XML, missing required fields in server payloads) —
-    relies on assumption that KSeF returns well-formed XML.
-  - **G-5:** Test fixtures for invalid invoices are inline string
-    literals; refactor to `src/test/resources/invalid-invoices/`
-    pending.
-- **Quality Gate `new_coverage`** drift on Sonar from the R3 refactor
-  surface (file moves counted as "new code"). Legacy tests still cover
-  the same logic at new paths; ratchet up to 80% post-stabilisation.
-- **README quickstart snippet** uses pre-R3 import paths
-  (`domain.invoicing.KsefSession`, `client.openSession(...)`) — the
-  actual current API is `client.invoices().sessions().online(FormCode)`.
-  Consumers should follow the `examples/` directory until README is
-  modernised.
 
 ### Coordinates
 
@@ -124,14 +47,7 @@ Companion artifacts (transitive, no explicit declaration needed):
 - `io.github.mgrtomaszzurawski:ksef-xml-models:0.1.0-preview`
 - `io.github.mgrtomaszzurawski:ksef-rest-models:0.1.0-preview`
 
----
-
-## [1.0.0] — planned
-
-First public release. Targets KSeF API 2.4.0 (per
-`ksef-docs/api-changelog.md`). The artefact has not been staged on
-Maven Central yet; the dependency snippets in the README show the
-coordinates that will resolve once Central publication completes.
+Targets KSeF API 2.4.0 (per `ksef-docs/api-changelog.md`).
 
 ### Added
 
@@ -157,16 +73,16 @@ coordinates that will resolve once Central publication completes.
   into parts, opens the batch session, uploads parts in parallel, closes,
   polls until terminal, and downloads UPOs for accepted invoices. Returns a
   populated `BatchResult` with `cleared`/`failed` breakdown. `submitBatchFromFiles(...)`
-  is the file-streaming variant for large batches. (PR11)
+  is the file-streaming variant for large batches.
 - **Threading warning:** `submitBatch` blocks the calling thread for minutes
   to hours, depending on batch size and upload bandwidth. KSeF batch can be
   up to 5 GB. Do not call from UI threads, HTTP request handlers, or
   reactive framework dispatch threads. Wrap with a dedicated executor for
-  async use. (PR11)
+  async use.
 - **No progress listener** on `BatchOptions` — per ADR-008/D1, callback-style
   progress events invert control of the consumer's thread context. Callers
   needing UI progress wrap `submitBatch(...)` in
-  `CompletableFuture.supplyAsync(...)`. (PR11)
+  `CompletableFuture.supplyAsync(...)`.
 - `SendInvoiceCommand` sealed interface — `Normal(byte[])` and
   `TechnicalCorrection(byte[], byte[] hashOfCorrected)` (per
   `ksef-docs/offline/korekta-techniczna.md`).
@@ -189,19 +105,19 @@ coordinates that will resolve once Central publication completes.
   `PefInvoiceDocument` / `PefKorInvoiceDocument`) with JAXB tree
   exposed via the schema-specific escape-hatch accessor. Unknown
   schemas fall through to `InvoiceDocument.fromXml(...)` minimal
-  wrapper for forward compatibility. (PR14)
+  wrapper for forward compatibility.
 - `FormCodeDetector` infers the `FormCode` from the XML root element
   + namespace; covers FA(2)/FA(3)/PEF(3)/PEF_KOR(3) and reports unknown
-  for forward-compat. (PR14)
+  for forward-compat.
 - `InvoiceSyncClient` — HWM-based incremental sync with `CheckpointStore`
   + `InvoiceSink`; mandates `PERMANENT_STORAGE` axis per spec.
 - `InvoiceClient.syncAsStream(plan, store)` — Stream-based incremental
   sync. Each consumed element returns a `DecryptedInvoice` (KsefNumber +
   metadata + decrypted XML bytes + optional file path). Caller composes
   with standard Stream operators (`filter`, `limit`, `takeWhile`) and
-  consumes via try-with-resources for deterministic cleanup. (PR17)
+  consumes via try-with-resources for deterministic cleanup.
 
-#### Typed Invoice impls (PR12b)
+#### Typed Invoice impls
 - `Fa2Invoice`, `Fa3Invoice`, `PefInvoice`, `PefKorInvoice` — typed
   wrappers over the JAXB raw tree with fluent data-authoring builders
   for the common business cases (header, seller/buyer, line items,
@@ -211,7 +127,7 @@ coordinates that will resolve once Central publication completes.
 - `Invoice.fromXml(FormCode, byte[])` minimal escape-hatch factory
   remains the path for schemas the SDK does not yet model.
 
-#### Offline + technical correction (PR13)
+#### Offline + technical correction
 - `OfflineInvoice` immutable type wrapping an authored `Invoice` with
   pre-rendered KOD I + KOD II QR PNGs.
 - `OfflineInvoiceBuilder` fluent builder; `OfflineMode` enum captures
@@ -222,7 +138,7 @@ coordinates that will resolve once Central publication completes.
   unreachability (ConnectException, UnknownHostException) — caller
   branches into offline-mode flow.
 
-#### UPO retrieval (PR15)
+#### UPO retrieval
 - `ClearedInvoice` record completes the `Invoice → SubmittedInvoice →
   ClearedInvoice` lifecycle. Embeds the full SubmittedInvoice + UpoEntry
   (raw XAdES bytes + parsed summary).
@@ -232,9 +148,6 @@ coordinates that will resolve once Central publication completes.
 - `ClosedSession.cleared(SubmittedInvoice)` and
   `ClosedSession.cleared(String referenceNumber)` overloads;
   `ClosedSession.allCleared()` returns the typed list.
-- Legacy `OnlineSession.upo(...)` / `upoByKsefNumber(...)` /
-  `bulkUpos()` accessors removed — UPO retrieval is post-archive only
-  per the type-state model.
 
 #### Permissions
 - 10 grant builders (`PersonPermissionGrantBuilder`,
@@ -279,27 +192,26 @@ coordinates that will resolve once Central publication completes.
 
 #### Configuration and infrastructure
 - `KsefClient.qrCode()` accessor returning the shared `QrCodeService`
-  for KOD I / KOD II rendering. (PR16)
+  for KOD I / KOD II rendering.
 - `KsefIdentifier` per-type format validation: `internalId` matches
   `<10-digit NIP>-<5 digits>`, `nipVatUe` matches country-prefix +
-  alphanumeric, `peppolId` matches `<ICD>:<value>`. NIP factory now
-  validates the weighted-sum checksum (weights 6,5,7,2,3,4,5,6,7
-  modulo 11). (PR19)
+  alphanumeric, `peppolId` matches `<ICD>:<value>`. NIP factory validates
+  the weighted-sum checksum (weights 6,5,7,2,3,4,5,6,7 modulo 11).
 - `KsefTimeoutException` abstract parent of `KsefAsyncTimeoutException`
-  and `KsefSessionPollingTimeoutException` — single catch covers both. (PR19)
+  and `KsefSessionPollingTimeoutException` — single catch covers both.
 - `KsefException.safeResponseBody()` scrubs digit runs ≥ 9 (NIP, PESEL,
   JWT) preserving last 4 chars; suitable for log/audit output. Raw
-  `responseBody()` still public for SDK-internal error parsing. (PR19)
+  `responseBody()` still public for SDK-internal error parsing.
 - `KsefEnvironment.custom(String)` validates via `URI.parseServerAuthority()`
   — rejects malformed URLs and missing-host configurations at config
-  time instead of letting them surface as obscure HTTP failures later. (PR19)
+  time instead of letting them surface as obscure HTTP failures later.
 - HTTP 410 Gone mapped to `KsefRetentionExpiredException` for KSeF
   retention-expired responses (api-changelog v2.4.0).
 - `KsefClient.builder()` no-arg + required `.environment(...)` and
   `.credentials(...)` setters validated at `build()` (matches AWS / Spring
   / Azure SDK idiom).
-- `KsefEnvironment.{TEST, DEMO, PROD, custom(url)}` (constants match
-  `ksef-docs/srodowiska.md`).
+- `KsefEnvironment.{TEST, DEMO, PROD, custom(url)}` constants match
+  `ksef-docs/srodowiska.md`.
 - `RetryPolicy` with exponential backoff + `ThreadLocalRandom` jitter,
   `retryOn5xx`, `retryOn429`, `retryPost=false` default,
   `maxRetryAfterSeconds=60`.
@@ -321,21 +233,6 @@ coordinates that will resolve once Central publication completes.
 - License files (`LICENSE.txt`, `THIRD-PARTY-NOTICES.md`) shipped in
   the published JAR under `META-INF/`.
 
-### Changed
-
-- N/A — first public release.
-
-### Removed
-
-- **Public batch session surface** (PR11): `KsefBatchSession`,
-  `PreparedBatchPackage`, `BatchFileSpec`, `BatchSessionOptions`,
-  `BatchAssemblyMode`, and the three `KsefClient.openBatchSession*`
-  overloads were removed from the public API. The 5-step state machine
-  they exposed (open → uploadParts → close → pollUntilComplete → bulkUpos)
-  was consolidated into the synchronous `Invoices.submitBatch(...)` facade.
-  These types now live in `sdk.internal.runtime.batch` /
-  `sdk.internal.client.session` and are not exported via JPMS.
-
 ### Security
 
 - AGPL-3.0-only retained (per revised ADR-007 — original Apache-2.0 plan
@@ -353,7 +250,31 @@ coordinates that will resolve once Central publication completes.
 
 ### Known limitations
 
-- `HttpClient` lifecycle: the JDK 17 baseline cannot call
+The following gaps are tracked and will close before the 1.0.0 cut:
+
+- **Negative-path test coverage** is partial. The XSD validation gate
+  on `OnlineSession.sendInvoice` and the batch preflight on
+  `submitFromFiles` are pinned with regression tests, and the typed
+  HTTP-status → exception dispatch is pinned, but wider coverage is
+  pending:
+  - **G-2:** XSD violation variety (missing required fields, wrong
+    data types, wrong enums) — only "wrong root" + "structurally
+    invalid" cases covered today.
+  - **G-3:** JAXB unmarshalling negative paths (malformed server
+    response XML, missing required fields in server payloads) —
+    relies on assumption that KSeF returns well-formed XML.
+  - **G-5:** Test fixtures for invalid invoices are inline string
+    literals; refactor to `src/test/resources/invalid-invoices/`
+    pending.
+- **Sonar `new_coverage`** quality-gate drift from the R3 refactor
+  surface (file moves counted as "new code"). Legacy tests still cover
+  the same logic at new paths; ratchet up to 80% post-stabilisation.
+- **README quickstart snippet** uses pre-R3 import paths
+  (`domain.invoicing.KsefSession`, `client.openSession(...)`) — the
+  actual current API is `client.invoices().sessions().online(FormCode)`.
+  Consumers should follow the `examples/` directory until README is
+  modernised.
+- **`HttpClient` lifecycle:** the JDK 17 baseline cannot call
   `HttpClient.close()` (added in JDK 21). The shared `HttpClient` is
   left to JVM cleanup. Will be addressed when the JDK baseline is bumped.
 
@@ -367,12 +288,12 @@ ADRs ([`ADR/`](ADR/)):
 - **ADR-004** — domain-specific clients (vs single god-class).
 - **ADR-005** — SDK overlay on generated code (immutable records as public API).
 - **ADR-006** — separate SDK and sample-app modules.
-- **ADR-007** — licence strategy (AGPL-3.0-only retained at 1.0.0).
+- **ADR-007** — licence strategy (AGPL-3.0-only retained).
 - **ADR-008** — API redesign: `KsefSession` / `KsefBatchSession` abstractions.
 - **ADR-009** — demo app purpose shift to live-validation harness.
 - **ADR-010** — SDK functional completeness audit cycle.
 - **ADR-011** — batch encryption (AES-256-CBC + PKCS#7) and polling semantics.
-- **ADR-012** — package structure: `domain/<feature>/`, `internal/{client,runtime}/`.
+- **ADR-012** — package structure: `domain/<feature>/`, `internal/{client,runtime}/` (superseded by ADR-034).
 - **ADR-013** — `HttpRuntime` narrow interface (transport→facade layering fix).
 - **ADR-014** — `ApiPaths` centralisation.
 - **ADR-015** — trust the spec on `@Nonnull` fields, carve-out via RCA.
@@ -390,6 +311,8 @@ ADRs ([`ADR/`](ADR/)):
 - **ADR-027** — transport-level URI redaction.
 - **ADR-028** — JPMS public-API defence gates.
 - **ADR-029** — XXE hardening on XML validator.
+- **ADR-031** — Maven removed, Gradle multi-module structure.
+- **ADR-034** — sentinel and domain sub-bucketing when themes diverge (supersedes ADR-012).
 
 ### Server-side behaviours worth knowing
 
@@ -400,4 +323,4 @@ either handles them transparently or surfaces them as typed
 exceptions. Curated list in
 [`KNOWN-SERVER-BEHAVIORS.md`](KNOWN-SERVER-BEHAVIORS.md).
 
-[1.0.0]: https://github.com/mgrtomaszzurawski/ksef-java-sdk/commits/develop
+[0.1.0-preview]: https://github.com/mgrtomaszzurawski/ksef-java-sdk/releases/tag/v0.1.0-preview
