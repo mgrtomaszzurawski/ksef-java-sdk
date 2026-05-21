@@ -7,27 +7,27 @@ Repository conventions and architecture notes for assistants working on this cod
 OpenAPI-first Java SDK for the Polish National e-Invoicing System (KSeF) REST API v2. Multi-module Gradle project (Maven removed 2026-05-10 per ADR-031):
 - `ksef-xml-models` — JAXB-generated XML models (FA2/FA3/PEF/PEF_KOR/UPO/AUTH)
 - `ksef-rest-models` — OpenAPI-generated REST models (`*Raw`)
-- `ksef-client` — the SDK library (target: Maven Central; **not yet published**)
+- `ksef-client` — the SDK library, **published to Maven Central as `0.1.0-preview`** (EXPERIMENTAL, `@API` annotation on `KsefClient`)
 - `ksef-demo` — integration examples and smoke tests (not published)
 - `ksef-examples` — compile-only check of consumer examples in `examples/`
 - `ksef-jpms-consumer` — JPMS consumer compile gate
 
 ## Release status
 
-**Pre-1.0. No version has been published to Maven Central yet.** Current
-artefact version is `1.0.0` in `gradle.properties` (preparing for first
-release; no git tag, no Maven Central artefact). There is no consumer contract to
-preserve — the project has zero external dependents because the artefact
-has never been released.
+**Current artefact version: `0.1.0-preview`** (in `gradle.properties`).
+Published to Maven Central under coordinates
+`io.github.mgrtomaszzurawski:ksef-client:0.1.0-preview`, with a matching
+annotated tag `v0.1.0-preview` on `main`. `KsefClient` is marked
+`@API(status = EXPERIMENTAL, since = "0.1.0")` via apiguardian — that
+marker plus the `0.x` SemVer position is the consumer-facing signal
+that the API may break between `0.x.y` releases.
 
-The work-in-progress branches consolidate breaking changes
-(removed/renamed types, changed record components, new required
-parameters) deliberately so that the eventual `1.0.0` cut is clean.
-Reviewers must NOT request back-compat shims, deprecated aliases, or
-overload bridges to "preserve" an API surface that has never shipped.
-SemVer pre-1.0 explicitly permits unrestricted breaking changes.
-
-When a review surfaces "breaking change" findings against the public API,
+The eventual `1.0.0` cut will drop the `@API EXPERIMENTAL` marker, lock
+the public API contract, and bump SemVer guarantees. Until then,
+reviewers MUST NOT request back-compat shims, deprecated aliases, or
+overload bridges to "preserve" the surface — SemVer pre-1.0 explicitly
+permits unrestricted breaking changes between `0.x.y` releases. When a
+review surfaces "breaking change" findings against the public API,
 treat them as informational confirmation that the breaking change
 landed — not as merge blockers.
 
@@ -89,9 +89,12 @@ own `build.gradle.kts`.
   `client.api.*` + `client.model.*` packages with `*Raw` suffix. UP-TO-DATE
   unless `ksef-client/openapi/open-api.json` changes.
 - `ksef-client` — SDK jar. Hand-written code only (362 main + 98 test files).
-  Configures Spotless, SpotBugs, PMD, Checkstyle, JaCoCo, GPG signing
-  (release-property-gated), and Maven Central publication via
-  `maven-publish` + `signing`.
+  Configures Spotless, SpotBugs, PMD, Checkstyle, JaCoCo, and Maven
+  Central publication via `com.vanniktech.maven.publish 0.30.0` (Central
+  Portal Publisher API). GPG signing is gated on `-PsigningEnabled=true`
+  and delegated to the local `gpg` binary via `useGpgCmd()` (BC's PGP
+  parser does not accept GnuPG 2.x AEAD-protected secret packets, so
+  in-memory signing through Gradle's signing plugin is bypassed).
 - `ksef-demo` — consumer app exercising the live KSeF demo server. Uses
   the `application` plugin; demo modes are passed via Gradle properties.
 - `ksef-examples` — compile-only check of the JBang-style examples in
