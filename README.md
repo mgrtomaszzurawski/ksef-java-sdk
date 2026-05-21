@@ -299,7 +299,7 @@ See [`examples/README.md`](examples/README.md) for the full list and notes.
 | Exceptions | Basic `ApiException` | Typed hierarchy (`KsefAuthException`, `KsefServerException`, `KsefRateLimitException`, …) |
 | Build tool | Gradle | Maven |
 | Java version | 11 source, 21 toolchain | 17+ |
-| Distribution | GitHub Packages only | Maven Central (release-profile staging dry-run pending) |
+| Distribution | GitHub Packages only | Maven Central |
 | JPMS | None | Named module with strict export boundaries |
 
 ## Sample app (`ksef-demo`)
@@ -383,7 +383,7 @@ Bundled official KSeF OpenAPI/XSD files (`ksef-client/openapi/open-api.json`, `k
 - ✅ 720+ unit + integration tests across 78 test classes (WireMock-mocked HTTP, full transport coverage)
 - ✅ JaCoCo coverage gate green at `INSTRUCTION ≥ 0.70`, `METHOD ≥ 0.75` bundle floor + per-class `METHOD = 1.00` ratchet on every `domain.*.builder.*Builder` and `domain.*.*Client` (`./gradlew check` → `ksef-client/build/reports/jacoco/`)
 - ✅ JSpecify null-safety annotations across all 29 exported `package-info` (ADR-017)
-- 🚧 Maven Central first publish (release-profile dry run pending)
+- ✅ `0.1.0-preview` published to Maven Central (EXPERIMENTAL — `@API` annotation on `KsefClient`)
 
 - Release history: [`CHANGELOG.md`](CHANGELOG.md)
 - Architectural decisions: [`ADR/`](ADR/)
