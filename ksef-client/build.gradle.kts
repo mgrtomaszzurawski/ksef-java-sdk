@@ -8,7 +8,7 @@ plugins {
     pmd
     id("com.github.spotbugs") version "6.0.26"
     id("com.diffplug.spotless") version "6.25.0"
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("com.vanniktech.maven.publish")
 }
 
 description = "Unofficial solo-developed Java SDK for the Polish KSeF REST API v2 (preview)"
