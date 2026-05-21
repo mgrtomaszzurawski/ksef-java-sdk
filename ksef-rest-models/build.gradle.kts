@@ -9,7 +9,7 @@ import com.vanniktech.maven.publish.JavadocJar
 plugins {
     `java-library`
     id("org.openapi.generator") version "7.12.0"
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("com.vanniktech.maven.publish")
 }
 
 description = "OpenAPI-generated REST models — companion to unofficial ksef-client (preview)"
