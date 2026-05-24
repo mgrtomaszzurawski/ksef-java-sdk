@@ -325,6 +325,8 @@ public final class Fa2Invoice implements Invoice {
         private @Nullable LocalDate paymentDueDate;
         private @Nullable String paymentMethodCode;
         private @Nullable VatExemption vatExemption;
+        private boolean splitPayment;
+        private @Nullable String systemInfo;
         private Consumer<Faktura> customizer;
 
         Builder() {
@@ -355,6 +357,18 @@ public final class Fa2Invoice implements Invoice {
          */
         public Builder vatExemption(VatExemption value) {
             this.vatExemption = value;
+            return this;
+        }
+
+        /** Split-payment / MPP flag ({@code Fa/Adnotacje/P_18A}). */
+        public Builder splitPayment(boolean value) {
+            this.splitPayment = value;
+            return this;
+        }
+
+        /** Issuing-system identifier ({@code Naglowek/SystemInfo}) — optional. */
+        public Builder systemInfo(String value) {
+            this.systemInfo = value;
             return this;
         }
 
@@ -464,6 +478,9 @@ public final class Fa2Invoice implements Invoice {
             header.setKodFormularza(kodFormularza);
             header.setWariantFormularza(FA2_WARIANT_FORMULARZA);
             header.setDataWytworzeniaFa(toGregorianDateTime(issueDate));
+            if (systemInfo != null) {
+                header.setSystemInfo(systemInfo);
+            }
             return header;
         }
 
@@ -474,6 +491,12 @@ public final class Fa2Invoice implements Invoice {
             identity.setNazwa(party.name());
             podmiot.setDaneIdentyfikacyjne(identity);
             podmiot.setAdres(buildAddress(party));
+            if (party.email() != null || party.phone() != null) {
+                Faktura.Podmiot1.DaneKontaktowe dk = new Faktura.Podmiot1.DaneKontaktowe();
+                if (party.email() != null) dk.setEmail(party.email());
+                if (party.phone() != null) dk.setTelefon(party.phone());
+                podmiot.getDaneKontaktowe().add(dk);
+            }
             return podmiot;
         }
 
@@ -484,6 +507,12 @@ public final class Fa2Invoice implements Invoice {
             identity.setNazwa(party.name());
             podmiot.setDaneIdentyfikacyjne(identity);
             podmiot.setAdres(buildAddress(party));
+            if (party.email() != null || party.phone() != null) {
+                Faktura.Podmiot2.DaneKontaktowe dk = new Faktura.Podmiot2.DaneKontaktowe();
+                if (party.email() != null) dk.setEmail(party.email());
+                if (party.phone() != null) dk.setTelefon(party.phone());
+                podmiot.getDaneKontaktowe().add(dk);
+            }
             return podmiot;
         }
 
@@ -521,7 +550,7 @@ public final class Fa2Invoice implements Invoice {
             if (deliveryDate != null) {
                 faContent.setP6(toGregorianDate(deliveryDate));
             }
-            faContent.setAdnotacje(buildAdnotacje(vatExemption));
+            faContent.setAdnotacje(buildAdnotacje(vatExemption, splitPayment));
             if (paymentDueDate != null || paymentMethodCode != null) {
                 faContent.setPlatnosc(buildPlatnosc(paymentDueDate, paymentMethodCode));
             }
@@ -535,12 +564,12 @@ public final class Fa2Invoice implements Invoice {
         }
 
         private static Faktura.Fa.Adnotacje buildAdnotacje(
-                @Nullable VatExemption exemption) {
+                @Nullable VatExemption exemption, boolean splitPayment) {
             Faktura.Fa.Adnotacje adnotacje = new Faktura.Fa.Adnotacje();
             adnotacje.setP16(FLAG_FALSE);
             adnotacje.setP17(FLAG_FALSE);
             adnotacje.setP18(FLAG_FALSE);
-            adnotacje.setP18A(FLAG_FALSE);
+            adnotacje.setP18A(splitPayment ? FLAG_TRUE : FLAG_FALSE);
             adnotacje.setP23(FLAG_FALSE);
             Faktura.Fa.Adnotacje.Zwolnienie zwolnienie = new Faktura.Fa.Adnotacje.Zwolnienie();
             if (exemption == null) {

@@ -56,6 +56,8 @@ public record InvoiceParty(
         String houseNumber,
         @Nullable String countryCode,
         @Nullable String addressL2,
+        @Nullable String email,
+        @Nullable String phone,
         boolean jst,
         boolean vatGroup) {
 
@@ -93,7 +95,7 @@ public record InvoiceParty(
                         @Nullable String street,
                         String houseNumber,
                         @Nullable String countryCode) {
-        this(nip, name, postalCode, locality, street, houseNumber, countryCode, null, false, false);
+        this(nip, name, postalCode, locality, street, houseNumber, countryCode, null, null, null, false, false);
     }
 
     /**
