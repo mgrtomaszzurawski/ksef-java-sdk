@@ -70,7 +70,6 @@ class Fa2InvoiceBuilderTest {
     }
 
     private static InvoiceLineItem line() {
-        return new InvoiceLineItem(1, "Service", "szt.",
-                new BigDecimal("1"), NET_AMOUNT, NET_AMOUNT, "23");
+        return new InvoiceLineItem(1, "Service", null, null, "szt.", new BigDecimal("1"), NET_AMOUNT, NET_AMOUNT, "23", null, null);
     }
 }

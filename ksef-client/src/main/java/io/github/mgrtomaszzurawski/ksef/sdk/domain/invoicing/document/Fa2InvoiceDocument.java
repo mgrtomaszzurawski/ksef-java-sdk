@@ -252,11 +252,15 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         return new InvoiceLineItem(
                 rowNumber,
                 wiersz.getP7(),
+                wiersz.getGTIN(),
+                wiersz.getPKWiU(),
                 wiersz.getP8A(),
                 wiersz.getP8B(),
                 wiersz.getP9A(),
                 wiersz.getP11(),
-                wiersz.getP12());
+                wiersz.getP12(),
+                wiersz.getP11A(),
+                wiersz.getP11Vat());
     }
 
     private static OffsetDateTime toOffsetDateTime(XMLGregorianCalendar gregorian) {
