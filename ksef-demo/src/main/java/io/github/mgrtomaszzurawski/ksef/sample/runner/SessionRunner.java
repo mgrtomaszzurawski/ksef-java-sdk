@@ -398,8 +398,7 @@ public final class SessionRunner implements DemoRunner {
                 .buyer(new InvoiceParty(DEMO_BUYER_NIP, DEMO_BUYER_NAME, DEMO_BUYER_POSTAL,
                         DEMO_BUYER_LOCALITY, null, DEMO_BUYER_HOUSE, null))
                 .totalGrossAmount(DEMO_LINE_GROSS)
-                .addLineItem(new InvoiceLineItem(1, DEMO_LINE_DESCRIPTION, DEMO_LINE_UNIT,
-                        BigDecimal.ONE, DEMO_LINE_NET, DEMO_LINE_NET, DEMO_LINE_VAT))
+                .addLineItem(new InvoiceLineItem(1, DEMO_LINE_DESCRIPTION, null, null, DEMO_LINE_UNIT, BigDecimal.ONE, DEMO_LINE_NET, DEMO_LINE_NET, DEMO_LINE_VAT, null, null))
                 .build();
     }
 

@@ -124,7 +124,6 @@ class Fa3InvoiceBuilderTest {
     }
 
     private static InvoiceLineItem lineItem() {
-        return new InvoiceLineItem(1, "Consulting", "szt.",
-                new BigDecimal("1"), NET_AMOUNT, NET_AMOUNT, VAT_RATE);
+        return new InvoiceLineItem(1, "Consulting", null, null, "szt.", new BigDecimal("1"), NET_AMOUNT, NET_AMOUNT, VAT_RATE, null, null);
     }
 }

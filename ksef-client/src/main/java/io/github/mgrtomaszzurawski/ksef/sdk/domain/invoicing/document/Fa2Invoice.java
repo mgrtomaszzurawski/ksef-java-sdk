@@ -260,11 +260,15 @@ public final class Fa2Invoice implements Invoice {
         return new InvoiceLineItem(
                 rowNumber,
                 wiersz.getP7(),
+                wiersz.getGTIN(),
+                wiersz.getPKWiU(),
                 wiersz.getP8A(),
                 wiersz.getP8B(),
                 wiersz.getP9A(),
                 wiersz.getP11(),
-                wiersz.getP12());
+                wiersz.getP12(),
+                wiersz.getP11A(),
+                wiersz.getP11Vat());
     }
 
     private static OffsetDateTime toOffsetDateTime(XMLGregorianCalendar gregorian) {
@@ -511,6 +515,12 @@ public final class Fa2Invoice implements Invoice {
             Faktura.Fa.FaWiersz wiersz = new Faktura.Fa.FaWiersz();
             wiersz.setNrWierszaFa(BigInteger.valueOf(line.rowNumber()));
             wiersz.setP7(line.description());
+            if (line.gtin() != null) {
+                wiersz.setGTIN(line.gtin());
+            }
+            if (line.pkwiu() != null) {
+                wiersz.setPKWiU(line.pkwiu());
+            }
             if (line.unitOfMeasure() != null) {
                 wiersz.setP8A(line.unitOfMeasure());
             }
@@ -522,6 +532,12 @@ public final class Fa2Invoice implements Invoice {
             }
             wiersz.setP11(line.netAmount());
             wiersz.setP12(line.vatRate());
+            if (line.grossAmount() != null) {
+                wiersz.setP11A(line.grossAmount());
+            }
+            if (line.vatAmount() != null) {
+                wiersz.setP11Vat(line.vatAmount());
+            }
             return wiersz;
         }
 
