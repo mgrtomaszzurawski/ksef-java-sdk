@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatExemption;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TAdresFa2;
@@ -320,9 +321,41 @@ public final class Fa2Invoice implements Invoice {
         private final List<InvoiceLineItem> lineItems = new ArrayList<>();
         private final List<InvoiceCorrectionReference> correctionReferences = new ArrayList<>();
         private BigDecimal totalGrossAmount;
+        private @Nullable LocalDate deliveryDate;
+        private @Nullable LocalDate paymentDueDate;
+        private @Nullable String paymentMethodCode;
+        private @Nullable VatExemption vatExemption;
         private Consumer<Faktura> customizer;
 
         Builder() {
+        }
+
+        /** Delivery / service-completion date ({@code Fa/P_6}) — optional. */
+        public Builder deliveryDate(LocalDate value) {
+            this.deliveryDate = value;
+            return this;
+        }
+
+        /** Payment due date ({@code Fa/Platnosc/TerminPlatnosci/Termin}) — optional. */
+        public Builder paymentDueDate(LocalDate value) {
+            this.paymentDueDate = value;
+            return this;
+        }
+
+        /** Payment-method code ({@code Fa/Platnosc/FormaPlatnosci}) — optional. */
+        public Builder paymentMethodCode(String value) {
+            this.paymentMethodCode = value;
+            return this;
+        }
+
+        /**
+         * VAT exemption basis ({@code Fa/Adnotacje/Zwolnienie}) — optional.
+         * Sets {@code P_19A/B/C} per record fields and clears the default
+         * {@code P_19N=TRUE} flag.
+         */
+        public Builder vatExemption(VatExemption value) {
+            this.vatExemption = value;
+            return this;
         }
 
         /**
@@ -485,7 +518,13 @@ public final class Fa2Invoice implements Invoice {
             faContent.setP2(invoiceNumber);
             faContent.setP15(totalGrossAmount);
             faContent.setRodzajFaktury(rodzajFaktury);
-            faContent.setAdnotacje(buildDefaultAdnotacje());
+            if (deliveryDate != null) {
+                faContent.setP6(toGregorianDate(deliveryDate));
+            }
+            faContent.setAdnotacje(buildAdnotacje(vatExemption));
+            if (paymentDueDate != null || paymentMethodCode != null) {
+                faContent.setPlatnosc(buildPlatnosc(paymentDueDate, paymentMethodCode));
+            }
             for (InvoiceLineItem line : lineItems) {
                 faContent.getFaWiersz().add(buildLineItem(line));
             }
@@ -495,7 +534,8 @@ public final class Fa2Invoice implements Invoice {
             return faContent;
         }
 
-        private static Faktura.Fa.Adnotacje buildDefaultAdnotacje() {
+        private static Faktura.Fa.Adnotacje buildAdnotacje(
+                @Nullable VatExemption exemption) {
             Faktura.Fa.Adnotacje adnotacje = new Faktura.Fa.Adnotacje();
             adnotacje.setP16(FLAG_FALSE);
             adnotacje.setP17(FLAG_FALSE);
@@ -503,7 +543,19 @@ public final class Fa2Invoice implements Invoice {
             adnotacje.setP18A(FLAG_FALSE);
             adnotacje.setP23(FLAG_FALSE);
             Faktura.Fa.Adnotacje.Zwolnienie zwolnienie = new Faktura.Fa.Adnotacje.Zwolnienie();
-            zwolnienie.setP19N(FLAG_TRUE);
+            if (exemption == null) {
+                zwolnienie.setP19N(FLAG_TRUE);
+            } else {
+                if (exemption.legalBasisArticle() != null) {
+                    zwolnienie.setP19A(exemption.legalBasisArticle());
+                }
+                if (exemption.legalBasisDirective() != null) {
+                    zwolnienie.setP19B(exemption.legalBasisDirective());
+                }
+                if (exemption.otherReason() != null) {
+                    zwolnienie.setP19C(exemption.otherReason());
+                }
+            }
             adnotacje.setZwolnienie(zwolnienie);
             Faktura.Fa.Adnotacje.NoweSrodkiTransportu nowe = new Faktura.Fa.Adnotacje.NoweSrodkiTransportu();
             nowe.setP22N(FLAG_TRUE);
@@ -512,6 +564,19 @@ public final class Fa2Invoice implements Invoice {
             pMarzy.setPPMarzyN(FLAG_TRUE);
             adnotacje.setPMarzy(pMarzy);
             return adnotacje;
+        }
+
+        private Faktura.Fa.Platnosc buildPlatnosc(@Nullable LocalDate dueDate, @Nullable String methodCode) {
+            Faktura.Fa.Platnosc platnosc = new Faktura.Fa.Platnosc();
+            if (methodCode != null) {
+                platnosc.setFormaPlatnosci(new BigInteger(methodCode));
+            }
+            if (dueDate != null) {
+                Faktura.Fa.Platnosc.TerminPlatnosci term = new Faktura.Fa.Platnosc.TerminPlatnosci();
+                term.setTermin(toGregorianDate(dueDate));
+                platnosc.getTerminPlatnosci().add(term);
+            }
+            return platnosc;
         }
 
         private static Faktura.Fa.FaWiersz buildLineItem(InvoiceLineItem line) {
