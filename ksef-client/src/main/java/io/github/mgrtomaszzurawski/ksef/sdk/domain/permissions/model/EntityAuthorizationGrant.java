@@ -19,6 +19,7 @@ public record EntityAuthorizationGrant(
         PermissionIdentifier authorizingEntityIdentifier,
         String authorizationScope,
         String description,
-        OffsetDateTime startDate) {
+        OffsetDateTime startDate,
+        @Nullable PermissionSubjectDetails subjectEntityDetails) {
 
 }

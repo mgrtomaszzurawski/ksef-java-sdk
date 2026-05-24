@@ -33,6 +33,8 @@ public record PersonPermission(
         String description,
         String permissionState,
         OffsetDateTime startDate,
-        @Nullable Boolean canDelegate) {
+        @Nullable Boolean canDelegate,
+        @Nullable PermissionSubjectDetails subjectPersonDetails,
+        @Nullable PermissionSubjectDetails subjectEntityDetails) {
 
 }

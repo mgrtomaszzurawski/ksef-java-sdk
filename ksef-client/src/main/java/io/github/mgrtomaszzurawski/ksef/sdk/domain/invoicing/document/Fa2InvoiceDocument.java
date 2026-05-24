@@ -8,6 +8,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatExemption;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateBucket;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateSum;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.jaxb.JaxbDeepClone;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TNaglowek;
@@ -61,6 +64,11 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final Optional<BigDecimal> netTotal;
     private final @Nullable String invoiceTypeCode;
     private final List<InvoiceLineItem> lineItems;
+    private final @Nullable LocalDate deliveryDate;
+    private final @Nullable LocalDate paymentDueDate;
+    private final @Nullable String paymentMethodCode;
+    private final @Nullable VatExemption vatExemption;
+    private final List<VatRateSum> vatBreakdown;
 
     Fa2InvoiceDocument(Faktura faktura, byte[] xmlBytes) {
         this.faktura = Objects.requireNonNull(faktura, InvoiceDocumentMessages.ERR_NULL_FAKTURA);
@@ -83,6 +91,11 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.netTotal = fa.netTotal;
         this.invoiceTypeCode = fa.invoiceTypeCode;
         this.lineItems = fa.lineItems;
+        this.deliveryDate = fa.deliveryDate;
+        this.paymentDueDate = fa.paymentDueDate;
+        this.paymentMethodCode = fa.paymentMethodCode;
+        this.vatExemption = fa.vatExemption;
+        this.vatBreakdown = fa.vatBreakdown;
     }
 
     private record HeaderSnapshot(@Nullable String systemCode,
@@ -123,10 +136,16 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                               @Nullable BigDecimal grossTotal,
                               Optional<BigDecimal> netTotal,
                               @Nullable String invoiceTypeCode,
-                              List<InvoiceLineItem> lineItems) {
+                              List<InvoiceLineItem> lineItems,
+                              @Nullable LocalDate deliveryDate,
+                              @Nullable LocalDate paymentDueDate,
+                              @Nullable String paymentMethodCode,
+                              @Nullable VatExemption vatExemption,
+                              List<VatRateSum> vatBreakdown) {
         static FaSnapshot from(Faktura.@Nullable Fa faContent) {
             if (faContent == null) {
-                return new FaSnapshot(null, null, null, null, Optional.empty(), null, List.of());
+                return new FaSnapshot(null, null, null, null, Optional.empty(), null,
+                        List.of(), null, null, null, null, List.of());
             }
             return new FaSnapshot(
                     faContent.getP2(),
@@ -135,7 +154,60 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                     faContent.getP15(),
                     Optional.ofNullable(faContent.getP131()),
                     faContent.getRodzajFaktury() != null ? faContent.getRodzajFaktury().value() : null,
-                    snapshotLineItems(faContent));
+                    snapshotLineItems(faContent),
+                    faContent.getP6() != null ? toLocalDate(faContent.getP6()) : null,
+                    extractPaymentDueDate(faContent.getPlatnosc()),
+                    extractPaymentMethodCode(faContent.getPlatnosc()),
+                    extractVatExemption(faContent.getAdnotacje()),
+                    extractVatBreakdown(faContent));
+        }
+    }
+
+    private static @Nullable LocalDate extractPaymentDueDate(Faktura.Fa.@Nullable Platnosc platnosc) {
+        if (platnosc == null || platnosc.getTerminPlatnosci() == null || platnosc.getTerminPlatnosci().isEmpty()) {
+            return null;
+        }
+        var first = platnosc.getTerminPlatnosci().get(0);
+        return first.getTermin() != null ? toLocalDate(first.getTermin()) : null;
+    }
+
+    private static @Nullable String extractPaymentMethodCode(Faktura.Fa.@Nullable Platnosc platnosc) {
+        if (platnosc == null || platnosc.getFormaPlatnosci() == null) {
+            return null;
+        }
+        return platnosc.getFormaPlatnosci().toString();
+    }
+
+    private static @Nullable VatExemption extractVatExemption(Faktura.Fa.@Nullable Adnotacje adnotacje) {
+        if (adnotacje == null || adnotacje.getZwolnienie() == null) {
+            return null;
+        }
+        var z = adnotacje.getZwolnienie();
+        if (z.getP19A() == null && z.getP19B() == null && z.getP19C() == null) {
+            return null;
+        }
+        return new VatExemption(z.getP19A(), z.getP19B(), z.getP19C());
+    }
+
+    private static List<VatRateSum> extractVatBreakdown(Faktura.Fa fa) {
+        List<VatRateSum> out = new ArrayList<>(10);
+        addBucket(out, VatRateBucket.STANDARD, fa.getP131(), fa.getP141());
+        addBucket(out, VatRateBucket.REDUCED_FIRST, fa.getP132(), fa.getP142());
+        addBucket(out, VatRateBucket.REDUCED_SECOND, fa.getP133(), fa.getP143());
+        addBucket(out, VatRateBucket.TAXI_LUMP_SUM, fa.getP134(), fa.getP144());
+        addBucket(out, VatRateBucket.SPECIAL_PROCEDURE, fa.getP135(), fa.getP145());
+        addBucket(out, VatRateBucket.EXEMPT, fa.getP137(), null);
+        addBucket(out, VatRateBucket.OUTSIDE_TERRITORY, fa.getP138(), null);
+        addBucket(out, VatRateBucket.INTRA_EU_SERVICES, fa.getP139(), null);
+        addBucket(out, VatRateBucket.REVERSE_CHARGE, fa.getP1310(), null);
+        addBucket(out, VatRateBucket.MARGIN_SCHEME, fa.getP1311(), null);
+        return List.copyOf(out);
+    }
+
+    private static void addBucket(List<VatRateSum> out, VatRateBucket bucket,
+                                  @Nullable BigDecimal net, @Nullable BigDecimal vat) {
+        if (net != null) {
+            out.add(new VatRateSum(bucket, net, vat));
         }
     }
 
@@ -228,6 +300,21 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
      * had no line items at construction.
      */
     public List<InvoiceLineItem> lineItems() { return lineItems; }
+
+    /** Delivery / service-completion date from {@code Fa/P_6}. Populated only when different from {@link #issueDate()}. */
+    public @Nullable LocalDate deliveryDate() { return deliveryDate; }
+
+    /** First {@code Fa/Platnosc/TerminPlatnosci/Termin} entry (multi-term schedules collapse to the first). */
+    public @Nullable LocalDate paymentDueDate() { return paymentDueDate; }
+
+    /** Payment-method code from {@code Fa/Platnosc/FormaPlatnosci} as a stable string (e.g. "1" cash, "2" card, "6" transfer). */
+    public @Nullable String paymentMethodCode() { return paymentMethodCode; }
+
+    /** VAT exemption basis from {@code Fa/Adnotacje/Zwolnienie}. Null when the invoice is not exempt. */
+    public @Nullable VatExemption vatExemption() { return vatExemption; }
+
+    /** VAT-rate breakdown summed from {@code Fa/P_13_x} + {@code Fa/P_14_x}. Empty list when none of the buckets has a non-null net amount. */
+    public List<VatRateSum> vatBreakdown() { return vatBreakdown; }
 
     private static List<InvoiceLineItem> snapshotLineItems(Faktura.@Nullable Fa faContent) {
         if (faContent == null || faContent.getFaWiersz() == null) {

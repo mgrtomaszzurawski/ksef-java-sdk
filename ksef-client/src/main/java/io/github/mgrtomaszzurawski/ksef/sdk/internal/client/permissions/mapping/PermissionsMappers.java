@@ -32,10 +32,17 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityRole;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EntityRoles;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermission;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.EuEntityPermissions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionEuEntityDetails;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionIdentifier;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.client.permissions.model.PermissionOperationResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionOperationStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PermissionSubjectDetails;
+import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsSubjectPersonDetailsRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsSubjectEntityDetailsRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsSubjectPersonByFingerprintDetailsRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsSubjectEntityByFingerprintDetailsRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsSubjectEntityByIdentifierDetailsRaw;
+import io.github.mgrtomaszzurawski.ksef.client.model.PermissionsEuEntityDetailsRaw;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermission;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonPermissions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model.PersonalPermission;
@@ -74,7 +81,8 @@ public final class PermissionsMappers {
         PermissionIdentifier authingEntityId = new PermissionIdentifier(authingRaw.getType().getValue(), authingRaw.getValue());
         String authScope = rawValue.getAuthorizationScope().getValue();
         return new EntityAuthorizationGrant(rawValue.getId(), authorId, authzEntityId, authingEntityId,
-                authScope, rawValue.getDescription(), rawValue.getStartDate());
+                authScope, rawValue.getDescription(), rawValue.getStartDate(),
+                toEntityDetailsByIdentifier(rawValue.getSubjectEntityDetails()));
     }
 
     public static EntityAuthorizationPermissions toEntityAuthorizationPermissions(QueryEntityAuthorizationPermissionsResponseRaw rawValue) {
@@ -115,7 +123,10 @@ public final class PermissionsMappers {
         String scope = rawValue.getPermissionScope().getValue();
         return new EuEntityPermission(rawValue.getId(), authorId, rawValue.getVatUeIdentifier(),
                 rawValue.getEuEntityName(), rawValue.getAuthorizedFingerprintIdentifier(),
-                scope, rawValue.getDescription(), rawValue.getStartDate());
+                scope, rawValue.getDescription(), rawValue.getStartDate(),
+                toPersonDetailsByFingerprint(rawValue.getSubjectPersonDetails()),
+                toEntityDetailsByFingerprint(rawValue.getSubjectEntityDetails()),
+                toEuEntityDetails(rawValue.getEuEntityDetails()));
     }
 
     public static EuEntityPermissions toEuEntityPermissions(QueryEuEntityPermissionsResponseRaw rawValue) {
@@ -145,15 +156,8 @@ public final class PermissionsMappers {
         PermissionIdentifier targetId = targetRaw != null
                 ? new PermissionIdentifier(targetRaw.getType().getValue(), targetRaw.getValue())
                 : null;
-        PermissionSubjectDetails personDetails = rawValue.getSubjectPersonDetails() != null
-                ? new PermissionSubjectDetails(
-                        rawValue.getSubjectPersonDetails().getFirstName(),
-                        rawValue.getSubjectPersonDetails().getLastName(), null)
-                : null;
-        PermissionSubjectDetails entityDetails = rawValue.getSubjectEntityDetails() != null
-                ? new PermissionSubjectDetails(null, null,
-                        rawValue.getSubjectEntityDetails().getFullName())
-                : null;
+        PermissionSubjectDetails personDetails = toPersonDetails(rawValue.getSubjectPersonDetails());
+        PermissionSubjectDetails entityDetails = toEntityDetails(rawValue.getSubjectEntityDetails());
         String scope = rawValue.getPermissionScope().getValue();
         String state = rawValue.getPermissionState().getValue();
         return new PersonalPermission(rawValue.getId(), ctxId, authzId, targetId, scope,
@@ -182,7 +186,9 @@ public final class PermissionsMappers {
         String scope = rawValue.getPermissionScope().getValue();
         String state = rawValue.getPermissionState().getValue();
         return new PersonPermission(rawValue.getId(), authzId, ctxId, targetId, authorId,
-                scope, rawValue.getDescription(), state, rawValue.getStartDate(), rawValue.getCanDelegate());
+                scope, rawValue.getDescription(), state, rawValue.getStartDate(), rawValue.getCanDelegate(),
+                toPersonDetails(rawValue.getSubjectPersonDetails()),
+                toEntityDetails(rawValue.getSubjectEntityDetails()));
     }
 
     public static PersonPermissions toPersonPermissions(QueryPersonPermissionsResponseRaw rawValue) {
@@ -211,7 +217,8 @@ public final class PermissionsMappers {
         PermissionIdentifier authorId = new PermissionIdentifier(authorRaw.getType().getValue(), authorRaw.getValue());
         String scope = rawValue.getPermissionScope().getValue();
         return new SubunitPermission(rawValue.getId(), authzId, subunitId, authorId,
-                scope, rawValue.getDescription(), rawValue.getSubunitName(), rawValue.getStartDate());
+                scope, rawValue.getDescription(), rawValue.getSubunitName(), rawValue.getStartDate(),
+                toPersonDetails(rawValue.getSubjectPersonDetails()));
     }
 
     public static SubunitPermissions toSubunitPermissions(QuerySubunitPermissionsResponseRaw rawValue) {
@@ -219,4 +226,79 @@ public final class PermissionsMappers {
         return new SubunitPermissions(mapped, rawValue.getHasMore());
     }
 
+    // ===== Subject-details helpers =====
+
+    static PermissionSubjectDetails toPersonDetails(PermissionsSubjectPersonDetailsRaw raw) {
+        if (raw == null) {
+            return null;
+        }
+        var pid = raw.getPersonIdentifier();
+        var doc = raw.getIdDocument();
+        return new PermissionSubjectDetails(
+                raw.getFirstName(), raw.getLastName(), null,
+                pid == null ? null : pid.getType().getValue(),
+                pid == null ? null : pid.getValue(),
+                raw.getBirthDate(),
+                doc == null ? null : doc.getType(),
+                doc == null ? null : doc.getNumber(),
+                doc == null ? null : doc.getCountry(),
+                null);
+    }
+
+    static PermissionSubjectDetails toPersonDetailsByFingerprint(PermissionsSubjectPersonByFingerprintDetailsRaw raw) {
+        if (raw == null) {
+            return null;
+        }
+        var pid = raw.getPersonIdentifier();
+        var doc = raw.getIdDocument();
+        return new PermissionSubjectDetails(
+                raw.getFirstName(), raw.getLastName(), null,
+                pid == null ? null : pid.getType().getValue(),
+                pid == null ? null : pid.getValue(),
+                raw.getBirthDate(),
+                doc == null ? null : doc.getType(),
+                doc == null ? null : doc.getNumber(),
+                doc == null ? null : doc.getCountry(),
+                null);
+    }
+
+    static PermissionSubjectDetails toEntityDetails(PermissionsSubjectEntityDetailsRaw raw) {
+        if (raw == null) {
+            return null;
+        }
+        return new PermissionSubjectDetails(
+                null, null, raw.getFullName(),
+                null, null, null,
+                null, null, null,
+                raw.getAddress());
+    }
+
+    static PermissionSubjectDetails toEntityDetailsByFingerprint(PermissionsSubjectEntityByFingerprintDetailsRaw raw) {
+        if (raw == null) {
+            return null;
+        }
+        return new PermissionSubjectDetails(
+                null, null, raw.getFullName(),
+                null, null, null,
+                null, null, null,
+                raw.getAddress());
+    }
+
+    static PermissionSubjectDetails toEntityDetailsByIdentifier(PermissionsSubjectEntityByIdentifierDetailsRaw raw) {
+        if (raw == null) {
+            return null;
+        }
+        return new PermissionSubjectDetails(
+                null, null, raw.getFullName(),
+                null, null, null,
+                null, null, null,
+                null);
+    }
+
+    static PermissionEuEntityDetails toEuEntityDetails(PermissionsEuEntityDetailsRaw raw) {
+        if (raw == null) {
+            return null;
+        }
+        return new PermissionEuEntityDetails(raw.getFullName(), raw.getAddress());
+    }
 }

@@ -154,7 +154,17 @@ public final class InvoicingMappers {
                 rawValue.getHasAttachment(),
                 rawValue.getInvoiceHash(),
                 rawValue.getHashOfCorrectedInvoice(),
-                subjects);
+                subjects,
+                toInvoiceAuthorizedSubject(rawValue.getAuthorizedSubject()));
+    }
+
+    private static io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceAuthorizedSubject
+            toInvoiceAuthorizedSubject(io.github.mgrtomaszzurawski.ksef.client.model.InvoiceMetadataAuthorizedSubjectRaw raw) {
+        if (raw == null) {
+            return null;
+        }
+        return new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceAuthorizedSubject(
+                raw.getNip(), raw.getName(), raw.getRole());
     }
 
     public static InvoiceMetadataResult toInvoiceMetadataResult(QueryInvoicesMetadataResponseRaw rawValue) {

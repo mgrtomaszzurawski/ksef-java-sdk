@@ -81,7 +81,7 @@ class InvoiceMetadataTest {
         InvoiceMetadata metadata = new InvoiceMetadata(
                 KSEF_NUMBER, INVOICE_NUMBER, ISSUE_DATE, INVOICING_DATE,
                 INVOICING_DATE, INVOICING_DATE, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, mutable);
+                null, null, null, null, null, null, null, null, null, mutable, null);
         // Adding to the original list after construction must not affect the snapshot.
         assertEquals(0, metadata.thirdSubjects().size());
     }
@@ -91,7 +91,7 @@ class InvoiceMetadataTest {
         InvoiceMetadata metadata = new InvoiceMetadata(
                 KSEF_NUMBER, INVOICE_NUMBER, ISSUE_DATE, INVOICING_DATE,
                 INVOICING_DATE, INVOICING_DATE, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
         assertEquals(0, metadata.thirdSubjects().size());
     }
 
@@ -140,6 +140,6 @@ class InvoiceMetadataTest {
                 INVOICING_DATE, INVOICING_DATE,
                 null, null, null, null, null, null,
                 null, null, null, null, null,
-                invoiceHash, correctionHash, List.of());
+                invoiceHash, correctionHash, List.of(), null);
     }
 }
