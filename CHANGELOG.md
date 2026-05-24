@@ -5,6 +5,103 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1-preview] — 2026-05-24
+
+### About this release
+
+Audit-driven typing expansion for FA(2)/FA(3) invoice wrappers and
+permissions / auth record projections. Single theme: every spec field a
+real-world consumer needs is now reachable through a flat typed
+accessor — no JAXB / Raw escape-hatch required for common B2B / retail
+/ fuel use cases.
+
+Pre-1.0 EXPERIMENTAL per `@API` on `KsefClient`; SemVer 0.x.y covers
+the record-arity bumps as breaking changes.
+
+### Added — FA(2)/FA(3) invoice line items (PR #92)
+
+- `InvoiceLineItem` arity 7 → 11. New fields: `gtin`, `pkwiu`,
+  `grossAmount` (P_11A), `vatAmount` (P_11Vat). Required for every
+  fuel / retail / B2B invoice; previously dropped to the
+  `unsafeJaxbView()` escape hatch.
+- Mappers in `Fa3InvoiceDocument`, `Fa2InvoiceDocument`, `Fa3Invoice`,
+  `Fa2Invoice` updated read + write sides symmetrically.
+
+### Added — FA(2)/FA(3) invoice wrapper accessors (PR #93)
+
+New types in `sdk.domain.invoicing.model`:
+- `VatExemption(legalBasisArticle, legalBasisDirective, otherReason)` —
+  basis for VAT exemption (`Fa/Adnotacje/Zwolnienie/P_19A/B/C`).
+- `VatRateBucket` enum (10 values: STANDARD, REDUCED_FIRST,
+  REDUCED_SECOND, TAXI_LUMP_SUM, SPECIAL_PROCEDURE, EXEMPT,
+  OUTSIDE_TERRITORY, INTRA_EU_SERVICES, REVERSE_CHARGE,
+  MARGIN_SCHEME) — stable enum over P_13_x / P_14_x positions.
+- `VatRateSum(bucket, netAmount, vatAmount)` — entry in the VAT
+  breakdown summary.
+- `InvoiceAuthorizedSubject(nip, name, role)` — issuer-on-behalf
+  pattern (bookkeeping firms acting as proxy for the seller).
+
+New accessors on `Fa3InvoiceDocument` + `Fa2InvoiceDocument`:
+- `deliveryDate()` — `Fa/P_6`, the date the buyer's VAT register uses.
+- `paymentDueDate()` + `paymentMethodCode()` —
+  `Fa/Platnosc/TerminPlatnosci/Termin` + `FormaPlatnosci`.
+- `vatExemption()` — null when not exempt.
+- `vatBreakdown()` — `List<VatRateSum>`, only non-null buckets surfaced.
+
+Builder setters added symmetrically:
+- `deliveryDate(LocalDate)`, `paymentDueDate(LocalDate)`,
+  `paymentMethodCode(String)`, `vatExemption(VatExemption)`.
+
+### Added — FA(2)/FA(3) invoice wrapper accessors (PR #94)
+
+- `InvoiceParty` arity 10 → 12. New fields: `email`, `phone` for the
+  party-contact channel (`DaneKontaktowe`). 7-arg convenience ctor
+  unchanged for the common Polish-no-contact case.
+- Read-side accessors on `Fa3InvoiceDocument` + `Fa2InvoiceDocument`:
+  - `sellerEmail()`, `sellerPhone()`, `sellerAddressL1()`,
+    `sellerAddressL2()`, `sellerCountryCode()`
+  - `buyerEmail()`, `buyerPhone()`, `buyerAddressL1()`,
+    `buyerAddressL2()`, `buyerCountryCode()`
+  - `buyerIsJst()`, `buyerIsVatGroup()` (FA(3) only)
+  - `systemInfo()` — `Naglowek/SystemInfo`
+  - `splitPayment()` — `Fa/Adnotacje/P_18A = 1` (MPP regime)
+- Builder setters: `splitPayment(boolean)`, `systemInfo(String)`.
+
+### Added — auth / metadata / permissions Raw → SDK projections (PR #93)
+
+- `AuthSession` arity 8 → 10. New fields: `authMethodCategory` and
+  `authMethodCode` — stable server-defined strings for programmatic
+  filtering / dispatch (the existing `authenticationMethod` is a
+  localised display label).
+- `InvoiceMetadata` arity 20 → 21. New field: `authorizedSubject` —
+  see `InvoiceAuthorizedSubject` above.
+- `PermissionSubjectDetails` arity 3 → 10. New fields:
+  `personIdentifierType`, `personIdentifierValue`, `birthDate`,
+  `idDocumentType`, `idDocumentNumber`, `idDocumentCountry`, `address`.
+  Disambiguators needed to verify "is this the right Jan Kowalski".
+- `PersonPermission` + `EuEntityPermission` + `EntityAuthorizationGrant`
+  + `SubunitPermission` each carry the relevant
+  `PermissionSubjectDetails` / `PermissionEuEntityDetails` fields the
+  Raw types expose but the SDK previously dropped. Asymmetry vs the
+  already-populated `PersonalPermission` resolved.
+- New `PermissionEuEntityDetails(fullName, address)` record.
+
+### Coordinates
+
+```xml
+<dependency>
+    <groupId>io.github.mgrtomaszzurawski</groupId>
+    <artifactId>ksef-client</artifactId>
+    <version>0.1.1-preview</version>
+</dependency>
+```
+
+Companion artifacts (transitive):
+- `io.github.mgrtomaszzurawski:ksef-xml-models:0.1.1-preview`
+- `io.github.mgrtomaszzurawski:ksef-rest-models:0.1.1-preview`
+
+---
+
 ## [0.1.0-preview] — 2026-05-21
 
 ### About this release
