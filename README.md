@@ -1,6 +1,6 @@
 # KSeF Java SDK
 
-> **UNOFFICIAL PREVIEW (0.1.0-preview)**
+> **UNOFFICIAL PREVIEW (0.1.1-preview)**
 >
 > This is a **solo-developed, unofficial** Java SDK for the Polish KSeF
 > e-invoicing system. **Not affiliated** with Ministerstwo Finansów,
@@ -21,7 +21,7 @@ OpenAPI-first Java SDK for the Polish National e-Invoicing System ([KSeF](https:
 
 REST models are generated from the official [CIRFMF/ksef-docs](https://github.com/CIRFMF/ksef-docs) OpenAPI specification; invoice XML models are generated from the published XSD schemas. A hand-written SDK overlay hides the protocol details (challenge-response auth, AES-256-CBC session encryption, XAdES-BASELINE-B signing, retry-with-backoff, batch upload + polling) behind a single facade.
 
-> **Status:** `0.1.0-preview` published to Maven Central. API surface is
+> **Status:** `0.1.1-preview` published to Maven Central. API surface is
 > EXPERIMENTAL per the `@API` annotation on `KsefClient`; `0.x` releases
 > may break it. The eventual 1.0.0 cut will drop the marker and lock the
 > contract. See [`CHANGELOG.md`](CHANGELOG.md) for the full release
@@ -99,14 +99,14 @@ Opening the folder via `File → Open Project` skips the Gradle import — sub-m
 <dependency>
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-client</artifactId>
-    <version>0.1.0-preview</version>
+    <version>0.1.1-preview</version>
 </dependency>
 ```
 
 **Gradle** (`build.gradle.kts`):
 
 ```kotlin
-implementation("io.github.mgrtomaszzurawski:ksef-client:0.1.0-preview")
+implementation("io.github.mgrtomaszzurawski:ksef-client:0.1.1-preview")
 ```
 
 ### Send an invoice
@@ -368,7 +368,7 @@ The SDK uses SLF4J. No logging backend is bundled — your application picks the
 
 What you'll see at `DEBUG`: HTTP method + URI, response status + elapsed ms, per-domain operation entry. Bodies are never logged (they carry NIPs, PESELs, JWT tokens, AES keys, full invoice XML — RODO violation if leaked).
 
-Note: building `KsefClient` emits one `WARN`-level log per construction in `0.1.0-preview` — a deliberate preview-status reminder that goes away with the `@API EXPERIMENTAL` marker at the 1.0.0 cut. Silence it by setting the `io.github.mgrtomaszzurawski.ksef.sdk.KsefClient` logger to `ERROR`.
+Note: building `KsefClient` emits one `WARN`-level log per construction in `0.1.1-preview` — a deliberate preview-status reminder that goes away with the `@API EXPERIMENTAL` marker at the 1.0.0 cut. Silence it by setting the `io.github.mgrtomaszzurawski.ksef.sdk.KsefClient` logger to `ERROR`.
 
 ## Concurrency and rate limits
 
@@ -418,7 +418,7 @@ Bundled official KSeF OpenAPI/XSD files (`ksef-client/openapi/open-api.json`, `k
 - ✅ 720+ unit + integration tests across 78 test classes (WireMock-mocked HTTP, full transport coverage)
 - ✅ JaCoCo coverage gate green at `INSTRUCTION ≥ 0.70`, `METHOD ≥ 0.75` bundle floor + per-class `METHOD = 1.00` ratchet on every `domain.*.builder.*Builder` and `domain.*.*Client` (`./gradlew check` → `ksef-client/build/reports/jacoco/`)
 - ✅ JSpecify null-safety annotations across all 29 exported `package-info` (ADR-017)
-- ✅ `0.1.0-preview` published to Maven Central (EXPERIMENTAL — `@API` annotation on `KsefClient`)
+- ✅ `0.1.1-preview` published to Maven Central (EXPERIMENTAL — `@API` annotation on `KsefClient`)
 
 - Release history: [`CHANGELOG.md`](CHANGELOG.md)
 - Architectural decisions: [`ADR/`](ADR/)

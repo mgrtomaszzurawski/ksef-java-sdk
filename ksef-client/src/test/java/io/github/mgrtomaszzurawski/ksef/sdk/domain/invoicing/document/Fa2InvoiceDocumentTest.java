@@ -98,8 +98,7 @@ class Fa2InvoiceDocumentTest {
                 .seller(new InvoiceParty(SELLER_NIP, "Acme", "00-001", "Warszawa", "Marszalkowska", "10", null))
                 .buyer(new InvoiceParty(BUYER_NIP, "Customer", "00-002", "Krakow", null, "5", null))
                 .totalGrossAmount(GROSS_AMOUNT)
-                .addLineItem(new InvoiceLineItem(1, "Consulting", "szt.",
-                        BigDecimal.ONE, NET_AMOUNT, NET_AMOUNT, VAT_RATE))
+                .addLineItem(new InvoiceLineItem(1, "Consulting", null, null, "szt.", BigDecimal.ONE, NET_AMOUNT, NET_AMOUNT, VAT_RATE, null, null))
                 .build();
     }
 }

@@ -60,8 +60,7 @@ public final class Fa3InvoiceExamples {
                 .seller(seller())
                 .buyer(buyer())
                 .totalGrossAmount(CONSULTING_GROSS)
-                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Consulting services",
-                        UNIT_HOUR, QUANTITY_ONE, CONSULTING_NET, CONSULTING_NET, VAT_23))
+                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Consulting services", null, null, UNIT_HOUR, QUANTITY_ONE, CONSULTING_NET, CONSULTING_NET, VAT_23, null, null))
                 .build();
     }
 
@@ -77,8 +76,7 @@ public final class Fa3InvoiceExamples {
                 .seller(seller())
                 .buyer(buyer())
                 .totalGrossAmount(GOODS_GROSS)
-                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Mug",
-                        UNIT_PIECE, QUANTITY_ONE, GOODS_NET, GOODS_NET, VAT_23))
+                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Mug", null, null, UNIT_PIECE, QUANTITY_ONE, GOODS_NET, GOODS_NET, VAT_23, null, null))
                 .build();
     }
 
@@ -98,8 +96,7 @@ public final class Fa3InvoiceExamples {
                 .correctionReference(new InvoiceCorrectionReference(
                         "FA/2025/0099", LocalDate.of(2025, 12, 1)))
                 .totalGrossAmount(CORRECTION_GROSS)
-                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Pricing correction",
-                        UNIT_PIECE, QUANTITY_ONE, CORRECTION_GROSS, CORRECTION_GROSS, VAT_23))
+                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Pricing correction", null, null, UNIT_PIECE, QUANTITY_ONE, CORRECTION_GROSS, CORRECTION_GROSS, VAT_23, null, null))
                 .build();
     }
 

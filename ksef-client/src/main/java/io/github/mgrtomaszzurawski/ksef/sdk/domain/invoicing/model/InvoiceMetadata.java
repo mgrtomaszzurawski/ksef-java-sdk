@@ -59,7 +59,8 @@ public record InvoiceMetadata(
         @Nullable Boolean hasAttachment,
         byte @Nullable [] invoiceHash,
         byte @Nullable [] hashOfCorrectedInvoice,
-        List<InvoiceThirdSubject> thirdSubjects) {
+        List<InvoiceThirdSubject> thirdSubjects,
+        @Nullable InvoiceAuthorizedSubject authorizedSubject) {
 
     public InvoiceMetadata {
         invoiceHash = invoiceHash == null ? null : invoiceHash.clone();
@@ -104,7 +105,8 @@ public record InvoiceMetadata(
                 && Objects.equals(hasAttachment, other.hasAttachment)
                 && Arrays.equals(invoiceHash, other.invoiceHash)
                 && Arrays.equals(hashOfCorrectedInvoice, other.hashOfCorrectedInvoice)
-                && Objects.equals(thirdSubjects, other.thirdSubjects);
+                && Objects.equals(thirdSubjects, other.thirdSubjects)
+                && Objects.equals(authorizedSubject, other.authorizedSubject);
     }
 
     @Override
@@ -112,7 +114,7 @@ public record InvoiceMetadata(
         return Objects.hash(ksefNumber, invoiceNumber, issueDate, invoicingDate,
                 acquisitionDate, permanentStorageDate, seller, buyer, netAmount, grossAmount,
                 vatAmount, currency, invoicingMode, invoiceType, formCode, selfInvoicing,
-                hasAttachment, thirdSubjects,
+                hasAttachment, thirdSubjects, authorizedSubject,
                 Arrays.hashCode(invoiceHash), Arrays.hashCode(hashOfCorrectedInvoice));
     }
 

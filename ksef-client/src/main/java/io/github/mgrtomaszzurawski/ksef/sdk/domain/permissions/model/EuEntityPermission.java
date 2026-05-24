@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An EU entity permission entry from query results.
@@ -19,6 +20,9 @@ public record EuEntityPermission(
         String authorizedFingerprintIdentifier,
         String permissionScope,
         String description,
-        OffsetDateTime startDate) {
+        OffsetDateTime startDate,
+        @Nullable PermissionSubjectDetails subjectPersonDetails,
+        @Nullable PermissionSubjectDetails subjectEntityDetails,
+        @Nullable PermissionEuEntityDetails euEntityDetails) {
 
 }

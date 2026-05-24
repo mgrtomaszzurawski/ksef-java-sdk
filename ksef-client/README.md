@@ -1,6 +1,6 @@
 # ksef-client
 
-> **UNOFFICIAL PREVIEW (0.1.0-preview)**
+> **UNOFFICIAL PREVIEW (0.1.1-preview)**
 >
 > This is a **solo-developed, unofficial** Java SDK for the Polish KSeF
 > e-invoicing system. **Not affiliated** with Ministerstwo Finansów,
@@ -27,7 +27,7 @@ see the [root README](../README.md) and the [`ADR/`](../ADR/) set.
 <dependency>
     <groupId>io.github.mgrtomaszzurawski</groupId>
     <artifactId>ksef-client</artifactId>
-    <version>0.1.0-preview</version>
+    <version>0.1.1-preview</version>
 </dependency>
 ```
 

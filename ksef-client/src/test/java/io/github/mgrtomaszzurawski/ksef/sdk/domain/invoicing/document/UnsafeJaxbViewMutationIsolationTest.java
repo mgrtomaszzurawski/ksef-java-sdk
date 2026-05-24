@@ -136,8 +136,7 @@ class UnsafeJaxbViewMutationIsolationTest {
                 .buyer(new InvoiceParty("9876543210", "Customer sp. z o.o.", "00-002",
                         "Krakow", null, "5", null))
                 .totalGrossAmount(new BigDecimal("123.00"))
-                .addLineItem(new InvoiceLineItem(1, "Consulting", "szt.", new BigDecimal("1"),
-                        new BigDecimal("100.00"), new BigDecimal("100.00"), "23"))
+                .addLineItem(new InvoiceLineItem(1, "Consulting", null, null, "szt.", new BigDecimal("1"), new BigDecimal("100.00"), new BigDecimal("100.00"), "23", null, null))
                 .build();
     }
 
@@ -150,8 +149,7 @@ class UnsafeJaxbViewMutationIsolationTest {
                 .buyer(new InvoiceParty("9876543210", "Customer sp. z o.o.", "00-002",
                         "Krakow", null, "5", null))
                 .totalGrossAmount(new BigDecimal("123.00"))
-                .addLineItem(new InvoiceLineItem(1, "Consulting", "szt.", new BigDecimal("1"),
-                        new BigDecimal("100.00"), new BigDecimal("100.00"), "23"))
+                .addLineItem(new InvoiceLineItem(1, "Consulting", null, null, "szt.", new BigDecimal("1"), new BigDecimal("100.00"), new BigDecimal("100.00"), "23", null, null))
                 .build();
     }
 
