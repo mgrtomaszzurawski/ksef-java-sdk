@@ -5,6 +5,7 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.permissions.model;
 
 import java.time.OffsetDateTime;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A subunit permission entry from query results.
@@ -19,6 +20,7 @@ public record SubunitPermission(
         String permissionScope,
         String description,
         String subunitName,
-        OffsetDateTime startDate) {
+        OffsetDateTime startDate,
+        @Nullable PermissionSubjectDetails subjectPersonDetails) {
 
 }

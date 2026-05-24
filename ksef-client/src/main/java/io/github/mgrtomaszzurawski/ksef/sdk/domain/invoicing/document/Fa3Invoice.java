@@ -542,6 +542,9 @@ public final class Fa3Invoice implements Invoice {
             TAdresFa3 address = new TAdresFa3();
             address.setKodKraju(TKodKraju.fromValue(party.resolvedCountryCode()));
             address.setAdresL1(buildAddressLine1(party));
+            if (party.addressL2() != null) {
+                address.setAdresL2(party.addressL2());
+            }
             return address;
         }
 

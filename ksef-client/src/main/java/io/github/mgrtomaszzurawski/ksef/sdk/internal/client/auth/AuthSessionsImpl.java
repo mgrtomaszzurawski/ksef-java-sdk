@@ -110,11 +110,13 @@ public final class AuthSessionsImpl implements AuthSessions {
     }
 
     private static AuthSession toAuthSession(AuthenticationListItem item) {
+        var info = item.authenticationMethodInfo();
         return new AuthSession(
                 item.referenceNumber(),
                 item.startDate(),
-                item.authenticationMethodInfo() == null
-                        ? null : item.authenticationMethodInfo().displayName(),
+                info == null ? null : info.displayName(),
+                info == null || info.category() == null ? null : info.category().name(),
+                info == null ? null : info.code(),
                 item.status(),
                 Boolean.TRUE.equals(item.tokenRedeemed()),
                 item.lastTokenRefreshDate(),

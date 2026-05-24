@@ -12,12 +12,12 @@ import org.jspecify.annotations.Nullable;
  * Generic invoice party (seller / buyer) shared between the FA(2) and
  * FA(3) typed builders.
  *
- * <p>Carries the minimum identifying information required to construct
- * a structurally valid {@code Podmiot1} (seller) or {@code Podmiot2}
- * (buyer) sub-element. Address fields are kept simple — Polish address
- * only — to satisfy the common-case build target. Consumers needing
- * foreign-address coverage or extended identification fields use
- * {@code Invoice.fromXml(...)} as the escape hatch.
+ * <p>Carries identifying information sufficient to construct a
+ * structurally valid {@code Podmiot1} (seller) or {@code Podmiot2}
+ * (buyer) sub-element. Structured Polish address fields cover the
+ * common case; {@link #addressL2()} is the wire-level second address
+ * line used for foreign addresses or for tenancy/lokal numbers that do
+ * not fit the structured shape.
  *
  * <p>For buyers ({@code Podmiot2}), the FA(3) XSD requires JST and GV
  * markers — JST = is this a sub-unit of a JST (Polish local-government
@@ -34,6 +34,10 @@ import org.jspecify.annotations.Nullable;
  * @param houseNumber building number (NrDomu)
  * @param countryCode ISO 3166-1 alpha-2 country code; defaults to
  *     {@code "PL"} when null
+ * @param addressL2 optional second address line ({@code AdresL2}) —
+ *     used for foreign addresses (where {@code AdresL1} structured
+ *     shape does not apply) and for cases where the consumer has the
+ *     address as flat strings rather than structured components
  * @param jst is this party a sub-unit of a JST (Polish local-government
  *     unit)? Used as {@code Podmiot2/JST} on FA(3). Ignored for
  *     {@code Podmiot1}. Defaults to {@code false}.
@@ -51,6 +55,7 @@ public record InvoiceParty(
         @Nullable String street,
         String houseNumber,
         @Nullable String countryCode,
+        @Nullable String addressL2,
         boolean jst,
         boolean vatGroup) {
 
@@ -77,9 +82,9 @@ public record InvoiceParty(
     }
 
     /**
-     * Convenience 7-arg constructor that defaults both {@link #jst()}
-     * and {@link #vatGroup()} to {@code false} — the common case for
-     * non-JST, non-VAT-group parties.
+     * Convenience 7-arg constructor that defaults {@link #addressL2()},
+     * {@link #jst()} and {@link #vatGroup()} — the common case for a
+     * Polish, non-JST, non-VAT-group party with structured address only.
      */
     public InvoiceParty(String nip,
                         String name,
@@ -88,7 +93,7 @@ public record InvoiceParty(
                         @Nullable String street,
                         String houseNumber,
                         @Nullable String countryCode) {
-        this(nip, name, postalCode, locality, street, houseNumber, countryCode, false, false);
+        this(nip, name, postalCode, locality, street, houseNumber, countryCode, null, false, false);
     }
 
     /**
