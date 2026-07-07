@@ -5,12 +5,15 @@
 package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.testfixtures.Fa3InvoiceFixtures;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import javax.xml.datatype.DatatypeFactory;
@@ -73,6 +76,62 @@ class CorrectionReadRegressionTest {
         assertEquals(REASON, doc.correctionReason());
         assertEquals(1, doc.correctionType());
         assertEquals(PERIOD, doc.correctedPeriod());
+    }
+
+    @Test
+    void fa2_whenCorrection_exposesCorrectedInvoiceAndContext() throws Exception {
+        io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura faktura = unmarshalFa2(minimalFa2Xml());
+        io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura.Fa fa = faktura.getFa();
+        fa.setPrzyczynaKorekty(REASON);
+        fa.setTypKorekty(TYPE);
+        fa.setOkresFaKorygowanej(PERIOD);
+
+        io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura.Fa.DaneFaKorygowanej dane =
+                new io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura.Fa.DaneFaKorygowanej();
+        dane.setNrFaKorygowanej(CORRECTED_NUMBER);
+        dane.setDataWystFaKorygowanej(DatatypeFactory.newInstance()
+                .newXMLGregorianCalendarDate(2026, 5, 1, javax.xml.datatype.DatatypeConstants.FIELD_UNDEFINED));
+        dane.setNrKSeFFaKorygowanej(CORRECTED_KSEF);
+        fa.getDaneFaKorygowanej().add(dane);
+
+        Fa2InvoiceDocument doc = Fa2InvoiceDocument.from(marshalFa2(faktura));
+
+        assertEquals(1, doc.correctedInvoices().size());
+        InvoiceCorrectionReference ref = doc.correctedInvoices().get(0);
+        assertEquals(CORRECTED_NUMBER, ref.originalInvoiceNumber());
+        assertEquals(CORRECTED_DATE, ref.originalInvoiceDate());
+        assertEquals(CORRECTED_KSEF, ref.originalKsefNumber());
+        assertEquals(REASON, doc.correctionReason());
+        assertEquals(1, doc.correctionType());
+        assertEquals(PERIOD, doc.correctedPeriod());
+    }
+
+    private static byte[] minimalFa2Xml() {
+        return Fa2Invoice.builder()
+                .invoiceNumber("FA/2026/FIXTURE/0001")
+                .issueDate(LocalDate.of(2026, 5, 11))
+                .seller(new InvoiceParty("1111111111", "Acme", "00-001", "Warszawa", "Marszalkowska", "10", null))
+                .buyer(new InvoiceParty("9876543210", "Customer", "00-002", "Krakow", null, "5", null))
+                .totalGrossAmount(new BigDecimal("123.00"))
+                .addLineItem(new InvoiceLineItem(1, "Consulting", null, null, "szt.",
+                        BigDecimal.ONE, new BigDecimal("100.00"), new BigDecimal("100.00"), "23", null, null))
+                .build()
+                .xml();
+    }
+
+    private static io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura unmarshalFa2(byte[] xml) throws Exception {
+        Unmarshaller unmarshaller =
+                JAXBContext.newInstance(io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura.class).createUnmarshaller();
+        return (io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura)
+                unmarshaller.unmarshal(new ByteArrayInputStream(xml));
+    }
+
+    private static byte[] marshalFa2(io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura faktura) throws Exception {
+        Marshaller marshaller =
+                JAXBContext.newInstance(io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura.class).createMarshaller();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        marshaller.marshal(faktura, out);
+        return out.toByteArray();
     }
 
     private static io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura unmarshal(byte[] xml) throws Exception {
