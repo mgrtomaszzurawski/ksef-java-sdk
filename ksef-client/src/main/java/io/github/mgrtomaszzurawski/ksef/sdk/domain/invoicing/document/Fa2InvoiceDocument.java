@@ -7,6 +7,7 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatExemption;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateBucket;
@@ -82,6 +83,10 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final @Nullable String paymentMethodCode;
     private final @Nullable VatExemption vatExemption;
     private final List<VatRateSum> vatBreakdown;
+    private final List<InvoiceCorrectionReference> correctedInvoices;
+    private final @Nullable String correctionReason;
+    private final @Nullable Integer correctionType;
+    private final @Nullable String correctedPeriod;
 
     Fa2InvoiceDocument(Faktura faktura, byte[] xmlBytes) {
         this.faktura = Objects.requireNonNull(faktura, InvoiceDocumentMessages.ERR_NULL_FAKTURA);
@@ -121,6 +126,10 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.paymentMethodCode = fa.paymentMethodCode;
         this.vatExemption = fa.vatExemption;
         this.vatBreakdown = fa.vatBreakdown;
+        this.correctedInvoices = fa.correctedInvoices;
+        this.correctionReason = fa.correctionReason;
+        this.correctionType = fa.correctionType;
+        this.correctedPeriod = fa.correctedPeriod;
     }
 
     private record HeaderSnapshot(@Nullable String systemCode,
@@ -149,7 +158,8 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         static PartySnapshot fromSeller(Faktura.@Nullable Podmiot1 podmiot) {
             TPodmiot1 identity = podmiot != null ? podmiot.getDaneIdentyfikacyjne() : null;
             TAdresFa2 adres = podmiot != null ? podmiot.getAdres() : null;
-            String email = null, phone = null;
+            String email = null;
+            String phone = null;
             if (podmiot != null && podmiot.getDaneKontaktowe() != null && !podmiot.getDaneKontaktowe().isEmpty()) {
                 var first = podmiot.getDaneKontaktowe().get(0);
                 email = first.getEmail();
@@ -167,7 +177,8 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         static PartySnapshot fromBuyer(Faktura.@Nullable Podmiot2 podmiot) {
             TPodmiot2 identity = podmiot != null ? podmiot.getDaneIdentyfikacyjne() : null;
             TAdresFa2 adres = podmiot != null ? podmiot.getAdres() : null;
-            String email = null, phone = null;
+            String email = null;
+            String phone = null;
             if (podmiot != null && podmiot.getDaneKontaktowe() != null && !podmiot.getDaneKontaktowe().isEmpty()) {
                 var first = podmiot.getDaneKontaktowe().get(0);
                 email = first.getEmail();
@@ -194,11 +205,16 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                               @Nullable LocalDate paymentDueDate,
                               @Nullable String paymentMethodCode,
                               @Nullable VatExemption vatExemption,
-                              List<VatRateSum> vatBreakdown) {
+                              List<VatRateSum> vatBreakdown,
+                              List<InvoiceCorrectionReference> correctedInvoices,
+                              @Nullable String correctionReason,
+                              @Nullable Integer correctionType,
+                              @Nullable String correctedPeriod) {
         static FaSnapshot from(Faktura.@Nullable Fa faContent) {
             if (faContent == null) {
                 return new FaSnapshot(null, null, null, null, Optional.empty(), null,
-                        List.of(), null, null, null, null, List.of());
+                        List.of(), null, null, null, null, List.of(),
+                        List.of(), null, null, null);
             }
             return new FaSnapshot(
                     faContent.getP2(),
@@ -212,8 +228,32 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                     extractPaymentDueDate(faContent.getPlatnosc()),
                     extractPaymentMethodCode(faContent.getPlatnosc()),
                     extractVatExemption(faContent.getAdnotacje()),
-                    extractVatBreakdown(faContent));
+                    extractVatBreakdown(faContent),
+                    extractCorrectedInvoices(faContent),
+                    faContent.getPrzyczynaKorekty(),
+                    faContent.getTypKorekty() != null ? faContent.getTypKorekty().intValue() : null,
+                    faContent.getOkresFaKorygowanej());
         }
+    }
+
+    private static List<InvoiceCorrectionReference> extractCorrectedInvoices(Faktura.Fa faContent) {
+        if (faContent.getDaneFaKorygowanej() == null || faContent.getDaneFaKorygowanej().isEmpty()) {
+            return List.of();
+        }
+        List<InvoiceCorrectionReference> refs = new ArrayList<>(faContent.getDaneFaKorygowanej().size());
+        for (Faktura.Fa.DaneFaKorygowanej dane : faContent.getDaneFaKorygowanej()) {
+            if (dane == null) {
+                continue;
+            }
+            // NrFaKorygowanej and DataWystFaKorygowanej are minOccurs=1 in the
+            // DaneFaKorygowanej XSD, so they are trusted non-null; a contract
+            // violation surfaces loudly rather than being masked.
+            refs.add(new InvoiceCorrectionReference(
+                    dane.getNrFaKorygowanej(),
+                    toLocalDate(dane.getDataWystFaKorygowanej()),
+                    dane.getNrKSeFFaKorygowanej()));
+        }
+        return List.copyOf(refs);
     }
 
     private static @Nullable LocalDate extractPaymentDueDate(Faktura.Fa.@Nullable Platnosc platnosc) {
@@ -242,11 +282,11 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         if (adnotacje == null || adnotacje.getZwolnienie() == null) {
             return null;
         }
-        var z = adnotacje.getZwolnienie();
-        if (z.getP19A() == null && z.getP19B() == null && z.getP19C() == null) {
+        var zwolnienie = adnotacje.getZwolnienie();
+        if (zwolnienie.getP19A() == null && zwolnienie.getP19B() == null && zwolnienie.getP19C() == null) {
             return null;
         }
-        return new VatExemption(z.getP19A(), z.getP19B(), z.getP19C());
+        return new VatExemption(zwolnienie.getP19A(), zwolnienie.getP19B(), zwolnienie.getP19C());
     }
 
     private static List<VatRateSum> extractVatBreakdown(Faktura.Fa fa) {
@@ -265,9 +305,9 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     }
 
     private static void addBucket(List<VatRateSum> out, VatRateBucket bucket,
-                                  @Nullable BigDecimal net, @Nullable BigDecimal vat) {
-        if (net != null) {
-            out.add(new VatRateSum(bucket, net, vat));
+                                  @Nullable BigDecimal netAmount, @Nullable BigDecimal vatAmount) {
+        if (netAmount != null) {
+            out.add(new VatRateSum(bucket, netAmount, vatAmount));
         }
     }
 
@@ -412,25 +452,40 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     /** VAT-rate breakdown summed from {@code Fa/P_13_x} + {@code Fa/P_14_x}. Empty list when none of the buckets has a non-null net amount. */
     public List<VatRateSum> vatBreakdown() { return vatBreakdown; }
 
+    /**
+     * Corrected-invoice references from {@code Fa/DaneFaKorygowanej}.
+     * Non-empty only on a correction ({@code RodzajFaktury} KOR / KOR_ZAL
+     * / KOR_ROZ); empty on an original invoice.
+     */
+    public List<InvoiceCorrectionReference> correctedInvoices() { return correctedInvoices; }
+
+    /** Correction reason from {@code Fa/PrzyczynaKorekty}. Null on an original invoice. */
+    public @Nullable String correctionReason() { return correctionReason; }
+
+    /** Correction type from {@code Fa/TypKorekty} (1/2/3). Null on an original invoice. */
+    public @Nullable Integer correctionType() { return correctionType; }
+
+    /** Corrected accounting period from {@code Fa/OkresFaKorygowanej}. Null when not supplied. */
+    public @Nullable String correctedPeriod() { return correctedPeriod; }
+
     private static List<InvoiceLineItem> snapshotLineItems(Faktura.@Nullable Fa faContent) {
         if (faContent == null || faContent.getFaWiersz() == null) {
             return List.of();
         }
         List<InvoiceLineItem> mapped = new ArrayList<>(faContent.getFaWiersz().size());
         for (Faktura.Fa.FaWiersz wiersz : faContent.getFaWiersz()) {
-            InvoiceLineItem item = mapLineItem(wiersz);
-            if (item != null) {
-                mapped.add(item);
+            if (wiersz != null) {
+                mapped.add(mapLineItem(wiersz));
             }
         }
         return List.copyOf(mapped);
     }
 
-    private static @Nullable InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
-        if (wiersz == null || wiersz.getP7() == null
-                || wiersz.getP11() == null || wiersz.getP12() == null) {
-            return null;
-        }
+    // Every FaWiersz maps to exactly one line item. P_7, P_11, P_11A,
+    // P_11Vat and P_12 are all minOccurs="0" in the FA(2) XSD, so any of
+    // them may be null (e.g. a gross-only line carries P_11A without
+    // P_11). Never drop a line — that would silently lose invoice data.
+    private static InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
         int rowNumber = wiersz.getNrWierszaFa() != null ? wiersz.getNrWierszaFa().intValue() : 1;
         return new InvoiceLineItem(
                 rowNumber,

@@ -6,7 +6,6 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 
 
 import java.math.BigDecimal;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -21,46 +20,48 @@ import org.jspecify.annotations.Nullable;
  * / {@link io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document.Fa2InvoiceDocument#unsafeJaxbView()}
  * JAXB escape hatch.
  *
+ * <p><strong>Nullability follows the FA(2)/FA(3) XSD.</strong> In both
+ * schemas {@code P_7}, {@code P_11}, {@code P_11A}, {@code P_11Vat} and
+ * {@code P_12} are all declared {@code minOccurs="0"}, so a valid
+ * {@code FaWiersz} may legitimately carry, for example, only a gross
+ * amount ({@code P_11A}) with no net ({@code P_11}). Every {@code FaWiersz}
+ * is mapped to exactly one {@code InvoiceLineItem}; the read path never
+ * drops a line, so the accessors below may return {@code null} where the
+ * source element was absent.
+ *
  * @param rowNumber row ordinal — 1-based, {@code NrWierszaFa}
- * @param description product / service description ({@code P_7})
+ * @param description product / service description ({@code P_7}) — may be null
  * @param gtin GTIN / barcode ({@code GTIN}) — may be null
  * @param pkwiu PKWiU classification ({@code PKWiU}) — may be null
  * @param unitOfMeasure unit symbol ({@code P_8A}) — may be null
  * @param quantity quantity ({@code P_8B}) — may be null
  * @param netUnitPrice unit price net ({@code P_9A}) — may be null
- * @param netAmount total net amount ({@code P_11})
+ * @param netAmount total net amount ({@code P_11}) — may be null on a
+ *     gross-only line
  * @param vatRate VAT rate token ({@code P_12}) — e.g. {@code "23"}, {@code "8"},
- *     {@code "5"}, {@code "0"}, {@code "zw"}, {@code "np"}
- * @param grossAmount total gross amount ({@code P_11A}) — may be null on FA(2)
- *     when the schema branch omits it; FA(3) typically always populates
- * @param vatAmount VAT amount ({@code P_11Vat}) — may be null; usually populated
- *     on FA(3) and on FA(2) write-side when explicitly set
+ *     {@code "5"}, {@code "0"}, {@code "zw"}, {@code "np"} — may be null
+ * @param grossAmount total gross amount ({@code P_11A}) — may be null
+ * @param vatAmount VAT amount ({@code P_11Vat}) — may be null
  *
  * @since 0.1.0
  */
 public record InvoiceLineItem(
         int rowNumber,
-        String description,
+        @Nullable String description,
         @Nullable String gtin,
         @Nullable String pkwiu,
         @Nullable String unitOfMeasure,
         @Nullable BigDecimal quantity,
         @Nullable BigDecimal netUnitPrice,
-        BigDecimal netAmount,
-        String vatRate,
+        @Nullable BigDecimal netAmount,
+        @Nullable String vatRate,
         @Nullable BigDecimal grossAmount,
         @Nullable BigDecimal vatAmount) {
 
-    private static final String ERR_NULL_DESCRIPTION = "description must not be null";
-    private static final String ERR_NULL_NET_AMOUNT = "netAmount must not be null";
-    private static final String ERR_NULL_VAT_RATE = "vatRate must not be null";
     private static final String ERR_BAD_ROW_NUMBER = "rowNumber must be >= 1";
     private static final int MIN_ROW_NUMBER = 1;
 
     public InvoiceLineItem {
-        Objects.requireNonNull(description, ERR_NULL_DESCRIPTION);
-        Objects.requireNonNull(netAmount, ERR_NULL_NET_AMOUNT);
-        Objects.requireNonNull(vatRate, ERR_NULL_VAT_RATE);
         if (rowNumber < MIN_ROW_NUMBER) {
             throw new IllegalArgumentException(ERR_BAD_ROW_NUMBER);
         }
