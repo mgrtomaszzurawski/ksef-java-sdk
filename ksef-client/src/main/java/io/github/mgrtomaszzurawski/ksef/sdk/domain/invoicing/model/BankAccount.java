@@ -17,7 +17,8 @@ import org.jspecify.annotations.Nullable;
  * @param swift SWIFT/BIC code ({@code SWIFT}) — null when domestic
  * @param ownAccountType split-payment own-account code
  *     ({@code RachunekWlasnyBanku}: 1 = purchased-receivables account,
- *     2 = collection-and-transfer account); null when not a bank's own account
+ *     2 = collection-and-transfer account, 3 = own-economy account); null
+ *     when not a bank's own account
  * @param bankName bank name ({@code NazwaBanku}) — null when not supplied
  * @param description free-text account description ({@code OpisRachunku})
  *

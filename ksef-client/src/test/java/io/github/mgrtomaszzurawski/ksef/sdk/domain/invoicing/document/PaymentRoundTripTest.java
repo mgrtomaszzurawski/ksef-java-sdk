@@ -205,4 +205,58 @@ class PaymentRoundTripTest {
         assertEquals("14 dni od daty dostawy", term.description());
         assertNull(term.quantity());
     }
+
+    @Test
+    void fa3_partialBranch_installmentFormsFactorAndOtherForm() {
+        // given / when — FA(3) partial branch with per-installment payment forms
+        // (coded + "other"), the top-level "other" form, a factor account, and a
+        // bank-account description — all mapping paths the other two tests skip.
+        byte[] xml = Fa3Invoice.builder()
+                .invoiceNumber("FA/2026/PAY/0003").issueDate(ISSUE_DATE)
+                .seller(seller()).buyer(buyer()).totalGrossAmount(new BigDecimal("123.00"))
+                .addLineItem(plainLine())
+                .paymentDueDate(DUE_DATE) // no methodCode -> top-level choice is free for PlatnoscInna
+                .customizeJaxb(faktura -> {
+                    var p = faktura.getFa().getPlatnosc();
+                    p.setZnacznikZaplatyCzesciowej((byte) 2);
+                    var zc1 = new io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura.Fa.Platnosc.ZaplataCzesciowa();
+                    zc1.setKwotaZaplatyCzesciowej(new BigDecimal("40.00"));
+                    zc1.setDataZaplatyCzesciowej(greg(PAID_DATE));
+                    zc1.setFormaPlatnosci(new BigInteger(METHOD_TRANSFER));
+                    p.getZaplataCzesciowa().add(zc1);
+                    var zc2 = new io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura.Fa.Platnosc.ZaplataCzesciowa();
+                    zc2.setKwotaZaplatyCzesciowej(new BigDecimal("10.00"));
+                    zc2.setDataZaplatyCzesciowej(greg(PAID_DATE));
+                    zc2.setPlatnoscInna(MARKER_YES);
+                    zc2.setOpisPlatnosci("barter");
+                    p.getZaplataCzesciowa().add(zc2);
+                    p.setPlatnoscInna(MARKER_YES);
+                    p.setOpisPlatnosci("kompensata");
+                    var factor = new io.github.mgrtomaszzurawski.ksef.xml.fa3.TRachunekBankowy();
+                    factor.setNrRB("PL27114020040000300201355387");
+                    p.getRachunekBankowyFaktora().add(factor);
+                    var rb = new io.github.mgrtomaszzurawski.ksef.xml.fa3.TRachunekBankowy();
+                    rb.setNrRB(IBAN);
+                    rb.setOpisRachunku("primary settlement");
+                    p.getRachunekBankowy().add(rb);
+                })
+                .build().xml();
+
+        assertNoXsdErrors(xml, FormCode.FA3);
+        InvoicePayment payment = Fa3InvoiceDocument.from(xml).payment();
+
+        // then
+        assertEquals(2, payment.partialPaymentStatus());
+        assertEquals(2, payment.partialPayments().size());
+        assertEquals(METHOD_TRANSFER, payment.partialPayments().get(0).methodCode());
+        assertNull(payment.partialPayments().get(0).otherForm());
+        assertTrue(payment.partialPayments().get(1).otherForm());
+        assertEquals("barter", payment.partialPayments().get(1).otherDescription());
+        assertTrue(payment.otherForm());
+        assertEquals("kompensata", payment.otherDescription());
+        assertNull(payment.methodCode());
+        assertEquals(1, payment.factorBankAccounts().size());
+        assertEquals("PL27114020040000300201355387", payment.factorBankAccounts().get(0).accountNumber());
+        assertEquals("primary settlement", payment.bankAccounts().get(0).description());
+    }
 }

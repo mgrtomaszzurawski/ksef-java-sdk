@@ -22,7 +22,8 @@ import org.jspecify.annotations.Nullable;
  * @param paid paid-in-full marker ({@code Zaplacono = 1}); null when not flagged
  * @param paymentDate date the invoice was paid ({@code DataZaplaty}); null when unpaid at issue
  * @param partialPaymentStatus partial-payment marker ({@code ZnacznikZaplatyCzesciowej}:
- *     1 = paid in part, 2 = paid in full across two or more installments); null when not flagged
+ *     1 = paid in part, 2 = paid in full across two or more installments); null when not flagged.
+ *     FA(2) models this as a single-choice marker, so it only ever emits 1 there
  * @param methodCode coded payment form ({@code FormaPlatnosci}, e.g. "1" cash, "2" card, "6" transfer); null when "other"
  * @param otherForm "other payment form" marker ({@code PlatnoscInna = 1}); null when a coded form is used
  * @param otherDescription free-text detail of the other form ({@code OpisPlatnosci}); null when a coded form is used

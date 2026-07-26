@@ -19,7 +19,8 @@ import org.jspecify.annotations.Nullable;
  *
  * @param amount installment amount ({@code KwotaZaplatyCzesciowej}) — mandatory
  * @param date date the installment was received
- *     ({@code DataZaplatyCzesciowej}) — null when not supplied
+ *     ({@code DataZaplatyCzesciowej}) — mandatory in the schema; nullable here
+ *     only to fail soft on malformed input
  * @param methodCode coded payment form ({@code FormaPlatnosci}, e.g. "1"
  *     cash, "2" card, "6" transfer) — null when the "other" form is used
  * @param otherForm "other payment form" marker ({@code PlatnoscInna = 1})
