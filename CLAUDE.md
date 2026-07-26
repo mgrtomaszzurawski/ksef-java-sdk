@@ -323,6 +323,33 @@ Server (.NET backend) returns structured validation errors:
 - No live KSeF calls in tests — all mocked
 - `TestCertificates.java` provides test X.509 certs/keys for crypto tests
 
+## Coverage tooling (`tools/coverage/`)
+
+Three deterministic, read-only measurement tools. A facade-method self-count
+lies (two facade methods over one endpoint self-count as two; a wired-but-
+untested op reads as "done"), so **measure at the OPERATION and FIELD level
+before claiming a bucket done, and state the REAL ratio** — do not trust a green
+number. These are reflection aids, **not** merge gates: they never run in the
+build or block a PR. Run from the repo root; all need `./gradlew
+:ksef-client:compileJava` first (the field tool reads bytecode). Full contract
+and precision bounds: `tools/coverage/README.md`.
+
+- **`endpoint-coverage.py`** — BREADTH. Of the 78 spec operations, how many does
+  a passing test DRIVE (WireMock stub/verify) vs merely WIRE (a `PATH_*` call
+  site, no test) vs leave ABSENT. `--absent` hides OK rows. Trust OK; WIRED is
+  prefix-resolved, so UNTESTED/ABSENT is a prompt to look.
+- **`field-coverage.py fa3|fa2|rest [--all]`** — DEPTH. Of the accessors the
+  generated model tree exposes (`javap` denominator), how many does the SDK
+  invoke (`javap -c` numerator). Emits the ABSENT-leaf list = the fields the
+  typed facade does not surface. `fa3`/`fa2` cover the JAXB invoice trees (the
+  KSeF-specific denominator); `rest` covers the OpenAPI `*Raw` types. UPPER
+  bound — the ABSENT list is the payload, not the percent.
+- **`live-e2e.sh [--yes]`** — fail-closed live write→read against
+  `api-demo.ksef.mf.gov.pl` (send one FA(3) invoice, read it back by KSeF
+  number). No credentials → BLOCK (exit 3), never a silent pass; the real send
+  is gated behind `--yes` (it sends a real demo invoice + triggers the per-NIP
+  cooldown).
+
 ## Key conventions
 
 ### KSeF-specific terminology
