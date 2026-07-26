@@ -48,6 +48,9 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 0.1.0
  */
+// Deliberate flat-accessor facade (ADR-030): one public getter per invoice
+// field is the design, so the public-member count is expected to be high.
+@SuppressWarnings("PMD.ExcessivePublicCount")
 public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** KSeF boolean marker: 1 = yes/true (2 = no/false; absent = not set). */
@@ -90,6 +93,14 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final @Nullable String correctionReason;
     private final @Nullable Integer correctionType;
     private final @Nullable String correctedPeriod;
+    private final @Nullable String issueLocality;
+    private final @Nullable BigDecimal taxExchangeRate;
+    private final @Nullable BigDecimal grossTotalBeforeCorrection;
+    private final @Nullable BigDecimal taxExchangeRateBeforeCorrection;
+    private final @Nullable String correctedInvoiceNumberReplacement;
+    private final @Nullable Boolean issuedToReceipt;
+    private final @Nullable Boolean relatedParty;
+    private final @Nullable Boolean exciseDutyRefund;
 
     Fa2InvoiceDocument(Faktura faktura, byte[] xmlBytes) {
         this.faktura = Objects.requireNonNull(faktura, InvoiceDocumentMessages.ERR_NULL_FAKTURA);
@@ -133,6 +144,14 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.correctionReason = fa.correctionReason;
         this.correctionType = fa.correctionType;
         this.correctedPeriod = fa.correctedPeriod;
+        this.issueLocality = fa.issueLocality;
+        this.taxExchangeRate = fa.taxExchangeRate;
+        this.grossTotalBeforeCorrection = fa.grossTotalBeforeCorrection;
+        this.taxExchangeRateBeforeCorrection = fa.taxExchangeRateBeforeCorrection;
+        this.correctedInvoiceNumberReplacement = fa.correctedInvoiceNumberReplacement;
+        this.issuedToReceipt = fa.issuedToReceipt;
+        this.relatedParty = fa.relatedParty;
+        this.exciseDutyRefund = fa.exciseDutyRefund;
     }
 
     private record HeaderSnapshot(@Nullable String systemCode,
@@ -212,12 +231,21 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                               List<InvoiceCorrectionReference> correctedInvoices,
                               @Nullable String correctionReason,
                               @Nullable Integer correctionType,
-                              @Nullable String correctedPeriod) {
+                              @Nullable String correctedPeriod,
+                              @Nullable String issueLocality,
+                              @Nullable BigDecimal taxExchangeRate,
+                              @Nullable BigDecimal grossTotalBeforeCorrection,
+                              @Nullable BigDecimal taxExchangeRateBeforeCorrection,
+                              @Nullable String correctedInvoiceNumberReplacement,
+                              @Nullable Boolean issuedToReceipt,
+                              @Nullable Boolean relatedParty,
+                              @Nullable Boolean exciseDutyRefund) {
         static FaSnapshot from(Faktura.@Nullable Fa faContent) {
             if (faContent == null) {
                 return new FaSnapshot(null, null, null, null, Optional.empty(), null,
                         List.of(), null, null, null, null, List.of(),
-                        List.of(), null, null, null);
+                        List.of(), null, null, null,
+                        null, null, null, null, null, null, null, null);
             }
             return new FaSnapshot(
                     faContent.getP2(),
@@ -235,7 +263,15 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                     extractCorrectedInvoices(faContent),
                     faContent.getPrzyczynaKorekty(),
                     faContent.getTypKorekty() != null ? faContent.getTypKorekty().intValue() : null,
-                    faContent.getOkresFaKorygowanej());
+                    faContent.getOkresFaKorygowanej(),
+                    faContent.getP1M(),
+                    faContent.getKursWalutyZ(),
+                    faContent.getP15ZK(),
+                    faContent.getKursWalutyZK(),
+                    faContent.getNrFaKorygowany(),
+                    toBooleanFlag(faContent.getFP()),
+                    toBooleanFlag(faContent.getTP()),
+                    toBooleanFlag(faContent.getZwrotAkcyzy()));
         }
     }
 
@@ -293,24 +329,27 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     }
 
     private static List<VatRateSum> extractVatBreakdown(Faktura.Fa fa) {
-        List<VatRateSum> out = new ArrayList<>(10);
-        addBucket(out, VatRateBucket.STANDARD, fa.getP131(), fa.getP141());
-        addBucket(out, VatRateBucket.REDUCED_FIRST, fa.getP132(), fa.getP142());
-        addBucket(out, VatRateBucket.REDUCED_SECOND, fa.getP133(), fa.getP143());
-        addBucket(out, VatRateBucket.TAXI_LUMP_SUM, fa.getP134(), fa.getP144());
-        addBucket(out, VatRateBucket.SPECIAL_PROCEDURE, fa.getP135(), fa.getP145());
-        addBucket(out, VatRateBucket.EXEMPT, fa.getP137(), null);
-        addBucket(out, VatRateBucket.OUTSIDE_TERRITORY, fa.getP138(), null);
-        addBucket(out, VatRateBucket.INTRA_EU_SERVICES, fa.getP139(), null);
-        addBucket(out, VatRateBucket.REVERSE_CHARGE, fa.getP1310(), null);
-        addBucket(out, VatRateBucket.MARGIN_SCHEME, fa.getP1311(), null);
+        List<VatRateSum> out = new ArrayList<>(13);
+        addBucket(out, VatRateBucket.STANDARD, fa.getP131(), fa.getP141(), fa.getP141W());
+        addBucket(out, VatRateBucket.REDUCED_FIRST, fa.getP132(), fa.getP142(), fa.getP142W());
+        addBucket(out, VatRateBucket.REDUCED_SECOND, fa.getP133(), fa.getP143(), fa.getP143W());
+        addBucket(out, VatRateBucket.TAXI_LUMP_SUM, fa.getP134(), fa.getP144(), fa.getP144W());
+        addBucket(out, VatRateBucket.SPECIAL_PROCEDURE, fa.getP135(), fa.getP145(), null);
+        addBucket(out, VatRateBucket.ZERO_RATE_DOMESTIC, fa.getP1361(), null, null);
+        addBucket(out, VatRateBucket.ZERO_RATE_INTRA_EU, fa.getP1362(), null, null);
+        addBucket(out, VatRateBucket.ZERO_RATE_EXPORT, fa.getP1363(), null, null);
+        addBucket(out, VatRateBucket.EXEMPT, fa.getP137(), null, null);
+        addBucket(out, VatRateBucket.OUTSIDE_TERRITORY, fa.getP138(), null, null);
+        addBucket(out, VatRateBucket.INTRA_EU_SERVICES, fa.getP139(), null, null);
+        addBucket(out, VatRateBucket.REVERSE_CHARGE, fa.getP1310(), null, null);
+        addBucket(out, VatRateBucket.MARGIN_SCHEME, fa.getP1311(), null, null);
         return List.copyOf(out);
     }
 
-    private static void addBucket(List<VatRateSum> out, VatRateBucket bucket,
-                                  @Nullable BigDecimal netAmount, @Nullable BigDecimal vatAmount) {
+    private static void addBucket(List<VatRateSum> out, VatRateBucket bucket, @Nullable BigDecimal netAmount,
+                                  @Nullable BigDecimal vatAmount, @Nullable BigDecimal vatAmountConvertedToPln) {
         if (netAmount != null) {
-            out.add(new VatRateSum(bucket, netAmount, vatAmount));
+            out.add(new VatRateSum(bucket, netAmount, vatAmount, vatAmountConvertedToPln));
         }
     }
 
@@ -470,6 +509,30 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** Corrected accounting period from {@code Fa/OkresFaKorygowanej}. Null when not supplied. */
     public @Nullable String correctedPeriod() { return correctedPeriod; }
+
+    /** Place of issue from {@code Fa/P_1M}. Null when not supplied. */
+    public @Nullable String issueLocality() { return issueLocality; }
+
+    /** Currency exchange rate used to compute VAT from {@code Fa/KursWalutyZ} (foreign-currency invoices). Null when in PLN or not supplied. */
+    public @Nullable BigDecimal taxExchangeRate() { return taxExchangeRate; }
+
+    /** Gross total before correction from {@code Fa/P_15ZK} (advance-payment corrections). Null on an original invoice. */
+    public @Nullable BigDecimal grossTotalBeforeCorrection() { return grossTotalBeforeCorrection; }
+
+    /** Currency exchange rate used to compute VAT before correction from {@code Fa/KursWalutyZK}. Null when not supplied. */
+    public @Nullable BigDecimal taxExchangeRateBeforeCorrection() { return taxExchangeRateBeforeCorrection; }
+
+    /** Replacement invoice number from {@code Fa/NrFaKorygowany} — the correct number when a correction fixes a wrong corrected-invoice number. Null otherwise. */
+    public @Nullable String correctedInvoiceNumberReplacement() { return correctedInvoiceNumberReplacement; }
+
+    /** Receipt-linked invoice marker from {@code Fa/FP = 1} (art. 109 ust. 3d). Null when not flagged. */
+    public @Nullable Boolean issuedToReceipt() { return issuedToReceipt; }
+
+    /** Related-party transaction marker from {@code Fa/TP = 1} (existing links between buyer and seller). Null when not flagged. */
+    public @Nullable Boolean relatedParty() { return relatedParty; }
+
+    /** Excise-duty refund marker from {@code Fa/ZwrotAkcyzy = 1} (fuel excise refund for farmers). Null when not flagged. */
+    public @Nullable Boolean exciseDutyRefund() { return exciseDutyRefund; }
 
     private static List<InvoiceLineItem> snapshotLineItems(Faktura.@Nullable Fa faContent) {
         if (faContent == null || faContent.getFaWiersz() == null) {

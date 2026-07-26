@@ -362,6 +362,7 @@ public final class Fa3Invoice implements Invoice {
      * assembled JAXB root immediately before XML marshalling, so its
      * effects are captured in the resulting bytes and flat accessors.
      */
+    @SuppressWarnings("PMD.TooManyFields") // wide builder mirrors the flat FA(3) header (ADR-035)
     public static final class Builder {
 
         /** Default invoice issuance time when caller provides {@code issueDate} only. */
@@ -385,8 +386,15 @@ public final class Fa3Invoice implements Invoice {
         private static final byte FLAG_FALSE = 2;
         private static final byte FLAG_TRUE = 1;
 
-        private static Byte toByteFlag(Boolean value) {
-            return value ? FLAG_TRUE : FLAG_FALSE;
+        /**
+         * Map a nullable Boolean to an {@code etd:TWybor1} single-choice
+         * marker. That type permits only the value {@code 1} (yes); there
+         * is no "no" value — the marker's absence is the negative. So only
+         * {@code TRUE} emits {@code 1}; {@code FALSE} and {@code null} both
+         * leave the element unset (a null setter argument is a JAXB no-op).
+         */
+        private static @Nullable Byte toSingleChoiceMarker(@Nullable Boolean value) {
+            return Boolean.TRUE.equals(value) ? FLAG_TRUE : null;
         }
 
         private @Nullable LocalDate issueDate;
@@ -405,6 +413,10 @@ public final class Fa3Invoice implements Invoice {
         private @Nullable VatExemption vatExemption;
         private boolean splitPayment;
         private @Nullable String systemInfo;
+        private @Nullable BigDecimal taxExchangeRate;
+        private boolean issuedToReceipt;
+        private boolean relatedParty;
+        private boolean exciseDutyRefund;
         private @Nullable Consumer<Faktura> customizer;
 
         Builder() {
@@ -527,6 +539,30 @@ public final class Fa3Invoice implements Invoice {
         /** Issuing-system identifier ({@code Naglowek/SystemInfo}) — optional. Useful for traceability across ERP / SDK versions. */
         public Builder systemInfo(String value) {
             this.systemInfo = value;
+            return this;
+        }
+
+        /** Currency exchange rate used to compute VAT ({@code Fa/KursWalutyZ}) — optional (foreign-currency invoices). */
+        public Builder taxExchangeRate(BigDecimal value) {
+            this.taxExchangeRate = value;
+            return this;
+        }
+
+        /** Receipt-linked invoice marker ({@code Fa/FP}, art. 109 ust. 3d). Emits 1 when true; absent when false. */
+        public Builder issuedToReceipt(boolean value) {
+            this.issuedToReceipt = value;
+            return this;
+        }
+
+        /** Related-party transaction marker ({@code Fa/TP}) — existing links between buyer and seller. Emits 1 when true; absent when false. */
+        public Builder relatedParty(boolean value) {
+            this.relatedParty = value;
+            return this;
+        }
+
+        /** Excise-duty refund marker ({@code Fa/ZwrotAkcyzy}) — fuel excise refund for farmers. Emits 1 when true; absent when false. */
+        public Builder exciseDutyRefund(boolean value) {
+            this.exciseDutyRefund = value;
             return this;
         }
 
@@ -671,6 +707,17 @@ public final class Fa3Invoice implements Invoice {
             if (deliveryDate != null) {
                 faContent.setP6(toGregorianDate(deliveryDate));
             }
+            // Flat header scalars valid on any invoice: a null setter argument
+            // leaves the element unset (JAXB no-op), so these need no null-guard.
+            // The correction-context scalars (P_15ZK, KursWalutyZK,
+            // NrFaKorygowany) are read-only — they live in an XSD sub-sequence
+            // gated on a correction RodzajFaktury and requiring DaneFaKorygowanej,
+            // so a plain setter would emit invalid XML. Write them via
+            // customizeJaxb on a correction invoice.
+            faContent.setKursWalutyZ(taxExchangeRate);
+            faContent.setFP(toSingleChoiceMarker(issuedToReceipt));
+            faContent.setTP(toSingleChoiceMarker(relatedParty));
+            faContent.setZwrotAkcyzy(toSingleChoiceMarker(exciseDutyRefund));
             faContent.setAdnotacje(buildAdnotacje(vatExemption, splitPayment));
             if (paymentDueDate != null || paymentMethodCode != null) {
                 faContent.setPlatnosc(buildPlatnosc(paymentDueDate, paymentMethodCode));
@@ -767,15 +814,14 @@ public final class Fa3Invoice implements Invoice {
             wiersz.setKwotaAkcyzy(line.exciseAmount());
             wiersz.setKursWaluty(line.exchangeRate());
             wiersz.setP12XII(line.valueAddedTaxRate());
+            // P_12_Zal_15 and StanPrzed are etd:TWybor1 single-choice markers
+            // (value 1 only); toSingleChoiceMarker emits 1 for true and leaves
+            // the element unset for false/null, so no null-guard is needed.
+            wiersz.setP12Zal15(toSingleChoiceMarker(line.annex15()));
+            wiersz.setStanPrzed(toSingleChoiceMarker(line.correctionStateBefore()));
             // Converted scalars are guarded — the converters must not see null.
             if (line.deliveryDate() != null) {
                 wiersz.setP6A(toGregorianDate(line.deliveryDate()));
-            }
-            if (line.annex15() != null) {
-                wiersz.setP12Zal15(toByteFlag(line.annex15()));
-            }
-            if (line.correctionStateBefore() != null) {
-                wiersz.setStanPrzed(toByteFlag(line.correctionStateBefore()));
             }
             if (line.gtuCode() != null) {
                 wiersz.setGTU(io.github.mgrtomaszzurawski.ksef.xml.fa3.TGTU.fromValue(line.gtuCode()));
@@ -791,8 +837,14 @@ public final class Fa3Invoice implements Invoice {
             Faktura.Fa.DaneFaKorygowanej entry = new Faktura.Fa.DaneFaKorygowanej();
             entry.setDataWystFaKorygowanej(toGregorianDate(correction.originalInvoiceDate()));
             entry.setNrFaKorygowanej(correction.originalInvoiceNumber());
+            // DaneFaKorygowanej requires a choice marker: NrKSeF=1 plus the KSeF
+            // number for an invoice issued through KSeF, or NrKSeFN=1 for one
+            // issued outside it. Without the marker the element is XSD-invalid.
             if (correction.originalKsefNumber() != null) {
+                entry.setNrKSeF(FLAG_TRUE);
                 entry.setNrKSeFFaKorygowanej(correction.originalKsefNumber());
+            } else {
+                entry.setNrKSeFN(FLAG_TRUE);
             }
             return entry;
         }
