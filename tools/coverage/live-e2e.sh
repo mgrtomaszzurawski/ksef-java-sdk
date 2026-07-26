@@ -24,9 +24,9 @@
 # Exit codes:  0 = write->read PROVEN   1 = ran but NOT proven   3 = BLOCKED
 #
 # Usage:
-#   context/tooling/live-e2e.sh            # preflight + confirm prompt
-#   context/tooling/live-e2e.sh --yes      # skip the confirm prompt (CI/agent)
-#   KSEF_E2E_CONFIRM=1 context/tooling/live-e2e.sh
+#   tools/coverage/live-e2e.sh            # preflight + confirm prompt
+#   tools/coverage/live-e2e.sh --yes      # skip the confirm prompt (CI/agent)
+#   KSEF_E2E_CONFIRM=1 tools/coverage/live-e2e.sh
 
 set -u
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
