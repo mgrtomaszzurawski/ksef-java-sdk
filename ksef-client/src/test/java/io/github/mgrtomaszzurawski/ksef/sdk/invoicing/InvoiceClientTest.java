@@ -11,7 +11,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.config.KsefEnvironment;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.policy.RetryPolicy;
 import io.github.mgrtomaszzurawski.ksef.sdk.core.KsefNumber;
 import io.github.mgrtomaszzurawski.ksef.sdk.config.credentials.KsefTokenCredentials;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.PreparedInvoiceExport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.builder.InvoiceQueryBuilder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ExportScope;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceExportStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceMetadataResult;
 import io.github.mgrtomaszzurawski.ksef.sdk.exception.KsefNotFoundException;
@@ -21,6 +23,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.findAll;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -338,6 +341,35 @@ class InvoiceClientTest {
 
             // then
             assertEquals(KSEF_STATUS_OK, response.status().code());
+        }
+    }
+
+    @Test
+    void prepareExport_whenAuthenticated_postsExportRequestAndReturnsHandle(WireMockRuntimeInfo wmInfo) {
+        // given — the export-start endpoint accepts the encrypted request and
+        // returns a reference number for the async export job.
+        stubFor(post(urlEqualTo(PATH_EXPORTS))
+                .withHeader(TestHttpConstants.AUTHORIZATION_HEADER, equalTo(TestHttpConstants.BEARER_PREFIX + TEST_TOKEN))
+                .willReturn(aResponse()
+                        .withStatus(TestHttpConstants.HTTP_OK)
+                        .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
+                        .withBody(EXPORT_RESPONSE)));
+
+        try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
+            // prepare() fetches the SymmetricKeyEncryption cert to wrap the AES key.
+            io.github.mgrtomaszzurawski.ksef.sdk.KsefAuthFlowFixture.stubSymmetricKeyEncryptionCert();
+
+            // when
+            InvoiceQueryBuilder query = InvoiceQueryBuilder.seller()
+                    .invoicingDateFrom(java.time.OffsetDateTime.now().minusDays(1));
+            PreparedInvoiceExport prepared =
+                    ksef.invoices().export().prepare(query.build(), ExportScope.FULL_CONTENT);
+
+            // then
+            assertEquals(TEST_EXPORT_REF, prepared.referenceNumber());
+            verify(postRequestedFor(urlEqualTo(PATH_EXPORTS))
+                    .withRequestBody(matchingJsonPath("$.encryption"))
+                    .withRequestBody(matchingJsonPath("$.filters")));
         }
     }
 
