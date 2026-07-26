@@ -7,8 +7,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BankAccount;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.EarlyPaymentDiscount;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePayment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatExemption;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateBucket;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateSum;
@@ -18,6 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.xml.fa3.TAdresFa3;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TNaglowek;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TPodmiot1;
 import io.github.mgrtomaszzurawski.ksef.xml.fa3.TPodmiot2;
+import io.github.mgrtomaszzurawski.ksef.xml.fa3.TRachunekBankowy;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -87,8 +93,7 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
     private final @Nullable String invoiceTypeCode;
     private final List<InvoiceLineItem> lineItems;
     private final @Nullable LocalDate deliveryDate;
-    private final @Nullable LocalDate paymentDueDate;
-    private final @Nullable String paymentMethodCode;
+    private final @Nullable InvoicePayment payment;
     private final @Nullable VatExemption vatExemption;
     private final List<VatRateSum> vatBreakdown;
     private final List<InvoiceCorrectionReference> correctedInvoices;
@@ -140,8 +145,7 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         this.invoiceTypeCode = fa.invoiceTypeCode;
         this.lineItems = fa.lineItems;
         this.deliveryDate = fa.deliveryDate;
-        this.paymentDueDate = fa.paymentDueDate;
-        this.paymentMethodCode = fa.paymentMethodCode;
+        this.payment = fa.payment;
         this.vatExemption = fa.vatExemption;
         this.vatBreakdown = fa.vatBreakdown;
         this.correctedInvoices = fa.correctedInvoices;
@@ -300,11 +304,8 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
     /** Delivery / service-completion date from {@code Fa/P_6}. Populated only when different from {@link #issueDate()}. */
     public @Nullable LocalDate deliveryDate() { return deliveryDate; }
 
-    /** First {@code Fa/Platnosc/TerminPlatnosci/Termin} entry (multi-term schedules collapse to the first). */
-    public @Nullable LocalDate paymentDueDate() { return paymentDueDate; }
-
-    /** Payment-method code from {@code Fa/Platnosc/FormaPlatnosci} as a stable string (e.g. "1" cash, "2" card, "6" transfer). */
-    public @Nullable String paymentMethodCode() { return paymentMethodCode; }
+    /** Payment terms from {@code Fa/Platnosc} — due dates, method, bank accounts, installments, skonto. Null when the invoice carries no payment block. */
+    public @Nullable InvoicePayment payment() { return payment; }
 
     /** VAT exemption basis from {@code Fa/Adnotacje/Zwolnienie}. Null when the invoice is not exempt. */
     public @Nullable VatExemption vatExemption() { return vatExemption; }
@@ -428,8 +429,7 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
                               @Nullable String invoiceTypeCode,
                               List<InvoiceLineItem> lineItems,
                               @Nullable LocalDate deliveryDate,
-                              @Nullable LocalDate paymentDueDate,
-                              @Nullable String paymentMethodCode,
+                              @Nullable InvoicePayment payment,
                               @Nullable VatExemption vatExemption,
                               List<VatRateSum> vatBreakdown,
                               List<InvoiceCorrectionReference> correctedInvoices,
@@ -447,7 +447,7 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         static FaSnapshot from(Faktura.@Nullable Fa faContent) {
             if (faContent == null) {
                 return new FaSnapshot(null, null, null, null, Optional.empty(), null,
-                        List.of(), null, null, null, null, List.of(),
+                        List.of(), null, null, null, List.of(),
                         List.of(), null, null, null,
                         null, null, null, null, null, null, null, null);
             }
@@ -460,8 +460,7 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
                     faContent.getRodzajFaktury() != null ? faContent.getRodzajFaktury().value() : null,
                     snapshotLineItems(faContent),
                     faContent.getP6() != null ? toLocalDate(faContent.getP6()) : null,
-                    extractPaymentDueDate(faContent.getPlatnosc()),
-                    extractPaymentMethodCode(faContent.getPlatnosc()),
+                    extractPayment(faContent.getPlatnosc()),
                     extractVatExemption(faContent.getAdnotacje()),
                     extractVatBreakdown(faContent),
                     extractCorrectedInvoices(faContent),
@@ -499,19 +498,92 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         return List.copyOf(refs);
     }
 
-    private static @Nullable LocalDate extractPaymentDueDate(Faktura.Fa.@Nullable Platnosc platnosc) {
-        if (platnosc == null || platnosc.getTerminPlatnosci() == null || platnosc.getTerminPlatnosci().isEmpty()) {
+    private static @Nullable InvoicePayment extractPayment(Faktura.Fa.@Nullable Platnosc platnosc) {
+        if (platnosc == null) {
             return null;
         }
-        var first = platnosc.getTerminPlatnosci().get(0);
-        return first.getTermin() != null ? toLocalDate(first.getTermin()) : null;
+        return new InvoicePayment(
+                toBooleanFlag(platnosc.getZaplacono()),
+                platnosc.getDataZaplaty() != null ? toLocalDate(platnosc.getDataZaplaty()) : null,
+                platnosc.getZnacznikZaplatyCzesciowej() != null
+                        ? platnosc.getZnacznikZaplatyCzesciowej().intValue() : null,
+                platnosc.getFormaPlatnosci() != null ? platnosc.getFormaPlatnosci().toString() : null,
+                toBooleanFlag(platnosc.getPlatnoscInna()),
+                platnosc.getOpisPlatnosci(),
+                platnosc.getLinkDoPlatnosci(),
+                platnosc.getIPKSeF(),
+                extractPaymentTerms(platnosc),
+                extractPartialPayments(platnosc),
+                extractBankAccounts(platnosc.getRachunekBankowy()),
+                extractBankAccounts(platnosc.getRachunekBankowyFaktora()),
+                extractSkonto(platnosc.getSkonto()));
     }
 
-    private static @Nullable String extractPaymentMethodCode(Faktura.Fa.@Nullable Platnosc platnosc) {
-        if (platnosc == null || platnosc.getFormaPlatnosci() == null) {
+    private static List<PaymentTerm> extractPaymentTerms(Faktura.Fa.Platnosc platnosc) {
+        if (platnosc.getTerminPlatnosci() == null || platnosc.getTerminPlatnosci().isEmpty()) {
+            return List.of();
+        }
+        List<PaymentTerm> out = new ArrayList<>(platnosc.getTerminPlatnosci().size());
+        for (Faktura.Fa.Platnosc.TerminPlatnosci term : platnosc.getTerminPlatnosci()) {
+            if (term == null) {
+                continue;
+            }
+            Faktura.Fa.Platnosc.TerminPlatnosci.TerminOpis opis = term.getTerminOpis();
+            out.add(new PaymentTerm(
+                    term.getTermin() != null ? toLocalDate(term.getTermin()) : null,
+                    null,
+                    opis != null && opis.getIlosc() != null ? opis.getIlosc().intValue() : null,
+                    opis != null ? opis.getJednostka() : null,
+                    opis != null ? opis.getZdarzeniePoczatkowe() : null));
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<PartialPayment> extractPartialPayments(Faktura.Fa.Platnosc platnosc) {
+        if (platnosc.getZaplataCzesciowa() == null || platnosc.getZaplataCzesciowa().isEmpty()) {
+            return List.of();
+        }
+        List<PartialPayment> out = new ArrayList<>(platnosc.getZaplataCzesciowa().size());
+        for (Faktura.Fa.Platnosc.ZaplataCzesciowa part : platnosc.getZaplataCzesciowa()) {
+            if (part == null) {
+                continue;
+            }
+            out.add(new PartialPayment(
+                    part.getKwotaZaplatyCzesciowej(),
+                    part.getDataZaplatyCzesciowej() != null ? toLocalDate(part.getDataZaplatyCzesciowej()) : null,
+                    part.getFormaPlatnosci() != null ? part.getFormaPlatnosci().toString() : null,
+                    toBooleanFlag(part.getPlatnoscInna()),
+                    part.getOpisPlatnosci()));
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<BankAccount> extractBankAccounts(@Nullable List<TRachunekBankowy> accounts) {
+        if (accounts == null || accounts.isEmpty()) {
+            return List.of();
+        }
+        List<BankAccount> out = new ArrayList<>(accounts.size());
+        for (TRachunekBankowy account : accounts) {
+            if (account == null) {
+                continue;
+            }
+            out.add(new BankAccount(
+                    account.getNrRB(),
+                    account.getSWIFT(),
+                    account.getRachunekWlasnyBanku() != null ? account.getRachunekWlasnyBanku().intValue() : null,
+                    account.getNazwaBanku(),
+                    account.getOpisRachunku()));
+        }
+        return List.copyOf(out);
+    }
+
+    private static @Nullable EarlyPaymentDiscount extractSkonto(Faktura.Fa.Platnosc.@Nullable Skonto skonto) {
+        if (skonto == null) {
             return null;
         }
-        return platnosc.getFormaPlatnosci().toString();
+        // WarunkiSkonta and WysokoscSkonta are minOccurs=1 within Skonto, so
+        // they are trusted non-null; a contract violation surfaces loudly.
+        return new EarlyPaymentDiscount(skonto.getWarunkiSkonta(), skonto.getWysokoscSkonta());
     }
 
     private static boolean extractSplitPayment(Faktura.@Nullable Fa fa) {
