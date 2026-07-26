@@ -492,10 +492,14 @@ public final class Fa2Invoice implements Invoice {
             podmiot.setDaneIdentyfikacyjne(identity);
             podmiot.setAdres(buildAddress(party));
             if (party.email() != null || party.phone() != null) {
-                Faktura.Podmiot1.DaneKontaktowe dk = new Faktura.Podmiot1.DaneKontaktowe();
-                if (party.email() != null) dk.setEmail(party.email());
-                if (party.phone() != null) dk.setTelefon(party.phone());
-                podmiot.getDaneKontaktowe().add(dk);
+                Faktura.Podmiot1.DaneKontaktowe contact = new Faktura.Podmiot1.DaneKontaktowe();
+                if (party.email() != null) {
+                    contact.setEmail(party.email());
+                }
+                if (party.phone() != null) {
+                    contact.setTelefon(party.phone());
+                }
+                podmiot.getDaneKontaktowe().add(contact);
             }
             return podmiot;
         }
@@ -508,10 +512,14 @@ public final class Fa2Invoice implements Invoice {
             podmiot.setDaneIdentyfikacyjne(identity);
             podmiot.setAdres(buildAddress(party));
             if (party.email() != null || party.phone() != null) {
-                Faktura.Podmiot2.DaneKontaktowe dk = new Faktura.Podmiot2.DaneKontaktowe();
-                if (party.email() != null) dk.setEmail(party.email());
-                if (party.phone() != null) dk.setTelefon(party.phone());
-                podmiot.getDaneKontaktowe().add(dk);
+                Faktura.Podmiot2.DaneKontaktowe contact = new Faktura.Podmiot2.DaneKontaktowe();
+                if (party.email() != null) {
+                    contact.setEmail(party.email());
+                }
+                if (party.phone() != null) {
+                    contact.setTelefon(party.phone());
+                }
+                podmiot.getDaneKontaktowe().add(contact);
             }
             return podmiot;
         }
@@ -642,6 +650,9 @@ public final class Fa2Invoice implements Invoice {
             Faktura.Fa.DaneFaKorygowanej entry = new Faktura.Fa.DaneFaKorygowanej();
             entry.setDataWystFaKorygowanej(toGregorianDate(correction.originalInvoiceDate()));
             entry.setNrFaKorygowanej(correction.originalInvoiceNumber());
+            if (correction.originalKsefNumber() != null) {
+                entry.setNrKSeFFaKorygowanej(correction.originalKsefNumber());
+            }
             return entry;
         }
 

@@ -232,16 +232,16 @@ public final class PermissionsMappers {
         if (raw == null) {
             return null;
         }
-        var pid = raw.getPersonIdentifier();
-        var doc = raw.getIdDocument();
+        var personId = raw.getPersonIdentifier();
+        var idDocument = raw.getIdDocument();
         return new PermissionSubjectDetails(
                 raw.getFirstName(), raw.getLastName(), null,
-                pid == null ? null : pid.getType().getValue(),
-                pid == null ? null : pid.getValue(),
+                personId == null ? null : personId.getType().getValue(),
+                personId == null ? null : personId.getValue(),
                 raw.getBirthDate(),
-                doc == null ? null : doc.getType(),
-                doc == null ? null : doc.getNumber(),
-                doc == null ? null : doc.getCountry(),
+                idDocument == null ? null : idDocument.getType(),
+                idDocument == null ? null : idDocument.getNumber(),
+                idDocument == null ? null : idDocument.getCountry(),
                 null);
     }
 
@@ -249,16 +249,16 @@ public final class PermissionsMappers {
         if (raw == null) {
             return null;
         }
-        var pid = raw.getPersonIdentifier();
-        var doc = raw.getIdDocument();
+        var personId = raw.getPersonIdentifier();
+        var idDocument = raw.getIdDocument();
         return new PermissionSubjectDetails(
                 raw.getFirstName(), raw.getLastName(), null,
-                pid == null ? null : pid.getType().getValue(),
-                pid == null ? null : pid.getValue(),
+                personId == null ? null : personId.getType().getValue(),
+                personId == null ? null : personId.getValue(),
                 raw.getBirthDate(),
-                doc == null ? null : doc.getType(),
-                doc == null ? null : doc.getNumber(),
-                doc == null ? null : doc.getCountry(),
+                idDocument == null ? null : idDocument.getType(),
+                idDocument == null ? null : idDocument.getNumber(),
+                idDocument == null ? null : idDocument.getCountry(),
                 null);
     }
 
