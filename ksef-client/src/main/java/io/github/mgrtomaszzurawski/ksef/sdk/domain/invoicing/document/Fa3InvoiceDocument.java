@@ -50,6 +50,9 @@ import org.jspecify.annotations.Nullable;
  */
 public final class Fa3InvoiceDocument implements InvoiceDocument {
 
+    /** KSeF boolean marker: 1 = yes/true (2 = no/false; absent = not set). */
+    private static final int KSEF_TRUE_MARKER = 1;
+
     private final Faktura faktura;
     private final byte[] xmlBytes;
     private final @Nullable String systemCode;
@@ -510,18 +513,37 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
     // P_11). Never drop a line — that would silently lose invoice data.
     private static InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
         int rowNumber = wiersz.getNrWierszaFa() != null ? wiersz.getNrWierszaFa().intValue() : 1;
-        return new InvoiceLineItem(
-                rowNumber,
-                wiersz.getP7(),
-                wiersz.getGTIN(),
-                wiersz.getPKWiU(),
-                wiersz.getP8A(),
-                wiersz.getP8B(),
-                wiersz.getP9A(),
-                wiersz.getP11(),
-                wiersz.getP12(),
-                wiersz.getP11A(),
-                wiersz.getP11Vat());
+        return InvoiceLineItem.builder()
+                .rowNumber(rowNumber)
+                .description(wiersz.getP7())
+                .gtin(wiersz.getGTIN())
+                .pkwiu(wiersz.getPKWiU())
+                .unitOfMeasure(wiersz.getP8A())
+                .quantity(wiersz.getP8B())
+                .netUnitPrice(wiersz.getP9A())
+                .netAmount(wiersz.getP11())
+                .vatRate(wiersz.getP12())
+                .grossAmount(wiersz.getP11A())
+                .vatAmount(wiersz.getP11Vat())
+                .deliveryDate(wiersz.getP6A() != null ? toLocalDate(wiersz.getP6A()) : null)
+                .uuid(wiersz.getUUID())
+                .index(wiersz.getIndeks())
+                .cnCode(wiersz.getCN())
+                .pkobCode(wiersz.getPKOB())
+                .grossUnitPrice(wiersz.getP9B())
+                .discountAmount(wiersz.getP10())
+                .exciseAmount(wiersz.getKwotaAkcyzy())
+                .exchangeRate(wiersz.getKursWaluty())
+                .valueAddedTaxRate(wiersz.getP12XII())
+                .annex15(toBooleanFlag(wiersz.getP12Zal15()))
+                .correctionStateBefore(toBooleanFlag(wiersz.getStanPrzed()))
+                .gtuCode(wiersz.getGTU() != null ? wiersz.getGTU().value() : null)
+                .procedureMarking(wiersz.getProcedura() != null ? wiersz.getProcedura().value() : null)
+                .build();
+    }
+
+    private static @Nullable Boolean toBooleanFlag(@Nullable Byte marker) {
+        return marker != null ? marker == KSEF_TRUE_MARKER : null;
     }
 
     private static OffsetDateTime toOffsetDateTime(XMLGregorianCalendar gregorian) {

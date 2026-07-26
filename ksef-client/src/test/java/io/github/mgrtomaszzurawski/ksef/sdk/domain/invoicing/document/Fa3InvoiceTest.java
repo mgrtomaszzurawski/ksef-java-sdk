@@ -81,9 +81,10 @@ class Fa3InvoiceTest {
                     .buyer(new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty(
                             BUYER_NIP, "Customer sp. z o.o.", "00-002", "Krakow", null, "5", null))
                     .totalGrossAmount(GROSS_AMOUNT)
-                    .addLineItem(new io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem(
-                            1, DESCRIPTION, null, null, "szt.", new BigDecimal("1"),
-                            NET_AMOUNT, NET_AMOUNT, VAT_RATE, null, null))
+                    .addLineItem(io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem
+                            .builder().rowNumber(1).description(DESCRIPTION).unitOfMeasure("szt.")
+                            .quantity(new BigDecimal("1")).netUnitPrice(NET_AMOUNT).netAmount(NET_AMOUNT)
+                            .vatRate(VAT_RATE).build())
                     .build();
         }
     }

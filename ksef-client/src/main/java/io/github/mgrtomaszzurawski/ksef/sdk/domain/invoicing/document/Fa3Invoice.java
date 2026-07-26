@@ -65,6 +65,9 @@ import org.jspecify.annotations.Nullable;
  */
 public final class Fa3Invoice implements Invoice {
 
+    /** KSeF boolean marker: 1 = yes/true (2 = no/false; absent = not set). */
+    private static final int KSEF_TRUE_MARKER = 1;
+
     /** Wire-level XSD namespace for FA(3). Effective 2025-06-25. */
     static final String FA3_NAMESPACE = "http://crd.gov.pl/wzor/2025/06/25/13775/";
     /** Schema version FA(3). */
@@ -296,23 +299,41 @@ public final class Fa3Invoice implements Invoice {
     }
 
     private static @Nullable InvoiceLineItem mapLineItem(Faktura.Fa.FaWiersz wiersz) {
-        if (wiersz == null || wiersz.getP7() == null
-                || wiersz.getP11() == null || wiersz.getP12() == null) {
+        if (wiersz == null) {
             return null;
         }
         int rowNumber = wiersz.getNrWierszaFa() != null ? wiersz.getNrWierszaFa().intValue() : 1;
-        return new InvoiceLineItem(
-                rowNumber,
-                wiersz.getP7(),
-                wiersz.getGTIN(),
-                wiersz.getPKWiU(),
-                wiersz.getP8A(),
-                wiersz.getP8B(),
-                wiersz.getP9A(),
-                wiersz.getP11(),
-                wiersz.getP12(),
-                wiersz.getP11A(),
-                wiersz.getP11Vat());
+        return InvoiceLineItem.builder()
+                .rowNumber(rowNumber)
+                .description(wiersz.getP7())
+                .gtin(wiersz.getGTIN())
+                .pkwiu(wiersz.getPKWiU())
+                .unitOfMeasure(wiersz.getP8A())
+                .quantity(wiersz.getP8B())
+                .netUnitPrice(wiersz.getP9A())
+                .netAmount(wiersz.getP11())
+                .vatRate(wiersz.getP12())
+                .grossAmount(wiersz.getP11A())
+                .vatAmount(wiersz.getP11Vat())
+                .deliveryDate(wiersz.getP6A() != null ? toLocalDate(wiersz.getP6A()) : null)
+                .uuid(wiersz.getUUID())
+                .index(wiersz.getIndeks())
+                .cnCode(wiersz.getCN())
+                .pkobCode(wiersz.getPKOB())
+                .grossUnitPrice(wiersz.getP9B())
+                .discountAmount(wiersz.getP10())
+                .exciseAmount(wiersz.getKwotaAkcyzy())
+                .exchangeRate(wiersz.getKursWaluty())
+                .valueAddedTaxRate(wiersz.getP12XII())
+                .annex15(toBooleanFlag(wiersz.getP12Zal15()))
+                .correctionStateBefore(toBooleanFlag(wiersz.getStanPrzed()))
+                .gtuCode(wiersz.getGTU() != null ? wiersz.getGTU().value() : null)
+                .procedureMarking(wiersz.getProcedura() != null ? wiersz.getProcedura().value() : null)
+                .build();
+    }
+
+    private static @Nullable Boolean toBooleanFlag(@Nullable Byte marker) {
+        return marker != null ? marker == KSEF_TRUE_MARKER : null;
     }
 
     private static OffsetDateTime toOffsetDateTime(XMLGregorianCalendar gregorian) {
@@ -363,6 +384,10 @@ public final class Fa3Invoice implements Invoice {
 
         private static final byte FLAG_FALSE = 2;
         private static final byte FLAG_TRUE = 1;
+
+        private static Byte toByteFlag(Boolean value) {
+            return value ? FLAG_TRUE : FLAG_FALSE;
+        }
 
         private @Nullable LocalDate issueDate;
         private @Nullable String issueLocality;
@@ -730,6 +755,34 @@ public final class Fa3Invoice implements Invoice {
             }
             if (line.vatAmount() != null) {
                 wiersz.setP11Vat(line.vatAmount());
+            }
+            // Direct pass-through scalars: a null setter argument leaves the
+            // element unset (JAXB does not marshal it), so no null-guard needed.
+            wiersz.setUUID(line.uuid());
+            wiersz.setIndeks(line.index());
+            wiersz.setCN(line.cnCode());
+            wiersz.setPKOB(line.pkobCode());
+            wiersz.setP9B(line.grossUnitPrice());
+            wiersz.setP10(line.discountAmount());
+            wiersz.setKwotaAkcyzy(line.exciseAmount());
+            wiersz.setKursWaluty(line.exchangeRate());
+            wiersz.setP12XII(line.valueAddedTaxRate());
+            // Converted scalars are guarded — the converters must not see null.
+            if (line.deliveryDate() != null) {
+                wiersz.setP6A(toGregorianDate(line.deliveryDate()));
+            }
+            if (line.annex15() != null) {
+                wiersz.setP12Zal15(toByteFlag(line.annex15()));
+            }
+            if (line.correctionStateBefore() != null) {
+                wiersz.setStanPrzed(toByteFlag(line.correctionStateBefore()));
+            }
+            if (line.gtuCode() != null) {
+                wiersz.setGTU(io.github.mgrtomaszzurawski.ksef.xml.fa3.TGTU.fromValue(line.gtuCode()));
+            }
+            if (line.procedureMarking() != null) {
+                wiersz.setProcedura(io.github.mgrtomaszzurawski.ksef.xml.fa3.TOznaczenieProcedury
+                        .fromValue(line.procedureMarking()));
             }
             return wiersz;
         }

@@ -60,7 +60,10 @@ public final class Fa3InvoiceExamples {
                 .seller(seller())
                 .buyer(buyer())
                 .totalGrossAmount(CONSULTING_GROSS)
-                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Consulting services", null, null, UNIT_HOUR, QUANTITY_ONE, CONSULTING_NET, CONSULTING_NET, VAT_23, null, null))
+                .addLineItem(InvoiceLineItem.builder().rowNumber(FIRST_LINE)
+                        .description("Consulting services").unitOfMeasure(UNIT_HOUR)
+                        .quantity(QUANTITY_ONE).netUnitPrice(CONSULTING_NET).netAmount(CONSULTING_NET)
+                        .vatRate(VAT_23).build())
                 .build();
     }
 
@@ -76,7 +79,9 @@ public final class Fa3InvoiceExamples {
                 .seller(seller())
                 .buyer(buyer())
                 .totalGrossAmount(GOODS_GROSS)
-                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Mug", null, null, UNIT_PIECE, QUANTITY_ONE, GOODS_NET, GOODS_NET, VAT_23, null, null))
+                .addLineItem(InvoiceLineItem.builder().rowNumber(FIRST_LINE).description("Mug")
+                        .unitOfMeasure(UNIT_PIECE).quantity(QUANTITY_ONE).netUnitPrice(GOODS_NET)
+                        .netAmount(GOODS_NET).vatRate(VAT_23).build())
                 .build();
     }
 
@@ -96,7 +101,10 @@ public final class Fa3InvoiceExamples {
                 .correctionReference(new InvoiceCorrectionReference(
                         "FA/2025/0099", LocalDate.of(2025, 12, 1)))
                 .totalGrossAmount(CORRECTION_GROSS)
-                .addLineItem(new InvoiceLineItem(FIRST_LINE, "Pricing correction", null, null, UNIT_PIECE, QUANTITY_ONE, CORRECTION_GROSS, CORRECTION_GROSS, VAT_23, null, null))
+                .addLineItem(InvoiceLineItem.builder().rowNumber(FIRST_LINE)
+                        .description("Pricing correction").unitOfMeasure(UNIT_PIECE)
+                        .quantity(QUANTITY_ONE).netUnitPrice(CORRECTION_GROSS)
+                        .netAmount(CORRECTION_GROSS).vatRate(VAT_23).build())
                 .build();
     }
 
