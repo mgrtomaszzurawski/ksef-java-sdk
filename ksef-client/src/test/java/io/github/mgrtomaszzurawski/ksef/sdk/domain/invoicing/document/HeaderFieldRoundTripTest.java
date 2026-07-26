@@ -222,6 +222,8 @@ class HeaderFieldRoundTripTest {
         assertNoXsdErrors(withoutKsef, FormCode.FA3);
         assertEquals(ORIGINAL_KSEF_NUMBER,
                 Fa3InvoiceDocument.from(withKsef).correctedInvoices().get(0).originalKsefNumber());
+        // the non-KSeF branch (NrKSeFN=1) carries no corrected KSeF number
+        assertNull(Fa3InvoiceDocument.from(withoutKsef).correctedInvoices().get(0).originalKsefNumber());
     }
 
     @Test
@@ -240,6 +242,15 @@ class HeaderFieldRoundTripTest {
                     fa.setP131(new BigDecimal("100.00"));
                     fa.setP141(new BigDecimal("23.00"));
                     fa.setP141W(new BigDecimal("99.36"));
+                    fa.setP132(new BigDecimal("100.00"));
+                    fa.setP142(new BigDecimal("8.00"));
+                    fa.setP142W(new BigDecimal("34.57"));
+                    fa.setP133(new BigDecimal("100.00"));
+                    fa.setP143(new BigDecimal("5.00"));
+                    fa.setP143W(new BigDecimal("21.61"));
+                    fa.setP134(new BigDecimal("100.00"));
+                    fa.setP144(new BigDecimal("4.00"));
+                    fa.setP144W(new BigDecimal("17.28"));
                     fa.setP1361(new BigDecimal("10.00"));
                     fa.setP1362(new BigDecimal("20.00"));
                     fa.setP1363(new BigDecimal("30.00"));
@@ -250,14 +261,121 @@ class HeaderFieldRoundTripTest {
         assertNoXsdErrors(xml, FormCode.FA3);
         List<VatRateSum> breakdown = Fa3InvoiceDocument.from(xml).vatBreakdown();
 
-        // then
-        VatRateSum standard = bucket(breakdown, VatRateBucket.STANDARD);
-        assertEquals(0, new BigDecimal("23.00").compareTo(standard.vatAmount()));
-        assertEquals(0, new BigDecimal("99.36").compareTo(standard.vatAmountConvertedToPln()));
+        // then — every _W bucket carries its PLN-converted VAT
+        assertConvertedPln(breakdown, VatRateBucket.STANDARD, "23.00", "99.36");
+        assertConvertedPln(breakdown, VatRateBucket.REDUCED_FIRST, "8.00", "34.57");
+        assertConvertedPln(breakdown, VatRateBucket.REDUCED_SECOND, "5.00", "21.61");
+        assertConvertedPln(breakdown, VatRateBucket.TAXI_LUMP_SUM, "4.00", "17.28");
+        // zero-rate net-only buckets
         assertEquals(0, new BigDecimal("10.00").compareTo(bucket(breakdown, VatRateBucket.ZERO_RATE_DOMESTIC).netAmount()));
         assertEquals(0, new BigDecimal("20.00").compareTo(bucket(breakdown, VatRateBucket.ZERO_RATE_INTRA_EU).netAmount()));
         assertEquals(0, new BigDecimal("30.00").compareTo(bucket(breakdown, VatRateBucket.ZERO_RATE_EXPORT).netAmount()));
         assertNull(bucket(breakdown, VatRateBucket.ZERO_RATE_DOMESTIC).vatAmount());
+        assertNull(bucket(breakdown, VatRateBucket.ZERO_RATE_DOMESTIC).vatAmountConvertedToPln());
+    }
+
+    private static void assertConvertedPln(List<VatRateSum> breakdown, VatRateBucket b, String vat, String vatPln) {
+        VatRateSum sum = bucket(breakdown, b);
+        assertEquals(0, new BigDecimal(vat).compareTo(sum.vatAmount()));
+        assertEquals(0, new BigDecimal(vatPln).compareTo(sum.vatAmountConvertedToPln()));
+    }
+
+    // --- FA(2) parity for the two write-bug fixes + the read mappings (the FA2
+    //     copies are hand-duplicated, so they need their own coverage) ---
+
+    @Test
+    void fa2_singleChoiceMarkersFalse_produceValidXmlAndReadNull() {
+        byte[] xml = Fa2Invoice.builder()
+                .invoiceNumber("FA/2026/HDR/0013").issueDate(ISSUE_DATE)
+                .seller(seller()).buyer(buyer()).totalGrossAmount(GROSS_AMOUNT)
+                .addLineItem(InvoiceLineItem.builder().rowNumber(1).description("Consulting")
+                        .unitOfMeasure("szt.").quantity(BigDecimal.ONE).netUnitPrice(new BigDecimal("100.00"))
+                        .netAmount(new BigDecimal("100.00")).vatRate("23")
+                        .annex15(false).correctionStateBefore(false).build())
+                .issuedToReceipt(false).relatedParty(false).exciseDutyRefund(false)
+                .build().xml();
+
+        assertNoXsdErrors(xml, FormCode.FA2);
+        Fa2InvoiceDocument document = Fa2InvoiceDocument.from(xml);
+        assertNull(document.issuedToReceipt());
+        assertNull(document.relatedParty());
+        assertNull(document.exciseDutyRefund());
+        assertNull(document.lineItems().get(0).annex15());
+        assertNull(document.lineItems().get(0).correctionStateBefore());
+    }
+
+    @Test
+    void fa2_correctionReference_emitsChoiceMarkerForBothKsefAndNonKsef() {
+        byte[] withKsef = Fa2Invoice.builder()
+                .invoiceNumber("FA/2026/KOR/0016").issueDate(ISSUE_DATE)
+                .seller(seller()).buyer(buyer())
+                .rodzajFaktury(io.github.mgrtomaszzurawski.ksef.xml.fa2.TRodzajFaktury.KOR)
+                .correctionReference(new InvoiceCorrectionReference(
+                        "FA/2026/ORIG/0002", LocalDate.of(2026, 5, 1), ORIGINAL_KSEF_NUMBER))
+                .totalGrossAmount(GROSS_AMOUNT).addLineItem(plainLine())
+                .build().xml();
+        byte[] withoutKsef = Fa2Invoice.builder()
+                .invoiceNumber("FA/2026/KOR/0017").issueDate(ISSUE_DATE)
+                .seller(seller()).buyer(buyer())
+                .rodzajFaktury(io.github.mgrtomaszzurawski.ksef.xml.fa2.TRodzajFaktury.KOR)
+                .correctionReference(new InvoiceCorrectionReference(
+                        "FA/2026/ORIG/0003", LocalDate.of(2026, 5, 1), null))
+                .totalGrossAmount(GROSS_AMOUNT).addLineItem(plainLine())
+                .build().xml();
+
+        assertNoXsdErrors(withKsef, FormCode.FA2);
+        assertNoXsdErrors(withoutKsef, FormCode.FA2);
+        assertEquals(ORIGINAL_KSEF_NUMBER,
+                Fa2InvoiceDocument.from(withKsef).correctedInvoices().get(0).originalKsefNumber());
+        assertNull(Fa2InvoiceDocument.from(withoutKsef).correctedInvoices().get(0).originalKsefNumber());
+    }
+
+    @Test
+    void fa2_correctionContextScalars_readBack() {
+        byte[] xml = Fa2Invoice.builder()
+                .invoiceNumber("FA/2026/KOR/0018").issueDate(ISSUE_DATE)
+                .seller(seller()).buyer(buyer())
+                .rodzajFaktury(io.github.mgrtomaszzurawski.ksef.xml.fa2.TRodzajFaktury.KOR)
+                .correctionReference(new InvoiceCorrectionReference(
+                        "FA/2026/ORIG/0004", LocalDate.of(2026, 5, 1), ORIGINAL_KSEF_NUMBER))
+                .totalGrossAmount(GROSS_AMOUNT).addLineItem(plainLine())
+                .customizeJaxb(faktura -> {
+                    var fa = faktura.getFa();
+                    fa.setNrFaKorygowany(CORRECTED_NUMBER_REPLACEMENT);
+                    fa.setP15ZK(GROSS_BEFORE_CORRECTION);
+                    fa.setKursWalutyZK(RATE_BEFORE_CORRECTION);
+                })
+                .build().xml();
+
+        assertNoXsdErrors(xml, FormCode.FA2);
+        Fa2InvoiceDocument document = Fa2InvoiceDocument.from(xml);
+        assertEquals(CORRECTED_NUMBER_REPLACEMENT, document.correctedInvoiceNumberReplacement());
+        assertEquals(0, GROSS_BEFORE_CORRECTION.compareTo(document.grossTotalBeforeCorrection()));
+        assertEquals(0, RATE_BEFORE_CORRECTION.compareTo(document.taxExchangeRateBeforeCorrection()));
+    }
+
+    @Test
+    void fa2_vatSummaryFields_foldIntoBreakdown() {
+        byte[] xml = Fa2Invoice.builder()
+                .invoiceNumber("FA/2026/HDR/0019").issueDate(ISSUE_DATE)
+                .seller(seller()).buyer(buyer()).totalGrossAmount(GROSS_AMOUNT).addLineItem(plainLine())
+                .customizeJaxb(faktura -> {
+                    var fa = faktura.getFa();
+                    fa.setP131(new BigDecimal("100.00"));
+                    fa.setP141(new BigDecimal("23.00"));
+                    fa.setP141W(new BigDecimal("99.36"));
+                    fa.setP1361(new BigDecimal("10.00"));
+                    fa.setP1362(new BigDecimal("20.00"));
+                    fa.setP1363(new BigDecimal("30.00"));
+                })
+                .build().xml();
+
+        assertNoXsdErrors(xml, FormCode.FA2);
+        List<VatRateSum> breakdown = Fa2InvoiceDocument.from(xml).vatBreakdown();
+        assertConvertedPln(breakdown, VatRateBucket.STANDARD, "23.00", "99.36");
+        assertEquals(0, new BigDecimal("10.00").compareTo(bucket(breakdown, VatRateBucket.ZERO_RATE_DOMESTIC).netAmount()));
+        assertEquals(0, new BigDecimal("20.00").compareTo(bucket(breakdown, VatRateBucket.ZERO_RATE_INTRA_EU).netAmount()));
+        assertEquals(0, new BigDecimal("30.00").compareTo(bucket(breakdown, VatRateBucket.ZERO_RATE_EXPORT).netAmount()));
     }
 
     private static VatRateSum bucket(List<VatRateSum> breakdown, VatRateBucket wanted) {
