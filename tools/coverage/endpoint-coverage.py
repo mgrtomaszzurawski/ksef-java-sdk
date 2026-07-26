@@ -52,15 +52,20 @@ APIPATHS = CLIENT_MAIN / ("io/github/mgrtomaszzurawski/ksef/sdk/internal/"
 
 HTTP_METHODS = ("get", "post", "put", "delete", "patch")
 
+# Constant chains in a source file are shallow; a handful of resolution passes
+# reaches a fixed point even with forward references.
+MAX_RESOLUTION_PASSES = 4
+PERCENT_SCALE = 100
+
 
 def load_spec_ops():
     spec = json.loads(SPEC.read_text(encoding="utf-8"))
-    ops = []
+    operations = []
     for path, methods in spec.get("paths", {}).items():
         for method, body in methods.items():
             if method.lower() in HTTP_METHODS:
-                ops.append((method.upper(), path))
-    return sorted(set(ops))
+                operations.append((method.upper(), path))
+    return sorted(set(operations))
 
 
 def op_regex(path):
@@ -72,58 +77,57 @@ def op_regex(path):
 
 def op_static_prefix(path):
     """The leading static portion of a spec path (up to the first {param})."""
-    idx = path.find("{")
-    return path if idx < 0 else path[:idx]
+    brace_index = path.find("{")
+    return path if brace_index < 0 else path[:brace_index]
 
 
 def resolve_apipaths_constants():
     """ApiPaths.NAME -> literal value, e.g. AUTH -> /auth."""
-    const = {}
+    constants = {}
     text = APIPATHS.read_text(encoding="utf-8")
     for name, value in re.findall(
             r'public\s+static\s+final\s+String\s+(\w+)\s*=\s*"([^"]*)"', text):
-        const[name] = value
-    return const
+        constants[name] = value
+    return constants
 
 
-def resolve_expr(expr, apipaths, local):
+def resolve_expr(expression, apipaths, symbols):
     """Resolve a Java string-concatenation expression to a static prefix.
 
     Understands: string literals, ApiPaths.NAME, bare PATH_* locals, and
     ApiPaths.subPath(base, segs...). Stops at the first token it cannot
     resolve and returns the static prefix accumulated so far (or None)."""
-    expr = expr.strip()
-    sub = re.match(r"ApiPaths\.subPath\((.*)\)$", expr, re.S)
-    if sub:
-        args = split_top_level_commas(sub.group(1))
-        if not args:
+    expression = expression.strip()
+    sub_call = re.match(r"ApiPaths\.subPath\((.*)\)$", expression, re.S)
+    if sub_call:
+        arguments = split_top_level_commas(sub_call.group(1))
+        if not arguments:
             return None
-        base = resolve_expr(args[0], apipaths, local)
+        base = resolve_expr(arguments[0], apipaths, symbols)
         if base is None:
             return None
-        out = base
-        for seg in args[1:]:
-            lit = re.match(r'"([^"]*)"$', seg.strip())
-            if lit:
-                out = out.rstrip("/") + "/" + lit.group(1)
+        resolved = base
+        for segment in arguments[1:]:
+            literal = re.match(r'"([^"]*)"$', segment.strip())
+            if literal:
+                resolved = resolved.rstrip("/") + "/" + literal.group(1)
             else:
                 break  # dynamic segment -> prefix ends here
-        return out
-    parts = split_top_level_plus(expr)
-    out = ""
-    for part in parts:
+        return resolved
+    resolved = ""
+    for part in split_top_level_plus(expression):
         part = part.strip()
-        lit = re.match(r'"([^"]*)"$', part)
-        ap = re.match(r"ApiPaths\.(\w+)$", part)
-        if lit:
-            out += lit.group(1)
-        elif ap and ap.group(1) in apipaths:
-            out += apipaths[ap.group(1)]
-        elif part in local:
-            out += local[part]
+        literal = re.match(r'"([^"]*)"$', part)
+        apipaths_ref = re.match(r"ApiPaths\.(\w+)$", part)
+        if literal:
+            resolved += literal.group(1)
+        elif apipaths_ref and apipaths_ref.group(1) in apipaths:
+            resolved += apipaths[apipaths_ref.group(1)]
+        elif part in symbols:
+            resolved += symbols[part]
         else:
             break  # unknown token -> prefix ends here
-    return out or None
+    return resolved or None
 
 
 def split_top_level_commas(text):
@@ -134,28 +138,53 @@ def split_top_level_plus(text):
     return _split_top_level(text, "+")
 
 
-def _split_top_level(text, sep):
-    out, depth, cur, in_str = [], 0, "", False
-    i = 0
-    while i < len(text):
-        ch = text[i]
-        if ch == '"' and (i == 0 or text[i - 1] != "\\"):
-            in_str = not in_str
-        if not in_str:
-            if ch in "([":
+def _split_top_level(text, separator):
+    segments, depth, current, in_string = [], 0, "", False
+    index = 0
+    while index < len(text):
+        character = text[index]
+        if character == '"' and (index == 0 or text[index - 1] != "\\"):
+            in_string = not in_string
+        if not in_string:
+            if character in "([":
                 depth += 1
-            elif ch in ")]":
+            elif character in ")]":
                 depth -= 1
-            elif ch == sep and depth == 0:
-                out.append(cur)
-                cur = ""
-                i += 1
+            elif character == separator and depth == 0:
+                segments.append(current)
+                current = ""
+                index += 1
                 continue
-        cur += ch
-        i += 1
-    if cur.strip():
-        out.append(cur)
-    return out
+        current += character
+        index += 1
+    if current.strip():
+        segments.append(current)
+    return segments
+
+
+def scan_balanced(text, start, opener, closer):
+    """Substring from `start` up to the closer that balances an already-consumed
+    opener (exclusive of that closer). String literals are skipped."""
+    depth, index, in_string = 1, start, False
+    while index < len(text):
+        character = text[index]
+        if character == '"' and text[index - 1] != "\\":
+            in_string = not in_string
+        if not in_string:
+            if character == opener:
+                depth += 1
+            elif character == closer:
+                depth -= 1
+                if depth == 0:
+                    break
+        index += 1
+    return text[start:index]
+
+
+def first_matcher_argument(text, start):
+    """First argument of a url*To(...) matcher, balanced on parens."""
+    inner = scan_balanced(text, start, "(", ")")
+    return split_top_level_commas(inner)[0] if inner.strip() else ""
 
 
 VERSION_PREFIX = re.compile(r"^/v\d+(?=/)")
@@ -171,22 +200,22 @@ def build_symbol_table(text, apipaths):
 
     Handles forward references by iterating to a fixed point (a constant may
     be defined in terms of another declared later in the file)."""
-    decls = re.findall(
+    declarations = re.findall(
         r'(?:static\s+final\s+String|String|var)\s+(\w+)\s*=\s*(.+?);',
         text, re.S)
-    table = {}
-    for _ in range(4):  # fixed point; depth of constant chains is shallow
+    symbols = {}
+    for _pass in range(MAX_RESOLUTION_PASSES):
         changed = False
-        for name, expr in decls:
-            if name in table:
+        for name, expression in declarations:
+            if name in symbols:
                 continue
-            resolved = resolve_expr(expr, apipaths, table)
+            resolved = resolve_expr(expression, apipaths, symbols)
             if resolved:
-                table[name] = resolved
+                symbols[name] = resolved
                 changed = True
         if not changed:
             break
-    return table
+    return symbols
 
 
 def collect_wired(apipaths):
@@ -196,10 +225,10 @@ def collect_wired(apipaths):
     the path as a parameter, so the verb is often lost at the http call site.
     WIRED only splits UNTESTED from ABSENT, so path granularity is enough."""
     wired = set()
-    for java in IMPL_DIR.rglob("*.java"):
-        text = java.read_text(encoding="utf-8")
-        table = build_symbol_table(text, apipaths)
-        for name, value in table.items():
+    for java_file in IMPL_DIR.rglob("*.java"):
+        text = java_file.read_text(encoding="utf-8")
+        symbols = build_symbol_table(text, apipaths)
+        for name, value in symbols.items():
             if name.startswith("PATH_") and value.startswith("/"):
                 wired.add(value.rstrip("/"))
     return wired
@@ -217,24 +246,24 @@ def collect_driven(apipaths):
     (225 of 289 matchers reference constants, not literals) and strips the
     server '/v2' version prefix so paths align with the spec."""
     driven = set()
-    for java in CLIENT_TEST.rglob("*.java"):
-        text = java.read_text(encoding="utf-8")
-        table = build_symbol_table(text, apipaths)
-        for m in MATCHER.finditer(text):
-            verb = verb_token(m.group(1))
+    for java_file in CLIENT_TEST.rglob("*.java"):
+        text = java_file.read_text(encoding="utf-8")
+        symbols = build_symbol_table(text, apipaths)
+        for match in MATCHER.finditer(text):
+            verb = verb_token(match.group(1))
             if verb is None:
                 continue
-            is_regex = "Matching" in m.group(2)
-            arg = extract_balanced_arg(text, m.end())
-            resolved = resolve_matcher_arg(arg, apipaths, table)
+            is_regex = "Matching" in match.group(2)
+            argument = first_matcher_argument(text, match.end())
+            resolved = resolve_matcher_arg(argument, apipaths, symbols)
             if resolved:
                 path = strip_version(resolved.split("?", 1)[0])
                 driven.add((verb, path, is_regex))
-        driven |= resolve_stub_helpers(text, apipaths, table)
+        driven |= resolve_stub_helpers(text, apipaths, symbols)
     return driven
 
 
-def resolve_stub_helpers(text, apipaths, table):
+def resolve_stub_helpers(text, apipaths, symbols):
     """One-hop resolution of stub/verify helper methods.
 
     KSeF parametrises dispatch tests through helpers like
@@ -244,114 +273,63 @@ def resolve_stub_helpers(text, apipaths, table):
     with the verb carried by the helper body. This keeps verb precision, so a
     constant only ever passed to a GET helper never marks a POST op driven."""
     helpers = {}  # name -> (paramIndex, VERB, is_regex)
-    sig = re.compile(r"(?:private|public|protected|static|final|void|\s)+"
-                     r"(\w+)\s*\(([^)]*)\)\s*\{")
-    for msig in sig.finditer(text):
-        name, params = msig.group(1), msig.group(2)
-        param_names = [p.strip().split()[-1]
-                       for p in params.split(",") if p.strip()]
-        body = extract_block(text, msig.end())
-        for m in MATCHER.finditer(body):
-            verb = verb_token(m.group(1))
+    signature_re = re.compile(
+        r"(?:private|public|protected|static|final|void|\s)+"
+        r"(\w+)\s*\(([^)]*)\)\s*\{")
+    for method_match in signature_re.finditer(text):
+        name, params = method_match.group(1), method_match.group(2)
+        param_names = [param.strip().split()[-1]
+                       for param in params.split(",") if param.strip()]
+        body = scan_balanced(text, method_match.end(), "{", "}")
+        for match in MATCHER.finditer(body):
+            verb = verb_token(match.group(1))
             if verb is None:
                 continue
-            arg = extract_balanced_arg(body, m.end()).strip()
-            if arg in param_names:
-                helpers[name] = (param_names.index(arg), verb,
-                                 "Matching" in m.group(2))
+            argument = first_matcher_argument(body, match.end()).strip()
+            if argument in param_names:
+                helpers[name] = (param_names.index(argument), verb,
+                                 "Matching" in match.group(2))
                 break
     resolved = set()
-    for name, (idx, verb, is_regex) in helpers.items():
-        for call in re.finditer(r"\b" + re.escape(name) + r"\s*\(", text):
-            args_str = extract_balanced_arg_full(text, call.end())
-            args = split_top_level_commas(args_str)
-            if len(args) <= idx:
+    for name, (param_index, verb, is_regex) in helpers.items():
+        for call_match in re.finditer(r"\b" + re.escape(name) + r"\s*\(", text):
+            call_args = split_top_level_commas(
+                scan_balanced(text, call_match.end(), "(", ")"))
+            if len(call_args) <= param_index:
                 continue
-            value = resolve_matcher_arg(args[idx].strip(), apipaths, table)
+            value = resolve_matcher_arg(call_args[param_index].strip(),
+                                        apipaths, symbols)
             if value and value.startswith("/"):
                 resolved.add((verb, strip_version(value.split("?", 1)[0]),
                               is_regex))
     return resolved
 
 
-def extract_block(text, start):
-    """Body of a method, balanced on braces, starting just after its '{'."""
-    depth, i, in_str = 1, start, False
-    while i < len(text) and depth > 0:
-        ch = text[i]
-        if ch == '"' and text[i - 1] != "\\":
-            in_str = not in_str
-        if not in_str:
-            if ch == "{":
-                depth += 1
-            elif ch == "}":
-                depth -= 1
-        i += 1
-    return text[start:i - 1]
-
-
-def extract_balanced_arg_full(text, start):
-    """All arguments of a call, balanced on parens, starting after its '('."""
-    depth, i, in_str = 1, start, False
-    while i < len(text) and depth > 0:
-        ch = text[i]
-        if ch == '"' and text[i - 1] != "\\":
-            in_str = not in_str
-        if not in_str:
-            if ch == "(":
-                depth += 1
-            elif ch == ")":
-                depth -= 1
-                if depth == 0:
-                    break
-        i += 1
-    return text[start:i]
-
-
 def verb_token(token):
-    low = token.lower().replace("requestedfor", "")
+    lowered = token.lower().replace("requestedfor", "")
     for verb in ("get", "post", "put", "delete", "patch"):
-        if low == verb:
+        if lowered == verb:
             return verb.upper()
     return None
 
 
-def resolve_matcher_arg(arg, apipaths, table):
-    lit = re.match(r'\s*"([^"]*)"\s*$', arg)
-    if lit:
-        return lit.group(1)
-    return resolve_expr(arg, apipaths, table)
+def resolve_matcher_arg(argument, apipaths, symbols):
+    literal = re.match(r'\s*"([^"]*)"\s*$', argument)
+    if literal:
+        return literal.group(1)
+    return resolve_expr(argument, apipaths, symbols)
 
 
-def extract_balanced_arg(text, start):
-    """First argument of the url*To(...) matcher, balanced on parens."""
-    depth, i, in_str = 1, start, False
-    while i < len(text) and depth > 0:
-        ch = text[i]
-        if ch == '"' and text[i - 1] != "\\":
-            in_str = not in_str
-        if not in_str:
-            if ch == "(":
-                depth += 1
-            elif ch == ")":
-                depth -= 1
-                if depth == 0:
-                    break
-        i += 1
-    inner = text[start:i]
-    return split_top_level_commas(inner)[0] if inner.strip() else ""
-
-
-def driven_match(method, rx, static, driven):
-    for verb, url, is_regex in driven:
+def driven_match(method, op_pattern, static, driven):
+    for verb, request_url, is_regex in driven:
         if verb != method:
             continue
-        url = url.rstrip("/")
+        request_url = request_url.rstrip("/")
         if is_regex:
             # matcher arg is a regex; a static-prefix literal match is enough
-            if static and url.startswith(static):
+            if static and request_url.startswith(static):
                 return True
-        elif rx.match(url) or url == static:
+        elif op_pattern.match(request_url) or request_url == static:
             return True
     return False
 
@@ -364,12 +342,12 @@ def wired_match(static, wired):
     return False
 
 
-def classify(ops, driven, wired):
+def classify(operations, driven, wired):
     rows = []
-    for method, path in ops:
-        rx = op_regex(path)
+    for method, path in operations:
+        op_pattern = op_regex(path)
         static = op_static_prefix(path).rstrip("/")
-        if driven_match(method, rx, static, driven):
+        if driven_match(method, op_pattern, static, driven):
             state = "OK"
         elif wired_match(static, wired):
             state = "UNTESTED"
@@ -380,29 +358,30 @@ def classify(ops, driven, wired):
 
 
 def main():
-    ops = load_spec_ops()
+    operations = load_spec_ops()
     apipaths = resolve_apipaths_constants()
     driven = collect_driven(apipaths)
     wired = collect_wired(apipaths)
-    rows = classify(ops, driven, wired)
+    rows = classify(operations, driven, wired)
 
     order = {"OK": 0, "UNTESTED": 1, "ABSENT": 2}
-    rows.sort(key=lambda r: (order[r[0]], r[1], r[2]))
+    rows.sort(key=lambda row: (order[row[0]], row[1], row[2]))
     counts = {"OK": 0, "UNTESTED": 0, "ABSENT": 0}
-    for state, _m, _p in rows:
+    for state, _method, _path in rows:
         counts[state] += 1
 
-    want_absent = "--absent" in sys.argv
+    hide_ok = "--absent" in sys.argv
     for state, method, path in rows:
-        if want_absent and state == "OK":
+        if hide_ok and state == "OK":
             continue
         print(f"{state:9} {method:6} {path}")
 
     total = len(rows)
-    ok = counts["OK"]
+    ok_count = counts["OK"]
     print()
-    print(f"BREADTH  {ok}/{total} operations DRIVEN by a test "
-          f"({100 * ok // total if total else 0}%)  |  "
+    percent = (PERCENT_SCALE * ok_count // total) if total else 0
+    print(f"BREADTH  {ok_count}/{total} operations DRIVEN by a test "
+          f"({percent}%)  |  "
           f"UNTESTED {counts['UNTESTED']}  ABSENT {counts['ABSENT']}")
     print("Reflection aid, not a gate. Trust OK; UNTESTED/ABSENT is a prompt "
           "to look (WIRED is prefix-resolved, see header).")

@@ -50,12 +50,12 @@ done
 have_creds=0
 if [ -f "$CREDS_FILE" ]; then
     have_creds=1
-    src="ksef-credentials.properties"
+    creds_source="ksef-credentials.properties"
 elif [ -n "${KSEF_NIP:-}" ] && \
      { [ -n "${KSEF_TOKEN:-}" ] || [ -n "${KSEF_TOKEN_READ:-}" ] || \
        [ -n "${KSEF_CERT_PATH:-}" ]; }; then
     have_creds=1
-    src="environment (KSEF_NIP + token/cert)"
+    creds_source="environment (KSEF_NIP + token/cert)"
 fi
 
 if [ "$have_creds" -eq 0 ]; then
@@ -71,7 +71,7 @@ must not be reported as one. Provide credentials and re-run.
 EOF
     exit 3
 fi
-echo "Credentials: $src"
+echo "Credentials: $creds_source"
 
 # --- 2. Side-effect gate: FULL sends a real invoice -----------------------
 if [ "$confirm" -eq 0 ]; then
