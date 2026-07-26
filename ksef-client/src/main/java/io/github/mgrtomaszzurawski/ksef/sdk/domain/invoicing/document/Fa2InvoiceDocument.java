@@ -8,16 +8,25 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdditionalDescription;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Agreement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BankAccount;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Carrier;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.EarlyPaymentDiscount;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceAddress;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceFooter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePeriod;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceSettlement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PurchaseOrder;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.RegistryEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SettlementItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TransactionConditions;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Transport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TransportParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatExemption;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateBucket;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateSum;
@@ -98,8 +107,10 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final @Nullable InvoicePayment payment;
     private final @Nullable InvoiceSettlement settlement;
     private final @Nullable InvoicePeriod invoicePeriod;
+    private final @Nullable TransactionConditions transactionConditions;
     private final List<String> deliveryNoteNumbers;
     private final List<AdditionalDescription> additionalDescriptions;
+    private final @Nullable InvoiceFooter footer;
     private final @Nullable VatExemption vatExemption;
     private final List<VatRateSum> vatBreakdown;
     private final List<InvoiceCorrectionReference> correctedInvoices;
@@ -154,8 +165,10 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         // Nested-record sections map directly here (not through FaSnapshot, which
         // holds the original flat scalars) to keep that positional record stable.
         this.invoicePeriod = extractInvoicePeriod(faktura.getFa());
+        this.transactionConditions = extractTransactionConditions(faktura.getFa());
         this.deliveryNoteNumbers = extractDeliveryNoteNumbers(faktura.getFa());
         this.additionalDescriptions = extractAdditionalDescriptions(faktura.getFa());
+        this.footer = extractFooter(faktura);
         this.vatExemption = fa.vatExemption;
         this.vatBreakdown = fa.vatBreakdown;
         this.correctedInvoices = fa.correctedInvoices;
@@ -476,6 +489,172 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         return List.copyOf(out);
     }
 
+    private static @Nullable TransactionConditions extractTransactionConditions(Faktura.@Nullable Fa fa) {
+        Faktura.Fa.WarunkiTransakcji conditions = fa != null ? fa.getWarunkiTransakcji() : null;
+        if (conditions == null) {
+            return null;
+        }
+        return new TransactionConditions(
+                extractAgreements(conditions.getUmowy()),
+                extractOrders(conditions.getZamowienia()),
+                conditions.getNrPartiiTowaru() != null ? List.copyOf(conditions.getNrPartiiTowaru()) : List.of(),
+                conditions.getWarunkiDostawy(),
+                conditions.getKursUmowny(),
+                conditions.getWalutaUmowna() != null ? conditions.getWalutaUmowna().value() : null,
+                extractTransports(conditions.getTransport()),
+                toBooleanFlag(conditions.getPodmiotPosredniczacy()));
+    }
+
+    private static List<Agreement> extractAgreements(
+            @Nullable List<Faktura.Fa.WarunkiTransakcji.Umowy> agreements) {
+        if (agreements == null || agreements.isEmpty()) {
+            return List.of();
+        }
+        List<Agreement> out = new ArrayList<>(agreements.size());
+        for (Faktura.Fa.WarunkiTransakcji.Umowy agreement : agreements) {
+            if (agreement != null) {
+                out.add(new Agreement(
+                        agreement.getDataUmowy() != null ? toLocalDate(agreement.getDataUmowy()) : null,
+                        agreement.getNrUmowy()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<PurchaseOrder> extractOrders(
+            @Nullable List<Faktura.Fa.WarunkiTransakcji.Zamowienia> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return List.of();
+        }
+        List<PurchaseOrder> out = new ArrayList<>(orders.size());
+        for (Faktura.Fa.WarunkiTransakcji.Zamowienia order : orders) {
+            if (order != null) {
+                out.add(new PurchaseOrder(
+                        order.getDataZamowienia() != null ? toLocalDate(order.getDataZamowienia()) : null,
+                        order.getNrZamowienia()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<Transport> extractTransports(
+            @Nullable List<Faktura.Fa.WarunkiTransakcji.Transport> transports) {
+        if (transports == null || transports.isEmpty()) {
+            return List.of();
+        }
+        List<Transport> out = new ArrayList<>(transports.size());
+        for (Faktura.Fa.WarunkiTransakcji.Transport transport : transports) {
+            if (transport != null) {
+                out.add(mapTransport(transport));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static Transport mapTransport(Faktura.Fa.WarunkiTransakcji.Transport transport) {
+        return new Transport(
+                transport.getRodzajTransportu() != null ? transport.getRodzajTransportu().intValue() : null,
+                toBooleanFlag(transport.getTransportInny()),
+                transport.getOpisInnegoTransportu(),
+                extractCarrier(transport.getPrzewoznik()),
+                transport.getNrZleceniaTransportu(),
+                transport.getOpisLadunku() != null ? transport.getOpisLadunku().intValue() : null,
+                toBooleanFlag(transport.getLadunekInny()),
+                transport.getOpisInnegoLadunku(),
+                transport.getJednostkaOpakowania(),
+                transport.getDataGodzRozpTransportu() != null
+                        ? toOffsetDateTime(transport.getDataGodzRozpTransportu()) : null,
+                transport.getDataGodzZakTransportu() != null
+                        ? toOffsetDateTime(transport.getDataGodzZakTransportu()) : null,
+                extractAddress(transport.getWysylkaZ()),
+                extractAddresses(transport.getWysylkaPrzez()),
+                extractAddress(transport.getWysylkaDo()));
+    }
+
+    private static @Nullable Carrier extractCarrier(
+            Faktura.Fa.WarunkiTransakcji.Transport.@Nullable Przewoznik carrier) {
+        if (carrier == null) {
+            return null;
+        }
+        // DaneIdentyfikacyjne and AdresPrzewoznika are minOccurs=1 within
+        // Przewoznik, so they are trusted non-null; a contract violation
+        // surfaces loudly rather than being masked.
+        return new Carrier(
+                mapTransportParty(carrier.getDaneIdentyfikacyjne()),
+                toAddress(carrier.getAdresPrzewoznika()));
+    }
+
+    private static TransportParty mapTransportParty(TPodmiot2 identity) {
+        return new TransportParty(
+                identity.getNIP(),
+                identity.getKodUE() != null ? identity.getKodUE().value() : null,
+                identity.getNrVatUE(),
+                identity.getKodKraju() != null ? identity.getKodKraju().value() : null,
+                identity.getNrID(),
+                toBooleanFlag(identity.getBrakID()),
+                identity.getNazwa());
+    }
+
+    private static List<InvoiceAddress> extractAddresses(@Nullable List<TAdresFa2> addresses) {
+        if (addresses == null || addresses.isEmpty()) {
+            return List.of();
+        }
+        List<InvoiceAddress> out = new ArrayList<>(addresses.size());
+        for (TAdresFa2 address : addresses) {
+            if (address != null) {
+                out.add(toAddress(address));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static @Nullable InvoiceAddress extractAddress(@Nullable TAdresFa2 address) {
+        return address != null ? toAddress(address) : null;
+    }
+
+    private static InvoiceAddress toAddress(TAdresFa2 address) {
+        // KodKraju and AdresL1 are minOccurs=1 within TAdres, so they are
+        // dereferenced directly; a contract violation surfaces loudly.
+        return new InvoiceAddress(
+                address.getKodKraju().value(),
+                address.getAdresL1(),
+                address.getAdresL2(),
+                address.getGLN());
+    }
+
+    private static @Nullable InvoiceFooter extractFooter(Faktura faktura) {
+        Faktura.Stopka stopka = faktura.getStopka();
+        if (stopka == null) {
+            return null;
+        }
+        List<String> notes = new ArrayList<>();
+        if (stopka.getInformacje() != null) {
+            for (Faktura.Stopka.Informacje info : stopka.getInformacje()) {
+                if (info != null && info.getStopkaFaktury() != null) {
+                    notes.add(info.getStopkaFaktury());
+                }
+            }
+        }
+        return new InvoiceFooter(notes, extractRegistries(stopka.getRejestry()));
+    }
+
+    private static List<RegistryEntry> extractRegistries(@Nullable List<Faktura.Stopka.Rejestry> registries) {
+        if (registries == null || registries.isEmpty()) {
+            return List.of();
+        }
+        List<RegistryEntry> out = new ArrayList<>(registries.size());
+        for (Faktura.Stopka.Rejestry registry : registries) {
+            if (registry != null) {
+                out.add(new RegistryEntry(
+                        registry.getPelnaNazwa(),
+                        registry.getKRS(),
+                        registry.getREGON(),
+                        registry.getBDO()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
     private static boolean extractSplitPayment(Faktura.@Nullable Fa fa) {
         if (fa == null || fa.getAdnotacje() == null) {
             return false;
@@ -657,11 +836,17 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     /** Billing period from {@code Fa/OkresFa} (continuous supplies), used instead of a single {@link #deliveryDate()}. Null when absent. */
     public @Nullable InvoicePeriod invoicePeriod() { return invoicePeriod; }
 
+    /** Transaction conditions from {@code Fa/WarunkiTransakcji} — contracts, orders, delivery terms, contractual currency and transport legs. Null when absent. */
+    public @Nullable TransactionConditions transactionConditions() { return transactionConditions; }
+
     /** Warehouse-issue (WZ) document numbers from {@code Fa/WZ}. Empty when none. */
     public List<String> deliveryNoteNumbers() { return deliveryNoteNumbers; }
 
     /** Additional key/value descriptions from {@code Fa/DodatkowyOpis}. Empty when none. */
     public List<AdditionalDescription> additionalDescriptions() { return additionalDescriptions; }
+
+    /** Invoice footer from {@code Faktura/Stopka} — free-text footer lines and issuer register references. Null when absent. */
+    public @Nullable InvoiceFooter footer() { return footer; }
 
     /** VAT exemption basis from {@code Fa/Adnotacje/Zwolnienie}. Null when the invoice is not exempt. */
     public @Nullable VatExemption vatExemption() { return vatExemption; }
