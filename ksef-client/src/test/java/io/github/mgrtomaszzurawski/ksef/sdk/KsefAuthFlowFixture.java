@@ -169,6 +169,44 @@ public final class KsefAuthFlowFixture {
                                 """.formatted(accessToken, later.toString(), later.plusDays(7).toString()))));
     }
 
+    /**
+     * Override the public-key-certificates stub with a response that also
+     * carries a {@code SymmetricKeyEncryption} cert, which invoice export and
+     * session open need to wrap the AES key. Call after
+     * {@link #newAuthenticatedClient} and before the operation under test.
+     * Added at priority 1 so it wins over the token-only default stub.
+     */
+    public static void stubSymmetricKeyEncryptionCert() {
+        TestCertificates certs;
+        try {
+            certs = TestCertificates.generateRsa();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to generate test cert for symmetric-key stub", ex);
+        }
+        String certPemBody = encodeCertAsPem(certs);
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime later = now.plusYears(1);
+        stubFor(get(urlEqualTo(SECURITY_PUBLIC_KEY_CERTS))
+                .atPriority(1)
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader(CONTENT_TYPE_HEADER, APPLICATION_JSON)
+                        .withBody("""
+                                [{
+                                  "certificate": "%s",
+                                  "usage": ["KsefTokenEncryption"],
+                                  "validFrom": "%s",
+                                  "validTo": "%s"
+                                },{
+                                  "certificate": "%s",
+                                  "usage": ["SymmetricKeyEncryption"],
+                                  "validFrom": "%s",
+                                  "validTo": "%s"
+                                }]
+                                """.formatted(certPemBody, now.toString(), later.toString(),
+                                        certPemBody, now.toString(), later.toString()))));
+    }
+
     private static String encodeCertAsPem(TestCertificates certs) {
         try {
             byte[] derBytes = certs.certificate().getEncoded();
