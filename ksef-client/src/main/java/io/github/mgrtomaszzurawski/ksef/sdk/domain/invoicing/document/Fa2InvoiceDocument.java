@@ -12,8 +12,10 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.EarlyPaymentD
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePayment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceSettlement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SettlementItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatExemption;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateBucket;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateSum;
@@ -92,6 +94,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final List<InvoiceLineItem> lineItems;
     private final @Nullable LocalDate deliveryDate;
     private final @Nullable InvoicePayment payment;
+    private final @Nullable InvoiceSettlement settlement;
     private final @Nullable VatExemption vatExemption;
     private final List<VatRateSum> vatBreakdown;
     private final List<InvoiceCorrectionReference> correctedInvoices;
@@ -142,6 +145,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.lineItems = fa.lineItems;
         this.deliveryDate = fa.deliveryDate;
         this.payment = fa.payment;
+        this.settlement = fa.settlement;
         this.vatExemption = fa.vatExemption;
         this.vatBreakdown = fa.vatBreakdown;
         this.correctedInvoices = fa.correctedInvoices;
@@ -229,6 +233,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                               List<InvoiceLineItem> lineItems,
                               @Nullable LocalDate deliveryDate,
                               @Nullable InvoicePayment payment,
+                              @Nullable InvoiceSettlement settlement,
                               @Nullable VatExemption vatExemption,
                               List<VatRateSum> vatBreakdown,
                               List<InvoiceCorrectionReference> correctedInvoices,
@@ -246,7 +251,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         static FaSnapshot from(Faktura.@Nullable Fa faContent) {
             if (faContent == null) {
                 return new FaSnapshot(null, null, null, null, Optional.empty(), null,
-                        List.of(), null, null, null, List.of(),
+                        List.of(), null, null, null, null, List.of(),
                         List.of(), null, null, null,
                         null, null, null, null, null, null, null, null);
             }
@@ -260,6 +265,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                     snapshotLineItems(faContent),
                     faContent.getP6() != null ? toLocalDate(faContent.getP6()) : null,
                     extractPayment(faContent.getPlatnosc()),
+                    extractSettlement(faContent.getRozliczenie()),
                     extractVatExemption(faContent.getAdnotacje()),
                     extractVatBreakdown(faContent),
                     extractCorrectedInvoices(faContent),
@@ -386,6 +392,47 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         // WarunkiSkonta and WysokoscSkonta are minOccurs=1 within Skonto, so
         // they are trusted non-null; a contract violation surfaces loudly.
         return new EarlyPaymentDiscount(skonto.getWarunkiSkonta(), skonto.getWysokoscSkonta());
+    }
+
+    private static @Nullable InvoiceSettlement extractSettlement(Faktura.Fa.@Nullable Rozliczenie rozliczenie) {
+        if (rozliczenie == null) {
+            return null;
+        }
+        return new InvoiceSettlement(
+                extractCharges(rozliczenie.getObciazenia()),
+                rozliczenie.getSumaObciazen(),
+                extractDeductions(rozliczenie.getOdliczenia()),
+                rozliczenie.getSumaOdliczen(),
+                rozliczenie.getDoZaplaty(),
+                rozliczenie.getDoRozliczenia());
+    }
+
+    private static List<SettlementItem> extractCharges(@Nullable List<Faktura.Fa.Rozliczenie.Obciazenia> charges) {
+        if (charges == null || charges.isEmpty()) {
+            return List.of();
+        }
+        List<SettlementItem> out = new ArrayList<>(charges.size());
+        for (Faktura.Fa.Rozliczenie.Obciazenia charge : charges) {
+            if (charge != null) {
+                // Kwota and Powod are minOccurs=1; trusted non-null.
+                out.add(new SettlementItem(charge.getKwota(), charge.getPowod()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<SettlementItem> extractDeductions(
+            @Nullable List<Faktura.Fa.Rozliczenie.Odliczenia> deductions) {
+        if (deductions == null || deductions.isEmpty()) {
+            return List.of();
+        }
+        List<SettlementItem> out = new ArrayList<>(deductions.size());
+        for (Faktura.Fa.Rozliczenie.Odliczenia deduction : deductions) {
+            if (deduction != null) {
+                out.add(new SettlementItem(deduction.getKwota(), deduction.getPowod()));
+            }
+        }
+        return List.copyOf(out);
     }
 
     private static boolean extractSplitPayment(Faktura.@Nullable Fa fa) {
@@ -562,6 +609,9 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** Payment terms from {@code Fa/Platnosc} — due dates, method, bank accounts, installments, skonto. Null when the invoice carries no payment block. */
     public @Nullable InvoicePayment payment() { return payment; }
+
+    /** Additional settlements from {@code Fa/Rozliczenie} — charges, deductions, amount payable or overpayment. Null when absent. */
+    public @Nullable InvoiceSettlement settlement() { return settlement; }
 
     /** VAT exemption basis from {@code Fa/Adnotacje/Zwolnienie}. Null when the invoice is not exempt. */
     public @Nullable VatExemption vatExemption() { return vatExemption; }
