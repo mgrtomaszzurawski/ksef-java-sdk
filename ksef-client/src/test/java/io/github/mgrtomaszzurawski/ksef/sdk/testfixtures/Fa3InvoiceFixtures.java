@@ -49,7 +49,9 @@ public final class Fa3InvoiceFixtures {
                 .buyer(new InvoiceParty(BUYER_NIP, "Customer sp. z o.o.", "00-002",
                         "Krakow", null, "5", null))
                 .totalGrossAmount(GROSS_AMOUNT)
-                .addLineItem(new InvoiceLineItem(1, DESCRIPTION, null, null, UNIT, BigDecimal.ONE, NET_AMOUNT, NET_AMOUNT, VAT_RATE, null, null))
+                .addLineItem(InvoiceLineItem.builder().rowNumber(1).description(DESCRIPTION)
+                        .unitOfMeasure(UNIT).quantity(BigDecimal.ONE).netUnitPrice(NET_AMOUNT)
+                        .netAmount(NET_AMOUNT).vatRate(VAT_RATE).build())
                 .build();
     }
 }

@@ -113,8 +113,10 @@ class CorrectionReadRegressionTest {
                 .seller(new InvoiceParty("1111111111", "Acme", "00-001", "Warszawa", "Marszalkowska", "10", null))
                 .buyer(new InvoiceParty("9876543210", "Customer", "00-002", "Krakow", null, "5", null))
                 .totalGrossAmount(new BigDecimal("123.00"))
-                .addLineItem(new InvoiceLineItem(1, "Consulting", null, null, "szt.",
-                        BigDecimal.ONE, new BigDecimal("100.00"), new BigDecimal("100.00"), "23", null, null))
+                .addLineItem(InvoiceLineItem.builder().rowNumber(1).description("Consulting")
+                        .unitOfMeasure("szt.").quantity(BigDecimal.ONE)
+                        .netUnitPrice(new BigDecimal("100.00")).netAmount(new BigDecimal("100.00"))
+                        .vatRate("23").build())
                 .build()
                 .xml();
     }

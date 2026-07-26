@@ -144,4 +144,13 @@
         <Class name="io.github.mgrtomaszzurawski.ksef.sdk.internal.client.invoicing.InvoicesImpl"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
+    <!-- toBooleanFlag maps an optional KSeF byte marker (1/2/absent) to a
+         tri-state @Nullable Boolean; returning null for an absent element is
+         the intended domain contract, not an oversight. Callers pass the
+         result straight into the nullable InvoiceLineItem builder. -->
+    <Match>
+        <Class name="~io\.github\.mgrtomaszzurawski\.ksef\.sdk\.domain\.invoicing\.document\.(Fa2|Fa3)Invoice(Document)?"/>
+        <Method name="toBooleanFlag"/>
+        <Bug pattern="NP_BOOLEAN_RETURN_NULL"/>
+    </Match>
 </FindBugsFilter>
