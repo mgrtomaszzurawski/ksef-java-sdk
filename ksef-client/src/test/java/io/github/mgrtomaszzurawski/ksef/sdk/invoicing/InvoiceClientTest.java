@@ -51,8 +51,6 @@ class InvoiceClientTest {
     private static final String INVOICES_BASE = "/v2/invoices";
     private static final String PATH_EXPORTS = INVOICES_BASE + "/exports";
     private static final String EMPTY_JSON = "{}";
-    private static final String EXPORT_START_RESPONSE =
-            "{\"referenceNumber\":\"" + TEST_EXPORT_REF + "\"}";
 
     private static final String QUERY_METADATA_RESPONSE = """
             {
@@ -355,7 +353,7 @@ class InvoiceClientTest {
                 .willReturn(aResponse()
                         .withStatus(TestHttpConstants.HTTP_OK)
                         .withHeader(TestHttpConstants.CONTENT_TYPE_HEADER, TestHttpConstants.APPLICATION_JSON)
-                        .withBody(EXPORT_START_RESPONSE)));
+                        .withBody(EXPORT_RESPONSE)));
 
         try (KsefClient ksef = createAuthenticatedClient(wmInfo)) {
             // prepare() fetches the SymmetricKeyEncryption cert to wrap the AES key.
