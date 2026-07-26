@@ -85,6 +85,8 @@ class LineItemFieldRoundTripTest {
 
     @Test
     void fa3_lineItemScalars_surviveWriteThenRead() {
+        // given / when — build an FA(3) invoice carrying every FaWiersz scalar,
+        // marshal it through the SDK write path, then read it back.
         byte[] xml = Fa3Invoice.builder()
                 .invoiceNumber("FA/2026/RT/0001")
                 .issueDate(ISSUE_DATE)
@@ -100,12 +102,14 @@ class LineItemFieldRoundTripTest {
 
         Fa3InvoiceDocument document = Fa3InvoiceDocument.from(xml);
 
+        // then
         assertEquals(1, document.lineItems().size());
         assertRoundTrip(document.lineItems().get(0));
     }
 
     @Test
     void fa2_lineItemScalars_surviveWriteThenRead() {
+        // given / when — same round trip through the FA(2) write + read path.
         byte[] xml = Fa2Invoice.builder()
                 .invoiceNumber("FA/2026/RT/0002")
                 .issueDate(ISSUE_DATE)
@@ -120,6 +124,7 @@ class LineItemFieldRoundTripTest {
 
         Fa2InvoiceDocument document = Fa2InvoiceDocument.from(xml);
 
+        // then
         assertEquals(1, document.lineItems().size());
         assertRoundTrip(document.lineItems().get(0));
     }

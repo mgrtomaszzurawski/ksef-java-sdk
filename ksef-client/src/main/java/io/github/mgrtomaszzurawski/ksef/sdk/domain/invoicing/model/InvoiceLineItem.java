@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  * <p>The fields are flat because {@code FaWiersz} declares them flat in the
  * XSD; per the coverage doctrine the typed overlay mirrors the schema
  * structure rather than inventing groupings. Construct via {@link #builder()}
- * — the canonical 23-argument constructor exists for internal mapping.
+ * — the canonical 25-argument constructor exists for internal mapping.
  *
  * <p><strong>Nullability follows the FA(2)/FA(3) XSD.</strong> Every scalar on
  * {@code FaWiersz} is {@code minOccurs="0"}, so a valid line may carry, for
