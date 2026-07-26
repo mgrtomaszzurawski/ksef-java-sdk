@@ -30,6 +30,12 @@ public enum VatRateBucket {
     TAXI_LUMP_SUM,
     /** Dział XII special procedure (e.g. OSS / IOSS for distance-selling). P_13_5 / P_14_5. */
     SPECIAL_PROCEDURE,
+    /** Zero rate (0%) excluding intra-EU supply and export. P_13_6_1 (net only). */
+    ZERO_RATE_DOMESTIC,
+    /** Zero rate (0%) for intra-EU supply of goods (WDT). P_13_6_2 (net only). */
+    ZERO_RATE_INTRA_EU,
+    /** Zero rate (0%) for export of goods. P_13_6_3 (net only). */
+    ZERO_RATE_EXPORT,
     /** Exempt from VAT. P_13_7 (net only). */
     EXEMPT,
     /** Out-of-territory supply. P_13_8 (net only). */
