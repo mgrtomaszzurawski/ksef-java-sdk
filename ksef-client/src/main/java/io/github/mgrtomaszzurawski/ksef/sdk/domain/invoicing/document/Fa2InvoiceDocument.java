@@ -7,11 +7,13 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.document;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdditionalDescription;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BankAccount;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.EarlyPaymentDiscount;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePayment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePeriod;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceSettlement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
@@ -95,6 +97,9 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final @Nullable LocalDate deliveryDate;
     private final @Nullable InvoicePayment payment;
     private final @Nullable InvoiceSettlement settlement;
+    private final @Nullable InvoicePeriod invoicePeriod;
+    private final List<String> deliveryNoteNumbers;
+    private final List<AdditionalDescription> additionalDescriptions;
     private final @Nullable VatExemption vatExemption;
     private final List<VatRateSum> vatBreakdown;
     private final List<InvoiceCorrectionReference> correctedInvoices;
@@ -146,6 +151,11 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.deliveryDate = fa.deliveryDate;
         this.payment = fa.payment;
         this.settlement = fa.settlement;
+        // Nested-record sections map directly here (not through FaSnapshot, which
+        // holds the original flat scalars) to keep that positional record stable.
+        this.invoicePeriod = extractInvoicePeriod(faktura.getFa());
+        this.deliveryNoteNumbers = extractDeliveryNoteNumbers(faktura.getFa());
+        this.additionalDescriptions = extractAdditionalDescriptions(faktura.getFa());
         this.vatExemption = fa.vatExemption;
         this.vatBreakdown = fa.vatBreakdown;
         this.correctedInvoices = fa.correctedInvoices;
@@ -435,6 +445,37 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         return List.copyOf(out);
     }
 
+    private static @Nullable InvoicePeriod extractInvoicePeriod(Faktura.@Nullable Fa fa) {
+        Faktura.Fa.OkresFa okres = fa != null ? fa.getOkresFa() : null;
+        if (okres == null || okres.getP6Od() == null || okres.getP6Do() == null) {
+            return null;
+        }
+        return new InvoicePeriod(toLocalDate(okres.getP6Od()), toLocalDate(okres.getP6Do()));
+    }
+
+    private static List<String> extractDeliveryNoteNumbers(Faktura.@Nullable Fa fa) {
+        if (fa == null || fa.getWZ() == null || fa.getWZ().isEmpty()) {
+            return List.of();
+        }
+        return List.copyOf(fa.getWZ());
+    }
+
+    private static List<AdditionalDescription> extractAdditionalDescriptions(Faktura.@Nullable Fa fa) {
+        if (fa == null || fa.getDodatkowyOpis() == null || fa.getDodatkowyOpis().isEmpty()) {
+            return List.of();
+        }
+        List<AdditionalDescription> out = new ArrayList<>(fa.getDodatkowyOpis().size());
+        for (io.github.mgrtomaszzurawski.ksef.xml.fa2.TKluczWartosc entry : fa.getDodatkowyOpis()) {
+            if (entry != null) {
+                // Klucz and Wartosc are minOccurs=1; trusted non-null.
+                out.add(new AdditionalDescription(
+                        entry.getNrWiersza() != null ? entry.getNrWiersza().intValue() : null,
+                        entry.getKlucz(), entry.getWartosc()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
     private static boolean extractSplitPayment(Faktura.@Nullable Fa fa) {
         if (fa == null || fa.getAdnotacje() == null) {
             return false;
@@ -612,6 +653,15 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** Additional settlements from {@code Fa/Rozliczenie} — charges, deductions, amount payable or overpayment. Null when absent. */
     public @Nullable InvoiceSettlement settlement() { return settlement; }
+
+    /** Billing period from {@code Fa/OkresFa} (continuous supplies), used instead of a single {@link #deliveryDate()}. Null when absent. */
+    public @Nullable InvoicePeriod invoicePeriod() { return invoicePeriod; }
+
+    /** Warehouse-issue (WZ) document numbers from {@code Fa/WZ}. Empty when none. */
+    public List<String> deliveryNoteNumbers() { return deliveryNoteNumbers; }
+
+    /** Additional key/value descriptions from {@code Fa/DodatkowyOpis}. Empty when none. */
+    public List<AdditionalDescription> additionalDescriptions() { return additionalDescriptions; }
 
     /** VAT exemption basis from {@code Fa/Adnotacje/Zwolnienie}. Null when the invoice is not exempt. */
     public @Nullable VatExemption vatExemption() { return vatExemption; }
