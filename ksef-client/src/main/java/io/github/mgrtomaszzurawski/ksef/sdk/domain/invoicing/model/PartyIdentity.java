@@ -7,9 +7,10 @@ package io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Identifying data of a transaction counterparty carried under a
- * {@code TPodmiot2} XSD complex type — used here for the carrier
- * ({@code Fa/WarunkiTransakcji/Transport/Przewoznik/DaneIdentyfikacyjne}).
+ * Identifying data of a buyer-class party carried under a
+ * {@code TPodmiot2} XSD complex type — used for the transport carrier
+ * ({@code Fa/WarunkiTransakcji/Transport/Przewoznik/DaneIdentyfikacyjne})
+ * and the correction buyer ({@code Fa/Podmiot2K/DaneIdentyfikacyjne}).
  *
  * <p>The tax identifier is an XSD choice: exactly one of a Polish NIP
  * ({@link #nip()}), an EU VAT number ({@link #euVatPrefix()} +
@@ -29,7 +30,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @since 0.1.0
  */
-public record TransportParty(
+public record PartyIdentity(
         @Nullable String nip,
         @Nullable String euVatPrefix,
         @Nullable String euVatNumber,

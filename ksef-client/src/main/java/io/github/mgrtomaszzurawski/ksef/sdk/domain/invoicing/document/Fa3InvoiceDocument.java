@@ -9,8 +9,11 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArch
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdditionalDescription;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Agreement;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AuthorizedParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BankAccount;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Carrier;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.CorrectionBuyer;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.CorrectionSeller;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.EarlyPaymentDiscount;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceAddress;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
@@ -21,6 +24,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePeriod
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceSettlement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyContact;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyIdentity;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PurchaseOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.RegistryEntry;
@@ -29,7 +33,6 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ThirdParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ThirdPartyIdentity;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TransactionConditions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Transport;
-import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TransportParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatExemption;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateBucket;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.VatRateSum;
@@ -123,6 +126,9 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
     private final List<String> deliveryNoteNumbers;
     private final List<AdditionalDescription> additionalDescriptions;
     private final List<ThirdParty> thirdParties;
+    private final @Nullable CorrectionSeller correctionSeller;
+    private final List<CorrectionBuyer> correctionBuyers;
+    private final @Nullable AuthorizedParty authorizedParty;
     private final @Nullable InvoiceFooter footer;
     private final @Nullable VatExemption vatExemption;
     private final List<VatRateSum> vatBreakdown;
@@ -139,6 +145,10 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
     private final @Nullable Boolean relatedParty;
     private final @Nullable Boolean exciseDutyRefund;
 
+    // Flat-facade constructor (ADR-030): one field assignment per surfaced
+    // invoice attribute, so its statement count scales with field coverage
+    // while each statement is a trivial assignment — NcssCount is a poor fit.
+    @SuppressWarnings("PMD.NcssCount")
     Fa3InvoiceDocument(Faktura faktura, byte[] xmlBytes) {
         this.faktura = Objects.requireNonNull(faktura, InvoiceDocumentMessages.ERR_NULL_FAKTURA);
         this.xmlBytes = xmlBytes.clone();
@@ -184,6 +194,9 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         this.deliveryNoteNumbers = extractDeliveryNoteNumbers(faktura.getFa());
         this.additionalDescriptions = extractAdditionalDescriptions(faktura.getFa());
         this.thirdParties = extractThirdParties(faktura);
+        this.correctionSeller = extractCorrectionSeller(faktura.getFa());
+        this.correctionBuyers = extractCorrectionBuyers(faktura.getFa());
+        this.authorizedParty = extractAuthorizedParty(faktura);
         this.footer = extractFooter(faktura);
         this.vatExemption = fa.vatExemption;
         this.vatBreakdown = fa.vatBreakdown;
@@ -363,6 +376,15 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
 
     /** Third parties from {@code Faktura/Podmiot3} — parties other than seller and buyer (additional buyers, factors, recipients). Empty when none. */
     public List<ThirdParty> thirdParties() { return thirdParties; }
+
+    /** Pre-correction seller data from {@code Fa/Podmiot1K}. Non-null only on a correction that changes seller data. */
+    public @Nullable CorrectionSeller correctionSeller() { return correctionSeller; }
+
+    /** Pre-correction buyer data from {@code Fa/Podmiot2K} (buyer and any additional buyers). Empty on an original invoice. */
+    public List<CorrectionBuyer> correctionBuyers() { return correctionBuyers; }
+
+    /** Authorised party from {@code Faktura/PodmiotUpowazniony}. Null when the invoice carries no authorised party. */
+    public @Nullable AuthorizedParty authorizedParty() { return authorizedParty; }
 
     /** Invoice footer from {@code Faktura/Stopka} — free-text footer lines and issuer register references. Null when absent. */
     public @Nullable InvoiceFooter footer() { return footer; }
@@ -811,12 +833,12 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         // Przewoznik, so they are trusted non-null; a contract violation
         // surfaces loudly rather than being masked.
         return new Carrier(
-                mapTransportParty(carrier.getDaneIdentyfikacyjne()),
+                mapPartyIdentity(carrier.getDaneIdentyfikacyjne()),
                 toAddress(carrier.getAdresPrzewoznika()));
     }
 
-    private static TransportParty mapTransportParty(TPodmiot2 identity) {
-        return new TransportParty(
+    private static PartyIdentity mapPartyIdentity(TPodmiot2 identity) {
+        return new PartyIdentity(
                 identity.getNIP(),
                 identity.getKodUE() != null ? identity.getKodUE().value() : null,
                 identity.getNrVatUE(),
@@ -903,6 +925,68 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         for (Faktura.Podmiot3.DaneKontaktowe contact : contacts) {
             if (contact != null) {
                 out.add(new PartyContact(contact.getEmail(), contact.getTelefon()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static @Nullable CorrectionSeller extractCorrectionSeller(Faktura.@Nullable Fa fa) {
+        Faktura.Fa.Podmiot1K seller = fa != null ? fa.getPodmiot1K() : null;
+        if (seller == null) {
+            return null;
+        }
+        // DaneIdentyfikacyjne and Adres are minOccurs=1; trusted non-null.
+        TPodmiot1 identity = seller.getDaneIdentyfikacyjne();
+        return new CorrectionSeller(
+                identity.getNIP(),
+                identity.getNazwa(),
+                toAddress(seller.getAdres()),
+                seller.getPrefiksPodatnika() != null ? seller.getPrefiksPodatnika().value() : null);
+    }
+
+    private static List<CorrectionBuyer> extractCorrectionBuyers(Faktura.@Nullable Fa fa) {
+        if (fa == null || fa.getPodmiot2K() == null || fa.getPodmiot2K().isEmpty()) {
+            return List.of();
+        }
+        List<CorrectionBuyer> out = new ArrayList<>(fa.getPodmiot2K().size());
+        for (Faktura.Fa.Podmiot2K buyer : fa.getPodmiot2K()) {
+            if (buyer != null) {
+                // DaneIdentyfikacyjne is minOccurs=1; trusted non-null.
+                out.add(new CorrectionBuyer(
+                        mapPartyIdentity(buyer.getDaneIdentyfikacyjne()),
+                        extractAddress(buyer.getAdres()),
+                        buyer.getIDNabywcy()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static @Nullable AuthorizedParty extractAuthorizedParty(Faktura faktura) {
+        Faktura.PodmiotUpowazniony party = faktura.getPodmiotUpowazniony();
+        if (party == null) {
+            return null;
+        }
+        // DaneIdentyfikacyjne, Adres and RolaPU are minOccurs=1; trusted non-null.
+        TPodmiot1 identity = party.getDaneIdentyfikacyjne();
+        return new AuthorizedParty(
+                identity.getNIP(),
+                identity.getNazwa(),
+                party.getNrEORI(),
+                toAddress(party.getAdres()),
+                extractAddress(party.getAdresKoresp()),
+                extractAuthorizedContacts(party.getDaneKontaktowe()),
+                party.getRolaPU().intValue());
+    }
+
+    private static List<PartyContact> extractAuthorizedContacts(
+            @Nullable List<Faktura.PodmiotUpowazniony.DaneKontaktowe> contacts) {
+        if (contacts == null || contacts.isEmpty()) {
+            return List.of();
+        }
+        List<PartyContact> out = new ArrayList<>(contacts.size());
+        for (Faktura.PodmiotUpowazniony.DaneKontaktowe contact : contacts) {
+            if (contact != null) {
+                out.add(new PartyContact(contact.getEmailPU(), contact.getTelefonPU()));
             }
         }
         return List.copyOf(out);

@@ -16,7 +16,7 @@ import java.util.Objects;
  *
  * @since 0.1.0
  */
-public record Carrier(TransportParty identity, InvoiceAddress address) {
+public record Carrier(PartyIdentity identity, InvoiceAddress address) {
 
     private static final String ERR_NULL_IDENTITY = "identity must not be null";
     private static final String ERR_NULL_ADDRESS = "address must not be null";
