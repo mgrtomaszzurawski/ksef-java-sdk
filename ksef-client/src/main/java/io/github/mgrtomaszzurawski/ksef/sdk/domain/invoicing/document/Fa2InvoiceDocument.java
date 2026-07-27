@@ -20,10 +20,13 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePaymen
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePeriod;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceSettlement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyContact;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PurchaseOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.RegistryEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SettlementItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ThirdParty;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ThirdPartyIdentity;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TransactionConditions;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Transport;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TransportParty;
@@ -36,6 +39,7 @@ import io.github.mgrtomaszzurawski.ksef.xml.fa2.TAdresFa2;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TNaglowek;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TPodmiot1;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TPodmiot2;
+import io.github.mgrtomaszzurawski.ksef.xml.fa2.TPodmiot3;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TRachunekBankowy;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -68,8 +72,14 @@ import org.jspecify.annotations.Nullable;
  * @since 0.1.0
  */
 // Deliberate flat-accessor facade (ADR-030): one public getter per invoice
-// field is the design, so the public-member count is expected to be high.
-@SuppressWarnings("PMD.ExcessivePublicCount")
+// field is the design, so the public-member count is expected to be high, the
+// class-total cyclomatic complexity scales with field coverage (one small
+// JAXB->record mapper per subtree, each trivial), and the object coupling
+// scales with the number of typed sections surfaced (one model record per
+// subtree). Per-method complexity stays guarded by CognitiveComplexity; the
+// class-total CyclomaticComplexity and CouplingBetweenObjects signals are a
+// poor fit for this wide mapping facade, so they are suppressed here.
+@SuppressWarnings({"PMD.ExcessivePublicCount", "PMD.CyclomaticComplexity", "PMD.CouplingBetweenObjects"})
 public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** KSeF boolean marker: 1 = yes/true (2 = no/false; absent = not set). */
@@ -110,6 +120,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final @Nullable TransactionConditions transactionConditions;
     private final List<String> deliveryNoteNumbers;
     private final List<AdditionalDescription> additionalDescriptions;
+    private final List<ThirdParty> thirdParties;
     private final @Nullable InvoiceFooter footer;
     private final @Nullable VatExemption vatExemption;
     private final List<VatRateSum> vatBreakdown;
@@ -168,6 +179,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.transactionConditions = extractTransactionConditions(faktura.getFa());
         this.deliveryNoteNumbers = extractDeliveryNoteNumbers(faktura.getFa());
         this.additionalDescriptions = extractAdditionalDescriptions(faktura.getFa());
+        this.thirdParties = extractThirdParties(faktura);
         this.footer = extractFooter(faktura);
         this.vatExemption = fa.vatExemption;
         this.vatBreakdown = fa.vatBreakdown;
@@ -622,6 +634,61 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                 address.getGLN());
     }
 
+    private static List<ThirdParty> extractThirdParties(Faktura faktura) {
+        if (faktura.getPodmiot3() == null || faktura.getPodmiot3().isEmpty()) {
+            return List.of();
+        }
+        List<ThirdParty> out = new ArrayList<>(faktura.getPodmiot3().size());
+        for (Faktura.Podmiot3 party : faktura.getPodmiot3()) {
+            if (party != null) {
+                out.add(mapThirdParty(party));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static ThirdParty mapThirdParty(Faktura.Podmiot3 party) {
+        // DaneIdentyfikacyjne is minOccurs=1; trusted non-null.
+        return new ThirdParty(
+                mapThirdPartyIdentity(party.getDaneIdentyfikacyjne()),
+                party.getIDNabywcy(),
+                party.getNrEORI(),
+                extractAddress(party.getAdres()),
+                extractAddress(party.getAdresKoresp()),
+                extractContacts(party.getDaneKontaktowe()),
+                party.getRola() != null ? party.getRola().intValue() : null,
+                toBooleanFlag(party.getRolaInna()),
+                party.getOpisRoli(),
+                party.getUdzial(),
+                party.getNrKlienta());
+    }
+
+    private static ThirdPartyIdentity mapThirdPartyIdentity(TPodmiot3 identity) {
+        return new ThirdPartyIdentity(
+                identity.getNIP(),
+                identity.getIDWew(),
+                identity.getKodUE() != null ? identity.getKodUE().value() : null,
+                identity.getNrVatUE(),
+                identity.getKodKraju() != null ? identity.getKodKraju().value() : null,
+                identity.getNrID(),
+                toBooleanFlag(identity.getBrakID()),
+                identity.getNazwa());
+    }
+
+    private static List<PartyContact> extractContacts(
+            @Nullable List<Faktura.Podmiot3.DaneKontaktowe> contacts) {
+        if (contacts == null || contacts.isEmpty()) {
+            return List.of();
+        }
+        List<PartyContact> out = new ArrayList<>(contacts.size());
+        for (Faktura.Podmiot3.DaneKontaktowe contact : contacts) {
+            if (contact != null) {
+                out.add(new PartyContact(contact.getEmail(), contact.getTelefon()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
     private static @Nullable InvoiceFooter extractFooter(Faktura faktura) {
         Faktura.Stopka stopka = faktura.getStopka();
         if (stopka == null) {
@@ -844,6 +911,9 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** Additional key/value descriptions from {@code Fa/DodatkowyOpis}. Empty when none. */
     public List<AdditionalDescription> additionalDescriptions() { return additionalDescriptions; }
+
+    /** Third parties from {@code Faktura/Podmiot3} — parties other than seller and buyer (additional buyers, factors, recipients). Empty when none. */
+    public List<ThirdParty> thirdParties() { return thirdParties; }
 
     /** Invoice footer from {@code Faktura/Stopka} — free-text footer lines and issuer register references. Null when absent. */
     public @Nullable InvoiceFooter footer() { return footer; }
