@@ -161,6 +161,7 @@
          - nip / NIP / VAT: Polish tax IDs and KSeF identifier types
          - gln / krs / bdo: business-register identifiers on the invoice
            (Global Location Number; National Court Register; waste database)
+         - vin: Vehicle Identification Number (new-means-of-transport annotation)
          - id / pkg / url / in / out / obj / o / csr / zip / upo / der / seq
            / key / iv / crc: standard short names + crypto/IO/encoding terms
            ('iv' is the standard symmetric-cipher initialization-vector name)
@@ -183,7 +184,7 @@
     and not(@Name = ('raw','nip','NIP','VAT','id','pkg','url','in','out','obj','o',
                      'csr','zip','upo','der','seq','key','iv','crc','xml','sum','fa',
                      'FA','FA2','FA3','PEF','RR','ROZ','KOR','JST','ZAL','UPR',
-                     'jst','ASC','DESC','gln','krs','bdo',
+                     'jst','ASC','DESC','gln','krs','bdo','vin',
                      'i','j','k','x','y','b','r','s','ch','cp','to','off','len',
                      'dir','all','rsa','ec','qrX','p','e','ex'))
     and not(ancestor::ForStatement)
