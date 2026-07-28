@@ -11,8 +11,8 @@ import org.jspecify.annotations.Nullable;
  * New-means-of-transport annotations of an invoice — the typed view of the
  * {@code Fa/Adnotacje/NoweSrodkiTransportu} node (intra-Community supply of
  * new means of transport, art. 42 ust. 5 of the VAT Act). Null on
- * {@code InvoiceDocument.newMeansOfTransport()} when the invoice carries no
- * such annotation.
+ * {@code InvoiceDocument.newMeansOfTransport()} only when the enclosing
+ * {@code Adnotacje} block is absent, which the schema makes mandatory.
  *
  * <p>The node is an XSD choice. On the positive branch {@link #intraCommunitySupply()}
  * ({@code P_22}) is set, {@link #article42Paragraph5()} ({@code P_42_5}) records

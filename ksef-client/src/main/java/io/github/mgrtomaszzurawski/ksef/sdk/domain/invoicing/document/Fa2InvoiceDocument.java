@@ -903,7 +903,8 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     private static NewTransportItem mapNewTransportItem(
             Faktura.Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu item) {
-        // P_22A and P_NrWierszaNST are minOccurs=1; trusted non-null.
+        // P_22A and P_NrWierszaNST are both minOccurs=1. Trust the date directly;
+        // default the line number to 1 defensively, as mapLineItem/mapOrderLine do.
         int lineNumber = item.getPNrWierszaNST() != null ? item.getPNrWierszaNST().intValue() : 1;
         return NewTransportItem.builder()
                 .admissionDate(toLocalDate(item.getP22A()))
@@ -1081,7 +1082,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     /** Margin-scheme annotations from {@code Fa/Adnotacje/PMarzy}. Null only when the annotation block is absent ({@code Adnotacje}/{@code PMarzy}), which the schema makes mandatory. */
     public @Nullable MarginScheme marginScheme() { return marginScheme; }
 
-    /** New-means-of-transport annotations from {@code Fa/Adnotacje/NoweSrodkiTransportu} (intra-Community supply, art. 42 ust. 5). Null when the annotation is absent. */
+    /** New-means-of-transport annotations from {@code Fa/Adnotacje/NoweSrodkiTransportu} (intra-Community supply, art. 42 ust. 5). Null only when the annotation block is absent ({@code Adnotacje}/{@code NoweSrodkiTransportu}), which the schema makes mandatory. */
     public @Nullable NewMeansOfTransport newMeansOfTransport() { return newMeansOfTransport; }
 
     /** Invoice number from {@code Fa/P_2}. */

@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Consumer;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -33,11 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link NewTransportItem}). Set through the JAXB escape hatch, XSD-validated,
  * and read back.
  *
- * <p>FA(3) exercises the positive branch with a land vehicle and an aircraft
- * item ({@code P_42_5} = 1); FA(2) exercises a distinct positive branch with a
- * vessel item ({@code P_42_5} = 2) — so both hand-duplicated read paths are
- * guarded with distinct values and all three vehicle-category arms of the
- * item choice are covered. A third case drives the negative {@code P_22N} arm.
+ * <p>The read mappers are hand-duplicated per schema, so both forms exercise
+ * every vehicle-category arm of the item choice with DISTINCT values: a land
+ * vehicle (mileage + one of VIN / body / chassis / frame + type), a vessel
+ * ({@code P_22C} + hull) and an aircraft ({@code P_22D} + factory number).
+ * The three adjacent same-typed land identifiers ({@code P_22B2}/{@code P_22B3}/
+ * {@code P_22B4}) each get a dedicated item so a swap among them is caught.
+ * {@code P_42_5} is set to 1 (FA(3)) and 2 (FA(2)) so a hard-coded mapping
+ * would fail. A third case drives the negative {@code P_22N} arm.
  */
 class NewMeansOfTransportRoundTripTest {
 
@@ -82,49 +86,29 @@ class NewMeansOfTransportRoundTripTest {
     }
 
     private static io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura.Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu
-            fa3LandItem() {
+            fa3Item(int line, Consumer<io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura
+                    .Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu> spec) {
         var item = new io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura
                 .Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu();
         item.setP22A(greg(ADMISSION_DATE));
-        item.setPNrWierszaNST(BigInteger.ONE);
-        item.setP22BMK("Tesla");
-        item.setP22BMD("Model 3");
-        item.setP22BK("Red");
-        item.setP22BNR("WZ12345");
-        item.setP22BRP("2026");
-        item.setP22B("150");
-        item.setP22B1("VIN123ABC");
-        item.setP22BT("Osobowy");
-        return item;
-    }
-
-    private static io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura.Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu
-            fa3AircraftItem() {
-        var item = new io.github.mgrtomaszzurawski.ksef.xml.fa3.Faktura
-                .Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu();
-        item.setP22A(greg(ADMISSION_DATE_2));
-        item.setPNrWierszaNST(BigInteger.TWO);
-        item.setP22BMK("Cessna");
-        item.setP22D("500");
-        item.setP22D1("FN-999");
+        item.setPNrWierszaNST(BigInteger.valueOf(line));
+        spec.accept(item);
         return item;
     }
 
     private static io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura.Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu
-            fa2VesselItem() {
+            fa2Item(int line, Consumer<io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura
+                    .Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu> spec) {
         var item = new io.github.mgrtomaszzurawski.ksef.xml.fa2.Faktura
                 .Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu();
         item.setP22A(greg(ADMISSION_DATE));
-        item.setPNrWierszaNST(BigInteger.valueOf(3));
-        item.setP22BMK("Bavaria");
-        item.setP22BMD("C42");
-        item.setP22C("1200");
-        item.setP22C1("HULL-77");
+        item.setPNrWierszaNST(BigInteger.valueOf(line));
+        spec.accept(item);
         return item;
     }
 
     @Test
-    void fa3_landAndAircraftItems_surviveWriteThenRead() {
+    void fa3_allVehicleArmsAndLandIdentifiers_surviveWriteThenRead() {
         byte[] xml = Fa3Invoice.builder()
                 .invoiceNumber("FA/2026/NST/0001").issueDate(ISSUE_DATE)
                 .seller(seller()).buyer(buyer()).totalGrossAmount(new BigDecimal("123.00")).addLineItem(plainLine())
@@ -133,20 +117,49 @@ class NewMeansOfTransportRoundTripTest {
                             .Fa.Adnotacje.NoweSrodkiTransportu();
                     node.setP22(YES);
                     node.setP425(YES);
-                    node.getNowySrodekTransportu().add(fa3LandItem());
-                    node.getNowySrodekTransportu().add(fa3AircraftItem());
+                    node.getNowySrodekTransportu().add(fa3Item(1, it -> {
+                        it.setP22BMK("Tesla");
+                        it.setP22BMD("Model 3");
+                        it.setP22BK("Red");
+                        it.setP22BNR("WZ12345");
+                        it.setP22BRP("2026");
+                        it.setP22B("150");
+                        it.setP22B1("VIN123ABC");
+                        it.setP22BT("Osobowy");
+                    }));
+                    node.getNowySrodekTransportu().add(fa3Item(2, it -> {
+                        it.setP22B("160");
+                        it.setP22B2("BODY-11");
+                    }));
+                    node.getNowySrodekTransportu().add(fa3Item(3, it -> {
+                        it.setP22B("170");
+                        it.setP22B3("CHASSIS-22");
+                    }));
+                    node.getNowySrodekTransportu().add(fa3Item(4, it -> {
+                        it.setP22B("180");
+                        it.setP22B4("FRAME-33");
+                    }));
+                    node.getNowySrodekTransportu().add(fa3Item(5, it -> {
+                        it.setP22C("1200");
+                        it.setP22C1("HULL-77");
+                    }));
+                    node.getNowySrodekTransportu().add(fa3Item(6, it -> {
+                        it.setP22A(greg(ADMISSION_DATE_2));
+                        it.setP22BMK("Cessna");
+                        it.setP22D("500");
+                        it.setP22D1("FN-999");
+                    }));
                     faktura.getFa().getAdnotacje().setNoweSrodkiTransportu(node);
                 })
                 .build().xml();
 
         assertNoXsdErrors(xml, FormCode.FA3);
-        Fa3InvoiceDocument document = Fa3InvoiceDocument.from(xml);
+        NewMeansOfTransport nst = Fa3InvoiceDocument.from(xml).newMeansOfTransport();
 
-        NewMeansOfTransport nst = document.newMeansOfTransport();
         assertEquals(Boolean.TRUE, nst.intraCommunitySupply());
         assertEquals(Boolean.TRUE, nst.article42Paragraph5());
         assertNull(nst.noIntraCommunitySupply());
-        assertEquals(2, nst.items().size());
+        assertEquals(6, nst.items().size());
 
         NewTransportItem land = nst.items().get(0);
         assertEquals(ADMISSION_DATE, land.admissionDate());
@@ -159,21 +172,33 @@ class NewMeansOfTransportRoundTripTest {
         assertEquals("150", land.mileage());
         assertEquals("VIN123ABC", land.vin());
         assertEquals("Osobowy", land.vehicleType());
+        assertNull(land.bodyNumber());
+        assertNull(land.chassisNumber());
+        assertNull(land.frameNumber());
         assertNull(land.vesselWorkingHours());
         assertNull(land.aircraftWorkingHours());
 
-        NewTransportItem aircraft = nst.items().get(1);
+        assertLandIdentifier(nst.items().get(1), "160", null, "BODY-11", null, null);
+        assertLandIdentifier(nst.items().get(2), "170", null, null, "CHASSIS-22", null);
+        assertLandIdentifier(nst.items().get(3), "180", null, null, null, "FRAME-33");
+
+        NewTransportItem vessel = nst.items().get(4);
+        assertEquals("1200", vessel.vesselWorkingHours());
+        assertEquals("HULL-77", vessel.hullNumber());
+        assertNull(vessel.mileage());
+        assertNull(vessel.aircraftWorkingHours());
+
+        NewTransportItem aircraft = nst.items().get(5);
         assertEquals(ADMISSION_DATE_2, aircraft.admissionDate());
-        assertEquals(2, aircraft.invoiceLineNumber());
         assertEquals("Cessna", aircraft.make());
         assertEquals("500", aircraft.aircraftWorkingHours());
         assertEquals("FN-999", aircraft.factoryNumber());
         assertNull(aircraft.mileage());
-        assertNull(aircraft.vin());
+        assertNull(aircraft.vesselWorkingHours());
     }
 
     @Test
-    void fa2_vesselItemDistinctFlags_surviveWriteThenRead() {
+    void fa2_allVehicleArmsDistinctFlags_surviveWriteThenRead() {
         byte[] xml = Fa2Invoice.builder()
                 .invoiceNumber("FA/2026/NST/0002").issueDate(ISSUE_DATE)
                 .seller(seller()).buyer(buyer()).totalGrossAmount(new BigDecimal("123.00")).addLineItem(plainLine())
@@ -182,29 +207,62 @@ class NewMeansOfTransportRoundTripTest {
                             .Fa.Adnotacje.NoweSrodkiTransportu();
                     node.setP22(YES);
                     node.setP425(NO);
-                    node.getNowySrodekTransportu().add(fa2VesselItem());
+                    node.getNowySrodekTransportu().add(fa2Item(11, it -> {
+                        it.setP22BMK("Volvo");
+                        it.setP22BMD("FH16");
+                        it.setP22BK("Blue");
+                        it.setP22BNR("KR99999");
+                        it.setP22BRP("2025");
+                        it.setP22B("250");
+                        it.setP22B1("VINFA2XYZ");
+                        it.setP22BT("Ciezarowy");
+                    }));
+                    node.getNowySrodekTransportu().add(fa2Item(12, it -> {
+                        it.setP22C("1300");
+                        it.setP22C1("HULL-88");
+                    }));
+                    node.getNowySrodekTransportu().add(fa2Item(13, it -> {
+                        it.setP22D("600");
+                        it.setP22D1("FN-222");
+                        it.setP22BMK("Boeing");
+                    }));
                     faktura.getFa().getAdnotacje().setNoweSrodkiTransportu(node);
                 })
                 .build().xml();
 
         assertNoXsdErrors(xml, FormCode.FA2);
-        Fa2InvoiceDocument document = Fa2InvoiceDocument.from(xml);
+        NewMeansOfTransport nst = Fa2InvoiceDocument.from(xml).newMeansOfTransport();
 
-        NewMeansOfTransport nst = document.newMeansOfTransport();
         assertEquals(Boolean.TRUE, nst.intraCommunitySupply());
         assertEquals(Boolean.FALSE, nst.article42Paragraph5());
         assertNull(nst.noIntraCommunitySupply());
-        assertEquals(1, nst.items().size());
+        assertEquals(3, nst.items().size());
 
-        NewTransportItem vessel = nst.items().get(0);
-        assertEquals(ADMISSION_DATE, vessel.admissionDate());
-        assertEquals(3, vessel.invoiceLineNumber());
-        assertEquals("Bavaria", vessel.make());
-        assertEquals("C42", vessel.model());
-        assertEquals("1200", vessel.vesselWorkingHours());
-        assertEquals("HULL-77", vessel.hullNumber());
+        NewTransportItem land = nst.items().get(0);
+        assertEquals(11, land.invoiceLineNumber());
+        assertEquals("Volvo", land.make());
+        assertEquals("FH16", land.model());
+        assertEquals("Blue", land.color());
+        assertEquals("KR99999", land.registrationNumber());
+        assertEquals("2025", land.productionYear());
+        assertEquals("250", land.mileage());
+        assertEquals("VINFA2XYZ", land.vin());
+        assertEquals("Ciezarowy", land.vehicleType());
+        assertNull(land.vesselWorkingHours());
+        assertNull(land.aircraftWorkingHours());
+
+        NewTransportItem vessel = nst.items().get(1);
+        assertEquals("1300", vessel.vesselWorkingHours());
+        assertEquals("HULL-88", vessel.hullNumber());
         assertNull(vessel.mileage());
         assertNull(vessel.aircraftWorkingHours());
+
+        NewTransportItem aircraft = nst.items().get(2);
+        assertEquals("Boeing", aircraft.make());
+        assertEquals("600", aircraft.aircraftWorkingHours());
+        assertEquals("FN-222", aircraft.factoryNumber());
+        assertNull(aircraft.mileage());
+        assertNull(aircraft.vesselWorkingHours());
     }
 
     @Test
@@ -221,12 +279,20 @@ class NewMeansOfTransportRoundTripTest {
                 .build().xml();
 
         assertNoXsdErrors(xml, FormCode.FA3);
-        Fa3InvoiceDocument document = Fa3InvoiceDocument.from(xml);
+        NewMeansOfTransport nst = Fa3InvoiceDocument.from(xml).newMeansOfTransport();
 
-        NewMeansOfTransport nst = document.newMeansOfTransport();
         assertTrue(nst.noIntraCommunitySupply());
         assertNull(nst.intraCommunitySupply());
         assertNull(nst.article42Paragraph5());
         assertTrue(nst.items().isEmpty());
+    }
+
+    private static void assertLandIdentifier(NewTransportItem item, String mileage, String vin,
+                                             String bodyNumber, String chassisNumber, String frameNumber) {
+        assertEquals(mileage, item.mileage());
+        assertEquals(vin, item.vin());
+        assertEquals(bodyNumber, item.bodyNumber());
+        assertEquals(chassisNumber, item.chassisNumber());
+        assertEquals(frameNumber, item.frameNumber());
     }
 }
