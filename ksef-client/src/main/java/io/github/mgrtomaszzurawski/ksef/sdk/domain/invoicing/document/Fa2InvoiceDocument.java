@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdditionalDescription;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdvanceOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Agreement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AuthorizedParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BankAccount;
@@ -22,6 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineIt
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePeriod;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceSettlement;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OrderLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyContact;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyIdentity;
@@ -126,6 +128,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final List<ThirdParty> thirdParties;
     private final @Nullable CorrectionSeller correctionSeller;
     private final List<CorrectionBuyer> correctionBuyers;
+    private final @Nullable AdvanceOrder advanceOrder;
     private final @Nullable AuthorizedParty authorizedParty;
     private final @Nullable InvoiceFooter footer;
     private final @Nullable VatExemption vatExemption;
@@ -192,6 +195,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.thirdParties = extractThirdParties(faktura);
         this.correctionSeller = extractCorrectionSeller(faktura.getFa());
         this.correctionBuyers = extractCorrectionBuyers(faktura.getFa());
+        this.advanceOrder = extractAdvanceOrder(faktura.getFa());
         this.authorizedParty = extractAuthorizedParty(faktura);
         this.footer = extractFooter(faktura);
         this.vatExemption = fa.vatExemption;
@@ -702,6 +706,49 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         return List.copyOf(out);
     }
 
+    private static @Nullable AdvanceOrder extractAdvanceOrder(Faktura.@Nullable Fa fa) {
+        Faktura.Fa.Zamowienie order = fa != null ? fa.getZamowienie() : null;
+        if (order == null) {
+            return null;
+        }
+        List<OrderLine> lines = new ArrayList<>();
+        if (order.getZamowienieWiersz() != null) {
+            for (Faktura.Fa.Zamowienie.ZamowienieWiersz line : order.getZamowienieWiersz()) {
+                if (line != null) {
+                    lines.add(mapOrderLine(line));
+                }
+            }
+        }
+        // WartoscZamowienia is minOccurs=1; trusted non-null.
+        return new AdvanceOrder(order.getWartoscZamowienia(), lines);
+    }
+
+    private static OrderLine mapOrderLine(Faktura.Fa.Zamowienie.ZamowienieWiersz line) {
+        int rowNumber = line.getNrWierszaZam() != null ? line.getNrWierszaZam().intValue() : 1;
+        return OrderLine.builder()
+                .rowNumber(rowNumber)
+                .uuid(line.getUUIDZ())
+                .description(line.getP7Z())
+                .index(line.getIndeksZ())
+                .gtin(line.getGTINZ())
+                .pkwiu(line.getPKWiUZ())
+                .cnCode(line.getCNZ())
+                .pkobCode(line.getPKOBZ())
+                .unitOfMeasure(line.getP8AZ())
+                .quantity(line.getP8BZ())
+                .netUnitPrice(line.getP9AZ())
+                .netAmount(line.getP11NettoZ())
+                .vatAmount(line.getP11VatZ())
+                .vatRate(line.getP12Z())
+                .valueAddedTaxRate(line.getP12ZXII())
+                .annex15(toBooleanFlag(line.getP12ZZal15()))
+                .gtuCode(line.getGTUZ() != null ? line.getGTUZ().value() : null)
+                .procedureMarking(line.getProceduraZ() != null ? line.getProceduraZ().value() : null)
+                .exciseAmount(line.getKwotaAkcyzyZ())
+                .correctionStateBefore(toBooleanFlag(line.getStanPrzedZ()))
+                .build();
+    }
+
     private static @Nullable CorrectionSeller extractCorrectionSeller(Faktura.@Nullable Fa fa) {
         Faktura.Fa.Podmiot1K seller = fa != null ? fa.getPodmiot1K() : null;
         if (seller == null) {
@@ -995,6 +1042,9 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** Pre-correction buyer data from {@code Fa/Podmiot2K} (buyer and any additional buyers). Empty on an original invoice. */
     public List<CorrectionBuyer> correctionBuyers() { return correctionBuyers; }
+
+    /** Advance-payment order from {@code Fa/Zamowienie} — ordered goods/services priced for an advance invoice. Null when absent. */
+    public @Nullable AdvanceOrder advanceOrder() { return advanceOrder; }
 
     /** Authorised party from {@code Faktura/PodmiotUpowazniony}. Null when the invoice carries no authorised party. */
     public @Nullable AuthorizedParty authorizedParty() { return authorizedParty; }
