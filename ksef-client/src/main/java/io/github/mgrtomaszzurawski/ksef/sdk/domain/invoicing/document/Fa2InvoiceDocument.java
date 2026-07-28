@@ -36,6 +36,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PurchaseOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.RegistryEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SettlementItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TaxpayerStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ThirdParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ThirdPartyIdentity;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TransactionConditions;
@@ -52,7 +53,6 @@ import io.github.mgrtomaszzurawski.ksef.xml.fa2.TPodmiot2;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TPodmiot3;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TRachunekBankowy;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -125,7 +125,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final @Nullable NewMeansOfTransport newMeansOfTransport;
     private final @Nullable String sellerEori;
     private final @Nullable String sellerTaxpayerPrefix;
-    private final @Nullable BigInteger sellerTaxpayerStatus;
+    private final @Nullable TaxpayerStatus sellerTaxpayerStatus;
     private final @Nullable InvoiceAddress sellerCorrespondenceAddress;
     private final @Nullable String buyerId;
     private final @Nullable String buyerEori;
@@ -229,7 +229,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.sellerEori = podmiot1 != null ? podmiot1.getNrEORI() : null;
         this.sellerTaxpayerPrefix = podmiot1 != null && podmiot1.getPrefiksPodatnika() != null
                 ? podmiot1.getPrefiksPodatnika().value() : null;
-        this.sellerTaxpayerStatus = podmiot1 != null ? podmiot1.getStatusInfoPodatnika() : null;
+        this.sellerTaxpayerStatus = TaxpayerStatus.fromCode(podmiot1 != null ? podmiot1.getStatusInfoPodatnika() : null);
         this.sellerCorrespondenceAddress = podmiot1 != null ? extractAddress(podmiot1.getAdresKoresp()) : null;
         Faktura.Podmiot2 podmiot2 = faktura.getPodmiot2();
         this.buyerId = podmiot2 != null ? podmiot2.getIDNabywcy() : null;
@@ -795,7 +795,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         if (fa == null || fa.getFakturaZaliczkowa() == null) {
             return List.of();
         }
-        List<AdvanceInvoiceReference> out = new ArrayList<>();
+        List<AdvanceInvoiceReference> out = new ArrayList<>(fa.getFakturaZaliczkowa().size());
         for (Faktura.Fa.FakturaZaliczkowa advanceRef : fa.getFakturaZaliczkowa()) {
             if (advanceRef != null) {
                 out.add(new AdvanceInvoiceReference(
@@ -811,7 +811,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         if (fa == null || fa.getZaliczkaCzesciowa() == null) {
             return List.of();
         }
-        List<PartialAdvance> out = new ArrayList<>();
+        List<PartialAdvance> out = new ArrayList<>(fa.getZaliczkaCzesciowa().size());
         for (Faktura.Fa.ZaliczkaCzesciowa zaliczka : fa.getZaliczkaCzesciowa()) {
             if (zaliczka != null) {
                 // P_15Z and P_6Z are minOccurs=1; trusted non-null.
@@ -1150,13 +1150,13 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     /** Seller EU taxpayer country prefix from {@code Podmiot1/PrefiksPodatnika} (VAT-UE country code). Null when absent. */
     public @Nullable String sellerTaxpayerPrefix() { return sellerTaxpayerPrefix; }
 
-    /** Seller taxpayer-status code from {@code Podmiot1/StatusInfoPodatnika}. Null when absent. */
-    public @Nullable BigInteger sellerTaxpayerStatus() { return sellerTaxpayerStatus; }
+    /** Seller legal status from {@code Podmiot1/StatusInfoPodatnika} (liquidation, restructuring, bankruptcy, inherited enterprise). Null when absent. */
+    public @Nullable TaxpayerStatus sellerTaxpayerStatus() { return sellerTaxpayerStatus; }
 
     /** Seller correspondence address from {@code Podmiot1/AdresKoresp}. Null when the invoice carries none. */
     public @Nullable InvoiceAddress sellerCorrespondenceAddress() { return sellerCorrespondenceAddress; }
 
-    /** Buyer identifier from {@code Podmiot2/IDNabywcy} (buyer's own reference). Null when absent. */
+    /** Buyer correction-linkage key from {@code Podmiot2/IDNabywcy} — a unique key correlating buyer data across a correction invoice and the invoice it corrects, set only when the buyer's data changed. Null when absent. */
     public @Nullable String buyerId() { return buyerId; }
 
     /** Buyer EORI number from {@code Podmiot2/NrEORI}. Null when absent. */

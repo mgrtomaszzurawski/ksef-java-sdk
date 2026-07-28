@@ -9,6 +9,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdvanceInvoic
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialAdvance;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TaxpayerStatus;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator.Severity;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.validation.KsefXmlValidator.ValidationIssue;
@@ -120,12 +121,14 @@ class PartyAndAdvanceRoundTripTest {
 
         assertEquals("PL1234567", document.sellerEori());
         assertEquals("PL", document.sellerTaxpayerPrefix());
-        assertEquals(BigInteger.ONE, document.sellerTaxpayerStatus());
+        assertEquals(TaxpayerStatus.LIQUIDATION, document.sellerTaxpayerStatus());
         assertEquals("ul. Korespondencyjna 1, Sprzedawca", document.sellerCorrespondenceAddress().addressLine1());
+        assertEquals("PL", document.sellerCorrespondenceAddress().countryCode());
         assertEquals("BUYER-ID-1", document.buyerId());
         assertEquals("DE7654321", document.buyerEori());
         assertEquals("CLIENT-9", document.buyerClientNumber());
         assertEquals("ul. Korespondencyjna 9, Nabywca", document.buyerCorrespondenceAddress().addressLine1());
+        assertEquals("PL", document.buyerCorrespondenceAddress().countryCode());
 
         assertEquals(1, document.partialAdvances().size());
         PartialAdvance partial = document.partialAdvances().get(0);
@@ -180,12 +183,14 @@ class PartyAndAdvanceRoundTripTest {
 
         assertEquals("PL7777777", document.sellerEori());
         assertEquals("PL", document.sellerTaxpayerPrefix());
-        assertEquals(BigInteger.ONE, document.sellerTaxpayerStatus());
+        assertEquals(TaxpayerStatus.LIQUIDATION, document.sellerTaxpayerStatus());
         assertEquals("ul. FA2 Koresp 7, Sprzedawca", document.sellerCorrespondenceAddress().addressLine1());
+        assertEquals("PL", document.sellerCorrespondenceAddress().countryCode());
         assertEquals("BUYER-ID-2", document.buyerId());
         assertEquals("FR1111111", document.buyerEori());
         assertEquals("CLIENT-2", document.buyerClientNumber());
         assertEquals("ul. FA2 Koresp 2, Nabywca", document.buyerCorrespondenceAddress().addressLine1());
+        assertEquals("PL", document.buyerCorrespondenceAddress().countryCode());
 
         assertEquals(1, document.partialAdvances().size());
         PartialAdvance partial = document.partialAdvances().get(0);
