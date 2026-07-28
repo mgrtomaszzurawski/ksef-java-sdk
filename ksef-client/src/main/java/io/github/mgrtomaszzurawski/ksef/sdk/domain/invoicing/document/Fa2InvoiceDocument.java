@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.FormCode;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.archive.InvoiceArchive;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSession;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdditionalDescription;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdvanceInvoiceReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdvanceOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Agreement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AuthorizedParty;
@@ -28,6 +29,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.NewMeansOfTra
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.NewTransportItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OrderLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialAdvance;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyContact;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyIdentity;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
@@ -50,6 +52,7 @@ import io.github.mgrtomaszzurawski.ksef.xml.fa2.TPodmiot2;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TPodmiot3;
 import io.github.mgrtomaszzurawski.ksef.xml.fa2.TRachunekBankowy;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -120,6 +123,16 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final boolean simplifiedTriangular;
     private final @Nullable MarginScheme marginScheme;
     private final @Nullable NewMeansOfTransport newMeansOfTransport;
+    private final @Nullable String sellerEori;
+    private final @Nullable String sellerTaxpayerPrefix;
+    private final @Nullable BigInteger sellerTaxpayerStatus;
+    private final @Nullable InvoiceAddress sellerCorrespondenceAddress;
+    private final @Nullable String buyerId;
+    private final @Nullable String buyerEori;
+    private final @Nullable String buyerClientNumber;
+    private final @Nullable InvoiceAddress buyerCorrespondenceAddress;
+    private final List<AdvanceInvoiceReference> advanceInvoiceReferences;
+    private final List<PartialAdvance> partialAdvances;
     private final @Nullable String invoiceNumber;
     private final @Nullable LocalDate issueDate;
     private final @Nullable String currency;
@@ -212,6 +225,19 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.correctionSeller = extractCorrectionSeller(faktura.getFa());
         this.correctionBuyers = extractCorrectionBuyers(faktura.getFa());
         this.advanceOrder = extractAdvanceOrder(faktura.getFa());
+        Faktura.Podmiot1 podmiot1 = faktura.getPodmiot1();
+        this.sellerEori = podmiot1 != null ? podmiot1.getNrEORI() : null;
+        this.sellerTaxpayerPrefix = podmiot1 != null && podmiot1.getPrefiksPodatnika() != null
+                ? podmiot1.getPrefiksPodatnika().value() : null;
+        this.sellerTaxpayerStatus = podmiot1 != null ? podmiot1.getStatusInfoPodatnika() : null;
+        this.sellerCorrespondenceAddress = podmiot1 != null ? extractAddress(podmiot1.getAdresKoresp()) : null;
+        Faktura.Podmiot2 podmiot2 = faktura.getPodmiot2();
+        this.buyerId = podmiot2 != null ? podmiot2.getIDNabywcy() : null;
+        this.buyerEori = podmiot2 != null ? podmiot2.getNrEORI() : null;
+        this.buyerClientNumber = podmiot2 != null ? podmiot2.getNrKlienta() : null;
+        this.buyerCorrespondenceAddress = podmiot2 != null ? extractAddress(podmiot2.getAdresKoresp()) : null;
+        this.advanceInvoiceReferences = extractAdvanceInvoiceReferences(faktura.getFa());
+        this.partialAdvances = extractPartialAdvances(faktura.getFa());
         this.authorizedParty = extractAuthorizedParty(faktura);
         this.footer = extractFooter(faktura);
         this.vatExemption = fa.vatExemption;
@@ -765,6 +791,39 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                 .build();
     }
 
+    private static List<AdvanceInvoiceReference> extractAdvanceInvoiceReferences(Faktura.@Nullable Fa fa) {
+        if (fa == null || fa.getFakturaZaliczkowa() == null) {
+            return List.of();
+        }
+        List<AdvanceInvoiceReference> out = new ArrayList<>();
+        for (Faktura.Fa.FakturaZaliczkowa advanceRef : fa.getFakturaZaliczkowa()) {
+            if (advanceRef != null) {
+                out.add(new AdvanceInvoiceReference(
+                        advanceRef.getNrFaZaliczkowej(),
+                        advanceRef.getNrKSeFFaZaliczkowej(),
+                        toBooleanFlag(advanceRef.getNrKSeFZN())));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<PartialAdvance> extractPartialAdvances(Faktura.@Nullable Fa fa) {
+        if (fa == null || fa.getZaliczkaCzesciowa() == null) {
+            return List.of();
+        }
+        List<PartialAdvance> out = new ArrayList<>();
+        for (Faktura.Fa.ZaliczkaCzesciowa zaliczka : fa.getZaliczkaCzesciowa()) {
+            if (zaliczka != null) {
+                // P_15Z and P_6Z are minOccurs=1; trusted non-null.
+                out.add(new PartialAdvance(
+                        zaliczka.getP15Z(),
+                        toLocalDate(zaliczka.getP6Z()),
+                        zaliczka.getKursWalutyZW()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
     private static @Nullable CorrectionSeller extractCorrectionSeller(Faktura.@Nullable Fa fa) {
         Faktura.Fa.Podmiot1K seller = fa != null ? fa.getPodmiot1K() : null;
         if (seller == null) {
@@ -1084,6 +1143,36 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** New-means-of-transport annotations from {@code Fa/Adnotacje/NoweSrodkiTransportu} (intra-Community supply, art. 42 ust. 5). Null only when the annotation block is absent ({@code Adnotacje}/{@code NoweSrodkiTransportu}), which the schema makes mandatory. */
     public @Nullable NewMeansOfTransport newMeansOfTransport() { return newMeansOfTransport; }
+
+    /** Seller EORI number from {@code Podmiot1/NrEORI}. Null when absent. */
+    public @Nullable String sellerEori() { return sellerEori; }
+
+    /** Seller EU taxpayer country prefix from {@code Podmiot1/PrefiksPodatnika} (VAT-UE country code). Null when absent. */
+    public @Nullable String sellerTaxpayerPrefix() { return sellerTaxpayerPrefix; }
+
+    /** Seller taxpayer-status code from {@code Podmiot1/StatusInfoPodatnika}. Null when absent. */
+    public @Nullable BigInteger sellerTaxpayerStatus() { return sellerTaxpayerStatus; }
+
+    /** Seller correspondence address from {@code Podmiot1/AdresKoresp}. Null when the invoice carries none. */
+    public @Nullable InvoiceAddress sellerCorrespondenceAddress() { return sellerCorrespondenceAddress; }
+
+    /** Buyer identifier from {@code Podmiot2/IDNabywcy} (buyer's own reference). Null when absent. */
+    public @Nullable String buyerId() { return buyerId; }
+
+    /** Buyer EORI number from {@code Podmiot2/NrEORI}. Null when absent. */
+    public @Nullable String buyerEori() { return buyerEori; }
+
+    /** Buyer client number from {@code Podmiot2/NrKlienta}. Null when absent. */
+    public @Nullable String buyerClientNumber() { return buyerClientNumber; }
+
+    /** Buyer correspondence address from {@code Podmiot2/AdresKoresp}. Null when the invoice carries none. */
+    public @Nullable InvoiceAddress buyerCorrespondenceAddress() { return buyerCorrespondenceAddress; }
+
+    /** Advance invoices settled by this invoice from {@code Fa/FakturaZaliczkowa}. Empty when none. */
+    public List<AdvanceInvoiceReference> advanceInvoiceReferences() { return advanceInvoiceReferences; }
+
+    /** Partial advance payments from {@code Fa/ZaliczkaCzesciowa}. Empty when none. */
+    public List<PartialAdvance> partialAdvances() { return partialAdvances; }
 
     /** Invoice number from {@code Fa/P_2}. */
     public @Nullable String invoiceNumber() { return invoiceNumber; }
