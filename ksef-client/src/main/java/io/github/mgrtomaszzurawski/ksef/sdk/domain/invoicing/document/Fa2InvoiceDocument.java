@@ -24,6 +24,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePaymen
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePeriod;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceSettlement;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.MarginScheme;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.NewMeansOfTransport;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.NewTransportItem;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OrderLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyContact;
@@ -117,6 +119,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final boolean reverseCharge;
     private final boolean simplifiedTriangular;
     private final @Nullable MarginScheme marginScheme;
+    private final @Nullable NewMeansOfTransport newMeansOfTransport;
     private final @Nullable String invoiceNumber;
     private final @Nullable LocalDate issueDate;
     private final @Nullable String currency;
@@ -187,6 +190,7 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.reverseCharge = adnotacje != null && adnotacje.getP18() == KSEF_TRUE_MARKER;
         this.simplifiedTriangular = adnotacje != null && adnotacje.getP23() == KSEF_TRUE_MARKER;
         this.marginScheme = extractMarginScheme(adnotacje);
+        this.newMeansOfTransport = extractNewMeansOfTransport(adnotacje);
         FaSnapshot fa = FaSnapshot.from(faktura.getFa());
         this.invoiceNumber = fa.invoiceNumber;
         this.issueDate = fa.issueDate;
@@ -877,6 +881,52 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
                 toBooleanFlag(margin.getPPMarzyN()));
     }
 
+    private static @Nullable NewMeansOfTransport extractNewMeansOfTransport(Faktura.Fa.@Nullable Adnotacje adnotacje) {
+        if (adnotacje == null || adnotacje.getNoweSrodkiTransportu() == null) {
+            return null;
+        }
+        Faktura.Fa.Adnotacje.NoweSrodkiTransportu node = adnotacje.getNoweSrodkiTransportu();
+        List<NewTransportItem> items = new ArrayList<>();
+        if (node.getNowySrodekTransportu() != null) {
+            for (Faktura.Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu item : node.getNowySrodekTransportu()) {
+                if (item != null) {
+                    items.add(mapNewTransportItem(item));
+                }
+            }
+        }
+        return new NewMeansOfTransport(
+                toBooleanFlag(node.getP22()),
+                toBooleanFlag(node.getP425()),
+                items,
+                toBooleanFlag(node.getP22N()));
+    }
+
+    private static NewTransportItem mapNewTransportItem(
+            Faktura.Fa.Adnotacje.NoweSrodkiTransportu.NowySrodekTransportu item) {
+        // P_22A and P_NrWierszaNST are both minOccurs=1. Trust the date directly;
+        // default the line number to 1 defensively, as mapLineItem/mapOrderLine do.
+        int lineNumber = item.getPNrWierszaNST() != null ? item.getPNrWierszaNST().intValue() : 1;
+        return NewTransportItem.builder()
+                .admissionDate(toLocalDate(item.getP22A()))
+                .invoiceLineNumber(lineNumber)
+                .make(item.getP22BMK())
+                .model(item.getP22BMD())
+                .color(item.getP22BK())
+                .registrationNumber(item.getP22BNR())
+                .productionYear(item.getP22BRP())
+                .mileage(item.getP22B())
+                .vin(item.getP22B1())
+                .bodyNumber(item.getP22B2())
+                .chassisNumber(item.getP22B3())
+                .frameNumber(item.getP22B4())
+                .vehicleType(item.getP22BT())
+                .vesselWorkingHours(item.getP22C())
+                .hullNumber(item.getP22C1())
+                .aircraftWorkingHours(item.getP22D())
+                .factoryNumber(item.getP22D1())
+                .build();
+    }
+
     private static @Nullable VatExemption extractVatExemption(Faktura.Fa.@Nullable Adnotacje adnotacje) {
         if (adnotacje == null || adnotacje.getZwolnienie() == null) {
             return null;
@@ -1031,6 +1081,9 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** Margin-scheme annotations from {@code Fa/Adnotacje/PMarzy}. Null only when the annotation block is absent ({@code Adnotacje}/{@code PMarzy}), which the schema makes mandatory. */
     public @Nullable MarginScheme marginScheme() { return marginScheme; }
+
+    /** New-means-of-transport annotations from {@code Fa/Adnotacje/NoweSrodkiTransportu} (intra-Community supply, art. 42 ust. 5). Null only when the annotation block is absent ({@code Adnotacje}/{@code NoweSrodkiTransportu}), which the schema makes mandatory. */
+    public @Nullable NewMeansOfTransport newMeansOfTransport() { return newMeansOfTransport; }
 
     /** Invoice number from {@code Fa/P_2}. */
     public @Nullable String invoiceNumber() { return invoiceNumber; }
