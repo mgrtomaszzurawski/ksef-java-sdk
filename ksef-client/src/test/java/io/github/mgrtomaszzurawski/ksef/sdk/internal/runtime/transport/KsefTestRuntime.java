@@ -70,7 +70,7 @@ public final class KsefTestRuntime {
         return new KsefHttpRuntime(
                 new KsefHttpRuntime.Transport(
                         KsefEnvironment.custom(wmInfo.getHttpBaseUrl() + KSEF_PATH_PREFIX),
-                        HttpClient.newHttpClient(),
+                        new ManagedHttpClient(HttpClient::newHttpClient, Duration.ofSeconds(60)),
                         mapper,
                         new RetryHandler(retryPolicy),
                         DEFAULT_READ_TIMEOUT),

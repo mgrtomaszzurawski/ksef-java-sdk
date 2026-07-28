@@ -33,6 +33,8 @@ public final class HttpSupport {
     private static final String LOG_REQUEST = "[{}] {}";
     private static final String LOG_RESPONSE = "[{}] {} -> {} ({}ms)";
 
+    private static final String HTTP_GET = "GET";
+    private static final String HTTP_HEAD = "HEAD";
     private static final String CONTENT_TYPE = "Content-Type";
     private static final String ACCEPT = "Accept";
     private static final String APPLICATION_JSON = "application/json";
@@ -569,7 +571,8 @@ public final class HttpSupport {
             LOGGER.debug(LOG_REQUEST, request.method(), UriRedaction.redactNipSegments(request.uri()));
         }
         try {
-            HttpResponse<T> response = runtime.httpClient().send(request, bodyHandler);
+            HttpResponse<T> response =
+                    runtime.managedHttpClient().send(request, bodyHandler, isSafeToReplay(request.method()));
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(LOG_RESPONSE, request.method(), UriRedaction.redactNipSegments(request.uri()),
                         response.statusCode(), System.currentTimeMillis() - start);
@@ -579,6 +582,14 @@ public final class HttpSupport {
             Thread.currentThread().interrupt();
             throw new IOException(request.method() + " " + UriRedaction.redactNipSegments(request.uri()) + " interrupted", exception);
         }
+    }
+
+    // GET/HEAD are safe (side-effect-free), so a transport failure may be
+    // replayed on a fresh connection. Every other method (POST/PUT/PATCH/DELETE)
+    // is not replayed to avoid a double submit; the managed client still
+    // rebuilds after the failure so the next call uses a healthy connection.
+    private static boolean isSafeToReplay(String method) {
+        return HTTP_GET.equals(method) || HTTP_HEAD.equals(method);
     }
 
     private <T> T deserialize(String body, Class<T> responseType) throws IOException {
