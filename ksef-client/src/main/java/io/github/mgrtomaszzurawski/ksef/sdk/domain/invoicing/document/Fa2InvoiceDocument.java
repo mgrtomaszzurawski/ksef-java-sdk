@@ -23,6 +23,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineIt
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoicePeriod;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceSettlement;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.MarginScheme;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.OrderLine;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartialPayment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PartyContact;
@@ -111,6 +112,11 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
     private final @Nullable String buyerCountryCode;
     private final @Nullable String systemInfo;
     private final boolean splitPayment;
+    private final boolean cashMethod;
+    private final boolean selfBilling;
+    private final boolean reverseCharge;
+    private final boolean simplifiedTriangular;
+    private final @Nullable MarginScheme marginScheme;
     private final @Nullable String invoiceNumber;
     private final @Nullable LocalDate issueDate;
     private final @Nullable String currency;
@@ -175,6 +181,12 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         this.buyerCountryCode = buyer.countryCode;
         this.systemInfo = faktura.getNaglowek() != null ? faktura.getNaglowek().getSystemInfo() : null;
         this.splitPayment = extractSplitPayment(faktura.getFa());
+        Faktura.Fa.Adnotacje adnotacje = faktura.getFa() != null ? faktura.getFa().getAdnotacje() : null;
+        this.cashMethod = adnotacje != null && adnotacje.getP16() == KSEF_TRUE_MARKER;
+        this.selfBilling = adnotacje != null && adnotacje.getP17() == KSEF_TRUE_MARKER;
+        this.reverseCharge = adnotacje != null && adnotacje.getP18() == KSEF_TRUE_MARKER;
+        this.simplifiedTriangular = adnotacje != null && adnotacje.getP23() == KSEF_TRUE_MARKER;
+        this.marginScheme = extractMarginScheme(adnotacje);
         FaSnapshot fa = FaSnapshot.from(faktura.getFa());
         this.invoiceNumber = fa.invoiceNumber;
         this.issueDate = fa.issueDate;
@@ -851,12 +863,29 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
         return fa.getAdnotacje().getP18A() == 1;
     }
 
+    private static @Nullable MarginScheme extractMarginScheme(Faktura.Fa.@Nullable Adnotacje adnotacje) {
+        if (adnotacje == null || adnotacje.getPMarzy() == null) {
+            return null;
+        }
+        Faktura.Fa.Adnotacje.PMarzy margin = adnotacje.getPMarzy();
+        return new MarginScheme(
+                toBooleanFlag(margin.getPPMarzy()),
+                toBooleanFlag(margin.getPPMarzy2()),
+                toBooleanFlag(margin.getPPMarzy31()),
+                toBooleanFlag(margin.getPPMarzy32()),
+                toBooleanFlag(margin.getPPMarzy33()),
+                toBooleanFlag(margin.getPPMarzyN()));
+    }
+
     private static @Nullable VatExemption extractVatExemption(Faktura.Fa.@Nullable Adnotacje adnotacje) {
         if (adnotacje == null || adnotacje.getZwolnienie() == null) {
             return null;
         }
         var zwolnienie = adnotacje.getZwolnienie();
-        if (zwolnienie.getP19A() == null && zwolnienie.getP19B() == null && zwolnienie.getP19C() == null) {
+        // Zwolnienie is an XSD choice: P_19 = 1 carries the exemption (with one
+        // legal basis P_19A/B/C), while P_19N = 1 marks an explicitly non-exempt
+        // supply. Surface an exemption only for the P_19 branch.
+        if (toBooleanFlag(zwolnienie.getP19N()) != null || toBooleanFlag(zwolnienie.getP19()) == null) {
             return null;
         }
         return new VatExemption(zwolnienie.getP19A(), zwolnienie.getP19B(), zwolnienie.getP19C());
@@ -987,6 +1016,21 @@ public final class Fa2InvoiceDocument implements InvoiceDocument {
 
     /** Split-payment / MPP flag from {@code Fa/Adnotacje/P_18A = 1}. */
     public boolean splitPayment() { return splitPayment; }
+
+    /** Cash-method flag from {@code Fa/Adnotacje/P_16 = 1} (art. 19a/21 — "metoda kasowa"). */
+    public boolean cashMethod() { return cashMethod; }
+
+    /** Self-billing flag from {@code Fa/Adnotacje/P_17 = 1} (art. 106d — "samofakturowanie"). */
+    public boolean selfBilling() { return selfBilling; }
+
+    /** Reverse-charge flag from {@code Fa/Adnotacje/P_18 = 1} ("odwrotne obciazenie"). */
+    public boolean reverseCharge() { return reverseCharge; }
+
+    /** Simplified intra-EU triangular-transaction flag from {@code Fa/Adnotacje/P_23 = 1}. */
+    public boolean simplifiedTriangular() { return simplifiedTriangular; }
+
+    /** Margin-scheme annotations from {@code Fa/Adnotacje/PMarzy}. Null only when the annotation block is absent ({@code Adnotacje}/{@code PMarzy}), which the schema makes mandatory. */
+    public @Nullable MarginScheme marginScheme() { return marginScheme; }
 
     /** Invoice number from {@code Fa/P_2}. */
     public @Nullable String invoiceNumber() { return invoiceNumber; }
