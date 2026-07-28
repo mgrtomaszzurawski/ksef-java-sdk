@@ -10,6 +10,9 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.session.ClosedSessi
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdditionalDescription;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AdvanceOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Agreement;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AttachmentBlock;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AttachmentMetadata;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AttachmentTable;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.AuthorizedParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.BankAccount;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.Carrier;
@@ -17,6 +20,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.CorrectionBuy
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.CorrectionSeller;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.EarlyPaymentDiscount;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceAddress;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceAttachment;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceCorrectionReference;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceFooter;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.InvoiceLineItem;
@@ -31,6 +35,8 @@ import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PaymentTerm;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.PurchaseOrder;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.RegistryEntry;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.SettlementItem;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TableColumn;
+import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TableRow;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ThirdParty;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.ThirdPartyIdentity;
 import io.github.mgrtomaszzurawski.ksef.sdk.domain.invoicing.model.TransactionConditions;
@@ -132,6 +138,7 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
     private final List<CorrectionBuyer> correctionBuyers;
     private final @Nullable AdvanceOrder advanceOrder;
     private final @Nullable AuthorizedParty authorizedParty;
+    private final @Nullable InvoiceAttachment attachment;
     private final @Nullable InvoiceFooter footer;
     private final @Nullable VatExemption vatExemption;
     private final List<VatRateSum> vatBreakdown;
@@ -201,6 +208,7 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         this.correctionBuyers = extractCorrectionBuyers(faktura.getFa());
         this.advanceOrder = extractAdvanceOrder(faktura.getFa());
         this.authorizedParty = extractAuthorizedParty(faktura);
+        this.attachment = extractAttachment(faktura);
         this.footer = extractFooter(faktura);
         this.vatExemption = fa.vatExemption;
         this.vatBreakdown = fa.vatBreakdown;
@@ -392,6 +400,9 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
 
     /** Authorised party from {@code Faktura/PodmiotUpowazniony}. Null when the invoice carries no authorised party. */
     public @Nullable AuthorizedParty authorizedParty() { return authorizedParty; }
+
+    /** Structured attachment from {@code Faktura/Zalacznik} — data blocks with descriptors, text and tables. Null when absent. */
+    public @Nullable InvoiceAttachment attachment() { return attachment; }
 
     /** Invoice footer from {@code Faktura/Stopka} — free-text footer lines and issuer register references. Null when absent. */
     public @Nullable InvoiceFooter footer() { return footer; }
@@ -1037,6 +1048,99 @@ public final class Fa3InvoiceDocument implements InvoiceDocument {
         for (Faktura.PodmiotUpowazniony.DaneKontaktowe contact : contacts) {
             if (contact != null) {
                 out.add(new PartyContact(contact.getEmailPU(), contact.getTelefonPU()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static @Nullable InvoiceAttachment extractAttachment(Faktura faktura) {
+        Faktura.Zalacznik attachment = faktura.getZalacznik();
+        if (attachment == null) {
+            return null;
+        }
+        List<AttachmentBlock> blocks = new ArrayList<>();
+        if (attachment.getBlokDanych() != null) {
+            for (Faktura.Zalacznik.BlokDanych block : attachment.getBlokDanych()) {
+                if (block != null) {
+                    blocks.add(mapBlock(block));
+                }
+            }
+        }
+        return new InvoiceAttachment(blocks);
+    }
+
+    private static AttachmentBlock mapBlock(Faktura.Zalacznik.BlokDanych block) {
+        List<String> paragraphs = block.getTekst() != null && block.getTekst().getAkapit() != null
+                ? List.copyOf(block.getTekst().getAkapit()) : List.of();
+        return new AttachmentBlock(
+                block.getZNaglowek(),
+                extractBlockMetadata(block.getMetaDane()),
+                paragraphs,
+                extractTables(block.getTabela()));
+    }
+
+    private static List<AttachmentMetadata> extractBlockMetadata(
+            @Nullable List<Faktura.Zalacznik.BlokDanych.MetaDane> metadata) {
+        if (metadata == null || metadata.isEmpty()) {
+            return List.of();
+        }
+        List<AttachmentMetadata> out = new ArrayList<>(metadata.size());
+        for (Faktura.Zalacznik.BlokDanych.MetaDane entry : metadata) {
+            if (entry != null) {
+                // ZKlucz and ZWartosc are minOccurs=1; trusted non-null.
+                out.add(new AttachmentMetadata(entry.getZKlucz(), entry.getZWartosc()));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<AttachmentTable> extractTables(
+            @Nullable List<Faktura.Zalacznik.BlokDanych.Tabela> tables) {
+        if (tables == null || tables.isEmpty()) {
+            return List.of();
+        }
+        List<AttachmentTable> out = new ArrayList<>(tables.size());
+        for (Faktura.Zalacznik.BlokDanych.Tabela table : tables) {
+            if (table != null) {
+                out.add(mapTable(table));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static AttachmentTable mapTable(Faktura.Zalacznik.BlokDanych.Tabela table) {
+        List<TableColumn> columns = new ArrayList<>();
+        if (table.getTNaglowek() != null && table.getTNaglowek().getKol() != null) {
+            for (Faktura.Zalacznik.BlokDanych.Tabela.TNaglowek.Kol column : table.getTNaglowek().getKol()) {
+                if (column != null) {
+                    // NKom and Typ are mandatory; trusted non-null.
+                    columns.add(new TableColumn(column.getNKom().getValue(), column.getTyp()));
+                }
+            }
+        }
+        List<TableRow> rows = new ArrayList<>();
+        if (table.getWiersz() != null) {
+            for (Faktura.Zalacznik.BlokDanych.Tabela.Wiersz dataRow : table.getWiersz()) {
+                if (dataRow != null) {
+                    rows.add(new TableRow(dataRow.getWKom() != null ? List.copyOf(dataRow.getWKom()) : List.of()));
+                }
+            }
+        }
+        List<String> totals = table.getSuma() != null && table.getSuma().getSKom() != null
+                ? List.copyOf(table.getSuma().getSKom()) : List.of();
+        return new AttachmentTable(extractTableMetadata(table.getTMetaDane()), table.getOpis(), columns, rows, totals);
+    }
+
+    private static List<AttachmentMetadata> extractTableMetadata(
+            @Nullable List<Faktura.Zalacznik.BlokDanych.Tabela.TMetaDane> metadata) {
+        if (metadata == null || metadata.isEmpty()) {
+            return List.of();
+        }
+        List<AttachmentMetadata> out = new ArrayList<>(metadata.size());
+        for (Faktura.Zalacznik.BlokDanych.Tabela.TMetaDane entry : metadata) {
+            if (entry != null) {
+                // TKlucz and TWartosc are minOccurs=1; trusted non-null.
+                out.add(new AttachmentMetadata(entry.getTKlucz(), entry.getTWartosc()));
             }
         }
         return List.copyOf(out);
