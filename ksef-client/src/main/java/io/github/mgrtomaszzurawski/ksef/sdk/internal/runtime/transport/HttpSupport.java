@@ -572,7 +572,7 @@ public final class HttpSupport {
         }
         try {
             HttpResponse<T> response =
-                    runtime.managedHttpClient().send(request, bodyHandler, isIdempotent(request.method()));
+                    runtime.managedHttpClient().send(request, bodyHandler, isSafeToReplay(request.method()));
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(LOG_RESPONSE, request.method(), UriRedaction.redactNipSegments(request.uri()),
                         response.statusCode(), System.currentTimeMillis() - start);
@@ -584,11 +584,11 @@ public final class HttpSupport {
         }
     }
 
-    // GET/HEAD carry no side effect, so a transport failure may be safely
-    // replayed on a fresh connection. Mutating methods (POST/PUT/PATCH/DELETE)
-    // are not replayed to avoid a double submit; the managed client still
+    // GET/HEAD are safe (side-effect-free), so a transport failure may be
+    // replayed on a fresh connection. Every other method (POST/PUT/PATCH/DELETE)
+    // is not replayed to avoid a double submit; the managed client still
     // rebuilds after the failure so the next call uses a healthy connection.
-    private static boolean isIdempotent(String method) {
+    private static boolean isSafeToReplay(String method) {
         return HTTP_GET.equals(method) || HTTP_HEAD.equals(method);
     }
 

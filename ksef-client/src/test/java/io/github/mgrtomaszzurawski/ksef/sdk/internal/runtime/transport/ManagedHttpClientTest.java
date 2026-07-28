@@ -81,6 +81,24 @@ class ManagedHttpClientTest {
     }
 
     @Test
+    void send_safeMethodRetryAlsoFails_propagatesAfterRebuild() throws Exception {
+        // The fresh client is dead too: the single replay fails and its exception
+        // propagates (no infinite loop), leaving the fresh client in place.
+        HttpClient dead = mock(HttpClient.class);
+        when(dead.send(any(), any(BodyHandler.class))).thenThrow(new HttpTimeoutException("first timeout"));
+        HttpClient alsoDead = mock(HttpClient.class);
+        when(alsoDead.send(any(), any(BodyHandler.class))).thenThrow(new HttpTimeoutException("second timeout"));
+
+        ManagedHttpClient managed = new ManagedHttpClient(factoryOf(List.of(dead, alsoDead)), TTL);
+
+        assertThrows(HttpTimeoutException.class,
+                () -> managed.send(getRequest(), HttpResponse.BodyHandlers.ofString(), true));
+        assertSame(alsoDead, managed.current());
+        verify(dead).send(any(), any(BodyHandler.class));
+        verify(alsoDead).send(any(), any(BodyHandler.class));
+    }
+
+    @Test
     void send_nonIdempotentTransportFailure_rebuildsButDoesNotRetry() throws Exception {
         HttpClient dead = mock(HttpClient.class);
         when(dead.send(any(), any(BodyHandler.class))).thenThrow(new IOException("connection reset"));
@@ -133,6 +151,7 @@ class ManagedHttpClientTest {
 
         assertSame(warm, managed.current());
         verify(warm).send(any(), any(BodyHandler.class));
+        verify(shouldNotBuild, never()).send(any(), any(BodyHandler.class));
     }
 
     @Test

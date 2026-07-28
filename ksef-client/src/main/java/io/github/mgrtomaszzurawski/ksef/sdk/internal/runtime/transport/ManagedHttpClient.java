@@ -106,11 +106,12 @@ public final class ManagedHttpClient {
      *
      * @param request the request to send
      * @param bodyHandler the response body handler
-     * @param idempotent whether the request is safe to replay (GET/HEAD); a
-     *     non-idempotent request is not retried, but the client is still rebuilt
-     *     so the next call is healthy
+     * @param safeToReplay whether the request is a safe (side-effect-free)
+     *     method that may be replayed after a transport failure — GET/HEAD. A
+     *     request that is not safe to replay is not retried, but the client is
+     *     still rebuilt so the next call is healthy
      */
-    public <T> HttpResponse<T> send(HttpRequest request, BodyHandler<T> bodyHandler, boolean idempotent)
+    public <T> HttpResponse<T> send(HttpRequest request, BodyHandler<T> bodyHandler, boolean safeToReplay)
             throws IOException, InterruptedException {
         rebuildIfIdle();
         HttpClient client = clientRef.get();
@@ -120,7 +121,7 @@ public final class ManagedHttpClient {
             return response;
         } catch (IOException transportFailure) {
             rebuild(client);
-            if (!idempotent) {
+            if (!safeToReplay) {
                 LOGGER.warn(LOG_NORETRY_REBUILD, request.method());
                 throw transportFailure;
             }
@@ -142,7 +143,19 @@ public final class ManagedHttpClient {
         }
     }
 
+    // Identity comparison is intentional: the check mirrors the AtomicReference
+    // compareAndSet below (which is reference-identity), and HttpClient has no
+    // meaningful equals — we ask "is the live client still the instance that failed?".
+    @SuppressWarnings("PMD.CompareObjectsWithEquals")
     private void rebuild(HttpClient known) {
+        // Skip the allocation entirely if another thread already rebuilt past
+        // `known` — a new HttpClient spawns a selector thread, so this collapses
+        // the common case of N concurrent failures on one dead client into a
+        // single rebuild instead of N. A residual race (two threads both pass
+        // this check) is still safe: only one compareAndSet wins.
+        if (clientRef.get() != known) {
+            return;
+        }
         HttpClient fresh = Objects.requireNonNull(factory.get(), ERR_FACTORY_NULL_CLIENT);
         // Only the thread that still observes `known` swaps it in; a concurrent
         // rebuild on the same dead client leaves `fresh` unreferenced. HttpClient

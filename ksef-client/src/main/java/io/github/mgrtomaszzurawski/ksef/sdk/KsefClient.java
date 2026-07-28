@@ -581,8 +581,9 @@ public final class KsefClient implements AutoCloseable {
          * Set the idle window after which the shared HTTP client is rebuilt on a
          * fresh connection pool before the next call (ADR-036). Keep it below the
          * idle timeout of any edge/NAT/WAF in front of KSeF so a silently dropped
-         * keep-alive connection is never reused. {@link Duration#ZERO} disables the
-         * idle rebuild (transport-failure recovery still applies). Default 60s.
+         * keep-alive connection is never reused. {@link Duration#ZERO} (or any
+         * non-positive duration) disables the idle rebuild; transport-failure
+         * recovery still applies. Default 60s.
          *
          * @param idleConnectionTtl the idle rebuild window; {@code ZERO} to disable
          * @return this builder

@@ -36,11 +36,13 @@ self-heal, **staying on `java.net.http` with no new dependency**:
 
 1. **Transport-failure recovery (the guarantee).** An `IOException` on send
    (timeout, connection reset) rebuilds the client on a fresh pool so the next
-   call is healthy; for an **idempotent** request (GET/HEAD) the send is retried
-   once on the new client. This lives **below** the business `RetryPolicy`, so it
-   fires even at `RetryPolicy.maxAttempts(1)` and does not change 429/5xx/`Retry-After`
-   behaviour. Non-idempotent requests (POST/PUT/PATCH/DELETE) are **not** replayed
-   — the client is still rebuilt, so the next call recovers, but no double submit.
+   call is healthy; for a **safe** (side-effect-free) request — GET/HEAD — the
+   send is retried once on the new client. This lives **below** the business
+   `RetryPolicy`, so it fires even at `RetryPolicy.maxAttempts(1)` and does not
+   change 429/5xx/`Retry-After` behaviour. Requests that are not safe to replay
+   (POST/PUT/PATCH/DELETE) are **not** replayed — the client is still rebuilt, so
+   the next call recovers, but no double submit. (Note: PUT/DELETE are
+   HTTP-idempotent but not safe; we replay only the safe subset, conservatively.)
 
 2. **Idle TTL (soft prevention).** Before a send, if the client has been idle
    longer than a configurable TTL (default 60s), it is rebuilt so a connection
