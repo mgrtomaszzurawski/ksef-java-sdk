@@ -51,6 +51,7 @@ import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.IdentifierMasking;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.crypto.CertificateLoader;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.HttpRuntime;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.KsefHttpRuntime;
+import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.ManagedHttpClient;
 import io.github.mgrtomaszzurawski.ksef.sdk.internal.runtime.transport.RetryHandler;
 import java.net.http.HttpClient;
 import java.security.KeyStore;
@@ -129,6 +130,8 @@ public final class KsefClient implements AutoCloseable {
             "Refresh-token endpoint failed ({}); falling back to full re-auth";
     private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(30);
+    /** Default idle window after which the shared HTTP client is rebuilt before the next call (ADR-036). */
+    private static final Duration DEFAULT_IDLE_CONNECTION_TTL = Duration.ofSeconds(60);
     /** Default deadline for the synchronous invoice verification poll in {@code OnlineSession.sendInvoice}. */
     private static final Duration DEFAULT_INVOICE_VERIFICATION_TIMEOUT = Duration.ofSeconds(60);
     private static final int AUTH_POLL_DELAY_MS = 2000;
@@ -142,7 +145,7 @@ public final class KsefClient implements AutoCloseable {
 
     private final KsefEnvironment environment;
     private final KsefCredentials credentials;
-    private final HttpClient httpClient;
+    private final ManagedHttpClient managedHttpClient;
     private final ObjectMapper objectMapper;
     private final RetryHandler retryHandler;
     private final SessionContext sessionContext;
@@ -185,14 +188,14 @@ public final class KsefClient implements AutoCloseable {
                 builder.retryPolicy,
                 builder.featurePolicy,
                 Optional.ofNullable(builder.offlineSigningProvider));
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(builder.connectTimeout)
-                .build();
+        this.managedHttpClient = new ManagedHttpClient(
+                () -> HttpClient.newBuilder().connectTimeout(builder.connectTimeout).build(),
+                builder.idleConnectionTtl);
         this.objectMapper = createObjectMapper();
         this.retryHandler = new RetryHandler(builder.retryPolicy);
         this.sessionContext = new SessionContext();
         this.runtime = new KsefHttpRuntime(
-                new KsefHttpRuntime.Transport(environment, httpClient, objectMapper, retryHandler, readTimeout),
+                new KsefHttpRuntime.Transport(environment, managedHttpClient, objectMapper, retryHandler, readTimeout),
                 new KsefHttpRuntime.AuthHooks(sessionContext, this::reauthenticate, this::ensureAuthenticated,
                         this::isCertificateBackedCredentials),
                 builder.featurePolicy);
@@ -462,6 +465,21 @@ public final class KsefClient implements AutoCloseable {
     }
 
     /**
+     * Force a fresh HTTP transport (a new connection pool) on the next call,
+     * without discarding this client or its authentication state. Use as a
+     * manual recovery hook if calls start timing out against a silently dropped
+     * connection. The SDK also rebuilds the transport automatically on a
+     * transport failure and after the configured idle window (ADR-036), so
+     * calling this is defence in depth, not a routine requirement.
+     *
+     * @since 0.1.2
+     */
+    public void reconnect() {
+        ensureOpen();
+        managedHttpClient.invalidate();
+    }
+
+    /**
      * Begin configuring a new {@code KsefClient} instance.
      *
      * <p>At minimum the builder requires a {@link KsefEnvironment} and a
@@ -496,6 +514,7 @@ public final class KsefClient implements AutoCloseable {
         private @Nullable KsefCredentials credentials;
         private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
         private Duration readTimeout = DEFAULT_READ_TIMEOUT;
+        private Duration idleConnectionTtl = DEFAULT_IDLE_CONNECTION_TTL;
         private RetryPolicy retryPolicy = RetryPolicy.builder().build();
         private FeaturePolicy featurePolicy = FeaturePolicy.defaults();
         private Duration invoiceVerificationTimeout = DEFAULT_INVOICE_VERIFICATION_TIMEOUT;
@@ -555,6 +574,22 @@ public final class KsefClient implements AutoCloseable {
          */
         public Builder readTimeout(Duration readTimeout) {
             this.readTimeout = readTimeout;
+            return this;
+        }
+
+        /**
+         * Set the idle window after which the shared HTTP client is rebuilt on a
+         * fresh connection pool before the next call (ADR-036). Keep it below the
+         * idle timeout of any edge/NAT/WAF in front of KSeF so a silently dropped
+         * keep-alive connection is never reused. {@link Duration#ZERO} disables the
+         * idle rebuild (transport-failure recovery still applies). Default 60s.
+         *
+         * @param idleConnectionTtl the idle rebuild window; {@code ZERO} to disable
+         * @return this builder
+         * @since 0.1.2
+         */
+        public Builder idleConnectionTtl(Duration idleConnectionTtl) {
+            this.idleConnectionTtl = idleConnectionTtl;
             return this;
         }
 

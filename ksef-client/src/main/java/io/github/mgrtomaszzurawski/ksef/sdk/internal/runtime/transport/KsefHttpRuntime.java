@@ -44,7 +44,10 @@ public final class KsefHttpRuntime implements HttpRuntime {
     public String baseUrl() { return transport.environment().baseUrl(); }
 
     @Override
-    public HttpClient httpClient() { return transport.httpClient(); }
+    public HttpClient httpClient() { return transport.managedHttpClient().current(); }
+
+    @Override
+    public ManagedHttpClient managedHttpClient() { return transport.managedHttpClient(); }
 
     @Override
     public SessionContext sessionContext() { return auth.sessionContext(); }
@@ -85,14 +88,14 @@ public final class KsefHttpRuntime implements HttpRuntime {
      */
     public record Transport(
             KsefEnvironment environment,
-            HttpClient httpClient,
+            ManagedHttpClient managedHttpClient,
             ObjectMapper objectMapper,
             RetryHandler retryHandler,
             Duration readTimeout) {
 
         public Transport {
             Objects.requireNonNull(environment, "environment must not be null");
-            Objects.requireNonNull(httpClient, "httpClient must not be null");
+            Objects.requireNonNull(managedHttpClient, "managedHttpClient must not be null");
             Objects.requireNonNull(objectMapper, "objectMapper must not be null");
             Objects.requireNonNull(retryHandler, "retryHandler must not be null");
             Objects.requireNonNull(readTimeout, "readTimeout must not be null");

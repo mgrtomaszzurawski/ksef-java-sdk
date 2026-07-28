@@ -25,8 +25,11 @@ public interface HttpRuntime {
     /** Base URL for the configured KSeF environment (no trailing slash). */
     String baseUrl();
 
-    /** Underlying JDK HTTP client. */
+    /** Current underlying JDK HTTP client (may change across a transport rebuild). */
     HttpClient httpClient();
+
+    /** Managed HTTP client owning the transport lifecycle (idle TTL, rebuild-on-failure). */
+    ManagedHttpClient managedHttpClient();
 
     /** Session context — current JWT, reference number, etc. */
     SessionContext sessionContext();
